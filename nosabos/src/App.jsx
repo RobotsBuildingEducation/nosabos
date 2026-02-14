@@ -4226,58 +4226,35 @@ export default function App() {
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
 
-  // Handler for lesson level navigation with lock checking
+  // Handler for lesson level navigation
+  // Lock checking is handled by CEFRLevelNavigator UI (next button disabled when locked)
   const handleLessonLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentLessonLevel);
-
-      // Allow navigation to any level at or below the highest unlocked level
-      if (newLevelIndex <= maxUnlockedIndex) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveLessonLevel(newLevel);
-      } else {
-        console.log(
-          `Lesson level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [currentLessonLevel],
+    [],
   );
 
-  // Handler for flashcard level navigation with lock checking
+  // Handler for flashcard level navigation
   const handleFlashcardLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentFlashcardLevel);
-
-      // Allow navigation to any level at or below the highest unlocked level
-      if (newLevelIndex <= maxUnlockedIndex) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveFlashcardLevel(newLevel);
-      } else {
-        console.log(
-          `Flashcard level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [currentFlashcardLevel],
+    [],
   );
 
   // Legacy: Combined handler for level navigation
   const handleLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentCEFRLevel);
-
-      // Allow navigation to any level at or below the highest unlocked level
-      if (newLevelIndex <= maxUnlockedIndex) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveCEFRLevel(newLevel);
-      } else {
-        console.log(
-          `Level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [currentCEFRLevel],
+    [],
   );
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
