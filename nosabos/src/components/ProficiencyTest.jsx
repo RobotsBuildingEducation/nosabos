@@ -1157,12 +1157,12 @@ Return ONLY valid JSON:
     };
   }, []);
 
-  /* ---- Timeline (deduplicated) ---- */
+  /* ---- Timeline (deduplicated + strict alternation) ---- */
   const timeline = useMemo(() => {
     const sorted = [...messages].sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
     // Deduplicate assistant messages with identical text
     const seenAssistantText = new Set();
-    return sorted.filter((m) => {
+    const deduped = sorted.filter((m) => {
       if (m.role !== "assistant") return true;
       const text = ((m.textFinal || "") + (m.textStream || "")).trim();
       if (!text) return false;
@@ -1170,6 +1170,21 @@ Return ONLY valid JSON:
       seenAssistantText.add(text);
       return true;
     });
+    // Enforce strict one-to-one alternation (newest first).
+    // When consecutive messages share the same role, keep only the first
+    // (most recent) one so the conversation stays user ↔ assistant.
+    const alternated = [];
+    for (const m of deduped) {
+      if (alternated.length === 0) {
+        alternated.push(m);
+        continue;
+      }
+      const prevRole = alternated[alternated.length - 1].role;
+      if (m.role !== prevRole) {
+        alternated.push(m);
+      }
+    }
+    return alternated;
   }, [messages]);
 
   /* ---- Render ---- */
@@ -1185,21 +1200,10 @@ Return ONLY valid JSON:
         pb="140px"
       >
         {/* Header */}
-        <Box
-          bgGradient="linear(to-r, purple.700, cyan.600)"
-          px={4}
-          py={4}
-        >
-          <VStack spacing={2} align="center">
-            <Text fontSize="lg" fontWeight="bold" color="white">
-              {isEs ? "Prueba de Nivel" : "Proficiency Test"}
-            </Text>
-            <Text fontSize="sm" color="whiteAlpha.800">
-              {isEs
-                ? `Intercambio ${Math.min(userMessageCount, MAX_EXCHANGES)} de ${MAX_EXCHANGES}`
-                : `Exchange ${Math.min(userMessageCount, MAX_EXCHANGES)} of ${MAX_EXCHANGES}`}
-            </Text>
-          </VStack>
+        <Box px={4} py={4}>
+          <Text fontSize="lg" fontWeight="bold" color="gray.100" textAlign="center">
+            {isEs ? "Prueba de Nivel" : "Proficiency Test"}
+          </Text>
         </Box>
 
         {/* Progress + Robot */}
