@@ -684,7 +684,7 @@ export default function StoryMode({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "gpt-5-nano",
           text: { format: { type: "text" } },
           input: {
             uiLanguage: uiLang, // UI language is app UI only
