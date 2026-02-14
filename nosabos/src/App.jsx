@@ -2071,21 +2071,6 @@ export default function App() {
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
 
-  // Show proficiency modal for any account that completed onboarding
-  // but has no proficiencyPlacement flag (new or old accounts alike).
-  useEffect(() => {
-    if (proficiencyCheckDoneRef.current) return;
-    if (isLoadingApp || !user) return;
-    if (needsOnboarding) return;
-    // Skip if already placed, skipped, or currently in onboarding chain modals
-    if (user?.proficiencyPlacement) return;
-    if (dailyGoalOpen || timerModalOpen) return;
-
-    proficiencyCheckDoneRef.current = true;
-    const t = setTimeout(() => setProficiencyTestOpen(true), 800);
-    return () => clearTimeout(t);
-  }, [isLoadingApp, user, needsOnboarding, dailyGoalOpen, timerModalOpen]);
-
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
     if (celebrateOpen) {
@@ -2107,6 +2092,20 @@ export default function App() {
   const timerRemainingRef = useRef(null);
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
+
+  // Show proficiency modal for any account that completed onboarding
+  // but has no proficiencyPlacement flag (new or old accounts alike).
+  useEffect(() => {
+    if (proficiencyCheckDoneRef.current) return;
+    if (isLoadingApp || !user) return;
+    if (needsOnboarding) return;
+    if (user?.proficiencyPlacement) return;
+    if (dailyGoalOpen || timerModalOpen) return;
+
+    proficiencyCheckDoneRef.current = true;
+    const t = setTimeout(() => setProficiencyTestOpen(true), 800);
+    return () => clearTimeout(t);
+  }, [isLoadingApp, user, needsOnboarding, dailyGoalOpen, timerModalOpen]);
 
   const formatTimer = useCallback((seconds) => {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
