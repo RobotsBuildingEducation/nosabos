@@ -28,7 +28,7 @@ import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
-import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
@@ -457,6 +457,8 @@ export default function ProficiencyTest() {
 
   // Derive settings from user
   const targetLang = user?.progress?.targetLang || "es";
+  const targetLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+  const targetLanguageCode = (targetLangTag || "es-MX").split("-")[0];
   const supportLang = user?.progress?.supportLang || "en";
   const voicePersona = user?.progress?.voicePersona || "";
   const pauseMs = user?.progress?.pauseMs || 800;
@@ -651,6 +653,7 @@ export default function ProficiencyTest() {
     return [
       `You are a ${langName} proficiency assessor conducting a placement test.`,
       strict,
+      `When speaking, use natural ${langName} pronunciation for locale ${targetLangTag}.`,
       "Your task is to have a natural conversation that progressively tests the user's language ability.",
       "Start with very simple topics (greetings, basic questions) and gradually increase complexity.",
       `CONVERSATION FLOW across ${MAX_EXCHANGES} exchanges:`,
@@ -1234,6 +1237,7 @@ Return ONLY valid JSON:
               },
               input_audio_transcription: {
                 model: "whisper-1",
+                language: targetLanguageCode,
                 prompt:
                   "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
               },
