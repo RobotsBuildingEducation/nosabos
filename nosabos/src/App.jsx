@@ -70,8 +70,9 @@ import {
   CheckCircleIcon,
   ArrowBackIcon,
 } from "@chakra-ui/icons";
-import { CiUser, CiEdit } from "react-icons/ci";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { CiSquarePlus, CiUser, CiEdit } from "react-icons/ci";
+import { IoIosMore } from "react-icons/io";
+import { MdOutlineFileUpload, MdOutlineSupportAgent } from "react-icons/md";
 import {
   RiSpeakLine,
   RiBook2Line,
@@ -684,6 +685,7 @@ function TopBar({
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
   const [switchNsec, setSwitchNsec] = useState("");
   const [isSwitching, setIsSwitching] = useState(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
 
   const persistSettings = useCallback(
     async (partial = {}) => {
@@ -727,6 +729,56 @@ function TopBar({
       });
     }
   };
+
+  const installSteps = useMemo(
+    () => [
+      {
+        id: "step1",
+        icon: <IoIosMore size={28} />,
+        text: t?.app_install_step1 || "Open the browser menu.",
+      },
+      {
+        id: "step2",
+        icon: <MdOutlineFileUpload size={28} />,
+        text: t?.app_install_step2 || "Choose 'Share' or 'Install'.",
+      },
+      {
+        id: "step3",
+        icon: <CiSquarePlus size={28} />,
+        text: t?.app_install_step3 || "Add to Home Screen.",
+      },
+      {
+        id: "step4",
+        icon: <LuBadgeCheck size={28} />,
+        text: t?.app_install_step4 || "Launch from your Home Screen.",
+      },
+      {
+        id: "step5",
+        icon: <LuKeyRound size={24} />,
+        text:
+          t?.account_final_step_title ||
+          "Copy your secret key to sign into your account",
+        subText:
+          t?.account_final_step_description ||
+          "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
+        action: (
+          <Button
+            size="xs"
+            padding={4}
+            leftIcon={<LuKeyRound size={14} />}
+            colorScheme="orange"
+            onClick={() =>
+              copy(currentSecret, t?.toast_secret_copied || "Secret copied")
+            }
+            isDisabled={!currentSecret}
+          >
+            {t?.account_copy_secret || "Copy Secret Key"}
+          </Button>
+        ),
+      },
+    ],
+    [t, copy, currentSecret]
+  );
 
   const switchAccountWithNsec = async () => {
     const nsec = (switchNsec || "").trim();
@@ -1144,6 +1196,17 @@ function TopBar({
                   </VStack>
                 </Wrap>
 
+                <Box>
+                  <Button
+                    size="sm"
+                    colorScheme="teal"
+                    variant="outline"
+                    onClick={() => setIsInstallModalOpen(true)}
+                  >
+                    {t?.app_install_button || "Install app"}
+                  </Button>
+                </Box>
+
                 {/* Persona */}
                 <Box bg="gray.800" p={3} rounded="md">
                   <Text fontSize="sm" mb={2}>
@@ -1332,6 +1395,49 @@ function TopBar({
         onSelectIdentity={onSelectIdentity}
         isIdentitySaving={isIdentitySaving}
       />
+
+      <Modal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
+        size="lg"
+        isCentered
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent bg="gray.900" color="gray.100" borderRadius="xl">
+          <ModalHeader textAlign="center" fontSize="xl" fontWeight="semibold">
+            {t?.app_install_title || "Install as app"}
+          </ModalHeader>
+          <ModalCloseButton color="gray.200" />
+          <ModalBody px={{ base: 4, md: 6 }} pb={6}>
+            <Box bg="gray.800" p={4} rounded="md">
+              {installSteps.map((step, idx) => (
+                <Box key={step.id} py={2}>
+                  <Flex
+                    align="center"
+                    gap={3}
+                    justify="space-between"
+                    flexWrap="wrap"
+                  >
+                    <HStack align="center" gap={3}>
+                      <Box color="teal.200">{step.icon}</Box>
+                      <Text fontSize="sm">{step.text}</Text>
+                    </HStack>
+                    {step.action ? <Box>{step.action}</Box> : null}
+                  </Flex>
+                  {step.subText ? (
+                    <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                      {step.subText}
+                    </Text>
+                  ) : null}
+                  {idx < installSteps.length - 1 && (
+                    <Divider my={3} borderColor="gray.700" />
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
