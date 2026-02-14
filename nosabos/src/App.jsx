@@ -2071,19 +2071,20 @@ export default function App() {
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
 
-  // Backwards-compat: show proficiency modal for existing accounts that
-  // completed onboarding but never took the proficiency test.
+  // Show proficiency modal for any account that completed onboarding
+  // but has no proficiencyPlacement flag (new or old accounts alike).
   useEffect(() => {
     if (proficiencyCheckDoneRef.current) return;
     if (isLoadingApp || !user) return;
-    if (!onboardingDone) return; // still in onboarding — modal chain handles it
-    if (user?.proficiencyPlacement) return; // already placed
+    if (needsOnboarding) return;
+    // Skip if already placed, skipped, or currently in onboarding chain modals
+    if (user?.proficiencyPlacement) return;
+    if (dailyGoalOpen || timerModalOpen) return;
 
     proficiencyCheckDoneRef.current = true;
-    // Small delay so the main UI settles before the modal appears
-    const t = setTimeout(() => setProficiencyTestOpen(true), 600);
+    const t = setTimeout(() => setProficiencyTestOpen(true), 800);
     return () => clearTimeout(t);
-  }, [isLoadingApp, user, onboardingDone]);
+  }, [isLoadingApp, user, needsOnboarding, dailyGoalOpen, timerModalOpen]);
 
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
