@@ -4226,100 +4226,35 @@ export default function App() {
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
 
-  // Handler for lesson level navigation with lock checking
+  // Handler for lesson level navigation
+  // Lock checking is handled by CEFRLevelNavigator UI (next button disabled when locked)
   const handleLessonLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-
-      // Check if this level is unlocked in lesson mode
-      let isUnlocked = newLevel === "Pre-A1";
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete in lesson mode
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (!lessonLevelCompletionStatus[prevLevel]?.isComplete) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveLessonLevel(newLevel);
-      } else {
-        console.log(
-          `Lesson level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [lessonLevelCompletionStatus],
+    [],
   );
 
-  // Handler for flashcard level navigation with lock checking
+  // Handler for flashcard level navigation
   const handleFlashcardLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-
-      // Check if this level is unlocked in flashcard mode
-      let isUnlocked = newLevel === "Pre-A1";
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete in flashcard mode
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveFlashcardLevel(newLevel);
-      } else {
-        console.log(
-          `Flashcard level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [flashcardLevelCompletionStatus],
+    [],
   );
 
   // Legacy: Combined handler for level navigation
   const handleLevelChange = useCallback(
     (newLevel) => {
-      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
-
-      // Check if this level is unlocked
-      let isUnlocked = newLevel === "Pre-A1";
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (!levelCompletionStatus[prevLevel]?.isComplete) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      if (CEFR_LEVELS.includes(newLevel)) {
         setActiveCEFRLevel(newLevel);
-      } else {
-        console.log(
-          `Level ${newLevel} is locked. Complete previous levels first.`,
-        );
       }
     },
-    [levelCompletionStatus],
+    [],
   );
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)

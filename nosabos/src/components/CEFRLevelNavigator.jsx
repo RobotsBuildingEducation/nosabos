@@ -118,9 +118,17 @@ export default function CEFRLevelNavigator({
   const isTestUnlocked =
     testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
-  // A level is unlocked if all previous levels are complete (or test mode)
+  // A level is unlocked if:
+  // 1. Test mode is active, OR
+  // 2. The next level is at or below the user's current unlocked level
+  //    (which already accounts for proficiency placement), OR
+  // 3. All previous levels are complete
+  const currentUnlockedIndex = CEFR_LEVELS.indexOf(currentLevel);
+  const nextLevelIndex = nextLevel ? CEFR_LEVELS.indexOf(nextLevel) : -1;
+
   const isNextLevelUnlocked = isTestUnlocked || (nextLevel
-    ? (() => {
+    ? nextLevelIndex <= currentUnlockedIndex ||
+      (() => {
         // Check all levels before the next level
         for (let i = 0; i < currentLevelIndex + 1; i++) {
           const level = CEFR_LEVELS[i];
