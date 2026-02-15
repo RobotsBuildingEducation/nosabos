@@ -3969,9 +3969,8 @@ export default function App() {
     // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    // If user has a per-language proficiency placement, use it; otherwise fall back to legacy global
-    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
-      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
+    // Only use per-language proficiency placement (no global fallback)
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -3989,7 +3988,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [lessonLevelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
+  }, [lessonLevelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
   // Determine current unlocked flashcard level (highest level user can access in flashcard mode)
   const currentFlashcardLevel = useMemo(() => {
@@ -3997,8 +3996,7 @@ export default function App() {
     // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
-      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -4016,7 +4014,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
+  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
   // Legacy: Combined current level (for backwards compatibility)
   const currentCEFRLevel = useMemo(() => {
@@ -4024,8 +4022,7 @@ export default function App() {
     // A level is unlocked if the previous level is complete in BOTH modes OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
-      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -4043,7 +4040,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [levelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
+  }, [levelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
@@ -4055,9 +4052,8 @@ export default function App() {
   useEffect(() => {
     if (!user || hasInitializedLevels) return;
 
-    // Per-language proficiency placement; fall back to legacy global if no per-language map exists
-    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
-      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
+    // Only use per-language proficiency placement (no global fallback)
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     // Initialize from user document if available, but validate they're unlocked
