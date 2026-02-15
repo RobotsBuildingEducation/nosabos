@@ -484,6 +484,7 @@ function TopBar({
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
+  const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
 
   // ---- Local draft state (no autosave) ----
@@ -1143,6 +1144,24 @@ function TopBar({
                     </Menu>
                   </VStack>
                 </Wrap>
+
+                {/* Start Proficiency Check */}
+                <Button
+                  leftIcon={<LuBadgeCheck />}
+                  size="sm"
+                  variant="outline"
+                  borderColor="cyan.600"
+                  color="cyan.200"
+                  _hover={{ bg: "cyan.900" }}
+                  onClick={() => {
+                    closeSettings();
+                    navigate("/proficiency");
+                  }}
+                >
+                  {appLanguage === "es"
+                    ? "Iniciar prueba de nivel"
+                    : "Start proficiency check"}
+                </Button>
 
                 {/* Persona */}
                 <Box bg="gray.800" p={3} rounded="md">
@@ -3327,15 +3346,25 @@ export default function App() {
       try {
         await setDoc(
           doc(database, "users", id),
-          { proficiencyPlacement: "skipped", updatedAt: new Date().toISOString() },
+          {
+            proficiencyPlacement: "skipped",
+            proficiencyPlacements: { [resolvedTargetLang]: "skipped" },
+            updatedAt: new Date().toISOString(),
+          },
           { merge: true },
         );
-        patchUser?.({ proficiencyPlacement: "skipped" });
+        patchUser?.({
+          proficiencyPlacement: "skipped",
+          proficiencyPlacements: {
+            ...(user?.proficiencyPlacements || {}),
+            [resolvedTargetLang]: "skipped",
+          },
+        });
       } catch (e) {
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
-  }, [resolveNpub, patchUser]);
+  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);
@@ -3940,8 +3969,9 @@ export default function App() {
     // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    // If user has a proficiency placement, unlock up to that level
-    const placement = user?.proficiencyPlacement;
+    // If user has a per-language proficiency placement, use it; otherwise fall back to legacy global
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
+      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -3959,7 +3989,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [lessonLevelCompletionStatus, user?.proficiencyPlacement]);
+  }, [lessonLevelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
 
   // Determine current unlocked flashcard level (highest level user can access in flashcard mode)
   const currentFlashcardLevel = useMemo(() => {
@@ -3967,7 +3997,8 @@ export default function App() {
     // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    const placement = user?.proficiencyPlacement;
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
+      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -3985,7 +4016,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacement]);
+  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
 
   // Legacy: Combined current level (for backwards compatibility)
   const currentCEFRLevel = useMemo(() => {
@@ -3993,7 +4024,8 @@ export default function App() {
     // A level is unlocked if the previous level is complete in BOTH modes OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
-    const placement = user?.proficiencyPlacement;
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
+      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -4011,7 +4043,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [levelCompletionStatus, user?.proficiencyPlacement]);
+  }, [levelCompletionStatus, user?.proficiencyPlacements, user?.proficiencyPlacement, resolvedTargetLang]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
@@ -4023,7 +4055,9 @@ export default function App() {
   useEffect(() => {
     if (!user || hasInitializedLevels) return;
 
-    const placement = user?.proficiencyPlacement;
+    // Per-language proficiency placement; fall back to legacy global if no per-language map exists
+    const placement = user?.proficiencyPlacements?.[resolvedTargetLang]
+      ?? (user?.proficiencyPlacements ? null : user?.proficiencyPlacement);
     const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     // Initialize from user document if available, but validate they're unlocked

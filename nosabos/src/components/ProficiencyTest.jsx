@@ -9,6 +9,7 @@ import {
   DrawerFooter,
   DrawerOverlay,
   HStack,
+  IconButton,
   Text,
   VStack,
   Badge,
@@ -17,6 +18,7 @@ import {
   Grid,
   GridItem,
 } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
@@ -1052,13 +1054,14 @@ Return ONLY valid JSON:
 
     try {
       // Mark all levels up to the assessed level as unlocked
-      // by setting the user's proficiency placement level
+      // by setting the user's proficiency placement level per-language
       const levelIndex = CEFR_LEVELS.indexOf(assessedLevel);
 
       await setDoc(
         doc(database, "users", currentNpub),
         {
           proficiencyPlacement: assessedLevel,
+          proficiencyPlacements: { [targetLang]: assessedLevel },
           proficiencyPlacementAt: new Date().toISOString(),
           activeLessonLevel: assessedLevel,
           activeFlashcardLevel: assessedLevel,
@@ -1073,6 +1076,10 @@ Return ONLY valid JSON:
       // Update local user state
       patchUser({
         proficiencyPlacement: assessedLevel,
+        proficiencyPlacements: {
+          ...(user?.proficiencyPlacements || {}),
+          [targetLang]: assessedLevel,
+        },
         activeLessonLevel: assessedLevel,
         activeFlashcardLevel: assessedLevel,
         progress: {
@@ -1389,10 +1396,22 @@ Return ONLY valid JSON:
         pb="140px"
       >
         {/* Header */}
-        <Box px={4} py={4}>
+        <Box px={4} py={4} position="relative">
           <Text fontSize="lg" fontWeight="bold" color="gray.100" textAlign="center">
             {isEs ? "Prueba de Nivel" : "Proficiency Test"}
           </Text>
+          <IconButton
+            icon={<CloseIcon />}
+            aria-label="Close"
+            variant="ghost"
+            color="gray.400"
+            _hover={{ color: "gray.200", bg: "whiteAlpha.100" }}
+            size="sm"
+            position="absolute"
+            top={4}
+            right={4}
+            onClick={() => navigate("/")}
+          />
         </Box>
 
         {/* Progress + Robot */}
