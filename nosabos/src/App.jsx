@@ -1470,7 +1470,7 @@ export default function App() {
     [],
   );
 
-  const resolvedTargetLang = user?.progress?.targetLang || "es";
+  const resolvedTargetLang = (user?.progress?.targetLang || "es").toLowerCase();
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
     (storedUiLang === "es" ? "es" : "en");
@@ -3584,7 +3584,8 @@ export default function App() {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
-      const existingProgress = user?.progress || {};
+      const latestUser = useUserStore.getState()?.user || {};
+      const existingProgress = latestUser?.progress || user?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
       const progressPayload = {
         ...existingProgress,
@@ -3616,7 +3617,7 @@ export default function App() {
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
       const patchHasChanges = Object.entries(patch).some(([key, value]) => {
-        const current = user?.[key];
+        const current = latestUser?.[key] ?? user?.[key];
         if (value && typeof value === "object") {
           try {
             return JSON.stringify(current) !== JSON.stringify(value);
