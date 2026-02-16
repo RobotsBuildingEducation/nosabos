@@ -1494,7 +1494,11 @@ export default function App() {
   }, [resolvedSupportLang]);
 
   useEffect(() => {
-    const id = (activeNpub || "").trim();
+    const id = (
+      user?.local_npub ||
+      (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "") ||
+      ""
+    ).trim();
     if (!id) return;
 
     const desiredAppLanguage = resolvedSupportLang === "es" ? "es" : "en";
@@ -1508,7 +1512,7 @@ export default function App() {
     }).catch((error) => {
       console.warn("Failed to sync appLanguage from supportLang:", error);
     });
-  }, [activeNpub, resolvedSupportLang, user?.appLanguage]);
+  }, [resolvedSupportLang, user?.appLanguage, user?.local_npub]);
 
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
