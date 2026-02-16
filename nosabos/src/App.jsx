@@ -2636,13 +2636,22 @@ export default function App() {
     // Derive appLanguage from supportLang to keep them in sync
     const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
 
+    // Strip subcollection-backed data from the progress field before writing
+    // to the user document. languageLessons and languageFlashcards live in
+    // their own subcollections and must not be duplicated (stale) in the doc.
+    const {
+      languageLessons: _ll,
+      languageFlashcards: _lf,
+      ...progressForFirestore
+    } = next;
+
     await setDoc(
       doc(database, "users", npub),
       {
         local_npub: npub,
         updatedAt: now,
         helpRequest: next.helpRequest || "",
-        progress: next,
+        progress: progressForFirestore,
         practicePronunciation: next.practicePronunciation,
         appLanguage: derivedAppLanguage,
       },
@@ -3667,24 +3676,22 @@ export default function App() {
       const latestUser = useUserStore.getState()?.user || {};
       const existingProgress = latestUser?.progress || user?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
-      const rawLanguageLessons =
-        rawProgress?.languageLessons &&
-        Object.keys(rawProgress.languageLessons).length > 0
-          ? rawProgress.languageLessons
-          : undefined;
-      const rawLanguageFlashcards =
-        rawProgress?.languageFlashcards &&
-        Object.keys(rawProgress.languageFlashcards).length > 0
-          ? rawProgress.languageFlashcards
-          : undefined;
+
+      // The user document's progress field may contain stale languageLessons/
+      // languageFlashcards data written by saveGlobalSettings. The subcollection
+      // listeners and loadUserObjectFromDB are the only sources of truth for
+      // these maps, so strip them from rawProgress before merging.
+      const {
+        languageLessons: _rawLL,
+        languageFlashcards: _rawLF,
+        ...rawProgressWithoutSubcollections
+      } = rawProgress;
 
       const progressPayload = {
         ...existingProgress,
-        ...rawProgress,
-        languageLessons:
-          rawLanguageLessons ?? existingProgress?.languageLessons ?? {},
-        languageFlashcards:
-          rawLanguageFlashcards ?? existingProgress?.languageFlashcards ?? {},
+        ...rawProgressWithoutSubcollections,
+        languageLessons: existingProgress?.languageLessons ?? {},
+        languageFlashcards: existingProgress?.languageFlashcards ?? {},
       };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
@@ -3698,11 +3705,8 @@ export default function App() {
       const hasHydratedProgressMaps =
         Object.keys(existingProgress?.languageLessons || {}).length > 0 ||
         Object.keys(existingProgress?.languageFlashcards || {}).length > 0;
-      const hasSnapshotProgressMaps =
-        Object.keys(rawProgress?.languageLessons || {}).length > 0 ||
-        Object.keys(rawProgress?.languageFlashcards || {}).length > 0;
 
-      if (hasHydratedProgressMaps || hasSnapshotProgressMaps) {
+      if (hasHydratedProgressMaps) {
         patch.progress = progressPayload;
       }
 
