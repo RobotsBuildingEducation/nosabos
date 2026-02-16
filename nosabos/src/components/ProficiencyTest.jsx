@@ -1065,9 +1065,7 @@ Return ONLY valid JSON:
           proficiencyPlacementAt: new Date().toISOString(),
           activeLessonLevel: assessedLevel,
           activeFlashcardLevel: assessedLevel,
-          progress: {
-            level: assessedLevel,
-          },
+          "progress.level": assessedLevel,
           updatedAt: new Date().toISOString(),
         },
         { merge: true }
