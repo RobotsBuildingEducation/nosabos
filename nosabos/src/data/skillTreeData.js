@@ -103,7 +103,8 @@ const baseLearningPath = {
               successCriteria_it: 'L\'apprendente ti dice "ciao".',
               successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
               successCriteria_nah: 'The learner says "niltze" to you.',
-              successCriteria_ja: 'The learner says "こんにちは" (konnichiwa) to you.',
+              successCriteria_ja:
+                'The learner says "こんにちは" (konnichiwa) to you.',
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
                 es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
@@ -130,50 +131,105 @@ const baseLearningPath = {
         {
           id: "lesson-pre-a1-1-1",
           title: { en: "My Family", es: "Mi Familia" },
-          description: { en: "Learn the words for close family members", es: "Aprende las palabras para familiares cercanos" },
+          description: {
+            en: "Learn the words for close family members",
+            es: "Aprende las palabras para familiares cercanos",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "close family members", focusPoints: ["mamá", "papá", "hermano", "hermana", "familia"] },
-            grammar: { topic: "family with articles", focusPoints: ["el/la with family nouns", "mi mamá, mi papá"] },
+            vocabulary: {
+              topic: "close family members",
+              focusPoints: ["mamá", "papá", "hermano", "hermana", "familia"],
+            },
+            grammar: {
+              topic: "family with articles",
+              focusPoints: ["el/la with family nouns", "mi mamá, mi papá"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-1-2",
           title: { en: "More Family", es: "Más Familia" },
-          description: { en: "Grandparents, babies, and extended family", es: "Abuelos, bebés y familia extendida" },
+          description: {
+            en: "Grandparents, babies, and extended family",
+            es: "Abuelos, bebés y familia extendida",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "extended family", focusPoints: ["abuelo", "abuela", "bebé", "hijo", "hija", "tío", "tía"] },
-            grammar: { topic: "masculine and feminine", focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"] },
+            vocabulary: {
+              topic: "extended family",
+              focusPoints: [
+                "abuelo",
+                "abuela",
+                "bebé",
+                "hijo",
+                "hija",
+                "tío",
+                "tía",
+              ],
+            },
+            grammar: {
+              topic: "masculine and feminine",
+              focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-1-3",
           title: { en: "People Around Me", es: "Personas a Mi Alrededor" },
-          description: { en: "Words for friends, children, and people you see every day", es: "Palabras para amigos, niños y personas que ves todos los días" },
+          description: {
+            en: "Words for friends, children, and people you see every day",
+            es: "Palabras para amigos, niños y personas que ves todos los días",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "people in daily life", focusPoints: ["amigo", "amiga", "niño", "niña", "hombre", "mujer", "persona"] },
-            grammar: { topic: "gender of people nouns", focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"] },
+            vocabulary: {
+              topic: "people in daily life",
+              focusPoints: [
+                "amigo",
+                "amiga",
+                "niño",
+                "niña",
+                "hombre",
+                "mujer",
+                "persona",
+              ],
+            },
+            grammar: {
+              topic: "gender of people nouns",
+              focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-1-quiz",
-          title: { en: "People & Family Quiz", es: "Prueba de Personas y Familia" },
-          description: { en: "Test your knowledge of people and family words", es: "Pon a prueba tu conocimiento de palabras de personas y familia" },
+          title: {
+            en: "People & Family Quiz",
+            es: "Prueba de Personas y Familia",
+          },
+          description: {
+            en: "Test your knowledge of people and family words",
+            es: "Pon a prueba tu conocimiento de palabras de personas y familia",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "people and family review", focusPoints: ["family members", "friends", "people"] },
-            grammar: { topic: "people vocabulary usage", focusPoints: ["gender", "articles", "possessives"] },
+            vocabulary: {
+              topic: "people and family review",
+              focusPoints: ["family members", "friends", "people"],
+            },
+            grammar: {
+              topic: "people vocabulary usage",
+              focusPoints: ["gender", "articles", "possessives"],
+            },
           },
         },
       ],
@@ -182,7 +238,10 @@ const baseLearningPath = {
     {
       id: "unit-pre-a1-numbers",
       title: { en: "Numbers 0-10", es: "Números 0-10" },
-      description: { en: "Count from zero to ten", es: "Cuenta del cero al diez" },
+      description: {
+        en: "Count from zero to ten",
+        es: "Cuenta del cero al diez",
+      },
       color: "#EC4899",
       position: { row: 1, offset: 0 },
       lessons: [
@@ -194,38 +253,65 @@ const baseLearningPath = {
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "numbers 0-5", focusPoints: ["cero", "uno", "dos", "tres", "cuatro", "cinco"] },
-            grammar: { topic: "number usage", focusPoints: ["counting objects"] },
+            vocabulary: {
+              topic: "numbers 0-5",
+              focusPoints: ["cero", "uno", "dos", "tres", "cuatro", "cinco"],
+            },
+            grammar: {
+              topic: "number usage",
+              focusPoints: ["counting objects"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-2-2",
           title: { en: "Six to Ten", es: "Seis a Diez" },
-          description: { en: "Complete counting to ten", es: "Completa el conteo hasta diez" },
+          description: {
+            en: "Complete counting to ten",
+            es: "Completa el conteo hasta diez",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "numbers 6-10", focusPoints: ["seis", "siete", "ocho", "nueve", "diez"] },
-            grammar: { topic: "number patterns", focusPoints: ["counting sequences"] },
+            vocabulary: {
+              topic: "numbers 6-10",
+              focusPoints: ["seis", "siete", "ocho", "nueve", "diez"],
+            },
+            grammar: {
+              topic: "number patterns",
+              focusPoints: ["counting sequences"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-2-3",
           title: { en: "Counting Objects", es: "Contando Objetos" },
-          description: { en: "Use numbers to count things", es: "Usa números para contar cosas" },
+          description: {
+            en: "Use numbers to count things",
+            es: "Usa números para contar cosas",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "counting objects", focusPoints: ["un/una", "dos libros", "tres mesas"] },
-            grammar: { topic: "number agreement", focusPoints: ["uno vs un/una"] },
+            vocabulary: {
+              topic: "counting objects",
+              focusPoints: ["un/una", "dos libros", "tres mesas"],
+            },
+            grammar: {
+              topic: "number agreement",
+              focusPoints: ["uno vs un/una"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-2-quiz",
           title: { en: "Numbers Quiz", es: "Prueba de Números" },
-          description: { en: "Test counting 0-10", es: "Prueba de contar 0-10" },
+          description: {
+            en: "Test counting 0-10",
+            es: "Prueba de contar 0-10",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
@@ -241,44 +327,79 @@ const baseLearningPath = {
     {
       id: "unit-pre-a1-greetings",
       title: { en: "Hello & Goodbye", es: "Hola y Adiós" },
-      description: { en: "Basic greetings and farewells", es: "Saludos y despedidas básicas" },
+      description: {
+        en: "Basic greetings and farewells",
+        es: "Saludos y despedidas básicas",
+      },
       color: "#10B981",
       position: { row: 2, offset: 0 },
       lessons: [
         {
           id: "lesson-pre-a1-3-1",
           title: { en: "Saying Hello", es: "Decir Hola" },
-          description: { en: "Different ways to greet people", es: "Diferentes formas de saludar" },
+          description: {
+            en: "Different ways to greet people",
+            es: "Diferentes formas de saludar",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "greetings", focusPoints: ["hola", "buenos días", "buenas tardes", "buenas noches"] },
-            grammar: { topic: "greeting usage", focusPoints: ["time-appropriate greetings"] },
+            vocabulary: {
+              topic: "greetings",
+              focusPoints: [
+                "hola",
+                "buenos días",
+                "buenas tardes",
+                "buenas noches",
+              ],
+            },
+            grammar: {
+              topic: "greeting usage",
+              focusPoints: ["time-appropriate greetings"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-3-2",
           title: { en: "Saying Goodbye", es: "Decir Adiós" },
-          description: { en: "Farewell expressions", es: "Expresiones de despedida" },
+          description: {
+            en: "Farewell expressions",
+            es: "Expresiones de despedida",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "farewells", focusPoints: ["adiós", "hasta luego", "hasta mañana", "chao"] },
-            grammar: { topic: "farewell usage", focusPoints: ["temporary vs permanent"] },
+            vocabulary: {
+              topic: "farewells",
+              focusPoints: ["adiós", "hasta luego", "hasta mañana", "chao"],
+            },
+            grammar: {
+              topic: "farewell usage",
+              focusPoints: ["temporary vs permanent"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-3-3",
           title: { en: "Greetings in Context", es: "Saludos en Contexto" },
-          description: { en: "Practice in real situations", es: "Practica en situaciones reales" },
+          description: {
+            en: "Practice in real situations",
+            es: "Practica en situaciones reales",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "greeting conversations", focusPoints: ["greeting + response patterns"] },
-            grammar: { topic: "greeting exchanges", focusPoints: ["question and answer"] },
+            vocabulary: {
+              topic: "greeting conversations",
+              focusPoints: ["greeting + response patterns"],
+            },
+            grammar: {
+              topic: "greeting exchanges",
+              focusPoints: ["question and answer"],
+            },
           },
         },
         {
@@ -290,8 +411,14 @@ const baseLearningPath = {
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "greetings review", focusPoints: ["all greetings/farewells"] },
-            grammar: { topic: "greeting rules", focusPoints: ["appropriate usage"] },
+            vocabulary: {
+              topic: "greetings review",
+              focusPoints: ["all greetings/farewells"],
+            },
+            grammar: {
+              topic: "greeting rules",
+              focusPoints: ["appropriate usage"],
+            },
           },
         },
       ],
@@ -299,33 +426,57 @@ const baseLearningPath = {
     // Unit 4: Yes, No & Basic Responses
     {
       id: "unit-pre-a1-responses",
-      title: { en: "Yes, No & Basic Responses", es: "Sí, No y Respuestas Básicas" },
-      description: { en: "Essential single-word responses", es: "Respuestas esenciales de una palabra" },
+      title: {
+        en: "Yes, No & Basic Responses",
+        es: "Sí, No y Respuestas Básicas",
+      },
+      description: {
+        en: "Essential single-word responses",
+        es: "Respuestas esenciales de una palabra",
+      },
       color: "#F59E0B",
       position: { row: 3, offset: 0 },
       lessons: [
         {
           id: "lesson-pre-a1-4-1",
           title: { en: "Yes and No", es: "Sí y No" },
-          description: { en: "The most important words", es: "Las palabras más importantes" },
+          description: {
+            en: "The most important words",
+            es: "Las palabras más importantes",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "affirmative/negative", focusPoints: ["sí", "no", "claro", "vale"] },
-            grammar: { topic: "response patterns", focusPoints: ["answering yes/no questions"] },
+            vocabulary: {
+              topic: "affirmative/negative",
+              focusPoints: ["sí", "no", "claro", "vale"],
+            },
+            grammar: {
+              topic: "response patterns",
+              focusPoints: ["answering yes/no questions"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-4-2",
           title: { en: "Maybe and I Don't Know", es: "Quizás y No Sé" },
-          description: { en: "Express uncertainty", es: "Expresa incertidumbre" },
+          description: {
+            en: "Express uncertainty",
+            es: "Expresa incertidumbre",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "uncertainty", focusPoints: ["quizás", "tal vez", "no sé", "puede ser"] },
-            grammar: { topic: "expressing doubt", focusPoints: ["uncertainty words"] },
+            vocabulary: {
+              topic: "uncertainty",
+              focusPoints: ["quizás", "tal vez", "no sé", "puede ser"],
+            },
+            grammar: {
+              topic: "expressing doubt",
+              focusPoints: ["uncertainty words"],
+            },
           },
         },
         {
@@ -336,21 +487,36 @@ const baseLearningPath = {
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "reactions", focusPoints: ["¡genial!", "¡perfecto!", "¿en serio?"] },
-            grammar: { topic: "exclamations", focusPoints: ["expressing emotions"] },
+            vocabulary: {
+              topic: "reactions",
+              focusPoints: ["¡genial!", "¡perfecto!", "¿en serio?"],
+            },
+            grammar: {
+              topic: "exclamations",
+              focusPoints: ["expressing emotions"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-4-quiz",
           title: { en: "Responses Quiz", es: "Prueba de Respuestas" },
-          description: { en: "Test response skills", es: "Prueba de respuestas" },
+          description: {
+            en: "Test response skills",
+            es: "Prueba de respuestas",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "responses review", focusPoints: ["yes/no", "uncertainty", "reactions"] },
-            grammar: { topic: "response usage", focusPoints: ["appropriate responses"] },
+            vocabulary: {
+              topic: "responses review",
+              focusPoints: ["yes/no", "uncertainty", "reactions"],
+            },
+            grammar: {
+              topic: "response usage",
+              focusPoints: ["appropriate responses"],
+            },
           },
         },
       ],
@@ -359,57 +525,101 @@ const baseLearningPath = {
     {
       id: "unit-pre-a1-courtesy",
       title: { en: "Please & Thank You", es: "Por Favor y Gracias" },
-      description: { en: "Essential courtesy expressions", es: "Expresiones de cortesía esenciales" },
+      description: {
+        en: "Essential courtesy expressions",
+        es: "Expresiones de cortesía esenciales",
+      },
       color: "#EF4444",
       position: { row: 4, offset: 0 },
       lessons: [
         {
           id: "lesson-pre-a1-5-1",
           title: { en: "Please and Thank You", es: "Por Favor y Gracias" },
-          description: { en: "Magic words that open doors", es: "Palabras mágicas que abren puertas" },
+          description: {
+            en: "Magic words that open doors",
+            es: "Palabras mágicas que abren puertas",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "basic courtesy", focusPoints: ["por favor", "gracias", "muchas gracias", "de nada"] },
-            grammar: { topic: "polite requests", focusPoints: ["adding por favor"] },
+            vocabulary: {
+              topic: "basic courtesy",
+              focusPoints: [
+                "por favor",
+                "gracias",
+                "muchas gracias",
+                "de nada",
+              ],
+            },
+            grammar: {
+              topic: "polite requests",
+              focusPoints: ["adding por favor"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-5-2",
           title: { en: "Sorry and Excuse Me", es: "Perdón y Disculpe" },
-          description: { en: "Apologize politely", es: "Discúlpate educadamente" },
+          description: {
+            en: "Apologize politely",
+            es: "Discúlpate educadamente",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "apologies", focusPoints: ["perdón", "lo siento", "disculpe", "con permiso"] },
-            grammar: { topic: "apologizing", focusPoints: ["formal vs informal"] },
+            vocabulary: {
+              topic: "apologies",
+              focusPoints: ["perdón", "lo siento", "disculpe", "con permiso"],
+            },
+            grammar: {
+              topic: "apologizing",
+              focusPoints: ["formal vs informal"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-5-3",
           title: { en: "Polite Expressions", es: "Expresiones Corteses" },
-          description: { en: "Additional gracious phrases", es: "Frases corteses adicionales" },
+          description: {
+            en: "Additional gracious phrases",
+            es: "Frases corteses adicionales",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "polite phrases", focusPoints: ["muy amable", "no hay de qué", "con gusto"] },
-            grammar: { topic: "formal courtesy", focusPoints: ["polite responses"] },
+            vocabulary: {
+              topic: "polite phrases",
+              focusPoints: ["muy amable", "no hay de qué", "con gusto"],
+            },
+            grammar: {
+              topic: "formal courtesy",
+              focusPoints: ["polite responses"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-5-quiz",
           title: { en: "Courtesy Quiz", es: "Prueba de Cortesía" },
-          description: { en: "Test polite expressions", es: "Prueba de expresiones corteses" },
+          description: {
+            en: "Test polite expressions",
+            es: "Prueba de expresiones corteses",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "courtesy review", focusPoints: ["please/thank you", "apologies"] },
-            grammar: { topic: "courtesy usage", focusPoints: ["appropriate situations"] },
+            vocabulary: {
+              topic: "courtesy review",
+              focusPoints: ["please/thank you", "apologies"],
+            },
+            grammar: {
+              topic: "courtesy usage",
+              focusPoints: ["appropriate situations"],
+            },
           },
         },
       ],
@@ -418,57 +628,90 @@ const baseLearningPath = {
     {
       id: "unit-pre-a1-objects",
       title: { en: "Common Objects", es: "Objetos Comunes" },
-      description: { en: "Name everyday things", es: "Nombra las cosas cotidianas" },
+      description: {
+        en: "Name everyday things",
+        es: "Nombra las cosas cotidianas",
+      },
       color: "#06B6D4",
       position: { row: 5, offset: 0 },
       lessons: [
         {
           id: "lesson-pre-a1-6-1",
           title: { en: "Things at Home", es: "Cosas en Casa" },
-          description: { en: "Common household items", es: "Artículos comunes del hogar" },
+          description: {
+            en: "Common household items",
+            es: "Artículos comunes del hogar",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "household items", focusPoints: ["mesa", "silla", "puerta", "ventana", "cama"] },
+            vocabulary: {
+              topic: "household items",
+              focusPoints: ["mesa", "silla", "puerta", "ventana", "cama"],
+            },
             grammar: { topic: "articles with objects", focusPoints: ["el/la"] },
           },
         },
         {
           id: "lesson-pre-a1-6-2",
           title: { en: "Personal Items", es: "Artículos Personales" },
-          description: { en: "Things you carry daily", es: "Cosas que llevas cada día" },
+          description: {
+            en: "Things you carry daily",
+            es: "Cosas que llevas cada día",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "personal items", focusPoints: ["teléfono", "libro", "bolsa", "llaves"] },
+            vocabulary: {
+              topic: "personal items",
+              focusPoints: ["teléfono", "libro", "bolsa", "llaves"],
+            },
             grammar: { topic: "possessive", focusPoints: ["mi/tu/su"] },
           },
         },
         {
           id: "lesson-pre-a1-6-3",
           title: { en: "Food and Drink", es: "Comida y Bebida" },
-          description: { en: "Basic food vocabulary", es: "Vocabulario básico de comida" },
+          description: {
+            en: "Basic food vocabulary",
+            es: "Vocabulario básico de comida",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "food/drinks", focusPoints: ["agua", "café", "pan", "leche", "fruta"] },
-            grammar: { topic: "food articles", focusPoints: ["el agua exception"] },
+            vocabulary: {
+              topic: "food/drinks",
+              focusPoints: ["agua", "café", "pan", "leche", "fruta"],
+            },
+            grammar: {
+              topic: "food articles",
+              focusPoints: ["el agua exception"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-6-quiz",
           title: { en: "Objects Quiz", es: "Prueba de Objetos" },
-          description: { en: "Test object vocabulary", es: "Prueba de vocabulario de objetos" },
+          description: {
+            en: "Test object vocabulary",
+            es: "Prueba de vocabulario de objetos",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "objects review", focusPoints: ["household", "personal", "food"] },
-            grammar: { topic: "object naming", focusPoints: ["articles", "gender"] },
+            vocabulary: {
+              topic: "objects review",
+              focusPoints: ["household", "personal", "food"],
+            },
+            grammar: {
+              topic: "object naming",
+              focusPoints: ["articles", "gender"],
+            },
           },
         },
       ],
@@ -477,7 +720,10 @@ const baseLearningPath = {
     {
       id: "unit-pre-a1-colors",
       title: { en: "Colors", es: "Colores" },
-      description: { en: "Identify and name colors", es: "Identifica y nombra colores" },
+      description: {
+        en: "Identify and name colors",
+        es: "Identifica y nombra colores",
+      },
       color: "#F97316",
       position: { row: 6, offset: 0 },
       lessons: [
@@ -489,8 +735,14 @@ const baseLearningPath = {
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "primary colors", focusPoints: ["rojo", "azul", "amarillo"] },
-            grammar: { topic: "color as adjective", focusPoints: ["el libro rojo"] },
+            vocabulary: {
+              topic: "primary colors",
+              focusPoints: ["rojo", "azul", "amarillo"],
+            },
+            grammar: {
+              topic: "color as adjective",
+              focusPoints: ["el libro rojo"],
+            },
           },
         },
         {
@@ -501,33 +753,57 @@ const baseLearningPath = {
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "additional colors", focusPoints: ["verde", "naranja", "rosa", "morado"] },
-            grammar: { topic: "color agreement", focusPoints: ["colors that change vs don't"] },
+            vocabulary: {
+              topic: "additional colors",
+              focusPoints: ["verde", "naranja", "rosa", "morado"],
+            },
+            grammar: {
+              topic: "color agreement",
+              focusPoints: ["colors that change vs don't"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-7-3",
-          title: { en: "Black, White & Neutral", es: "Negro, Blanco y Neutros" },
-          description: { en: "Complete your palette", es: "Completa tu paleta" },
+          title: {
+            en: "Black, White & Neutral",
+            es: "Negro, Blanco y Neutros",
+          },
+          description: {
+            en: "Complete your palette",
+            es: "Completa tu paleta",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "neutral colors", focusPoints: ["negro", "blanco", "gris"] },
-            grammar: { topic: "color combinations", focusPoints: ["blanco y negro", "azul oscuro"] },
+            vocabulary: {
+              topic: "neutral colors",
+              focusPoints: ["negro", "blanco", "gris"],
+            },
+            grammar: {
+              topic: "color combinations",
+              focusPoints: ["blanco y negro", "azul oscuro"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-7-quiz",
           title: { en: "Colors Quiz", es: "Prueba de Colores" },
-          description: { en: "Test color knowledge", es: "Prueba de conocimiento de colores" },
+          description: {
+            en: "Test color knowledge",
+            es: "Prueba de conocimiento de colores",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: { topic: "colors review", focusPoints: ["all colors"] },
-            grammar: { topic: "color usage", focusPoints: ["agreement", "placement"] },
+            grammar: {
+              topic: "color usage",
+              focusPoints: ["agreement", "placement"],
+            },
           },
         },
       ],
@@ -543,50 +819,86 @@ const baseLearningPath = {
         {
           id: "lesson-pre-a1-8-1",
           title: { en: "Saying Your Name", es: "Decir Tu Nombre" },
-          description: { en: "Learn to introduce yourself", es: "Aprende a presentarte" },
+          description: {
+            en: "Learn to introduce yourself",
+            es: "Aprende a presentarte",
+          },
           xpRequired: 0,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "self introduction", focusPoints: ["me llamo", "soy", "mi nombre es"] },
-            grammar: { topic: "introduction patterns", focusPoints: ["Me llamo + name"] },
+            vocabulary: {
+              topic: "self introduction",
+              focusPoints: ["me llamo", "soy", "mi nombre es"],
+            },
+            grammar: {
+              topic: "introduction patterns",
+              focusPoints: ["Me llamo + name"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-8-2",
           title: { en: "Asking Names", es: "Preguntar Nombres" },
-          description: { en: "Ask others their name", es: "Pregunta a otros su nombre" },
+          description: {
+            en: "Ask others their name",
+            es: "Pregunta a otros su nombre",
+          },
           xpRequired: 10,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "asking for names", focusPoints: ["¿Cómo te llamas?", "¿Cómo se llama?"] },
-            grammar: { topic: "formal vs informal", focusPoints: ["tú vs usted"] },
+            vocabulary: {
+              topic: "asking for names",
+              focusPoints: ["¿Cómo te llamas?", "¿Cómo se llama?"],
+            },
+            grammar: {
+              topic: "formal vs informal",
+              focusPoints: ["tú vs usted"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-8-3",
           title: { en: "Nice to Meet You", es: "Mucho Gusto" },
-          description: { en: "Complete the introduction", es: "Completa la presentación" },
+          description: {
+            en: "Complete the introduction",
+            es: "Completa la presentación",
+          },
           xpRequired: 20,
           xpReward: 15,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "meeting expressions", focusPoints: ["mucho gusto", "encantado/a", "igualmente"] },
-            grammar: { topic: "gender in expressions", focusPoints: ["encantado vs encantada"] },
+            vocabulary: {
+              topic: "meeting expressions",
+              focusPoints: ["mucho gusto", "encantado/a", "igualmente"],
+            },
+            grammar: {
+              topic: "gender in expressions",
+              focusPoints: ["encantado vs encantada"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-8-quiz",
           title: { en: "Introductions Quiz", es: "Prueba de Presentaciones" },
-          description: { en: "Test introduction skills", es: "Prueba de presentaciones" },
+          description: {
+            en: "Test introduction skills",
+            es: "Prueba de presentaciones",
+          },
           xpRequired: 30,
           xpReward: 25,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "introductions review", focusPoints: ["giving name", "asking name"] },
-            grammar: { topic: "introduction patterns", focusPoints: ["formal/informal"] },
+            vocabulary: {
+              topic: "introductions review",
+              focusPoints: ["giving name", "asking name"],
+            },
+            grammar: {
+              topic: "introduction patterns",
+              focusPoints: ["formal/informal"],
+            },
           },
         },
       ],
@@ -608,43 +920,70 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-1",
           title: { en: "Hello and Goodbye", es: "Hola y Adiós" },
-          description: { en: "Learn essential greetings and farewells", es: "Aprende saludos y despedidas esenciales" },
+          description: {
+            en: "Learn essential greetings and farewells",
+            es: "Aprende saludos y despedidas esenciales",
+          },
           xpRequired: 0,
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: { topic: "greetings" },
-            grammar: { topic: "greetings structures", focusPoints: ["basic patterns", "common phrases"] },
+            grammar: {
+              topic: "greetings structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
           },
         },
         {
           id: "lesson-a1-1-2",
           title: { en: "Meeting Someone New", es: "Conocer a Alguien Nuevo" },
-          description: { en: "Practice greetings in real conversations", es: "Practica saludos en conversaciones reales" },
+          description: {
+            en: "Practice greetings in real conversations",
+            es: "Practica saludos en conversaciones reales",
+          },
           xpRequired: 10,
           xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
-            realtime: { scenario: "greetings conversation", prompt: "Practice using greetings in real conversation" },
-            stories: { topic: "greetings", prompt: "Read and discuss greetings" },
+            realtime: {
+              scenario: "greetings conversation",
+              prompt: "Practice using greetings in real conversation",
+            },
+            stories: {
+              topic: "greetings",
+              prompt: "Read and discuss greetings",
+            },
           },
         },
         {
           id: "lesson-a1-1-3",
           title: { en: "Advanced Greetings", es: "Saludos Avanzados" },
-          description: { en: "Master formal and informal greetings", es: "Domina saludos formales e informales" },
+          description: {
+            en: "Master formal and informal greetings",
+            es: "Domina saludos formales e informales",
+          },
           xpRequired: 20,
           xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
-            reading: { topic: "greetings", prompt: "Advanced greetings content and comprehension" },
-            realtime: { scenario: "greetings mastery", prompt: "Demonstrate mastery of greetings" },
+            reading: {
+              topic: "greetings",
+              prompt: "Advanced greetings content and comprehension",
+            },
+            realtime: {
+              scenario: "greetings mastery",
+              prompt: "Demonstrate mastery of greetings",
+            },
           },
         },
         {
           id: "lesson-a1-1-quiz",
           title: { en: "First Words Quiz", es: "Prueba de Primeras Palabras" },
-          description: { en: "Test your knowledge of first words", es: "Prueba tus conocimientos de primeras palabras" },
+          description: {
+            en: "Test your knowledge of first words",
+            es: "Prueba tus conocimientos de primeras palabras",
+          },
           xpRequired: 30,
           xpReward: 40,
           modes: ["vocabulary", "grammar"],
@@ -652,7 +991,10 @@ const baseLearningPath = {
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
             vocabulary: { topic: "greetings" },
-            grammar: { topics: ["greetings structures"], focusPoints: ["comprehensive review"] },
+            grammar: {
+              topics: ["greetings structures"],
+              focusPoints: ["comprehensive review"],
+            },
           },
         },
       ],
@@ -674,43 +1016,73 @@ const baseLearningPath = {
         {
           id: "lesson-a1-3-1",
           title: { en: "Counting to Twenty", es: "Contando hasta Veinte" },
-          description: { en: "Learn to count from zero to twenty", es: "Aprende a contar desde cero hasta veinte" },
+          description: {
+            en: "Learn to count from zero to twenty",
+            es: "Aprende a contar desde cero hasta veinte",
+          },
           xpRequired: 0,
           xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: { topic: "numbers" },
-            grammar: { topic: "numbers structures", focusPoints: ["basic patterns", "common phrases"] },
+            grammar: {
+              topic: "numbers structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
           },
         },
         {
           id: "lesson-a1-3-2",
-          title: { en: "Using Numbers Daily", es: "Usando Números Diariamente" },
-          description: { en: "Practice numbers in everyday situations", es: "Practica números en situaciones cotidianas" },
+          title: {
+            en: "Using Numbers Daily",
+            es: "Usando Números Diariamente",
+          },
+          description: {
+            en: "Practice numbers in everyday situations",
+            es: "Practica números en situaciones cotidianas",
+          },
           xpRequired: 10,
           xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
-            realtime: { scenario: "numbers conversation", prompt: "Practice using numbers in real conversation" },
+            realtime: {
+              scenario: "numbers conversation",
+              prompt: "Practice using numbers in real conversation",
+            },
             stories: { topic: "numbers", prompt: "Read and discuss numbers" },
           },
         },
         {
           id: "lesson-a1-3-3",
-          title: { en: "Phone Numbers and Ages", es: "Números de Teléfono y Edades" },
-          description: { en: "Apply numbers to phone numbers and ages", es: "Aplica números a teléfonos y edades" },
+          title: {
+            en: "Phone Numbers and Ages",
+            es: "Números de Teléfono y Edades",
+          },
+          description: {
+            en: "Apply numbers to phone numbers and ages",
+            es: "Aplica números a teléfonos y edades",
+          },
           xpRequired: 20,
           xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
-            reading: { topic: "numbers", prompt: "Advanced numbers content and comprehension" },
-            realtime: { scenario: "numbers mastery", prompt: "Demonstrate mastery of numbers" },
+            reading: {
+              topic: "numbers",
+              prompt: "Advanced numbers content and comprehension",
+            },
+            realtime: {
+              scenario: "numbers mastery",
+              prompt: "Demonstrate mastery of numbers",
+            },
           },
         },
         {
           id: "lesson-a1-3-quiz",
           title: { en: "Numbers 0-20 Quiz", es: "Prueba de Números 0-20" },
-          description: { en: "Test your knowledge of numbers 0-20", es: "Prueba tus conocimientos de números 0-20" },
+          description: {
+            en: "Test your knowledge of numbers 0-20",
+            es: "Prueba tus conocimientos de números 0-20",
+          },
           xpRequired: 30,
           xpReward: 50,
           modes: ["vocabulary", "grammar"],
@@ -718,7 +1090,10 @@ const baseLearningPath = {
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
             vocabulary: { topic: "numbers" },
-            grammar: { topics: ["numbers structures"], focusPoints: ["comprehensive review"] },
+            grammar: {
+              topics: ["numbers structures"],
+              focusPoints: ["comprehensive review"],
+            },
           },
         },
       ],
@@ -740,43 +1115,70 @@ const baseLearningPath = {
         {
           id: "lesson-a1-4-1",
           title: { en: "Counting to One Hundred", es: "Contando hasta Cien" },
-          description: { en: "Learn to count from twenty-one to one hundred", es: "Aprende a contar desde veintiuno hasta cien" },
+          description: {
+            en: "Learn to count from twenty-one to one hundred",
+            es: "Aprende a contar desde veintiuno hasta cien",
+          },
           xpRequired: 0,
           xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: { topic: "numbers" },
-            grammar: { topic: "numbers structures", focusPoints: ["basic patterns", "common phrases"] },
+            grammar: {
+              topic: "numbers structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
           },
         },
         {
           id: "lesson-a1-4-2",
           title: { en: "Prices and Money", es: "Precios y Dinero" },
-          description: { en: "Practice using larger numbers with prices and money", es: "Practica usando números grandes con precios y dinero" },
+          description: {
+            en: "Practice using larger numbers with prices and money",
+            es: "Practica usando números grandes con precios y dinero",
+          },
           xpRequired: 10,
           xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
-            realtime: { scenario: "numbers conversation", prompt: "Practice using numbers in real conversation" },
+            realtime: {
+              scenario: "numbers conversation",
+              prompt: "Practice using numbers in real conversation",
+            },
             stories: { topic: "numbers", prompt: "Read and discuss numbers" },
           },
         },
         {
           id: "lesson-a1-4-3",
-          title: { en: "Big Numbers in Context", es: "Números Grandes en Contexto" },
-          description: { en: "Apply larger numbers in real-life contexts", es: "Aplica números grandes en contextos de la vida real" },
+          title: {
+            en: "Big Numbers in Context",
+            es: "Números Grandes en Contexto",
+          },
+          description: {
+            en: "Apply larger numbers in real-life contexts",
+            es: "Aplica números grandes en contextos de la vida real",
+          },
           xpRequired: 20,
           xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
-            reading: { topic: "numbers", prompt: "Advanced numbers content and comprehension" },
-            realtime: { scenario: "numbers mastery", prompt: "Demonstrate mastery of numbers" },
+            reading: {
+              topic: "numbers",
+              prompt: "Advanced numbers content and comprehension",
+            },
+            realtime: {
+              scenario: "numbers mastery",
+              prompt: "Demonstrate mastery of numbers",
+            },
           },
         },
         {
           id: "lesson-a1-4-quiz",
           title: { en: "Numbers 21-100 Quiz", es: "Prueba de Números 21-100" },
-          description: { en: "Test your knowledge of numbers 21-100", es: "Prueba tus conocimientos de números 21-100" },
+          description: {
+            en: "Test your knowledge of numbers 21-100",
+            es: "Prueba tus conocimientos de números 21-100",
+          },
           xpRequired: 30,
           xpReward: 50,
           modes: ["vocabulary", "grammar"],
@@ -784,7 +1186,10 @@ const baseLearningPath = {
           quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
             vocabulary: { topic: "numbers" },
-            grammar: { topics: ["numbers structures"], focusPoints: ["comprehensive review"] },
+            grammar: {
+              topics: ["numbers structures"],
+              focusPoints: ["comprehensive review"],
+            },
           },
         },
       ],
@@ -806,62 +1211,114 @@ const baseLearningPath = {
         {
           id: "lesson-pre-a1-f-1",
           title: { en: "Everyday Starters", es: "Arranques Cotidianos" },
-          description: { en: "Your first 20 high-frequency words for greetings and basics", es: "Tus primeras 20 palabras de alta frecuencia para saludos y básicos" },
+          description: {
+            en: "Your first 20 high-frequency words for greetings and basics",
+            es: "Tus primeras 20 palabras de alta frecuencia para saludos y básicos",
+          },
           xpRequired: 0,
           xpReward: 25,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "greetings and starters", focusPoints: ["hello/bye variations", "thanks/please", "yes/no"] },
-            grammar: { topic: "formula chunks", focusPoints: ["basic greeting patterns"] },
+            vocabulary: {
+              topic: "greetings and starters",
+              focusPoints: ["hello/bye variations", "thanks/please", "yes/no"],
+            },
+            grammar: {
+              topic: "formula chunks",
+              focusPoints: ["basic greeting patterns"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-f-2",
           title: { en: "People & Places", es: "Personas y Lugares" },
-          description: { en: "Add 20 words for names, family, and moving around", es: "Suma 20 palabras para nombres, familia y moverte por ahí" },
+          description: {
+            en: "Add 20 words for names, family, and moving around",
+            es: "Suma 20 palabras para nombres, familia y moverte por ahí",
+          },
           xpRequired: 10,
           xpReward: 25,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "people and places", focusPoints: ["family", "locations", "getting attention"] },
-            grammar: { topic: "formula chunks", focusPoints: ["I am/from", "This is", "Where is?"] },
+            vocabulary: {
+              topic: "people and places",
+              focusPoints: ["family", "locations", "getting attention"],
+            },
+            grammar: {
+              topic: "formula chunks",
+              focusPoints: ["I am/from", "This is", "Where is?"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-f-3",
           title: { en: "Actions & Essentials", es: "Acciones y Esenciales" },
-          description: { en: "20 everyday verbs and short requests to get things done", es: "20 verbos cotidianos y peticiones cortas para lograr cosas" },
+          description: {
+            en: "20 everyday verbs and short requests to get things done",
+            es: "20 verbos cotidianos y peticiones cortas para lograr cosas",
+          },
           xpRequired: 20,
           xpReward: 30,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "actions and needs", focusPoints: ["common verbs", "requests", "need/want"] },
-            grammar: { topic: "action phrases", focusPoints: ["basic verb usage"] },
+            vocabulary: {
+              topic: "actions and needs",
+              focusPoints: ["common verbs", "requests", "need/want"],
+            },
+            grammar: {
+              topic: "action phrases",
+              focusPoints: ["basic verb usage"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-f-4",
-          title: { en: "Time, Travel & Directions", es: "Tiempo, Viajes y Direcciones" },
-          description: { en: "20 words for time, transport, and finding your way", es: "20 palabras para tiempo, transporte y orientarte" },
+          title: {
+            en: "Time, Travel & Directions",
+            es: "Tiempo, Viajes y Direcciones",
+          },
+          description: {
+            en: "20 words for time, transport, and finding your way",
+            es: "20 palabras para tiempo, transporte y orientarte",
+          },
           xpRequired: 30,
           xpReward: 30,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "time and movement", focusPoints: ["days and hours", "here/there", "left/right"] },
-            grammar: { topic: "direction phrases", focusPoints: ["basic direction patterns"] },
+            vocabulary: {
+              topic: "time and movement",
+              focusPoints: ["days and hours", "here/there", "left/right"],
+            },
+            grammar: {
+              topic: "direction phrases",
+              focusPoints: ["basic direction patterns"],
+            },
           },
         },
         {
           id: "lesson-pre-a1-f-quiz",
           title: { en: "Foundations Quiz", es: "Prueba de Fundamentos" },
-          description: { en: "Round out 100 words with connectors, feelings, and quick questions", es: "Completa 100 palabras con conectores, emociones y preguntas rápidas" },
+          description: {
+            en: "Round out 100 words with connectors, feelings, and quick questions",
+            es: "Completa 100 palabras con conectores, emociones y preguntas rápidas",
+          },
           xpRequired: 40,
           xpReward: 35,
           isFinalQuiz: true,
           modes: ["vocabulary", "grammar"],
           content: {
-            vocabulary: { topic: "connectors and questions", focusPoints: ["and/but/because", "how/what/where", "feeling words"] },
-            grammar: { topic: "foundation review", focusPoints: ["all patterns"] },
+            vocabulary: {
+              topic: "connectors and questions",
+              focusPoints: [
+                "and/but/because",
+                "how/what/where",
+                "feeling words",
+              ],
+            },
+            grammar: {
+              topic: "foundation review",
+              focusPoints: ["all patterns"],
+            },
           },
         },
       ],
@@ -9822,7 +10279,7 @@ function addSupplementalLessons(level, unit) {
   const nonQuizLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
   const maxNonQuizXp = Math.max(
     ...nonQuizLessons.map((lesson) => lesson.xpRequired || 0),
-    0
+    0,
   );
   const xpStep = 15;
   const topic = unit.title?.en || unit.description?.en || "unit theme";
@@ -10219,7 +10676,7 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     const goalVariations = generateGoalVariations(
       template,
       topicLabel,
-      allFocus
+      allFocus,
     );
 
     return {
@@ -10238,7 +10695,7 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     const baseGoal = {
       scenario: `Practice using ${firstFocus} in conversation`,
       prompt: `Have a natural conversation where the learner practices ${topicLabel}. Focus on: ${allFocus.join(
-        ", "
+        ", ",
       )}.`,
       successCriteria: `User demonstrates use of ${firstFocus} in context`,
     };
@@ -10324,7 +10781,7 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
       successCriteria: baseTemplate.successCriteria,
       successCriteria_es: translateGoalTextToEs(
         baseTemplate.successCriteria,
-        topicLabel
+        topicLabel,
       ),
     },
   ];
@@ -10334,17 +10791,17 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
     scenario: `Answer questions about ${topicLabel}`,
     scenario_es: translateGoalTextToEs(
       `Answer questions about ${topicLabel}`,
-      topicLabel
+      topicLabel,
     ),
     prompt: `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
     prompt_es: translateGoalTextToEs(
       `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
-      topicLabel
+      topicLabel,
     ),
     successCriteria: `User answers questions using ${topicLabel} vocabulary correctly`,
     successCriteria_es: translateGoalTextToEs(
       `User answers questions using ${topicLabel} vocabulary correctly`,
-      topicLabel
+      topicLabel,
     ),
   });
 
@@ -10353,17 +10810,17 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
     scenario: `Start a conversation about ${topicLabel}`,
     scenario_es: translateGoalTextToEs(
       `Start a conversation about ${topicLabel}`,
-      topicLabel
+      topicLabel,
     ),
     prompt: `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
     prompt_es: translateGoalTextToEs(
       `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
-      topicLabel
+      topicLabel,
     ),
     successCriteria: `User initiates and sustains conversation about ${topicLabel}`,
     successCriteria_es: translateGoalTextToEs(
       `User initiates and sustains conversation about ${topicLabel}`,
-      topicLabel
+      topicLabel,
     ),
   });
 
@@ -10374,19 +10831,19 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
       scenario_es: translateGoalTextToEs(
         `Use ${focusPoints[0]} in a real situation`,
         topicLabel,
-        focusPoints[0]
+        focusPoints[0],
       ),
       prompt: `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
       prompt_es: translateGoalTextToEs(
         `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
         topicLabel,
-        focusPoints[0]
+        focusPoints[0],
       ),
       successCriteria: `User demonstrates correct use of ${focusPoints[0]}`,
       successCriteria_es: translateGoalTextToEs(
         `User demonstrates correct use of ${focusPoints[0]}`,
         topicLabel,
-        focusPoints[0]
+        focusPoints[0],
       ),
     });
   }
@@ -10433,7 +10890,7 @@ function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
   const creativeGoals = generateCreativeGoalsForTopic(
     topicKey,
     unitTitle,
-    lessonTitles
+    lessonTitles,
   );
   goalVariations.push(...creativeGoals);
 
@@ -10897,21 +11354,21 @@ function ensureUnitModuleCoverage(unit, lessons) {
   }, {});
 
   const missingModules = Array.from(ALLOWED_MODULES).filter(
-    (module) => !moduleCounts[module]
+    (module) => !moduleCounts[module],
   );
 
   const eligibleLessons = lessons.filter(
     (lesson) =>
       !lesson.isFinalQuiz &&
       !lesson.id?.includes("skill-builder") &&
-      !lesson.id?.includes("integrated-practice")
+      !lesson.id?.includes("integrated-practice"),
   );
 
   missingModules.forEach((module) => {
     let targetLesson = eligibleLessons.find(
       (lesson) =>
         (lesson.modes?.length || 0) < 4 &&
-        !(lesson.modes || []).includes(module)
+        !(lesson.modes || []).includes(module),
     );
 
     if (!targetLesson) {
@@ -10924,7 +11381,7 @@ function ensureUnitModuleCoverage(unit, lessons) {
 
       if (targetLesson) {
         const modeToReplace = targetLesson.modes.find(
-          (mode) => moduleCounts[mode] > 1
+          (mode) => moduleCounts[mode] > 1,
         );
         if (modeToReplace) {
           targetLesson.modes = targetLesson.modes
@@ -10940,12 +11397,12 @@ function ensureUnitModuleCoverage(unit, lessons) {
     }
 
     targetLesson.modes = Array.from(
-      new Set([...(targetLesson.modes || []), module])
+      new Set([...(targetLesson.modes || []), module]),
     );
     targetLesson.content = ensureModeContent(
       module,
       deriveLessonTopic(unit, targetLesson),
-      targetLesson
+      targetLesson,
     );
     moduleCounts[module] = (moduleCounts[module] || 0) + 1;
   });
@@ -10979,7 +11436,7 @@ function assignSubLevels(unitsByLevel) {
     cloned[level] = units.map((unit, index) => {
       const subLevelIndex = Math.min(
         Math.floor(index / chunkSize),
-        subStages.length - 1
+        subStages.length - 1,
       );
       const subLevel = subStages[subLevelIndex];
       const isMilestone =
@@ -11026,9 +11483,9 @@ function applyCEFRScaffolding(path) {
           appendAdvancedModes(
             level,
             tagLessonWithFunction(level, unit, lesson),
-            unit
-          )
-        )
+            unit,
+          ),
+        ),
       );
       const balancedLessons = ensureUnitModuleCoverage(unit, enhancedLessons);
 
@@ -11160,7 +11617,7 @@ export function getUnitProgress(unit, userProgress) {
   const total = unit.lessons.length;
   if (!total) return 0;
   const completed = unit.lessons.filter(
-    (l) => userProgress?.[l.id]?.completed
+    (l) => userProgress?.[l.id]?.completed,
   ).length;
   return Math.round((completed / total) * 100);
 }
