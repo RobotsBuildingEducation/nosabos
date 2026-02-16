@@ -149,6 +149,8 @@ import { awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
+import GettingStartedModal from "./components/GettingStartedModal";
+import { getLearningPath } from "./data/skillTreeData";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
@@ -2148,6 +2150,8 @@ export default function App() {
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
+  const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
+  const gettingStartedCheckDoneRef = useRef(false);
 
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
@@ -2228,6 +2232,43 @@ export default function App() {
     needsOnboarding,
     dailyGoalOpen,
     timerModalOpen,
+  ]);
+
+  // Show getting started tutorial modal once after the proficiency decision.
+  // Covers: proficiency skipped, proficiency test completed, or returning user
+  // who has a proficiency decision but never saw this modal.
+  useEffect(() => {
+    if (gettingStartedCheckDoneRef.current) return;
+    if (isLoadingApp || !user || !activeNpub) return;
+    if (needsOnboarding) return;
+    // Wait until all onboarding-chain modals are closed
+    if (dailyGoalOpen || timerModalOpen || proficiencyTestOpen) return;
+
+    // User must have made a proficiency decision already
+    const hasProficiencyDecision =
+      user?.proficiencyPlacement != null &&
+      user?.proficiencyPlacement !== undefined;
+    if (!hasProficiencyDecision) return;
+
+    // Only show once ever
+    if (user?.gettingStartedModalShown) {
+      gettingStartedCheckDoneRef.current = true;
+      return;
+    }
+
+    gettingStartedCheckDoneRef.current = true;
+
+    setTimeout(() => {
+      setGettingStartedOpen(true);
+    }, 500);
+  }, [
+    isLoadingApp,
+    user,
+    activeNpub,
+    needsOnboarding,
+    dailyGoalOpen,
+    timerModalOpen,
+    proficiencyTestOpen,
   ]);
 
   const formatTimer = useCallback((seconds) => {
@@ -3483,6 +3524,44 @@ export default function App() {
     setProficiencyTestOpen(false);
     navigate("/proficiency");
   }, [navigate]);
+
+  // Getting started modal: mark as shown and persist to Firestore
+  const markGettingStartedShown = useCallback(async () => {
+    const id = resolveNpub();
+    if (id) {
+      try {
+        await setDoc(
+          doc(database, "users", id),
+          {
+            gettingStartedModalShown: true,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true },
+        );
+        patchUser?.({ gettingStartedModalShown: true });
+      } catch (e) {
+        console.warn("Failed to persist getting started shown:", e);
+      }
+    }
+  }, [resolveNpub, patchUser]);
+
+  const handleGettingStartedSkip = useCallback(() => {
+    setGettingStartedOpen(false);
+    markGettingStartedShown();
+  }, [markGettingStartedShown]);
+
+  const handleGettingStartedStart = useCallback(() => {
+    setGettingStartedOpen(false);
+    markGettingStartedShown();
+
+    // Find the tutorial lesson from the Pre-A1 learning path and launch it directly
+    const units = getLearningPath(resolvedTargetLang, "Pre-A1");
+    const tutorialUnit = units?.find((u) => u.isTutorial);
+    const tutorialLesson = tutorialUnit?.lessons?.[0];
+    if (tutorialLesson) {
+      handleStartLesson(tutorialLesson);
+    }
+  }, [markGettingStartedShown, handleStartLesson, resolvedTargetLang]);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -4938,6 +5017,13 @@ export default function App() {
         isOpen={proficiencyTestOpen}
         onClose={handleProficiencySkip}
         onTakeTest={handleProficiencyTakeTest}
+        lang={appLanguage}
+      />
+
+      <GettingStartedModal
+        isOpen={gettingStartedOpen}
+        onClose={handleGettingStartedSkip}
+        onStartTutorial={handleGettingStartedStart}
         lang={appLanguage}
       />
 
