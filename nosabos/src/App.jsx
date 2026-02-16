@@ -1493,6 +1493,23 @@ export default function App() {
     } catch {}
   }, [resolvedSupportLang]);
 
+  useEffect(() => {
+    const id = (activeNpub || "").trim();
+    if (!id) return;
+
+    const desiredAppLanguage = resolvedSupportLang === "es" ? "es" : "en";
+    const persistedAppLanguage = user?.appLanguage === "es" ? "es" : "en";
+
+    if (persistedAppLanguage === desiredAppLanguage) return;
+
+    updateDoc(doc(database, "users", id), {
+      appLanguage: desiredAppLanguage,
+      updatedAt: new Date().toISOString(),
+    }).catch((error) => {
+      console.warn("Failed to sync appLanguage from supportLang:", error);
+    });
+  }, [activeNpub, resolvedSupportLang, user?.appLanguage]);
+
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
       user?.dailyGoalXp ??
