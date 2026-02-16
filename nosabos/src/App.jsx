@@ -1496,7 +1496,9 @@ export default function App() {
   useEffect(() => {
     const id = (
       user?.local_npub ||
-      (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "") ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("local_npub")
+        : "") ||
       ""
     ).trim();
     if (!id) return;
