@@ -3580,6 +3580,82 @@ export default function App() {
     return () => window.removeEventListener("xp:awarded", handleLocalXpAward);
   }, [hasSpendableBalance, sendOneSatToNpub, user?.identity]);
 
+  useEffect(() => {
+    if (!activeNpub) return;
+
+    const lessonProgressRef = collection(
+      database,
+      "users",
+      activeNpub,
+      "languageLessons",
+    );
+    const flashcardProgressRef = collection(
+      database,
+      "users",
+      activeNpub,
+      "languageFlashcards",
+    );
+
+    const unsubLessons = onSnapshot(lessonProgressRef, (snapshot) => {
+      const languageLessons = {};
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data?.targetLang || !data?.lessonId) return;
+
+        const lang = String(data.targetLang).toLowerCase();
+        if (!languageLessons[lang]) languageLessons[lang] = {};
+
+        languageLessons[lang][data.lessonId] = {
+          ...(languageLessons[lang][data.lessonId] || {}),
+          ...data,
+        };
+      });
+
+      const latestUser = useUserStore.getState()?.user || {};
+      const currentProgress = latestUser?.progress || {};
+
+      patchUser?.({
+        progress: {
+          ...currentProgress,
+          languageLessons,
+        },
+      });
+    });
+
+    const unsubFlashcards = onSnapshot(flashcardProgressRef, (snapshot) => {
+      const languageFlashcards = {};
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (!data?.targetLang || !data?.cardId) return;
+
+        const lang = String(data.targetLang).toLowerCase();
+        if (!languageFlashcards[lang]) languageFlashcards[lang] = {};
+
+        languageFlashcards[lang][data.cardId] = {
+          ...(languageFlashcards[lang][data.cardId] || {}),
+          ...data,
+        };
+      });
+
+      const latestUser = useUserStore.getState()?.user || {};
+      const currentProgress = latestUser?.progress || {};
+
+      patchUser?.({
+        progress: {
+          ...currentProgress,
+          languageFlashcards,
+        },
+      });
+    });
+
+    return () => {
+      unsubLessons();
+      unsubFlashcards();
+    };
+  }, [activeNpub, patchUser]);
+
   // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
     if (!activeNpub) return;
