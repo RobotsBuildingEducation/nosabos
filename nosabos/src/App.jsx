@@ -2860,11 +2860,19 @@ export default function App() {
       // Mark lesson as in progress in Firestore
       const npub = resolveNpub();
       let fresh = null;
-      if (npub) {
-        // Pass current user progress so startLesson can preserve COMPLETED status
-        await startLesson(npub, lesson.id, resolvedTargetLang, user?.progress);
+      const lessonLang = resolvedTargetLang;
+      const langKey = (lessonLang || "es").toLowerCase();
 
-        // Refresh user data to get updated progress
+      // Compute current XP before calling startLesson (needed as baseline for fresh starts)
+      const fallbackTotalXp = Number(user?.xp ?? 0) || 0;
+      const preProgressSource = user?.progress || { totalXp: fallbackTotalXp };
+      const currentXp = getLanguageXp(preProgressSource, lessonLang);
+
+      if (npub) {
+        // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
+        await startLesson(npub, lesson.id, resolvedTargetLang, user?.progress, currentXp);
+
+        // Refresh user data to get updated progress (including saved lessonStartXp)
         fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
       }
@@ -2875,20 +2883,32 @@ export default function App() {
         localStorage.setItem("activeLesson", JSON.stringify(lesson));
       }
 
-      // Record starting XP for this lesson (language-specific)
-      const lessonLang = resolvedTargetLang;
+      // Determine the correct starting XP:
+      // If the lesson was already in-progress and has a saved lessonStartXp, use it
+      // so the user resumes from where they left off. Otherwise use current XP.
       activeLessonLanguageRef.current = lessonLang;
-      const fallbackTotalXp = Number(fresh?.xp ?? user?.xp ?? 0) || 0;
-      const progressSource = fresh?.progress ||
-        user?.progress || { totalXp: fallbackTotalXp };
-      const currentXp = getLanguageXp(progressSource, lessonLang);
-      setLessonStartXp(currentXp);
+      const freshProgressSource = fresh?.progress || preProgressSource;
+      const freshCurrentXp = getLanguageXp(freshProgressSource, lessonLang);
+      const savedLessonData =
+        freshProgressSource?.languageLessons?.[langKey]?.[lesson.id];
+      const savedStartXp = savedLessonData?.lessonStartXp;
+
+      // Use saved XP baseline if it exists and is a valid number less than or equal to current XP
+      const effectiveStartXp =
+        typeof savedStartXp === "number" && savedStartXp <= freshCurrentXp
+          ? savedStartXp
+          : freshCurrentXp;
+
+      setLessonStartXp(effectiveStartXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
       console.log("[Lesson Start] Recording starting XP:", {
         lessonId: lesson.id,
         lessonTitle: lesson.title.en,
         lessonLang,
-        startXp: currentXp,
+        startXp: effectiveStartXp,
+        currentXp: freshCurrentXp,
+        savedStartXp,
+        resumed: effectiveStartXp !== freshCurrentXp,
         xpRequired: lesson.xpReward,
         freshXp: fresh?.xp,
         userXp: user?.xp,

@@ -10,6 +10,7 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
+  deleteField,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { SKILL_STATUS } from "../data/skillTreeData";
@@ -31,13 +32,15 @@ export function initializeProgress() {
 }
 
 /**
- * Start a lesson - mark it as in progress (but preserve COMPLETED status)
+ * Start a lesson - mark it as in progress (but preserve COMPLETED and IN_PROGRESS status).
+ * Saves `lessonStartXp` so users can resume mid-lesson progress across sessions.
  */
 export async function startLesson(
   npub,
   lessonId,
   targetLang = "es",
   userProgress = null,
+  currentXp = 0,
 ) {
   if (!npub || !lessonId) return;
 
@@ -51,37 +54,54 @@ export async function startLesson(
     `${languageKey}_${lessonId}`,
   );
 
-  // Check if lesson is already completed - if so, don't change its status
-  // This prevents restarting a completed lesson from re-locking subsequent lessons
-  const existingStatus =
-    userProgress?.languageLessons?.[languageKey]?.[lessonId]?.status ||
-    userProgress?.lessons?.[lessonId]?.status;
+  // Check existing lesson status to decide what to write
+  const existingLessonData =
+    userProgress?.languageLessons?.[languageKey]?.[lessonId] ||
+    userProgress?.lessons?.[lessonId];
+  const existingStatus = existingLessonData?.status;
 
   const isAlreadyCompleted = existingStatus === SKILL_STATUS.COMPLETED;
+  const isAlreadyInProgress = existingStatus === SKILL_STATUS.IN_PROGRESS;
 
   try {
-    // Only update status if NOT already completed
     const updateData = {
       [`progress.currentLesson`]: lessonId,
       "progress.lastActiveAt": serverTimestamp(),
     };
 
-    await Promise.all([
-      updateDoc(userRef, updateData),
-      !isAlreadyCompleted
-        ? setDoc(
-            lessonProgressRef,
-            {
-              targetLang: languageKey,
-              lessonId,
-              status: SKILL_STATUS.IN_PROGRESS,
-              startedAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          )
-        : Promise.resolve(),
-    ]);
+    // Determine the lesson doc write:
+    // - COMPLETED: don't touch (preserves unlock chain)
+    // - IN_PROGRESS: only bump updatedAt (preserve lessonStartXp & startedAt)
+    // - Otherwise (new/available): write full IN_PROGRESS with lessonStartXp
+    let lessonDocPromise;
+    if (isAlreadyCompleted) {
+      lessonDocPromise = Promise.resolve();
+    } else if (isAlreadyInProgress) {
+      // Lesson already in progress — preserve lessonStartXp and startedAt
+      lessonDocPromise = setDoc(
+        lessonProgressRef,
+        {
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } else {
+      // Fresh start — record the baseline XP so progress can be restored later
+      lessonDocPromise = setDoc(
+        lessonProgressRef,
+        {
+          targetLang: languageKey,
+          lessonId,
+          status: SKILL_STATUS.IN_PROGRESS,
+          lessonStartXp: currentXp,
+          startedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
   } catch (error) {
     console.error("Error starting lesson:", error);
     throw error;
@@ -125,6 +145,7 @@ export async function completeLesson(
           status: SKILL_STATUS.COMPLETED,
           completedAt: serverTimestamp(),
           xpEarned: xpReward,
+          lessonStartXp: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
@@ -359,6 +380,7 @@ export async function abandonLesson(npub, lessonId, targetLang = "es") {
           targetLang: languageKey,
           lessonId,
           status: SKILL_STATUS.AVAILABLE,
+          lessonStartXp: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
