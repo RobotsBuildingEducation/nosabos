@@ -3667,17 +3667,24 @@ export default function App() {
       const latestUser = useUserStore.getState()?.user || {};
       const existingProgress = latestUser?.progress || user?.progress || {};
       const rawProgress = data?.progress || { totalXp: newXp };
+      const rawLanguageLessons =
+        rawProgress?.languageLessons &&
+        Object.keys(rawProgress.languageLessons).length > 0
+          ? rawProgress.languageLessons
+          : undefined;
+      const rawLanguageFlashcards =
+        rawProgress?.languageFlashcards &&
+        Object.keys(rawProgress.languageFlashcards).length > 0
+          ? rawProgress.languageFlashcards
+          : undefined;
+
       const progressPayload = {
         ...existingProgress,
         ...rawProgress,
         languageLessons:
-          rawProgress?.languageLessons ??
-          existingProgress?.languageLessons ??
-          {},
+          rawLanguageLessons ?? existingProgress?.languageLessons ?? {},
         languageFlashcards:
-          rawProgress?.languageFlashcards ??
-          existingProgress?.languageFlashcards ??
-          {},
+          rawLanguageFlashcards ?? existingProgress?.languageFlashcards ?? {},
       };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
