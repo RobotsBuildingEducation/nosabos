@@ -428,7 +428,12 @@ async function loadUserObjectFromDB(db, id) {
     const ref = doc(db, "users", id);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
-    let userData = { id: snap.id, ...snap.data() };
+
+    // Ensure onboarding fields first, then hydrate progress maps from subcollections.
+    let userData = await ensureOnboardingField(db, id, {
+      id: snap.id,
+      ...snap.data(),
+    });
 
     const [languageLessonsSnapshot, languageFlashcardsSnapshot] =
       await Promise.all([
@@ -473,7 +478,6 @@ async function loadUserObjectFromDB(db, id) {
     userData.progress.languageLessons = languageLessons;
     userData.progress.languageFlashcards = languageFlashcards;
 
-    userData = await ensureOnboardingField(db, id, userData);
     return userData;
   } catch (e) {
     console.error("loadUserObjectFromDB failed:", e);
