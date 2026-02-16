@@ -3605,12 +3605,23 @@ export default function App() {
       };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
-      // Keep global user store in sync with Firestore changes so all modules
-      // show the latest XP/progress immediately
+      // Keep global user store in sync with Firestore changes.
+      // IMPORTANT: root user snapshots do not include subcollection-backed lesson/
+      // flashcard progress, so avoid blindly overwriting `progress` before hydration.
       const patch = {
         xp: newXp,
-        progress: progressPayload,
       };
+
+      const hasHydratedProgressMaps =
+        Object.keys(existingProgress?.languageLessons || {}).length > 0 ||
+        Object.keys(existingProgress?.languageFlashcards || {}).length > 0;
+      const hasSnapshotProgressMaps =
+        Object.keys(rawProgress?.languageLessons || {}).length > 0 ||
+        Object.keys(rawProgress?.languageFlashcards || {}).length > 0;
+
+      if (hasHydratedProgressMaps || hasSnapshotProgressMaps) {
+        patch.progress = progressPayload;
+      }
 
       if (typeof data?.streak === "number") patch.streak = data.streak;
       if (typeof data?.dailyXp === "number") patch.dailyXp = data.dailyXp;
