@@ -1493,6 +1493,29 @@ export default function App() {
     } catch {}
   }, [resolvedSupportLang]);
 
+  useEffect(() => {
+    const id = (
+      user?.local_npub ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("local_npub")
+        : "") ||
+      ""
+    ).trim();
+    if (!id) return;
+
+    const desiredAppLanguage = resolvedSupportLang === "es" ? "es" : "en";
+    const persistedAppLanguage = user?.appLanguage === "es" ? "es" : "en";
+
+    if (persistedAppLanguage === desiredAppLanguage) return;
+
+    updateDoc(doc(database, "users", id), {
+      appLanguage: desiredAppLanguage,
+      updatedAt: new Date().toISOString(),
+    }).catch((error) => {
+      console.warn("Failed to sync appLanguage from supportLang:", error);
+    });
+  }, [resolvedSupportLang, user?.appLanguage, user?.local_npub]);
+
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
       user?.dailyGoalXp ??
@@ -2788,10 +2811,10 @@ export default function App() {
       };
 
       const now = new Date().toISOString();
-      const uiLangForPersist =
-        (user?.appLanguage === "es" && "es") ||
-        (localStorage.getItem("appLanguage") === "es" && "es") ||
-        (appLanguage === "es" ? "es" : "en");
+      // Keep persisted app language aligned with onboarding support language.
+      // This prevents stale locale defaults from overwriting the user's choice
+      // when returning from proficiency/back to home.
+      const uiLangForPersist = normalized.supportLang;
 
       await setDoc(
         doc(database, "users", id),
