@@ -145,7 +145,7 @@ import {
   completeLesson,
   getLanguageXp,
 } from "./utils/progressTracking";
-import { awardXp } from "./utils/utils";
+import { awardXp, DEFAULT_DAILY_GOAL_XP } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
@@ -1495,10 +1495,10 @@ export default function App() {
     const rawGoal =
       user?.dailyGoalXp ??
       user?.progress?.dailyGoalXp ??
-      user?.stats?.dailyGoalXp ??
-      0;
+      user?.stats?.dailyGoalXp;
+    if (rawGoal === undefined || rawGoal === null) return DEFAULT_DAILY_GOAL_XP;
     const parsed = Number(rawGoal);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return Number.isFinite(parsed) ? parsed : DEFAULT_DAILY_GOAL_XP;
   }, [user]);
 
   const dailyXpToday = useMemo(() => {
@@ -2756,6 +2756,7 @@ export default function App() {
             currentStep: 1, // Now just 1 step
             draft: null,
           },
+          dailyGoalXp: DEFAULT_DAILY_GOAL_XP,
           xp: 0,
           streak: 0,
           progress: { ...normalized },
@@ -4914,6 +4915,7 @@ export default function App() {
         onClose={handleDailyGoalClose}
         npub={activeNpub}
         lang={appLanguage}
+        defaultGoal={dailyGoalTarget ?? DEFAULT_DAILY_GOAL_XP}
         t={t}
         completedGoalDates={user?.completedGoalDates || []}
         startDate={user?.createdAt}
