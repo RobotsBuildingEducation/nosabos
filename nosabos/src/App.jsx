@@ -98,7 +98,15 @@ import {
 } from "react-icons/pi";
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
-import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
@@ -421,6 +429,53 @@ async function loadUserObjectFromDB(db, id) {
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     let userData = { id: snap.id, ...snap.data() };
+
+    const [languageLessonsSnapshot, languageFlashcardsSnapshot] =
+      await Promise.all([
+        getDocs(collection(db, "users", id, "languageLessons")),
+        getDocs(collection(db, "users", id, "languageFlashcards")),
+      ]);
+
+    const languageLessons = {};
+    languageLessonsSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!data?.targetLang || !data?.lessonId) return;
+
+      const targetLang = String(data.targetLang).toLowerCase();
+      if (!languageLessons[targetLang]) languageLessons[targetLang] = {};
+
+      languageLessons[targetLang][data.lessonId] = {
+        ...(languageLessons[targetLang][data.lessonId] || {}),
+        ...data,
+      };
+    });
+
+    const languageFlashcards = {};
+    languageFlashcardsSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (!data?.targetLang || !data?.cardId) return;
+
+      const targetLang = String(data.targetLang).toLowerCase();
+      if (!languageFlashcards[targetLang]) languageFlashcards[targetLang] = {};
+
+      languageFlashcards[targetLang][data.cardId] = {
+        ...(languageFlashcards[targetLang][data.cardId] || {}),
+        ...data,
+      };
+    });
+
+    if (!userData.progress || typeof userData.progress !== "object") {
+      userData.progress = {};
+    }
+
+    if (Object.keys(languageLessons).length > 0) {
+      userData.progress.languageLessons = languageLessons;
+    }
+
+    if (Object.keys(languageFlashcards).length > 0) {
+      userData.progress.languageFlashcards = languageFlashcards;
+    }
+
     userData = await ensureOnboardingField(db, id, userData);
     return userData;
   } catch (e) {
@@ -2825,12 +2880,34 @@ export default function App() {
 
       // Update flashcard progress in Firestore (language-specific)
       const userRef = doc(database, "users", npub);
-      await updateDoc(userRef, {
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
-          new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      const flashcardProgressRef = doc(
+        database,
+        "users",
+        npub,
+        "languageFlashcards",
+        `${resolvedTargetLang}_${card.id}`,
+      );
+      const completedAt = new Date().toISOString();
+
+      await Promise.all([
+        updateDoc(userRef, {
+          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
+          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
+            completedAt,
+          updatedAt: new Date().toISOString(),
+        }),
+        setDoc(
+          flashcardProgressRef,
+          {
+            targetLang: resolvedTargetLang,
+            cardId: card.id,
+            completed: true,
+            completedAt,
+            updatedAt: completedAt,
+          },
+          { merge: true },
+        ),
+      ]);
 
       // Refresh user data to get updated progress
       const fresh = await loadUserObjectFromDB(database, npub);
@@ -2868,12 +2945,34 @@ export default function App() {
 
       // Remove the card from completed status (add it back to the active deck)
       const userRef = doc(database, "users", npub);
-      await updateDoc(userRef, {
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: false,
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
-          null,
-        updatedAt: new Date().toISOString(),
-      });
+      const flashcardProgressRef = doc(
+        database,
+        "users",
+        npub,
+        "languageFlashcards",
+        `${resolvedTargetLang}_${card.id}`,
+      );
+      const updatedAt = new Date().toISOString();
+
+      await Promise.all([
+        updateDoc(userRef, {
+          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: false,
+          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
+            null,
+          updatedAt,
+        }),
+        setDoc(
+          flashcardProgressRef,
+          {
+            targetLang: resolvedTargetLang,
+            cardId: card.id,
+            completed: false,
+            completedAt: null,
+            updatedAt,
+          },
+          { merge: true },
+        ),
+      ]);
 
       // Refresh user data to get updated progress
       const fresh = await loadUserObjectFromDB(database, npub);
@@ -3988,7 +4087,11 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [lessonLevelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
+  }, [
+    lessonLevelCompletionStatus,
+    user?.proficiencyPlacements,
+    resolvedTargetLang,
+  ]);
 
   // Determine current unlocked flashcard level (highest level user can access in flashcard mode)
   const currentFlashcardLevel = useMemo(() => {
@@ -4014,7 +4117,11 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
+  }, [
+    flashcardLevelCompletionStatus,
+    user?.proficiencyPlacements,
+    resolvedTargetLang,
+  ]);
 
   // Legacy: Combined current level (for backwards compatibility)
   const currentCEFRLevel = useMemo(() => {
@@ -4258,34 +4365,25 @@ export default function App() {
 
   // Handler for lesson level navigation
   // Lock checking is handled by CEFRLevelNavigator UI (next button disabled when locked)
-  const handleLessonLevelChange = useCallback(
-    (newLevel) => {
-      if (CEFR_LEVELS.includes(newLevel)) {
-        setActiveLessonLevel(newLevel);
-      }
-    },
-    [],
-  );
+  const handleLessonLevelChange = useCallback((newLevel) => {
+    if (CEFR_LEVELS.includes(newLevel)) {
+      setActiveLessonLevel(newLevel);
+    }
+  }, []);
 
   // Handler for flashcard level navigation
-  const handleFlashcardLevelChange = useCallback(
-    (newLevel) => {
-      if (CEFR_LEVELS.includes(newLevel)) {
-        setActiveFlashcardLevel(newLevel);
-      }
-    },
-    [],
-  );
+  const handleFlashcardLevelChange = useCallback((newLevel) => {
+    if (CEFR_LEVELS.includes(newLevel)) {
+      setActiveFlashcardLevel(newLevel);
+    }
+  }, []);
 
   // Legacy: Combined handler for level navigation
-  const handleLevelChange = useCallback(
-    (newLevel) => {
-      if (CEFR_LEVELS.includes(newLevel)) {
-        setActiveCEFRLevel(newLevel);
-      }
-    },
-    [],
-  );
+  const handleLevelChange = useCallback((newLevel) => {
+    if (CEFR_LEVELS.includes(newLevel)) {
+      setActiveCEFRLevel(newLevel);
+    }
+  }, []);
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
   const relevantLevels = useMemo(() => {
