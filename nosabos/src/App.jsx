@@ -3708,7 +3708,7 @@ export default function App() {
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
       const patchHasChanges = Object.entries(patch).some(([key, value]) => {
-        const current = latestUser?.[key] ?? user?.[key];
+        const current = latestUser?.[key];
         if (value && typeof value === "object") {
           try {
             return JSON.stringify(current) !== JSON.stringify(value);
@@ -3740,8 +3740,9 @@ export default function App() {
           const mark = Date.now();
           lastLocalXpEventRef.current = mark;
           const recipientNpub =
-            typeof user?.identity === "string" && user.identity.trim()
-              ? user.identity.trim()
+            typeof latestUser?.identity === "string" &&
+            latestUser.identity.trim()
+              ? latestUser.identity.trim()
               : undefined;
           Promise.resolve(sendOneSatToNpub(recipientNpub)).catch((error) => {
             console.error("Failed to send sat on XP update", error);
@@ -3814,13 +3815,10 @@ export default function App() {
     sendOneSatToNpub,
     pickRandomFeature,
     patchUser,
-    user,
-    user?.identity,
     maybePostNostrProgress,
     viewMode,
     activeLesson,
     lessonStartXp,
-    setUser,
     resolvedTargetLang,
     triggerLessonCompletion,
   ]);
