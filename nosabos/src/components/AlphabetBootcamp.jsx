@@ -180,18 +180,23 @@ async function saveAlphabetProgress(
   letterId,
   practiceWord,
   wasCorrect,
-  practiceWordMeaning
+  practiceWordMeaning,
 ) {
   if (!npub) return;
 
   const userRef = doc(database, "users", npub);
-  const progressKey = `progress.alphabetPractice.${targetLang}.${letterId}`;
+  const docId = `${targetLang}_${letterId}`;
+  const alphabetProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "alphabetPractice",
+    docId,
+  );
 
   try {
-    const snap = await getDoc(userRef);
-    const existingProgress = snap.exists()
-      ? snap.data()?.progress?.alphabetPractice?.[targetLang]?.[letterId]
-      : null;
+    const snap = await getDoc(alphabetProgressRef);
+    const existingProgress = snap.exists() ? snap.data() : null;
 
     const attempts = (existingProgress?.attempts || 0) + 1;
     const correctCount =
@@ -201,23 +206,34 @@ async function saveAlphabetProgress(
     // Keep track of last 10 practiced words
     const updatedWords = [...new Set([practiceWord, ...lastWords])].slice(
       0,
-      10
+      10,
     );
 
-    await setDoc(
-      userRef,
-      {
-        [`${progressKey}.attempts`]: attempts,
-        [`${progressKey}.correctCount`]: correctCount,
-        [`${progressKey}.practicedWords`]: updatedWords,
-        [`${progressKey}.lastAttemptAt`]: serverTimestamp(),
-        [`${progressKey}.lastWord`]: practiceWord,
-        [`${progressKey}.lastWordMeaning`]:
-          practiceWordMeaning ?? existingProgress?.lastWordMeaning ?? null,
-        "progress.lastActiveAt": serverTimestamp(),
-      },
-      { merge: true }
-    );
+    await Promise.all([
+      setDoc(
+        alphabetProgressRef,
+        {
+          letterId,
+          targetLang,
+          attempts,
+          correctCount,
+          practicedWords: updatedWords,
+          lastAttemptAt: serverTimestamp(),
+          lastWord: practiceWord,
+          lastWordMeaning:
+            practiceWordMeaning ?? existingProgress?.lastWordMeaning ?? null,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      ),
+      setDoc(
+        userRef,
+        {
+          "progress.lastActiveAt": serverTimestamp(),
+        },
+        { merge: true },
+      ),
+    ]);
   } catch (error) {
     console.error("Error saving alphabet progress:", error);
   }
@@ -229,7 +245,7 @@ async function saveAlphabetPracticeWord(
   letterId,
   practiceWord,
   practiceWordMeaning,
-  correctCount
+  correctCount,
 ) {
   if (!npub) return;
 
@@ -245,7 +261,7 @@ async function saveAlphabetPracticeWord(
         correctCount: correctCount ?? 0,
         updatedAt: serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   } catch (error) {
     console.error("Error saving alphabet practice word:", error);
@@ -312,10 +328,10 @@ function LetterCard({
   const [isPlayingWord, setIsPlayingWord] = useState(false);
   const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [practiceWord, setPracticeWord] = useState(
-    initialPracticeWord || letter.practiceWord || ""
+    initialPracticeWord || letter.practiceWord || "",
   );
   const [practiceWordMeaningData, setPracticeWordMeaningData] = useState(
-    normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
+    normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning),
   );
   const [correctCount, setCorrectCount] = useState(initialCorrectCount);
   const wordPlayerRef = useRef(null);
@@ -324,7 +340,9 @@ function LetterCard({
   useEffect(() => {
     setPracticeWord(initialPracticeWord || letter.practiceWord || "");
     setPracticeWordMeaningData(
-      normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
+      normalizeMeaning(
+        initialPracticeWordMeaning || letter.practiceWordMeaning,
+      ),
     );
   }, [
     initialPracticeWord,
@@ -356,8 +374,8 @@ function LetterCard({
       ? letter.type === "vowel"
         ? "Vocal"
         : letter.type === "consonant"
-        ? "Consonante"
-        : "Signo"
+          ? "Consonante"
+          : "Signo"
       : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
   const sound =
@@ -369,7 +387,7 @@ function LetterCard({
   const practiceMarker = getPracticeLetterMarker(letter);
   const highlightedPracticeWord = useMemo(
     () => getHighlightedWordParts(practiceWord, practiceMarker),
-    [practiceMarker, practiceWord]
+    [practiceMarker, practiceWord],
   );
 
   // Speech practice hook - use hook's isRecording and isConnecting states
@@ -459,7 +477,7 @@ function LetterCard({
         letter.id,
         nextPracticeWord,
         isYes,
-        nextPracticeMeaning
+        nextPracticeMeaning,
       );
       await saveAlphabetPracticeWord(
         npub,
@@ -467,7 +485,7 @@ function LetterCard({
         letter.id,
         nextPracticeWord,
         nextPracticeMeaning,
-        newCorrectCount
+        newCorrectCount,
       );
     } catch (error) {
       console.error("AI grading error:", error);
@@ -657,7 +675,7 @@ function LetterCard({
       letter.id,
       nextPracticeWord,
       nextPracticeMeaning,
-      correctCount
+      correctCount,
     );
     setShowResult(false);
     setIsCorrect(false);
@@ -697,7 +715,7 @@ function LetterCard({
         return null;
       }
     },
-    [letter.letter, letter.name, targetLang]
+    [letter.letter, letter.name, targetLang],
   );
 
   // Cleanup on unmount
@@ -989,12 +1007,12 @@ function LetterCard({
                     ? "Conectando..."
                     : "Connecting..."
                   : isRecording
-                  ? appLanguage === "es"
-                    ? "Detener"
-                    : "Stop"
-                  : appLanguage === "es"
-                  ? "Grabar"
-                  : "Record"}
+                    ? appLanguage === "es"
+                      ? "Detener"
+                      : "Stop"
+                    : appLanguage === "es"
+                      ? "Grabar"
+                      : "Record"}
               </Button>
             </VStack>
           )}
@@ -1137,8 +1155,8 @@ export default function AlphabetBootcamp({
         const snapshot = await getDocs(
           query(
             collection(database, "users", npub, "alphabetPractice"),
-            where("targetLang", "==", targetLang)
-          )
+            where("targetLang", "==", targetLang),
+          ),
         );
 
         const mapped = {};
@@ -1368,11 +1386,11 @@ export default function AlphabetBootcamp({
                           };
                           setTimeout(
                             () => requestAnimationFrame(checkEnded),
-                            100
+                            100,
                           );
                           const fallbackMs = Math.max(
                             1500,
-                            text.length * 50 + 500
+                            text.length * 50 + 500,
                           );
                           setTimeout(resolve, fallbackMs);
                         });
@@ -1550,11 +1568,11 @@ export default function AlphabetBootcamp({
                           };
                           setTimeout(
                             () => requestAnimationFrame(checkEnded),
-                            100
+                            100,
                           );
                           const fallbackMs = Math.max(
                             1500,
-                            text.length * 50 + 500
+                            text.length * 50 + 500,
                           );
                           setTimeout(resolve, fallbackMs);
                         });
