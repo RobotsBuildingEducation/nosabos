@@ -3584,7 +3584,20 @@ export default function App() {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
-      const progressPayload = data?.progress || { totalXp: newXp };
+      const existingProgress = user?.progress || {};
+      const rawProgress = data?.progress || { totalXp: newXp };
+      const progressPayload = {
+        ...existingProgress,
+        ...rawProgress,
+        languageLessons:
+          rawProgress?.languageLessons ??
+          existingProgress?.languageLessons ??
+          {},
+        languageFlashcards:
+          rawProgress?.languageFlashcards ??
+          existingProgress?.languageFlashcards ??
+          {},
+      };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
       // Keep global user store in sync with Firestore changes so all modules
