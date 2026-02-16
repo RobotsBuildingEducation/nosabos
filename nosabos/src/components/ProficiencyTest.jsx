@@ -10,6 +10,10 @@ import {
   DrawerOverlay,
   HStack,
   IconButton,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
   Text,
   VStack,
   Badge,
@@ -512,6 +516,9 @@ export default function ProficiencyTest() {
     () => messages.filter((m) => m.role === "user").length,
     [messages]
   );
+
+  // Exit confirmation modal
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   // Result drawer
   const [showResult, setShowResult] = useState(false);
@@ -1092,6 +1099,34 @@ Return ONLY valid JSON:
     navigate("/");
   }, [currentNpub, assessedLevel, navigate, patchUser, user?.progress]);
 
+  /* ---- Confirm exit: mark placement as skipped and leave ---- */
+  const handleConfirmExit = useCallback(async () => {
+    setShowExitConfirm(false);
+    if (currentNpub) {
+      try {
+        await setDoc(
+          doc(database, "users", currentNpub),
+          {
+            proficiencyPlacement: "skipped",
+            proficiencyPlacements: { [targetLang]: "skipped" },
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        patchUser({
+          proficiencyPlacement: "skipped",
+          proficiencyPlacements: {
+            ...(user?.proficiencyPlacements || {}),
+            [targetLang]: "skipped",
+          },
+        });
+      } catch (e) {
+        console.warn("Failed to persist proficiency skip:", e);
+      }
+    }
+    navigate("/");
+  }, [currentNpub, targetLang, navigate, patchUser, user?.proficiencyPlacements]);
+
   const handleTryAgain = useCallback(() => {
     stop();
     setShowResult(false);
@@ -1408,7 +1443,7 @@ Return ONLY valid JSON:
             position="absolute"
             top={4}
             right={4}
-            onClick={() => navigate("/")}
+            onClick={() => setShowExitConfirm(true)}
           />
         </Box>
 
@@ -1846,6 +1881,59 @@ Return ONLY valid JSON:
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Exit confirmation modal */}
+      <Modal
+        isOpen={showExitConfirm}
+        onClose={() => setShowExitConfirm(false)}
+        isCentered
+        size="sm"
+        motionPreset="slideInBottom"
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="gray.900"
+          color="gray.100"
+          border="1px solid"
+          borderColor="gray.700"
+          rounded="2xl"
+          mx={4}
+        >
+          <ModalBody py={8} px={6}>
+            <VStack spacing={4}>
+              <Text fontSize="lg" fontWeight="bold" textAlign="center">
+                {isEs
+                  ? "¿Salir de la prueba de nivel?"
+                  : "Exit proficiency test?"}
+              </Text>
+              <Text fontSize="sm" color="gray.400" textAlign="center">
+                {isEs
+                  ? "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración."
+                  : "Your progress won't be saved. You can retake the test later from settings."}
+              </Text>
+              <VStack spacing={3} w="100%" pt={2}>
+                <Button
+                  w="100%"
+                  colorScheme="red"
+                  variant="solid"
+                  onClick={handleConfirmExit}
+                >
+                  {isEs ? "Sí, salir" : "Yes, exit"}
+                </Button>
+                <Button
+                  w="100%"
+                  variant="ghost"
+                  color="gray.300"
+                  _hover={{ bg: "whiteAlpha.100" }}
+                  onClick={() => setShowExitConfirm(false)}
+                >
+                  {isEs ? "Continuar la prueba" : "Continue test"}
+                </Button>
+              </VStack>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
