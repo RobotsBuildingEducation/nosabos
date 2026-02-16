@@ -42,7 +42,6 @@ export async function startLesson(
   if (!npub || !lessonId) return;
 
   const languageKey = (targetLang || "es").toLowerCase();
-  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, "users", npub);
   const lessonProgressRef = doc(
     database,
@@ -66,15 +65,6 @@ export async function startLesson(
       [`progress.currentLesson`]: lessonId,
       "progress.lastActiveAt": serverTimestamp(),
     };
-
-    // Only set to IN_PROGRESS if not already completed
-    if (!isAlreadyCompleted) {
-      updateData[`progress.lessons.${lessonId}.status`] =
-        SKILL_STATUS.IN_PROGRESS;
-      updateData[`progress.lessons.${lessonId}.startedAt`] = serverTimestamp();
-      updateData[`${languageLessonBase}.status`] = SKILL_STATUS.IN_PROGRESS;
-      updateData[`${languageLessonBase}.startedAt`] = serverTimestamp();
-    }
 
     await Promise.all([
       updateDoc(userRef, updateData),
@@ -111,7 +101,6 @@ export async function completeLesson(
   if (!npub || !lessonId || !xpReward) return;
 
   const languageKey = (targetLang || "es").toLowerCase();
-  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
 
   const userRef = doc(database, "users", npub);
   const lessonProgressRef = doc(
@@ -125,15 +114,6 @@ export async function completeLesson(
   try {
     await Promise.all([
       updateDoc(userRef, {
-        // Update lesson status
-        [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.COMPLETED,
-        [`progress.lessons.${lessonId}.completedAt`]: serverTimestamp(),
-        [`progress.lessons.${lessonId}.xpEarned`]: xpReward,
-        [`${languageLessonBase}.status`]: SKILL_STATUS.COMPLETED,
-        [`${languageLessonBase}.completedAt`]: serverTimestamp(),
-        [`${languageLessonBase}.xpEarned`]: xpReward,
-
-        // Clear current lesson
         "progress.currentLesson": null,
         "progress.lastActiveAt": serverTimestamp(),
       }),
@@ -192,7 +172,6 @@ export async function trackLessonAttempt(npub, lessonId, targetLang = "es") {
   if (!npub || !lessonId) return;
 
   const languageKey = (targetLang || "es").toLowerCase();
-  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, "users", npub);
   const lessonProgressRef = doc(
     database,
@@ -205,10 +184,7 @@ export async function trackLessonAttempt(npub, lessonId, targetLang = "es") {
   try {
     await Promise.all([
       updateDoc(userRef, {
-        [`progress.lessons.${lessonId}.attempts`]: increment(1),
-        [`progress.lessons.${lessonId}.lastAttemptAt`]: serverTimestamp(),
-        [`${languageLessonBase}.attempts`]: increment(1),
-        [`${languageLessonBase}.lastAttemptAt`]: serverTimestamp(),
+        "progress.lastActiveAt": serverTimestamp(),
       }),
       setDoc(
         lessonProgressRef,
@@ -362,7 +338,6 @@ export async function abandonLesson(npub, lessonId, targetLang = "es") {
   if (!npub || !lessonId) return;
 
   const languageKey = (targetLang || "es").toLowerCase();
-  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, "users", npub);
   const lessonProgressRef = doc(
     database,
@@ -375,9 +350,8 @@ export async function abandonLesson(npub, lessonId, targetLang = "es") {
   try {
     await Promise.all([
       updateDoc(userRef, {
-        [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.AVAILABLE,
-        [`${languageLessonBase}.status`]: SKILL_STATUS.AVAILABLE,
         "progress.currentLesson": null,
+        "progress.lastActiveAt": serverTimestamp(),
       }),
       setDoc(
         lessonProgressRef,

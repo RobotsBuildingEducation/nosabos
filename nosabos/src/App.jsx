@@ -468,13 +468,10 @@ async function loadUserObjectFromDB(db, id) {
       userData.progress = {};
     }
 
-    if (Object.keys(languageLessons).length > 0) {
-      userData.progress.languageLessons = languageLessons;
-    }
-
-    if (Object.keys(languageFlashcards).length > 0) {
-      userData.progress.languageFlashcards = languageFlashcards;
-    }
+    // Use subcollections as the canonical source of truth for lesson/flashcard progress.
+    // This intentionally ignores any legacy nested progress JSON fields.
+    userData.progress.languageLessons = languageLessons;
+    userData.progress.languageFlashcards = languageFlashcards;
 
     userData = await ensureOnboardingField(db, id, userData);
     return userData;
@@ -2890,12 +2887,14 @@ export default function App() {
       const completedAt = new Date().toISOString();
 
       await Promise.all([
-        updateDoc(userRef, {
-          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
-          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
-            completedAt,
-          updatedAt: new Date().toISOString(),
-        }),
+        setDoc(
+          userRef,
+          {
+            updatedAt: completedAt,
+            "progress.lastActiveAt": completedAt,
+          },
+          { merge: true },
+        ),
         setDoc(
           flashcardProgressRef,
           {
@@ -2955,12 +2954,14 @@ export default function App() {
       const updatedAt = new Date().toISOString();
 
       await Promise.all([
-        updateDoc(userRef, {
-          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: false,
-          [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
-            null,
-          updatedAt,
-        }),
+        setDoc(
+          userRef,
+          {
+            updatedAt,
+            "progress.lastActiveAt": updatedAt,
+          },
+          { merge: true },
+        ),
         setDoc(
           flashcardProgressRef,
           {
