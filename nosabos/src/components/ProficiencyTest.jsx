@@ -562,6 +562,7 @@ export default function ProficiencyTest() {
 
   // Result drawer
   const [showResult, setShowResult] = useState(false);
+  const [showRubric, setShowRubric] = useState(false);
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
   const [assessmentScores, setAssessmentScores] = useState(null);
@@ -1494,6 +1495,50 @@ Return ONLY valid JSON:
 
   /* ---- Render ---- */
   const levelInfo = assessedLevel ? CEFR_LEVEL_INFO[assessedLevel] : null;
+  const rubricRows = [
+    {
+      level: "Pre-A1",
+      range: "1.0 - 3.1",
+      en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
+      es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
+    },
+    {
+      level: "A1",
+      range: "3.2 - 4.3",
+      en: "Can handle greetings and personal basics with simple memorized patterns.",
+      es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
+    },
+    {
+      level: "A2",
+      range: "4.4 - 5.5",
+      en: "Can discuss routine topics and answer straightforward questions with limited detail.",
+      es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
+    },
+    {
+      level: "B1",
+      range: "5.6 - 6.7",
+      en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
+      es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
+    },
+    {
+      level: "B2",
+      range: "6.8 - 7.9",
+      en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
+      es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
+    },
+    {
+      level: "C1",
+      range: "8.0 - 8.7",
+      en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
+      es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
+    },
+    {
+      level: "C2",
+      range: "8.8 - 10.0",
+      en: "Near-native precision, speed, and adaptability across complex topics.",
+      es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
+    },
+  ];
 
   return (
     <>
@@ -1518,6 +1563,26 @@ Return ONLY valid JSON:
             right={4}
             onClick={() => setShowExitConfirm(true)}
           />
+          <HStack spacing={2} pr={12}>
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="whiteAlpha"
+              rounded="full"
+              onClick={handleTryAgain}
+            >
+              {isEs ? "Empezar de nuevo" : "Start over"}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              colorScheme="cyan"
+              rounded="full"
+              onClick={() => setShowRubric(true)}
+            >
+              {isEs ? "Rúbrica" : "Grading rubric"}
+            </Button>
+          </HStack>
         </Box>
 
         {/* Progress + Robot */}
@@ -1987,6 +2052,112 @@ Return ONLY valid JSON:
               </Button>
             </HStack>
           </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        isOpen={showRubric}
+        placement="bottom"
+        onClose={() => setShowRubric(false)}
+      >
+        <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
+        <DrawerContent
+          bg="gray.900"
+          color="gray.100"
+          borderTopRadius="24px"
+          h="80vh"
+          sx={{
+            "@supports (height: 100dvh)": {
+              height: "80dvh",
+            },
+          }}
+        >
+          <DrawerBody py={6} overflowY="auto">
+            <VStack align="stretch" spacing={4}>
+              <Box>
+                <Text fontSize="xl" fontWeight="bold" mb={2}>
+                  {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
+                </Text>
+                <Text fontSize="sm" opacity={0.75}>
+                  {isEs
+                    ? "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio."
+                    : "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability."}
+                </Text>
+              </Box>
+
+              <Box bg="gray.800" borderRadius="xl" p={4}>
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                  {isEs ? "Qué puntúa el sistema" : "What gets scored"}
+                </Text>
+                <Text fontSize="sm" opacity={0.8}>
+                  {isEs
+                    ? "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión."
+                    : "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension."}
+                </Text>
+              </Box>
+
+              <Box bg="gray.800" borderRadius="xl" p={4}>
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                  {isEs ? "Mecanismo de calificación" : "Scoring mechanism"}
+                </Text>
+                <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
+                  <Text>
+                    • {isEs
+                      ? "Comprensión y fluidez pesan más que confianza."
+                      : "Comprehension and fluency are weighted more heavily than confidence."}
+                  </Text>
+                  <Text>
+                    • {isEs
+                      ? "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1."
+                      : "Very short or low-substance responses cap the result at Pre-A1/A1."}
+                  </Text>
+                  <Text>
+                    • {isEs
+                      ? "Si hay muchos " +
+                        "\"no sé\"/relleno, el nivel baja automáticamente."
+                      : "Frequent filler or \"I don't know\" responses automatically lower the placement."}
+                  </Text>
+                  <Text>
+                    • {isEs
+                      ? "El nivel final nunca supera la evidencia real de tu conversación."
+                      : "Final placement never exceeds what your conversation evidence supports."}
+                  </Text>
+                </VStack>
+              </Box>
+
+              <Box>
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                  {isEs ? "Bandas de nivel" : "Level bands"}
+                </Text>
+                <VStack spacing={2} align="stretch">
+                  {rubricRows.map((row) => (
+                    <Box key={row.level} bg="gray.800" borderRadius="xl" px={3} py={2.5}>
+                      <HStack justify="space-between" align="center" mb={1}>
+                        <Badge colorScheme="cyan" variant="subtle">
+                          {row.level}
+                        </Badge>
+                        <Text fontSize="xs" opacity={0.6}>
+                          {row.range}
+                        </Text>
+                      </HStack>
+                      <Text fontSize="sm" opacity={0.8} lineHeight="1.5">
+                        {row[isEs ? "es" : "en"]}
+                      </Text>
+                    </Box>
+                  ))}
+                </VStack>
+              </Box>
+
+              <Button
+                mt={2}
+                colorScheme="cyan"
+                rounded="xl"
+                onClick={() => setShowRubric(false)}
+              >
+                {isEs ? "Entendido" : "Got it"}
+              </Button>
+            </VStack>
+          </DrawerBody>
         </DrawerContent>
       </Drawer>
 
