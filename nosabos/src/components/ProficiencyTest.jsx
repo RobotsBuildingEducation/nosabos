@@ -531,7 +531,10 @@ export default function ProficiencyTest() {
           local_npub: profile.local_npub || npub,
         });
       } catch (error) {
-        console.warn("Failed to load user settings for proficiency test:", error);
+        console.warn(
+          "Failed to load user settings for proficiency test:",
+          error,
+        );
       }
     };
 
