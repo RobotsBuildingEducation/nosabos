@@ -332,7 +332,7 @@ function buildFillVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Use ONLY greetings. The word being tested MUST be a greeting like "hello", "hola", "hi", "good morning", "good afternoon", or "goodbye". The full sentence MUST be a greeting-only line (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Use ONLY greetings in ${TARGET}. The word being tested MUST be a basic greeting in ${TARGET}. The full sentence MUST be greeting-only (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
@@ -343,10 +343,20 @@ function buildFillVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
     `- ≤ 120 chars; natural context that cues the target word.`,
     topicDirective,
+    languageGuard,
     `- Hint in ${SUPPORT} (≤ 8 words), covering meaning/synonym/topic.`,
     wantTR
       ? `- ${SUPPORT} translation of the full sentence.`
@@ -391,7 +401,7 @@ function buildMCVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
@@ -402,6 +412,15 @@ function buildMCVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answer must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -411,6 +430,7 @@ function buildMCVocabStreamPrompt({
     `One of the distinct word choices must be correct.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",
@@ -450,7 +470,7 @@ function buildMAVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye". Do NOT use any other nouns/topics.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
@@ -461,6 +481,15 @@ function buildMAVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answers must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} vocabulary fill-in-the-blanks question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -468,9 +497,10 @@ function buildMAVocabStreamPrompt({
     `- Create a sentence in ${TARGET} with EXACTLY ${numBlanks} blanks written as "___" where ${TARGET} vocabulary words should be inserted.`,
     `- The sentence should test vocabulary knowledge by having the learner fill in ${TARGET} words.`,
     `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
-    `- Example: A ${TARGET} sentence like "El ___ está en la ___" with answers ["libro", "mesa"] means blank 1 = libro, blank 2 = mesa.`,
+    `- Example format: "<${TARGET} sentence with ___ blanks>" with answers ["<word1>","<word2>"] means one answer per blank in order.`,
     `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
     `- CRITICAL: Each choice MUST be a single ${TARGET} word. NEVER combine words with "/" or "or".`,
+    languageGuard,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR
       ? `- ${SUPPORT} translation showing the complete sentence.`
@@ -780,9 +810,6 @@ function buildVocabTranslateStreamPrompt({
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
-  const exampleSentence = isTargetToSupport
-    ? `Example: "El gato es negro" -> "The cat is black"`
-    : `Example: "The cat is black" -> "El gato es negro"`;
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE greeting-only sentence. It MUST include a basic greeting like "hello", "hi", "good morning", "good afternoon", "good evening", "goodbye", or "bye". Use ONLY greetings (no colors, animals, objects, or unrelated nouns). Keep it 2–4 words and absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
@@ -802,6 +829,15 @@ function buildVocabTranslateStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) sentence must be ONLY in ${SOURCE_LANG}.`,
+    `  2) correctWords and distractors must be ONLY in ${ANSWER_LANG}.`,
+    `  3) hint must be ONLY in ${SUPPORT}.`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE sentence translation exercise for VOCABULARY. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -810,6 +846,7 @@ function buildVocabTranslateStreamPrompt({
     `- Correct translation as array of ${ANSWER_LANG} words in order.`,
     `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
     `- Hint in ${SUPPORT} (≤8 words) about key vocabulary.`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",
@@ -2407,6 +2444,8 @@ Return EXACTLY:
 
     let got = false;
     let pendingAnswer = "";
+    let tempQuestion = "";
+    let tempChoices = [];
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2427,14 +2466,19 @@ Return EXACTLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "vocab_mc" && obj.phase === "q" && obj.question) {
-              setQMC(String(obj.question));
+              tempQuestion = String(obj.question);
+              setQMC(tempQuestion);
               got = true;
             } else if (
               obj?.type === "vocab_mc" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 4).map(String);
+              const rawChoices = obj.choices
+                .slice(0, 4)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
+              tempChoices = rawChoices;
               // if answer already known from meta, ensure it's in choices
               if (pendingAnswer) {
                 const { choices, answer } = ensureAnswerInChoices(
@@ -2485,14 +2529,19 @@ Return EXACTLY:
                 obj.phase === "q" &&
                 obj.question
               ) {
-                setQMC(String(obj.question));
+                tempQuestion = String(obj.question);
+                setQMC(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "vocab_mc" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 4).map(String);
+                const rawChoices = obj.choices
+                  .slice(0, 4)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
+                tempChoices = rawChoices;
                 if (pendingAnswer) {
                   const { choices, answer } = ensureAnswerInChoices(
                     rawChoices,
@@ -2525,7 +2574,20 @@ Return EXACTLY:
           );
       }
 
-      if (!got) throw new Error("no-mc");
+      if (tempChoices.length && pendingAnswer) {
+        const { choices, answer } = ensureAnswerInChoices(
+          tempChoices,
+          pendingAnswer
+        );
+        setChoicesMC(choices);
+        setAnswerMC(answer);
+      } else if (tempChoices.length) {
+        setChoicesMC(tempChoices);
+      }
+
+      if (!got || !tempQuestion || tempChoices.length < 3) {
+        throw new Error("incomplete-mc");
+      }
     } catch {
       // Fallback (non-stream)
       const text = await callResponses({
@@ -2726,6 +2788,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
     let got = false;
     let pendingAnswers = [];
+    let tempQuestion = "";
+    let tempChoices = [];
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2746,14 +2810,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "vocab_ma" && obj.phase === "q" && obj.question) {
-              setQMA(String(obj.question));
+              tempQuestion = String(obj.question);
+              setQMA(tempQuestion);
               got = true;
             } else if (
               obj?.type === "vocab_ma" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 6).map(String);
+              const rawChoices = obj.choices
+                .slice(0, 6)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
+              tempChoices = rawChoices;
               if (pendingAnswers?.length) {
                 const { choices, answers } = ensureAnswersInChoices(
                   rawChoices,
@@ -2803,14 +2872,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 obj.phase === "q" &&
                 obj.question
               ) {
-                setQMA(String(obj.question));
+                tempQuestion = String(obj.question);
+                setQMA(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "vocab_ma" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 6).map(String);
+                const rawChoices = obj.choices
+                  .slice(0, 6)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
+                tempChoices = rawChoices;
                 if (pendingAnswers?.length) {
                   const { choices, answers } = ensureAnswersInChoices(
                     rawChoices,
@@ -2843,7 +2917,25 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
           );
       }
 
-      if (!got) throw new Error("no-ma");
+      if (tempChoices.length && pendingAnswers.length) {
+        const { choices, answers } = ensureAnswersInChoices(
+          tempChoices,
+          pendingAnswers
+        );
+        setChoicesMA(choices);
+        if (answers.length >= 2) setAnswersMA(answers);
+      } else if (tempChoices.length) {
+        setChoicesMA(tempChoices);
+      }
+
+      if (
+        !got ||
+        !tempQuestion ||
+        tempChoices.length < 4 ||
+        pendingAnswers.length < 2
+      ) {
+        throw new Error("incomplete-ma");
+      }
     } catch {
       // Fallback (non-stream)
       const text = await callResponses({
