@@ -336,7 +336,11 @@ export default function Onboarding({
                   <Text fontSize="xs" opacity={0.7} mb={3}>
                     {ui.onboarding_support_language_desc}
                   </Text>
-                  <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
+                  <Menu
+                    autoSelect={false}
+                    isLazy
+                    onOpen={() => playSound(selectSound)}
+                  >
                     <MenuButton
                       as={Button}
                       rightIcon={<ChevronDownIcon />}
@@ -348,7 +352,7 @@ export default function Onboarding({
                       _active={{ bg: "gray.750" }}
                       w="100%"
                       textAlign="left"
-                      padding={6}
+                      padding={5}
                       onClick={() => playSound(selectSound)}
                     >
                       <HStack spacing={2}>
@@ -375,13 +379,13 @@ export default function Onboarding({
                           setSupportLang(value);
                         }}
                       >
-                        <MenuItemOption value="en" padding={6} pl={1}>
+                        <MenuItemOption value="en" padding={5} pl={1}>
                           <HStack spacing={2}>
                             {usaFlag()}
                             <Text as="span">{ui.onboarding_support_en}</Text>
                           </HStack>
                         </MenuItemOption>
-                        <MenuItemOption value="es" padding={6} pl={1}>
+                        <MenuItemOption value="es" padding={5} pl={1}>
                           <HStack spacing={2}>
                             {mexicanFlag()}
                             <Text as="span">{ui.onboarding_support_es}</Text>
@@ -400,7 +404,11 @@ export default function Onboarding({
                   <Text fontSize="xs" opacity={0.7} mb={3}>
                     {ui.onboarding_practice_language_desc}
                   </Text>
-                  <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
+                  <Menu
+                    autoSelect={false}
+                    isLazy
+                    onOpen={() => playSound(selectSound)}
+                  >
                     <MenuButton
                       as={Button}
                       rightIcon={<ChevronDownIcon />}
@@ -413,7 +421,7 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                       title={ui.onboarding_practice_label_title}
-                      padding={6}
+                      padding={5}
                       onClick={() => playSound(selectSound)}
                     >
                       <HStack spacing={2}>
@@ -468,7 +476,7 @@ export default function Onboarding({
                           <MenuItemOption
                             key={option.value}
                             value={option.value}
-                            padding={6}
+                            padding={5}
                             pl={1}
                           >
                             <div style={{ display: "inline-flex" }}>

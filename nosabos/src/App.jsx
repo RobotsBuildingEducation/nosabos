@@ -557,10 +557,11 @@ function TopBar({
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
   const normalizedTargetLang = String(targetLang || "").toLowerCase();
-  const hasProficiencyDecisionForTargetLang = Object.prototype.hasOwnProperty.call(
-    user?.proficiencyPlacements || {},
-    normalizedTargetLang,
-  );
+  const hasProficiencyDecisionForTargetLang =
+    Object.prototype.hasOwnProperty.call(
+      user?.proficiencyPlacements || {},
+      normalizedTargetLang,
+    );
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
@@ -1065,7 +1066,11 @@ function TopBar({
                       {translations[appLanguage]
                         .onboarding_support_menu_label || "Support:"}
                     </Text>
-                    <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
+                    <Menu
+                      autoSelect={false}
+                      isLazy
+                      onOpen={() => playSound(selectSound)}
+                    >
                       <MenuButton
                         as={Button}
                         rightIcon={<ChevronDownIcon />}
@@ -1075,7 +1080,7 @@ function TopBar({
                         bg="gray.800"
                         _hover={{ bg: "gray.750" }}
                         _active={{ bg: "gray.750" }}
-                        padding={6}
+                        padding={5}
                         onClick={() => playSound(selectSound)}
                       >
                         <HStack spacing={2}>
@@ -1108,7 +1113,7 @@ function TopBar({
                             <MenuItemOption
                               key={option.value}
                               value={option.value}
-                              padding={6}
+                              padding={5}
                             >
                               <HStack spacing={2}>
                                 {option.flag}
@@ -1126,7 +1131,11 @@ function TopBar({
                       {translations[appLanguage]
                         .onboarding_practice_menu_label || "Practice:"}
                     </Text>
-                    <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
+                    <Menu
+                      autoSelect={false}
+                      isLazy
+                      onOpen={() => playSound(selectSound)}
+                    >
                       <MenuButton
                         as={Button}
                         rightIcon={<ChevronDownIcon />}
@@ -1141,7 +1150,7 @@ function TopBar({
                           translations[appLanguage]
                             .onboarding_practice_label_title
                         }
-                        padding={6}
+                        padding={5}
                         onClick={() => playSound(selectSound)}
                       >
                         <HStack spacing={2}>
@@ -1198,7 +1207,7 @@ function TopBar({
                             <MenuItemOption
                               key={option.value}
                               value={option.value}
-                              padding={6}
+                              padding={5}
                             >
                               <HStack spacing={2}>
                                 {option.flag}
