@@ -56,8 +56,6 @@ import {
   Tooltip,
   useDisclosure,
   useBreakpointValue,
-  Alert,
-  AlertIcon,
   Accordion,
   AccordionItem,
   AccordionButton,
@@ -1473,13 +1471,12 @@ function TopBar({
 export default function App() {
   const toast = useToast();
   const initRef = useRef(false);
-  const updateToastShownRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
-  const { needsRefresh, reload } = useAppUpdate();
+  useAppUpdate();
   const handleSendToHelpChat = useCallback(
     (text) => {
       const payload = (text || "").trim();
@@ -1661,46 +1658,6 @@ export default function App() {
   });
   const t = translations[appLanguage] || translations.en;
 
-  useEffect(() => {
-    if (!needsRefresh || updateToastShownRef.current) return;
-    updateToastShownRef.current = true;
-    toast({
-      id: "app-update",
-      position: "top",
-      duration: null,
-      isClosable: true,
-      render: ({ onClose }) => (
-        <Alert
-          status="info"
-          variant="left-accent"
-          borderRadius="md"
-          boxShadow="md"
-          alignItems="center"
-        >
-          <AlertIcon />
-          <Box flex="1">
-            <Text fontWeight="semibold">
-              {t?.toast_update_title || "Update available"}
-            </Text>
-            <Text fontSize="sm">
-              {t?.toast_update_desc ||
-                "A new version is ready. Reload to update your app."}
-            </Text>
-          </Box>
-          <Button
-            size="sm"
-            colorScheme="blue"
-            onClick={() => {
-              onClose();
-              reload();
-            }}
-          >
-            {t?.toast_update_action || "Reload"}
-          </Button>
-        </Alert>
-      ),
-    });
-  }, [needsRefresh, reload, t, toast]);
   const subscriptionVerified = useMemo(() => {
     const matchesLocal =
       storedPasscode &&
