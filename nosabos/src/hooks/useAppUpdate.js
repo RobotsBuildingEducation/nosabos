@@ -1,31 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { registerSW } from "virtual:pwa-register";
 
-export default function useAppUpdate() {
-  const [needsRefresh, setNeedsRefresh] = useState(false);
-  const [isOfflineReady, setIsOfflineReady] = useState(false);
-  const updateServiceWorkerRef = useRef(null);
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // check every hour
 
+export default function useAppUpdate() {
   useEffect(() => {
-    const updateServiceWorker = registerSW({
-      onNeedRefresh() {
-        setNeedsRefresh(true);
-      },
-      onOfflineReady() {
-        setIsOfflineReady(true);
+    registerSW({
+      onRegisteredSW(_swUrl, registration) {
+        if (!registration) return;
+        setInterval(() => {
+          registration.update();
+        }, UPDATE_CHECK_INTERVAL_MS);
       },
     });
-
-    updateServiceWorkerRef.current = updateServiceWorker;
   }, []);
-
-  const reload = useCallback(() => {
-    updateServiceWorkerRef.current?.(true);
-  }, []);
-
-  return {
-    needsRefresh,
-    isOfflineReady,
-    reload,
-  };
 }
