@@ -33,7 +33,7 @@ import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { database, gradingModel } from "../firebaseResources/firebaseResources";
 
 import useUserStore from "../hooks/useUserStore";
@@ -499,10 +499,60 @@ export default function ProficiencyTest() {
   const patchUser = useUserStore((s) => s.patchUser);
   const currentNpub = strongNpub(user);
 
+  const storedProgressTargetLang = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    const raw = localStorage.getItem("progress");
+    if (!raw) return "";
+    try {
+      const parsed = JSON.parse(raw);
+      return typeof parsed?.targetLang === "string" ? parsed.targetLang : "";
+    } catch {
+      return "";
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadUser = async () => {
+      if (user?.progress?.targetLang) return;
+
+      const npub = strongNpub(user);
+      if (!npub) return;
+
+      try {
+        const snap = await getDoc(doc(database, "users", npub));
+        if (!snap.exists() || cancelled) return;
+
+        const profile = snap.data() || {};
+        setUser({
+          ...(user || {}),
+          ...profile,
+          local_npub: profile.local_npub || npub,
+        });
+      } catch (error) {
+        console.warn(
+          "Failed to load user settings for proficiency test:",
+          error,
+        );
+      }
+    };
+
+    loadUser();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setUser, user]);
+
   const aliveRef = useRef(false);
 
   // Derive settings from user
-  const targetLang = user?.progress?.targetLang || "es";
+  const targetLang =
+    user?.progress?.targetLang ||
+    user?.targetLang ||
+    storedProgressTargetLang ||
+    "es";
   const targetLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const targetLanguageCode = (targetLangTag || "es-MX").split("-")[0];
   const supportLang = user?.progress?.supportLang || "en";
