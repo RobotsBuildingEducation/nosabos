@@ -544,6 +544,7 @@ function TopBar({
   const toast = useToast();
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
+  const [isSignOutOpen, setIsSignOutOpen] = useState(false);
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
@@ -1390,16 +1391,7 @@ function TopBar({
                   {t.app_close || "Close"}
                 </Button>
                 <Button
-                  onClick={() => {
-                    if (typeof window === "undefined") return;
-                    try {
-                      localStorage.clear();
-                      window.location.href = "/";
-                    } catch (err) {
-                      console.error("signOut error:", err);
-                      window.location.reload();
-                    }
-                  }}
+                  onClick={() => setIsSignOutOpen(true)}
                   colorScheme="gray"
                   border="1px solid orange"
                 >
@@ -1410,6 +1402,39 @@ function TopBar({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Sign-out confirmation modal */}
+      <Modal isOpen={isSignOutOpen} onClose={() => setIsSignOutOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="gray.800" borderColor="whiteAlpha.200" border="1px solid">
+          <ModalHeader>{t.app_sign_out_confirm_title || "Sign out?"}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {t.app_sign_out_confirm_body ||
+              "Are you sure you want to sign out? Make sure you have your secret key saved before signing out."}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={() => setIsSignOutOpen(false)}>
+              {t.common_cancel || "Cancel"}
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={() => {
+                if (typeof window === "undefined") return;
+                try {
+                  localStorage.clear();
+                  window.location.href = "/";
+                } catch (err) {
+                  console.error("signOut error:", err);
+                  window.location.reload();
+                }
+              }}
+            >
+              {t.app_sign_out_confirm || "Sign out"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* ---- Account Drawer ---- */}
       <IdentityDrawer
