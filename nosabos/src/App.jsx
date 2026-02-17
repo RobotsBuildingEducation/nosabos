@@ -1778,7 +1778,7 @@ export default function App() {
     if (typeof window !== "undefined") {
       return localStorage.getItem("pathMode") || "path";
     }
-    return ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path";
+    return "path";
   });
   const lastPathTargetRef = useRef(null);
 
@@ -1795,31 +1795,15 @@ export default function App() {
     }
   }, [pathMode]);
 
-  // Ensure alphabet languages default to bootcamp on language switch; others fall back to path
-  // Only applies when user explicitly switches languages, not on initial load (respects localStorage)
+  // Ensure pathMode is always valid; default to skill tree path for all languages
   useEffect(() => {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
-      setPathMode(
-        ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path",
-      );
+      setPathMode("path");
       if (user) {
         lastPathTargetRef.current = resolvedTargetLang;
       }
       return;
-    }
-
-    // Only apply mode-switching logic when user is loaded AND language explicitly changed
-    if (
-      user &&
-      lastPathTargetRef.current !== null &&
-      lastPathTargetRef.current !== resolvedTargetLang
-    ) {
-      if (ALPHABET_LANGS.includes(resolvedTargetLang)) {
-        setPathMode("alphabet");
-      } else if (pathMode === "alphabet") {
-        setPathMode("path");
-      }
     }
 
     // Only update ref when user data is loaded (prevents false "change" detection on initial load)
