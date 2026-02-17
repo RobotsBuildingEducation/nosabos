@@ -4415,11 +4415,12 @@ export default function App() {
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
   const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("Pre-A1");
-  const [hasInitializedLevels, setHasInitializedLevels] = useState(false);
+  const [initializedLevelsLang, setInitializedLevelsLang] = useState(null);
 
   // Sync active levels from user document when it loads
   useEffect(() => {
-    if (!user || hasInitializedLevels) return;
+    if (!user) return;
+    if (initializedLevelsLang === resolvedTargetLang) return;
 
     // Only use per-language proficiency placement (no global fallback)
     const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
@@ -4493,10 +4494,11 @@ export default function App() {
       setActiveFlashcardLevel(currentFlashcardLevel);
     }
 
-    setHasInitializedLevels(true);
+    setInitializedLevelsLang(resolvedTargetLang);
   }, [
     user,
-    hasInitializedLevels,
+    initializedLevelsLang,
+    resolvedTargetLang,
     lessonLevelCompletionStatus,
     flashcardLevelCompletionStatus,
     currentLessonLevel,
@@ -4510,7 +4512,7 @@ export default function App() {
   const prevLessonLevelRef = useRef(null);
   useEffect(() => {
     // Skip if not initialized yet or no change
-    if (!hasInitializedLevels || !activeNpub) return;
+    if (initializedLevelsLang !== resolvedTargetLang || !activeNpub) return;
     if (prevLessonLevelRef.current === activeLessonLevel) return;
     prevLessonLevelRef.current = activeLessonLevel;
 
@@ -4520,13 +4522,18 @@ export default function App() {
       { activeLessonLevel, updatedAt: new Date().toISOString() },
       { merge: true },
     ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
-  }, [activeLessonLevel, activeNpub, hasInitializedLevels]);
+  }, [
+    activeLessonLevel,
+    activeNpub,
+    initializedLevelsLang,
+    resolvedTargetLang,
+  ]);
 
   // Persist active flashcard level to Firestore
   const prevFlashcardLevelRef = useRef(null);
   useEffect(() => {
     // Skip if not initialized yet or no change
-    if (!hasInitializedLevels || !activeNpub) return;
+    if (initializedLevelsLang !== resolvedTargetLang || !activeNpub) return;
     if (prevFlashcardLevelRef.current === activeFlashcardLevel) return;
     prevFlashcardLevelRef.current = activeFlashcardLevel;
 
@@ -4536,7 +4543,12 @@ export default function App() {
       { activeFlashcardLevel, updatedAt: new Date().toISOString() },
       { merge: true },
     ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
-  }, [activeFlashcardLevel, activeNpub, hasInitializedLevels]);
+  }, [
+    activeFlashcardLevel,
+    activeNpub,
+    initializedLevelsLang,
+    resolvedTargetLang,
+  ]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
