@@ -556,6 +556,11 @@ function TopBar({
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
+  const normalizedTargetLang = String(targetLang || "").toLowerCase();
+  const hasProficiencyDecisionForTargetLang = Object.prototype.hasOwnProperty.call(
+    user?.proficiencyPlacements || {},
+    normalizedTargetLang,
+  );
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
@@ -1207,24 +1212,26 @@ function TopBar({
                 </Wrap>
 
                 {/* Start Proficiency Check */}
-                <Button
-                  leftIcon={<LuBadgeCheck />}
-                  size="sm"
-                  variant="outline"
-                  borderColor="cyan.600"
-                  color="cyan.200"
-                  padding={6}
-                  _hover={{ bg: "cyan.900" }}
-                  onClick={() => {
-                    closeSettings();
-                    navigate("/proficiency");
-                  }}
-                  mt={4}
-                >
-                  {appLanguage === "es"
-                    ? "Iniciar prueba de nivel"
-                    : "Start proficiency check"}
-                </Button>
+                {!hasProficiencyDecisionForTargetLang && (
+                  <Button
+                    leftIcon={<LuBadgeCheck />}
+                    size="sm"
+                    variant="outline"
+                    borderColor="cyan.600"
+                    color="cyan.200"
+                    padding={6}
+                    _hover={{ bg: "cyan.900" }}
+                    onClick={() => {
+                      closeSettings();
+                      navigate("/proficiency");
+                    }}
+                    mt={4}
+                  >
+                    {appLanguage === "es"
+                      ? "Iniciar prueba de nivel"
+                      : "Start proficiency check"}
+                  </Button>
+                )}
 
                 {/* Persona */}
                 <Box bg="gray.800" p={3} rounded="md">
