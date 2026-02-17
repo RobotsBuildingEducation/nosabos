@@ -1506,14 +1506,6 @@ Return ONLY valid JSON:
       >
         {/* Header */}
         <Box px={4} py={4} position="relative">
-          <Text
-            fontSize="lg"
-            fontWeight="bold"
-            color="gray.100"
-            textAlign="center"
-          >
-            {isEs ? "Prueba de Nivel" : "Proficiency Test"}
-          </Text>
           <IconButton
             icon={<CloseIcon />}
             aria-label="Close"
@@ -1522,14 +1514,14 @@ Return ONLY valid JSON:
             _hover={{ color: "gray.200", bg: "whiteAlpha.100" }}
             size="sm"
             position="absolute"
-            top={4}
+            top={3}
             right={4}
             onClick={() => setShowExitConfirm(true)}
           />
         </Box>
 
         {/* Progress + Robot */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box px={4} mt={4} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
             p={3}
@@ -1542,7 +1534,7 @@ Return ONLY valid JSON:
           >
             <Box
               position="absolute"
-              top={3}
+              top={8}
               left={3}
               width="72px"
               opacity={0.95}
@@ -1561,19 +1553,19 @@ Return ONLY valid JSON:
               spacing={2}
               width="100%"
               pl={{ base: "78px", sm: "82px" }}
-              pt={{ base: 1, sm: 0 }}
             >
+              <Text
+                fontSize="lg"
+                fontWeight="bold"
+                color="gray.100"
+                textAlign="center"
+              >
+                {isEs ? "Prueba de Nivel" : "Proficiency Test"}
+              </Text>
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
-                    <Badge
-                      colorScheme="purple"
-                      variant="subtle"
-                      fontSize="10px"
-                    >
-                      {isEs ? "Evaluación" : "Assessment"}
-                    </Badge>
-                    <Text fontSize="xs" opacity={0.9} color="white" flex="1">
+                    <Text fontSize="sm" opacity={0.9} color="white" flex="1">
                       {isEs
                         ? "Habla naturalmente — estamos evaluando tu nivel"
                         : "Speak naturally — we're assessing your level"}
@@ -1678,7 +1670,7 @@ Return ONLY valid JSON:
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
-              mb={20}
+              mb={4}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
               {status === "connected" ? (
