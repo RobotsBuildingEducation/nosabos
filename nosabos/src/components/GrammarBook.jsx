@@ -136,6 +136,27 @@ function buildFallbackDistractors(words = [], answerLang = "en") {
   return picks;
 }
 
+function getTranslateFallbackSample(langCode = "en") {
+  const samples = {
+    en: {
+      sentence: "The house is small.",
+      words: ["The", "house", "is", "small"],
+      hint: "Basic description sentence",
+    },
+    es: {
+      sentence: "La casa es pequeña.",
+      words: ["La", "casa", "es", "pequeña"],
+      hint: "Frase descriptiva básica",
+    },
+    it: {
+      sentence: "La casa è piccola.",
+      words: ["La", "casa", "è", "piccola"],
+      hint: "Frase descrittiva di base",
+    },
+  };
+  return samples[langCode] || samples.en;
+}
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -3050,49 +3071,23 @@ Return JSON ONLY:
       const allWords = [...tempCorrectWords, ...distractors];
       setTWordBank(shuffle(allWords));
     } catch {
-      // Fallback defaults based on direction
-      const isTargetToSupport = direction === "target-to-support";
-      if (targetLang === "es") {
-        if (isTargetToSupport) {
-          // Spanish -> English
-          setTSentence("Vamos a la escuela.");
-          setTCorrectWords(["We", "go", "to", "school"]);
-          setTDistractors(["house", "the", "tomorrow"]);
-          setTWordBank(
-            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
-          );
-          setTHint("Present tense of 'ir' (to go)");
-        } else {
-          // English -> Spanish
-          setTSentence("We go to school.");
-          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
-          setTDistractors(["casa", "el", "mañana"]);
-          setTWordBank(
-            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
-          );
-          setTHint("Present tense of 'ir' (to go)");
-        }
-      } else {
-        if (isTargetToSupport) {
-          // English -> Spanish (when target is English)
-          setTSentence("We go to school.");
-          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
-          setTDistractors(["casa", "el", "mañana"]);
-          setTWordBank(
-            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
-          );
-          setTHint("Presente del verbo 'ir'");
-        } else {
-          // Spanish -> English (when target is English)
-          setTSentence("Vamos a la escuela.");
-          setTCorrectWords(["We", "go", "to", "school"]);
-          setTDistractors(["house", "the", "tomorrow"]);
-          setTWordBank(
-            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
-          );
-          setTHint("Presente del verbo 'ir'");
-        }
-      }
+      // Fallback defaults must honor active target/support language routing.
+      const sourceLang =
+        direction === "target-to-support" ? targetLang : supportCode;
+      const answerLang =
+        direction === "target-to-support" ? supportCode : targetLang;
+      const sourceSample = getTranslateFallbackSample(sourceLang);
+      const answerSample = getTranslateFallbackSample(answerLang);
+      const fallbackDistractors = buildFallbackDistractors(
+        answerSample.words,
+        answerLang
+      );
+
+      setTSentence(sourceSample.sentence);
+      setTCorrectWords(answerSample.words);
+      setTDistractors(fallbackDistractors);
+      setTWordBank(shuffle([...answerSample.words, ...fallbackDistractors]));
+      setTHint(answerSample.hint);
 
       if (
         repeatVariant &&
