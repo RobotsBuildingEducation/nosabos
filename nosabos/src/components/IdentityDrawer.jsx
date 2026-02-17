@@ -1,11 +1,17 @@
 // src/components/IdentityDrawer.jsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Accordion,
   AccordionButton,
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box,
   Button,
   Divider,
@@ -64,6 +70,8 @@ export default function IdentityDrawer({
   const toast = useToast();
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isSignOutOpen, setIsSignOutOpen] = useState(false);
+  const signOutCancelRef = useRef();
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -214,6 +222,7 @@ export default function IdentityDrawer({
   );
 
   return (
+    <>
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
       <DrawerOverlay bg="blackAlpha.600" />
       <DrawerContent
@@ -482,7 +491,7 @@ export default function IdentityDrawer({
             <Button
               mt={6}
               leftIcon={<LuDoorOpen size={18} />}
-              onClick={handleSignOut}
+              onClick={() => setIsSignOutOpen(true)}
               padding={6}
               borderRadius="lg"
               colorScheme="gray"
@@ -494,6 +503,34 @@ export default function IdentityDrawer({
         </DrawerBody>
       </DrawerContent>
     </Drawer>
+
+    <AlertDialog
+      isOpen={isSignOutOpen}
+      leastDestructiveRef={signOutCancelRef}
+      onClose={() => setIsSignOutOpen(false)}
+      isCentered
+    >
+      <AlertDialogOverlay>
+        <AlertDialogContent bg="gray.800" borderColor="whiteAlpha.200" border="1px solid">
+          <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            {t?.app_sign_out_confirm_title || "Sign out?"}
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            {t?.app_sign_out_confirm_body ||
+              "Are you sure you want to sign out? Make sure you have your secret key saved before signing out."}
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button ref={signOutCancelRef} onClick={() => setIsSignOutOpen(false)}>
+              {t?.common_cancel || "Cancel"}
+            </Button>
+            <Button colorScheme="red" onClick={handleSignOut} ml={3}>
+              {t?.app_sign_out_confirm || "Sign out"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogOverlay>
+    </AlertDialog>
+    </>
   );
 }
 
