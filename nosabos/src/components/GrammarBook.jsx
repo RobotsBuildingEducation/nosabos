@@ -147,7 +147,7 @@ function useT(uiLang = "en") {
     const raw = (dict[key] ?? enDict[key] ?? key) + "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
-      k in params ? String(params[k]) : `{${k}}`
+      k in params ? String(params[k]) : `{${k}}`,
     );
   };
 }
@@ -175,7 +175,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
-  }[code] || code);
+  })[code] || code;
 
 const strongNpub = (user) =>
   (
@@ -264,8 +264,8 @@ const resolveSupportLang = (supportLang, appUILang) =>
       ? "es"
       : "en"
     : supportLang === "es"
-    ? "es"
-    : "en";
+      ? "es"
+      : "en";
 
 /* FILL — stream phases */
 function buildFillStreamPrompt({
@@ -291,21 +291,21 @@ function buildFillStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-          : null,
-        lessonContent.focusPoints
-          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-              lessonContent.focusPoints
-            )}. These are mandatory lesson objectives.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints,
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -379,7 +379,7 @@ function buildMatchStreamPrompt({
   return [
     `Create ONE ${TARGET} GRAMMAR matching exercise using exactly ONE grammar family (coherent set). Difficulty: ${diff}.`,
     `Stay related to recent correct topics: ${JSON.stringify(
-      recentGood.slice(-3)
+      recentGood.slice(-3),
     )}`,
     "",
     "Allowed families (pick ONE for all rows):",
@@ -442,21 +442,21 @@ function buildMCStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-          : null,
-        lessonContent.focusPoints
-          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-              lessonContent.focusPoints
-            )}. These are mandatory lesson objectives.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints,
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -545,21 +545,21 @@ function buildMAStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-          : null,
-        lessonContent.focusPoints
-          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-              lessonContent.focusPoints
-            )}. These are mandatory lesson objectives.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints,
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -590,7 +590,7 @@ function buildMAStreamPrompt({
     "Stream as NDJSON:",
     `{"type":"ma","phase":"q","question":"<${TARGET} sentence with EXACTLY ${numBlanks} ___ blanks>"}  // first`,
     `{"type":"ma","phase":"choices","choices":["<word1>","<word2>","..."]}  // second, 5-6 single words`,
-    `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${numBlanks === 3 ? ',"<answer for blank 3>"' : ''}],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${numBlanks === 3 ? ',"<answer for blank 3>"' : ""}],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
 }
@@ -618,21 +618,21 @@ function buildSpeakGrammarStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking exercise about basic greetings only. The sentence MUST be a simple greeting like "Hello!", "¡Hola!", "Good morning!", "¡Buenos días!". Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-          : null,
-        lessonContent.focusPoints
-          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-              lessonContent.focusPoints
-            )}. These are mandatory lesson objectives.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : `- Consider recent grammar successes: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints,
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider recent grammar successes: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   return [
     `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${
@@ -715,21 +715,21 @@ function buildTranslateStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. Use only common greeting words. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. This is lesson-specific content.`
-          : null,
-        lessonContent.focusPoints
-          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-              lessonContent.focusPoints
-            )}.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n")
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. This is lesson-specific content.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints,
+              )}.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -843,7 +843,7 @@ function ensureAnswersInChoices(choices, answers) {
       const nonAnswerIdx = newChoices.findIndex(
         (c) =>
           !validAnswers.some((a) => norm(a) === norm(c)) &&
-          !answers.some((a) => norm(a) === norm(c))
+          !answers.some((a) => norm(a) === norm(c)),
       );
       if (nonAnswerIdx !== -1) {
         newChoices[nonAnswerIdx] = String(ans);
@@ -917,7 +917,7 @@ export default function GrammarBook({
 
   const quizStorageKey = useMemo(
     () => (lesson?.id ? `quiz-progress:${lesson.id}` : null),
-    [lesson?.id]
+    [lesson?.id],
   );
 
   useEffect(() => {
@@ -1045,7 +1045,7 @@ export default function GrammarBook({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
-    }[code] || code);
+    })[code] || code;
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
@@ -1079,7 +1079,8 @@ export default function GrammarBook({
 
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");
-  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
+  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
+    useState(false);
 
   function showCopyToast() {
     toast({
@@ -1101,7 +1102,7 @@ export default function GrammarBook({
       lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
     if (tr?.trim())
       lines.push(
-        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim()
+        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim(),
       );
     return lines.join("\n");
   }
@@ -1132,7 +1133,8 @@ export default function GrammarBook({
 
   // Inline assistant support - streams response directly in the UI
   async function handleAskAssistant(questionContext) {
-    if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
+    if (!questionContext || isLoadingAssistantSupport || assistantSupportText)
+      return;
 
     playSound(submitSound);
     setIsLoadingAssistantSupport(true);
@@ -1144,8 +1146,8 @@ export default function GrammarBook({
         level === "beginner"
           ? "Use short, simple sentences."
           : level === "intermediate"
-          ? "Be concise and natural."
-          : "Be succinct and native-like.";
+            ? "Be concise and natural."
+            : "Be succinct and native-like.";
 
       const instruction = [
         "You are a helpful language study buddy for quick questions.",
@@ -1191,7 +1193,7 @@ export default function GrammarBook({
           response ||
             (userLanguage === "es"
               ? "No se pudo generar una respuesta en este momento."
-              : "Could not generate a response at this time.")
+              : "Could not generate a response at this time."),
         );
       }
     } catch (error) {
@@ -1199,7 +1201,7 @@ export default function GrammarBook({
       setAssistantSupportText(
         userLanguage === "es"
           ? "No se pudo generar una respuesta en este momento."
-          : "Could not generate a response at this time."
+          : "Could not generate a response at this time.",
       );
     } finally {
       setIsLoadingAssistantSupport(false);
@@ -1439,7 +1441,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           explanation ||
             (userLanguage === "es"
               ? "No se pudo generar una explicación en este momento."
-              : "Could not generate an explanation at this time.")
+              : "Could not generate an explanation at this time."),
         );
       }
     } catch (error) {
@@ -1447,7 +1449,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       setExplanationText(
         userLanguage === "es"
           ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time."
+          : "Could not generate an explanation at this time.",
       );
     } finally {
       setIsLoadingExplanation(false);
@@ -1711,14 +1713,14 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       const order = repeatOnlyQuestions
         ? [generateRepeatTranslate]
         : [
-              generateFill,
-              generateMC,
-              generateMA,
-              generateSpeak,
-              generateMatch,
-              generateTranslate,
-              generateRepeatTranslate,
-            ];
+            generateFill,
+            generateMC,
+            generateMA,
+            generateSpeak,
+            generateMatch,
+            generateTranslate,
+            generateRepeatTranslate,
+          ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
@@ -1792,7 +1794,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const useDrag = shouldUseDragVariant(
       mcQ,
       mcChoices,
-      [mcAnswer].filter(Boolean)
+      [mcAnswer].filter(Boolean),
     );
     setMcLayout(useDrag ? "drag" : "buttons");
     setMcSlotIndex(null);
@@ -1872,7 +1874,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         setMcPick("");
       }
     },
-    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
+    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices],
   );
 
   const handleMaDragEnd = useCallback(
@@ -1943,7 +1945,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         });
       }
     },
-    [maLayout, maBankOrder, maSlots]
+    [maLayout, maBankOrder, maSlots],
   );
 
   // Auto-drag handlers for click-to-place functionality
@@ -1964,7 +1966,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       setMcSlotIndex(choiceIdx);
       setMcPick(mcChoices[choiceIdx] || "");
     },
-    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
+    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices],
   );
 
   const handleMaAnswerClick = useCallback(
@@ -1991,7 +1993,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return next;
       });
     },
-    [maLayout, maBankOrder, maSlots]
+    [maLayout, maBankOrder, maSlots],
   );
 
   useEffect(() => {
@@ -2099,7 +2101,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
                   setTranslation(obj.translation);
                 gotSomething = true;
               }
-            })
+            }),
           );
       }
 
@@ -2108,12 +2110,12 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       // Fallback (unchanged)
       const fallbackPrompt = `
 Write ONE short ${LANG_NAME(
-        targetLang
+        targetLang,
       )} grammar question with a single blank "___".
 - No meta like "(to go)" in the question.
 - ≤ 120 chars.
 Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
-        resolveSupportLang(supportLang, userLanguage)
+        resolveSupportLang(supportLang, userLanguage),
       )} (≤ 8 words)> ||| <${
         showTranslations
           ? LANG_NAME(resolveSupportLang(supportLang, userLanguage))
@@ -2134,7 +2136,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           setTranslation(
             showTranslations && supportCode === "en"
               ? "She ___ to work every day."
-              : ""
+              : "",
           );
         } else {
           setQuestion("Fill in the blank: She ___ to work every day.");
@@ -2142,7 +2144,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           setTranslation(
             showTranslations && supportCode === "es"
               ? "Ella ___ al trabajo cada día."
-              : ""
+              : "",
           );
         }
       }
@@ -2221,7 +2223,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               if (pendingAnswer) {
                 const { choices, answer } = ensureAnswerInChoices(
                   rawChoices,
-                  pendingAnswer
+                  pendingAnswer,
                 );
                 setMcChoices(choices);
                 setMcAnswer(answer);
@@ -2238,7 +2240,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                 if (Array.isArray(mcChoices) && mcChoices.length) {
                   const { choices, answer } = ensureAnswerInChoices(
                     mcChoices,
-                    pendingAnswer
+                    pendingAnswer,
                   );
                   setMcChoices(choices);
                   setMcAnswer(answer);
@@ -2280,7 +2282,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                 if (pendingAnswer) {
                   const { choices, answer } = ensureAnswerInChoices(
                     rawChoices,
-                    pendingAnswer
+                    pendingAnswer,
                   );
                   setMcChoices(choices);
                   setMcAnswer(answer);
@@ -2297,7 +2299,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                   if (Array.isArray(mcChoices) && mcChoices.length) {
                     const { choices, answer } = ensureAnswerInChoices(
                       mcChoices,
-                      pendingAnswer
+                      pendingAnswer,
                     );
                     setMcChoices(choices);
                     setMcAnswer(answer);
@@ -2305,14 +2307,14 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                 }
                 got = true;
               }
-            })
+            }),
           );
       }
 
       if (tempChoices.length && pendingAnswer) {
         const { choices, answer } = ensureAnswerInChoices(
           tempChoices,
-          pendingAnswer
+          pendingAnswer,
         );
         setMcChoices(choices);
         setMcAnswer(answer);
@@ -2327,16 +2329,16 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
       // Fallback (non-stream)
       const fallback = `
 Create ONE multiple-choice ${LANG_NAME(
-        targetLang
+        targetLang,
       )} grammar question. Return JSON ONLY:
 {
   "question": "<stem>",
   "hint": "<hint in ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )}>",
   "choices": ["<choice1>","<choice2>","<choice3>","<choice4>"],
   "notes": "Replace <choiceN> with real ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )} options.",
   "answer": "<exact correct choice>",
   "translation": "${showTranslations ? "<translation>" : ""}"
@@ -2355,7 +2357,7 @@ Create ONE multiple-choice ${LANG_NAME(
         // Ensure the correct answer is always in choices
         const { choices, answer } = ensureAnswerInChoices(
           rawChoices,
-          parsed.answer
+          parsed.answer,
         );
         setMcQ(String(parsed.question));
         setMcHint(String(parsed.hint || ""));
@@ -2371,7 +2373,7 @@ Create ONE multiple-choice ${LANG_NAME(
         setMcTranslation(
           showTranslations && supportCode === "es"
             ? "Elige la forma correcta del pasado de 'go'."
-            : ""
+            : "",
         );
       }
     } finally {
@@ -2548,7 +2550,7 @@ Create ONE multiple-choice ${LANG_NAME(
                 }
                 got = true;
               }
-            })
+            }),
           );
       }
 
@@ -2556,7 +2558,7 @@ Create ONE multiple-choice ${LANG_NAME(
       if (tempChoices.length > 0 && tempAnswers.length >= 2) {
         const { choices, answers } = ensureAnswersInChoices(
           tempChoices,
-          tempAnswers
+          tempAnswers,
         );
         setMaChoices(choices);
         setMaAnswers(answers);
@@ -2577,12 +2579,12 @@ Create ONE multiple-choice ${LANG_NAME(
       // Fallback (non-stream)
       const fallback = `
 Create ONE multiple-answer ${LANG_NAME(
-        targetLang
+        targetLang,
       )} grammar question. Return JSON ONLY:
 {
   "question":"<stem>",
   "hint":"<hint in ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )}>",
   "choices":["...","...","...","...","..."],
   "answers":["<correct>","<correct>"],
@@ -2617,7 +2619,7 @@ Create ONE multiple-answer ${LANG_NAME(
         setMaTranslation(
           showTranslations && supportCode === "es"
             ? "Selecciona todas las oraciones en presente perfecto."
-            : ""
+            : "",
         );
       }
     } finally {
@@ -2688,20 +2690,20 @@ Create ONE multiple-answer ${LANG_NAME(
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(
-          targetLang
+          targetLang,
         )} sentence for pronunciation practice. Return JSON ONLY:
 {
   "target":"<${LANG_NAME(targetLang)} sentence with a grammar focus>",
   "prompt":"<${LANG_NAME(
-    targetLang
+    targetLang,
   )} instruction telling the learner to say it aloud>",
   "hint":"<${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )} grammar hint>",
   "translation":"${
     showTranslations
       ? `<${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )} translation>`
       : ""
   }"
@@ -2722,7 +2724,7 @@ Create ONE ${LANG_NAME(
           setSTranslation(
             supportCode === "en"
               ? "If I had studied more, I would have passed."
-              : "Si hubiera estudiado más, habría aprobado."
+              : "Si hubiera estudiado más, habría aprobado.",
           );
         } else if (targetLang === "nah") {
           setSTarget("Tlakatl kuali tlahtoa nechca teopan.");
@@ -2731,7 +2733,7 @@ Create ONE ${LANG_NAME(
           setSTranslation(
             supportCode === "en"
               ? "The person speaks well near the temple."
-              : "La persona habla bien cerca del templo."
+              : "La persona habla bien cerca del templo.",
           );
         } else {
           setSTarget("Were she to ask, I would help.");
@@ -2739,12 +2741,12 @@ Create ONE ${LANG_NAME(
           setSHint(
             supportCode === "es"
               ? "condicional invertido"
-              : "inverted conditional"
+              : "inverted conditional",
           );
           setSTranslation(
             supportCode === "es"
               ? "Si ella lo pidiera, ayudaría."
-              : "Were she to ask, I would help."
+              : "Were she to ask, I would help.",
           );
         }
       }
@@ -2820,7 +2822,7 @@ Create ONE ${LANG_NAME(
               setMSlots(Array(left.length).fill(null));
               setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
               setMAnswerMap(
-                map.length === left.length ? map : [...left.keys()]
+                map.length === left.length ? map : [...left.keys()],
               );
               okPayload = true;
             }
@@ -2863,11 +2865,11 @@ Create ONE ${LANG_NAME(
                 setMSlots(Array(left.length).fill(null));
                 setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
                 setMAnswerMap(
-                  map.length === left.length ? map : [...left.keys()]
+                  map.length === left.length ? map : [...left.keys()],
                 );
                 okPayload = true;
               }
-            })
+            }),
           );
       }
 
@@ -2878,11 +2880,11 @@ Create ONE ${LANG_NAME(
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(
-          targetLang
+          targetLang,
         )} GRAMMAR matching exercise (single grammar family, 3–6 rows).
 Return JSON ONLY:
 {"stem":"<stem>","left":["..."],"right":["..."],"map":[0,2,1],"hint":"<hint in ${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )}>"}
 `.trim(),
       });
@@ -2954,8 +2956,8 @@ Return JSON ONLY:
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
-        ? "target-tts-support-bank"
-        : "support-tts-target-bank"
+          ? "target-tts-support-bank"
+          : "support-tts-target-bank"
       : null;
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
@@ -2966,11 +2968,11 @@ Return JSON ONLY:
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
-        ? "target-to-support"
-        : "support-to-target"
+          ? "target-to-support"
+          : "support-to-target"
       : Math.random() < 0.5
-      ? "target-to-support"
-      : "support-to-target";
+        ? "target-to-support"
+        : "support-to-target";
 
     setQuestionTTsLang(
       repeatVariant
@@ -2978,8 +2980,8 @@ Return JSON ONLY:
           ? targetLang
           : supportCode
         : direction === "target-to-support"
-        ? targetLang
-        : supportCode
+          ? targetLang
+          : supportCode,
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -3097,7 +3099,7 @@ Return JSON ONLY:
               ) {
                 setTHint(String(obj.hint).trim());
               }
-            })
+            }),
           );
       }
 
@@ -3134,7 +3136,7 @@ Return JSON ONLY:
           setTCorrectWords(["We", "go", "to", "school"]);
           setTDistractors(["house", "the", "tomorrow"]);
           setTWordBank(
-            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
+            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]),
           );
           setTHint("Present tense of 'ir' (to go)");
         } else {
@@ -3143,7 +3145,7 @@ Return JSON ONLY:
           setTCorrectWords(["Vamos", "a", "la", "escuela"]);
           setTDistractors(["casa", "el", "mañana"]);
           setTWordBank(
-            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
+            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]),
           );
           setTHint("Present tense of 'ir' (to go)");
         }
@@ -3154,7 +3156,7 @@ Return JSON ONLY:
           setTCorrectWords(["Vamos", "a", "la", "escuela"]);
           setTDistractors(["casa", "el", "mañana"]);
           setTWordBank(
-            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
+            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]),
           );
           setTHint("Presente del verbo 'ir'");
         } else {
@@ -3163,7 +3165,7 @@ Return JSON ONLY:
           setTCorrectWords(["We", "go", "to", "school"]);
           setTDistractors(["house", "the", "tomorrow"]);
           setTWordBank(
-            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
+            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]),
           );
           setTHint("Presente del verbo 'ir'");
         }
@@ -3680,7 +3682,7 @@ Return JSON ONLY:
       targetName,
       toast,
       userLanguage,
-    ]
+    ],
   );
 
   const {
@@ -3798,7 +3800,15 @@ Return JSON ONLY:
       mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
-  }, [mHint, mLeft, mRight, mStem, isLoadingAssistantSupport, assistantSupportText, userLanguage]);
+  }, [
+    mHint,
+    mLeft,
+    mRight,
+    mStem,
+    isLoadingAssistantSupport,
+    assistantSupportText,
+    userLanguage,
+  ]);
 
   const showTRFill =
     showTranslations &&
@@ -3824,7 +3834,13 @@ Return JSON ONLY:
     return (
       <IconButton
         aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
-        icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+        icon={
+          isLoadingAssistantSupport ? (
+            <Spinner size="xs" />
+          ) : (
+            <MdOutlineSupportAgent />
+          )
+        }
         size="sm"
         fontSize="lg"
         rounded="xl"
@@ -4022,7 +4038,7 @@ Return JSON ONLY:
         setIsQuestionPlaying(false);
       }
     },
-    [isQuestionPlaying, targetLang, toast, userLanguage]
+    [isQuestionPlaying, targetLang, toast, userLanguage],
   );
 
   // Handler for playing TTS on individual match words
@@ -4075,7 +4091,7 @@ Return JSON ONLY:
         setMatchWordSynthesizing(null);
       }
     },
-    [matchWordSynthesizing, targetLang]
+    [matchWordSynthesizing, targetLang],
   );
 
   const renderMcPrompt = () => {
@@ -4090,12 +4106,12 @@ Return JSON ONLY:
       nodes.push(
         <React.Fragment key={`grammar-mc-segment-${idx}`}>
           {segment}
-        </React.Fragment>
+        </React.Fragment>,
       );
       if (idx < segments.length - 1) {
         if (blankPlaced) {
           nodes.push(
-            <React.Fragment key={`grammar-mc-gap-${idx}`}>___</React.Fragment>
+            <React.Fragment key={`grammar-mc-gap-${idx}`}>___</React.Fragment>,
           );
           return;
         }
@@ -4175,7 +4191,7 @@ Return JSON ONLY:
                 </Box>
               </Box>
             )}
-          </Droppable>
+          </Droppable>,
         );
       }
     });
@@ -4194,14 +4210,14 @@ Return JSON ONLY:
       nodes.push(
         <React.Fragment key={`grammar-ma-segment-${idx}`}>
           {segment}
-        </React.Fragment>
+        </React.Fragment>,
       );
       if (idx < segments.length - 1) {
         const currentSlot = slotNumber;
         slotNumber += 1;
         if (currentSlot >= maSlots.length) {
           nodes.push(
-            <React.Fragment key={`grammar-ma-gap-${idx}`}>___</React.Fragment>
+            <React.Fragment key={`grammar-ma-gap-${idx}`}>___</React.Fragment>,
           );
           return;
         }
@@ -4281,7 +4297,7 @@ Return JSON ONLY:
                 </Box>
               </Box>
             )}
-          </Droppable>
+          </Droppable>,
         );
       }
     });
@@ -4329,8 +4345,8 @@ Return JSON ONLY:
                             !hasAnswer
                               ? "gray.700"
                               : isCorrect
-                              ? "blue.400"
-                              : "red.400"
+                                ? "blue.400"
+                                : "red.400"
                           }
                           borderRadius="sm"
                           position="relative"
@@ -4370,7 +4386,7 @@ Return JSON ONLY:
                           }
                         />
                       );
-                    }
+                    },
                   )}
                 </HStack>
 
@@ -4479,8 +4495,8 @@ Return JSON ONLY:
                       ? "Cerrar teclado"
                       : "Close keyboard"
                     : userLanguage === "es"
-                    ? "Abrir teclado"
-                    : "Open keyboard"}
+                      ? "Abrir teclado"
+                      : "Open keyboard"}
                 </Button>
               )}
               {canSkip && (
@@ -4679,8 +4695,8 @@ Return JSON ONLY:
                   {(mcChoices.length
                     ? mcChoices
                     : loadingMCQ
-                    ? ["…", "…", "…", "…"]
-                    : []
+                      ? ["…", "…", "…", "…"]
+                      : []
                   ).map((c, i) => (
                     <Box
                       key={i}
@@ -4957,8 +4973,8 @@ Return JSON ONLY:
                   {(maChoices.length
                     ? maChoices
                     : loadingMAQ
-                    ? ["…", "…", "…", "…", "…"]
-                    : []
+                      ? ["…", "…", "…", "…", "…"]
+                      : []
                   ).map((c, i) => {
                     const isSelected = maPicks.includes(c);
                     return (
@@ -5328,7 +5344,13 @@ Return JSON ONLY:
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                  icon={
+                    isLoadingAssistantSupport ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <MdOutlineSupportAgent />
+                    )
+                  }
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -5336,143 +5358,161 @@ Return JSON ONLY:
                   color="blue"
                   boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
-                  isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+                  isDisabled={
+                    isLoadingAssistantSupport || !!assistantSupportText
+                  }
                 />
               </HStack>
 
               <DragDropContext onDragEnd={onDragEnd}>
                 <VStack align="stretch" spacing={3}>
-                  {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
-                    (lhs, i) => (
+                  {(mLeft.length
+                    ? mLeft
+                    : loadingMG
+                      ? ["…", "…", "…"]
+                      : []
+                  ).map((lhs, i) => (
+                    <HStack
+                      key={i}
+                      align="center"
+                      spacing={3}
+                      bg="rgba(255,255,255,0.025)"
+                      rounded="xl"
+                      px={3}
+                      py={2}
+                      border="1px solid rgba(255,255,255,0.05)"
+                    >
+                      {/* Left word */}
                       <HStack
-                        key={i}
-                        align="center"
-                        spacing={3}
-                        bg="rgba(255,255,255,0.025)"
-                        rounded="xl"
-                        px={3}
-                        py={2}
-                        border="1px solid rgba(255,255,255,0.05)"
+                        minW={{ base: "120px", md: "180px" }}
+                        spacing={1}
+                        flexShrink={0}
                       >
-                        {/* Left word */}
-                        <HStack minW={{ base: "120px", md: "180px" }} spacing={1} flexShrink={0}>
-                          <IconButton
-                            aria-label={
-                              userLanguage === "es"
-                                ? "Escuchar palabra"
-                                : "Listen to word"
+                        <IconButton
+                          aria-label={
+                            userLanguage === "es"
+                              ? "Escuchar palabra"
+                              : "Listen to word"
+                          }
+                          icon={renderSpeakerIcon(matchWordSynthesizing === i)}
+                          size="xs"
+                          fontSize="md"
+                          variant="ghost"
+                          color="cyan.300"
+                          onClick={() => handlePlayMatchWordTTS(lhs, i)}
+                          isDisabled={!lhs || lhs === "…"}
+                        />
+                        <Text fontWeight="semibold" color="white">
+                          {lhs}
+                        </Text>
+                      </HStack>
+
+                      {/* Arrow */}
+                      <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>
+                        →
+                      </Text>
+
+                      {/* Drop slot */}
+                      <Droppable
+                        droppableId={`slot-${i}`}
+                        direction="horizontal"
+                      >
+                        {(provided) => (
+                          <HStack
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            minH="42px"
+                            px={3}
+                            border={
+                              mSlots[i] !== null && mRight[mSlots[i]] != null
+                                ? "1px solid rgba(128,90,213,0.4)"
+                                : "1px dashed rgba(255,255,255,0.15)"
                             }
-                            icon={renderSpeakerIcon(matchWordSynthesizing === i)}
-                            size="xs"
-                            fontSize="md"
-                            variant="ghost"
-                            color="cyan.300"
-                            onClick={() => handlePlayMatchWordTTS(lhs, i)}
-                            isDisabled={!lhs || lhs === "…"}
-                          />
-                          <Text fontWeight="semibold" color="white">{lhs}</Text>
-                        </HStack>
-
-                        {/* Arrow */}
-                        <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>→</Text>
-
-                        {/* Drop slot */}
-                        <Droppable
-                          droppableId={`slot-${i}`}
-                          direction="horizontal"
-                        >
-                          {(provided) => (
-                            <HStack
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              minH="42px"
-                              px={3}
-                              border={
-                                mSlots[i] !== null && mRight[mSlots[i]] != null
-                                  ? "1px solid rgba(128,90,213,0.4)"
-                                  : "1px dashed rgba(255,255,255,0.15)"
-                              }
-                              bg={
-                                mSlots[i] !== null && mRight[mSlots[i]] != null
-                                  ? "rgba(128,90,213,0.1)"
-                                  : "rgba(255,255,255,0.02)"
-                              }
-                              rounded="lg"
-                              w="100%"
-                              transition="all 0.2s ease"
-                            >
-                              {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
-                                <Draggable
-                                  draggableId={`r-${mSlots[i]}`}
-                                  index={0}
-                                >
-                                  {(dragProvided) => (
-                                    <Box
-                                      ref={dragProvided.innerRef}
-                                      {...dragProvided.draggableProps}
-                                      {...dragProvided.dragHandleProps}
-                                      onClick={() => {
+                            bg={
+                              mSlots[i] !== null && mRight[mSlots[i]] != null
+                                ? "rgba(128,90,213,0.1)"
+                                : "rgba(255,255,255,0.02)"
+                            }
+                            rounded="lg"
+                            w="100%"
+                            transition="all 0.2s ease"
+                          >
+                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                              <Draggable
+                                draggableId={`r-${mSlots[i]}`}
+                                index={0}
+                              >
+                                {(dragProvided) => (
+                                  <Box
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    onClick={() => {
+                                      playSound(selectSound);
+                                      handleMatchAutoMove(
+                                        mSlots[i],
+                                        `slot-${i}`,
+                                      );
+                                    }}
+                                    onKeyDown={(event) => {
+                                      if (
+                                        event.key === "Enter" ||
+                                        event.key === " "
+                                      ) {
+                                        event.preventDefault();
                                         playSound(selectSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
-                                          `slot-${i}`
+                                          `slot-${i}`,
                                         );
-                                      }}
-                                      onKeyDown={(event) => {
-                                        if (
-                                          event.key === "Enter" ||
-                                          event.key === " "
-                                        ) {
-                                          event.preventDefault();
-                                          playSound(selectSound);
-                                          handleMatchAutoMove(
-                                            mSlots[i],
-                                            `slot-${i}`
-                                          );
-                                        }
-                                      }}
-                                      role="button"
-                                      tabIndex={0}
-                                      style={{
-                                        cursor: "pointer",
-                                        transition:
-                                          "transform 0.18s ease, box-shadow 0.18s ease",
-                                        ...(dragProvided.draggableProps.style ||
-                                          {}),
-                                      }}
-                                      _hover={{
-                                        transform: "translateY(-2px)",
-                                        boxShadow: "0 4px 12px rgba(128,90,213,0.3)",
-                                      }}
-                                      _focusVisible={{
-                                        boxShadow:
-                                          "0 0 0 2px rgba(128,90,213,0.5)",
-                                        transform: "translateY(-2px)",
-                                      }}
-                                      px={3}
-                                      py={1.5}
-                                      rounded="lg"
-                                      bg="rgba(128,90,213,0.15)"
-                                      border="1px solid rgba(128,90,213,0.35)"
-                                      color="white"
-                                      fontSize="sm"
-                                    >
-                                      {mRight[mSlots[i]]}
-                                    </Box>
-                                  )}
-                                </Draggable>
-                              ) : (
-                                <Text opacity={0.4} fontSize="sm" fontStyle="italic">
-                                  {t("grammar_dnd_drop_here")}
-                                </Text>
-                              )}
-                              {provided.placeholder}
-                            </HStack>
-                          )}
-                        </Droppable>
-                      </HStack>
-                    )
-                  )}
+                                      }
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    style={{
+                                      cursor: "pointer",
+                                      transition:
+                                        "transform 0.18s ease, box-shadow 0.18s ease",
+                                      ...(dragProvided.draggableProps.style ||
+                                        {}),
+                                    }}
+                                    _hover={{
+                                      transform: "translateY(-2px)",
+                                      boxShadow:
+                                        "0 4px 12px rgba(128,90,213,0.3)",
+                                    }}
+                                    _focusVisible={{
+                                      boxShadow:
+                                        "0 0 0 2px rgba(128,90,213,0.5)",
+                                      transform: "translateY(-2px)",
+                                    }}
+                                    px={3}
+                                    py={1.5}
+                                    rounded="lg"
+                                    bg="rgba(128,90,213,0.15)"
+                                    border="1px solid rgba(128,90,213,0.35)"
+                                    color="white"
+                                    fontSize="sm"
+                                  >
+                                    {mRight[mSlots[i]]}
+                                  </Box>
+                                )}
+                              </Draggable>
+                            ) : (
+                              <Text
+                                opacity={0.4}
+                                fontSize="sm"
+                                fontStyle="italic"
+                              >
+                                {t("grammar_dnd_drop_here")}
+                              </Text>
+                            )}
+                            {provided.placeholder}
+                          </HStack>
+                        )}
+                      </Droppable>
+                    </HStack>
+                  ))}
                 </VStack>
 
                 {/* Bank */}
@@ -5506,75 +5546,79 @@ Return JSON ONLY:
                         rounded="lg"
                         bg="rgba(255,255,255,0.015)"
                       >
-                        {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
-                          (ri, index) =>
-                            mRight[ri] != null ? (
-                              <Draggable
-                                key={`r-${ri}`}
-                                draggableId={`r-${ri}`}
-                                index={index}
-                              >
-                                {(dragProvided) => (
-                                  <Box
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                    onClick={() => {
+                        {(mBank.length
+                          ? mBank
+                          : loadingMG
+                            ? [0, 1, 2]
+                            : []
+                        ).map((ri, index) =>
+                          mRight[ri] != null ? (
+                            <Draggable
+                              key={`r-${ri}`}
+                              draggableId={`r-${ri}`}
+                              index={index}
+                            >
+                              {(dragProvided) => (
+                                <Box
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    handleMatchAutoMove(ri, "bank");
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (
+                                      event.key === "Enter" ||
+                                      event.key === " "
+                                    ) {
+                                      event.preventDefault();
                                       playSound(selectSound);
                                       handleMatchAutoMove(ri, "bank");
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (
-                                        event.key === "Enter" ||
-                                        event.key === " "
-                                      ) {
-                                        event.preventDefault();
-                                        playSound(selectSound);
-                                        handleMatchAutoMove(ri, "bank");
-                                      }
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    style={{
-                                      cursor: "pointer",
-                                      transition:
-                                        "transform 0.18s ease, box-shadow 0.18s ease",
-                                      ...(dragProvided.draggableProps.style ||
-                                        {}),
-                                    }}
-                                    _hover={{
-                                      transform: "translateY(-2px)",
-                                      boxShadow: "0 4px 12px rgba(128,90,213,0.25)",
-                                    }}
-                                    _focusVisible={{
-                                      boxShadow:
-                                        "0 0 0 2px rgba(128,90,213,0.5)",
-                                      transform: "translateY(-2px)",
-                                    }}
-                                    px={3}
-                                    py={1.5}
-                                    rounded="lg"
-                                    bg="rgba(128,90,213,0.12)"
-                                    border="1px solid rgba(128,90,213,0.3)"
-                                    color="white"
-                                    fontSize="sm"
-                                  >
-                                    {mRight[ri]}
-                                  </Box>
-                                )}
-                              </Draggable>
-                            ) : (
-                              <Box
-                                key={`placeholder-${index}`}
-                                px={3}
-                                py={1.5}
-                                rounded="lg"
-                                border="1px dashed rgba(255,255,255,0.12)"
-                                opacity={0.4}
-                              >
-                                …
-                              </Box>
-                            )
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                  style={{
+                                    cursor: "pointer",
+                                    transition:
+                                      "transform 0.18s ease, box-shadow 0.18s ease",
+                                    ...(dragProvided.draggableProps.style ||
+                                      {}),
+                                  }}
+                                  _hover={{
+                                    transform: "translateY(-2px)",
+                                    boxShadow:
+                                      "0 4px 12px rgba(128,90,213,0.25)",
+                                  }}
+                                  _focusVisible={{
+                                    boxShadow: "0 0 0 2px rgba(128,90,213,0.5)",
+                                    transform: "translateY(-2px)",
+                                  }}
+                                  px={3}
+                                  py={1.5}
+                                  rounded="lg"
+                                  bg="rgba(128,90,213,0.12)"
+                                  border="1px solid rgba(128,90,213,0.3)"
+                                  color="white"
+                                  fontSize="sm"
+                                >
+                                  {mRight[ri]}
+                                </Box>
+                              )}
+                            </Draggable>
+                          ) : (
+                            <Box
+                              key={`placeholder-${index}`}
+                              px={3}
+                              py={1.5}
+                              rounded="lg"
+                              border="1px dashed rgba(255,255,255,0.12)"
+                              opacity={0.4}
+                            >
+                              …
+                            </Box>
+                          ),
                         )}
                         {provided.placeholder}
                       </HStack>
