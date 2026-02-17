@@ -49,6 +49,7 @@ import {
   russianFlag,
   usaFlag,
 } from "./flagsIcons/flags";
+import RandomCharacter from "./RandomCharacter";
 
 const BASE_PATH = "/onboarding";
 
@@ -312,20 +313,20 @@ export default function Onboarding({
             },
           }}
         >
-          <DrawerHeader pb={4}>
+          <DrawerBody pb={6}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={1}>
-                <Text fontWeight="bold" fontSize="lg">
-                  {ui.onboarding_title}
-                </Text>
+                <HStack display="flex" alignItems={"center"}>
+                  <RandomCharacter notSoRandomCharacter={"24"} />
+                  <Text fontWeight="bold" fontSize="lg">
+                    {ui.onboarding_title}
+                  </Text>
+                </HStack>
                 <Text opacity={0.85} fontSize="sm">
                   {ui.onboarding_subtitle}
                 </Text>
               </VStack>
             </Box>
-          </DrawerHeader>
-
-          <DrawerBody pb={6}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={4}>
                 {/* Support Language */}

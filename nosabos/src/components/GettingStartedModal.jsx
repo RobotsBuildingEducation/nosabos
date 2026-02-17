@@ -13,6 +13,7 @@ import { LuBookOpen } from "react-icons/lu";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import RandomCharacter from "./RandomCharacter";
 
 export default function GettingStartedModal({
   isOpen,
@@ -55,19 +56,9 @@ export default function GettingStartedModal({
         maxW={{ base: "90%", sm: "md" }}
       >
         {/* Header gradient */}
-        <Box
-          bgGradient="linear(to-r, #6366F1, #8B5CF6)"
-          px={6}
-          py={6}
-        >
+        <Box bgGradient="linear(to-r, #6366F1, #8B5CF6)" px={6} py={6}>
           <VStack spacing={3} align="center">
-            <Box
-              bg="whiteAlpha.200"
-              p={3}
-              rounded="full"
-            >
-              <Box as={LuBookOpen} fontSize="32px" color="white" />
-            </Box>
+            <RandomCharacter notSoRandomCharacter={"39"} width="75px" />
             <Text
               fontWeight="bold"
               fontSize="xl"
@@ -75,8 +66,8 @@ export default function GettingStartedModal({
               color="white"
             >
               {isEs
-                ? "Comienza con un recorrido rápido"
-                : "Start with a quick tour"}
+                ? "Empieza con una lección tutorial"
+                : "Start with a tutorial lesson"}
             </Text>
           </VStack>
         </Box>
@@ -94,17 +85,13 @@ export default function GettingStartedModal({
                 : "We'll walk you through each learning module — vocabulary, grammar, reading, stories, and conversation — so you know how everything works."}
             </Text>
 
-            <Text
-              fontSize="sm"
-              opacity={0.7}
-              textAlign="center"
-            >
+            <Text fontSize="sm" opacity={0.7} textAlign="center">
               {isEs
                 ? "Solo toma un momento y ganarás tu primer XP."
                 : "It only takes a moment and you'll earn your first XP."}
             </Text>
 
-            <VStack spacing={3} pt={2}>
+            <VStack spacing={4} pt={2}>
               <Button
                 w="100%"
                 size="lg"
@@ -120,11 +107,12 @@ export default function GettingStartedModal({
               <Button
                 w="100%"
                 size="md"
-                variant="ghost"
+                variant="outline"
                 color="gray.400"
                 _hover={{ color: "gray.200", bg: "whiteAlpha.100" }}
                 onClick={handleSkip}
                 rounded="xl"
+                py={6}
               >
                 {isEs ? "Saltar por ahora" : "Skip for now"}
               </Button>

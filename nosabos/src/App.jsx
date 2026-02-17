@@ -1039,12 +1039,7 @@ function TopBar({
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"
-          maxH="100vh"
-          sx={{
-            "@supports (height: 100dvh)": {
-              maxHeight: "100dvh",
-            },
-          }}
+          maxH="75vh"
         >
           <DrawerCloseButton
             color="gray.400"
@@ -1242,7 +1237,7 @@ function TopBar({
                   >
                     {appLanguage === "es"
                       ? "Iniciar prueba de nivel"
-                      : "Start proficiency check"}
+                      : "Start proficiency test"}
                   </Button>
                 )}
 
@@ -2067,7 +2062,9 @@ export default function App() {
     setIsLoadingApp(true);
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
-      const storedDisplayName = (localStorage.getItem("displayName") || "").trim();
+      const storedDisplayName = (
+        localStorage.getItem("displayName") || ""
+      ).trim();
       console.log("[CONNECT_DID] Read local_npub from localStorage:", id);
       console.log(
         "[CONNECT_DID] Read local_nsec from localStorage:",

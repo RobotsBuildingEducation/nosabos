@@ -14,6 +14,7 @@ import { LuBadgeCheck } from "react-icons/lu";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import RandomCharacter from "./RandomCharacter";
 
 export default function ProficiencyTestModal({
   isOpen,
@@ -56,19 +57,11 @@ export default function ProficiencyTestModal({
         maxW={{ base: "90%", sm: "md" }}
       >
         {/* Header gradient */}
-        <Box
-          bgGradient="linear(to-r, purple.600, cyan.500)"
-          px={6}
-          py={6}
-        >
-          <VStack spacing={3} align="center">
-            <Box
-              bg="whiteAlpha.200"
-              p={3}
-              rounded="full"
-            >
-              <Box as={LuBadgeCheck} fontSize="32px" color="white" />
-            </Box>
+        <Box bgGradient="linear(to-r, cyan.400, cyan.500)" px={6} py={6}>
+          <VStack spacing={3} mt={"-14"}>
+            <RandomCharacter notSoRandomCharacter={"9"} width="100px" />
+            {/* <Box as={LuBadgeCheck} fontSize="32px" color="white" /> */}
+
             <Text
               fontWeight="bold"
               fontSize="xl"
@@ -95,17 +88,13 @@ export default function ProficiencyTestModal({
                 : "We can have a quick conversation to figure out your level and place you in the right spot."}
             </Text>
 
-            <Text
-              fontSize="sm"
-              opacity={0.7}
-              textAlign="center"
-            >
+            <Text fontSize="sm" opacity={0.7} textAlign="center">
               {isEs
-                ? "Una charla breve de 14 intercambios — evaluaremos tu pronunciación, gramática y confianza."
-                : "A short 14-exchange chat — we'll assess your pronunciation, grammar, and confidence."}
+                ? "Una charla breve de 10 intercambios — evaluaremos tu pronunciación, gramática y confianza."
+                : "A short 10-exchange chat — we'll assess your pronunciation, grammar, and confidence."}
             </Text>
 
-            <VStack spacing={3} pt={2}>
+            <VStack spacing={4} pt={2}>
               <Button
                 w="100%"
                 size="lg"
@@ -121,24 +110,22 @@ export default function ProficiencyTestModal({
               <Button
                 w="100%"
                 size="md"
-                variant="ghost"
+                variant="outline"
                 color="gray.400"
                 _hover={{ color: "gray.200", bg: "whiteAlpha.100" }}
                 onClick={handleSkip}
                 rounded="xl"
+                py={6}
+                borde
               >
                 {isEs ? "No gracias" : "No thanks"}
               </Button>
             </VStack>
 
-            <Text
-              fontSize="xs"
-              opacity={0.5}
-              textAlign="center"
-            >
+            <Text fontSize="xs" opacity={0.5} textAlign="center">
               {isEs
-                ? "\"No gracias\" te iniciará desde el nivel principiante."
-                : "\"No thanks\" will start you from the beginner level."}
+                ? '"No gracias" te iniciará desde el nivel principiante.'
+                : '"No thanks" will start you from the beginner level.'}
             </Text>
           </VStack>
         </ModalBody>
