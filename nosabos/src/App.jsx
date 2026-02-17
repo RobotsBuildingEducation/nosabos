@@ -2074,6 +2074,7 @@ export default function App() {
     setIsLoadingApp(true);
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
+      const storedDisplayName = (localStorage.getItem("displayName") || "").trim();
       console.log("[CONNECT_DID] Read local_npub from localStorage:", id);
       console.log(
         "[CONNECT_DID] Read local_nsec from localStorage:",
@@ -2096,6 +2097,7 @@ export default function App() {
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
+            profile: storedDisplayName ? { displayName: storedDisplayName } : {},
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -2114,9 +2116,18 @@ export default function App() {
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
+          profile: storedDisplayName ? { displayName: storedDisplayName } : {},
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
+      }
+
+      if (id && storedDisplayName && !userDoc?.profile?.displayName) {
+        await setDoc(
+          doc(database, "users", id),
+          { profile: { displayName: storedDisplayName } },
+          { merge: true },
+        );
       }
 
       setActiveNpub(id);
