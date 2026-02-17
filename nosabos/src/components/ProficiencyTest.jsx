@@ -1527,28 +1527,45 @@ Return ONLY valid JSON:
         {/* Timeline — newest first */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
           {isEvaluating && (
-            <Box
-              bg="gray.800"
-              border="1px solid"
-              borderColor="gray.700"
-              rounded="2xl"
-              p={4}
-            >
-              <HStack spacing={3} align="center">
-                <RobotBuddyPro state="thinking" mood="thinking" maxW={60} />
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="semibold">
-                    {isEs ? "Evaluando" : "Evaluating"}
-                  </Text>
-                  <Text fontSize="sm" opacity={0.75}>
+            <VStack spacing={0} py={6}>
+              {/* Robot — outside and above the card */}
+              <Box mb={-6} zIndex={1}>
+                <RobotBuddyPro
+                  state="thinking"
+                  mood="thinking"
+                  maxW={140}
+                />
+              </Box>
+
+              {/* Card with loading text */}
+              <Box
+                bg="linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,70,0.95) 50%, rgba(15,23,42,0.95) 100%)"
+                border="1px solid"
+                borderColor="whiteAlpha.200"
+                rounded="2xl"
+                pt={10}
+                pb={5}
+                px={6}
+                w="100%"
+                maxW="340px"
+                textAlign="center"
+                boxShadow="0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)"
+              >
+                <VStack spacing={3}>
+                  <HStack spacing={2} justify="center">
+                    <Spinner size="sm" color="cyan.300" speed="0.8s" />
+                    <Text fontWeight="bold" fontSize="lg" color="white">
+                      {isEs ? "Evaluando" : "Evaluating"}
+                    </Text>
+                  </HStack>
+                  <Text fontSize="sm" opacity={0.6} color="whiteAlpha.800">
                     {isEs
                       ? "Analizando tu conversación para determinar tu nivel..."
                       : "Analyzing your conversation to determine your level..."}
                   </Text>
                 </VStack>
-                <Spinner ml="auto" size="sm" color="cyan.300" />
-              </HStack>
-            </Box>
+              </Box>
+            </VStack>
           )}
           {timeline.map((m) => {
             const isUser = m.role === "user";
