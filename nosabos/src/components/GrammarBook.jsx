@@ -289,7 +289,7 @@ function buildFillStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word like "hello", "hola", "hi", or "buenos días". Keep everything at absolute beginner level. Example: "___ amigo!" where the answer is "Hola".`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
     ? [
         lessonContent.topic
@@ -307,6 +307,15 @@ function buildFillStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question and answer must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -314,6 +323,7 @@ function buildFillStreamPrompt({
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
     topicDirective,
     `- Hint in ${SUPPORT} (≤8 words).`,
+    languageGuard,
     wantTranslation
       ? `- Provide a ${SUPPORT} translation.`
       : `- Provide empty translation "".`,
@@ -430,7 +440,7 @@ function buildMCStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días". Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
     ? [
         lessonContent.topic
@@ -448,6 +458,15 @@ function buildMCStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answer must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -459,6 +478,7 @@ function buildMCStreamPrompt({
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
       : `- Empty translation "".`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",
@@ -523,7 +543,7 @@ function buildMAStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings like "hello", "hola", "hi", "buenos días", "good morning". Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings in ${TARGET}. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
     ? [
         lessonContent.topic
@@ -541,6 +561,15 @@ function buildMAStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answers must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} fill-in-the-blanks grammar question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -548,9 +577,10 @@ function buildMAStreamPrompt({
     `- The sentence MUST contain EXACTLY ${numBlanks} blanks written as "___" (three underscores).`,
     `- The sentence MUST be in ${TARGET} and make complete grammatical sense when all blanks are filled.`,
     `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
-    `- Example: "Mi ___ vive en una ___ grande" with answers ["hermano", "casa"] means blank 1 = hermano, blank 2 = casa.`,
+    `- Example format: "<${TARGET} sentence with ___ blanks>" with answers ["<word1>","<word2>"] means one answer per blank in order.`,
     `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
     `- CRITICAL: Each choice MUST be a single word. NEVER combine words with "/" or "or".`,
+    languageGuard,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- ${SUPPORT} translation of the complete sentence.`

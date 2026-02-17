@@ -332,7 +332,7 @@ function buildFillVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Use ONLY greetings. The word being tested MUST be a greeting like "hello", "hola", "hi", "good morning", "good afternoon", or "goodbye". The full sentence MUST be a greeting-only line (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Use ONLY greetings in ${TARGET}. The word being tested MUST be a basic greeting in ${TARGET}. The full sentence MUST be greeting-only (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
@@ -343,10 +343,20 @@ function buildFillVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
     `- ≤ 120 chars; natural context that cues the target word.`,
     topicDirective,
+    languageGuard,
     `- Hint in ${SUPPORT} (≤ 8 words), covering meaning/synonym/topic.`,
     wantTR
       ? `- ${SUPPORT} translation of the full sentence.`
@@ -391,7 +401,7 @@ function buildMCVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
@@ -402,6 +412,15 @@ function buildMCVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answer must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -411,6 +430,7 @@ function buildMCVocabStreamPrompt({
     `One of the distinct word choices must be correct.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",
@@ -450,7 +470,7 @@ function buildMAVocabStreamPrompt({
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye". Do NOT use any other nouns/topics.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
@@ -461,6 +481,15 @@ function buildMAVocabStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) question, choices, and answers must be ONLY in ${TARGET}.`,
+    `  2) hint must be ONLY in ${SUPPORT}.`,
+    `  3) translation must be ONLY in ${SUPPORT} (or empty if disabled).`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE ${TARGET} vocabulary fill-in-the-blanks question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -468,9 +497,10 @@ function buildMAVocabStreamPrompt({
     `- Create a sentence in ${TARGET} with EXACTLY ${numBlanks} blanks written as "___" where ${TARGET} vocabulary words should be inserted.`,
     `- The sentence should test vocabulary knowledge by having the learner fill in ${TARGET} words.`,
     `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
-    `- Example: A ${TARGET} sentence like "El ___ está en la ___" with answers ["libro", "mesa"] means blank 1 = libro, blank 2 = mesa.`,
+    `- Example format: "<${TARGET} sentence with ___ blanks>" with answers ["<word1>","<word2>"] means one answer per blank in order.`,
     `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
     `- CRITICAL: Each choice MUST be a single ${TARGET} word. NEVER combine words with "/" or "or".`,
+    languageGuard,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR
       ? `- ${SUPPORT} translation showing the complete sentence.`
