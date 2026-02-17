@@ -322,49 +322,16 @@ export default function IdentityDrawer({
             right={4}
           />
           <DrawerHeader pb={2} pr={12}>
-            {t?.app_account_title || "Account"}
+            {displayName
+              ? appLanguage === "es"
+                ? `Cuenta de ${displayName}`
+                : `${displayName}'s Account`
+              : t?.app_account_title || "Account"}
           </DrawerHeader>
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
             <VStack align="stretch" spacing={3} flex={1}>
-              {/* Display Name Section */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {appLanguage === "es"
-                    ? "Nombre de usuario"
-                    : "Display name"}
-                </Text>
-                {displayName ? (
-                  <Text fontSize="md" fontWeight="semibold" mb={2}>
-                    {displayName}
-                  </Text>
-                ) : null}
-                <Input
-                  value={displayNameInput}
-                  onChange={(e) => setDisplayNameInput(e.target.value)}
-                  placeholder={
-                    appLanguage === "es"
-                      ? "Ingresa tu nombre"
-                      : "Enter a display name"
-                  }
-                  bg="gray.700"
-                  mb={2}
-                />
-                <Button
-                  size="sm"
-                  colorScheme="teal"
-                  onClick={handleSaveDisplayName}
-                  isLoading={isSavingDisplayName}
-                  loadingText={
-                    appLanguage === "es" ? "Guardando…" : "Saving…"
-                  }
-                >
-                  {appLanguage === "es" ? "Guardar" : "Save"}
-                </Button>
-              </Box>
-
-              {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
+              {/* Copy ID + Secret Key */}
               <HStack spacing={2} align="flex-start" flexWrap="wrap">
-                {/* Copy ID Button */}
                 <Button
                   size="sm"
                   onClick={() =>
@@ -376,8 +343,6 @@ export default function IdentityDrawer({
                 >
                   {t?.app_copy_id || "Copy User ID"}
                 </Button>
-
-                {/* Copy Secret Key Button */}
                 <Button
                   size="sm"
                   colorScheme="orange"
@@ -394,37 +359,8 @@ export default function IdentityDrawer({
                 </Button>
               </HStack>
 
-              {/* Switch account */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {t?.app_switch_account || "Switch account"}
-                </Text>
-                <Text fontSize="xs" opacity={0.75} mt={1} mb={1}>
-                  {t?.app_switch_note ||
-                    "We'll derive your public key (npub) from the secret and switch safely."}
-                </Text>
-                <Input
-                  value={switchNsec}
-                  onChange={(e) => setSwitchNsec(e.target.value)}
-                  bg="gray.700"
-                  placeholder={
-                    t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                  }
-                />
-                <HStack mt={2} justify="flex-end">
-                  <Button
-                    isLoading={isSwitching}
-                    loadingText={t?.app_switching || "Switching…"}
-                    onClick={switchAccountWithNsec}
-                    colorScheme="teal"
-                  >
-                    {t?.app_switch || "Switch"}
-                  </Button>
-                </HStack>
-              </Box>
-
               {/* Patreon Support Link */}
-              <Box mt={4} p={4} bg="gray.800" rounded="lg" width="fit-content">
+              <Box p={4} bg="gray.800" rounded="lg" width="fit-content">
                 <HStack spacing={3} align="center">
                   <Box
                     p={2}
@@ -440,7 +376,7 @@ export default function IdentityDrawer({
                     <Text fontWeight="semibold" fontSize="sm">
                       {appLanguage === "es"
                         ? "Apóyanos en Patreon"
-                        : "Join  us on Patreon"}
+                        : "Join us on Patreon"}
                     </Text>
                     <Text fontSize="xs" color="gray.400">
                       {appLanguage === "es"
@@ -463,6 +399,88 @@ export default function IdentityDrawer({
                   </Button>
                 </HStack>
               </Box>
+
+              {/* Display Name + Switch Account Accordions */}
+              <Accordion allowMultiple bg="gray.800" rounded="md">
+                {/* Display Name */}
+                <AccordionItem border="none">
+                  <AccordionButton px={4} py={3}>
+                    <Flex flex="1" textAlign="left" align="center">
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {displayName
+                          ? appLanguage === "es"
+                            ? "Cambiar nombre de usuario"
+                            : "Change display name"
+                          : appLanguage === "es"
+                            ? "Crear nombre de usuario"
+                            : "Create display name"}
+                      </Text>
+                    </Flex>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4}>
+                    <Input
+                      value={displayNameInput}
+                      onChange={(e) => setDisplayNameInput(e.target.value)}
+                      placeholder={
+                        appLanguage === "es"
+                          ? "Ingresa tu nombre"
+                          : "Enter a display name"
+                      }
+                      bg="gray.700"
+                      mb={2}
+                    />
+                    <Button
+                      size="sm"
+                      colorScheme="teal"
+                      onClick={handleSaveDisplayName}
+                      isLoading={isSavingDisplayName}
+                      loadingText={
+                        appLanguage === "es" ? "Guardando…" : "Saving…"
+                      }
+                    >
+                      {appLanguage === "es" ? "Guardar" : "Save"}
+                    </Button>
+                  </AccordionPanel>
+                </AccordionItem>
+
+                {/* Switch Account */}
+                <AccordionItem border="none">
+                  <AccordionButton px={4} py={3}>
+                    <Flex flex="1" textAlign="left" align="center">
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {t?.app_switch_account || "Switch account"}
+                      </Text>
+                    </Flex>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4}>
+                    <Text fontSize="xs" opacity={0.75} mb={2}>
+                      {t?.app_switch_note ||
+                        "We'll derive your public key (npub) from the secret and switch safely."}
+                    </Text>
+                    <Input
+                      value={switchNsec}
+                      onChange={(e) => setSwitchNsec(e.target.value)}
+                      bg="gray.700"
+                      placeholder={
+                        t?.app_nsec_placeholder ||
+                        "Paste an nsec key to switch"
+                      }
+                    />
+                    <HStack mt={2} justify="flex-end">
+                      <Button
+                        isLoading={isSwitching}
+                        loadingText={t?.app_switching || "Switching…"}
+                        onClick={switchAccountWithNsec}
+                        colorScheme="teal"
+                      >
+                        {t?.app_switch || "Switch"}
+                      </Button>
+                    </HStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
 
               {/* Bitcoin Wallet Section (Accordion) */}
               {enableWallet && (
