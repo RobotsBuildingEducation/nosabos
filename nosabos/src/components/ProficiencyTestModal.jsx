@@ -21,6 +21,7 @@ export default function ProficiencyTestModal({
   onClose,
   onTakeTest,
   lang = "en",
+  targetLangLabel = "",
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isEs = lang === "es";
@@ -64,13 +65,13 @@ export default function ProficiencyTestModal({
 
             <Text
               fontWeight="bold"
-              fontSize="xl"
+              fontSize="lg"
               textAlign="center"
               color="white"
             >
               {isEs
-                ? "¿Conoces algo del idioma?"
-                : "Already know some of the language?"}
+                ? `¿Ya conoces algo de ${targetLangLabel || "el idioma"}?`
+                : `Already know some ${targetLangLabel || "of the language"}?`}
             </Text>
           </VStack>
         </Box>
