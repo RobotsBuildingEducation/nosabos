@@ -45,7 +45,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   const userNpub = useMemo(
     () =>
       typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-    []
+    [],
   );
 
   const loadData = async () => {
@@ -108,8 +108,8 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
             prev.map((entry) =>
               entry.id === updatedTeam.id && entry.createdBy === creatorNpub
                 ? { ...entry, ...updatedTeam }
-                : entry
-            )
+                : entry,
+            ),
           );
           try {
             const progress = await getTeamMemberProgress(creatorNpub, team.id);
@@ -117,7 +117,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           } catch (error) {
             console.error("refresh progress error", error);
           }
-        }
+        },
       );
     });
     return () => {
@@ -216,7 +216,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   };
 
   const pendingInvites = teamInvites.filter(
-    (invite) => invite.status === "pending"
+    (invite) => invite.status === "pending",
   );
 
   if (loading) {
@@ -239,15 +239,9 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           </Text>
           <VStack spacing={3} align="stretch">
             {pendingInvites.map((invite) => (
-              <Box
-                key={invite.id}
-                p={4}
-                borderWidth="1px"
-                borderRadius="md"
-                bg="yellow.50"
-              >
+              <Box key={invite.id} p={4} borderWidth="1px" borderRadius="md">
                 <Text fontWeight="bold">{invite.teamName}</Text>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="whiteAlpha.800">
                   {t?.teams_view_invited_by || "Invited by"}:{" "}
                   {invite.invitedByName || invite.invitedBy}
                 </Text>
@@ -262,7 +256,6 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                   </Button>
                   <Button
                     size="sm"
-                    variant="outline"
                     colorScheme="red"
                     onClick={() => handleRejectInvite(invite.id)}
                     isLoading={processingInvite === invite.id}
@@ -291,15 +284,15 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
             {myTeams.map((team) => {
               const progress = teamMemberProgress[team.id] || [];
               const acceptedMembers = (team.members || []).filter(
-                (member) => member.status === "accepted"
+                (member) => member.status === "accepted",
               );
               const pendingMembers = (team.members || []).filter(
-                (member) => member.status === "pending"
+                (member) => member.status === "pending",
               );
               const memberLabel = formatCountLabel(
                 acceptedMembers.length + 1,
                 t?.teams_view_member_one || "member",
-                t?.teams_view_member_many || "members"
+                t?.teams_view_member_many || "members",
               );
               return (
                 <AccordionItem
