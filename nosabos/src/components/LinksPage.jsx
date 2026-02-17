@@ -48,7 +48,8 @@ import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
 import { logEvent } from "firebase/analytics";
-import { analytics } from "../firebaseResources/firebaseResources";
+import { doc, updateDoc } from "firebase/firestore";
+import { analytics, database } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
@@ -630,10 +631,18 @@ export default function LinksPage() {
       // Post kind 0 (metadata) event to update profile
       await postNostrContent(JSON.stringify(metadata), 0);
 
-      // Save to localStorage
+      // Save to localStorage and Firestore
       if (usernameInput.trim()) {
         localStorage.setItem("displayName", usernameInput.trim());
         setDisplayName(usernameInput.trim());
+
+        // Also persist to user document in Firestore
+        const storedNpub = localStorage.getItem("local_npub");
+        if (storedNpub) {
+          await updateDoc(doc(database, "users", storedNpub), {
+            displayName: usernameInput.trim(),
+          });
+        }
       }
 
       if (trimmedProfilePictureUrl) {

@@ -1460,6 +1460,7 @@ function TopBar({
         user={user}
         onSelectIdentity={onSelectIdentity}
         isIdentitySaving={isIdentitySaving}
+        postNostrContent={postNostrContent}
       />
     </>
   );

@@ -72,12 +72,83 @@ export default function IdentityDrawer({
   user,
   onSelectIdentity,
   isIdentitySaving = false,
+  postNostrContent,
 }) {
   const toast = useToast();
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
   const signOutCancelRef = useRef();
+
+  // Display name state
+  const [displayName, setDisplayName] = useState("");
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+
+  // Load displayName from localStorage on mount
+  useEffect(() => {
+    const storedDisplayName = localStorage.getItem("displayName") || "";
+    setDisplayName(storedDisplayName);
+    setDisplayNameInput(storedDisplayName);
+  }, []);
+
+  const handleSaveDisplayName = async () => {
+    const trimmed = displayNameInput.trim();
+    if (!trimmed) {
+      toast({
+        title:
+          appLanguage === "es"
+            ? "Ingresa un nombre"
+            : "Enter a display name",
+        status: "warning",
+        duration: 2000,
+      });
+      return;
+    }
+
+    setIsSavingDisplayName(true);
+    try {
+      // Post kind 0 (metadata) to Nostr
+      if (postNostrContent) {
+        const metadata = {
+          name: trimmed,
+          about: "A student onboarded with Robots Building Education",
+        };
+        await postNostrContent(JSON.stringify(metadata), 0);
+      }
+
+      // Save to localStorage
+      localStorage.setItem("displayName", trimmed);
+      setDisplayName(trimmed);
+
+      // Save to Firestore
+      const id = localStorage.getItem("local_npub");
+      if (id) {
+        await updateDoc(doc(database, "users", id), {
+          displayName: trimmed,
+        });
+      }
+
+      toast({
+        title:
+          appLanguage === "es"
+            ? "Nombre actualizado"
+            : "Display name updated",
+        status: "success",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Failed to save display name:", error);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description: error?.message || String(error),
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      setIsSavingDisplayName(false);
+    }
+  };
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -255,6 +326,42 @@ export default function IdentityDrawer({
           </DrawerHeader>
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
             <VStack align="stretch" spacing={3} flex={1}>
+              {/* Display Name Section */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {appLanguage === "es"
+                    ? "Nombre de usuario"
+                    : "Display name"}
+                </Text>
+                {displayName ? (
+                  <Text fontSize="md" fontWeight="semibold" mb={2}>
+                    {displayName}
+                  </Text>
+                ) : null}
+                <Input
+                  value={displayNameInput}
+                  onChange={(e) => setDisplayNameInput(e.target.value)}
+                  placeholder={
+                    appLanguage === "es"
+                      ? "Ingresa tu nombre"
+                      : "Enter a display name"
+                  }
+                  bg="gray.700"
+                  mb={2}
+                />
+                <Button
+                  size="sm"
+                  colorScheme="teal"
+                  onClick={handleSaveDisplayName}
+                  isLoading={isSavingDisplayName}
+                  loadingText={
+                    appLanguage === "es" ? "Guardando…" : "Saving…"
+                  }
+                >
+                  {appLanguage === "es" ? "Guardar" : "Save"}
+                </Button>
+              </Box>
+
               {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
               <HStack spacing={2} align="flex-start" flexWrap="wrap">
                 {/* Copy ID Button */}
