@@ -1147,10 +1147,10 @@ const LandingPage = ({ onAuthenticated }) => {
         style={{
           minHeight: "auto",
           display: "flex",
-          alignItems: "center",
+          // alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          padding: "100px 24px 60px",
+          padding: "10px 24px 0px",
           overflow: "hidden",
         }}
       >
