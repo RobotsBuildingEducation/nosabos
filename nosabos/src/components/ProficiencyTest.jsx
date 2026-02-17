@@ -1563,26 +1563,6 @@ Return ONLY valid JSON:
             right={4}
             onClick={() => setShowExitConfirm(true)}
           />
-          <HStack spacing={2} pr={12}>
-            <Button
-              size="sm"
-              variant="outline"
-              colorScheme="whiteAlpha"
-              rounded="full"
-              onClick={handleTryAgain}
-            >
-              {isEs ? "Empezar de nuevo" : "Start over"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              colorScheme="cyan"
-              rounded="full"
-              onClick={() => setShowRubric(true)}
-            >
-              {isEs ? "Rúbrica" : "Grading rubric"}
-            </Button>
-          </HStack>
         </Box>
 
         {/* Progress + Robot */}
@@ -1725,7 +1705,7 @@ Return ONLY valid JSON:
           zIndex={30}
           px={4}
         >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
+          <VStack spacing={2} w="100%" maxW="560px" justify="center">
             <Button
               onClick={status === "connected" ? stop : start}
               size="lg"
@@ -1735,7 +1715,7 @@ Return ONLY valid JSON:
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
-              mb={4}
+              mb={1}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
               {status === "connected" ? (
@@ -1755,7 +1735,27 @@ Return ONLY valid JSON:
                 </>
               )}
             </Button>
-          </HStack>
+            <HStack spacing={2}>
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="whiteAlpha"
+                rounded="full"
+                onClick={handleTryAgain}
+              >
+                {isEs ? "Empezar de nuevo" : "Start over"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="cyan"
+                rounded="full"
+                onClick={() => setShowRubric(true)}
+              >
+                {isEs ? "Rúbrica" : "Grading rubric"}
+              </Button>
+            </HStack>
+          </VStack>
         </Center>
 
         {err && (
@@ -2062,10 +2062,12 @@ Return ONLY valid JSON:
       >
         <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
         <DrawerContent
-          bg="gray.900"
+          bg="linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"
           color="gray.100"
           borderTopRadius="24px"
           h="80vh"
+          borderTop="1px solid rgba(255,255,255,0.14)"
+          boxShadow="0 -18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)"
           sx={{
             "@supports (height: 100dvh)": {
               height: "80dvh",
@@ -2074,9 +2076,29 @@ Return ONLY valid JSON:
         >
           <DrawerBody py={6} overflowY="auto">
             <VStack align="stretch" spacing={4}>
-              <Box>
-                <Text fontSize="xl" fontWeight="bold" mb={2}>
-                  {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
+              <Box
+                bg="linear-gradient(135deg, rgba(6,182,212,0.24), rgba(168,85,247,0.22))"
+                border="1px solid rgba(255,255,255,0.18)"
+                borderRadius="2xl"
+                p={4}
+                boxShadow="inset 0 1px 0 rgba(255,255,255,0.06)"
+              >
+                <HStack justify="space-between" align="start" mb={2}>
+                  <Text fontSize="xl" fontWeight="bold" mb={2}>
+                    {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
+                  </Text>
+                  <Badge
+                    colorScheme="purple"
+                    variant="solid"
+                    px={2.5}
+                    py={1}
+                    rounded="full"
+                  >
+                    {isEs ? "Transparente" : "Transparent"}
+                  </Badge>
+                </HStack>
+                <Text fontSize="sm" opacity={0.88}>
+                  {isEs ? "Conoce exactamente cómo se calcula tu nivel." : "Know exactly how your level is calculated."}
                 </Text>
                 <Text fontSize="sm" opacity={0.75}>
                   {isEs
@@ -2085,8 +2107,13 @@ Return ONLY valid JSON:
                 </Text>
               </Box>
 
-              <Box bg="gray.800" borderRadius="xl" p={4}>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              <Box
+                bg="rgba(17,24,39,0.85)"
+                borderRadius="xl"
+                p={4}
+                border="1px solid rgba(255,255,255,0.10)"
+              >
+                <Text fontSize="sm" fontWeight="semibold" mb={2} color="cyan.200">
                   {isEs ? "Qué puntúa el sistema" : "What gets scored"}
                 </Text>
                 <Text fontSize="sm" opacity={0.8}>
@@ -2096,8 +2123,13 @@ Return ONLY valid JSON:
                 </Text>
               </Box>
 
-              <Box bg="gray.800" borderRadius="xl" p={4}>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+              <Box
+                bg="rgba(17,24,39,0.85)"
+                borderRadius="xl"
+                p={4}
+                border="1px solid rgba(255,255,255,0.10)"
+              >
+                <Text fontSize="sm" fontWeight="semibold" mb={2} color="purple.200">
                   {isEs ? "Mecanismo de calificación" : "Scoring mechanism"}
                 </Text>
                 <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
@@ -2126,14 +2158,23 @@ Return ONLY valid JSON:
               </Box>
 
               <Box>
-                <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                <Text fontSize="sm" fontWeight="semibold" mb={2} color="cyan.200">
                   {isEs ? "Bandas de nivel" : "Level bands"}
                 </Text>
                 <VStack spacing={2} align="stretch">
                   {rubricRows.map((row) => (
-                    <Box key={row.level} bg="gray.800" borderRadius="xl" px={3} py={2.5}>
+                    <Box
+                      key={row.level}
+                      bg="linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.78))"
+                      borderRadius="xl"
+                      px={3}
+                      py={2.5}
+                      border="1px solid rgba(255,255,255,0.10)"
+                      _hover={{ borderColor: "rgba(34,211,238,0.45)" }}
+                      transition="border-color 0.2s ease"
+                    >
                       <HStack justify="space-between" align="center" mb={1}>
-                        <Badge colorScheme="cyan" variant="subtle">
+                        <Badge colorScheme="cyan" variant="solid" px={2} py={0.5}>
                           {row.level}
                         </Badge>
                         <Text fontSize="xs" opacity={0.6}>
@@ -2150,7 +2191,9 @@ Return ONLY valid JSON:
 
               <Button
                 mt={2}
-                colorScheme="cyan"
+                bgGradient="linear(to-r, cyan.400, purple.500)"
+                color="white"
+                _hover={{ bgGradient: "linear(to-r, cyan.300, purple.400)" }}
                 rounded="xl"
                 onClick={() => setShowRubric(false)}
               >
