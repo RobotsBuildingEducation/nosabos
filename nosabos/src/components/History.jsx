@@ -1697,13 +1697,26 @@ export default function History({
         >
           <Box
             flex="1"
-            bg="gray.800"
+            bg="linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 70, 0.9) 50%, rgba(15, 23, 42, 0.95) 100%)"
             border="1px solid"
-            borderColor="gray.700"
+            borderColor="whiteAlpha.100"
             rounded="xl"
             p={[4, 5]}
             minH="280px"
             width="100%"
+            position="relative"
+            overflow="hidden"
+            boxShadow="0 0 40px rgba(20, 184, 166, 0.06), 0 4px 24px rgba(0, 0, 0, 0.3)"
+            _before={{
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: "1px",
+              bgGradient:
+                "linear(to-r, transparent, rgba(20, 184, 166, 0.4), rgba(14, 165, 233, 0.3), transparent)",
+            }}
           >
             {isLoading ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
