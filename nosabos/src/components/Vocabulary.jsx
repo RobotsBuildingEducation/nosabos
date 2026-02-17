@@ -2444,6 +2444,8 @@ Return EXACTLY:
 
     let got = false;
     let pendingAnswer = "";
+    let tempQuestion = "";
+    let tempChoices = [];
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2464,14 +2466,19 @@ Return EXACTLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "vocab_mc" && obj.phase === "q" && obj.question) {
-              setQMC(String(obj.question));
+              tempQuestion = String(obj.question);
+              setQMC(tempQuestion);
               got = true;
             } else if (
               obj?.type === "vocab_mc" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 4).map(String);
+              const rawChoices = obj.choices
+                .slice(0, 4)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
+              tempChoices = rawChoices;
               // if answer already known from meta, ensure it's in choices
               if (pendingAnswer) {
                 const { choices, answer } = ensureAnswerInChoices(
@@ -2522,14 +2529,19 @@ Return EXACTLY:
                 obj.phase === "q" &&
                 obj.question
               ) {
-                setQMC(String(obj.question));
+                tempQuestion = String(obj.question);
+                setQMC(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "vocab_mc" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 4).map(String);
+                const rawChoices = obj.choices
+                  .slice(0, 4)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
+                tempChoices = rawChoices;
                 if (pendingAnswer) {
                   const { choices, answer } = ensureAnswerInChoices(
                     rawChoices,
@@ -2562,7 +2574,20 @@ Return EXACTLY:
           );
       }
 
-      if (!got) throw new Error("no-mc");
+      if (tempChoices.length && pendingAnswer) {
+        const { choices, answer } = ensureAnswerInChoices(
+          tempChoices,
+          pendingAnswer
+        );
+        setChoicesMC(choices);
+        setAnswerMC(answer);
+      } else if (tempChoices.length) {
+        setChoicesMC(tempChoices);
+      }
+
+      if (!got || !tempQuestion || tempChoices.length < 3) {
+        throw new Error("incomplete-mc");
+      }
     } catch {
       // Fallback (non-stream)
       const text = await callResponses({
@@ -2763,6 +2788,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
     let got = false;
     let pendingAnswers = [];
+    let tempQuestion = "";
+    let tempChoices = [];
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2783,14 +2810,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "vocab_ma" && obj.phase === "q" && obj.question) {
-              setQMA(String(obj.question));
+              tempQuestion = String(obj.question);
+              setQMA(tempQuestion);
               got = true;
             } else if (
               obj?.type === "vocab_ma" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 6).map(String);
+              const rawChoices = obj.choices
+                .slice(0, 6)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
+              tempChoices = rawChoices;
               if (pendingAnswers?.length) {
                 const { choices, answers } = ensureAnswersInChoices(
                   rawChoices,
@@ -2840,14 +2872,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 obj.phase === "q" &&
                 obj.question
               ) {
-                setQMA(String(obj.question));
+                tempQuestion = String(obj.question);
+                setQMA(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "vocab_ma" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 6).map(String);
+                const rawChoices = obj.choices
+                  .slice(0, 6)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
+                tempChoices = rawChoices;
                 if (pendingAnswers?.length) {
                   const { choices, answers } = ensureAnswersInChoices(
                     rawChoices,
@@ -2880,7 +2917,25 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
           );
       }
 
-      if (!got) throw new Error("no-ma");
+      if (tempChoices.length && pendingAnswers.length) {
+        const { choices, answers } = ensureAnswersInChoices(
+          tempChoices,
+          pendingAnswers
+        );
+        setChoicesMA(choices);
+        if (answers.length >= 2) setAnswersMA(answers);
+      } else if (tempChoices.length) {
+        setChoicesMA(tempChoices);
+      }
+
+      if (
+        !got ||
+        !tempQuestion ||
+        tempChoices.length < 4 ||
+        pendingAnswers.length < 2
+      ) {
+        throw new Error("incomplete-ma");
+      }
     } catch {
       // Fallback (non-stream)
       const text = await callResponses({

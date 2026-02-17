@@ -2183,6 +2183,8 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
 
     let got = false;
     let pendingAnswer = "";
+    let tempQuestion = "";
+    let tempChoices = [];
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2202,14 +2204,19 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
-              setMcQ(String(obj.question));
+              tempQuestion = String(obj.question);
+              setMcQ(tempQuestion);
               got = true;
             } else if (
               obj?.type === "mc" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 4).map(String);
+              const rawChoices = obj.choices
+                .slice(0, 4)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
+              tempChoices = rawChoices;
               // If answer already known, ensure it's in choices
               if (pendingAnswer) {
                 const { choices, answer } = ensureAnswerInChoices(
@@ -2257,14 +2264,19 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
               if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
-                setMcQ(String(obj.question));
+                tempQuestion = String(obj.question);
+                setMcQ(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "mc" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 4).map(String);
+                const rawChoices = obj.choices
+                  .slice(0, 4)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
+                tempChoices = rawChoices;
                 if (pendingAnswer) {
                   const { choices, answer } = ensureAnswerInChoices(
                     rawChoices,
@@ -2297,7 +2309,20 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           );
       }
 
-      if (!got) throw new Error("no-mc");
+      if (tempChoices.length && pendingAnswer) {
+        const { choices, answer } = ensureAnswerInChoices(
+          tempChoices,
+          pendingAnswer
+        );
+        setMcChoices(choices);
+        setMcAnswer(answer);
+      } else if (tempChoices.length) {
+        setMcChoices(tempChoices);
+      }
+
+      if (!got || !tempQuestion || tempChoices.length < 3) {
+        throw new Error("incomplete-mc");
+      }
     } catch {
       // Fallback (non-stream)
       const fallback = `
@@ -2458,7 +2483,10 @@ Create ONE multiple-choice ${LANG_NAME(
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              tempChoices = obj.choices.slice(0, 6).map(String);
+              tempChoices = obj.choices
+                .slice(0, 6)
+                .map((c) => String(c).trim())
+                .filter(Boolean);
               // Don't set state yet - wait for answers to arrive
               got = true;
             } else if (obj?.type === "ma" && obj.phase === "meta") {
@@ -2501,7 +2529,10 @@ Create ONE multiple-choice ${LANG_NAME(
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                tempChoices = obj.choices.slice(0, 6).map(String);
+                tempChoices = obj.choices
+                  .slice(0, 6)
+                  .map((c) => String(c).trim())
+                  .filter(Boolean);
                 got = true;
               } else if (obj?.type === "ma" && obj.phase === "meta") {
                 if (typeof obj.hint === "string") {
@@ -2534,7 +2565,14 @@ Create ONE multiple-choice ${LANG_NAME(
         if (tempAnswers.length >= 2) setMaAnswers(tempAnswers);
       }
 
-      if (!got) throw new Error("no-ma");
+      if (
+        !got ||
+        !tempQuestion ||
+        tempChoices.length < 4 ||
+        tempAnswers.length < 2
+      ) {
+        throw new Error("incomplete-ma");
+      }
     } catch {
       // Fallback (non-stream)
       const fallback = `
