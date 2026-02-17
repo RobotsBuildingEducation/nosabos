@@ -118,7 +118,7 @@ exports.exchangeRealtimeSDP = onRequest(
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     let offerSDP = "";
-    let model = "gpt-4o-mini-realtime-preview"; // set your default realtime model
+    let model = "gpt-5-nano-realtime-preview"; // set your default realtime model
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {
@@ -340,7 +340,7 @@ Generate an engaging Spanish story now:`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o-mini",
+            model: "gpt-5-nano",
             messages: [
               {
                 role: "system",
@@ -550,7 +550,7 @@ When the story is complete, send:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5-nano",
         messages: [
           {
             role: "system",
