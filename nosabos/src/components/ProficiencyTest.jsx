@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+} from "react";
 import {
   Box,
   Button,
@@ -45,7 +51,7 @@ const REALTIME_MODEL =
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
+  REALTIME_MODEL,
 )}`;
 
 const MAX_EXCHANGES = 10;
@@ -172,8 +178,7 @@ function scoreColor(score) {
 }
 
 /* ---- helpers ---- */
-const uid = () =>
-  Math.random().toString(36).slice(2) + Date.now().toString(36);
+const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 function strongNpub(user) {
   return (
@@ -198,7 +203,6 @@ function safeParseJson(text) {
   }
   return null;
 }
-
 
 function normalizeCefrLevel(level) {
   if (!level) return null;
@@ -232,25 +236,28 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   const pronunciation = scoreFor("pronunciation");
   const confidence = scoreFor("confidence");
 
-  const scored = [grammar, vocabulary, fluency, comprehension, pronunciation, confidence].filter(
-    (n) => typeof n === "number"
-  );
+  const scored = [
+    grammar,
+    vocabulary,
+    fluency,
+    comprehension,
+    pronunciation,
+    confidence,
+  ].filter((n) => typeof n === "number");
   const avg = scored.length
     ? scored.reduce((a, b) => a + b, 0) / scored.length
     : null;
 
   const combined = (userTexts || []).join(" ").toLowerCase();
-  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|idk|huh|um+|uh+|hmm+|lol|haha)/g;
+  const fallbackPattern =
+    /(no se|no sé|no entiendo|i don't know|i dont know|idk|huh|um+|uh+|hmm+|lol|haha)/g;
   const fallbackMatches = combined.match(fallbackPattern) || [];
   const fallbackDensity = userTexts?.length
     ? fallbackMatches.length / userTexts.length
     : 0;
 
-  const tokenCounts = (userTexts || []).map((t) =>
-    t
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean).length
+  const tokenCounts = (userTexts || []).map(
+    (t) => t.trim().split(/\s+/).filter(Boolean).length,
   );
   const avgTokens = tokenCounts.length
     ? tokenCounts.reduce((a, b) => a + b, 0) / tokenCounts.length
@@ -288,22 +295,17 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   // CEFR-oriented score banding from rubric evidence
   else if (avg !== null && avg < 3.2) {
     cap = "Pre-A1";
-  }
-  else if (avg !== null && avg < 4.4) {
+  } else if (avg !== null && avg < 4.4) {
     cap = "A1";
-  }
-  else if (avg !== null && avg < 5.6) {
+  } else if (avg !== null && avg < 5.6) {
     cap = "A2";
-  }
-  else if (avg !== null && avg < 6.8) {
+  } else if (avg !== null && avg < 6.8) {
     if (avgTokens < 4) cap = "A2";
     else cap = "B1";
-  }
-  else if (avg !== null && avg < 8) {
+  } else if (avg !== null && avg < 8) {
     if (avgTokens < 6) cap = "B1";
     else cap = "B2";
-  }
-  else if (avg !== null && avg < 8.8) {
+  } else if (avg !== null && avg < 8.8) {
     cap = avgTokens >= 8 ? "C1" : "B2";
   } else {
     cap =
@@ -325,38 +327,67 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
 }
 
 function summarizeSpeechEvidence(turns = []) {
-  const sortedTurns = [...turns].sort((a, b) => (a.startTs || 0) - (b.startTs || 0));
-  const finishedTurns = sortedTurns.filter((t) => typeof t.durationMs === "number" && t.durationMs > 0);
-  const transcriptTurns = sortedTurns.filter((t) => typeof t.transcript === "string" && t.transcript.trim());
+  const sortedTurns = [...turns].sort(
+    (a, b) => (a.startTs || 0) - (b.startTs || 0),
+  );
+  const finishedTurns = sortedTurns.filter(
+    (t) => typeof t.durationMs === "number" && t.durationMs > 0,
+  );
+  const transcriptTurns = sortedTurns.filter(
+    (t) => typeof t.transcript === "string" && t.transcript.trim(),
+  );
 
-  const totalSpeechMs = finishedTurns.reduce((sum, turn) => sum + turn.durationMs, 0);
-  const avgTurnMs = finishedTurns.length ? totalSpeechMs / finishedTurns.length : 0;
+  const totalSpeechMs = finishedTurns.reduce(
+    (sum, turn) => sum + turn.durationMs,
+    0,
+  );
+  const avgTurnMs = finishedTurns.length
+    ? totalSpeechMs / finishedTurns.length
+    : 0;
   const totalWords = transcriptTurns.reduce((sum, turn) => {
     const words = turn.transcript.trim().split(/\s+/).filter(Boolean).length;
     return sum + words;
   }, 0);
 
-  const estimatedWpm = totalSpeechMs > 0 ? Math.round((totalWords / (totalSpeechMs / 60000)) * 10) / 10 : null;
+  const estimatedWpm =
+    totalSpeechMs > 0
+      ? Math.round((totalWords / (totalSpeechMs / 60000)) * 10) / 10
+      : null;
   const confidences = transcriptTurns
-    .map((t) => (typeof t.transcriptConfidence === "number" ? t.transcriptConfidence : null))
+    .map((t) =>
+      typeof t.transcriptConfidence === "number"
+        ? t.transcriptConfidence
+        : null,
+    )
     .filter((n) => typeof n === "number");
   const avgTranscriptConfidence = confidences.length
-    ? Math.round((confidences.reduce((a, b) => a + b, 0) / confidences.length) * 1000) / 1000
+    ? Math.round(
+        (confidences.reduce((a, b) => a + b, 0) / confidences.length) * 1000,
+      ) / 1000
     : null;
 
   const pauses = [];
   for (let i = 1; i < finishedTurns.length; i += 1) {
     const prevEnd = finishedTurns[i - 1]?.endTs;
     const start = finishedTurns[i]?.startTs;
-    if (typeof prevEnd === "number" && typeof start === "number" && start >= prevEnd) pauses.push(start - prevEnd);
+    if (
+      typeof prevEnd === "number" &&
+      typeof start === "number" &&
+      start >= prevEnd
+    )
+      pauses.push(start - prevEnd);
   }
 
-  const avgPauseMs = pauses.length ? Math.round(pauses.reduce((a, b) => a + b, 0) / pauses.length) : null;
+  const avgPauseMs = pauses.length
+    ? Math.round(pauses.reduce((a, b) => a + b, 0) / pauses.length)
+    : null;
   const rmsValues = finishedTurns
     .map((t) => (typeof t.rmsAvg === "number" ? t.rmsAvg : null))
     .filter((n) => typeof n === "number");
   const avgRms = rmsValues.length
-    ? Math.round((rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length) * 10000) / 10000
+    ? Math.round(
+        (rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length) * 10000,
+      ) / 10000
     : null;
 
   return {
@@ -373,15 +404,24 @@ function summarizeSpeechEvidence(turns = []) {
     avgRms,
     turns: sortedTurns.map((turn) => ({
       id: turn.id,
-      durationMs: typeof turn.durationMs === "number" ? Math.round(turn.durationMs) : null,
+      durationMs:
+        typeof turn.durationMs === "number"
+          ? Math.round(turn.durationMs)
+          : null,
       transcript: turn.transcript || "",
       wordCount: turn.wordCount || 0,
       transcriptConfidence:
         typeof turn.transcriptConfidence === "number"
           ? Math.round(turn.transcriptConfidence * 1000) / 1000
           : null,
-      rmsAvg: typeof turn.rmsAvg === "number" ? Math.round(turn.rmsAvg * 10000) / 10000 : null,
-      rmsPeak: typeof turn.rmsPeak === "number" ? Math.round(turn.rmsPeak * 10000) / 10000 : null,
+      rmsAvg:
+        typeof turn.rmsAvg === "number"
+          ? Math.round(turn.rmsAvg * 10000) / 10000
+          : null,
+      rmsPeak:
+        typeof turn.rmsPeak === "number"
+          ? Math.round(turn.rmsPeak * 10000) / 10000
+          : null,
     })),
   };
 }
@@ -514,7 +554,7 @@ export default function ProficiencyTest() {
   // Count user exchanges (user messages count)
   const userMessageCount = useMemo(
     () => messages.filter((m) => m.role === "user").length,
-    [messages]
+    [messages],
   );
 
   // Exit confirmation modal
@@ -625,39 +665,41 @@ export default function ProficiencyTest() {
 
   /* ---- Build proficiency assessment instructions ---- */
   function buildProficiencyInstructions() {
-    const langName = {
-      es: "Spanish",
-      pt: "Portuguese",
-      fr: "French",
-      it: "Italian",
-      nl: "Dutch",
-      ja: "Japanese",
-      ru: "Russian",
-      de: "German",
-      el: "Greek",
-      pl: "Polish",
-      ga: "Irish",
-      nah: "Eastern Huasteca Nahuatl",
-      yua: "Yucatec Maya",
-      en: "English",
-    }[targetLang] || "Spanish";
+    const langName =
+      {
+        es: "Spanish",
+        pt: "Portuguese",
+        fr: "French",
+        it: "Italian",
+        nl: "Dutch",
+        ja: "Japanese",
+        ru: "Russian",
+        de: "German",
+        el: "Greek",
+        pl: "Polish",
+        ga: "Irish",
+        nah: "Eastern Huasteca Nahuatl",
+        yua: "Yucatec Maya",
+        en: "English",
+      }[targetLang] || "Spanish";
 
-    const strict = {
-      es: "Responde ÚNICAMENTE en español.",
-      pt: "Responda APENAS em português brasileiro.",
-      fr: "Réponds UNIQUEMENT en français.",
-      it: "Rispondi SOLO in italiano.",
-      nl: "Antwoord ALLEEN in het Nederlands.",
-      ja: "日本語のみで応答してください。",
-      ru: "Отвечайте ТОЛЬКО на русском языке.",
-      de: "Antworten Sie NUR auf Deutsch.",
-      el: "Απαντήστε ΜΟΝΟ στα ελληνικά.",
-      pl: "Odpowiadaj TYLKO po polsku.",
-      ga: "Freagair i nGaeilge AMHÁIN.",
-      nah: "T'aanen tu'ux maaya t'aan.",
-      yua: "Respond ONLY in Yucatec Maya.",
-      en: "Respond ONLY in English.",
-    }[targetLang] || "Respond ONLY in the target language.";
+    const strict =
+      {
+        es: "Responde ÚNICAMENTE en español.",
+        pt: "Responda APENAS em português brasileiro.",
+        fr: "Réponds UNIQUEMENT en français.",
+        it: "Rispondi SOLO in italiano.",
+        nl: "Antwoord ALLEEN in het Nederlands.",
+        ja: "日本語のみで応答してください。",
+        ru: "Отвечайте ТОЛЬКО на русском языке.",
+        de: "Antworten Sie NUR auf Deutsch.",
+        el: "Απαντήστε ΜΟΝΟ στα ελληνικά.",
+        pl: "Odpowiadaj TYLKO po polsku.",
+        ga: "Freagair i nGaeilge AMHÁIN.",
+        nah: "T'aanen tu'ux maaya t'aan.",
+        yua: "Respond ONLY in Yucatec Maya.",
+        en: "Respond ONLY in English.",
+      }[targetLang] || "Respond ONLY in the target language.";
 
     return [
       `You are a ${langName} proficiency assessor conducting a placement test.`,
@@ -757,7 +799,8 @@ export default function ProficiencyTest() {
         }
         turn.transcript = text;
         turn.wordCount = text.split(/\s+/).filter(Boolean).length;
-        if (typeof confidence === "number") turn.transcriptConfidence = confidence;
+        if (typeof confidence === "number")
+          turn.transcriptConfidence = confidence;
         if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
 
         const now = Date.now();
@@ -905,7 +948,7 @@ export default function ProficiencyTest() {
     setAssessmentError(false);
     // Collect the full conversation for analysis
     const sorted = [...messagesRef.current].sort(
-      (a, b) => (a.ts || 0) - (b.ts || 0)
+      (a, b) => (a.ts || 0) - (b.ts || 0),
     );
     const transcript = sorted
       .map((m) => {
@@ -915,14 +958,27 @@ export default function ProficiencyTest() {
       })
       .filter((line) => line.includes(": ") && line.split(": ")[1].trim())
       .join("\n");
-    const speechEvidence = summarizeSpeechEvidence(speechTurnsRef.current || []);
+    const speechEvidence = summarizeSpeechEvidence(
+      speechTurnsRef.current || [],
+    );
 
-    const langName = {
-      es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
-      nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
-      el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
-      yua: "Yucatec Maya", en: "English",
-    }[targetLang] || "the target language";
+    const langName =
+      {
+        es: "Spanish",
+        pt: "Portuguese",
+        fr: "French",
+        it: "Italian",
+        nl: "Dutch",
+        ja: "Japanese",
+        ru: "Russian",
+        de: "German",
+        el: "Greek",
+        pl: "Polish",
+        ga: "Irish",
+        nah: "Nahuatl",
+        yua: "Yucatec Maya",
+        en: "English",
+      }[targetLang] || "the target language";
 
     const prompt = `You are an EXTREMELY STRICT CEFR language proficiency assessor for ${langName}. Your job is to accurately place learners — most test-takers are beginners and should score low.
 
@@ -992,20 +1048,23 @@ Return ONLY valid JSON:
         const strictLevel = getStrictPlacementFromEvidence(
           userTexts,
           parsed.scores,
-          modelLevel
+          modelLevel,
         );
         setAssessedLevel(
-          CEFR_LEVELS.includes(strictLevel) ? strictLevel : "Pre-A1"
+          CEFR_LEVELS.includes(strictLevel) ? strictLevel : "Pre-A1",
         );
         setAssessmentSummary(parsed.summary || "");
         if (parsed.scores && typeof parsed.scores === "object") {
-          if (!speechEvidence?.hasAudioEvidence && parsed?.scores?.pronunciation) {
+          if (
+            !speechEvidence?.hasAudioEvidence &&
+            parsed?.scores?.pronunciation
+          ) {
             const currentScore =
               typeof parsed.scores.pronunciation === "number"
                 ? parsed.scores.pronunciation
                 : typeof parsed?.scores?.pronunciation?.score === "number"
-                ? parsed.scores.pronunciation.score
-                : 1;
+                  ? parsed.scores.pronunciation.score
+                  : 1;
             parsed.scores.pronunciation = {
               ...(typeof parsed.scores.pronunciation === "object"
                 ? parsed.scores.pronunciation
@@ -1019,21 +1078,21 @@ Return ONLY valid JSON:
       } else {
         // Try to extract level from text
         const levelMatch = resultText?.match?.(
-          /\b(A0|Pre-A1|A1|A2|B1|B2|C1|C2)\b/
+          /\b(A0|Pre-A1|A1|A2|B1|B2|C1|C2)\b/,
         );
         const fallbackLevel = getStrictPlacementFromEvidence(
           userTexts,
           parsed?.scores,
-          normalizeCefrLevel(levelMatch?.[1] || "A1")
+          normalizeCefrLevel(levelMatch?.[1] || "A1"),
         );
         setAssessedLevel(
-          CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1"
+          CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1",
         );
         setAssessmentSummary(
           parsed?.summary ||
             (isEs
               ? "Evaluación completada. Revisa tus resultados abajo."
-              : "Assessment complete. Review your results below.")
+              : "Assessment complete. Review your results below."),
         );
       }
     } catch (e) {
@@ -1043,7 +1102,7 @@ Return ONLY valid JSON:
       setAssessmentSummary(
         isEs
           ? "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad."
-          : "Assessment error. Conservatively placing you at Pre-A1/A0."
+          : "Assessment error. Conservatively placing you at Pre-A1/A0.",
       );
     }
 
@@ -1075,7 +1134,7 @@ Return ONLY valid JSON:
           "progress.level": assessedLevel,
           updatedAt: new Date().toISOString(),
         },
-        { merge: true }
+        { merge: true },
       );
 
       // Update local user state
@@ -1111,7 +1170,7 @@ Return ONLY valid JSON:
             proficiencyPlacements: { [targetLang]: "skipped" },
             updatedAt: new Date().toISOString(),
           },
-          { merge: true }
+          { merge: true },
         );
         patchUser({
           proficiencyPlacement: "skipped",
@@ -1125,7 +1184,13 @@ Return ONLY valid JSON:
       }
     }
     navigate("/");
-  }, [currentNpub, targetLang, navigate, patchUser, user?.proficiencyPlacements]);
+  }, [
+    currentNpub,
+    targetLang,
+    navigate,
+    patchUser,
+    user?.proficiencyPlacements,
+  ]);
 
   const handleTryAgain = useCallback(() => {
     stop();
@@ -1170,8 +1235,8 @@ Return ONLY valid JSON:
         typeof raw?.score === "number"
           ? raw.score
           : typeof raw === "number"
-          ? raw
-          : null;
+            ? raw
+            : null;
       if (score === null) continue;
       const clamped = Math.max(1, Math.min(10, score));
       const weight = weighted[criterion.key] || 1;
@@ -1283,7 +1348,7 @@ Return ONLY valid JSON:
               },
               output_audio_format: "pcm16",
             },
-          })
+          }),
         );
 
         pendingGuardrailTextRef.current = instructions;
@@ -1295,7 +1360,7 @@ Return ONLY valid JSON:
               role: "system",
               content: [{ type: "input_text", text: instructions }],
             },
-          })
+          }),
         );
       };
 
@@ -1330,23 +1395,27 @@ Return ONLY valid JSON:
           dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
         } catch {}
         dcRef.current.send(
-          JSON.stringify({ type: "input_audio_buffer.clear" })
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
         );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
             session: { turn_detection: null },
-          })
+          }),
         );
       }
     } catch {}
     try {
       const a = audioRef.current;
       if (a) {
-        try { a.pause(); } catch {}
+        try {
+          a.pause();
+        } catch {}
         const s = a.srcObject;
         if (s) {
-          try { s.getTracks().forEach((t) => t.stop()); } catch {}
+          try {
+            s.getTracks().forEach((t) => t.stop());
+          } catch {}
         }
         a.srcObject = null;
       }
@@ -1378,11 +1447,18 @@ Return ONLY valid JSON:
   useEffect(() => {
     return () => {
       aliveRef.current = false;
-      if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
+      if (streamFlushTimerRef.current)
+        clearTimeout(streamFlushTimerRef.current);
       stopSpeechSampling();
-      try { audioCtxRef.current?.close(); } catch {}
-      try { localRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
-      try { pcRef.current?.close(); } catch {}
+      try {
+        audioCtxRef.current?.close();
+      } catch {}
+      try {
+        localRef.current?.getTracks().forEach((t) => t.stop());
+      } catch {}
+      try {
+        pcRef.current?.close();
+      } catch {}
     };
   }, []);
 
@@ -1430,7 +1506,12 @@ Return ONLY valid JSON:
       >
         {/* Header */}
         <Box px={4} py={4} position="relative">
-          <Text fontSize="lg" fontWeight="bold" color="gray.100" textAlign="center">
+          <Text
+            fontSize="lg"
+            fontWeight="bold"
+            color="gray.100"
+            textAlign="center"
+          >
             {isEs ? "Prueba de Nivel" : "Proficiency Test"}
           </Text>
           <IconButton
@@ -1502,19 +1583,12 @@ Return ONLY valid JSON:
 
                 <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
-                    <Badge
-                      colorScheme="cyan"
-                      variant="subtle"
-                      fontSize="10px"
-                    >
+                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
                       {isEs ? "Progreso" : "Progress"}
                     </Badge>
-                    <Badge
-                      colorScheme="teal"
-                      variant="subtle"
-                      fontSize="10px"
-                    >
-                      {Math.min(userMessageCount, MAX_EXCHANGES)}/{MAX_EXCHANGES}
+                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                      {Math.min(userMessageCount, MAX_EXCHANGES)}/
+                      {MAX_EXCHANGES}
                     </Badge>
                   </HStack>
                   <WaveBar value={progressPct} />
@@ -1529,12 +1603,8 @@ Return ONLY valid JSON:
           {isEvaluating && (
             <VStack spacing={0} py={6}>
               {/* Robot — outside and above the card */}
-              <Box mb={-6} zIndex={1}>
-                <RobotBuddyPro
-                  state="thinking"
-                  mood="thinking"
-                  maxW={140}
-                />
+              <Box mb={0} zIndex={1}>
+                <RobotBuddyPro state="thinking" mood="thinking" maxW={140} />
               </Box>
 
               {/* Card with loading text */}
@@ -1553,7 +1623,6 @@ Return ONLY valid JSON:
               >
                 <VStack spacing={3}>
                   <HStack spacing={2} justify="center">
-                    <Spinner size="sm" color="cyan.300" speed="0.8s" />
                     <Text fontWeight="bold" fontSize="lg" color="white">
                       {isEs ? "Evaluando" : "Evaluating"}
                     </Text>
@@ -1572,10 +1641,7 @@ Return ONLY valid JSON:
             if (isUser) {
               return (
                 <RowRight key={m.id}>
-                  <UserBubble
-                    label={isEs ? "Tú" : "You"}
-                    text={m.textFinal}
-                  />
+                  <UserBubble label={isEs ? "Tú" : "You"} text={m.textFinal} />
                 </RowRight>
               );
             }
@@ -1617,8 +1683,7 @@ Return ONLY valid JSON:
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp;{" "}
-                  {isEs ? "Detener" : "Stop"}
+                  <FaStop /> &nbsp; {isEs ? "Detener" : "Stop"}
                 </>
               ) : (
                 <>
@@ -1628,8 +1693,8 @@ Return ONLY valid JSON:
                       ? "Conectando..."
                       : "Connecting..."
                     : isEs
-                    ? "Comenzar"
-                    : "Start"}
+                      ? "Comenzar"
+                      : "Start"}
                 </>
               )}
             </Button>
@@ -1739,7 +1804,14 @@ Return ONLY valid JSON:
                 <>
                   <Divider borderColor="gray.700" />
                   <Box>
-                    <Text fontWeight="semibold" fontSize="sm" mb={3} opacity={0.7} letterSpacing="0.05em" textTransform="uppercase">
+                    <Text
+                      fontWeight="semibold"
+                      fontSize="sm"
+                      mb={3}
+                      opacity={0.7}
+                      letterSpacing="0.05em"
+                      textTransform="uppercase"
+                    >
                       {isEs ? "Desglose" : "Breakdown"}
                     </Text>
                     <Grid templateColumns="repeat(2, 1fr)" gap={2}>
@@ -1749,8 +1821,8 @@ Return ONLY valid JSON:
                           typeof data?.score === "number"
                             ? Math.max(1, Math.min(10, data.score))
                             : typeof data === "number"
-                            ? Math.max(1, Math.min(10, data))
-                            : null;
+                              ? Math.max(1, Math.min(10, data))
+                              : null;
                         const note =
                           typeof data?.note === "string" ? data.note : "";
                         const color = scoreColor(score);
@@ -1773,18 +1845,36 @@ Return ONLY valid JSON:
                               borderColor={accent}
                               h="100%"
                             >
-                              <HStack justify="space-between" align="center" mb={1}>
-                                <Text fontSize="xs" fontWeight="semibold" opacity={0.85}>
+                              <HStack
+                                justify="space-between"
+                                align="center"
+                                mb={1}
+                              >
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                  opacity={0.85}
+                                >
                                   {criterion[isEs ? "es" : "en"]}
                                 </Text>
                                 {score !== null && (
-                                  <Text fontSize="lg" fontWeight="bold" color={accent} lineHeight="1">
+                                  <Text
+                                    fontSize="lg"
+                                    fontWeight="bold"
+                                    color={accent}
+                                    lineHeight="1"
+                                  >
                                     {score}
                                   </Text>
                                 )}
                               </HStack>
                               {note && (
-                                <Text fontSize="2xs" opacity={0.55} lineHeight="1.4" noOfLines={3}>
+                                <Text
+                                  fontSize="2xs"
+                                  opacity={0.55}
+                                  lineHeight="1.4"
+                                  noOfLines={3}
+                                >
                                   {note}
                                 </Text>
                               )}
@@ -1819,23 +1909,32 @@ Return ONLY valid JSON:
 
               {assessedLevel && (
                 <Box bg="gray.800" px={4} py={3} rounded="lg">
-                  <Text fontSize="xs" fontWeight="semibold" opacity={0.5} mb={2} textTransform="uppercase" letterSpacing="0.05em">
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    opacity={0.5}
+                    mb={2}
+                    textTransform="uppercase"
+                    letterSpacing="0.05em"
+                  >
                     {isEs ? `Nivel ${assessedLevel}` : `Level ${assessedLevel}`}
                   </Text>
                   <VStack align="start" spacing={1}>
-                    {(CEFR_LEVEL_OFFERINGS[assessedLevel]?.[isEs ? "es" : "en"] || []).map(
-                      (item) => (
-                        <Text key={item} fontSize="xs" opacity={0.7}>
-                          {item}
-                        </Text>
-                      )
-                    )}
+                    {(
+                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.[
+                        isEs ? "es" : "en"
+                      ] || []
+                    ).map((item) => (
+                      <Text key={item} fontSize="xs" opacity={0.7}>
+                        {item}
+                      </Text>
+                    ))}
                   </VStack>
                   {assessedLevel !== "Pre-A1" && (
                     <HStack mt={3} spacing={1.5} flexWrap="wrap">
                       {CEFR_LEVELS.slice(
                         0,
-                        CEFR_LEVELS.indexOf(assessedLevel) + 1
+                        CEFR_LEVELS.indexOf(assessedLevel) + 1,
                       ).map((lvl) => (
                         <Badge
                           key={lvl}
