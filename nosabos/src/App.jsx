@@ -2097,7 +2097,7 @@ export default function App() {
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
-            profile: storedDisplayName ? { displayName: storedDisplayName } : {},
+            displayName: storedDisplayName || "",
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -2116,16 +2116,16 @@ export default function App() {
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
-          profile: storedDisplayName ? { displayName: storedDisplayName } : {},
+          displayName: storedDisplayName || "",
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
       }
 
-      if (id && storedDisplayName && !userDoc?.profile?.displayName) {
+      if (id && storedDisplayName && !userDoc?.displayName) {
         await setDoc(
           doc(database, "users", id),
-          { profile: { displayName: storedDisplayName } },
+          { displayName: storedDisplayName },
           { merge: true },
         );
       }
