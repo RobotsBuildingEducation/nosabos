@@ -21,7 +21,17 @@ function textFromChunk(chunk) {
 export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
+  onChunk,
 }) {
+  const emitChunk = (fullText, delta) => {
+    if (typeof onChunk !== "function") return;
+    try {
+      onChunk(fullText, delta);
+    } catch (err) {
+      console.warn("callResponses onChunk handler failed", err);
+    }
+  };
+
   if (simplemodel) {
     try {
       const resp = await simplemodel.generateContentStream({
@@ -30,7 +40,11 @@ export async function callResponses({
 
       let aggregated = "";
       for await (const chunk of resp.stream) {
-        aggregated += textFromChunk(chunk);
+        const piece = textFromChunk(chunk);
+        if (piece) {
+          aggregated += piece;
+          emitChunk(aggregated, piece);
+        }
       }
 
       const finalResp = await resp.response;
@@ -38,6 +52,11 @@ export async function callResponses({
         (typeof finalResp?.text === "function"
           ? finalResp.text()
           : finalResp?.text) || aggregated;
+
+      if (finalText && finalText !== aggregated) {
+        emitChunk(finalText, finalText.slice(aggregated.length));
+      }
+
       return String(finalText || "");
     } catch (err) {
       console.warn("callResponses gemini stream failed", err);
@@ -74,9 +93,13 @@ export async function callResponses({
       (Array.isArray(payload?.choices) &&
         (payload.choices[0]?.message?.content || "")) ||
       (typeof payload === "string" ? payload : "");
-    return String(text || "");
+    const result = String(text || "");
+    emitChunk(result, result);
+    return result;
   } catch {
-    return "";
+    const fallback = "";
+    emitChunk(fallback, fallback);
+    return fallback;
   }
 }
 

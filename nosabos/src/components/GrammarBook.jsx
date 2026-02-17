@@ -1432,10 +1432,11 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           setExplanationText(finalText);
         }
       } else {
-        // Fallback to non-streaming if Gemini unavailable
+        // Fallback streaming when Gemini unavailable
         const explanation = await callResponses({
           model: MODEL,
           input: prompt,
+          onChunk: (fullText) => setExplanationText(fullText || ""),
         });
         setExplanationText(
           explanation ||
