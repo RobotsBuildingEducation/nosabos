@@ -331,7 +331,7 @@ export default function IdentityDrawer({
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
             <VStack align="stretch" spacing={3} flex={1}>
               {/* Copy ID + Secret Key */}
-              <HStack spacing={2} align="flex-start" flexWrap="wrap">
+              <HStack spacing={3} justify="flex-end" flexWrap="wrap">
                 <Button
                   size="sm"
                   onClick={() =>
@@ -339,7 +339,8 @@ export default function IdentityDrawer({
                   }
                   isDisabled={!currentId}
                   colorScheme="teal"
-                  padding={5}
+                  px={6}
+                  py={5}
                 >
                   {t?.app_copy_id || "Copy User ID"}
                 </Button>
@@ -353,7 +354,8 @@ export default function IdentityDrawer({
                     )
                   }
                   isDisabled={!currentSecret}
-                  padding={5}
+                  px={6}
+                  py={5}
                 >
                   {t?.app_copy_secret || "Copy Secret Key"}
                 </Button>
@@ -401,7 +403,7 @@ export default function IdentityDrawer({
               </Box>
 
               {/* Display Name + Switch Account Accordions */}
-              <Accordion allowMultiple bg="gray.800" rounded="md">
+              <Accordion allowMultiple bg="gray.800" rounded="md" maxW="600px">
                 {/* Display Name */}
                 <AccordionItem border="none">
                   <AccordionButton px={4} py={3}>
@@ -430,17 +432,19 @@ export default function IdentityDrawer({
                       bg="gray.700"
                       mb={2}
                     />
-                    <Button
-                      size="sm"
-                      colorScheme="teal"
-                      onClick={handleSaveDisplayName}
-                      isLoading={isSavingDisplayName}
-                      loadingText={
-                        appLanguage === "es" ? "Guardando…" : "Saving…"
-                      }
-                    >
-                      {appLanguage === "es" ? "Guardar" : "Save"}
-                    </Button>
+                    <HStack justify="flex-end">
+                      <Button
+                        size="sm"
+                        colorScheme="teal"
+                        onClick={handleSaveDisplayName}
+                        isLoading={isSavingDisplayName}
+                        loadingText={
+                          appLanguage === "es" ? "Guardando…" : "Saving…"
+                        }
+                      >
+                        {appLanguage === "es" ? "Guardar" : "Save"}
+                      </Button>
+                    </HStack>
                   </AccordionPanel>
                 </AccordionItem>
 
