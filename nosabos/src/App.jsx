@@ -1070,7 +1070,7 @@ function TopBar({
                         bg="gray.800"
                         _hover={{ bg: "gray.750" }}
                         _active={{ bg: "gray.750" }}
-                        px={4}
+                        padding={6}
                       >
                         <HStack spacing={2}>
                           {selectedSupportOption?.flag}
@@ -1101,6 +1101,7 @@ function TopBar({
                             <MenuItemOption
                               key={option.value}
                               value={option.value}
+                              padding={6}
                             >
                               <HStack spacing={2}>
                                 {option.flag}
@@ -1133,6 +1134,7 @@ function TopBar({
                           translations[appLanguage]
                             .onboarding_practice_label_title
                         }
+                        padding={6}
                       >
                         <HStack spacing={2}>
                           {selectedPracticeOption?.flag}
@@ -1187,6 +1189,7 @@ function TopBar({
                             <MenuItemOption
                               key={option.value}
                               value={option.value}
+                              padding={6}
                             >
                               <HStack spacing={2}>
                                 {option.flag}
@@ -1210,11 +1213,13 @@ function TopBar({
                   variant="outline"
                   borderColor="cyan.600"
                   color="cyan.200"
+                  padding={6}
                   _hover={{ bg: "cyan.900" }}
                   onClick={() => {
                     closeSettings();
                     navigate("/proficiency");
                   }}
+                  mt={4}
                 >
                   {appLanguage === "es"
                     ? "Iniciar prueba de nivel"
@@ -2870,7 +2875,13 @@ export default function App() {
 
       if (npub) {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
-        await startLesson(npub, lesson.id, resolvedTargetLang, user?.progress, currentXp);
+        await startLesson(
+          npub,
+          lesson.id,
+          resolvedTargetLang,
+          user?.progress,
+          currentXp,
+        );
 
         // Refresh user data to get updated progress (including saved lessonStartXp)
         fresh = await loadUserObjectFromDB(database, npub);

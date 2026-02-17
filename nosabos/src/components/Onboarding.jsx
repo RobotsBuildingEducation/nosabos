@@ -347,6 +347,7 @@ export default function Onboarding({
                       _active={{ bg: "gray.750" }}
                       w="100%"
                       textAlign="left"
+                      padding={6}
                     >
                       <HStack spacing={2}>
                         {supportOption.flag}
@@ -369,13 +370,13 @@ export default function Onboarding({
                         value={supportLang}
                         onChange={(value) => setSupportLang(value)}
                       >
-                        <MenuItemOption value="en">
+                        <MenuItemOption value="en" padding={6} pl={1}>
                           <HStack spacing={2}>
                             {usaFlag()}
                             <Text as="span">{ui.onboarding_support_en}</Text>
                           </HStack>
                         </MenuItemOption>
-                        <MenuItemOption value="es">
+                        <MenuItemOption value="es" padding={6} pl={1}>
                           <HStack spacing={2}>
                             {mexicanFlag()}
                             <Text as="span">{ui.onboarding_support_es}</Text>
@@ -407,6 +408,7 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                       title={ui.onboarding_practice_label_title}
+                      padding={6}
                     >
                       <HStack spacing={2}>
                         {selectedPracticeOption?.flag}
@@ -457,6 +459,8 @@ export default function Onboarding({
                           <MenuItemOption
                             key={option.value}
                             value={option.value}
+                            padding={6}
+                            pl={1}
                           >
                             <div style={{ display: "inline-flex" }}>
                               {option?.flag}&nbsp;
