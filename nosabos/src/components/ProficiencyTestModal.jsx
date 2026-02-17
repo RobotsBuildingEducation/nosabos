@@ -65,7 +65,7 @@ export default function ProficiencyTestModal({
 
             <Text
               fontWeight="bold"
-              fontSize="xl"
+              fontSize="lg"
               textAlign="center"
               color="white"
             >
