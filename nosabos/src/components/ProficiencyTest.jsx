@@ -613,6 +613,7 @@ export default function ProficiencyTest() {
   // Result drawer
   const [showResult, setShowResult] = useState(false);
   const [showRubric, setShowRubric] = useState(false);
+  const rubricBodyRef = useRef(null);
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
   const [assessmentScores, setAssessmentScores] = useState(null);
@@ -622,6 +623,11 @@ export default function ProficiencyTest() {
 
   // Progress bar
   const progressPct = Math.min(100, (userMessageCount / MAX_EXCHANGES) * 100);
+
+  useEffect(() => {
+    if (!showRubric || !rubricBodyRef.current) return;
+    rubricBodyRef.current.scrollTop = 0;
+  }, [showRubric]);
 
   function pushMessage(m) {
     setMessages((p) => {
@@ -2129,7 +2135,7 @@ Return ONLY valid JSON:
             },
           }}
         >
-          <DrawerBody py={6} overflowY="auto">
+          <DrawerBody ref={rubricBodyRef} py={6} overflowY="auto">
             <VStack
               align="stretch"
               spacing={4}
