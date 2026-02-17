@@ -1065,7 +1065,7 @@ function TopBar({
                       {translations[appLanguage]
                         .onboarding_support_menu_label || "Support:"}
                     </Text>
-                    <Menu autoSelect={false} isLazy>
+                    <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
                       <MenuButton
                         as={Button}
                         rightIcon={<ChevronDownIcon />}
@@ -1076,6 +1076,7 @@ function TopBar({
                         _hover={{ bg: "gray.750" }}
                         _active={{ bg: "gray.750" }}
                         padding={6}
+                        onClick={() => playSound(selectSound)}
                       >
                         <HStack spacing={2}>
                           {selectedSupportOption?.flag}
@@ -1098,6 +1099,7 @@ function TopBar({
                           type="radio"
                           value={supportLang}
                           onChange={(value) => {
+                            playSound(selectSound);
                             setSupportLang(value);
                             persistSettings({ supportLang: value });
                           }}
@@ -1124,7 +1126,7 @@ function TopBar({
                       {translations[appLanguage]
                         .onboarding_practice_menu_label || "Practice:"}
                     </Text>
-                    <Menu autoSelect={false} isLazy>
+                    <Menu autoSelect={false} isLazy onOpen={() => playSound(selectSound)}>
                       <MenuButton
                         as={Button}
                         rightIcon={<ChevronDownIcon />}
@@ -1140,6 +1142,7 @@ function TopBar({
                             .onboarding_practice_label_title
                         }
                         padding={6}
+                        onClick={() => playSound(selectSound)}
                       >
                         <HStack spacing={2}>
                           {selectedPracticeOption?.flag}
@@ -1186,6 +1189,7 @@ function TopBar({
                           type="radio"
                           value={targetLang}
                           onChange={(value) => {
+                            playSound(selectSound);
                             setTargetLang(value);
                             persistSettings({ targetLang: value });
                           }}
