@@ -1795,7 +1795,7 @@ export default function App() {
     }
   }, [pathMode]);
 
-  // Ensure pathMode is always valid; default to skill tree path for all languages
+  // Reset to skill tree path on language switch; also validate pathMode
   useEffect(() => {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
@@ -1804,6 +1804,15 @@ export default function App() {
         lastPathTargetRef.current = resolvedTargetLang;
       }
       return;
+    }
+
+    // When user explicitly switches languages, reset to skill tree path
+    if (
+      user &&
+      lastPathTargetRef.current !== null &&
+      lastPathTargetRef.current !== resolvedTargetLang
+    ) {
+      setPathMode("path");
     }
 
     // Only update ref when user data is loaded (prevents false "change" detection on initial load)
