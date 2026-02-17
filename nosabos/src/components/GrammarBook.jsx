@@ -682,11 +682,8 @@ function buildTranslateStreamPrompt({
 
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
-  const exampleSentence = isTargetToSupport
-    ? `Example: "Hola amigo" -> "Hello friend"`
-    : `Example: "Hello friend" -> "Hola amigo"`;
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. ${exampleSentence}. Use only common greeting words. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. Use only common greeting words. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
     ? [
         lessonContent.topic
@@ -704,6 +701,15 @@ function buildTranslateStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) sentence must be ONLY in ${SOURCE_LANG}.`,
+    `  2) correctWords and distractors must be ONLY in ${ANSWER_LANG}.`,
+    `  3) hint must be ONLY in ${SUPPORT}.`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE sentence translation exercise. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -712,6 +718,7 @@ function buildTranslateStreamPrompt({
     `- Correct translation as array of ${ANSWER_LANG} words in order.`,
     `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
     `- Hint in ${SUPPORT} (≤8 words) about the grammar point.`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",

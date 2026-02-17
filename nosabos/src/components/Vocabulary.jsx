@@ -780,9 +780,6 @@ function buildVocabTranslateStreamPrompt({
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
   const varietyLines = buildVarietyLines(lessonContent, recentGood);
-  const exampleSentence = isTargetToSupport
-    ? `Example: "El gato es negro" -> "The cat is black"`
-    : `Example: "The cat is black" -> "El gato es negro"`;
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE greeting-only sentence. It MUST include a basic greeting like "hello", "hi", "good morning", "good afternoon", "good evening", "goodbye", or "bye". Use ONLY greetings (no colors, animals, objects, or unrelated nouns). Keep it 2–4 words and absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
@@ -802,6 +799,15 @@ function buildVocabTranslateStreamPrompt({
         recentGood.slice(-3)
       )}`;
 
+  const languageGuard = [
+    `- LANGUAGE RULES (MANDATORY):`,
+    `  1) sentence must be ONLY in ${SOURCE_LANG}.`,
+    `  2) correctWords and distractors must be ONLY in ${ANSWER_LANG}.`,
+    `  3) hint must be ONLY in ${SUPPORT}.`,
+    `  4) NEVER use any other language, including Spanish, unless it is one of the required languages above.`,
+    `  5) Do NOT mix languages within the same field.`,
+  ].join("\n");
+
   return [
     `Create ONE sentence translation exercise for VOCABULARY. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
@@ -810,6 +816,7 @@ function buildVocabTranslateStreamPrompt({
     `- Correct translation as array of ${ANSWER_LANG} words in order.`,
     `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
     `- Hint in ${SUPPORT} (≤8 words) about key vocabulary.`,
+    languageGuard,
     topicDirective,
     "",
     "Stream as NDJSON:",
