@@ -97,9 +97,7 @@ export default function IdentityDrawer({
     if (!trimmed) {
       toast({
         title:
-          appLanguage === "es"
-            ? "Ingresa un nombre"
-            : "Enter a display name",
+          appLanguage === "es" ? "Ingresa un nombre" : "Enter a display name",
         status: "warning",
         duration: 2000,
       });
@@ -131,9 +129,7 @@ export default function IdentityDrawer({
 
       toast({
         title:
-          appLanguage === "es"
-            ? "Nombre actualizado"
-            : "Display name updated",
+          appLanguage === "es" ? "Nombre actualizado" : "Display name updated",
         status: "success",
         duration: 2000,
       });
@@ -362,7 +358,14 @@ export default function IdentityDrawer({
               </HStack>
 
               {/* Patreon Support Link */}
-              <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
+              <Box
+                p={4}
+                bg="gray.800"
+                rounded="lg"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
                 <HStack spacing={3} align="center">
                   <Box
                     p={2}
@@ -403,7 +406,14 @@ export default function IdentityDrawer({
               </Box>
 
               {/* Display Name + Switch Account Accordions */}
-              <Accordion allowMultiple bg="gray.800" rounded="md" maxW="600px" w="100%" mx="auto">
+              <Accordion
+                allowMultiple
+                bg="gray.800"
+                rounded="md"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
                 {/* Display Name */}
                 <AccordionItem border="none">
                   <AccordionButton px={4} py={3}>
@@ -449,6 +459,15 @@ export default function IdentityDrawer({
                 </AccordionItem>
 
                 {/* Switch Account */}
+              </Accordion>
+              <Accordion
+                allowMultiple
+                bg="gray.800"
+                rounded="md"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
                 <AccordionItem border="none">
                   <AccordionButton px={4} py={3}>
                     <Flex flex="1" textAlign="left" align="center">
@@ -468,8 +487,7 @@ export default function IdentityDrawer({
                       onChange={(e) => setSwitchNsec(e.target.value)}
                       bg="gray.700"
                       placeholder={
-                        t?.app_nsec_placeholder ||
-                        "Paste an nsec key to switch"
+                        t?.app_nsec_placeholder || "Paste an nsec key to switch"
                       }
                     />
                     <HStack mt={2} justify="flex-end">
@@ -505,7 +523,7 @@ export default function IdentityDrawer({
                   mx="auto"
                 >
                   <AccordionItem border="none">
-                    <AccordionButton px={4} py={3} bg="#f08e19">
+                    <AccordionButton px={4} py={3}>
                       <Flex flex="1" textAlign="left" align="center" gap={3}>
                         <Text
                           fontWeight="semibold"
@@ -533,35 +551,37 @@ export default function IdentityDrawer({
               )}
 
               {/* Install App Section (Always Visible - NOT an accordion) */}
-              <Box bg="gray.800" p={4} rounded="md">
-                <Text fontWeight="semibold" mb={3}>
-                  {t?.app_install_title || "Install as app"}
-                </Text>
-                <Box bg="gray.900" p={3} rounded="md">
-                  {installSteps.map((step, idx) => (
-                    <Box key={step.id} py={2}>
-                      <Flex
-                        align="center"
-                        gap={3}
-                        justify="space-between"
-                        flexWrap="wrap"
-                      >
-                        <HStack align="center" gap={3}>
-                          <Box color="teal.200">{step.icon}</Box>
-                          <Text fontSize="sm">{step.text}</Text>
-                        </HStack>
-                        {step.action ? <Box>{step.action}</Box> : null}
-                      </Flex>
-                      {step.subText ? (
-                        <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                          {step.subText}
-                        </Text>
-                      ) : null}
-                      {idx < installSteps.length - 1 && (
-                        <Divider my={3} borderColor="gray.700" />
-                      )}
-                    </Box>
-                  ))}
+              <Box display="flex" justifyContent={"center"} mt={6}>
+                <Box maxW="600px">
+                  <Text fontWeight="semibold" mb={3}>
+                    {t?.app_install_title || "Install as app"}
+                  </Text>
+                  <Box bg="gray.900" p={3} rounded="md">
+                    {installSteps.map((step, idx) => (
+                      <Box key={step.id} py={2}>
+                        <Flex
+                          align="center"
+                          gap={3}
+                          justify="space-between"
+                          flexWrap="wrap"
+                        >
+                          <HStack align="center" gap={3}>
+                            <Box color="teal.200">{step.icon}</Box>
+                            <Text fontSize="sm">{step.text}</Text>
+                          </HStack>
+                          {step.action ? <Box>{step.action}</Box> : null}
+                        </Flex>
+                        {step.subText ? (
+                          <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                            {step.subText}
+                          </Text>
+                        ) : null}
+                        {idx < installSteps.length - 1 && (
+                          <Divider my={3} borderColor="gray.700" />
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
               </Box>
 
