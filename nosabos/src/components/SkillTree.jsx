@@ -276,7 +276,7 @@ const getTranslation = (key, params = {}) => {
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
-    params[k] != null ? String(params[k]) : `{${k}}`
+    params[k] != null ? String(params[k]) : `{${k}}`,
   );
 };
 
@@ -857,8 +857,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.LOCKED
                   ? "linear(to-br, gray.700, gray.800)"
                   : status === SKILL_STATUS.COMPLETED
-                  ? "linear(135deg, #FFD700, #FFA500, #FFD700)"
-                  : `linear(135deg, ${unit.color}dd, ${unit.color})`
+                    ? "linear(135deg, #FFD700, #FFA500, #FFD700)"
+                    : `linear(135deg, ${unit.color}dd, ${unit.color})`
               }
               border="4px solid"
               borderColor="transparent"
@@ -870,8 +870,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.LOCKED
                   ? "0 8px 0px rgba(0,0,0,0.4)"
                   : status === SKILL_STATUS.COMPLETED
-                  ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
-                  : `0 8px 0px ${unit.color}AA`
+                    ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
+                    : `0 8px 0px ${unit.color}AA`
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="transform 0.15s ease, box-shadow 0.15s ease"
@@ -1054,7 +1054,7 @@ const UnitSection = React.memo(function UnitSection({
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
     (lesson) =>
-      userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+      userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
   ).length;
 
   const unitTitle = getUIDisplayText(unit.title);
@@ -1114,7 +1114,7 @@ const UnitSection = React.memo(function UnitSection({
             pointerEvents="none"
           />
 
-          <HStack justify="space-between" mb={4} position="relative">
+          <HStack justify="space-between" position="relative">
             <VStack align="start" spacing={2}>
               <HStack spacing={3}>
                 <Box
@@ -1145,34 +1145,6 @@ const UnitSection = React.memo(function UnitSection({
               </Text>
             </VStack>
           </HStack>
-
-          {/* Enhanced Unit Progress Bar */}
-          <Box position="relative">
-            <Progress
-              value={unitProgressPercent}
-              borderRadius="full"
-              size="sm"
-              bg="whiteAlpha.100"
-              sx={{
-                "& > div": {
-                  bgGradient: `linear(to-r, ${unit.color}, ${unit.color}dd)`,
-                  boxShadow: `0 0 10px ${unit.color}80`,
-                },
-              }}
-            />
-            <Text
-              position="absolute"
-              right={2}
-              top="50%"
-              transform="translateY(-50%)"
-              fontSize="xs"
-              fontWeight="bold"
-              color="white"
-              textShadow="0 1px 2px rgba(0,0,0,0.5)"
-            >
-              {Math.round(unitProgressPercent)}%
-            </Text>
-          </Box>
         </Box>
 
         {/* Connector from unit header to first lesson */}
@@ -1574,15 +1546,15 @@ function LessonDetailModal({
                 lesson.isTutorial
                   ? "blue.600"
                   : lesson.isFinalQuiz
-                  ? "purple.600"
-                  : "yellow.600"
+                    ? "purple.600"
+                    : "yellow.600"
               }
               boxShadow={
                 lesson.isTutorial
                   ? "0 4px 12px rgba(99, 102, 241, 0.2)"
                   : lesson.isFinalQuiz
-                  ? "0 4px 12px rgba(159, 122, 234, 0.2)"
-                  : "0 4px 12px rgba(251, 191, 36, 0.2)"
+                    ? "0 4px 12px rgba(159, 122, 234, 0.2)"
+                    : "0 4px 12px rgba(251, 191, 36, 0.2)"
               }
             >
               <Box
@@ -1603,15 +1575,15 @@ function LessonDetailModal({
                       lesson.isTutorial
                         ? "linear(135deg, blue.400, indigo.600)"
                         : lesson.isFinalQuiz
-                        ? "linear(135deg, purple.400, purple.600)"
-                        : "linear(135deg, yellow.400, orange.400)"
+                          ? "linear(135deg, purple.400, purple.600)"
+                          : "linear(135deg, yellow.400, orange.400)"
                     }
                     boxShadow={
                       lesson.isTutorial
                         ? "0 2px 10px rgba(99, 102, 241, 0.4)"
                         : lesson.isFinalQuiz
-                        ? "0 2px 10px rgba(159, 122, 234, 0.4)"
-                        : "0 2px 10px rgba(251, 191, 36, 0.4)"
+                          ? "0 2px 10px rgba(159, 122, 234, 0.4)"
+                          : "0 2px 10px rgba(251, 191, 36, 0.4)"
                     }
                   >
                     {lesson.isTutorial ? (
@@ -1626,8 +1598,8 @@ function LessonDetailModal({
                     {lesson.isTutorial
                       ? getTranslation("skill_tree_tutorial_goal")
                       : lesson.isFinalQuiz
-                      ? getTranslation("skill_tree_passing_score")
-                      : getTranslation("skill_tree_xp_reward")}
+                        ? getTranslation("skill_tree_passing_score")
+                        : getTranslation("skill_tree_xp_reward")}
                   </Text>
                 </HStack>
                 <Text
@@ -1647,12 +1619,12 @@ function LessonDetailModal({
                   {lesson.isTutorial
                     ? getTranslation("skill_tree_tutorial_activities")
                     : lesson.isFinalQuiz
-                    ? `${Math.round(
-                        (lesson.quizConfig?.passingScore /
-                          lesson.quizConfig?.questionsRequired) *
-                          100
-                      )}%`
-                    : `+${lesson.xpReward} XP`}
+                      ? `${Math.round(
+                          (lesson.quizConfig?.passingScore /
+                            lesson.quizConfig?.questionsRequired) *
+                            100,
+                        )}%`
+                      : `+${lesson.xpReward} XP`}
                 </Text>
               </HStack>
             </Box>
@@ -1841,16 +1813,16 @@ export default function SkillTree({
   // Calculate overall progress
   const totalLessons = units.reduce(
     (sum, unit) => sum + unit.lessons.length,
-    0
+    0,
   );
   const completedLessons = units.reduce(
     (sum, unit) =>
       sum +
       unit.lessons.filter(
         (lesson) =>
-          userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+          userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
       ).length,
-    0
+    0,
   );
   const overallProgress =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
@@ -1913,16 +1885,17 @@ export default function SkillTree({
 
     const levelTotalLessons = visibleUnits.reduce(
       (sum, unit) => sum + unit.lessons.length,
-      0
+      0,
     );
     const levelCompletedLessons = visibleUnits.reduce(
       (sum, unit) =>
         sum +
         unit.lessons.filter(
           (lesson) =>
-            userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+            userProgress.lessons?.[lesson.id]?.status ===
+            SKILL_STATUS.COMPLETED,
         ).length,
-      0
+      0,
     );
 
     return levelTotalLessons > 0
