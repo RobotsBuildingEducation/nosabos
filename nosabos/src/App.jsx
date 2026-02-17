@@ -537,6 +537,7 @@ function TopBar({
   testSound,
   // 🆕 mobile detection prop
   isMobile,
+  postNostrContent,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -4770,6 +4771,7 @@ export default function App() {
         playSound={playSound}
         testSound={submitActionSound}
         isMobile={isMobile}
+        postNostrContent={postNostrContent}
       />
 
       <TeamsDrawer
