@@ -72,12 +72,79 @@ export default function IdentityDrawer({
   user,
   onSelectIdentity,
   isIdentitySaving = false,
+  postNostrContent,
 }) {
   const toast = useToast();
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
   const signOutCancelRef = useRef();
+
+  // Display name state
+  const [displayName, setDisplayName] = useState("");
+  const [displayNameInput, setDisplayNameInput] = useState("");
+  const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+
+  // Load displayName from localStorage on mount
+  useEffect(() => {
+    const storedDisplayName = localStorage.getItem("displayName") || "";
+    setDisplayName(storedDisplayName);
+    setDisplayNameInput(storedDisplayName);
+  }, []);
+
+  const handleSaveDisplayName = async () => {
+    const trimmed = displayNameInput.trim();
+    if (!trimmed) {
+      toast({
+        title:
+          appLanguage === "es" ? "Ingresa un nombre" : "Enter a display name",
+        status: "warning",
+        duration: 2000,
+      });
+      return;
+    }
+
+    setIsSavingDisplayName(true);
+    try {
+      // Post kind 0 (metadata) to Nostr
+      if (postNostrContent) {
+        const metadata = {
+          name: trimmed,
+          about: "A student onboarded with Robots Building Education",
+        };
+        await postNostrContent(JSON.stringify(metadata), 0);
+      }
+
+      // Save to localStorage
+      localStorage.setItem("displayName", trimmed);
+      setDisplayName(trimmed);
+
+      // Save to Firestore
+      const id = localStorage.getItem("local_npub");
+      if (id) {
+        await updateDoc(doc(database, "users", id), {
+          displayName: trimmed,
+        });
+      }
+
+      toast({
+        title:
+          appLanguage === "es" ? "Nombre actualizado" : "Display name updated",
+        status: "success",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Failed to save display name:", error);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description: error?.message || String(error),
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      setIsSavingDisplayName(false);
+    }
+  };
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -235,29 +302,21 @@ export default function IdentityDrawer({
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"
-          maxH="100vh"
+          maxH="80vh"
           display="flex"
           flexDirection="column"
-          sx={{
-            "@supports (height: 100dvh)": {
-              maxHeight: "100dvh",
-            },
-          }}
         >
-          <DrawerCloseButton
-            color="gray.400"
-            _hover={{ color: "gray.200" }}
-            top={4}
-            right={4}
-          />
-          <DrawerHeader pb={2} pr={12}>
-            {t?.app_account_title || "Account"}
-          </DrawerHeader>
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+            <DrawerHeader>
+              {displayName
+                ? appLanguage === "es"
+                  ? `Cuenta de ${displayName}`
+                  : `${displayName}'s Account`
+                : t?.app_account_title || "Account"}
+            </DrawerHeader>
             <VStack align="stretch" spacing={3} flex={1}>
-              {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
-              <HStack spacing={2} align="flex-start" flexWrap="wrap">
-                {/* Copy ID Button */}
+              {/* Copy ID + Secret Key */}
+              <HStack spacing={3} justify="center" flexWrap="wrap">
                 <Button
                   size="sm"
                   onClick={() =>
@@ -265,12 +324,11 @@ export default function IdentityDrawer({
                   }
                   isDisabled={!currentId}
                   colorScheme="teal"
-                  padding={5}
+                  px={6}
+                  py={5}
                 >
                   {t?.app_copy_id || "Copy User ID"}
                 </Button>
-
-                {/* Copy Secret Key Button */}
                 <Button
                   size="sm"
                   colorScheme="orange"
@@ -281,43 +339,22 @@ export default function IdentityDrawer({
                     )
                   }
                   isDisabled={!currentSecret}
-                  padding={5}
+                  px={6}
+                  py={5}
                 >
                   {t?.app_copy_secret || "Copy Secret Key"}
                 </Button>
               </HStack>
 
-              {/* Switch account */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {t?.app_switch_account || "Switch account"}
-                </Text>
-                <Text fontSize="xs" opacity={0.75} mt={1} mb={1}>
-                  {t?.app_switch_note ||
-                    "We'll derive your public key (npub) from the secret and switch safely."}
-                </Text>
-                <Input
-                  value={switchNsec}
-                  onChange={(e) => setSwitchNsec(e.target.value)}
-                  bg="gray.700"
-                  placeholder={
-                    t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                  }
-                />
-                <HStack mt={2} justify="flex-end">
-                  <Button
-                    isLoading={isSwitching}
-                    loadingText={t?.app_switching || "Switching…"}
-                    onClick={switchAccountWithNsec}
-                    colorScheme="teal"
-                  >
-                    {t?.app_switch || "Switch"}
-                  </Button>
-                </HStack>
-              </Box>
-
               {/* Patreon Support Link */}
-              <Box mt={4} p={4} bg="gray.800" rounded="lg" width="fit-content">
+              <Box
+                p={4}
+                bg="gray.800"
+                rounded="lg"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
                 <HStack spacing={3} align="center">
                   <Box
                     p={2}
@@ -333,7 +370,7 @@ export default function IdentityDrawer({
                     <Text fontWeight="semibold" fontSize="sm">
                       {appLanguage === "es"
                         ? "Apóyanos en Patreon"
-                        : "Join  us on Patreon"}
+                        : "Join us on Patreon"}
                     </Text>
                     <Text fontSize="xs" color="gray.400">
                       {appLanguage === "es"
@@ -357,6 +394,105 @@ export default function IdentityDrawer({
                 </HStack>
               </Box>
 
+              {/* Display Name + Switch Account Accordions */}
+              <Accordion
+                allowMultiple
+                bg="gray.800"
+                rounded="md"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
+                {/* Display Name */}
+                <AccordionItem border="none">
+                  <AccordionButton px={4} py={3}>
+                    <Flex flex="1" textAlign="left" align="center">
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {displayName
+                          ? appLanguage === "es"
+                            ? "Cambiar nombre de usuario"
+                            : "Change display name"
+                          : appLanguage === "es"
+                            ? "Crear nombre de usuario"
+                            : "Create display name"}
+                      </Text>
+                    </Flex>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4}>
+                    <Input
+                      value={displayNameInput}
+                      onChange={(e) => setDisplayNameInput(e.target.value)}
+                      placeholder={
+                        appLanguage === "es"
+                          ? "Ingresa tu nombre"
+                          : "Enter a display name"
+                      }
+                      bg="gray.700"
+                      mb={2}
+                    />
+                    <HStack justify="flex-end">
+                      <Button
+                        size="sm"
+                        colorScheme="teal"
+                        onClick={handleSaveDisplayName}
+                        isLoading={isSavingDisplayName}
+                        loadingText={
+                          appLanguage === "es" ? "Guardando…" : "Saving…"
+                        }
+                      >
+                        {appLanguage === "es" ? "Guardar" : "Save"}
+                      </Button>
+                    </HStack>
+                  </AccordionPanel>
+                </AccordionItem>
+
+                {/* Switch Account */}
+              </Accordion>
+              <Accordion
+                allowMultiple
+                bg="gray.800"
+                rounded="md"
+                maxW="600px"
+                w="100%"
+                mx="auto"
+              >
+                <AccordionItem border="none">
+                  <AccordionButton px={4} py={3}>
+                    <Flex flex="1" textAlign="left" align="center">
+                      <Text fontWeight="semibold" fontSize="sm">
+                        {t?.app_switch_account || "Switch account"}
+                      </Text>
+                    </Flex>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4}>
+                    <Text fontSize="xs" opacity={0.75} mb={2}>
+                      {t?.app_switch_note ||
+                        "We'll derive your public key (npub) from the secret and switch safely."}
+                    </Text>
+                    <Input
+                      value={switchNsec}
+                      onChange={(e) => setSwitchNsec(e.target.value)}
+                      bg="gray.700"
+                      placeholder={
+                        t?.app_nsec_placeholder || "Paste an nsec key to switch"
+                      }
+                    />
+                    <HStack mt={2} justify="flex-end">
+                      <Button
+                        isLoading={isSwitching}
+                        loadingText={t?.app_switching || "Switching…"}
+                        onClick={switchAccountWithNsec}
+                        colorScheme="teal"
+                      >
+                        {t?.app_switch || "Switch"}
+                      </Button>
+                    </HStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
+
               {/* Bitcoin Wallet Section (Accordion) */}
               {enableWallet && (
                 <Accordion
@@ -371,10 +507,12 @@ export default function IdentityDrawer({
                   }}
                   bg="gray.800"
                   rounded="md"
-                  width="fit-content"
+                  maxW="600px"
+                  w="100%"
+                  mx="auto"
                 >
                   <AccordionItem border="none">
-                    <AccordionButton px={4} py={3} bg="#f08e19">
+                    <AccordionButton px={4} py={3}>
                       <Flex flex="1" textAlign="left" align="center" gap={3}>
                         <Text
                           fontWeight="semibold"
@@ -402,35 +540,37 @@ export default function IdentityDrawer({
               )}
 
               {/* Install App Section (Always Visible - NOT an accordion) */}
-              <Box bg="gray.800" p={4} rounded="md">
-                <Text fontWeight="semibold" mb={3}>
-                  {t?.app_install_title || "Install as app"}
-                </Text>
-                <Box bg="gray.900" p={3} rounded="md">
-                  {installSteps.map((step, idx) => (
-                    <Box key={step.id} py={2}>
-                      <Flex
-                        align="center"
-                        gap={3}
-                        justify="space-between"
-                        flexWrap="wrap"
-                      >
-                        <HStack align="center" gap={3}>
-                          <Box color="teal.200">{step.icon}</Box>
-                          <Text fontSize="sm">{step.text}</Text>
-                        </HStack>
-                        {step.action ? <Box>{step.action}</Box> : null}
-                      </Flex>
-                      {step.subText ? (
-                        <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                          {step.subText}
-                        </Text>
-                      ) : null}
-                      {idx < installSteps.length - 1 && (
-                        <Divider my={3} borderColor="gray.700" />
-                      )}
-                    </Box>
-                  ))}
+              <Box display="flex" justifyContent={"center"} mt={6}>
+                <Box maxW="600px">
+                  <Text fontWeight="semibold" mb={3}>
+                    {t?.app_install_title || "Install as app"}
+                  </Text>
+                  <Box bg="gray.900" p={3} rounded="md">
+                    {installSteps.map((step, idx) => (
+                      <Box key={step.id} py={2}>
+                        <Flex
+                          align="center"
+                          gap={3}
+                          justify="space-between"
+                          flexWrap="wrap"
+                        >
+                          <HStack align="center" gap={3}>
+                            <Box color="teal.200">{step.icon}</Box>
+                            <Text fontSize="sm">{step.text}</Text>
+                          </HStack>
+                          {step.action ? <Box>{step.action}</Box> : null}
+                        </Flex>
+                        {step.subText ? (
+                          <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                            {step.subText}
+                          </Text>
+                        ) : null}
+                        {idx < installSteps.length - 1 && (
+                          <Divider my={3} borderColor="gray.700" />
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
                 </Box>
               </Box>
 
