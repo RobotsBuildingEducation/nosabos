@@ -4851,7 +4851,7 @@ export default function App() {
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box pb={{ base: 32, md: 24 }} w="100%">
-          {!hasInitializedLevels ? (
+          {initializedLevelsLang !== resolvedTargetLang ? (
             <Box
               display="flex"
               justifyContent="center"
