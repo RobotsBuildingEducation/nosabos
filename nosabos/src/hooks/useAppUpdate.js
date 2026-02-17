@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { registerSW } from "virtual:pwa-register";
 
+const UPDATE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // check every hour
+
 export default function useAppUpdate() {
   const [needsRefresh, setNeedsRefresh] = useState(false);
   const [isOfflineReady, setIsOfflineReady] = useState(false);
@@ -13,6 +15,13 @@ export default function useAppUpdate() {
       },
       onOfflineReady() {
         setIsOfflineReady(true);
+      },
+      onRegisteredSW(swUrl, registration) {
+        if (!registration) return;
+        const intervalId = setInterval(() => {
+          registration.update();
+        }, UPDATE_CHECK_INTERVAL_MS);
+        return () => clearInterval(intervalId);
       },
     });
 
