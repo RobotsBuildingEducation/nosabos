@@ -1499,42 +1499,49 @@ Return ONLY valid JSON:
     {
       level: "Pre-A1",
       range: "1.0 - 3.1",
+      badgeColor: "purple",
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
     },
     {
       level: "A1",
       range: "3.2 - 4.3",
+      badgeColor: "purple",
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
     },
     {
       level: "A2",
       range: "4.4 - 5.5",
+      badgeColor: "purple",
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
     },
     {
       level: "B1",
       range: "5.6 - 6.7",
+      badgeColor: "blue",
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
     },
     {
       level: "B2",
       range: "6.8 - 7.9",
+      badgeColor: "blue",
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
     },
     {
       level: "C1",
       range: "8.0 - 8.7",
+      badgeColor: "pink",
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
     },
     {
       level: "C2",
       range: "8.8 - 10.0",
+      badgeColor: "pink",
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
     },
@@ -2174,7 +2181,7 @@ Return ONLY valid JSON:
                       transition="border-color 0.2s ease"
                     >
                       <HStack justify="space-between" align="center" mb={1}>
-                        <Badge colorScheme="cyan" variant="solid" px={2} py={0.5}>
+                        <Badge colorScheme={row.badgeColor} variant="solid" px={2} py={0.5}>
                           {row.level}
                         </Badge>
                         <Text fontSize="xs" opacity={0.6}>
