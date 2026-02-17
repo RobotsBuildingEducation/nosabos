@@ -331,7 +331,7 @@ export default function IdentityDrawer({
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
             <VStack align="stretch" spacing={3} flex={1}>
               {/* Copy ID + Secret Key */}
-              <HStack spacing={3} justify="flex-end" flexWrap="wrap">
+              <HStack spacing={3} justify="center" flexWrap="wrap">
                 <Button
                   size="sm"
                   onClick={() =>
@@ -362,7 +362,7 @@ export default function IdentityDrawer({
               </HStack>
 
               {/* Patreon Support Link */}
-              <Box p={4} bg="gray.800" rounded="lg" width="fit-content">
+              <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
                 <HStack spacing={3} align="center">
                   <Box
                     p={2}
@@ -403,7 +403,7 @@ export default function IdentityDrawer({
               </Box>
 
               {/* Display Name + Switch Account Accordions */}
-              <Accordion allowMultiple bg="gray.800" rounded="md" maxW="600px">
+              <Accordion allowMultiple bg="gray.800" rounded="md" maxW="600px" w="100%" mx="auto">
                 {/* Display Name */}
                 <AccordionItem border="none">
                   <AccordionButton px={4} py={3}>
@@ -500,7 +500,9 @@ export default function IdentityDrawer({
                   }}
                   bg="gray.800"
                   rounded="md"
-                  width="fit-content"
+                  maxW="600px"
+                  w="100%"
+                  mx="auto"
                 >
                   <AccordionItem border="none">
                     <AccordionButton px={4} py={3} bg="#f08e19">
