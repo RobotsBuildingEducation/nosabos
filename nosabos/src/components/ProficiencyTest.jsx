@@ -1638,6 +1638,24 @@ Return ONLY valid JSON:
                   <WaveBar value={progressPct} />
                 </Box>
               </Box>
+              <HStack spacing={2} mt={2}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="teal"
+                  onClick={handleTryAgain}
+                >
+                  {isEs ? "Empezar de nuevo" : "Start over"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  colorScheme="teal"
+                  onClick={() => setShowRubric(true)}
+                >
+                  {isEs ? "Rúbrica" : "Grading rubric"}
+                </Button>
+              </HStack>
             </VStack>
           </Box>
         </Box>
@@ -1742,26 +1760,6 @@ Return ONLY valid JSON:
                 </>
               )}
             </Button>
-            <HStack spacing={2}>
-              <Button
-                size="sm"
-                variant="outline"
-                colorScheme="whiteAlpha"
-                rounded="full"
-                onClick={handleTryAgain}
-              >
-                {isEs ? "Empezar de nuevo" : "Start over"}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                colorScheme="cyan"
-                rounded="full"
-                onClick={() => setShowRubric(true)}
-              >
-                {isEs ? "Rúbrica" : "Grading rubric"}
-              </Button>
-            </HStack>
           </VStack>
         </Center>
 
@@ -2082,13 +2080,22 @@ Return ONLY valid JSON:
           }}
         >
           <DrawerBody py={6} overflowY="auto">
-            <VStack align="stretch" spacing={4}>
+            <VStack
+              align="stretch"
+              spacing={4}
+              width="100%"
+              display="flex"
+              alignItems={"center"}
+              justifyContent={"center"}
+            >
               <Box
-                bg="linear-gradient(135deg, rgba(6,182,212,0.24), rgba(168,85,247,0.22))"
+                bg="linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"
                 border="1px solid rgba(255,255,255,0.18)"
                 borderRadius="2xl"
                 p={4}
                 boxShadow="inset 0 1px 0 rgba(255,255,255,0.06)"
+                maxWidth="600px"
+                width="100%"
               >
                 <HStack justify="space-between" align="start" mb={2}>
                   <Text fontSize="xl" fontWeight="bold" mb={2}>
@@ -2105,7 +2112,9 @@ Return ONLY valid JSON:
                   </Badge>
                 </HStack>
                 <Text fontSize="sm" opacity={0.88}>
-                  {isEs ? "Conoce exactamente cómo se calcula tu nivel." : "Know exactly how your level is calculated."}
+                  {isEs
+                    ? "Conoce exactamente cómo se calcula tu nivel."
+                    : "Know exactly how your level is calculated."}
                 </Text>
                 <Text fontSize="sm" opacity={0.75}>
                   {isEs
@@ -2119,8 +2128,10 @@ Return ONLY valid JSON:
                 borderRadius="xl"
                 p={4}
                 border="1px solid rgba(255,255,255,0.10)"
+                maxWidth="600px"
+                width="100%"
               >
-                <Text fontSize="sm" fontWeight="semibold" mb={2} color="cyan.200">
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>
                   {isEs ? "Qué puntúa el sistema" : "What gets scored"}
                 </Text>
                 <Text fontSize="sm" opacity={0.8}>
@@ -2135,39 +2146,42 @@ Return ONLY valid JSON:
                 borderRadius="xl"
                 p={4}
                 border="1px solid rgba(255,255,255,0.10)"
+                maxWidth={"600px"}
+                width="100%"
               >
-                <Text fontSize="sm" fontWeight="semibold" mb={2} color="purple.200">
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>
                   {isEs ? "Mecanismo de calificación" : "Scoring mechanism"}
                 </Text>
                 <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
                   <Text>
-                    • {isEs
+                    •{" "}
+                    {isEs
                       ? "Comprensión y fluidez pesan más que confianza."
                       : "Comprehension and fluency are weighted more heavily than confidence."}
                   </Text>
                   <Text>
-                    • {isEs
+                    •{" "}
+                    {isEs
                       ? "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1."
                       : "Very short or low-substance responses cap the result at Pre-A1/A1."}
                   </Text>
                   <Text>
-                    • {isEs
+                    •{" "}
+                    {isEs
                       ? "Si hay muchos " +
-                        "\"no sé\"/relleno, el nivel baja automáticamente."
-                      : "Frequent filler or \"I don't know\" responses automatically lower the placement."}
+                        '"no sé"/relleno, el nivel baja automáticamente.'
+                      : 'Frequent filler or "I don\'t know" responses automatically lower the placement.'}
                   </Text>
                   <Text>
-                    • {isEs
+                    •{" "}
+                    {isEs
                       ? "El nivel final nunca supera la evidencia real de tu conversación."
                       : "Final placement never exceeds what your conversation evidence supports."}
                   </Text>
                 </VStack>
               </Box>
 
-              <Box>
-                <Text fontSize="sm" fontWeight="semibold" mb={2} color="cyan.200">
-                  {isEs ? "Bandas de nivel" : "Level bands"}
-                </Text>
+              <Box maxWidth="600px" width="100%">
                 <VStack spacing={2} align="stretch">
                   {rubricRows.map((row) => (
                     <Box
@@ -2181,7 +2195,12 @@ Return ONLY valid JSON:
                       transition="border-color 0.2s ease"
                     >
                       <HStack justify="space-between" align="center" mb={1}>
-                        <Badge colorScheme={row.badgeColor} variant="solid" px={2} py={0.5}>
+                        <Badge
+                          colorScheme={row.badgeColor}
+                          variant="solid"
+                          px={2}
+                          py={0.5}
+                        >
                           {row.level}
                         </Badge>
                         <Text fontSize="xs" opacity={0.6}>
@@ -2198,9 +2217,10 @@ Return ONLY valid JSON:
 
               <Button
                 mt={2}
-                bgGradient="linear(to-r, cyan.400, purple.500)"
+                colorScheme="teal"
+                maxW="400px"
+                p={4}
                 color="white"
-                _hover={{ bgGradient: "linear(to-r, cyan.300, purple.400)" }}
                 rounded="xl"
                 onClick={() => setShowRubric(false)}
               >
