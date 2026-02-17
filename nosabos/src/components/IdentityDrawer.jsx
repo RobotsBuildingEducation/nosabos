@@ -302,29 +302,18 @@ export default function IdentityDrawer({
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"
-          maxH="100vh"
+          maxH="80vh"
           display="flex"
           flexDirection="column"
-          sx={{
-            "@supports (height: 100dvh)": {
-              maxHeight: "100dvh",
-            },
-          }}
         >
-          <DrawerCloseButton
-            color="gray.400"
-            _hover={{ color: "gray.200" }}
-            top={4}
-            right={4}
-          />
-          <DrawerHeader pb={2} pr={12}>
-            {displayName
-              ? appLanguage === "es"
-                ? `Cuenta de ${displayName}`
-                : `${displayName}'s Account`
-              : t?.app_account_title || "Account"}
-          </DrawerHeader>
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+            <DrawerHeader>
+              {displayName
+                ? appLanguage === "es"
+                  ? `Cuenta de ${displayName}`
+                  : `${displayName}'s Account`
+                : t?.app_account_title || "Account"}
+            </DrawerHeader>
             <VStack align="stretch" spacing={3} flex={1}>
               {/* Copy ID + Secret Key */}
               <HStack spacing={3} justify="center" flexWrap="wrap">
