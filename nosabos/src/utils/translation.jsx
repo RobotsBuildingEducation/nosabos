@@ -243,6 +243,10 @@ export const translations = {
     app_install_step4: "Launch from your Home Screen.",
     app_close: "Close",
     app_sign_out: "Sign out",
+    app_sign_out_confirm_title: "Sign out?",
+    app_sign_out_confirm_body:
+      "Are you sure you want to sign out? Make sure you have your secret key saved before signing out.",
+    app_sign_out_confirm: "Sign out",
     app_copy_id: "Copy User ID",
     app_copy_secret: "Copy Secret Key",
     account_final_step_title: "Copy your secret key to sign into your account",
@@ -800,6 +804,10 @@ export const translations = {
       "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
     app_close: "Cerrar",
     app_sign_out: "Cerrar sesión",
+    app_sign_out_confirm_title: "¿Cerrar sesión?",
+    app_sign_out_confirm_body:
+      "¿Estás seguro de que quieres cerrar sesión? Asegúrate de tener tu llave secreta guardada antes de cerrar sesión.",
+    app_sign_out_confirm: "Cerrar sesión",
     app_copy_id: "Copiar ID de usuario",
     app_copy_secret: "Copiar llave secreta",
     toast_copied: "Copiado",

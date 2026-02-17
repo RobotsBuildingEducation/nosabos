@@ -1,11 +1,23 @@
 // src/components/IdentityDrawer.jsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Accordion,
   AccordionButton,
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Box,
   Button,
   Divider,
@@ -64,6 +76,8 @@ export default function IdentityDrawer({
   const toast = useToast();
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isSignOutOpen, setIsSignOutOpen] = useState(false);
+  const signOutCancelRef = useRef();
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -161,7 +175,7 @@ export default function IdentityDrawer({
   const cefrTimestamp =
     cefrResult?.updatedAt &&
     new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US"
+      appLanguage === "es" ? "es" : "en-US",
     );
   const installSteps = useMemo(
     () => [
@@ -210,214 +224,218 @@ export default function IdentityDrawer({
         ),
       },
     ],
-    [t, copy, currentSecret]
+    [t, copy, currentSecret],
   );
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay bg="blackAlpha.600" />
-      <DrawerContent
-        bg="gray.900"
-        color="gray.100"
-        borderTopRadius="24px"
-        maxH="100vh"
-        display="flex"
-        flexDirection="column"
-        sx={{
-          "@supports (height: 100dvh)": {
-            maxHeight: "100dvh",
-          },
-        }}
-      >
-        <DrawerCloseButton
-          color="gray.400"
-          _hover={{ color: "gray.200" }}
-          top={4}
-          right={4}
-        />
-        <DrawerHeader pb={2} pr={12}>
-          {t?.app_account_title || "Account"}
-        </DrawerHeader>
-        <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
-          <VStack align="stretch" spacing={3} flex={1}>
-            {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
-            <HStack spacing={2} align="flex-start" flexWrap="wrap">
-              {/* Copy ID Button */}
-              <Button
-                size="sm"
-                onClick={() =>
-                  copy(currentId, t?.toast_id_copied || "ID copied")
-                }
-                isDisabled={!currentId}
-                colorScheme="teal"
-                padding={5}
-              >
-                {t?.app_copy_id || "Copy User ID"}
-              </Button>
-
-              {/* Copy Secret Key Button */}
-              <Button
-                size="sm"
-                colorScheme="orange"
-                onClick={() =>
-                  copy(currentSecret, t?.toast_secret_copied || "Secret copied")
-                }
-                isDisabled={!currentSecret}
-                padding={5}
-              >
-                {t?.app_copy_secret || "Copy Secret Key"}
-              </Button>
-            </HStack>
-
-            {/* Switch account */}
-            <Box bg="gray.800" p={3} rounded="md">
-              <Text fontSize="sm" mb={2}>
-                {t?.app_switch_account || "Switch account"}
-              </Text>
-              <Text fontSize="xs" opacity={0.75} mt={1} mb={1}>
-                {t?.app_switch_note ||
-                  "We'll derive your public key (npub) from the secret and switch safely."}
-              </Text>
-              <Input
-                value={switchNsec}
-                onChange={(e) => setSwitchNsec(e.target.value)}
-                bg="gray.700"
-                placeholder={
-                  t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                }
-              />
-              <HStack mt={2} justify="flex-end">
-                <Button
-                  isLoading={isSwitching}
-                  loadingText={t?.app_switching || "Switching…"}
-                  onClick={switchAccountWithNsec}
-                  colorScheme="teal"
-                >
-                  {t?.app_switch || "Switch"}
-                </Button>
-              </HStack>
-            </Box>
-
-            {/* Patreon Support Link */}
-            <Box mt={4} p={4} bg="gray.800" rounded="lg" width="fit-content">
-              <HStack spacing={3} align="center">
-                <Box
-                  p={2}
-                  bg="black"
-                  rounded="lg"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  <SiPatreon size={20} color="white" />
-                </Box>
-                <VStack align="start" spacing={0} flex={1}>
-                  <Text fontWeight="semibold" fontSize="sm">
-                    {appLanguage === "es"
-                      ? "Apóyanos en Patreon"
-                      : "Join  us on Patreon"}
-                  </Text>
-                  <Text fontSize="xs" color="gray.400">
-                    {appLanguage === "es"
-                      ? "Accede a más apps educativas y contenido"
-                      : "Access more education apps and content"}
-                  </Text>
-                </VStack>
+    <>
+      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent
+          bg="gray.900"
+          color="gray.100"
+          borderTopRadius="24px"
+          maxH="100vh"
+          display="flex"
+          flexDirection="column"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "100dvh",
+            },
+          }}
+        >
+          <DrawerCloseButton
+            color="gray.400"
+            _hover={{ color: "gray.200" }}
+            top={4}
+            right={4}
+          />
+          <DrawerHeader pb={2} pr={12}>
+            {t?.app_account_title || "Account"}
+          </DrawerHeader>
+          <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+            <VStack align="stretch" spacing={3} flex={1}>
+              {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
+              <HStack spacing={2} align="flex-start" flexWrap="wrap">
+                {/* Copy ID Button */}
                 <Button
                   size="sm"
-                  bg="black"
-                  boxShadow="0px 0px 4px gray"
                   onClick={() =>
-                    window.open(
-                      "https://www.patreon.com/NotesAndOtherStuff",
-                      "_blank"
+                    copy(currentId, t?.toast_id_copied || "ID copied")
+                  }
+                  isDisabled={!currentId}
+                  colorScheme="teal"
+                  padding={5}
+                >
+                  {t?.app_copy_id || "Copy User ID"}
+                </Button>
+
+                {/* Copy Secret Key Button */}
+                <Button
+                  size="sm"
+                  colorScheme="orange"
+                  onClick={() =>
+                    copy(
+                      currentSecret,
+                      t?.toast_secret_copied || "Secret copied",
                     )
                   }
+                  isDisabled={!currentSecret}
+                  padding={5}
                 >
-                  {appLanguage === "es" ? "Unirse" : "Join"}
+                  {t?.app_copy_secret || "Copy Secret Key"}
                 </Button>
               </HStack>
-            </Box>
 
-            {/* Bitcoin Wallet Section (Accordion) */}
-            {enableWallet && (
-              <Accordion
-                allowMultiple
-                index={isWalletOpen ? [0] : []}
-                onChange={(index) => {
-                  if (Array.isArray(index)) {
-                    setIsWalletOpen(index.includes(0));
-                  } else {
-                    setIsWalletOpen(index === 0);
+              {/* Switch account */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {t?.app_switch_account || "Switch account"}
+                </Text>
+                <Text fontSize="xs" opacity={0.75} mt={1} mb={1}>
+                  {t?.app_switch_note ||
+                    "We'll derive your public key (npub) from the secret and switch safely."}
+                </Text>
+                <Input
+                  value={switchNsec}
+                  onChange={(e) => setSwitchNsec(e.target.value)}
+                  bg="gray.700"
+                  placeholder={
+                    t?.app_nsec_placeholder || "Paste an nsec key to switch"
                   }
-                }}
-                bg="gray.800"
-                rounded="md"
-                width="fit-content"
-              >
-                <AccordionItem border="none">
-                  <AccordionButton px={4} py={3} bg="#f08e19">
-                    <Flex flex="1" textAlign="left" align="center" gap={3}>
-                      <Text
-                        fontWeight="semibold"
-                        textShadow="0px 0px 24px black"
-                      >
-                        {appLanguage === "es"
-                          ? "Billetera Bitcoin (experimental)"
-                          : "Bitcoin wallet (experimental)"}
-                      </Text>
-                    </Flex>
-                    <AccordionIcon />
-                  </AccordionButton>
-                  <AccordionPanel px={0} pb={4} pt={0}>
-                    <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
-                      <BitcoinWalletSection
-                        userLanguage={appLanguage}
-                        identity={user?.identity || ""}
-                        onSelectIdentity={onSelectIdentity}
-                        isIdentitySaving={isIdentitySaving}
-                      />
-                    </Box>
-                  </AccordionPanel>
-                </AccordionItem>
-              </Accordion>
-            )}
-
-            {/* Install App Section (Always Visible - NOT an accordion) */}
-            <Box bg="gray.800" p={4} rounded="md">
-              <Text fontWeight="semibold" mb={3}>
-                {t?.app_install_title || "Install as app"}
-              </Text>
-              <Box bg="gray.900" p={3} rounded="md">
-                {installSteps.map((step, idx) => (
-                  <Box key={step.id} py={2}>
-                    <Flex
-                      align="center"
-                      gap={3}
-                      justify="space-between"
-                      flexWrap="wrap"
-                    >
-                      <HStack align="center" gap={3}>
-                        <Box color="teal.200">{step.icon}</Box>
-                        <Text fontSize="sm">{step.text}</Text>
-                      </HStack>
-                      {step.action ? <Box>{step.action}</Box> : null}
-                    </Flex>
-                    {step.subText ? (
-                      <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                        {step.subText}
-                      </Text>
-                    ) : null}
-                    {idx < installSteps.length - 1 && (
-                      <Divider my={3} borderColor="gray.700" />
-                    )}
-                  </Box>
-                ))}
+                />
+                <HStack mt={2} justify="flex-end">
+                  <Button
+                    isLoading={isSwitching}
+                    loadingText={t?.app_switching || "Switching…"}
+                    onClick={switchAccountWithNsec}
+                    colorScheme="teal"
+                  >
+                    {t?.app_switch || "Switch"}
+                  </Button>
+                </HStack>
               </Box>
-            </Box>
 
-            {/* CEFR insight - Commented out for future development */}
-            {/*
+              {/* Patreon Support Link */}
+              <Box mt={4} p={4} bg="gray.800" rounded="lg" width="fit-content">
+                <HStack spacing={3} align="center">
+                  <Box
+                    p={2}
+                    bg="black"
+                    rounded="lg"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <SiPatreon size={20} color="white" />
+                  </Box>
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text fontWeight="semibold" fontSize="sm">
+                      {appLanguage === "es"
+                        ? "Apóyanos en Patreon"
+                        : "Join  us on Patreon"}
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      {appLanguage === "es"
+                        ? "Accede a más apps educativas y contenido"
+                        : "Access more education apps and content"}
+                    </Text>
+                  </VStack>
+                  <Button
+                    size="sm"
+                    bg="black"
+                    boxShadow="0px 0px 4px gray"
+                    onClick={() =>
+                      window.open(
+                        "https://www.patreon.com/NotesAndOtherStuff",
+                        "_blank",
+                      )
+                    }
+                  >
+                    {appLanguage === "es" ? "Unirse" : "Join"}
+                  </Button>
+                </HStack>
+              </Box>
+
+              {/* Bitcoin Wallet Section (Accordion) */}
+              {enableWallet && (
+                <Accordion
+                  allowMultiple
+                  index={isWalletOpen ? [0] : []}
+                  onChange={(index) => {
+                    if (Array.isArray(index)) {
+                      setIsWalletOpen(index.includes(0));
+                    } else {
+                      setIsWalletOpen(index === 0);
+                    }
+                  }}
+                  bg="gray.800"
+                  rounded="md"
+                  width="fit-content"
+                >
+                  <AccordionItem border="none">
+                    <AccordionButton px={4} py={3} bg="#f08e19">
+                      <Flex flex="1" textAlign="left" align="center" gap={3}>
+                        <Text
+                          fontWeight="semibold"
+                          textShadow="0px 0px 24px black"
+                        >
+                          {appLanguage === "es"
+                            ? "Billetera Bitcoin (experimental)"
+                            : "Bitcoin wallet (experimental)"}
+                        </Text>
+                      </Flex>
+                      <AccordionIcon />
+                    </AccordionButton>
+                    <AccordionPanel px={0} pb={4} pt={0}>
+                      <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
+                        <BitcoinWalletSection
+                          userLanguage={appLanguage}
+                          identity={user?.identity || ""}
+                          onSelectIdentity={onSelectIdentity}
+                          isIdentitySaving={isIdentitySaving}
+                        />
+                      </Box>
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              )}
+
+              {/* Install App Section (Always Visible - NOT an accordion) */}
+              <Box bg="gray.800" p={4} rounded="md">
+                <Text fontWeight="semibold" mb={3}>
+                  {t?.app_install_title || "Install as app"}
+                </Text>
+                <Box bg="gray.900" p={3} rounded="md">
+                  {installSteps.map((step, idx) => (
+                    <Box key={step.id} py={2}>
+                      <Flex
+                        align="center"
+                        gap={3}
+                        justify="space-between"
+                        flexWrap="wrap"
+                      >
+                        <HStack align="center" gap={3}>
+                          <Box color="teal.200">{step.icon}</Box>
+                          <Text fontSize="sm">{step.text}</Text>
+                        </HStack>
+                        {step.action ? <Box>{step.action}</Box> : null}
+                      </Flex>
+                      {step.subText ? (
+                        <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                          {step.subText}
+                        </Text>
+                      ) : null}
+                      {idx < installSteps.length - 1 && (
+                        <Divider my={3} borderColor="gray.700" />
+                      )}
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+
+              {/* CEFR insight - Commented out for future development */}
+              {/*
             <Box bg="gray.800" p={3} rounded="md">
               <HStack justify="space-between" align="flex-start" mb={2}>
                 <VStack align="flex-start" spacing={0} flex="1">
@@ -476,24 +494,60 @@ export default function IdentityDrawer({
               </Button>
             </Box>
             */}
-          </VStack>
+            </VStack>
 
-          <Flex mt="auto" justify="flex-end">
-            <Button
-              mt={6}
-              leftIcon={<LuDoorOpen size={18} />}
-              onClick={handleSignOut}
-              padding={6}
-              borderRadius="lg"
-              colorScheme="gray"
-              border="1px solid orange"
-            >
-              {t?.app_sign_out || "Sign out"}
-            </Button>
-          </Flex>
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
+            <Flex mt="auto" justify="flex-end">
+              <Button
+                mt={6}
+                leftIcon={<LuDoorOpen size={18} />}
+                onClick={() => setIsSignOutOpen(true)}
+                padding={6}
+                borderRadius="lg"
+                colorScheme="gray"
+                border="1px solid orange"
+              >
+                {t?.app_sign_out || "Sign out"}
+              </Button>
+            </Flex>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      <AlertDialog
+        isOpen={isSignOutOpen}
+        leastDestructiveRef={signOutCancelRef}
+        onClose={() => setIsSignOutOpen(false)}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent
+            bg="gray.800"
+            borderColor="whiteAlpha.200"
+            border="1px solid"
+          >
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              {t?.app_sign_out_confirm_title || "Sign out?"}
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              {t?.app_sign_out_confirm_body ||
+                "Are you sure you want to sign out? Make sure you have your secret key saved before signing out."}
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={signOutCancelRef}
+                variant="ghost"
+                onClick={() => setIsSignOutOpen(false)}
+              >
+                {t?.common_cancel || "Cancel"}
+              </Button>
+              <Button colorScheme="red" onClick={handleSignOut} ml={3}>
+                {t?.app_sign_out_confirm || "Sign out"}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+    </>
   );
 }
 

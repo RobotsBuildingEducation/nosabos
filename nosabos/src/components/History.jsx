@@ -1697,9 +1697,9 @@ export default function History({
         >
           <Box
             flex="1"
-            bg="gray.800"
+            bg="linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(25, 34, 56, 0.85) 50%, rgba(15, 23, 42, 0.9) 100%)"
             border="1px solid"
-            borderColor="gray.700"
+            borderColor="whiteAlpha.100"
             rounded="xl"
             p={[4, 5]}
             minH="280px"
