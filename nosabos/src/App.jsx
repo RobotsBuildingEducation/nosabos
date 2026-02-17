@@ -5093,7 +5093,7 @@ export default function App() {
         onClose={handleProficiencySkip}
         onTakeTest={handleProficiencyTakeTest}
         lang={appLanguage}
-        targetLangLabel={selectedPracticeOption?.label}
+        targetLangLabel={TARGET_LANGUAGE_LABELS[resolvedTargetLang]}
       />
 
       <GettingStartedModal
