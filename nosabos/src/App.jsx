@@ -5761,6 +5761,7 @@ function BottomActionBar({
                           color="white"
                           icon={<ModeIcon size={18} />}
                           fontWeight={isSelected ? "bold" : "normal"}
+                          p={6}
                         >
                           {mode.label}
                         </MenuItem>
