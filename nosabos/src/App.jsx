@@ -5099,7 +5099,7 @@ export default function App() {
         onClose={handleProficiencySkip}
         onTakeTest={handleProficiencyTakeTest}
         lang={appLanguage}
-        targetLangLabel={TARGET_LANGUAGE_LABELS[resolvedTargetLang]}
+        targetLangLabel={t[`language_${resolvedTargetLang}`] || TARGET_LANGUAGE_LABELS[resolvedTargetLang]}
       />
 
       <GettingStartedModal

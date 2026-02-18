@@ -85,7 +85,7 @@ export default function GettingStartedModal({
                 : "We'll walk you through each learning module — vocabulary, grammar, reading, stories, and conversation — so you know how everything works."}
             </Text>
 
-            <Text fontSize="sm" opacity={0.7} textAlign="center">
+            <Text fontSize="xs" opacity={0.7} textAlign="center">
               {isEs
                 ? "Solo toma un momento y ganarás tu primer XP."
                 : "It only takes a moment and you'll earn your first XP."}
