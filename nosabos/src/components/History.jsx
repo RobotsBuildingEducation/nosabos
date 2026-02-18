@@ -1319,12 +1319,14 @@ export default function History({
     } catch {}
     try {
       if (currentAudioRef.current) {
+        currentAudioRef.current._ttsCleanup?.();
         currentAudioRef.current.pause();
         currentAudioRef.current.currentTime = 0;
         currentAudioRef.current = null;
       }
     } catch {}
     setIsReadingTarget(false);
+    setIsSynthesizingTarget(false);
   };
 
   async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
