@@ -2358,6 +2358,7 @@ Return ONLY JSON:
   --------------------------- */
   const messagesRef = useRef([]);
   const [messages, setMessages] = useState([]);
+  const messageSeqRef = useRef(0);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -2572,7 +2573,10 @@ Return ONLY JSON:
   }
 
   function pushMessage(m) {
-    setMessages((p) => [...p, m]);
+    setMessages((p) => {
+      const nextOrder = ++messageSeqRef.current;
+      return [...p, { ...m, order: m?.order ?? nextOrder }];
+    });
   }
   function updateMessage(id, updater) {
     setMessages((p) => p.map((m) => (m.id === id ? updater(m) : m)));
@@ -2791,13 +2795,29 @@ Do not return the whole sentence as a single chunk.`;
 
   const timeline = useMemo(() => {
     const map = new Map();
-    for (const h of history) map.set(h.id, { ...h, source: "hist" });
+    for (const h of history)
+      map.set(h.id, {
+        ...h,
+        source: "hist",
+        order: Number.isFinite(h?.order) ? h.order : h.ts || 0,
+      });
     for (const m of messages) {
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Simple sort: newest first (most recent at top, oldest at bottom)
-    return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
+    // Sort newest first so the latest call/response appears at the top.
+    // If roles differ, always keep assistant above user to mirror Conversations layout.
+    return Array.from(map.values()).sort((a, b) => {
+      const at = a?.ts || 0;
+      const bt = b?.ts || 0;
+      if (at !== bt) return bt - at;
+      if (a?.role !== b?.role) return a?.role === "assistant" ? -1 : 1;
+      const ao = a?.order || 0;
+      const bo = b?.order || 0;
+      if (ao !== bo) return bo - ao;
+      if (a?.role === b?.role) return 0;
+      return a?.role === "assistant" ? -1 : 1;
+    });
   }, [messages, history]);
 
   return (
