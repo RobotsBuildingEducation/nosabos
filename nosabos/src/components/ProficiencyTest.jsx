@@ -614,6 +614,7 @@ export default function ProficiencyTest() {
   const [showResult, setShowResult] = useState(false);
   const [showRubric, setShowRubric] = useState(false);
   const rubricBodyRef = useRef(null);
+  const rubricInitialFocusRef = useRef(null);
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
   const [assessmentScores, setAssessmentScores] = useState(null);
@@ -2120,6 +2121,7 @@ Return ONLY valid JSON:
         isOpen={showRubric}
         placement="bottom"
         onClose={() => setShowRubric(false)}
+        initialFocusRef={rubricInitialFocusRef}
       >
         <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
         <DrawerContent
@@ -2142,9 +2144,11 @@ Return ONLY valid JSON:
               width="100%"
               display="flex"
               alignItems={"center"}
-              justifyContent={"center"}
+              justifyContent="flex-start"
             >
               <Box
+                ref={rubricInitialFocusRef}
+                tabIndex={-1}
                 bg="linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"
                 border="1px solid rgba(255,255,255,0.18)"
                 borderRadius="2xl"
