@@ -27,7 +27,11 @@ import {
   Input,
   SlideFade,
 } from "@chakra-ui/react";
-import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
+import {
+  PiSpeakerHighDuotone,
+  PiLightningDuotone,
+  PiStopDuotone,
+} from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdKeyboard, MdMenuBook } from "react-icons/md";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
@@ -1773,6 +1777,19 @@ export default function History({
                     />
                     <Text fontSize="xs" opacity={0.6}>
                       {t("history_read_all")}
+                    </Text>
+                  </VStack>
+                  <VStack spacing={0.5}>
+                    <IconButton
+                      icon={<PiStopDuotone size="20px" />}
+                      onClick={stopSpeech}
+                      aria-label="Stop"
+                      size="sm"
+                      variant="ghost"
+                      isDisabled={!isReadingTarget && !isSynthesizingTarget}
+                    />
+                    <Text fontSize="xs" opacity={0.6}>
+                      {t("history_stop")}
                     </Text>
                   </VStack>
                 </HStack>
