@@ -436,7 +436,13 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
   await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
-  return { audio, audioUrl: null, ready, finalize, cleanup: () => {} };
+  const cleanupFn = () => {
+    intentionalEnd = true;
+    resolveFinalize?.();
+  };
+  audio._ttsCleanup = cleanupFn;
+
+  return { audio, audioUrl: null, ready, finalize, cleanup: cleanupFn };
 }
 
 /**
