@@ -1697,9 +1697,10 @@ export default function History({
         >
           <Box
             flex="1"
-            bg="linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(25, 34, 56, 0.85) 50%, rgba(15, 23, 42, 0.9) 100%)"
+            bg="rgba(255, 255, 255, 0.05)"
+            backdropFilter="blur(20px)"
             border="1px solid"
-            borderColor="whiteAlpha.100"
+            borderColor="rgba(255, 255, 255, 0.1)"
             rounded="xl"
             p={[4, 5]}
             minH="280px"
@@ -1776,34 +1777,42 @@ export default function History({
                   </VStack>
                 </HStack>
 
-                <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {splitIntoSentences(viewLecture.target || "").map(
-                    (sentence, i) => (
-                      <Text
-                        as="span"
-                        key={i}
-                        bg={
-                          activeSentenceIndex === i
-                            ? "rgba(56, 178, 172, 0.2)"
-                            : "transparent"
-                        }
-                        borderRadius="sm"
-                        px={activeSentenceIndex === i ? "2px" : 0}
-                        transition="background 0.2s"
-                        cursor="pointer"
-                        _hover={{
-                          bg:
+                <Box
+                  bg="rgba(56, 178, 172, 0.15)"
+                  borderLeft="3px solid"
+                  borderColor="teal.400"
+                  rounded="lg"
+                  p={4}
+                >
+                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
+                    {splitIntoSentences(viewLecture.target || "").map(
+                      (sentence, i) => (
+                        <Text
+                          as="span"
+                          key={i}
+                          bg={
                             activeSentenceIndex === i
-                              ? "rgba(56, 178, 172, 0.2)"
-                              : "rgba(128, 128, 128, 0.1)",
-                        }}
-                        onClick={() => readSingleSentence(sentence)}
-                      >
-                        {sentence}{" "}
-                      </Text>
-                    ),
-                  )}
-                </Text>
+                              ? "rgba(56, 178, 172, 0.35)"
+                              : "transparent"
+                          }
+                          borderRadius="sm"
+                          px={activeSentenceIndex === i ? "2px" : 0}
+                          transition="background 0.2s"
+                          cursor="pointer"
+                          _hover={{
+                            bg:
+                              activeSentenceIndex === i
+                                ? "rgba(56, 178, 172, 0.35)"
+                                : "rgba(56, 178, 172, 0.1)",
+                          }}
+                          onClick={() => readSingleSentence(sentence)}
+                        >
+                          {sentence}{" "}
+                        </Text>
+                      ),
+                    )}
+                  </Text>
+                </Box>
 
                 {/* Review question */}
                 {!draftLecture && !isGenerating ? (
@@ -2220,13 +2229,21 @@ export default function History({
                         </AccordionButton>
                       </Box>
                       <AccordionPanel px={0} pb={3} pt={3}>
-                        <Text
-                          fontSize={{ base: "sm", md: "sm" }}
-                          opacity={0.95}
-                          lineHeight="1.8"
+                        <Box
+                          bg="rgba(99, 102, 241, 0.15)"
+                          borderLeft="3px solid"
+                          borderColor="purple.400"
+                          rounded="lg"
+                          p={4}
                         >
-                          {viewLecture.support}
-                        </Text>
+                          <Text
+                            fontSize={{ base: "sm", md: "sm" }}
+                            opacity={0.95}
+                            lineHeight="1.8"
+                          >
+                            {viewLecture.support}
+                          </Text>
+                        </Box>
                       </AccordionPanel>
                     </AccordionItem>
                   </Accordion>
