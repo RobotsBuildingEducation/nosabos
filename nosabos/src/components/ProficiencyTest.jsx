@@ -604,7 +604,8 @@ export default function ProficiencyTest() {
 
   // Count user exchanges (user messages count, exclude pending placeholders)
   const userMessageCount = useMemo(
-    () => messages.filter((m) => m.role === "user" && !m.pendingTranscript).length,
+    () =>
+      messages.filter((m) => m.role === "user" && !m.pendingTranscript).length,
     [messages],
   );
 
@@ -2192,21 +2193,8 @@ Return ONLY valid JSON:
                   <Text fontSize="xl" fontWeight="bold" mb={2}>
                     {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
                   </Text>
-                  <Badge
-                    colorScheme="purple"
-                    variant="solid"
-                    px={2.5}
-                    py={1}
-                    rounded="full"
-                  >
-                    {isEs ? "Transparente" : "Transparent"}
-                  </Badge>
                 </HStack>
-                <Text fontSize="sm" opacity={0.88}>
-                  {isEs
-                    ? "Conoce exactamente cómo se calcula tu nivel."
-                    : "Know exactly how your level is calculated."}
-                </Text>
+
                 <Text fontSize="sm" opacity={0.75}>
                   {isEs
                     ? "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio."
