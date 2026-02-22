@@ -590,6 +590,7 @@ export default function ProficiencyTest() {
   const streamBuffersRef = useRef(new Map());
   const streamFlushTimerRef = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
+  const pendingUserMsgRef = useRef(null);
   const speechTurnsRef = useRef([]);
   const currentSpeechTurnRef = useRef(null);
   const speechSampleTimerRef = useRef(null);
@@ -601,9 +602,9 @@ export default function ProficiencyTest() {
   const guardrailItemIdsRef = useRef([]);
   const pendingGuardrailTextRef = useRef("");
 
-  // Count user exchanges (user messages count)
+  // Count user exchanges (user messages count, exclude pending placeholders)
   const userMessageCount = useMemo(
-    () => messages.filter((m) => m.role === "user").length,
+    () => messages.filter((m) => m.role === "user" && !m.pendingTranscript).length,
     [messages],
   );
 
@@ -866,23 +867,37 @@ export default function ProficiencyTest() {
           text === lastTranscriptRef.current.text &&
           now - lastTranscriptRef.current.ts < 2000
         ) {
+          // Remove orphaned placeholder if transcript is a duplicate
+          const staleId = pendingUserMsgRef.current;
+          if (staleId) {
+            pendingUserMsgRef.current = null;
+            setMessages((p) => p.filter((m) => m.id !== staleId));
+          }
           return;
         }
         lastTranscriptRef.current = { text, ts: now };
-        const msgs = messagesRef.current;
-        const recentAi = msgs
-          .filter((m) => m.role === "assistant")
-          .sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
-        const userTs = recentAi?.ts ? recentAi.ts - 1 : now;
-        pushMessage({
-          id: uid(),
-          role: "user",
-          lang: targetLang,
-          textFinal: text,
-          textStream: "",
-          done: true,
-          ts: userTs,
-        });
+
+        // Update the placeholder user message if one exists, otherwise create new
+        const pendingId = pendingUserMsgRef.current;
+        if (pendingId) {
+          pendingUserMsgRef.current = null;
+          updateMessage(pendingId, (m) => ({
+            ...m,
+            textFinal: text,
+            done: true,
+            pendingTranscript: false,
+          }));
+        } else {
+          pushMessage({
+            id: uid(),
+            role: "user",
+            lang: targetLang,
+            textFinal: text,
+            textStream: "",
+            done: true,
+            ts: now,
+          });
+        }
       }
       return;
     }
@@ -978,6 +993,21 @@ export default function ProficiencyTest() {
       }
       currentSpeechTurnRef.current = null;
       stopSpeechSampling();
+
+      // Create placeholder user message so it renders before the AI response
+      const placeholderId = uid();
+      pendingUserMsgRef.current = placeholderId;
+      pushMessage({
+        id: placeholderId,
+        role: "user",
+        lang: targetLang,
+        textFinal: "",
+        textStream: "",
+        done: false,
+        pendingTranscript: true,
+        ts: now,
+      });
+
       setUiState("thinking");
       setMood("thinking");
       return;
@@ -1758,9 +1788,10 @@ Return ONLY valid JSON:
           {timeline.map((m) => {
             const isUser = m.role === "user";
             if (isUser) {
+              const userText = m.pendingTranscript ? "…" : m.textFinal;
               return (
                 <RowRight key={m.id}>
-                  <UserBubble label={isEs ? "Tú" : "You"} text={m.textFinal} />
+                  <UserBubble label={isEs ? "Tú" : "You"} text={userText} />
                 </RowRight>
               );
             }
