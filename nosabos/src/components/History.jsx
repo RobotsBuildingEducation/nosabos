@@ -26,11 +26,15 @@ import {
   Stack,
   Input,
   SlideFade,
+  Grid,
+  GridItem,
+  Textarea,
 } from "@chakra-ui/react";
 import {
   PiSpeakerHighDuotone,
   PiLightningDuotone,
   PiStopDuotone,
+  PiMicrophoneStageDuotone,
 } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdKeyboard, MdMenuBook } from "react-icons/md";
@@ -41,7 +45,7 @@ import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
+import { database, simplemodel, gradingModel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import {
@@ -765,6 +769,25 @@ function buildStreamingPrompt({
 }
 
 /* ---------------------------
+   Speech format grading helpers
+--------------------------- */
+const SPEECH_CRITERIA = [
+  { key: "accuracy", en: "Accuracy", es: "Precisión" },
+  { key: "completeness", en: "Completeness", es: "Completitud" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
+  { key: "fluency", en: "Fluency", es: "Fluidez" },
+  { key: "confidence", en: "Confidence", es: "Confianza" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+];
+
+function speechScoreColor(score) {
+  if (score >= 8) return "green";
+  if (score >= 6) return "teal";
+  if (score >= 4) return "yellow";
+  return "red";
+}
+
+/* ---------------------------
    Component
 --------------------------- */
 export default function History({
@@ -867,6 +890,8 @@ export default function History({
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
 
+  const isTutorial = lessonContent?.topic === "tutorial";
+
   // List
   const [lectures, setLectures] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -897,6 +922,15 @@ export default function History({
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [showReviewKeyboard, setShowReviewKeyboard] = useState(false);
 
+  // Speech format state
+  const [reviewFormat, setReviewFormat] = useState(null); // "question" | "speech"
+  const [speechTranscript, setSpeechTranscript] = useState("");
+  const [speechFeedback, setSpeechFeedback] = useState(null);
+  const [isGradingSpeech, setIsGradingSpeech] = useState(false);
+  const [speechSubmitted, setSpeechSubmitted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const speechRecRef = useRef(null);
+
   const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
     targetLang,
   );
@@ -908,6 +942,55 @@ export default function History({
       setReviewAnswer((prev) => prev + key);
     }
   }, []);
+
+  // Browser SpeechRecognition support
+  const hasSpeechRecognition =
+    typeof window !== "undefined" &&
+    !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  function startListening() {
+    const SpeechRec =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) return;
+    const rec = new SpeechRec();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = BCP47[targetLang]?.tts || "es-ES";
+    rec.onresult = (event) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setSpeechTranscript(transcript);
+    };
+    rec.onend = () => setIsListening(false);
+    rec.onerror = () => setIsListening(false);
+    speechRecRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  }
+
+  function stopListening() {
+    if (speechRecRef.current) {
+      speechRecRef.current.stop();
+      speechRecRef.current = null;
+    }
+    setIsListening(false);
+  }
+
+  function switchReviewFormat(format) {
+    if (format === reviewFormat) return;
+    stopListening();
+    setReviewFormat(format);
+    setReviewQuestion(null);
+    setReviewAnswer("");
+    setReviewSubmitted(false);
+    setReviewCorrect(null);
+    setSpeechTranscript("");
+    setSpeechFeedback(null);
+    setSpeechSubmitted(false);
+    setExplanationText("");
+  }
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1613,8 +1696,90 @@ export default function History({
     }
   }
 
-  // Reset review question when lecture changes
+  async function gradeSpeechAttempt() {
+    if (!speechTranscript.trim() || isGradingSpeech) return;
+    playSound(submitActionSound);
+    setIsGradingSpeech(true);
+    stopListening();
+
+    const originalText = viewLecture?.target || "";
+    const langName = LANG_NAME(targetLang);
+    const supportName = LANG_NAME(supportLang);
+
+    const prompt = `You are grading a language learner's attempt to read a ${langName} paragraph aloud.
+
+ORIGINAL PARAGRAPH:
+${originalText}
+
+STUDENT'S ATTEMPT (transcription):
+${speechTranscript}
+
+Grade the student's reading attempt on these criteria (1-10 scale):
+
+SCORING GUIDELINES:
+- accuracy (1-10): How closely does the student's text match the original? Word-for-word comparison.
+- completeness (1-10): Did the student read the full paragraph or only parts?
+- pronunciation (1-10): Based on transcription accuracy, how well were words likely pronounced? Wrong or missing words suggest pronunciation difficulty.
+- fluency (1-10): Based on the flow and coherence of the transcript, how smooth was the reading?
+- confidence (1-10): Overall assessment of reading confidence based on completeness and accuracy.
+- comprehension (1-10): Does the transcript suggest the student understood what they were reading?
+
+BE ENCOURAGING but HONEST. This is practice, not a test. Highlight what they did well and what to work on.
+
+Provide a brief 2-3 sentence summary of feedback in ${supportName}.
+
+Return ONLY valid JSON:
+{"summary":"brief feedback","scores":{"accuracy":{"score":5,"note":"reason"},"completeness":{"score":5,"note":"reason"},"pronunciation":{"score":5,"note":"reason"},"fluency":{"score":5,"note":"reason"},"confidence":{"score":5,"note":"reason"},"comprehension":{"score":5,"note":"reason"}}}`;
+
+    try {
+      const resp = await gradingModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+      let resultText = "";
+      const result = resp.response;
+      if (typeof result?.text === "function") resultText = result.text();
+      else if (typeof result?.text === "string") resultText = result.text;
+      else {
+        const cand = result?.candidates?.[0];
+        if (cand?.content?.parts?.length)
+          resultText = cand.content.parts.map((p) => p.text || "").join("");
+      }
+      const parsed = safeParseJSON(resultText);
+      if (parsed) {
+        setSpeechFeedback(parsed);
+      }
+    } catch (e) {
+      console.error("Speech grading failed", e);
+      setSpeechFeedback({
+        summary:
+          userLanguage === "es"
+            ? "No se pudo generar retroalimentación. ¡Sigue practicando!"
+            : "Could not generate feedback. Keep practicing!",
+        scores: {},
+      });
+    } finally {
+      setIsGradingSpeech(false);
+      setSpeechSubmitted(true);
+      playSound(deliciousSound);
+    }
+
+    // Always award XP for speech format (user always passes)
+    if (activeLecture && !activeLecture.awarded) {
+      const amt = Number(activeLecture?.xpAward || 0);
+      if (amt > 0) {
+        await awardXp(npub, amt, targetLang).catch(() => {});
+      }
+      setLectures((prev) =>
+        prev.map((lec) =>
+          lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
+        ),
+      );
+    }
+  }
+
+  // Reset review state when lecture changes
   useEffect(() => {
+    setReviewFormat(null);
     setReviewQuestion(null);
     setExplanationText("");
     setIsLoadingExplanation(false);
@@ -1622,11 +1787,32 @@ export default function History({
     setReviewSubmitted(false);
     setReviewCorrect(null);
     setShowReviewKeyboard(false);
-  }, [activeId]);
+    setSpeechTranscript("");
+    setSpeechFeedback(null);
+    setSpeechSubmitted(false);
+    stopListening();
+  }, [activeId]); // eslint-disable-line
 
-  // Auto-generate review question when a lecture is ready
+  // Select review format (question vs speech) when a lecture is ready
   useEffect(() => {
     if (
+      activeLecture?.target &&
+      !draftLecture &&
+      !isGenerating &&
+      reviewFormat === null
+    ) {
+      if (isTutorial) {
+        setReviewFormat("question"); // tutorial default; user can toggle
+      } else {
+        setReviewFormat(Math.random() < 0.5 ? "question" : "speech");
+      }
+    }
+  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+
+  // Auto-generate review question when format is "question"
+  useEffect(() => {
+    if (
+      reviewFormat === "question" &&
       activeLecture?.target &&
       !draftLecture &&
       !isGenerating &&
@@ -1635,7 +1821,7 @@ export default function History({
     ) {
       generateReviewQuestion();
     }
-  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+  }, [reviewFormat, activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -1833,11 +2019,318 @@ export default function History({
                   </Text>
                 </Box>
 
-                {/* Review question */}
+                {/* Review: question or speech format */}
                 {!draftLecture && !isGenerating ? (
                   <Box>
                     <Divider opacity={0.2} mb={3} />
-                    {isGeneratingQuestion ? (
+
+                    {/* Tutorial mode: let user choose format */}
+                    {isTutorial && reviewFormat && (
+                      <HStack spacing={2} mb={3} justify="center">
+                        <Button
+                          size="sm"
+                          variant={
+                            reviewFormat === "question" ? "solid" : "outline"
+                          }
+                          colorScheme="teal"
+                          onClick={() => switchReviewFormat("question")}
+                        >
+                          {t("history_format_question")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={
+                            reviewFormat === "speech" ? "solid" : "outline"
+                          }
+                          colorScheme="purple"
+                          onClick={() => switchReviewFormat("speech")}
+                        >
+                          {t("history_format_speech")}
+                        </Button>
+                      </HStack>
+                    )}
+
+                    {/* Speech format */}
+                    {reviewFormat === "speech" ? (
+                      <VStack align="stretch" spacing={3}>
+                        <Text fontWeight="600" fontSize="sm">
+                          {t("history_speech_heading")}
+                        </Text>
+                        <Text fontSize="sm" opacity={0.8} lineHeight="1.6">
+                          {t("history_speech_instructions")}
+                        </Text>
+
+                        {!speechSubmitted && (
+                          <>
+                            {hasSpeechRecognition && (
+                              <HStack justify="center">
+                                <Button
+                                  size="sm"
+                                  colorScheme={isListening ? "red" : "purple"}
+                                  leftIcon={
+                                    isListening ? (
+                                      <PiStopDuotone />
+                                    ) : (
+                                      <PiMicrophoneStageDuotone />
+                                    )
+                                  }
+                                  onClick={
+                                    isListening ? stopListening : startListening
+                                  }
+                                >
+                                  {isListening
+                                    ? t("history_speech_stop_mic")
+                                    : t("history_speech_start_mic")}
+                                </Button>
+                              </HStack>
+                            )}
+                            <Textarea
+                              size="sm"
+                              placeholder={t("history_speech_placeholder")}
+                              value={speechTranscript}
+                              onChange={(e) =>
+                                setSpeechTranscript(e.target.value)
+                              }
+                              rows={4}
+                              isDisabled={isGradingSpeech}
+                            />
+                            <Button
+                              size="sm"
+                              colorScheme="teal"
+                              onClick={gradeSpeechAttempt}
+                              isLoading={isGradingSpeech}
+                              isDisabled={!speechTranscript.trim()}
+                            >
+                              {t("history_speech_submit")}
+                            </Button>
+                          </>
+                        )}
+
+                        {/* Speech feedback */}
+                        {speechSubmitted && speechFeedback && (
+                          <SlideFade in={true} offsetY="10px">
+                            <VStack spacing={3} align="stretch">
+                              <VStack
+                                spacing={3}
+                                align="stretch"
+                                p={4}
+                                borderRadius="xl"
+                                bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                                borderWidth="1px"
+                                borderColor="green.400"
+                                boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                              >
+                                <HStack spacing={3} align="center">
+                                  <Flex
+                                    w="44px"
+                                    h="44px"
+                                    rounded="full"
+                                    align="center"
+                                    justify="center"
+                                    bg="green.500"
+                                    color="white"
+                                    fontWeight="bold"
+                                    fontSize="lg"
+                                    boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                                    flexShrink={0}
+                                  >
+                                    {"✓"}
+                                  </Flex>
+                                  <Box flex="1">
+                                    <Text fontWeight="semibold">
+                                      {t("history_speech_complete")}
+                                    </Text>
+                                  </Box>
+                                </HStack>
+
+                                {speechFeedback.summary && (
+                                  <Text
+                                    fontSize="sm"
+                                    opacity={0.9}
+                                    lineHeight="1.6"
+                                  >
+                                    {speechFeedback.summary}
+                                  </Text>
+                                )}
+
+                                {/* Score breakdown grid */}
+                                {speechFeedback.scores &&
+                                  Object.keys(speechFeedback.scores).length >
+                                    0 && (
+                                    <Box>
+                                      <Text
+                                        fontWeight="semibold"
+                                        fontSize="xs"
+                                        mb={2}
+                                        opacity={0.7}
+                                        textTransform="uppercase"
+                                        letterSpacing="0.05em"
+                                      >
+                                        {t("history_speech_breakdown")}
+                                      </Text>
+                                      <Grid
+                                        templateColumns="repeat(2, 1fr)"
+                                        gap={2}
+                                      >
+                                        {SPEECH_CRITERIA.map((criterion) => {
+                                          const data =
+                                            speechFeedback.scores[
+                                              criterion.key
+                                            ];
+                                          const score =
+                                            typeof data?.score === "number"
+                                              ? Math.max(
+                                                  1,
+                                                  Math.min(10, data.score),
+                                                )
+                                              : typeof data === "number"
+                                                ? Math.max(
+                                                    1,
+                                                    Math.min(10, data),
+                                                  )
+                                                : null;
+                                          if (score === null) return null;
+                                          const note =
+                                            typeof data?.note === "string"
+                                              ? data.note
+                                              : "";
+                                          const color =
+                                            speechScoreColor(score);
+                                          const colorMap = {
+                                            green: "#48BB78",
+                                            teal: "#38B2AC",
+                                            yellow: "#ECC94B",
+                                            red: "#FC8181",
+                                          };
+                                          const accent =
+                                            colorMap[color] || "#A0AEC0";
+                                          return (
+                                            <GridItem key={criterion.key}>
+                                              <Box
+                                                bg="rgba(0,0,0,0.2)"
+                                                px={3}
+                                                py={2.5}
+                                                rounded="lg"
+                                                borderLeft="3px solid"
+                                                borderColor={accent}
+                                                h="100%"
+                                              >
+                                                <HStack
+                                                  justify="space-between"
+                                                  align="center"
+                                                  mb={1}
+                                                >
+                                                  <Text
+                                                    fontSize="xs"
+                                                    fontWeight="semibold"
+                                                    opacity={0.85}
+                                                  >
+                                                    {
+                                                      criterion[
+                                                        userLanguage === "es"
+                                                          ? "es"
+                                                          : "en"
+                                                      ]
+                                                    }
+                                                  </Text>
+                                                  <Text
+                                                    fontSize="lg"
+                                                    fontWeight="bold"
+                                                    color={accent}
+                                                    lineHeight="1"
+                                                  >
+                                                    {score}
+                                                  </Text>
+                                                </HStack>
+                                                {note && (
+                                                  <Text
+                                                    fontSize="2xs"
+                                                    opacity={0.55}
+                                                    lineHeight="1.4"
+                                                    noOfLines={3}
+                                                  >
+                                                    {note}
+                                                  </Text>
+                                                )}
+                                              </Box>
+                                            </GridItem>
+                                          );
+                                        })}
+                                      </Grid>
+                                    </Box>
+                                  )}
+
+                                {/* Next button - always pass */}
+                                {activeLecture && (
+                                  <Box
+                                    width="100%"
+                                    display="flex"
+                                    justifyContent="center"
+                                  >
+                                    <Button
+                                      rightIcon={<FiArrowRight />}
+                                      colorScheme="cyan"
+                                      variant="solid"
+                                      onClick={finishReadingAndNext}
+                                      isDisabled={isGenerating}
+                                      shadow="md"
+                                      width="full"
+                                      py={6}
+                                      size="lg"
+                                      maxWidth="250px"
+                                    >
+                                      {t("reading_btn_next") || "Next"}
+                                    </Button>
+                                  </Box>
+                                )}
+
+                                {lessonProgress &&
+                                  lessonProgress.total > 0 && (
+                                    <VStack
+                                      align="center"
+                                      spacing={2}
+                                      mt={2}
+                                      px={1}
+                                      width="full"
+                                    >
+                                      <HStack
+                                        justify="center"
+                                        align="center"
+                                        spacing={3}
+                                        fontSize="xs"
+                                      >
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {lessonProgress.label}
+                                        </Text>
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {Math.round(lessonProgress.pct)}%
+                                        </Text>
+                                      </HStack>
+                                      <Box width="60%" mx="auto">
+                                        <WaveBar
+                                          value={lessonProgress.pct}
+                                          height={20}
+                                          start="#4aa8ff"
+                                          end="#75f8ffff"
+                                        />
+                                      </Box>
+                                    </VStack>
+                                  )}
+                              </VStack>
+                              <RandomCharacter />
+                            </VStack>
+                          </SlideFade>
+                        )}
+                      </VStack>
+                    ) : isGeneratingQuestion ? (
                       <HStack justify="center" py={4}>
                         <Spinner size="sm" color="teal.400" />
                         <Text fontSize="sm" opacity={0.7}>
