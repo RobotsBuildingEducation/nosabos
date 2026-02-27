@@ -28,7 +28,6 @@ import {
   SlideFade,
   Grid,
   GridItem,
-  Textarea,
 } from "@chakra-ui/react";
 import {
   PiSpeakerHighDuotone,
@@ -976,6 +975,11 @@ export default function History({
       speechRecRef.current = null;
     }
     setIsListening(false);
+  }
+
+  function startOverSpeech() {
+    stopListening();
+    setSpeechTranscript("");
   }
 
   function switchReviewFormat(format) {
@@ -2062,47 +2066,68 @@ Return ONLY valid JSON:
 
                         {!speechSubmitted && (
                           <>
-                            {hasSpeechRecognition && (
-                              <HStack justify="center">
+                            <HStack justify="center" spacing={2}>
+                              {!isListening ? (
                                 <Button
                                   size="sm"
-                                  colorScheme={isListening ? "red" : "purple"}
-                                  leftIcon={
-                                    isListening ? (
-                                      <PiStopDuotone />
-                                    ) : (
-                                      <PiMicrophoneStageDuotone />
-                                    )
-                                  }
-                                  onClick={
-                                    isListening ? stopListening : startListening
-                                  }
+                                  colorScheme="purple"
+                                  leftIcon={<PiMicrophoneStageDuotone />}
+                                  onClick={startListening}
+                                  isDisabled={!hasSpeechRecognition}
                                 >
-                                  {isListening
-                                    ? t("history_speech_stop_mic")
-                                    : t("history_speech_start_mic")}
+                                  {t("history_speech_start_mic")}
                                 </Button>
-                              </HStack>
+                              ) : (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    colorScheme="red"
+                                    leftIcon={<PiStopDuotone />}
+                                    onClick={stopListening}
+                                  >
+                                    {t("history_speech_stop_mic")}
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    colorScheme="whiteAlpha"
+                                    onClick={startOverSpeech}
+                                  >
+                                    {t("history_speech_start_over")}
+                                  </Button>
+                                </>
+                              )}
+                            </HStack>
+
+                            {speechTranscript && (
+                              <Text
+                                fontSize="sm"
+                                lineHeight="1.8"
+                                opacity={0.9}
+                              >
+                                {speechTranscript}
+                              </Text>
                             )}
-                            <Textarea
-                              size="sm"
-                              placeholder={t("history_speech_placeholder")}
-                              value={speechTranscript}
-                              onChange={(e) =>
-                                setSpeechTranscript(e.target.value)
-                              }
-                              rows={4}
-                              isDisabled={isGradingSpeech}
-                            />
-                            <Button
-                              size="sm"
-                              colorScheme="teal"
-                              onClick={gradeSpeechAttempt}
-                              isLoading={isGradingSpeech}
-                              isDisabled={!speechTranscript.trim()}
-                            >
-                              {t("history_speech_submit")}
-                            </Button>
+
+                            {speechTranscript && !isListening && (
+                              <Box
+                                display="flex"
+                                justifyContent="center"
+                              >
+                                <Button
+                                  size="md"
+                                  colorScheme="teal"
+                                  onClick={gradeSpeechAttempt}
+                                  isLoading={isGradingSpeech}
+                                  isDisabled={!speechTranscript.trim()}
+                                  maxW="300px"
+                                  w="full"
+                                  py={6}
+                                >
+                                  {t("history_speech_submit")}
+                                </Button>
+                              </Box>
+                            )}
                           </>
                         )}
 
