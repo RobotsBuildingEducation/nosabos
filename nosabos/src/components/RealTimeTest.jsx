@@ -16,7 +16,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaDice } from "react-icons/fa";
+import { FaStop } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import {
@@ -36,9 +36,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
@@ -2796,8 +2794,21 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Simple sort: newest first (most recent at top, oldest at bottom)
-    return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
+    // Sort chronologically (oldest first) then enforce strict user/assistant alternation
+    const sorted = Array.from(map.values()).sort(
+      (a, b) => (a?.ts || 0) - (b?.ts || 0)
+    );
+    const paired = [];
+    let ui = 0;
+    let ai = 0;
+    const users = sorted.filter((m) => m.role === "user");
+    const assistants = sorted.filter((m) => m.role === "assistant");
+    while (ui < users.length || ai < assistants.length) {
+      if (ui < users.length) paired.push(users[ui++]);
+      if (ai < assistants.length) paired.push(assistants[ai++]);
+    }
+    // Reverse for display: newest first
+    return paired.reverse();
   }, [messages, history]);
 
   return (
@@ -2811,128 +2822,19 @@ Do not return the whole sentence as a single chunk.`;
         borderRadius="24px"
         mt="-8"
       >
-        {/* Header */}
-        {/* <Text
-        fontSize={["md", "lg"]}
-        fontWeight="bold"
-        noOfLines={1}
-        flex="1"
-        mr={2}
-        px={4}
-        pt={1}
-      >
-        {appTitle} (BETA)
-      </Text> */}
-
-        <Flex
+        {/* Plain text title */}
+        <Text
+          fontSize={["md", "lg"]}
+          fontWeight="bold"
+          noOfLines={1}
           px={4}
-          pt={2}
-          align="center"
-          justify="space-between"
-          gap={2}
-        ></Flex>
-
-        {/* Only Delete (settings moved to top bar) */}
-
-        {/* 🎯 Active goal display */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
-          <Box
-            bg="gray.800"
-            p={3}
-            rounded="2xl"
-            border="1px solid rgba(255,255,255,0.06)"
-            width="100%"
-            maxWidth="400px"
-            position="relative"
-            overflow="hidden"
-          >
-            <Box
-              position="absolute"
-              top={3}
-              left={3}
-              width="72px"
-              opacity={0.95}
-            >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={uiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
-
-            <VStack
-              align="flex-start"
-              spacing={2}
-              width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-              pt={{ base: 1, sm: 0 }}
-            >
-              <Box w="100%">
-                <HStack justify="space-between" align="center" mb={1}>
-                  <HStack spacing={2} align="center" flex="1">
-                    <IconButton
-                      icon={
-                        isGeneratingGoal ? (
-                          <Spinner size="xs" color="white" />
-                        ) : (
-                          <FaDice />
-                        )
-                      }
-                      size="xs"
-                      variant="ghost"
-                      color="white"
-                      aria-label={uiLang === "es" ? "Nueva meta" : "New goal"}
-                      onClick={generateGoalVariation}
-                      opacity={0.7}
-                      _hover={{ opacity: 1 }}
-                      isDisabled={status === "connected" || isGeneratingGoal}
-                      minW="24px"
-                      h="24px"
-                    />
-                    <Badge
-                      colorScheme="yellow"
-                      variant="subtle"
-                      fontSize={"10px"}
-                    >
-                      {tGoalLabel}
-                    </Badge>
-                    <Text fontSize="xs" opacity={0.9} color="white" flex="1">
-                      {isGeneratingGoal
-                        ? streamingGoalText ||
-                          (uiLang === "es" ? "Generando..." : "Generating...")
-                        : goalTitleForUI(currentGoal) || "—"}
-                    </Text>
-                  </HStack>
-                </HStack>
-                {!!currentGoal && !isGeneratingGoal && (
-                  <Text fontSize="xs" opacity={0.8}>
-                    <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                    {goalRubricForUI(currentGoal)}
-                  </Text>
-                )}
-                {goalFeedback && !isGeneratingGoal ? (
-                  <Text fontSize="xs" mt={2} opacity={0.9}>
-                    💡 {goalFeedback}
-                  </Text>
-                ) : null}
-
-                <Box mt={3}>
-                  <HStack justifyContent="space-between" mb={1}>
-                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                    </Badge>
-                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                      {ui.ra_label_xp} {xp}
-                    </Badge>
-                  </HStack>
-                  <WaveBar value={progressPct} />
-                </Box>
-              </Box>
-            </VStack>
-          </Box>
-        </Box>
+          pt={3}
+          pb={1}
+          textAlign="center"
+          color="gray.100"
+        >
+          {appTitle}
+        </Text>
 
         {/* Timeline — newest first */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
