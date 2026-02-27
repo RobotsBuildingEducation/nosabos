@@ -106,7 +106,7 @@ export const linksPageTranslations = {
     // RoadmapCash Modal
     roadmapCashTitle: "Roadmap.Cash (free)",
     roadmapCashDescription:
-      "A small and free personal financial planning tool. Early stage development.",
+      "A free personal financial planning tool. Just enter whatever data you want and we'll generate visual insights, plans and coaching to make progress in and achieve your financial goals.",
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "You'll use your secret key to switch in to your account in the menu. If you entered through social media, you only have to do this once.",

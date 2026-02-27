@@ -545,24 +545,24 @@ export default function LinksPage() {
       ),
       launchAppText: translations.launchApp,
     },
-    // {
-    //   title: translations.roadmapCashTitle,
-    //   description: translations.roadmapCashDescription,
-    //   href: "https://roadmap.cash",
-    //   analyticsName: "roadmap_cash",
-    //   visual: (
-    //     <Box
-    //       w={{ base: "110px", md: "120px" }}
-    //       h={{ base: "110px", md: "120px" }}
-    //       display="flex"
-    //       alignItems="center"
-    //       justifyContent="center"
-    //     >
-    //       <AnimatedLogo showWordmark={false} size={110} />
-    //     </Box>
-    //   ),
-    //   launchAppText: translations.launchApp,
-    // },
+    {
+      title: translations.roadmapCashTitle,
+      description: translations.roadmapCashDescription,
+      href: "https://roadmap.cash",
+      analyticsName: "roadmap_cash",
+      visual: (
+        <Box
+          w={{ base: "140px", md: "140px" }}
+          h={{ base: "140px", md: "140px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <AnimatedLogo showWordmark={false} size={140} />
+        </Box>
+      ),
+      launchAppText: translations.launchApp,
+    },
     {
       title: translations.patreonTitle,
       description: translations.patreonDescription,
