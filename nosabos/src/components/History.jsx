@@ -28,6 +28,7 @@ import {
   SlideFade,
   Grid,
   GridItem,
+  Switch,
 } from "@chakra-ui/react";
 import {
   PiSpeakerHighDuotone,
@@ -2028,29 +2029,37 @@ Return ONLY valid JSON:
                   <Box>
                     <Divider opacity={0.2} mb={3} />
 
-                    {/* Tutorial mode: let user choose format */}
+                    {/* Tutorial mode: let user toggle format */}
                     {isTutorial && reviewFormat && (
-                      <HStack spacing={2} mb={3} justify="center">
-                        <Button
-                          size="sm"
-                          variant={
-                            reviewFormat === "question" ? "solid" : "outline"
+                      <HStack spacing={3} mb={3} justify="center">
+                        <Text
+                          fontSize="sm"
+                          fontWeight={
+                            reviewFormat === "question" ? "bold" : "normal"
                           }
-                          colorScheme="teal"
-                          onClick={() => switchReviewFormat("question")}
+                          opacity={reviewFormat === "question" ? 1 : 0.6}
                         >
                           {t("history_format_question")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={
-                            reviewFormat === "speech" ? "solid" : "outline"
-                          }
+                        </Text>
+                        <Switch
+                          size="md"
                           colorScheme="purple"
-                          onClick={() => switchReviewFormat("speech")}
+                          isChecked={reviewFormat === "speech"}
+                          onChange={() =>
+                            switchReviewFormat(
+                              reviewFormat === "speech" ? "question" : "speech",
+                            )
+                          }
+                        />
+                        <Text
+                          fontSize="sm"
+                          fontWeight={
+                            reviewFormat === "speech" ? "bold" : "normal"
+                          }
+                          opacity={reviewFormat === "speech" ? 1 : 0.6}
                         >
                           {t("history_format_speech")}
-                        </Button>
+                        </Text>
                       </HStack>
                     )}
 
@@ -2109,7 +2118,7 @@ Return ONLY valid JSON:
                               </Text>
                             )}
 
-                            {speechTranscript && !isListening && (
+                            {speechTranscript && (
                               <Box
                                 display="flex"
                                 justifyContent="center"
