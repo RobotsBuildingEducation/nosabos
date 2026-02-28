@@ -1525,10 +1525,10 @@ export default function History({
       setSynthesizing: setIsSynthesizingTarget,
     });
 
-  const readSingleSentence = async (sentence, index) => {
+  const readSingleSentence = (sentence, index) => {
     if (!sentence || isReadingTarget) return;
-    stopSpeech();
-    setActiveSentenceIndex(index);
+    // speak() synchronously calls stopSpeech() which clears activeSentenceIndex,
+    // so we set the index after speak starts (before its async work resolves)
     speak({
       text: sentence,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
@@ -1536,6 +1536,7 @@ export default function History({
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
     });
+    setActiveSentenceIndex(index);
   };
 
   // Generate a review question for the current lecture
