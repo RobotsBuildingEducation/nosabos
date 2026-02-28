@@ -1989,34 +1989,54 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
+                  <VStack align="stretch" spacing={2}>
                     {splitIntoSentences(viewLecture.target || "").map(
                       (sentence, i) => (
-                        <Text
-                          as="span"
+                        <Box
                           key={i}
                           bg={
                             activeSentenceIndex === i
                               ? "rgba(56, 178, 172, 0.35)"
-                              : "transparent"
+                              : "rgba(255, 255, 255, 0.04)"
                           }
-                          borderRadius="sm"
-                          px={activeSentenceIndex === i ? "2px" : 0}
-                          transition="background 0.2s"
+                          borderRadius="lg"
+                          px={4}
+                          py={2.5}
+                          transition="all 0.2s"
                           cursor="pointer"
+                          border="1px solid"
+                          borderColor={
+                            activeSentenceIndex === i
+                              ? "teal.400"
+                              : "rgba(255, 255, 255, 0.06)"
+                          }
                           _hover={{
                             bg:
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
-                                : "rgba(56, 178, 172, 0.1)",
+                                : "rgba(56, 178, 172, 0.12)",
+                            borderColor: "teal.400",
+                          }}
+                          _active={{
+                            bg: "rgba(56, 178, 172, 0.25)",
                           }}
                           onClick={() => readSingleSentence(sentence)}
                         >
-                          {sentence}{" "}
-                        </Text>
+                          <HStack spacing={2} align="center">
+                            <Box flexShrink={0} opacity={0.5}>
+                              <PiSpeakerHighDuotone size="14px" />
+                            </Box>
+                            <Text
+                              fontSize={{ base: "md", md: "md" }}
+                              lineHeight="1.7"
+                            >
+                              {sentence}
+                            </Text>
+                          </HStack>
+                        </Box>
                       ),
                     )}
-                  </Text>
+                  </VStack>
                 </Box>
 
                 {/* Review: question or speech format */}
