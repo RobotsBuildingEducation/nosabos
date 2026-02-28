@@ -2011,17 +2011,15 @@ Return ONLY valid JSON:
                         const defaultBg = colors[i % colors.length];
                         const shadow = shadowColors[i % shadowColors.length];
                         return (
-                          <Button
+                          <Text
+                            as="button"
                             key={i}
-                            variant="unstyled"
                             display="inline"
                             fontWeight="normal"
-                            fontSize={{ base: "md", md: "md" }}
+                            fontSize="inherit"
                             lineHeight="inherit"
-                            h="auto"
-                            minW={0}
-                            whiteSpace="normal"
-                            textAlign="left"
+                            fontFamily="inherit"
+                            color="inherit"
                             bg={
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
@@ -2041,14 +2039,17 @@ Return ONLY valid JSON:
                                 : `0px 4px 0px ${shadow}`
                             }
                             transition="all 0.2s"
-                            _active={{
-                              boxShadow: "none",
-                              transform: "translateY(2px)",
+                            cursor="pointer"
+                            sx={{
+                              "&:active": {
+                                boxShadow: "none",
+                                transform: "translateY(2px)",
+                              },
                             }}
                             onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
                           >
                             {sentence}{" "}
-                          </Button>
+                          </Text>
                         );
                       }
                     )}
