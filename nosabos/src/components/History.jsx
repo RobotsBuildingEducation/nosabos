@@ -1989,39 +1989,53 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
+                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
                     {splitIntoSentences(viewLecture.target || "").map(
-                      (sentence, i) => (
-                        <Text
-                          as="span"
-                          key={i}
-                          bg={
-                            activeSentenceIndex === i
-                              ? "rgba(56, 178, 172, 0.35)"
-                              : "transparent"
-                          }
-                          borderRadius="sm"
-                          px={1}
-                          border="1px solid"
-                          borderColor={
-                            activeSentenceIndex === i
-                              ? "teal.400"
-                              : "rgba(255, 255, 255, 0.12)"
-                          }
-                          transition="background 0.2s"
-                          cursor="pointer"
-                          _hover={{
-                            bg:
+                      (sentence, i) => {
+                        const colors = [
+                          "rgba(56, 178, 172, 0.12)",
+                          "rgba(128, 90, 213, 0.12)",
+                          "rgba(237, 137, 54, 0.12)",
+                          "rgba(99, 179, 237, 0.12)",
+                          "rgba(246, 173, 85, 0.12)",
+                        ];
+                        const defaultBg = colors[i % colors.length];
+                        return (
+                          <Text
+                            as="span"
+                            key={i}
+                            bg={
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
-                                : "rgba(56, 178, 172, 0.1)",
-                            borderColor: "teal.400",
-                          }}
-                          onClick={() => readSingleSentence(sentence)}
-                        >
-                          {sentence}
-                        </Text>
-                      ){" "}
+                                : defaultBg
+                            }
+                            borderRadius="sm"
+                            px={1}
+                            border="1px solid"
+                            borderColor={
+                              activeSentenceIndex === i
+                                ? "teal.400"
+                                : "rgba(255, 255, 255, 0.12)"
+                            }
+                            transition="background 0.2s"
+                            cursor="pointer"
+                            sx={{
+                              "@media (hover: hover)": {
+                                "&:hover": {
+                                  bg:
+                                    activeSentenceIndex === i
+                                      ? "rgba(56, 178, 172, 0.35)"
+                                      : "rgba(56, 178, 172, 0.15)",
+                                  borderColor: "var(--chakra-colors-teal-400)",
+                                },
+                              },
+                            }}
+                            onClick={() => readSingleSentence(sentence)}
+                          >
+                            {sentence}
+                          </Text>
+                        );
+                      }){" "}
                     )}
                   </Text>
                 </Box>
