@@ -1936,7 +1936,7 @@ Return ONLY valid JSON:
                           <PiSpeakerHighDuotone size="20px" />
                         )
                       }
-                      onClick={readTarget}
+                      onClick={() => { playSound(clickSound); readTarget(); }}
                       aria-label="Read with highlighting"
                       size="sm"
                       variant="ghost"
@@ -1957,7 +1957,7 @@ Return ONLY valid JSON:
                           <PiLightningDuotone size="20px" />
                         )
                       }
-                      onClick={readTargetFull}
+                      onClick={() => { playSound(clickSound); readTargetFull(); }}
                       aria-label="Read all"
                       size="sm"
                       variant="ghost"
@@ -1972,7 +1972,7 @@ Return ONLY valid JSON:
                   <VStack spacing={0.5}>
                     <IconButton
                       icon={<PiStopDuotone size="20px" />}
-                      onClick={stopSpeech}
+                      onClick={() => { playSound(clickSound); stopSpeech(); }}
                       aria-label="Stop"
                       size="sm"
                       variant="ghost"
@@ -2032,12 +2032,12 @@ Return ONLY valid JSON:
                                 },
                               },
                             }}
-                            onClick={() => readSingleSentence(sentence, i)}
+                            onClick={() => { playSound(clickSound); readSingleSentence(sentence, i); }}
                           >
-                            {sentence}
+                            {sentence}{" "}
                           </Text>
                         );
-                      }){" "}
+                      }
                     )}
                   </Text>
                 </Box>
@@ -2099,7 +2099,7 @@ Return ONLY valid JSON:
                                   size="sm"
                                   colorScheme="purple"
                                   leftIcon={<PiMicrophoneStageDuotone />}
-                                  onClick={startListening}
+                                  onClick={() => { playSound(clickSound); startListening(); }}
                                   isDisabled={!hasSpeechRecognition}
                                 >
                                   {t("history_speech_start_mic")}
@@ -2110,7 +2110,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     colorScheme="red"
                                     leftIcon={<PiStopDuotone />}
-                                    onClick={stopListening}
+                                    onClick={() => { playSound(clickSound); stopListening(); }}
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
@@ -2118,7 +2118,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     variant="outline"
                                     colorScheme="whiteAlpha"
-                                    onClick={startOverSpeech}
+                                    onClick={() => { playSound(clickSound); startOverSpeech(); }}
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2446,9 +2446,10 @@ Return ONLY valid JSON:
                                   size="sm"
                                   variant="ghost"
                                   leftIcon={<MdKeyboard />}
-                                  onClick={() =>
-                                    setShowReviewKeyboard((prev) => !prev)
-                                  }
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    setShowReviewKeyboard((prev) => !prev);
+                                  }}
                                 >
                                   {showReviewKeyboard
                                     ? t("history_keyboard_close")
@@ -2574,9 +2575,10 @@ Return ONLY valid JSON:
                                   size="sm"
                                   variant="ghost"
                                   leftIcon={<MdKeyboard />}
-                                  onClick={() =>
-                                    setShowReviewKeyboard((prev) => !prev)
-                                  }
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    setShowReviewKeyboard((prev) => !prev);
+                                  }}
                                 >
                                   {showReviewKeyboard
                                     ? t("history_keyboard_close")
@@ -2641,7 +2643,7 @@ Return ONLY valid JSON:
                                       )
                                     }
                                     colorScheme="pink"
-                                    onClick={explainReviewAnswer}
+                                    onClick={() => { playSound(clickSound); explainReviewAnswer(); }}
                                     isDisabled={
                                       isLoadingExplanation || !!explanationText
                                     }
@@ -2758,7 +2760,7 @@ Return ONLY valid JSON:
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={generateReviewQuestion}
+                        onClick={() => { playSound(clickSound); generateReviewQuestion(); }}
                       >
                         {t("history_generate_review")}
                       </Button>
