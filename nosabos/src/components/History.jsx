@@ -1936,7 +1936,7 @@ Return ONLY valid JSON:
                           <PiSpeakerHighDuotone size="20px" />
                         )
                       }
-                      onClick={() => { playSound(clickSound); readTarget(); }}
+                      onClick={() => { playSound(selectSound); readTarget(); }}
                       aria-label="Read with highlighting"
                       size="sm"
                       variant="ghost"
@@ -1957,7 +1957,7 @@ Return ONLY valid JSON:
                           <PiLightningDuotone size="20px" />
                         )
                       }
-                      onClick={() => { playSound(clickSound); readTargetFull(); }}
+                      onClick={() => { playSound(selectSound); readTargetFull(); }}
                       aria-label="Read all"
                       size="sm"
                       variant="ghost"
@@ -1972,7 +1972,7 @@ Return ONLY valid JSON:
                   <VStack spacing={0.5}>
                     <IconButton
                       icon={<PiStopDuotone size="20px" />}
-                      onClick={() => { playSound(clickSound); stopSpeech(); }}
+                      onClick={() => { playSound(selectSound); stopSpeech(); }}
                       aria-label="Stop"
                       size="sm"
                       variant="ghost"
@@ -2001,7 +2001,15 @@ Return ONLY valid JSON:
                           "rgba(99, 179, 237, 0.12)",
                           "rgba(246, 173, 85, 0.12)",
                         ];
+                        const shadowColors = [
+                          "rgba(56, 178, 172, 0.3)",
+                          "rgba(128, 90, 213, 0.3)",
+                          "rgba(237, 137, 54, 0.3)",
+                          "rgba(99, 179, 237, 0.3)",
+                          "rgba(246, 173, 85, 0.3)",
+                        ];
                         const defaultBg = colors[i % colors.length];
+                        const shadow = shadowColors[i % shadowColors.length];
                         return (
                           <Text
                             as="span"
@@ -2019,7 +2027,12 @@ Return ONLY valid JSON:
                                 ? "teal.400"
                                 : "rgba(255, 255, 255, 0.12)"
                             }
-                            transition="background 0.2s"
+                            boxShadow={
+                              activeSentenceIndex === i
+                                ? "0px 4px 0px teal"
+                                : `0px 4px 0px ${shadow}`
+                            }
+                            transition="all 0.2s"
                             cursor="pointer"
                             sx={{
                               "@media (hover: hover)": {
@@ -2032,7 +2045,7 @@ Return ONLY valid JSON:
                                 },
                               },
                             }}
-                            onClick={() => { playSound(clickSound); readSingleSentence(sentence, i); }}
+                            onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
                           >
                             {sentence}{" "}
                           </Text>
@@ -2099,7 +2112,7 @@ Return ONLY valid JSON:
                                   size="sm"
                                   colorScheme="purple"
                                   leftIcon={<PiMicrophoneStageDuotone />}
-                                  onClick={() => { playSound(clickSound); startListening(); }}
+                                  onClick={() => { playSound(selectSound); startListening(); }}
                                   isDisabled={!hasSpeechRecognition}
                                 >
                                   {t("history_speech_start_mic")}
@@ -2110,7 +2123,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     colorScheme="red"
                                     leftIcon={<PiStopDuotone />}
-                                    onClick={() => { playSound(clickSound); stopListening(); }}
+                                    onClick={() => { playSound(selectSound); stopListening(); }}
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
@@ -2118,7 +2131,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     variant="outline"
                                     colorScheme="whiteAlpha"
-                                    onClick={() => { playSound(clickSound); startOverSpeech(); }}
+                                    onClick={() => { playSound(selectSound); startOverSpeech(); }}
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2643,7 +2656,7 @@ Return ONLY valid JSON:
                                       )
                                     }
                                     colorScheme="pink"
-                                    onClick={() => { playSound(clickSound); explainReviewAnswer(); }}
+                                    onClick={() => { playSound(selectSound); explainReviewAnswer(); }}
                                     isDisabled={
                                       isLoadingExplanation || !!explanationText
                                     }
@@ -2760,7 +2773,7 @@ Return ONLY valid JSON:
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => { playSound(clickSound); generateReviewQuestion(); }}
+                        onClick={() => { playSound(selectSound); generateReviewQuestion(); }}
                       >
                         {t("history_generate_review")}
                       </Button>
