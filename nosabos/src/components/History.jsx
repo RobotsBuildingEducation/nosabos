@@ -2035,14 +2035,9 @@ Return ONLY valid JSON:
                             transition="all 0.2s"
                             cursor="pointer"
                             sx={{
-                              "@media (hover: hover)": {
-                                "&:hover": {
-                                  bg:
-                                    activeSentenceIndex === i
-                                      ? "rgba(56, 178, 172, 0.35)"
-                                      : "rgba(56, 178, 172, 0.15)",
-                                  borderColor: "var(--chakra-colors-teal-400)",
-                                },
+                              "&:active": {
+                                boxShadow: "0px 0px 0px transparent",
+                                transform: "translateY(4px)",
                               },
                             }}
                             onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
