@@ -1525,16 +1525,24 @@ export default function History({
       setSynthesizing: setIsSynthesizingTarget,
     });
 
+  const singleSentenceIndexRef = useRef(-1);
+
   const readSingleSentence = (sentence, index) => {
     if (!sentence) return;
-    // speak() internally calls stopSpeech() which stops any current playback,
-    // so we don't guard on isReadingTarget — let users tap freely between lines
+    singleSentenceIndexRef.current = index;
+    // No-op setReading/setSynthesizing to avoid spinners on single line taps
     speak({
       text: sentence,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
-      onDone: () => setActiveSentenceIndex(-1),
-      setReading: setIsReadingTarget,
-      setSynthesizing: setIsSynthesizingTarget,
+      onDone: () => {
+        // Only clear if this sentence is still the active one
+        if (singleSentenceIndexRef.current === index) {
+          setActiveSentenceIndex(-1);
+          singleSentenceIndexRef.current = -1;
+        }
+      },
+      setReading: () => {},
+      setSynthesizing: () => {},
     });
     setActiveSentenceIndex(index);
   };
