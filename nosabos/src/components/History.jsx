@@ -1526,9 +1526,9 @@ export default function History({
     });
 
   const readSingleSentence = (sentence, index) => {
-    if (!sentence || isReadingTarget) return;
-    // speak() synchronously calls stopSpeech() which clears activeSentenceIndex,
-    // so we set the index after speak starts (before its async work resolves)
+    if (!sentence) return;
+    // speak() internally calls stopSpeech() which stops any current playback,
+    // so we don't guard on isReadingTarget — let users tap freely between lines
     speak({
       text: sentence,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
