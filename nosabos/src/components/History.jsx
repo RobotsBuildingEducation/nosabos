@@ -2019,43 +2019,50 @@ Return ONLY valid JSON:
                         const defaultBg = colors[i % colors.length];
                         const shadow = shadowColors[i % shadowColors.length];
                         return (
-                          <Text
+                          <Box
                             as="span"
+                            key={i}
+                            cursor="pointer"
+                            onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
                             role="button"
                             tabIndex={0}
-                            key={i}
-                            bg={
-                              activeSentenceIndex === i
-                                ? "rgba(56, 178, 172, 0.35)"
-                                : defaultBg
-                            }
-                            borderRadius="sm"
-                            px={1}
-                            py="1px"
-                            border="1px solid"
-                            borderColor={
-                              activeSentenceIndex === i
-                                ? "teal.400"
-                                : "rgba(255, 255, 255, 0.12)"
-                            }
-                            boxShadow={
-                              activeSentenceIndex === i
-                                ? "0px 4px 0px teal"
-                                : `0px 4px 0px ${shadow}`
-                            }
-                            transition="all 0.15s"
-                            cursor="pointer"
                             sx={{
-                              "&:active": {
+                              "& > span": {
+                                display: "inline-block",
+                                transition: "all 0.15s",
+                              },
+                              "&:active > span": {
+                                transform: "translateY(2px)",
                                 boxShadow: "none",
-                                paddingTop: "3px",
-                                paddingBottom: "0px",
                               },
                             }}
-                            onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
                           >
-                            {sentence}{" "}
-                          </Text>
+                            <Text
+                              as="span"
+                              display="inline-block"
+                              bg={
+                                activeSentenceIndex === i
+                                  ? "rgba(56, 178, 172, 0.35)"
+                                  : defaultBg
+                              }
+                              borderRadius="sm"
+                              px={1}
+                              py="1px"
+                              border="1px solid"
+                              borderColor={
+                                activeSentenceIndex === i
+                                  ? "teal.400"
+                                  : "rgba(255, 255, 255, 0.12)"
+                              }
+                              boxShadow={
+                                activeSentenceIndex === i
+                                  ? "0px 4px 0px teal"
+                                  : `0px 4px 0px ${shadow}`
+                              }
+                            >
+                              {sentence}
+                            </Text>{" "}
+                          </Box>
                         );
                       }
                     )}
