@@ -2012,14 +2012,10 @@ Return ONLY valid JSON:
                         const shadow = shadowColors[i % shadowColors.length];
                         return (
                           <Text
-                            as="button"
+                            as="span"
+                            role="button"
+                            tabIndex={0}
                             key={i}
-                            display="inline"
-                            fontWeight="normal"
-                            fontSize="inherit"
-                            lineHeight="inherit"
-                            fontFamily="inherit"
-                            color="inherit"
                             bg={
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
@@ -2038,12 +2034,13 @@ Return ONLY valid JSON:
                                 ? "0px 4px 0px teal"
                                 : `0px 4px 0px ${shadow}`
                             }
-                            transition="all 0.2s"
+                            transition="all 0.15s"
                             cursor="pointer"
                             sx={{
                               "&:active": {
-                                boxShadow: "none",
-                                transform: "translateY(2px)",
+                                boxShadow: activeSentenceIndex === i
+                                  ? "inset 0px 2px 4px rgba(0,0,0,0.3)"
+                                  : "inset 0px 2px 4px rgba(0,0,0,0.2)",
                               },
                             }}
                             onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
