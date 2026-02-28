@@ -1525,13 +1525,14 @@ export default function History({
       setSynthesizing: setIsSynthesizingTarget,
     });
 
-  const readSingleSentence = async (sentence) => {
+  const readSingleSentence = async (sentence, index) => {
     if (!sentence || isReadingTarget) return;
     stopSpeech();
+    setActiveSentenceIndex(index);
     speak({
       text: sentence,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
-      onDone: () => {},
+      onDone: () => setActiveSentenceIndex(-1),
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
     });
@@ -2030,7 +2031,7 @@ Return ONLY valid JSON:
                                 },
                               },
                             }}
-                            onClick={() => readSingleSentence(sentence)}
+                            onClick={() => readSingleSentence(sentence, i)}
                           >
                             {sentence}
                           </Text>
