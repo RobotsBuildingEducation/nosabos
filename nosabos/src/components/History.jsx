@@ -987,7 +987,6 @@ export default function History({
     if (format === reviewFormat) return;
     stopListening();
     setReviewFormat(format);
-    setReviewQuestion(null);
     setReviewAnswer("");
     setReviewSubmitted(false);
     setReviewCorrect(null);
