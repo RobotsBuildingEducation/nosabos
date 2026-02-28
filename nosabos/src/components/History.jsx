@@ -1989,54 +1989,41 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <VStack align="stretch" spacing={2}>
+                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                     {splitIntoSentences(viewLecture.target || "").map(
                       (sentence, i) => (
-                        <Box
+                        <Text
+                          as="span"
                           key={i}
                           bg={
                             activeSentenceIndex === i
                               ? "rgba(56, 178, 172, 0.35)"
-                              : "rgba(255, 255, 255, 0.04)"
+                              : "transparent"
                           }
-                          borderRadius="lg"
-                          px={4}
-                          py={2.5}
-                          transition="all 0.2s"
-                          cursor="pointer"
+                          borderRadius="sm"
+                          px={1}
                           border="1px solid"
                           borderColor={
                             activeSentenceIndex === i
                               ? "teal.400"
-                              : "rgba(255, 255, 255, 0.06)"
+                              : "rgba(255, 255, 255, 0.12)"
                           }
+                          transition="background 0.2s"
+                          cursor="pointer"
                           _hover={{
                             bg:
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
-                                : "rgba(56, 178, 172, 0.12)",
+                                : "rgba(56, 178, 172, 0.1)",
                             borderColor: "teal.400",
-                          }}
-                          _active={{
-                            bg: "rgba(56, 178, 172, 0.25)",
                           }}
                           onClick={() => readSingleSentence(sentence)}
                         >
-                          <HStack spacing={2} align="center">
-                            <Box flexShrink={0} opacity={0.5}>
-                              <PiSpeakerHighDuotone size="14px" />
-                            </Box>
-                            <Text
-                              fontSize={{ base: "md", md: "md" }}
-                              lineHeight="1.7"
-                            >
-                              {sentence}
-                            </Text>
-                          </HStack>
-                        </Box>
-                      ),
+                          {sentence}
+                        </Text>
+                      ){" "}
                     )}
-                  </VStack>
+                  </Text>
                 </Box>
 
                 {/* Review: question or speech format */}
