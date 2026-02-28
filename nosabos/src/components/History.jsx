@@ -1797,7 +1797,7 @@ Return ONLY valid JSON:
     stopListening();
   }, [activeId]); // eslint-disable-line
 
-  // Select review format (question vs speech) when a lecture is ready
+  // Default to question format when a lecture is ready
   useEffect(() => {
     if (
       activeLecture?.target &&
@@ -1805,11 +1805,7 @@ Return ONLY valid JSON:
       !isGenerating &&
       reviewFormat === null
     ) {
-      if (isTutorial) {
-        setReviewFormat("question"); // tutorial default; user can toggle
-      } else {
-        setReviewFormat(Math.random() < 0.5 ? "question" : "speech");
-      }
+      setReviewFormat("question");
     }
   }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
@@ -2029,7 +2025,7 @@ Return ONLY valid JSON:
                     <Divider opacity={0.2} mb={3} />
 
                     {/* Tutorial mode: let user toggle format */}
-                    {isTutorial && reviewFormat && (
+                    {reviewFormat && (
                       <HStack spacing={3} mb={3} justify="center">
                         <Text
                           fontSize="sm"
