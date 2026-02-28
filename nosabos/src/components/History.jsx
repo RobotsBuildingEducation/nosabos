@@ -2016,6 +2016,7 @@ Return ONLY valid JSON:
                             role="button"
                             tabIndex={0}
                             key={i}
+                            display="inline-block"
                             bg={
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
@@ -2038,9 +2039,8 @@ Return ONLY valid JSON:
                             cursor="pointer"
                             sx={{
                               "&:active": {
-                                boxShadow: activeSentenceIndex === i
-                                  ? "inset 0px 2px 4px rgba(0,0,0,0.3)"
-                                  : "inset 0px 2px 4px rgba(0,0,0,0.2)",
+                                boxShadow: "none",
+                                transform: "translateY(2px)",
                               },
                             }}
                             onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
