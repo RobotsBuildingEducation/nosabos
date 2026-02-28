@@ -2036,8 +2036,8 @@ Return ONLY valid JSON:
                             cursor="pointer"
                             sx={{
                               "&:active": {
-                                boxShadow: "0px 0px 0px transparent",
-                                transform: "translateY(4px)",
+                                boxShadow: "none",
+                                transform: "translateY(2px)",
                               },
                             }}
                             onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
