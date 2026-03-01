@@ -1184,7 +1184,9 @@ const UnitSection = React.memo(function UnitSection({
             strokeWidth="5"
             fill="none"
             strokeLinecap="round"
-            strokeDasharray="8 4"
+            style={{
+              transition: "all 0.3s ease",
+            }}
           />
         </Box>
 
@@ -1376,35 +1378,20 @@ const UnitSection = React.memo(function UnitSection({
                 x2="0%"
                 y2="100%"
               >
-                <stop offset="0%" stopColor={unit.color} stopOpacity={0.6} />
-                <stop offset="100%" stopColor={unit.color} stopOpacity={0.2} />
+                <stop offset="0%" stopColor={unit.color} stopOpacity={0.8} />
+                <stop offset="100%" stopColor={unit.color} stopOpacity={0.3} />
               </linearGradient>
             </defs>
             <path
               d="M 100 0 Q 100 50, 100 100"
               stroke={`url(#unit-end-${unit.id})`}
-              strokeWidth="4"
+              strokeWidth="5"
               fill="none"
               strokeLinecap="round"
-              strokeDasharray="8 4"
+              style={{
+                transition: "all 0.3s ease",
+              }}
             />
-            {/* Animated arrow */}
-            <circle cx="100" cy="0" r="4" fill={unit.color} opacity="0.8">
-              <animate
-                attributeName="cy"
-                from="0"
-                to="100"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-              <animate
-                attributeName="opacity"
-                from="0.8"
-                to="0"
-                dur="2s"
-                repeatCount="indefinite"
-              />
-            </circle>
           </Box>
         )}
       </VStack>
