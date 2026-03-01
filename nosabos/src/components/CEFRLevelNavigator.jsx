@@ -26,7 +26,7 @@ const getTranslation = (key, params = {}) => {
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
-    params[k] != null ? String(params[k]) : `{${k}}`
+    params[k] != null ? String(params[k]) : `{${k}}`,
   );
 };
 
@@ -116,7 +116,8 @@ export default function CEFRLevelNavigator({
   const testNsec =
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
   const isTestUnlocked =
-    testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+    testNsec ===
+    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
   // A level is unlocked if:
   // 1. Test mode is active, OR
@@ -126,19 +127,21 @@ export default function CEFRLevelNavigator({
   const currentUnlockedIndex = CEFR_LEVELS.indexOf(currentLevel);
   const nextLevelIndex = nextLevel ? CEFR_LEVELS.indexOf(nextLevel) : -1;
 
-  const isNextLevelUnlocked = isTestUnlocked || (nextLevel
-    ? nextLevelIndex <= currentUnlockedIndex ||
-      (() => {
-        // Check all levels before the next level
-        for (let i = 0; i < currentLevelIndex + 1; i++) {
-          const level = CEFR_LEVELS[i];
-          if (!levelCompletionStatus[level]?.isComplete) {
-            return false;
+  const isNextLevelUnlocked =
+    isTestUnlocked ||
+    (nextLevel
+      ? nextLevelIndex <= currentUnlockedIndex ||
+        (() => {
+          // Check all levels before the next level
+          for (let i = 0; i < currentLevelIndex + 1; i++) {
+            const level = CEFR_LEVELS[i];
+            if (!levelCompletionStatus[level]?.isComplete) {
+              return false;
+            }
           }
-        }
-        return true;
-      })()
-    : false);
+          return true;
+        })()
+      : false);
 
   const levelInfo = CEFR_LEVEL_INFO[activeCEFRLevel];
   const isCurrentUserLevel = activeCEFRLevel === currentLevel;
@@ -182,10 +185,10 @@ export default function CEFRLevelNavigator({
           {/* Previous Level Button */}
 
           {/* Current Level Badge */}
-          <VStack spacing={2} flex={1} align="center">
+          <VStack spacing={0} flex={1} align="center">
             <Badge
-              px={6}
-              py={3}
+              px={4}
+              py={2}
               borderRadius="16px"
               bgGradient={levelInfo.gradient}
               color="white"
@@ -196,14 +199,14 @@ export default function CEFRLevelNavigator({
               {levelInfo.displayLabel || activeCEFRLevel}
             </Badge>
             <Text
-              fontSize="lg"
+              fontSize="md"
               fontWeight="bold"
               color="white"
               textAlign={"center"}
             >
               {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
             </Text>
-            <Text fontSize="sm" color="gray.400" textAlign="center">
+            <Text fontSize="xs" color="gray.400" textAlign="center">
               {levelInfo.description[getAppLanguage()] ||
                 levelInfo.description.en}
             </Text>

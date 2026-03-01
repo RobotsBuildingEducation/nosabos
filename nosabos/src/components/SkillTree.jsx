@@ -1986,23 +1986,28 @@ export default function SkillTree({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            mb={8}
+            mb={4}
+            display="flex"
+            justifyContent={"center"}
           >
             <HStack
               justify="space-between"
               bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
               backdropFilter="blur(10px)"
               px={6}
-              py={3}
+              py={2}
               borderRadius="8px"
               border="1px solid"
               borderColor="whiteAlpha.200"
               boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+              w="100%"
+              maxW="600px"
             >
               <HStack spacing={3}>
                 <VStack spacing={0} align="start">
+                  {" "}
                   <Text
-                    fontSize="lg"
+                    fontSize="sm"
                     fontWeight="black"
                     color="white"
                     lineHeight="1"
