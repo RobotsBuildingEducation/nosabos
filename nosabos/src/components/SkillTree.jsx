@@ -1089,7 +1089,9 @@ const UnitSection = React.memo(function UnitSection({
           bgGradient={`linear(135deg, ${unit.color}15, ${unit.color}08)`}
           backdropFilter="blur(10px)"
           borderRadius="2xl"
-          p={6}
+          p={4}
+          pl={6}
+          pr={6}
           border="2px solid"
           borderColor={`${unit.color}40`}
           boxShadow={`0 8px 32px ${unit.color}20, 0 4px 16px rgba(0,0,0,0.3)`}
@@ -1113,20 +1115,19 @@ const UnitSection = React.memo(function UnitSection({
             bgSize="24px 24px"
             pointerEvents="none"
           />
-
           <HStack justify="space-between" position="relative">
             <VStack align="start" spacing={2}>
               <HStack spacing={3}>
                 <Box
-                  w={5}
-                  h={5}
+                  w={2}
+                  h={2}
                   borderRadius="full"
                   bg={unit.color}
                   boxShadow={`0 0 20px ${unit.color}80`}
                   animation="pulse 3s ease-in-out infinite"
                 />
                 <Heading
-                  size="md"
+                  size="sm"
                   bgGradient={`linear(to-r, white, gray.200)`}
                   bgClip="text"
                   fontWeight="bold"
