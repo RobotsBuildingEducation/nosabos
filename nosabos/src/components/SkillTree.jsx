@@ -1965,6 +1965,7 @@ export default function SkillTree({
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
         py={6}
+        pt={3}
         px={{ base: 3, sm: 4, md: 6 }}
         position="relative"
         zIndex={1}
