@@ -679,13 +679,13 @@ function splitIntoSentences(text) {
   return result.map((s) => s.trim()).filter(Boolean);
 }
 const BCP47 = {
-  es: { tts: "es-ES" },
+  es: { tts: "es-MX" },
   en: { tts: "en-US" },
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
   nl: { tts: "nl-NL" },
-  nah: { tts: "es-ES" },
+  nah: { tts: "es-MX" },
   ru: { tts: "ru-RU" },
   de: { tts: "de-DE" },
   el: { tts: "el-GR" },
@@ -955,7 +955,7 @@ export default function History({
     const rec = new SpeechRec();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = BCP47[targetLang]?.tts || "es-ES";
+    rec.lang = BCP47[targetLang]?.tts || "es-MX";
     rec.onresult = (event) => {
       let transcript = "";
       for (let i = 0; i < event.results.length; i++) {
@@ -1525,16 +1525,26 @@ export default function History({
       setSynthesizing: setIsSynthesizingTarget,
     });
 
-  const readSingleSentence = async (sentence) => {
-    if (!sentence || isReadingTarget) return;
-    stopSpeech();
+  const singleSentenceIndexRef = useRef(-1);
+
+  const readSingleSentence = (sentence, index) => {
+    if (!sentence) return;
+    singleSentenceIndexRef.current = index;
+    // No-op setReading/setSynthesizing to avoid spinners on single line taps
     speak({
       text: sentence,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
-      onDone: () => {},
-      setReading: setIsReadingTarget,
-      setSynthesizing: setIsSynthesizingTarget,
+      onDone: () => {
+        // Only clear if this sentence is still the active one
+        if (singleSentenceIndexRef.current === index) {
+          setActiveSentenceIndex(-1);
+          singleSentenceIndexRef.current = -1;
+        }
+      },
+      setReading: () => {},
+      setSynthesizing: () => {},
     });
+    setActiveSentenceIndex(index);
   };
 
   // Generate a review question for the current lecture
@@ -1934,7 +1944,7 @@ Return ONLY valid JSON:
                           <PiSpeakerHighDuotone size="20px" />
                         )
                       }
-                      onClick={readTarget}
+                      onClick={() => { playSound(selectSound); readTarget(); }}
                       aria-label="Read with highlighting"
                       size="sm"
                       variant="ghost"
@@ -1955,7 +1965,7 @@ Return ONLY valid JSON:
                           <PiLightningDuotone size="20px" />
                         )
                       }
-                      onClick={readTargetFull}
+                      onClick={() => { playSound(selectSound); readTargetFull(); }}
                       aria-label="Read all"
                       size="sm"
                       variant="ghost"
@@ -1970,7 +1980,7 @@ Return ONLY valid JSON:
                   <VStack spacing={0.5}>
                     <IconButton
                       icon={<PiStopDuotone size="20px" />}
-                      onClick={stopSpeech}
+                      onClick={() => { playSound(selectSound); stopSpeech(); }}
                       aria-label="Stop"
                       size="sm"
                       variant="ghost"
@@ -1989,54 +1999,67 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <VStack align="stretch" spacing={2}>
+                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
                     {splitIntoSentences(viewLecture.target || "").map(
-                      (sentence, i) => (
-                        <Box
-                          key={i}
-                          bg={
-                            activeSentenceIndex === i
-                              ? "rgba(56, 178, 172, 0.35)"
-                              : "rgba(255, 255, 255, 0.04)"
-                          }
-                          borderRadius="lg"
-                          px={4}
-                          py={2.5}
-                          transition="all 0.2s"
-                          cursor="pointer"
-                          border="1px solid"
-                          borderColor={
-                            activeSentenceIndex === i
-                              ? "teal.400"
-                              : "rgba(255, 255, 255, 0.06)"
-                          }
-                          _hover={{
-                            bg:
+                      (sentence, i) => {
+                        const colors = [
+                          "rgba(56, 178, 172, 0.12)",
+                          "rgba(128, 90, 213, 0.12)",
+                          "rgba(237, 137, 54, 0.12)",
+                          "rgba(99, 179, 237, 0.12)",
+                          "rgba(246, 173, 85, 0.12)",
+                        ];
+                        const shadowColors = [
+                          "rgba(56, 178, 172, 0.3)",
+                          "rgba(128, 90, 213, 0.3)",
+                          "rgba(237, 137, 54, 0.3)",
+                          "rgba(99, 179, 237, 0.3)",
+                          "rgba(246, 173, 85, 0.3)",
+                        ];
+                        const defaultBg = colors[i % colors.length];
+                        const shadow = shadowColors[i % shadowColors.length];
+                        return (
+                          <Text
+                            as="span"
+                            role="button"
+                            tabIndex={0}
+                            key={i}
+                            position="relative"
+                            bg={
                               activeSentenceIndex === i
                                 ? "rgba(56, 178, 172, 0.35)"
-                                : "rgba(56, 178, 172, 0.12)",
-                            borderColor: "teal.400",
-                          }}
-                          _active={{
-                            bg: "rgba(56, 178, 172, 0.25)",
-                          }}
-                          onClick={() => readSingleSentence(sentence)}
-                        >
-                          <HStack spacing={2} align="center">
-                            <Box flexShrink={0} opacity={0.5}>
-                              <PiSpeakerHighDuotone size="14px" />
-                            </Box>
-                            <Text
-                              fontSize={{ base: "md", md: "md" }}
-                              lineHeight="1.7"
-                            >
-                              {sentence}
-                            </Text>
-                          </HStack>
-                        </Box>
-                      ),
+                                : defaultBg
+                            }
+                            borderRadius="sm"
+                            px={1}
+                            py="1px"
+                            border="1px solid"
+                            borderColor={
+                              activeSentenceIndex === i
+                                ? "teal.400"
+                                : "rgba(255, 255, 255, 0.12)"
+                            }
+                            boxShadow={
+                              activeSentenceIndex === i
+                                ? "0px 4px 0px teal"
+                                : `0px 4px 0px ${shadow}`
+                            }
+                            transition="all 0.15s"
+                            cursor="pointer"
+                            sx={{
+                              "&:active": {
+                                top: "2px",
+                                boxShadow: "none",
+                              },
+                            }}
+                            onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
+                          >
+                            {sentence}{" "}
+                          </Text>
+                        );
+                      }
                     )}
-                  </VStack>
+                  </Text>
                 </Box>
 
                 {/* Review: question or speech format */}
@@ -2096,7 +2119,7 @@ Return ONLY valid JSON:
                                   size="sm"
                                   colorScheme="purple"
                                   leftIcon={<PiMicrophoneStageDuotone />}
-                                  onClick={startListening}
+                                  onClick={() => { playSound(selectSound); startListening(); }}
                                   isDisabled={!hasSpeechRecognition}
                                 >
                                   {t("history_speech_start_mic")}
@@ -2107,7 +2130,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     colorScheme="red"
                                     leftIcon={<PiStopDuotone />}
-                                    onClick={stopListening}
+                                    onClick={() => { playSound(selectSound); stopListening(); }}
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
@@ -2115,7 +2138,7 @@ Return ONLY valid JSON:
                                     size="sm"
                                     variant="outline"
                                     colorScheme="whiteAlpha"
-                                    onClick={startOverSpeech}
+                                    onClick={() => { playSound(selectSound); startOverSpeech(); }}
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2443,9 +2466,10 @@ Return ONLY valid JSON:
                                   size="sm"
                                   variant="ghost"
                                   leftIcon={<MdKeyboard />}
-                                  onClick={() =>
-                                    setShowReviewKeyboard((prev) => !prev)
-                                  }
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    setShowReviewKeyboard((prev) => !prev);
+                                  }}
                                 >
                                   {showReviewKeyboard
                                     ? t("history_keyboard_close")
@@ -2571,9 +2595,10 @@ Return ONLY valid JSON:
                                   size="sm"
                                   variant="ghost"
                                   leftIcon={<MdKeyboard />}
-                                  onClick={() =>
-                                    setShowReviewKeyboard((prev) => !prev)
-                                  }
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    setShowReviewKeyboard((prev) => !prev);
+                                  }}
                                 >
                                   {showReviewKeyboard
                                     ? t("history_keyboard_close")
@@ -2638,7 +2663,7 @@ Return ONLY valid JSON:
                                       )
                                     }
                                     colorScheme="pink"
-                                    onClick={explainReviewAnswer}
+                                    onClick={() => { playSound(selectSound); explainReviewAnswer(); }}
                                     isDisabled={
                                       isLoadingExplanation || !!explanationText
                                     }
@@ -2755,7 +2780,7 @@ Return ONLY valid JSON:
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={generateReviewQuestion}
+                        onClick={() => { playSound(selectSound); generateReviewQuestion(); }}
                       >
                         {t("history_generate_review")}
                       </Button>

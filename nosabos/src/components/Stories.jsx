@@ -107,16 +107,16 @@ const LLM_LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
-  }[code] || code);
+  })[code] || code;
 
 const BCP47 = {
-  es: { stt: "es-ES", tts: "es-ES" },
+  es: { stt: "es-MX", tts: "es-MX" },
   en: { stt: "en-US", tts: "en-US" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
   nl: { stt: "nl-NL", tts: "nl-NL" },
-  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
+  nah: { stt: "es-MX", tts: "es-MX" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
   de: { stt: "de-DE", tts: "de-DE" },
   el: { stt: "el-GR", tts: "el-GR" },
@@ -156,9 +156,7 @@ const toLangKey = (value) => {
   if (["pl", "polish", "polaco", "polski"].includes(raw)) return "pl";
   if (["ga", "irish", "irlandés", "irlandes", "gaeilge"].includes(raw))
     return "ga";
-  if (
-    ["yua", "yucatec maya", "maya yucateco", "maaya t'aan"].includes(raw)
-  )
+  if (["yua", "yucatec maya", "maya yucateco", "maaya t'aan"].includes(raw))
     return "yua";
   return null;
 };
@@ -524,7 +522,7 @@ export default function StoryMode({
 
     characters.forEach((name) => {
       const isFeminine = FEMININE_NAME_PATTERNS.some((pattern) =>
-        pattern.test(name)
+        pattern.test(name),
       );
 
       if (isFeminine) {
@@ -549,7 +547,7 @@ export default function StoryMode({
     )
       return [];
     const weights = wordTokens.map(
-      (t) => 0.22 + Math.max(1, Array.from(t.text).length) * 0.055
+      (t) => 0.22 + Math.max(1, Array.from(t.text).length) * 0.055,
     );
     const sum = weights.reduce((a, b) => a + b, 0);
     const scale = (totalDurationSec * 0.98) / sum;
@@ -617,7 +615,7 @@ export default function StoryMode({
   const validateAndFixStorySentences = (
     data,
     tgtKey = "tgt",
-    supKey = "sup"
+    supKey = "sup",
   ) => {
     if (!data || !data.fullStory || !data.sentences) return data;
     const full = data.fullStory[tgtKey];
@@ -700,7 +698,7 @@ export default function StoryMode({
       const normalized = normalizeStory(
         data.story || data,
         targetLang,
-        supportLang
+        supportLang,
       );
       if (!normalized) throw new Error("Story payload missing expected fields");
       const validated = validateAndFixStorySentences(normalized, "tgt", "sup");
@@ -725,7 +723,10 @@ export default function StoryMode({
         ? {
             storyType: "paragraph",
             fullStory: {
-              tgt: targetLang === "en" ? "Hello. Hi. Goodbye." : "Hola. Hola. Adiós.",
+              tgt:
+                targetLang === "en"
+                  ? "Hello. Hi. Goodbye."
+                  : "Hola. Hola. Adiós.",
               sup:
                 supportLang === "es"
                   ? "Hola. Hola. Adiós."
@@ -734,7 +735,10 @@ export default function StoryMode({
             sentences:
               targetLang === "en"
                 ? [
-                    { tgt: "Hello.", sup: supportLang === "es" ? "Hola." : "Hello." },
+                    {
+                      tgt: "Hello.",
+                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                    },
                     { tgt: "Hi.", sup: supportLang === "es" ? "Hola." : "Hi." },
                     {
                       tgt: "Goodbye.",
@@ -742,8 +746,14 @@ export default function StoryMode({
                     },
                   ]
                 : [
-                    { tgt: "Hola.", sup: supportLang === "es" ? "Hola." : "Hello." },
-                    { tgt: "Hola.", sup: supportLang === "es" ? "Hola." : "Hi." },
+                    {
+                      tgt: "Hola.",
+                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                    },
+                    {
+                      tgt: "Hola.",
+                      sup: supportLang === "es" ? "Hola." : "Hi.",
+                    },
                     {
                       tgt: "Adiós.",
                       sup: supportLang === "es" ? "Adiós." : "Goodbye.",
@@ -879,8 +889,8 @@ export default function StoryMode({
       const selectedStoryType = isTutorial
         ? "conversation"
         : Math.random() < 0.5
-        ? "paragraph"
-        : "conversation";
+          ? "paragraph"
+          : "conversation";
       setStoryType(selectedStoryType);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
@@ -888,10 +898,10 @@ export default function StoryMode({
       const scenarioDirective = isTutorial
         ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 2-5 words maximum. The story MUST be only 2-3 lines/sentences.`
         : lessonContent?.scenario || lessonContent?.topic
-        ? lessonContent.scenario
-          ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-          : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-        : "Create a simple conversational story appropriate for language practice.";
+          ? lessonContent.scenario
+            ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
+            : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
+          : "Create a simple conversational story appropriate for language practice.";
 
       // Different prompts based on story type
       let prompt;
@@ -934,7 +944,9 @@ export default function StoryMode({
           scenarioDirective,
           "",
           "Constraints:",
-          isTutorial ? "- 2 to 3 sentences total." : "- 8 to 10 sentences total.",
+          isTutorial
+            ? "- 2 to 3 sentences total."
+            : "- 8 to 10 sentences total.",
           isTutorial
             ? "- Simple greetings only, 2–5 words per sentence."
             : "- Simple, culturally-relevant, 8–15 words per sentence.",
@@ -996,7 +1008,7 @@ export default function StoryMode({
             setStoryData((prev) => {
               const prevSentences = prev?.sentences || [];
               const alreadyExists = prevSentences.some(
-                (s) => s.tgt === item.tgt && s.sup === item.sup
+                (s) => s.tgt === item.tgt && s.sup === item.sup,
               );
               if (alreadyExists) return prev;
               const nextSentences = [...prevSentences, item];
@@ -1102,12 +1114,12 @@ export default function StoryMode({
             })),
           },
           tLang,
-          sLang
+          sLang,
         );
         const validated = validateAndFixStorySentences(
           normalized,
           "tgt",
-          "sup"
+          "sup",
         );
         // Preserve character data and storyType from original sentences
         const finalData = {
@@ -1128,7 +1140,7 @@ export default function StoryMode({
     } catch (error) {
       console.error(
         "Gemini streaming failed; falling back to backend/demo.",
-        error
+        error,
       );
       try {
         await generateStory(); // fallback path
@@ -1197,7 +1209,7 @@ export default function StoryMode({
       onEnd = () => {},
       setSynthesizing,
       voice = null,
-    } = {}
+    } = {},
   ) => {
     try {
       if (currentAudioRef.current) {
@@ -1239,7 +1251,7 @@ export default function StoryMode({
           stopHighlighter = startAudioAlignedHighlight(
             audio,
             tokenMap.tokens,
-            (idx) => setHighlightedWordIndex(idx)
+            (idx) => setHighlightedWordIndex(idx),
           );
         }
       };
@@ -1333,7 +1345,7 @@ export default function StoryMode({
 
       return { handleBoundary, tokenMap };
     },
-    [createTokenMap, currentWordIndex]
+    [createTokenMap, currentWordIndex],
   );
 
   /* ----------------------------- Recording + strict scoring ----------------------------- */
@@ -1448,7 +1460,7 @@ export default function StoryMode({
       toast,
       uiLang,
       uiText,
-    ]
+    ],
   );
 
   const {
@@ -1542,7 +1554,7 @@ export default function StoryMode({
 
     if (awardedXp > 0) {
       await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(
-        () => {}
+        () => {},
       );
     }
     try {
@@ -1572,7 +1584,7 @@ export default function StoryMode({
       const totalSentences = storyData?.sentences?.length || 0;
       const latestPassed = Math.min(
         totalSentences || passedCount + 1,
-        passedCount + 1
+        passedCount + 1,
       );
       const totalSessionXp = computeStoryXpReward();
       setSessionXp(totalSessionXp);
@@ -1837,7 +1849,7 @@ export default function StoryMode({
                                     setPlayingLineIndex(idx);
                                     playTargetTTS(
                                       sentence.tgt,
-                                      characterVoice
+                                      characterVoice,
                                     ).finally(() => setPlayingLineIndex(null));
                                   }}
                                   variant="outline"
@@ -1849,7 +1861,7 @@ export default function StoryMode({
                                     sentence.character || "line"
                                   }`}
                                   icon={renderSpeakerIcon(
-                                    isThisLinePlaying && isSynthesizingTarget
+                                    isThisLinePlaying && isSynthesizingTarget,
                                   )}
                                   flexShrink={0}
                                   mt={1}
@@ -1909,7 +1921,7 @@ export default function StoryMode({
                         <IconButton
                           onClick={() =>
                             playNarrationWithHighlighting(
-                              storyData.fullStory?.tgt
+                              storyData.fullStory?.tgt,
                             )
                           }
                           variant="outline"
@@ -2016,8 +2028,8 @@ export default function StoryMode({
                             isRecording
                               ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
                               : isConnecting
-                              ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
-                              : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                                ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
+                                : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
                           }
                           color="white"
                           fontWeight="600"
@@ -2029,13 +2041,17 @@ export default function StoryMode({
                               <PiMicrophoneStageDuotone />
                             )
                           }
-                          isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
+                          isDisabled={
+                            !supportsSpeak ||
+                            !currentSentence?.tgt ||
+                            isConnecting
+                          }
                           _hover={{
                             bg: isRecording
                               ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
                               : isConnecting
-                              ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
-                              : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
+                                ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
+                                : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
                             transform: "translateY(-2px)",
                           }}
                           _active={{ transform: "translateY(0)" }}
@@ -2046,8 +2062,8 @@ export default function StoryMode({
                               ? "Conectando..."
                               : "Connecting..."
                             : isRecording
-                            ? uiText.stopRecording
-                            : uiText.record}
+                              ? uiText.stopRecording
+                              : uiText.record}
                         </Button>
                       </HStack>
                     </Center>
@@ -2058,7 +2074,7 @@ export default function StoryMode({
                             currentSentence?.tgt,
                             currentSentence?.character
                               ? characterVoiceMap.get(currentSentence.character)
-                              : null
+                              : null,
                           )
                         }
                         aria-label={uiText.listen}
@@ -2071,7 +2087,7 @@ export default function StoryMode({
                       >
                         {renderSpeakerIcon(
                           isPlayingTarget || isSynthesizingTarget,
-                          "white"
+                          "white",
                         )}
                       </Button>
                     </HStack>
@@ -2109,7 +2125,7 @@ export default function StoryMode({
                                 <Text fontWeight="semibold">
                                   {t(
                                     uiLang,
-                                    "stories_sentence_success_title"
+                                    "stories_sentence_success_title",
                                   ) || uiText.wellDone}
                                 </Text>
                                 <Text fontSize="sm" color="whiteAlpha.800">
@@ -2119,7 +2135,7 @@ export default function StoryMode({
                                         "stories_sentence_success_score",
                                         {
                                           score: lastSuccessInfo.score,
-                                        }
+                                        },
                                       ) ||
                                       `${uiText.score}: ${lastSuccessInfo.score}%`
                                     : t(uiLang, "practice_next_ready") ||
