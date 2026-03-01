@@ -875,6 +875,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="transform 0.15s ease, box-shadow 0.15s ease"
+              sx={{
+                "button:active &": {
+                  boxShadow: "none",
+                },
+              }}
             >
               <Icon
                 size={36}
