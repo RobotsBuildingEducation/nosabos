@@ -679,13 +679,13 @@ function splitIntoSentences(text) {
   return result.map((s) => s.trim()).filter(Boolean);
 }
 const BCP47 = {
-  es: { tts: "es-ES" },
+  es: { tts: "es-MX" },
   en: { tts: "en-US" },
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
   nl: { tts: "nl-NL" },
-  nah: { tts: "es-ES" },
+  nah: { tts: "es-MX" },
   ru: { tts: "ru-RU" },
   de: { tts: "de-DE" },
   el: { tts: "el-GR" },
@@ -955,7 +955,7 @@ export default function History({
     const rec = new SpeechRec();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = BCP47[targetLang]?.tts || "es-ES";
+    rec.lang = BCP47[targetLang]?.tts || "es-MX";
     rec.onresult = (event) => {
       let transcript = "";
       for (let i = 0; i < event.results.length; i++) {

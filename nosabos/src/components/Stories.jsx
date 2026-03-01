@@ -110,13 +110,13 @@ const LLM_LANG_NAME = (code) =>
   }[code] || code);
 
 const BCP47 = {
-  es: { stt: "es-ES", tts: "es-ES" },
+  es: { stt: "es-MX", tts: "es-MX" },
   en: { stt: "en-US", tts: "en-US" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
   nl: { stt: "nl-NL", tts: "nl-NL" },
-  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
+  nah: { stt: "es-MX", tts: "es-MX" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
   de: { stt: "de-DE", tts: "de-DE" },
   el: { stt: "el-GR", tts: "el-GR" },

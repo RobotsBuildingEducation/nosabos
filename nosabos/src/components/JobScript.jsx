@@ -114,12 +114,12 @@ const toBCP47 = (v, fallback = "en-US") => {
   const m = normalizeLangCode(v);
   if (!m) return fallback;
   if (m === "en") return "en-US";
-  if (m === "es") return "es-ES";
+  if (m === "es") return "es-MX";
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
   if (m === "nl") return "nl-NL";
-  if (m === "nah") return "es-ES"; // fallback
+  if (m === "nah") return "es-MX"; // fallback
   if (m === "ru") return "ru-RU";
   if (m === "de") return "de-DE";
   if (m === "el") return "el-GR";
