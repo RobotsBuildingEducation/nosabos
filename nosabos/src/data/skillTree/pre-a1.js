@@ -110,7 +110,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "close family members",
@@ -119,6 +119,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "family with articles",
             focusPoints: ["el/la with family nouns", "mi mamá, mi papá"],
+          },
+          reading: {
+            topic: "family members",
+            prompt: "Read a short description of a family",
           },
         },
       },
@@ -134,7 +138,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "extended family",
@@ -152,6 +156,10 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "masculine and feminine",
             focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
           },
+          stories: {
+            topic: "extended family",
+            prompt: "A story about visiting grandparents and meeting extended family",
+          },
         },
       },
       {
@@ -166,7 +174,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "people in daily life",
@@ -183,6 +191,12 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "gender of people nouns",
             focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
+          },
+          realtime: {
+            scenario: "Describing people",
+            prompt: "Describe the people around you using new vocabulary",
+            successCriteria:
+              "The learner uses people vocabulary to describe someone.",
           },
         },
       },
@@ -240,7 +254,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "numbers 0-5",
@@ -249,6 +263,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number usage",
             focusPoints: ["counting objects", "number pronunciation"],
+          },
+          stories: {
+            topic: "counting to five",
+            prompt: "A short story about counting things from zero to five",
           },
         },
       },
@@ -264,7 +282,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "numbers 6-10",
@@ -273,6 +291,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number patterns",
             focusPoints: ["counting sequences", "number recognition"],
+          },
+          reading: {
+            topic: "numbers 6-10",
+            prompt: "Read a short passage that uses numbers six through ten",
           },
         },
       },
@@ -288,7 +310,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "counting with objects",
@@ -302,6 +324,12 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number agreement",
             focusPoints: ["uno vs un/una", "numbers with nouns"],
+          },
+          realtime: {
+            scenario: "Counting objects",
+            prompt: "Count everyday objects together in a conversation",
+            successCriteria:
+              "The learner counts at least three objects using correct numbers.",
           },
         },
       },
@@ -359,7 +387,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "greetings",
@@ -373,6 +401,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "greeting usage",
             focusPoints: ["time-appropriate greetings", "formal vs informal"],
+          },
+          reading: {
+            topic: "greetings",
+            prompt: "Read a short dialogue where people greet each other at different times of day",
           },
         },
       },
@@ -388,7 +420,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "farewells",
@@ -403,6 +435,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "farewell usage",
             focusPoints: ["temporary vs permanent goodbye", "casual vs formal"],
+          },
+          stories: {
+            topic: "farewells",
+            prompt: "A story about friends saying goodbye in different ways",
           },
         },
       },
@@ -493,7 +529,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "affirmative and negative",
@@ -502,6 +538,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "response patterns",
             focusPoints: ["answering yes/no questions", "emphasis with sí/no"],
+          },
+          stories: {
+            topic: "yes and no",
+            prompt: "A story where characters answer yes or no to simple questions",
           },
         },
       },
@@ -517,7 +557,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "uncertainty expressions",
@@ -533,6 +573,10 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "expressing doubt",
             focusPoints: ["uncertainty words", "hesitation phrases"],
           },
+          reading: {
+            topic: "uncertainty expressions",
+            prompt: "Read a conversation where someone is unsure and uses maybe and I don't know",
+          },
         },
       },
       {
@@ -547,7 +591,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "reaction words",
@@ -562,6 +606,12 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "exclamations",
             focusPoints: ["expressing emotions", "showing interest"],
+          },
+          realtime: {
+            scenario: "Reacting in conversation",
+            prompt: "React to what someone tells you using quick responses",
+            successCriteria:
+              "The learner uses reaction words naturally in conversation.",
           },
         },
       },
@@ -619,7 +669,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "basic courtesy",
@@ -628,6 +678,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "polite requests",
             focusPoints: ["adding por favor", "thanking appropriately"],
+          },
+          reading: {
+            topic: "polite exchanges",
+            prompt: "Read a short scene where people use please and thank you",
           },
         },
       },
@@ -643,7 +697,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "apologies and attention",
@@ -659,6 +713,12 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "apologizing",
             focusPoints: ["formal vs informal apologies", "getting attention"],
           },
+          realtime: {
+            scenario: "Apologizing and excusing yourself",
+            prompt: "Practice saying sorry and excuse me in different situations",
+            successCriteria:
+              "The learner uses apology and attention phrases appropriately.",
+          },
         },
       },
       {
@@ -673,7 +733,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "polite phrases",
@@ -687,6 +747,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "formal courtesy",
             focusPoints: ["polite responses", "gracious expressions"],
+          },
+          stories: {
+            topic: "polite expressions",
+            prompt: "A story about someone being helpful and using gracious phrases",
           },
         },
       },
@@ -744,7 +808,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "household items",
@@ -761,6 +825,10 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "articles with objects",
             focusPoints: ["el/la with objects", "masculine vs feminine nouns"],
           },
+          stories: {
+            topic: "household items",
+            prompt: "A story about exploring rooms in a house and naming objects",
+          },
         },
       },
       {
@@ -775,7 +843,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "personal items",
@@ -792,6 +860,10 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "possessive with objects",
             focusPoints: ["mi/tu/su", "ownership expressions"],
           },
+          reading: {
+            topic: "personal items",
+            prompt: "Read about someone describing what they carry in their bag",
+          },
         },
       },
       {
@@ -806,7 +878,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "food and drinks",
@@ -815,6 +887,12 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "food articles",
             focusPoints: ["el agua (feminine exception)", "uncountable nouns"],
+          },
+          realtime: {
+            scenario: "Ordering food and drinks",
+            prompt: "Practice asking for food and drinks at a café",
+            successCriteria:
+              "The learner names at least two food or drink items.",
           },
         },
       },
@@ -872,7 +950,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "primary colors",
@@ -881,6 +959,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "color as adjective",
             focusPoints: ["color placement after noun", "el libro rojo"],
+          },
+          reading: {
+            topic: "primary colors",
+            prompt: "Read a short passage that describes objects by their colors",
           },
         },
       },
@@ -896,7 +978,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "additional colors",
@@ -916,6 +998,12 @@ export const SKILL_TREE_PRE_A1 = [
               "colors that don't (naranja, rosa)",
             ],
           },
+          realtime: {
+            scenario: "Describing colors around you",
+            prompt: "Tell someone what colors you see around you",
+            successCriteria:
+              "The learner names at least three colors in conversation.",
+          },
         },
       },
       {
@@ -930,7 +1018,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "neutral colors",
@@ -939,6 +1027,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "color combinations",
             focusPoints: ["blanco y negro", "azul oscuro", "verde claro"],
+          },
+          stories: {
+            topic: "neutral colors",
+            prompt: "A story about painting a room and choosing between light and dark colors",
           },
         },
       },
@@ -996,7 +1088,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "stories"],
         content: {
           vocabulary: {
             topic: "self introduction",
@@ -1005,6 +1097,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "introduction patterns",
             focusPoints: ["Me llamo + name", "Soy + name"],
+          },
+          stories: {
+            topic: "self introduction",
+            prompt: "A story about someone arriving at a new place and introducing themselves",
           },
         },
       },
@@ -1020,7 +1116,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "reading"],
         content: {
           vocabulary: {
             topic: "asking for names",
@@ -1033,6 +1129,10 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "formal vs informal",
             focusPoints: ["tú vs usted", "te llamas vs se llama"],
+          },
+          reading: {
+            topic: "asking names",
+            prompt: "Read a dialogue where two people ask each other their names",
           },
         },
       },

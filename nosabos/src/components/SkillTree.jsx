@@ -1352,48 +1352,51 @@ const UnitSection = React.memo(function UnitSection({
               </Box>
             );
           })}
+          {/* Connector from last lesson to next unit */}
+          {hasNextUnit && (
+            <Box
+              as="svg"
+              position="absolute"
+              top={`${(unit.lessons.length - 1) * 140 + 45}px`}
+              left="50%"
+              transform="translateX(-50%)"
+              width={`${svgWidth}px`}
+              height="140px"
+              overflow="visible"
+              zIndex={0}
+              pointerEvents="none"
+            >
+              <defs>
+                <linearGradient
+                  id={`unit-end-${unit.id}`}
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%"
+                >
+                  <stop offset="0%" stopColor={unit.color} stopOpacity={0.8} />
+                  <stop
+                    offset="100%"
+                    stopColor={unit.color}
+                    stopOpacity={0.3}
+                  />
+                </linearGradient>
+              </defs>
+              <path
+                d={`M ${svgWidth / 2} 0 Q ${svgWidth / 2} 70, ${svgWidth / 2} 95`}
+                stroke={`url(#unit-end-${unit.id})`}
+                strokeWidth="5"
+                fill="none"
+                strokeLinecap="round"
+                style={{
+                  transition: "all 0.3s ease",
+                }}
+              />
+            </Box>
+          )}
           {/* Spacer to ensure container height accommodates all lessons */}
           <Box h={`${unit.lessons.length * 140}px`} />
         </Box>
-
-        {/* Connector from last lesson to next unit */}
-        {hasNextUnit && (
-          <Box
-            as="svg"
-            position="relative"
-            left="50%"
-            transform="translateX(-50%)"
-            width="200px"
-            height="100px"
-            overflow="visible"
-            zIndex={0}
-            pointerEvents="none"
-            mt={-10}
-          >
-            <defs>
-              <linearGradient
-                id={`unit-end-${unit.id}`}
-                x1="0%"
-                y1="0%"
-                x2="0%"
-                y2="100%"
-              >
-                <stop offset="0%" stopColor={unit.color} stopOpacity={0.8} />
-                <stop offset="100%" stopColor={unit.color} stopOpacity={0.3} />
-              </linearGradient>
-            </defs>
-            <path
-              d="M 100 0 Q 100 50, 100 100"
-              stroke={`url(#unit-end-${unit.id})`}
-              strokeWidth="5"
-              fill="none"
-              strokeLinecap="round"
-              style={{
-                transition: "all 0.3s ease",
-              }}
-            />
-          </Box>
-        )}
       </VStack>
     </MotionBox>
   );
