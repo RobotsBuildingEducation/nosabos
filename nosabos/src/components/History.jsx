@@ -45,7 +45,11 @@ import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { database, simplemodel, gradingModel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
+import {
+  database,
+  simplemodel,
+  gradingModel,
+} from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import {
@@ -1944,7 +1948,10 @@ Return ONLY valid JSON:
                           <PiSpeakerHighDuotone size="20px" />
                         )
                       }
-                      onClick={() => { playSound(selectSound); readTarget(); }}
+                      onClick={() => {
+                        playSound(selectSound);
+                        readTarget();
+                      }}
                       aria-label="Read with highlighting"
                       size="sm"
                       variant="ghost"
@@ -1965,7 +1972,10 @@ Return ONLY valid JSON:
                           <PiLightningDuotone size="20px" />
                         )
                       }
-                      onClick={() => { playSound(selectSound); readTargetFull(); }}
+                      onClick={() => {
+                        playSound(selectSound);
+                        readTargetFull();
+                      }}
                       aria-label="Read all"
                       size="sm"
                       variant="ghost"
@@ -1980,7 +1990,10 @@ Return ONLY valid JSON:
                   <VStack spacing={0.5}>
                     <IconButton
                       icon={<PiStopDuotone size="20px" />}
-                      onClick={() => { playSound(selectSound); stopSpeech(); }}
+                      onClick={() => {
+                        playSound(selectSound);
+                        stopSpeech();
+                      }}
                       aria-label="Stop"
                       size="sm"
                       variant="ghost"
@@ -2052,12 +2065,15 @@ Return ONLY valid JSON:
                                 boxShadow: "none",
                               },
                             }}
-                            onClick={() => { playSound(selectSound); readSingleSentence(sentence, i); }}
+                            onClick={() => {
+                              playSound(selectSound);
+                              readSingleSentence(sentence, i);
+                            }}
                           >
                             {sentence}{" "}
                           </Text>
                         );
-                      }
+                      },
                     )}
                   </Text>
                 </Box>
@@ -2119,7 +2135,10 @@ Return ONLY valid JSON:
                                   size="sm"
                                   colorScheme="purple"
                                   leftIcon={<PiMicrophoneStageDuotone />}
-                                  onClick={() => { playSound(selectSound); startListening(); }}
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    startListening();
+                                  }}
                                   isDisabled={!hasSpeechRecognition}
                                 >
                                   {t("history_speech_start_mic")}
@@ -2130,7 +2149,10 @@ Return ONLY valid JSON:
                                     size="sm"
                                     colorScheme="red"
                                     leftIcon={<PiStopDuotone />}
-                                    onClick={() => { playSound(selectSound); stopListening(); }}
+                                    onClick={() => {
+                                      playSound(selectSound);
+                                      stopListening();
+                                    }}
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
@@ -2138,7 +2160,10 @@ Return ONLY valid JSON:
                                     size="sm"
                                     variant="outline"
                                     colorScheme="whiteAlpha"
-                                    onClick={() => { playSound(selectSound); startOverSpeech(); }}
+                                    onClick={() => {
+                                      playSound(selectSound);
+                                      startOverSpeech();
+                                    }}
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2157,10 +2182,7 @@ Return ONLY valid JSON:
                             )}
 
                             {speechTranscript && (
-                              <Box
-                                display="flex"
-                                justifyContent="center"
-                              >
+                              <Box display="flex" justifyContent="center">
                                 <Button
                                   size="md"
                                   colorScheme="teal"
@@ -2239,19 +2261,12 @@ Return ONLY valid JSON:
                                     let totalScore = 0;
                                     let count = 0;
                                     SPEECH_CRITERIA.forEach((c) => {
-                                      const d =
-                                        speechFeedback.scores[c.key];
+                                      const d = speechFeedback.scores[c.key];
                                       const s =
                                         typeof d?.score === "number"
-                                          ? Math.max(
-                                              1,
-                                              Math.min(10, d.score),
-                                            )
+                                          ? Math.max(1, Math.min(10, d.score))
                                           : typeof d === "number"
-                                            ? Math.max(
-                                                1,
-                                                Math.min(10, d),
-                                              )
+                                            ? Math.max(1, Math.min(10, d))
                                             : null;
                                       if (s !== null) {
                                         totalScore += s;
@@ -2261,9 +2276,8 @@ Return ONLY valid JSON:
                                     if (count === 0) return null;
                                     const avg = totalScore / count;
                                     const totalAccent =
-                                      totalColorMap[
-                                        speechScoreColor(avg)
-                                      ] || "#A0AEC0";
+                                      totalColorMap[speechScoreColor(avg)] ||
+                                      "#A0AEC0";
                                     return (
                                       <Box
                                         bg="rgba(0,0,0,0.25)"
@@ -2282,9 +2296,7 @@ Return ONLY valid JSON:
                                           letterSpacing="0.05em"
                                           mb={1}
                                         >
-                                          {t(
-                                            "history_speech_total_score",
-                                          )}
+                                          {t("history_speech_total_score")}
                                         </Text>
                                         <Text
                                           fontSize="3xl"
@@ -2347,8 +2359,7 @@ Return ONLY valid JSON:
                                             typeof data?.note === "string"
                                               ? data.note
                                               : "";
-                                          const color =
-                                            speechScoreColor(score);
+                                          const color = speechScoreColor(score);
                                           const colorMap = {
                                             green: "#48BB78",
                                             teal: "#38B2AC",
@@ -2437,46 +2448,45 @@ Return ONLY valid JSON:
                                   </Box>
                                 )}
 
-                                {lessonProgress &&
-                                  lessonProgress.total > 0 && (
-                                    <VStack
+                                {lessonProgress && lessonProgress.total > 0 && (
+                                  <VStack
+                                    align="center"
+                                    spacing={2}
+                                    mt={2}
+                                    px={1}
+                                    width="full"
+                                  >
+                                    <HStack
+                                      justify="center"
                                       align="center"
-                                      spacing={2}
-                                      mt={2}
-                                      px={1}
-                                      width="full"
+                                      spacing={3}
+                                      fontSize="xs"
                                     >
-                                      <HStack
-                                        justify="center"
-                                        align="center"
-                                        spacing={3}
-                                        fontSize="xs"
+                                      <Text
+                                        color="whiteAlpha.800"
+                                        fontWeight="semibold"
+                                        textAlign="center"
                                       >
-                                        <Text
-                                          color="whiteAlpha.800"
-                                          fontWeight="semibold"
-                                          textAlign="center"
-                                        >
-                                          {lessonProgress.label}
-                                        </Text>
-                                        <Text
-                                          color="whiteAlpha.800"
-                                          fontWeight="semibold"
-                                          textAlign="center"
-                                        >
-                                          {Math.round(lessonProgress.pct)}%
-                                        </Text>
-                                      </HStack>
-                                      <Box width="60%" mx="auto">
-                                        <WaveBar
-                                          value={lessonProgress.pct}
-                                          height={20}
-                                          start="#4aa8ff"
-                                          end="#75f8ffff"
-                                        />
-                                      </Box>
-                                    </VStack>
-                                  )}
+                                        {lessonProgress.label}
+                                      </Text>
+                                      <Text
+                                        color="whiteAlpha.800"
+                                        fontWeight="semibold"
+                                        textAlign="center"
+                                      >
+                                        {Math.round(lessonProgress.pct)}%
+                                      </Text>
+                                    </HStack>
+                                    <Box width="60%" mx="auto">
+                                      <WaveBar
+                                        value={lessonProgress.pct}
+                                        height={20}
+                                        start="#4aa8ff"
+                                        end="#75f8ffff"
+                                      />
+                                    </Box>
+                                  </VStack>
+                                )}
                               </VStack>
                               <RandomCharacter />
                             </VStack>
@@ -2744,7 +2754,10 @@ Return ONLY valid JSON:
                                       )
                                     }
                                     colorScheme="pink"
-                                    onClick={() => { playSound(selectSound); explainReviewAnswer(); }}
+                                    onClick={() => {
+                                      playSound(selectSound);
+                                      explainReviewAnswer();
+                                    }}
                                     isDisabled={
                                       isLoadingExplanation || !!explanationText
                                     }
@@ -2861,7 +2874,10 @@ Return ONLY valid JSON:
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => { playSound(selectSound); generateReviewQuestion(); }}
+                        onClick={() => {
+                          playSound(selectSound);
+                          generateReviewQuestion();
+                        }}
                       >
                         {t("history_generate_review")}
                       </Button>
@@ -2877,6 +2893,7 @@ Return ONLY valid JSON:
                         <AccordionButton
                           px={4}
                           py={2}
+                          mt={6}
                           borderRadius="lg"
                           borderWidth="1px"
                           borderColor="whiteAlpha.200"
