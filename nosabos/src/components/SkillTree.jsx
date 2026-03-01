@@ -1366,7 +1366,7 @@ const UnitSection = React.memo(function UnitSection({
             overflow="visible"
             zIndex={0}
             pointerEvents="none"
-            mt={-4}
+            mt={-10}
           >
             <defs>
               <linearGradient
