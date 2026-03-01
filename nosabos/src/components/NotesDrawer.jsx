@@ -362,8 +362,8 @@ export default function NotesDrawer({
                                         ? "nota"
                                         : "note"
                                       : lang === "es"
-                                      ? "notas"
-                                      : "notes"
+                                        ? "notas"
+                                        : "notes"
                                   }`
                                 : noNotesLabel}
                             </Text>
