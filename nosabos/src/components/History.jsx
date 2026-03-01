@@ -2225,6 +2225,87 @@ Return ONLY valid JSON:
                                   </Text>
                                 )}
 
+                                {/* Total score */}
+                                {speechFeedback.scores &&
+                                  Object.keys(speechFeedback.scores).length >
+                                    0 &&
+                                  (() => {
+                                    const totalColorMap = {
+                                      green: "#48BB78",
+                                      teal: "#38B2AC",
+                                      yellow: "#ECC94B",
+                                      red: "#FC8181",
+                                    };
+                                    let totalScore = 0;
+                                    let count = 0;
+                                    SPEECH_CRITERIA.forEach((c) => {
+                                      const d =
+                                        speechFeedback.scores[c.key];
+                                      const s =
+                                        typeof d?.score === "number"
+                                          ? Math.max(
+                                              1,
+                                              Math.min(10, d.score),
+                                            )
+                                          : typeof d === "number"
+                                            ? Math.max(
+                                                1,
+                                                Math.min(10, d),
+                                              )
+                                            : null;
+                                      if (s !== null) {
+                                        totalScore += s;
+                                        count++;
+                                      }
+                                    });
+                                    if (count === 0) return null;
+                                    const avg = totalScore / count;
+                                    const totalAccent =
+                                      totalColorMap[
+                                        speechScoreColor(avg)
+                                      ] || "#A0AEC0";
+                                    return (
+                                      <Box
+                                        bg="rgba(0,0,0,0.25)"
+                                        px={4}
+                                        py={3}
+                                        rounded="xl"
+                                        borderWidth="1px"
+                                        borderColor={totalAccent}
+                                        textAlign="center"
+                                      >
+                                        <Text
+                                          fontWeight="semibold"
+                                          fontSize="xs"
+                                          opacity={0.7}
+                                          textTransform="uppercase"
+                                          letterSpacing="0.05em"
+                                          mb={1}
+                                        >
+                                          {t(
+                                            "history_speech_total_score",
+                                          )}
+                                        </Text>
+                                        <Text
+                                          fontSize="3xl"
+                                          fontWeight="bold"
+                                          color={totalAccent}
+                                          lineHeight="1"
+                                        >
+                                          {totalScore}
+                                          <Text
+                                            as="span"
+                                            fontSize="md"
+                                            opacity={0.5}
+                                            fontWeight="normal"
+                                          >
+                                            /{count * 10}
+                                          </Text>
+                                        </Text>
+                                      </Box>
+                                    );
+                                  })()}
+
                                 {/* Score breakdown grid */}
                                 {speechFeedback.scores &&
                                   Object.keys(speechFeedback.scores).length >
