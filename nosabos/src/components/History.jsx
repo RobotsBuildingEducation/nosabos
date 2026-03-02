@@ -7,11 +7,6 @@ import React, {
   useState,
 } from "react";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Badge,
   Button,
@@ -444,14 +439,12 @@ Write ONE short educational lecture about ${topicText}. ${promptText}. Difficult
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader.
 2. The target language for learning is: ${TARGET} (language code: ${targetLang})
-3. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-4. Write the title and lecture body in ${TARGET} ONLY
-5. Write all takeaways in ${SUPPORT} ONLY
-6. Write the translation in ${SUPPORT} ONLY
-7. Do NOT write in any other language regardless of what the topic mentions
-8. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
+3. Write the title and lecture body in ${TARGET} ONLY
+4. Write all takeaways in ${SUPPORT} ONLY
+5. Do NOT write in any other language regardless of what the topic mentions
+6. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
 
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
 ${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words"}
@@ -464,14 +457,12 @@ Include:
 - A concise title (<= 60 chars) in ${TARGET}
 - Lecture body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
-- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${SUPPORT}>"],
-  "support": "<full translation in ${SUPPORT}>"
+  "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
 }
@@ -521,14 +512,12 @@ ${prev}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. The target language for learning is: ${TARGET} (language code: ${targetLang})
-2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-3. Write the title and lecture body in ${TARGET} ONLY
-4. Write all takeaways in ${SUPPORT} ONLY
-5. Write the translation in ${SUPPORT} ONLY
-6. Do NOT write in any other language regardless of what the topic mentions
-7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
+2. Write the title and lecture body in ${TARGET} ONLY
+3. Write all takeaways in ${SUPPORT} ONLY
+4. Do NOT write in any other language regardless of what the topic mentions
+5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
 
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
 ${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
@@ -540,14 +529,12 @@ Include:
 - A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
 - Lecture body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
-- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${SUPPORT}>"],
-  "support": "<full translation in ${SUPPORT}>"
+  "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
 }
@@ -744,14 +731,12 @@ function buildStreamingPrompt({
     "",
     "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
     `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
-    `2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})`,
-    `3. Write the title and lecture body in ${TARGET} ONLY`,
-    `4. Write ALL takeaways in ${SUPPORT} ONLY`,
-    `5. Write the translation in ${SUPPORT} ONLY`,
-    `6. Do NOT write in any other language regardless of what the topic mentions`,
-    `7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
+    `2. Write the title and lecture body in ${TARGET} ONLY`,
+    `3. Write ALL takeaways in ${SUPPORT} ONLY`,
+    `4. Do NOT write in any other language regardless of what the topic mentions`,
+    `5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
     "",
-    `IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by ${TARGET} and ${SUPPORT}.`,
+    `IMPORTANT: Ignore any language references in the topic description. Use ${TARGET} for title/target and ${SUPPORT} only for takeaways.`,
     "",
     `Style: ~180–260 words, ${diff}.`,
     "",
@@ -933,6 +918,12 @@ export default function History({
   const [speechSubmitted, setSpeechSubmitted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const speechRecRef = useRef(null);
+  const [lineTranslationsByLecture, setLineTranslationsByLecture] = useState(
+    {},
+  );
+  const [translationsVisibleByLecture, setTranslationsVisibleByLecture] =
+    useState({});
+  const [isTranslatingLecture, setIsTranslatingLecture] = useState(false);
 
   const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
     targetLang,
@@ -999,6 +990,111 @@ export default function History({
     setExplanationText("");
   }
 
+  function scrollHistoryToTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
+
+  async function translateLectureLines() {
+    if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
+      return;
+
+    if ((lineTranslationsByLecture[viewLecture.id] || []).length) return;
+
+    setIsTranslatingLecture(true);
+    setTranslationsVisibleByLecture((prev) => ({
+      ...prev,
+      [viewLecture.id]: true,
+    }));
+    setLineTranslationsByLecture((prev) => ({
+      ...prev,
+      [viewLecture.id]: Array(targetSentences.length).fill(""),
+    }));
+
+    let receivedCount = 0;
+    const nextLines = Array(targetSentences.length).fill("");
+    let lineBuffer = "";
+
+    const applyLine = (rawLine) => {
+      if (receivedCount >= targetSentences.length) return;
+      const clean = String(rawLine || "")
+        .replace(/^\s*\d+[\).:-]\s*/, "")
+        .trim();
+      if (!clean) return;
+      nextLines[receivedCount] = clean;
+      receivedCount += 1;
+      setLineTranslationsByLecture((prev) => ({
+        ...prev,
+        [viewLecture.id]: [...nextLines],
+      }));
+    };
+
+    try {
+      const prompt = [
+        `Translate each sentence below from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
+        "Output plain text only.",
+        `Return exactly ${targetSentences.length} lines.`,
+        "Each line must be only the translation for the matching sentence index.",
+        "No numbering, labels, markdown, or commentary.",
+        "",
+        "Sentences:",
+        ...targetSentences.map((sentence, i) => `${i + 1}. ${sentence}`),
+      ].join("\n");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      for await (const chunk of resp.stream) {
+        const chunkText = textFromChunk(chunk);
+        if (!chunkText) continue;
+        lineBuffer += chunkText;
+        const segments = lineBuffer.split(/\r?\n/);
+        lineBuffer = segments.pop() || "";
+        for (const line of segments) applyLine(line);
+      }
+
+      if (lineBuffer.trim()) applyLine(lineBuffer);
+
+      if (
+        !(receivedCount === targetSentences.length && nextLines.every(Boolean))
+      ) {
+        const supportFallback = splitIntoSentences(viewLecture.support || "");
+        if (supportFallback.length === targetSentences.length) {
+          setLineTranslationsByLecture((prev) => ({
+            ...prev,
+            [viewLecture.id]: supportFallback,
+          }));
+        } else {
+          setLineTranslationsByLecture((prev) => {
+            const copy = { ...prev };
+            delete copy[viewLecture.id];
+            return copy;
+          });
+          setTranslationsVisibleByLecture((prev) => ({
+            ...prev,
+            [viewLecture.id]: false,
+          }));
+        }
+      }
+    } catch {
+      const supportFallback = splitIntoSentences(viewLecture.support || "");
+      if (supportFallback.length === targetSentences.length) {
+        setLineTranslationsByLecture((prev) => ({
+          ...prev,
+          [viewLecture.id]: supportFallback,
+        }));
+      } else {
+        setLineTranslationsByLecture((prev) => {
+          const copy = { ...prev };
+          delete copy[viewLecture.id];
+          return copy;
+        });
+      }
+    } finally {
+      setIsTranslatingLecture(false);
+    }
+  }
+
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
@@ -1037,6 +1133,16 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+  const targetSentences = useMemo(
+    () => splitIntoSentences(viewLecture?.target || ""),
+    [viewLecture?.target],
+  );
+  const lineTranslations = viewLecture?.id
+    ? lineTranslationsByLecture[viewLecture.id] || []
+    : [];
+  const isTranslationVisible = viewLecture?.id
+    ? translationsVisibleByLecture[viewLecture.id] === true
+    : false;
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
@@ -1125,17 +1231,11 @@ export default function History({
     }
 
     const cleanTitle = stripLineLabel(String(parsed.title || ""), targetLang);
-    const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
-      targetText: parsed.target || "",
-      supportText: parsed.support || "",
+    const safeTarget = sanitizeLectureBlock(
+      String(parsed.target || ""),
       targetLang,
-      supportLang,
-    });
-    const safeTarget = cleanTarget || String(parsed.target || "").trim();
-    const safeSupport =
-      cleanSupport ||
-      sanitizeLectureBlock(String(parsed.support || ""), supportLang) ||
-      safeTarget;
+    );
+    const safeSupport = "";
     const cleanTakeaways = Array.isArray(parsed.takeaways)
       ? parsed.takeaways
           .map((t) => stripLineLabel(String(t || ""), supportLang))
@@ -1213,7 +1313,6 @@ export default function History({
 
     let title = "";
     const targetParts = [];
-    const supportParts = [];
     const takeaways = [];
     let revealed = false;
 
@@ -1230,7 +1329,7 @@ export default function History({
       setDraftLecture({
         title: draftTitle,
         target: sanitizeLectureBlock(targetParts.join(" "), targetLang),
-        support: sanitizeLectureBlock(supportParts.join(" "), supportLang),
+        support: "",
         takeaways: [...takeaways],
       });
     };
@@ -1252,7 +1351,7 @@ export default function History({
       if (!type || !text) return;
 
       const cleaned =
-        type === "support" || type === "takeaway"
+        type === "takeaway"
           ? stripLineLabel(text, supportLang)
           : stripLineLabel(text, targetLang);
       const normalized = cleaned.replace(/\s+/g, " ").trim();
@@ -1270,13 +1369,6 @@ export default function History({
       if (type === "target") {
         if (targetParts[targetParts.length - 1] !== normalized) {
           targetParts.push(normalized);
-          revealDraft();
-        }
-        return;
-      }
-      if (type === "support") {
-        if (supportParts[supportParts.length - 1] !== normalized) {
-          supportParts.push(normalized);
           revealDraft();
         }
         return;
@@ -1327,23 +1419,9 @@ export default function History({
         targetParts.join(" "),
         targetLang,
       );
-      const draftSupport = sanitizeLectureBlock(
-        supportParts.join(" "),
-        supportLang,
-      );
       const finalTakeaways = takeaways.slice(0, 3);
-
-      const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
-        targetText: draftTarget,
-        supportText: draftSupport,
-        targetLang,
-        supportLang,
-      });
-      const safeTarget = cleanTarget || draftTarget;
-      const safeSupport =
-        cleanSupport ||
-        sanitizeLectureBlock(draftSupport, supportLang) ||
-        safeTarget;
+      const safeTarget = draftTarget;
+      const safeSupport = "";
       const finalTitle =
         title ||
         (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
@@ -1924,9 +2002,87 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
-                    {splitIntoSentences(viewLecture.target || "").map(
-                      (sentence, i) => {
+                  {isTranslationVisible ? (
+                    <VStack align="stretch" spacing={2}>
+                      {targetSentences.map((sentence, i) => {
+                        const colors = [
+                          "rgba(56, 178, 172, 0.12)",
+                          "rgba(128, 90, 213, 0.12)",
+                          "rgba(237, 137, 54, 0.12)",
+                          "rgba(99, 179, 237, 0.12)",
+                          "rgba(246, 173, 85, 0.12)",
+                        ];
+                        const shadowColors = [
+                          "rgba(56, 178, 172, 0.3)",
+                          "rgba(128, 90, 213, 0.3)",
+                          "rgba(237, 137, 54, 0.3)",
+                          "rgba(99, 179, 237, 0.3)",
+                          "rgba(246, 173, 85, 0.3)",
+                        ];
+                        const defaultBg = colors[i % colors.length];
+                        const shadow = shadowColors[i % shadowColors.length];
+                        return (
+                          <Box key={i}>
+                            <Text
+                              as="span"
+                              role="button"
+                              tabIndex={0}
+                              position="relative"
+                              bg={
+                                activeSentenceIndex === i
+                                  ? "rgba(56, 178, 172, 0.35)"
+                                  : defaultBg
+                              }
+                              borderRadius="sm"
+                              px={1}
+                              py="1px"
+                              border="1px solid"
+                              borderColor={
+                                activeSentenceIndex === i
+                                  ? "teal.400"
+                                  : "rgba(255, 255, 255, 0.12)"
+                              }
+                              boxShadow={
+                                activeSentenceIndex === i
+                                  ? "0px 4px 0px teal"
+                                  : `0px 4px 0px ${shadow}`
+                              }
+                              transition="all 0.15s"
+                              cursor="pointer"
+                              sx={{
+                                "&:active": {
+                                  top: "2px",
+                                  boxShadow: "none",
+                                },
+                              }}
+                              onClick={() => {
+                                playSound(selectSound);
+                                readSingleSentence(sentence, i);
+                              }}
+                            >
+                              {sentence}
+                            </Text>
+                            {lineTranslations[i] ? (
+                              <Text
+                                mt={1}
+                                px={1}
+                                fontSize="sm"
+                                color="whiteAlpha.800"
+                                opacity={0.9}
+                                fontStyle="italic"
+                                lineHeight="1.5"
+                                mb={3}
+                              >
+                                {lineTranslations[i]}
+                              </Text>
+                            ) : null}
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+                  ) : (
+                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
+                      {targetSentences.map((sentence, i) => {
                         const colors = [
                           "rgba(56, 178, 172, 0.12)",
                           "rgba(128, 90, 213, 0.12)",
@@ -1985,9 +2141,58 @@ Return ONLY valid JSON:
                             {sentence}{" "}
                           </Text>
                         );
-                      },
-                    )}
-                  </Text>
+                      })}
+                    </Text>
+                  )}
+                  {showTranslations ? (
+                    <HStack justify="flex-end" mt={4}>
+                      {!lineTranslations.length ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            scrollHistoryToTop();
+                            translateLectureLines();
+                          }}
+                          isLoading={isTranslatingLecture}
+                        >
+                          {t("history_translate")}
+                        </Button>
+                      ) : isTranslationVisible ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            if (!viewLecture?.id) return;
+                            setTranslationsVisibleByLecture((prev) => ({
+                              ...prev,
+                              [viewLecture.id]: false,
+                            }));
+                          }}
+                        >
+                          {t("history_hide_translation") || "Hide translation"}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            scrollHistoryToTop();
+                            if (!viewLecture?.id) return;
+                            setTranslationsVisibleByLecture((prev) => ({
+                              ...prev,
+                              [viewLecture.id]: true,
+                            }));
+                          }}
+                        >
+                          {t("history_show_translation") || "Show translation"}
+                        </Button>
+                      )}
+                    </HStack>
+                  ) : null}
                 </Box>
 
                 {/* Review: question or speech format */}
@@ -2795,57 +3000,9 @@ Return ONLY valid JSON:
                   </Box>
                 ) : null}
 
-                {/* Translation & takeaways in accordion */}
-                {showTranslations && viewLecture.support ? (
-                  <Accordion allowToggle>
-                    <AccordionItem border="none">
-                      <Box display="flex" justifyContent="center">
-                        <AccordionButton
-                          px={4}
-                          py={2}
-                          mt={6}
-                          borderRadius="lg"
-                          borderWidth="1px"
-                          borderColor="whiteAlpha.200"
-                          bg="whiteAlpha.50"
-                          _hover={{ bg: "whiteAlpha.100" }}
-                          w="fit-content"
-                        >
-                          <Text
-                            fontWeight="600"
-                            fontSize="sm"
-                            opacity={0.9}
-                            mr={2}
-                          >
-                            {t("history_translate")}
-                          </Text>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </Box>
-                      <AccordionPanel px={0} pb={3} pt={3}>
-                        <Box
-                          bg="rgba(99, 102, 241, 0.15)"
-                          borderLeft="3px solid"
-                          borderColor="purple.400"
-                          rounded="lg"
-                          p={4}
-                        >
-                          <Text
-                            fontSize={{ base: "sm", md: "sm" }}
-                            opacity={0.95}
-                            lineHeight="1.8"
-                          >
-                            {viewLecture.support}
-                          </Text>
-                        </Box>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                ) : null}
-
                 {Array.isArray(viewLecture.takeaways) &&
                 viewLecture.takeaways.length ? (
-                  <>
+                  <Box mt={12}>
                     <Text fontWeight="600" fontSize="sm" opacity={0.9} mb={1.5}>
                       {t("reading_takeaways_heading")}
                     </Text>
@@ -2856,7 +3013,7 @@ Return ONLY valid JSON:
                         </Text>
                       ))}
                     </VStack>
-                  </>
+                  </Box>
                 ) : null}
               </VStack>
             ) : (
