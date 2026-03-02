@@ -1918,7 +1918,7 @@ Return ONLY valid JSON:
             border="1px solid"
             borderColor="rgba(255, 255, 255, 0.1)"
             rounded="xl"
-            p={[4, 5]}
+            p={[3, 5]}
             minH="280px"
             width="100%"
           >
@@ -1996,7 +1996,7 @@ Return ONLY valid JSON:
                   borderLeft="3px solid"
                   borderColor="teal.400"
                   rounded="lg"
-                  p={4}
+                  p={3}
                 >
                   {isTranslationVisible ? (
                     <VStack align="stretch" spacing={2}>
