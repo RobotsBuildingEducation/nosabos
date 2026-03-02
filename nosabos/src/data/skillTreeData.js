@@ -11551,10 +11551,10 @@ function applyCEFRScaffolding(path) {
           ),
         ),
       );
-      const balancedLessons =
-        level === "Pre-A1"
-          ? applyPreA1LessonModuleStrategy(unit, enhancedLessons)
-          : ensureUnitModuleCoverage(unit, enhancedLessons);
+      const balancedLessons = applyPreA1LessonModuleStrategy(
+        unit,
+        ensureUnitModuleCoverage(unit, enhancedLessons),
+      );
 
       return {
         ...unit,
