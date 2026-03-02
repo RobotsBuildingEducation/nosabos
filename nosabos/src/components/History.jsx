@@ -928,6 +928,7 @@ export default function History({
   const [speechSubmitted, setSpeechSubmitted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const speechRecRef = useRef(null);
+  const paragraphBlockRef = useRef(null);
   const [lineTranslationsByLecture, setLineTranslationsByLecture] = useState(
     {},
   );
@@ -1001,7 +1002,10 @@ export default function History({
   }
 
   function scrollHistoryToTop() {
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    paragraphBlockRef.current?.scrollIntoView({
+      behavior: "auto",
+      block: "start",
+    });
   }
 
   async function translateLectureLines() {
@@ -2032,6 +2036,7 @@ Return ONLY valid JSON:
                 </HStack>
 
                 <Box
+                  ref={paragraphBlockRef}
                   bg="rgba(56, 178, 172, 0.15)"
                   borderLeft="3px solid"
                   borderColor="teal.400"
