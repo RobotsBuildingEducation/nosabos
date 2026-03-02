@@ -2053,62 +2053,66 @@ Return ONLY valid JSON:
                       const defaultBg = colors[i % colors.length];
                       const shadow = shadowColors[i % shadowColors.length];
                       return (
-                        <Box key={i} mb={lineTranslations[i] ? 3 : 1.5}>
-                          <Text
-                            as="span"
-                            role="button"
-                            tabIndex={0}
-                            position="relative"
-                            bg={
-                              activeSentenceIndex === i
-                                ? "rgba(56, 178, 172, 0.35)"
-                                : defaultBg
-                            }
-                            borderRadius="sm"
-                            px={1}
-                            py="1px"
-                            border="1px solid"
-                            borderColor={
-                              activeSentenceIndex === i
-                                ? "teal.400"
-                                : "rgba(255, 255, 255, 0.12)"
-                            }
-                            boxShadow={
-                              activeSentenceIndex === i
-                                ? "0px 4px 0px teal"
-                                : `0px 4px 0px ${shadow}`
-                            }
-                            transition="all 0.15s"
-                            cursor="pointer"
-                            sx={{
-                              "&:active": {
-                                top: "2px",
-                                boxShadow: "none",
-                              },
-                            }}
-                            onClick={() => {
-                              playSound(selectSound);
-                              readSingleSentence(sentence, i);
-                            }}
-                          >
-                            {sentence}
-                          </Text>
-                          {isTranslationVisible && lineTranslations[i] ? (
-                            <Text
-                              fontSize="sm"
-                              ml={1}
-                              mt={1}
-                              color="whiteAlpha.800"
-                              opacity={0.9}
-                              fontStyle="italic"
-                            >
-                              {lineTranslations[i]}
-                            </Text>
-                          ) : null}
-                        </Box>
+                        <Text
+                          as="span"
+                          role="button"
+                          tabIndex={0}
+                          key={i}
+                          position="relative"
+                          bg={
+                            activeSentenceIndex === i
+                              ? "rgba(56, 178, 172, 0.35)"
+                              : defaultBg
+                          }
+                          borderRadius="sm"
+                          px={1}
+                          py="1px"
+                          border="1px solid"
+                          borderColor={
+                            activeSentenceIndex === i
+                              ? "teal.400"
+                              : "rgba(255, 255, 255, 0.12)"
+                          }
+                          boxShadow={
+                            activeSentenceIndex === i
+                              ? "0px 4px 0px teal"
+                              : `0px 4px 0px ${shadow}`
+                          }
+                          transition="all 0.15s"
+                          cursor="pointer"
+                          sx={{
+                            "&:active": {
+                              top: "2px",
+                              boxShadow: "none",
+                            },
+                          }}
+                          onClick={() => {
+                            playSound(selectSound);
+                            readSingleSentence(sentence, i);
+                          }}
+                        >
+                          {sentence}{" "}
+                        </Text>
                       );
                     })}
                   </Text>
+                  {isTranslationVisible && lineTranslations.length ? (
+                    <VStack align="stretch" spacing={1.5} mt={3}>
+                      {lineTranslations.map((line, i) =>
+                        line ? (
+                          <Text
+                            key={`translation-footnote-${i}`}
+                            fontSize="sm"
+                            color="whiteAlpha.800"
+                            opacity={0.9}
+                            fontStyle="italic"
+                          >
+                            {i + 1}. {line}
+                          </Text>
+                        ) : null,
+                      )}
+                    </VStack>
+                  ) : null}
                   {showTranslations ? (
                     <HStack justify="flex-end" mt={4}>
                       {!lineTranslations.length ? (
