@@ -3002,7 +3002,7 @@ Return ONLY valid JSON:
 
                 {Array.isArray(viewLecture.takeaways) &&
                 viewLecture.takeaways.length ? (
-                  <>
+                  <Box mt={12}>
                     <Text fontWeight="600" fontSize="sm" opacity={0.9} mb={1.5}>
                       {t("reading_takeaways_heading")}
                     </Text>
@@ -3013,7 +3013,7 @@ Return ONLY valid JSON:
                         </Text>
                       ))}
                     </VStack>
-                  </>
+                  </Box>
                 ) : null}
               </VStack>
             ) : (
