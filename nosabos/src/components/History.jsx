@@ -1055,7 +1055,9 @@ export default function History({
 
       if (lineBuffer.trim()) applyLine(lineBuffer);
 
-      if (!(receivedCount === targetSentences.length && nextLines.every(Boolean))) {
+      if (
+        !(receivedCount === targetSentences.length && nextLines.every(Boolean))
+      ) {
         const supportFallback = splitIntoSentences(viewLecture.support || "");
         if (supportFallback.length === targetSentences.length) {
           setLineTranslationsByLecture((prev) => ({
@@ -1229,7 +1231,10 @@ export default function History({
     }
 
     const cleanTitle = stripLineLabel(String(parsed.title || ""), targetLang);
-    const safeTarget = sanitizeLectureBlock(String(parsed.target || ""), targetLang);
+    const safeTarget = sanitizeLectureBlock(
+      String(parsed.target || ""),
+      targetLang,
+    );
     const safeSupport = "";
     const cleanTakeaways = Array.isArray(parsed.takeaways)
       ? parsed.takeaways
@@ -2066,6 +2071,7 @@ Return ONLY valid JSON:
                                 opacity={0.9}
                                 fontStyle="italic"
                                 lineHeight="1.5"
+                                mb={3}
                               >
                                 {lineTranslations[i]}
                               </Text>
