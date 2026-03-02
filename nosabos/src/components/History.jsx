@@ -439,14 +439,12 @@ Write ONE short educational lecture about ${topicText}. ${promptText}. Difficult
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader.
 2. The target language for learning is: ${TARGET} (language code: ${targetLang})
-3. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-4. Write the title and lecture body in ${TARGET} ONLY
-5. Write all takeaways in ${SUPPORT} ONLY
-6. Write the translation in ${SUPPORT} ONLY
-7. Do NOT write in any other language regardless of what the topic mentions
-8. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
+3. Write the title and lecture body in ${TARGET} ONLY
+4. Write all takeaways in ${SUPPORT} ONLY
+5. Do NOT write in any other language regardless of what the topic mentions
+6. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
 
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
 ${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words"}
@@ -459,14 +457,12 @@ Include:
 - A concise title (<= 60 chars) in ${TARGET}
 - Lecture body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
-- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${SUPPORT}>"],
-  "support": "<full translation in ${SUPPORT}>"
+  "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
 }
@@ -516,14 +512,12 @@ ${prev}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. The target language for learning is: ${TARGET} (language code: ${targetLang})
-2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-3. Write the title and lecture body in ${TARGET} ONLY
-4. Write all takeaways in ${SUPPORT} ONLY
-5. Write the translation in ${SUPPORT} ONLY
-6. Do NOT write in any other language regardless of what the topic mentions
-7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
+2. Write the title and lecture body in ${TARGET} ONLY
+3. Write all takeaways in ${SUPPORT} ONLY
+4. Do NOT write in any other language regardless of what the topic mentions
+5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
 
-IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined by the target language (${TARGET}) for title/body and ${SUPPORT} for takeaways.
 
 Content requirements:
 ${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
@@ -535,14 +529,12 @@ Include:
 - A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
 - Lecture body in ${TARGET}
 - 3 concise bullet takeaways in ${SUPPORT}
-- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${SUPPORT}>"],
-  "support": "<full translation in ${SUPPORT}>"
+  "takeaways": ["<3 bullets in ${SUPPORT}>"]
 }
 `.trim();
 }
@@ -739,14 +731,12 @@ function buildStreamingPrompt({
     "",
     "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
     `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
-    `2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})`,
-    `3. Write the title and lecture body in ${TARGET} ONLY`,
-    `4. Write ALL takeaways in ${SUPPORT} ONLY`,
-    `5. Write the translation in ${SUPPORT} ONLY`,
-    `6. Do NOT write in any other language regardless of what the topic mentions`,
-    `7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
+    `2. Write the title and lecture body in ${TARGET} ONLY`,
+    `3. Write ALL takeaways in ${SUPPORT} ONLY`,
+    `4. Do NOT write in any other language regardless of what the topic mentions`,
+    `5. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
     "",
-    `IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by ${TARGET} and ${SUPPORT}.`,
+    `IMPORTANT: Ignore any language references in the topic description. Use ${TARGET} for title/target and ${SUPPORT} only for takeaways.`,
     "",
     `Style: ~180–260 words, ${diff}.`,
     "",
@@ -1243,17 +1233,8 @@ export default function History({
     }
 
     const cleanTitle = stripLineLabel(String(parsed.title || ""), targetLang);
-    const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
-      targetText: parsed.target || "",
-      supportText: parsed.support || "",
-      targetLang,
-      supportLang,
-    });
-    const safeTarget = cleanTarget || String(parsed.target || "").trim();
-    const safeSupport =
-      cleanSupport ||
-      sanitizeLectureBlock(String(parsed.support || ""), supportLang) ||
-      safeTarget;
+    const safeTarget = sanitizeLectureBlock(String(parsed.target || ""), targetLang);
+    const safeSupport = "";
     const cleanTakeaways = Array.isArray(parsed.takeaways)
       ? parsed.takeaways
           .map((t) => stripLineLabel(String(t || ""), supportLang))
@@ -1331,7 +1312,6 @@ export default function History({
 
     let title = "";
     const targetParts = [];
-    const supportParts = [];
     const takeaways = [];
     let revealed = false;
 
@@ -1348,7 +1328,7 @@ export default function History({
       setDraftLecture({
         title: draftTitle,
         target: sanitizeLectureBlock(targetParts.join(" "), targetLang),
-        support: sanitizeLectureBlock(supportParts.join(" "), supportLang),
+        support: "",
         takeaways: [...takeaways],
       });
     };
@@ -1370,7 +1350,7 @@ export default function History({
       if (!type || !text) return;
 
       const cleaned =
-        type === "support" || type === "takeaway"
+        type === "takeaway"
           ? stripLineLabel(text, supportLang)
           : stripLineLabel(text, targetLang);
       const normalized = cleaned.replace(/\s+/g, " ").trim();
@@ -1388,13 +1368,6 @@ export default function History({
       if (type === "target") {
         if (targetParts[targetParts.length - 1] !== normalized) {
           targetParts.push(normalized);
-          revealDraft();
-        }
-        return;
-      }
-      if (type === "support") {
-        if (supportParts[supportParts.length - 1] !== normalized) {
-          supportParts.push(normalized);
           revealDraft();
         }
         return;
@@ -1445,23 +1418,9 @@ export default function History({
         targetParts.join(" "),
         targetLang,
       );
-      const draftSupport = sanitizeLectureBlock(
-        supportParts.join(" "),
-        supportLang,
-      );
       const finalTakeaways = takeaways.slice(0, 3);
-
-      const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
-        targetText: draftTarget,
-        supportText: draftSupport,
-        targetLang,
-        supportLang,
-      });
-      const safeTarget = cleanTarget || draftTarget;
-      const safeSupport =
-        cleanSupport ||
-        sanitizeLectureBlock(draftSupport, supportLang) ||
-        safeTarget;
+      const safeTarget = draftTarget;
+      const safeSupport = "";
       const finalTitle =
         title ||
         (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
