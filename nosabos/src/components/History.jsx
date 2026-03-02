@@ -2097,6 +2097,7 @@ Return ONLY valid JSON:
                                   colorScheme="teal"
                                   onClick={gradeSpeechAttempt}
                                   isLoading={isGradingSpeech}
+                                  loadingText={t("history_speech_submitting")}
                                   isDisabled={!speechTranscript.trim()}
                                   maxW="300px"
                                   w="full"
