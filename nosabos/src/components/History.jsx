@@ -1901,8 +1901,8 @@ Return ONLY valid JSON:
           {onSkip && (
             <Button
               onClick={handleSkip}
-              variant="outline"
-              border="1px solid cyan"
+              bg="#2d2e38"
+              boxShadow={"0px 4px 0px #3f4546"}
             >
               {t("reading_skip")}
             </Button>
@@ -2149,7 +2149,9 @@ Return ONLY valid JSON:
                       {!lineTranslations.length ? (
                         <Button
                           size="sm"
-                          variant="outline"
+                          // variant="outline"
+                          bg="#406760"
+                          boxShadow={"0px 4px 0px #39534f"}
                           onClick={() => {
                             playSound(selectSound);
                             scrollHistoryToTop();
@@ -2162,7 +2164,8 @@ Return ONLY valid JSON:
                       ) : isTranslationVisible ? (
                         <Button
                           size="sm"
-                          variant="outline"
+                          bg="#48379c"
+                          boxShadow={"0px 4px 0px #0d012c"}
                           onClick={() => {
                             playSound(selectSound);
                             if (!viewLecture?.id) return;
@@ -2177,7 +2180,8 @@ Return ONLY valid JSON:
                       ) : (
                         <Button
                           size="sm"
-                          variant="outline"
+                          bg="#406760"
+                          boxShadow={"0px 4px 0px #39534f"}
                           onClick={() => {
                             playSound(selectSound);
                             scrollHistoryToTop();
