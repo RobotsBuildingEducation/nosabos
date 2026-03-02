@@ -2035,9 +2035,6 @@ Return ONLY valid JSON:
                         <Text fontWeight="600" fontSize="sm">
                           {t("history_speech_heading")}
                         </Text>
-                        <Text fontSize="sm" opacity={0.8} lineHeight="1.6">
-                          {t("history_speech_instructions")}
-                        </Text>
 
                         {!speechSubmitted && (
                           <>

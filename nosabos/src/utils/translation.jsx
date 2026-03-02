@@ -101,7 +101,7 @@ export const translations = {
     history_format_speech: "Read aloud",
     history_speech_heading: "Reading practice",
     history_speech_instructions:
-      "Try reading the paragraph above out loud. You'll get feedback on your reading!",
+      "Read the paragraph above out loud. You'll get feedback on your reading!",
     history_speech_start_mic: "Start reading",
     history_speech_stop_mic: "Stop",
     history_speech_start_over: "Start over",

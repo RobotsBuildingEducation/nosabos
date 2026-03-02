@@ -162,12 +162,15 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "Talking about family",
-              prompt: "Tell someone about your grandparents and extended family",
-              successCriteria: "The learner names at least two extended family members.",
+              prompt:
+                "Tell someone about your grandparents and extended family",
+              successCriteria:
+                "The learner names at least two extended family members.",
             },
             stories: {
               topic: "extended family",
-              prompt: "A story about visiting grandparents and meeting extended family",
+              prompt:
+                "A story about visiting grandparents and meeting extended family",
             },
           },
         },
@@ -189,7 +192,8 @@ const baseLearningPath = {
             realtime: {
               scenario: "Describing people",
               prompt: "Describe the people around you using new vocabulary",
-              successCriteria: "The learner uses people vocabulary to describe someone.",
+              successCriteria:
+                "The learner uses people vocabulary to describe someone.",
             },
           },
         },
@@ -262,7 +266,8 @@ const baseLearningPath = {
           content: {
             stories: {
               topic: "numbers 6-10",
-              prompt: "A story about counting items at a market from six to ten",
+              prompt:
+                "A story about counting items at a market from six to ten",
             },
             reading: {
               topic: "numbers 6-10",
@@ -284,11 +289,13 @@ const baseLearningPath = {
             realtime: {
               scenario: "Counting objects",
               prompt: "Count everyday objects together in a conversation",
-              successCriteria: "The learner counts at least three objects using correct numbers.",
+              successCriteria:
+                "The learner counts at least three objects using correct numbers.",
             },
             stories: {
               topic: "counting objects",
-              prompt: "A short story about a child counting toys and sharing them",
+              prompt:
+                "A short story about a child counting toys and sharing them",
             },
           },
         },
@@ -360,12 +367,14 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "farewells",
-              prompt: "Read a short dialogue where friends say goodbye in different ways",
+              prompt:
+                "Read a short dialogue where friends say goodbye in different ways",
             },
             realtime: {
               scenario: "Saying goodbye",
               prompt: "Practice different ways to say goodbye",
-              successCriteria: "The learner uses at least two different farewell expressions.",
+              successCriteria:
+                "The learner uses at least two different farewell expressions.",
             },
           },
         },
@@ -382,11 +391,13 @@ const baseLearningPath = {
           content: {
             stories: {
               topic: "greetings in context",
-              prompt: "A story about arriving at a party and greeting everyone differently",
+              prompt:
+                "A story about arriving at a party and greeting everyone differently",
             },
             reading: {
               topic: "greeting conversations",
-              prompt: "Read a scene where people greet each other at different times of day",
+              prompt:
+                "Read a scene where people greet each other at different times of day",
             },
           },
         },
@@ -459,12 +470,15 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "Expressing uncertainty",
-              prompt: "Practice responding with maybe, I don't know, and other uncertain phrases",
-              successCriteria: "The learner uses at least two uncertainty expressions.",
+              prompt:
+                "Practice responding with maybe, I don't know, and other uncertain phrases",
+              successCriteria:
+                "The learner uses at least two uncertainty expressions.",
             },
             stories: {
               topic: "uncertainty expressions",
-              prompt: "A story about someone who can't decide what to eat for lunch",
+              prompt:
+                "A story about someone who can't decide what to eat for lunch",
             },
           },
         },
@@ -478,7 +492,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "reaction words",
-              prompt: "Read a text message conversation full of reactions and exclamations",
+              prompt:
+                "Read a text message conversation full of reactions and exclamations",
             },
             stories: {
               topic: "quick responses",
@@ -560,12 +575,15 @@ const baseLearningPath = {
           content: {
             stories: {
               topic: "apologies",
-              prompt: "A story about someone who accidentally bumps into people and apologizes",
+              prompt:
+                "A story about someone who accidentally bumps into people and apologizes",
             },
             realtime: {
               scenario: "Apologizing and excusing yourself",
-              prompt: "Practice saying sorry and excuse me in different situations",
-              successCriteria: "The learner uses apology and attention phrases appropriately.",
+              prompt:
+                "Practice saying sorry and excuse me in different situations",
+              successCriteria:
+                "The learner uses apology and attention phrases appropriately.",
             },
           },
         },
@@ -582,12 +600,14 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "polite expressions",
-              prompt: "Read a scene where people exchange gracious phrases at a restaurant",
+              prompt:
+                "Read a scene where people exchange gracious phrases at a restaurant",
             },
             realtime: {
               scenario: "Being polite",
               prompt: "Practice using polite phrases in everyday situations",
-              successCriteria: "The learner uses at least two polite expressions naturally.",
+              successCriteria:
+                "The learner uses at least two polite expressions naturally.",
             },
           },
         },
@@ -657,11 +677,13 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "personal items",
-              prompt: "Read about someone describing what they carry in their bag",
+              prompt:
+                "Read about someone describing what they carry in their bag",
             },
             stories: {
               topic: "personal items",
-              prompt: "A story about someone who lost their keys and searches for them",
+              prompt:
+                "A story about someone who lost their keys and searches for them",
             },
           },
         },
@@ -679,11 +701,13 @@ const baseLearningPath = {
             realtime: {
               scenario: "Ordering food and drinks",
               prompt: "Practice asking for food and drinks at a café",
-              successCriteria: "The learner names at least two food or drink items.",
+              successCriteria:
+                "The learner names at least two food or drink items.",
             },
             reading: {
               topic: "food and drinks",
-              prompt: "Read a simple café menu and identify common food and drink items",
+              prompt:
+                "Read a simple café menu and identify common food and drink items",
             },
           },
         },
@@ -751,11 +775,13 @@ const baseLearningPath = {
             realtime: {
               scenario: "Describing colors around you",
               prompt: "Tell someone what colors you see around you",
-              successCriteria: "The learner names at least three colors in conversation.",
+              successCriteria:
+                "The learner names at least three colors in conversation.",
             },
             reading: {
               topic: "additional colors",
-              prompt: "Read descriptions of colorful paintings and identify the colors used",
+              prompt:
+                "Read descriptions of colorful paintings and identify the colors used",
             },
           },
         },
@@ -775,12 +801,15 @@ const baseLearningPath = {
           content: {
             stories: {
               topic: "neutral colors",
-              prompt: "A story about painting a room and choosing between light and dark colors",
+              prompt:
+                "A story about painting a room and choosing between light and dark colors",
             },
             realtime: {
               scenario: "Color preferences",
-              prompt: "Discuss your favorite colors and describe what color things are",
-              successCriteria: "The learner uses at least three color words including neutral colors.",
+              prompt:
+                "Discuss your favorite colors and describe what color things are",
+              successCriteria:
+                "The learner uses at least three color words including neutral colors.",
             },
           },
         },
@@ -847,12 +876,14 @@ const baseLearningPath = {
           content: {
             stories: {
               topic: "asking for names",
-              prompt: "A story about a new student meeting classmates and learning their names",
+              prompt:
+                "A story about a new student meeting classmates and learning their names",
             },
             realtime: {
               scenario: "Asking someone's name",
               prompt: "Meet someone new and ask what their name is",
-              successCriteria: "The learner asks for the other person's name using an appropriate phrase.",
+              successCriteria:
+                "The learner asks for the other person's name using an appropriate phrase.",
             },
           },
         },
@@ -869,11 +900,13 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "meeting expressions",
-              prompt: "Read a dialogue where two people meet for the first time and exchange polite greetings",
+              prompt:
+                "Read a dialogue where two people meet for the first time and exchange polite greetings",
             },
             stories: {
               topic: "nice to meet you",
-              prompt: "A story about a welcome party where everyone introduces themselves",
+              prompt:
+                "A story about a welcome party where everyone introduces themselves",
             },
           },
         },
@@ -11293,9 +11326,11 @@ function ensureModeContent(mode, topic, lesson) {
 }
 
 function hashText(text) {
-  return String(text || "").split("").reduce((hash, char) => {
-    return (hash * 31 + char.charCodeAt(0)) % 2147483647;
-  }, 7);
+  return String(text || "")
+    .split("")
+    .reduce((hash, char) => {
+      return (hash * 31 + char.charCodeAt(0)) % 2147483647;
+    }, 7);
 }
 
 function applyPreA1LessonModuleStrategy(unit, lessons) {
