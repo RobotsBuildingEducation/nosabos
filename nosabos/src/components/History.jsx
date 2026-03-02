@@ -2153,6 +2153,9 @@ Return ONLY valid JSON:
                             translateLectureLines();
                           }}
                           isLoading={isTranslatingLecture}
+                          loadingText={
+                            t("history_translating") || "Translating"
+                          }
                         >
                           {t("history_translate")}
                         </Button>
