@@ -1000,6 +1000,10 @@ export default function History({
     setExplanationText("");
   }
 
+  function scrollHistoryToTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }
+
   async function translateLectureLines() {
     if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
       return;
@@ -2183,6 +2187,7 @@ Return ONLY valid JSON:
                           variant="outline"
                           onClick={() => {
                             playSound(selectSound);
+                            scrollHistoryToTop();
                             translateLectureLines();
                           }}
                           isLoading={isTranslatingLecture}
@@ -2210,6 +2215,7 @@ Return ONLY valid JSON:
                           variant="outline"
                           onClick={() => {
                             playSound(selectSound);
+                            scrollHistoryToTop();
                             if (!viewLecture?.id) return;
                             setTranslationsVisibleByLecture((prev) => ({
                               ...prev,
