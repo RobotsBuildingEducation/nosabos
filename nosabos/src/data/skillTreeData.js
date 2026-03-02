@@ -11292,6 +11292,72 @@ function ensureModeContent(mode, topic, lesson) {
   return updatedContent;
 }
 
+function hashText(text) {
+  return String(text || "").split("").reduce((hash, char) => {
+    return (hash * 31 + char.charCodeAt(0)) % 2147483647;
+  }, 7);
+}
+
+function applyPreA1LessonModuleStrategy(unit, lessons) {
+  const extraModes = ["realtime", "reading", "stories"];
+  let previousSignature = null;
+
+  return lessons.map((lesson) => {
+    const isProtectedLesson =
+      lesson.isTutorial ||
+      lesson.isFinalQuiz ||
+      lesson.id?.includes("skill-builder") ||
+      lesson.id?.includes("integrated-practice");
+
+    if (isProtectedLesson) {
+      previousSignature = null;
+      return lesson;
+    }
+
+    const seed = hashText(`${unit.id}-${lesson.id}-${lesson.title?.en || ""}`);
+    const desiredExtraCount = 1 + (seed % 2);
+    const rotatingModes = [...extraModes]
+      .sort((left, right) => {
+        const leftScore = (hashText(`${lesson.id}-${left}`) + seed) % 97;
+        const rightScore = (hashText(`${lesson.id}-${right}`) + seed) % 97;
+        return leftScore - rightScore;
+      })
+      .slice(0, desiredExtraCount);
+
+    const options = [
+      [...rotatingModes],
+      [...extraModes.filter((mode) => !rotatingModes.includes(mode))].slice(
+        0,
+        desiredExtraCount,
+      ),
+      [...extraModes.filter((mode) => !rotatingModes.includes(mode))],
+    ].filter((modes) => modes.length > 0);
+
+    const selectedExtras =
+      options.find((modes) => modes.sort().join("|") !== previousSignature) ||
+      rotatingModes;
+
+    const modes = ["vocabulary", "grammar", ...selectedExtras];
+    const signature = [...selectedExtras].sort().join("|");
+
+    let content = { ...(lesson.content || {}) };
+    modes.forEach((mode) => {
+      content = ensureModeContent(mode, deriveLessonTopic(unit, lesson), {
+        ...lesson,
+        content,
+      });
+    });
+
+    previousSignature = signature;
+
+    return {
+      ...lesson,
+      modes,
+      content,
+    };
+  });
+}
+
 function normalizeLessonModes(unit, lesson) {
   // Skip normalization for tutorial lessons - preserve their exact modes
   if (lesson.isTutorial) {
@@ -11485,7 +11551,10 @@ function applyCEFRScaffolding(path) {
           ),
         ),
       );
-      const balancedLessons = ensureUnitModuleCoverage(unit, enhancedLessons);
+      const balancedLessons =
+        level === "Pre-A1"
+          ? applyPreA1LessonModuleStrategy(unit, enhancedLessons)
+          : ensureUnitModuleCoverage(unit, enhancedLessons);
 
       return {
         ...unit,
