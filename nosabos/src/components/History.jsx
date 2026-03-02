@@ -1005,40 +1005,84 @@ export default function History({
     if ((lineTranslationsByLecture[viewLecture.id] || []).length) return;
 
     setIsTranslatingLecture(true);
+    setLineTranslationsByLecture((prev) => ({
+      ...prev,
+      [viewLecture.id]: Array(targetSentences.length).fill(""),
+    }));
+
+    let receivedCount = 0;
+    const nextLines = Array(targetSentences.length).fill("");
+    let lineBuffer = "";
+
+    const applyLine = (rawLine) => {
+      if (receivedCount >= targetSentences.length) return;
+      const clean = String(rawLine || "")
+        .replace(/^\s*\d+[\).:-]\s*/, "")
+        .trim();
+      if (!clean) return;
+      nextLines[receivedCount] = clean;
+      receivedCount += 1;
+      setLineTranslationsByLecture((prev) => ({
+        ...prev,
+        [viewLecture.id]: [...nextLines],
+      }));
+    };
+
     try {
       const prompt = [
         `Translate each sentence below from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
-        "Return ONLY valid JSON with this exact shape:",
-        '{"translations":["...","..."]}',
-        `The translations array must have exactly ${targetSentences.length} items in the same order.`,
-        "Do not include numbering or extra text.",
+        "Output plain text only.",
+        `Return exactly ${targetSentences.length} lines.`,
+        "Each line must be only the translation for the matching sentence index.",
+        "No numbering, labels, markdown, or commentary.",
         "",
         "Sentences:",
         ...targetSentences.map((sentence, i) => `${i + 1}. ${sentence}`),
       ].join("\n");
 
-      const raw = await callResponses({ model: MODEL, input: prompt });
-      const parsed = safeParseJSON(raw);
-      const mapped = Array.isArray(parsed?.translations)
-        ? parsed.translations
-            .slice(0, targetSentences.length)
-            .map((item) => String(item || "").trim())
-        : [];
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
 
-      if (mapped.length === targetSentences.length && mapped.every(Boolean)) {
-        setLineTranslationsByLecture((prev) => ({
-          ...prev,
-          [viewLecture.id]: mapped,
-        }));
-        return;
+      for await (const chunk of resp.stream) {
+        const chunkText = textFromChunk(chunk);
+        if (!chunkText) continue;
+        lineBuffer += chunkText;
+        const segments = lineBuffer.split(/\r?\n/);
+        lineBuffer = segments.pop() || "";
+        for (const line of segments) applyLine(line);
       }
 
+      if (lineBuffer.trim()) applyLine(lineBuffer);
+
+      if (!(receivedCount === targetSentences.length && nextLines.every(Boolean))) {
+        const supportFallback = splitIntoSentences(viewLecture.support || "");
+        if (supportFallback.length === targetSentences.length) {
+          setLineTranslationsByLecture((prev) => ({
+            ...prev,
+            [viewLecture.id]: supportFallback,
+          }));
+        } else {
+          setLineTranslationsByLecture((prev) => {
+            const copy = { ...prev };
+            delete copy[viewLecture.id];
+            return copy;
+          });
+        }
+      }
+    } catch {
       const supportFallback = splitIntoSentences(viewLecture.support || "");
       if (supportFallback.length === targetSentences.length) {
         setLineTranslationsByLecture((prev) => ({
           ...prev,
           [viewLecture.id]: supportFallback,
         }));
+      } else {
+        setLineTranslationsByLecture((prev) => {
+          const copy = { ...prev };
+          delete copy[viewLecture.id];
+          return copy;
+        });
       }
     } finally {
       setIsTranslatingLecture(false);
