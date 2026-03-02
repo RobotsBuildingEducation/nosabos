@@ -158,23 +158,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              topic: "extended family",
-              focusPoints: [
-                "abuelo",
-                "abuela",
-                "bebé",
-                "hijo",
-                "hija",
-                "tío",
-                "tía",
-              ],
+            realtime: {
+              scenario: "Talking about family",
+              prompt: "Tell someone about your grandparents and extended family",
+              successCriteria: "The learner names at least two extended family members.",
             },
-            grammar: {
-              topic: "masculine and feminine",
-              focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
+            stories: {
+              topic: "extended family",
+              prompt: "A story about visiting grandparents and meeting extended family",
             },
           },
         },
@@ -187,23 +180,16 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "realtime"],
           content: {
-            vocabulary: {
+            reading: {
               topic: "people in daily life",
-              focusPoints: [
-                "amigo",
-                "amiga",
-                "niño",
-                "niña",
-                "hombre",
-                "mujer",
-                "persona",
-              ],
+              prompt: "Read a short description of people in a neighborhood",
             },
-            grammar: {
-              topic: "gender of people nouns",
-              focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
+            realtime: {
+              scenario: "Describing people",
+              prompt: "Describe the people around you using new vocabulary",
+              successCriteria: "The learner uses people vocabulary to describe someone.",
             },
           },
         },
@@ -272,15 +258,15 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["stories", "reading"],
           content: {
-            vocabulary: {
+            stories: {
               topic: "numbers 6-10",
-              focusPoints: ["seis", "siete", "ocho", "nueve", "diez"],
+              prompt: "A story about counting items at a market from six to ten",
             },
-            grammar: {
-              topic: "number patterns",
-              focusPoints: ["counting sequences"],
+            reading: {
+              topic: "numbers 6-10",
+              prompt: "Read a short passage that uses numbers six through ten",
             },
           },
         },
@@ -293,15 +279,16 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              topic: "counting objects",
-              focusPoints: ["un/una", "dos libros", "tres mesas"],
+            realtime: {
+              scenario: "Counting objects",
+              prompt: "Count everyday objects together in a conversation",
+              successCriteria: "The learner counts at least three objects using correct numbers.",
             },
-            grammar: {
-              topic: "number agreement",
-              focusPoints: ["uno vs un/una"],
+            stories: {
+              topic: "counting objects",
+              prompt: "A short story about a child counting toys and sharing them",
             },
           },
         },
@@ -369,15 +356,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "realtime"],
           content: {
-            vocabulary: {
+            reading: {
               topic: "farewells",
-              focusPoints: ["adiós", "hasta luego", "hasta mañana", "chao"],
+              prompt: "Read a short dialogue where friends say goodbye in different ways",
             },
-            grammar: {
-              topic: "farewell usage",
-              focusPoints: ["temporary vs permanent"],
+            realtime: {
+              scenario: "Saying goodbye",
+              prompt: "Practice different ways to say goodbye",
+              successCriteria: "The learner uses at least two different farewell expressions.",
             },
           },
         },
@@ -390,15 +378,15 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["stories", "reading"],
           content: {
-            vocabulary: {
-              topic: "greeting conversations",
-              focusPoints: ["greeting + response patterns"],
+            stories: {
+              topic: "greetings in context",
+              prompt: "A story about arriving at a party and greeting everyone differently",
             },
-            grammar: {
-              topic: "greeting exchanges",
-              focusPoints: ["question and answer"],
+            reading: {
+              topic: "greeting conversations",
+              prompt: "Read a scene where people greet each other at different times of day",
             },
           },
         },
@@ -467,15 +455,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              topic: "uncertainty",
-              focusPoints: ["quizás", "tal vez", "no sé", "puede ser"],
+            realtime: {
+              scenario: "Expressing uncertainty",
+              prompt: "Practice responding with maybe, I don't know, and other uncertain phrases",
+              successCriteria: "The learner uses at least two uncertainty expressions.",
             },
-            grammar: {
-              topic: "expressing doubt",
-              focusPoints: ["uncertainty words"],
+            stories: {
+              topic: "uncertainty expressions",
+              prompt: "A story about someone who can't decide what to eat for lunch",
             },
           },
         },
@@ -485,15 +474,15 @@ const baseLearningPath = {
           description: { en: "React naturally", es: "Reacciona naturalmente" },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "stories"],
           content: {
-            vocabulary: {
-              topic: "reactions",
-              focusPoints: ["¡genial!", "¡perfecto!", "¿en serio?"],
+            reading: {
+              topic: "reaction words",
+              prompt: "Read a text message conversation full of reactions and exclamations",
             },
-            grammar: {
-              topic: "exclamations",
-              focusPoints: ["expressing emotions"],
+            stories: {
+              topic: "quick responses",
+              prompt: "A story about friends reacting to surprising news",
             },
           },
         },
@@ -567,15 +556,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["stories", "realtime"],
           content: {
-            vocabulary: {
+            stories: {
               topic: "apologies",
-              focusPoints: ["perdón", "lo siento", "disculpe", "con permiso"],
+              prompt: "A story about someone who accidentally bumps into people and apologizes",
             },
-            grammar: {
-              topic: "apologizing",
-              focusPoints: ["formal vs informal"],
+            realtime: {
+              scenario: "Apologizing and excusing yourself",
+              prompt: "Practice saying sorry and excuse me in different situations",
+              successCriteria: "The learner uses apology and attention phrases appropriately.",
             },
           },
         },
@@ -588,15 +578,16 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "realtime"],
           content: {
-            vocabulary: {
-              topic: "polite phrases",
-              focusPoints: ["muy amable", "no hay de qué", "con gusto"],
+            reading: {
+              topic: "polite expressions",
+              prompt: "Read a scene where people exchange gracious phrases at a restaurant",
             },
-            grammar: {
-              topic: "formal courtesy",
-              focusPoints: ["polite responses"],
+            realtime: {
+              scenario: "Being polite",
+              prompt: "Practice using polite phrases in everyday situations",
+              successCriteria: "The learner uses at least two polite expressions naturally.",
             },
           },
         },
@@ -662,13 +653,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "stories"],
           content: {
-            vocabulary: {
+            reading: {
               topic: "personal items",
-              focusPoints: ["teléfono", "libro", "bolsa", "llaves"],
+              prompt: "Read about someone describing what they carry in their bag",
             },
-            grammar: { topic: "possessive", focusPoints: ["mi/tu/su"] },
+            stories: {
+              topic: "personal items",
+              prompt: "A story about someone who lost their keys and searches for them",
+            },
           },
         },
         {
@@ -680,15 +674,16 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["realtime", "reading"],
           content: {
-            vocabulary: {
-              topic: "food/drinks",
-              focusPoints: ["agua", "café", "pan", "leche", "fruta"],
+            realtime: {
+              scenario: "Ordering food and drinks",
+              prompt: "Practice asking for food and drinks at a café",
+              successCriteria: "The learner names at least two food or drink items.",
             },
-            grammar: {
-              topic: "food articles",
-              focusPoints: ["el agua exception"],
+            reading: {
+              topic: "food and drinks",
+              prompt: "Read a simple café menu and identify common food and drink items",
             },
           },
         },
@@ -751,15 +746,16 @@ const baseLearningPath = {
           description: { en: "Expand your palette", es: "Amplía tu paleta" },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["realtime", "reading"],
           content: {
-            vocabulary: {
-              topic: "additional colors",
-              focusPoints: ["verde", "naranja", "rosa", "morado"],
+            realtime: {
+              scenario: "Describing colors around you",
+              prompt: "Tell someone what colors you see around you",
+              successCriteria: "The learner names at least three colors in conversation.",
             },
-            grammar: {
-              topic: "color agreement",
-              focusPoints: ["colors that change vs don't"],
+            reading: {
+              topic: "additional colors",
+              prompt: "Read descriptions of colorful paintings and identify the colors used",
             },
           },
         },
@@ -775,15 +771,16 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["stories", "realtime"],
           content: {
-            vocabulary: {
+            stories: {
               topic: "neutral colors",
-              focusPoints: ["negro", "blanco", "gris"],
+              prompt: "A story about painting a room and choosing between light and dark colors",
             },
-            grammar: {
-              topic: "color combinations",
-              focusPoints: ["blanco y negro", "azul oscuro"],
+            realtime: {
+              scenario: "Color preferences",
+              prompt: "Discuss your favorite colors and describe what color things are",
+              successCriteria: "The learner uses at least three color words including neutral colors.",
             },
           },
         },
@@ -846,15 +843,16 @@ const baseLearningPath = {
           },
           xpRequired: 10,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["stories", "realtime"],
           content: {
-            vocabulary: {
+            stories: {
               topic: "asking for names",
-              focusPoints: ["¿Cómo te llamas?", "¿Cómo se llama?"],
+              prompt: "A story about a new student meeting classmates and learning their names",
             },
-            grammar: {
-              topic: "formal vs informal",
-              focusPoints: ["tú vs usted"],
+            realtime: {
+              scenario: "Asking someone's name",
+              prompt: "Meet someone new and ask what their name is",
+              successCriteria: "The learner asks for the other person's name using an appropriate phrase.",
             },
           },
         },
@@ -867,15 +865,15 @@ const baseLearningPath = {
           },
           xpRequired: 20,
           xpReward: 15,
-          modes: ["vocabulary", "grammar"],
+          modes: ["reading", "stories"],
           content: {
-            vocabulary: {
+            reading: {
               topic: "meeting expressions",
-              focusPoints: ["mucho gusto", "encantado/a", "igualmente"],
+              prompt: "Read a dialogue where two people meet for the first time and exchange polite greetings",
             },
-            grammar: {
-              topic: "gender in expressions",
-              focusPoints: ["encantado vs encantada"],
+            stories: {
+              topic: "nice to meet you",
+              prompt: "A story about a welcome party where everyone introduces themselves",
             },
           },
         },
@@ -11319,8 +11317,8 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    // Fill in missing modes
-    while (modes.length < 3) {
+    // Fill in missing modes only if lesson has fewer than 2
+    while (modes.length < 2) {
       const filler = [
         "vocabulary",
         "grammar",
