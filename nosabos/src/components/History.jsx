@@ -2142,7 +2142,7 @@ Return ONLY valid JSON:
                   )}
                   {showTranslations ? (
                     <HStack justify="flex-end" mt={4}>
-                      {!lineTranslations.length ? (
+                      {isTranslatingLecture || !lineTranslations.length ? (
                         <Button
                           size="sm"
                           // variant="outline"
