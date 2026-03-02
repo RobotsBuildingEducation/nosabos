@@ -2034,43 +2034,108 @@ Return ONLY valid JSON:
                   rounded="lg"
                   p={4}
                 >
-                  <Box
-                    as="span"
-                    display="inline"
-                    fontSize={{ base: "md", md: "md" }}
-                    lineHeight="2.2"
-                  >
-                    {targetSentences.map((sentence, i) => {
-                      const colors = [
-                        "rgba(56, 178, 172, 0.12)",
-                        "rgba(128, 90, 213, 0.12)",
-                        "rgba(237, 137, 54, 0.12)",
-                        "rgba(99, 179, 237, 0.12)",
-                        "rgba(246, 173, 85, 0.12)",
-                      ];
-                      const shadowColors = [
-                        "rgba(56, 178, 172, 0.3)",
-                        "rgba(128, 90, 213, 0.3)",
-                        "rgba(237, 137, 54, 0.3)",
-                        "rgba(99, 179, 237, 0.3)",
-                        "rgba(246, 173, 85, 0.3)",
-                      ];
-                      const defaultBg = colors[i % colors.length];
-                      const shadow = shadowColors[i % shadowColors.length];
-                      return (
-                        <Box
-                          as="span"
-                          key={i}
-                          display="inline-flex"
-                          flexDir="column"
-                          verticalAlign="top"
-                          mr={1}
-                          mb={isTranslationVisible && lineTranslations[i] ? 2 : 0}
-                        >
+                  {isTranslationVisible ? (
+                    <VStack align="stretch" spacing={2}>
+                      {targetSentences.map((sentence, i) => {
+                        const colors = [
+                          "rgba(56, 178, 172, 0.12)",
+                          "rgba(128, 90, 213, 0.12)",
+                          "rgba(237, 137, 54, 0.12)",
+                          "rgba(99, 179, 237, 0.12)",
+                          "rgba(246, 173, 85, 0.12)",
+                        ];
+                        const shadowColors = [
+                          "rgba(56, 178, 172, 0.3)",
+                          "rgba(128, 90, 213, 0.3)",
+                          "rgba(237, 137, 54, 0.3)",
+                          "rgba(99, 179, 237, 0.3)",
+                          "rgba(246, 173, 85, 0.3)",
+                        ];
+                        const defaultBg = colors[i % colors.length];
+                        const shadow = shadowColors[i % shadowColors.length];
+                        return (
+                          <Box key={i}>
+                            <Text
+                              as="span"
+                              role="button"
+                              tabIndex={0}
+                              position="relative"
+                              bg={
+                                activeSentenceIndex === i
+                                  ? "rgba(56, 178, 172, 0.35)"
+                                  : defaultBg
+                              }
+                              borderRadius="sm"
+                              px={1}
+                              py="1px"
+                              border="1px solid"
+                              borderColor={
+                                activeSentenceIndex === i
+                                  ? "teal.400"
+                                  : "rgba(255, 255, 255, 0.12)"
+                              }
+                              boxShadow={
+                                activeSentenceIndex === i
+                                  ? "0px 4px 0px teal"
+                                  : `0px 4px 0px ${shadow}`
+                              }
+                              transition="all 0.15s"
+                              cursor="pointer"
+                              sx={{
+                                "&:active": {
+                                  top: "2px",
+                                  boxShadow: "none",
+                                },
+                              }}
+                              onClick={() => {
+                                playSound(selectSound);
+                                readSingleSentence(sentence, i);
+                              }}
+                            >
+                              {sentence}
+                            </Text>
+                            {lineTranslations[i] ? (
+                              <Text
+                                mt={1}
+                                px={1}
+                                fontSize="sm"
+                                color="whiteAlpha.800"
+                                opacity={0.9}
+                                fontStyle="italic"
+                                lineHeight="1.5"
+                              >
+                                {lineTranslations[i]}
+                              </Text>
+                            ) : null}
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+                  ) : (
+                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
+                      {targetSentences.map((sentence, i) => {
+                        const colors = [
+                          "rgba(56, 178, 172, 0.12)",
+                          "rgba(128, 90, 213, 0.12)",
+                          "rgba(237, 137, 54, 0.12)",
+                          "rgba(99, 179, 237, 0.12)",
+                          "rgba(246, 173, 85, 0.12)",
+                        ];
+                        const shadowColors = [
+                          "rgba(56, 178, 172, 0.3)",
+                          "rgba(128, 90, 213, 0.3)",
+                          "rgba(237, 137, 54, 0.3)",
+                          "rgba(99, 179, 237, 0.3)",
+                          "rgba(246, 173, 85, 0.3)",
+                        ];
+                        const defaultBg = colors[i % colors.length];
+                        const shadow = shadowColors[i % shadowColors.length];
+                        return (
                           <Text
                             as="span"
                             role="button"
                             tabIndex={0}
+                            key={i}
                             position="relative"
                             bg={
                               activeSentenceIndex === i
@@ -2104,25 +2169,12 @@ Return ONLY valid JSON:
                               readSingleSentence(sentence, i);
                             }}
                           >
-                            {sentence}
+                            {sentence}{" "}
                           </Text>
-                          {isTranslationVisible && lineTranslations[i] ? (
-                            <Text
-                              mt={1}
-                              px={1}
-                              fontSize="sm"
-                              color="whiteAlpha.800"
-                              opacity={0.9}
-                              fontStyle="italic"
-                              lineHeight="1.5"
-                            >
-                              {lineTranslations[i]}
-                            </Text>
-                          ) : null}
-                        </Box>
-                      );
-                    })}
-                  </Box>
+                        );
+                      })}
+                    </Text>
+                  )}
                   {showTranslations ? (
                     <HStack justify="flex-end" mt={4}>
                       {!lineTranslations.length ? (
