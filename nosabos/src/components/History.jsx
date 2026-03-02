@@ -908,7 +908,6 @@ export default function History({
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   // Sentence-level TTS highlighting
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
-  const sentencePlaybackRef = useRef(false);
 
   // Refs for audio
   const currentAudioRef = useRef(null);
@@ -1403,7 +1402,6 @@ export default function History({
   }
 
   const stopSpeech = () => {
-    sentencePlaybackRef.current = false;
     setActiveSentenceIndex(-1);
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
@@ -1457,68 +1455,6 @@ export default function History({
       onDone?.();
     }
   }
-
-  const readTarget = async () => {
-    const text = viewLecture?.target;
-    if (!text) return;
-
-    const sentences = splitIntoSentences(text);
-    if (!sentences.length) return;
-
-    stopSpeech();
-    sentencePlaybackRef.current = true;
-    setIsReadingTarget(true);
-
-    const langTag = (BCP47[targetLang] || BCP47.es).tts;
-    const voice = getRandomVoice();
-
-    for (let i = 0; i < sentences.length; i++) {
-      if (!sentencePlaybackRef.current) break;
-      setActiveSentenceIndex(i);
-
-      try {
-        setIsSynthesizingTarget(true);
-        const player = await getTTSPlayer({
-          text: sentences[i],
-          langTag: langTag || TTS_LANG_TAG.es,
-          voice,
-          responseFormat: LOW_LATENCY_TTS_FORMAT,
-        });
-
-        if (!sentencePlaybackRef.current) {
-          player.cleanup?.();
-          break;
-        }
-
-        currentAudioRef.current = player.audio;
-
-        await new Promise((resolve) => {
-          const done = () => {
-            currentAudioRef.current = null;
-            player.cleanup?.();
-            player.finalize?.catch?.(() => {});
-            resolve();
-          };
-          player.audio.onended = done;
-          player.audio.onerror = done;
-
-          player.ready
-            .then(() => {
-              setIsSynthesizingTarget(false);
-              player.audio.play().catch(done);
-            })
-            .catch(done);
-        });
-      } catch {
-        // continue to next sentence on error
-      }
-    }
-
-    setIsSynthesizingTarget(false);
-    setIsReadingTarget(false);
-    setActiveSentenceIndex(-1);
-    sentencePlaybackRef.current = false;
-  };
 
   const readTargetFull = async () =>
     speak({
@@ -1942,31 +1878,7 @@ Return ONLY valid JSON:
                   <VStack spacing={0.5}>
                     <IconButton
                       icon={
-                        isSynthesizingTarget && sentencePlaybackRef.current ? (
-                          <Spinner size="sm" />
-                        ) : (
-                          <PiSpeakerHighDuotone size="20px" />
-                        )
-                      }
-                      onClick={() => {
-                        playSound(selectSound);
-                        readTarget();
-                      }}
-                      aria-label="Read with highlighting"
-                      size="sm"
-                      variant="ghost"
-                      isDisabled={
-                        !viewLecture?.target || draftLecture || isGenerating
-                      }
-                    />
-                    <Text fontSize="xs" opacity={0.6}>
-                      {t("history_read_sentences")}
-                    </Text>
-                  </VStack>
-                  <VStack spacing={0.5}>
-                    <IconButton
-                      icon={
-                        isSynthesizingTarget && !sentencePlaybackRef.current ? (
+                        isSynthesizingTarget ? (
                           <Spinner size="sm" />
                         ) : (
                           <PiLightningDuotone size="20px" />
