@@ -134,23 +134,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["realtime", "stories"],
         content: {
-          vocabulary: {
-            topic: "extended family",
-            focusPoints: [
-              "abuelo",
-              "abuela",
-              "bebé",
-              "hijo",
-              "hija",
-              "tío",
-              "tía",
-            ],
+          realtime: {
+            scenario: "Talking about family",
+            prompt: "Tell someone about your grandparents and extended family",
+            successCriteria:
+              "The learner names at least two extended family members.",
           },
-          grammar: {
-            topic: "masculine and feminine",
-            focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
+          stories: {
+            topic: "extended family",
+            prompt: "A story about visiting grandparents and meeting extended family",
           },
         },
       },
@@ -166,23 +160,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["reading", "realtime"],
         content: {
-          vocabulary: {
+          reading: {
             topic: "people in daily life",
-            focusPoints: [
-              "amigo",
-              "amiga",
-              "niño",
-              "niña",
-              "hombre",
-              "mujer",
-              "persona",
-            ],
+            prompt: "Read a short description of people in a neighborhood",
           },
-          grammar: {
-            topic: "gender of people nouns",
-            focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
+          realtime: {
+            scenario: "Describing people",
+            prompt: "Describe the people around you using new vocabulary",
+            successCriteria:
+              "The learner uses people vocabulary to describe someone.",
           },
         },
       },
@@ -264,15 +252,15 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["stories", "reading"],
         content: {
-          vocabulary: {
+          stories: {
             topic: "numbers 6-10",
-            focusPoints: ["seis", "siete", "ocho", "nueve", "diez"],
+            prompt: "A story about counting items at a market from six to ten",
           },
-          grammar: {
-            topic: "number patterns",
-            focusPoints: ["counting sequences", "number recognition"],
+          reading: {
+            topic: "numbers 6-10",
+            prompt: "Read a short passage that uses numbers six through ten",
           },
         },
       },
@@ -288,20 +276,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["realtime", "stories"],
         content: {
-          vocabulary: {
-            topic: "counting with objects",
-            focusPoints: [
-              "un/una",
-              "dos libros",
-              "tres mesas",
-              "quantity expressions",
-            ],
+          realtime: {
+            scenario: "Counting objects",
+            prompt: "Count everyday objects together in a conversation",
+            successCriteria:
+              "The learner counts at least three objects using correct numbers.",
           },
-          grammar: {
-            topic: "number agreement",
-            focusPoints: ["uno vs un/una", "numbers with nouns"],
+          stories: {
+            topic: "counting objects",
+            prompt: "A short story about a child counting toys and sharing them",
           },
         },
       },
@@ -388,21 +373,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["reading", "realtime"],
         content: {
-          vocabulary: {
+          reading: {
             topic: "farewells",
-            focusPoints: [
-              "adiós",
-              "hasta luego",
-              "hasta mañana",
-              "nos vemos",
-              "chao",
-            ],
+            prompt: "Read a short dialogue where friends say goodbye in different ways",
           },
-          grammar: {
-            topic: "farewell usage",
-            focusPoints: ["temporary vs permanent goodbye", "casual vs formal"],
+          realtime: {
+            scenario: "Saying goodbye",
+            prompt: "Practice different ways to say goodbye",
+            successCriteria:
+              "The learner uses at least two different farewell expressions.",
           },
         },
       },
@@ -418,24 +399,15 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "realtime"],
+        modes: ["stories", "reading"],
         content: {
-          vocabulary: {
+          stories: {
+            topic: "greetings in context",
+            prompt: "A story about arriving at a party and greeting everyone differently",
+          },
+          reading: {
             topic: "greeting conversations",
-            focusPoints: [
-              "greeting + response patterns",
-              "polite acknowledgments",
-            ],
-          },
-          grammar: {
-            topic: "greeting exchanges",
-            focusPoints: ["question and answer patterns", "social norms"],
-          },
-          realtime: {
-            scenario: "Meeting someone",
-            prompt: "Practice greeting someone and saying goodbye",
-            successCriteria:
-              "The learner uses appropriate greetings and farewells.",
+            prompt: "Read a scene where people greet each other at different times of day",
           },
         },
       },
@@ -517,21 +489,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["realtime", "stories"],
         content: {
-          vocabulary: {
-            topic: "uncertainty expressions",
-            focusPoints: [
-              "quizás",
-              "tal vez",
-              "no sé",
-              "puede ser",
-              "a lo mejor",
-            ],
+          realtime: {
+            scenario: "Expressing uncertainty",
+            prompt: "Practice responding with maybe, I don't know, and other uncertain phrases",
+            successCriteria:
+              "The learner uses at least two uncertainty expressions.",
           },
-          grammar: {
-            topic: "expressing doubt",
-            focusPoints: ["uncertainty words", "hesitation phrases"],
+          stories: {
+            topic: "uncertainty expressions",
+            prompt: "A story about someone who can't decide what to eat for lunch",
           },
         },
       },
@@ -547,21 +515,15 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["reading", "stories"],
         content: {
-          vocabulary: {
+          reading: {
             topic: "reaction words",
-            focusPoints: [
-              "¡genial!",
-              "¡perfecto!",
-              "¡qué bien!",
-              "¡oh no!",
-              "¿en serio?",
-            ],
+            prompt: "Read a text message conversation full of reactions and exclamations",
           },
-          grammar: {
-            topic: "exclamations",
-            focusPoints: ["expressing emotions", "showing interest"],
+          stories: {
+            topic: "quick responses",
+            prompt: "A story about friends reacting to surprising news",
           },
         },
       },
@@ -643,21 +605,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["stories", "realtime"],
         content: {
-          vocabulary: {
-            topic: "apologies and attention",
-            focusPoints: [
-              "perdón",
-              "lo siento",
-              "disculpe",
-              "disculpa",
-              "con permiso",
-            ],
+          stories: {
+            topic: "apologies",
+            prompt: "A story about someone who accidentally bumps into people and apologizes",
           },
-          grammar: {
-            topic: "apologizing",
-            focusPoints: ["formal vs informal apologies", "getting attention"],
+          realtime: {
+            scenario: "Apologizing and excusing yourself",
+            prompt: "Practice saying sorry and excuse me in different situations",
+            successCriteria:
+              "The learner uses apology and attention phrases appropriately.",
           },
         },
       },
@@ -673,20 +631,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["reading", "realtime"],
         content: {
-          vocabulary: {
-            topic: "polite phrases",
-            focusPoints: [
-              "muy amable",
-              "no hay de qué",
-              "con gusto",
-              "a sus órdenes",
-            ],
+          reading: {
+            topic: "polite expressions",
+            prompt: "Read a scene where people exchange gracious phrases at a restaurant",
           },
-          grammar: {
-            topic: "formal courtesy",
-            focusPoints: ["polite responses", "gracious expressions"],
+          realtime: {
+            scenario: "Being polite",
+            prompt: "Practice using polite phrases in everyday situations",
+            successCriteria:
+              "The learner uses at least two polite expressions naturally.",
           },
         },
       },
@@ -775,22 +730,15 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["reading", "stories"],
         content: {
-          vocabulary: {
+          reading: {
             topic: "personal items",
-            focusPoints: [
-              "teléfono",
-              "libro",
-              "bolsa",
-              "llaves",
-              "cartera",
-              "gafas",
-            ],
+            prompt: "Read about someone describing what they carry in their bag",
           },
-          grammar: {
-            topic: "possessive with objects",
-            focusPoints: ["mi/tu/su", "ownership expressions"],
+          stories: {
+            topic: "personal items",
+            prompt: "A story about someone who lost their keys and searches for them",
           },
         },
       },
@@ -806,15 +754,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["realtime", "reading"],
         content: {
-          vocabulary: {
-            topic: "food and drinks",
-            focusPoints: ["agua", "café", "pan", "leche", "fruta", "comida"],
+          realtime: {
+            scenario: "Ordering food and drinks",
+            prompt: "Practice asking for food and drinks at a café",
+            successCriteria:
+              "The learner names at least two food or drink items.",
           },
-          grammar: {
-            topic: "food articles",
-            focusPoints: ["el agua (feminine exception)", "uncountable nouns"],
+          reading: {
+            topic: "food and drinks",
+            prompt: "Read a simple café menu and identify common food and drink items",
           },
         },
       },
@@ -896,25 +846,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["realtime", "reading"],
         content: {
-          vocabulary: {
-            topic: "additional colors",
-            focusPoints: [
-              "verde",
-              "naranja",
-              "rosa",
-              "morado",
-              "marrón",
-              "gris",
-            ],
+          realtime: {
+            scenario: "Describing colors around you",
+            prompt: "Tell someone what colors you see around you",
+            successCriteria:
+              "The learner names at least three colors in conversation.",
           },
-          grammar: {
-            topic: "color agreement",
-            focusPoints: [
-              "colors that change (rojo/roja)",
-              "colors that don't (naranja, rosa)",
-            ],
+          reading: {
+            topic: "additional colors",
+            prompt: "Read descriptions of colorful paintings and identify the colors used",
           },
         },
       },
@@ -930,15 +872,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["stories", "realtime"],
         content: {
-          vocabulary: {
+          stories: {
             topic: "neutral colors",
-            focusPoints: ["negro", "blanco", "gris", "beige", "crema"],
+            prompt: "A story about painting a room and choosing between light and dark colors",
           },
-          grammar: {
-            topic: "color combinations",
-            focusPoints: ["blanco y negro", "azul oscuro", "verde claro"],
+          realtime: {
+            scenario: "Color preferences",
+            prompt: "Discuss your favorite colors and describe what color things are",
+            successCriteria:
+              "The learner uses at least three color words including neutral colors.",
           },
         },
       },
@@ -1020,19 +964,17 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar"],
+        modes: ["stories", "realtime"],
         content: {
-          vocabulary: {
+          stories: {
             topic: "asking for names",
-            focusPoints: [
-              "¿Cómo te llamas?",
-              "¿Cómo se llama?",
-              "¿Cuál es tu nombre?",
-            ],
+            prompt: "A story about a new student meeting classmates and learning their names",
           },
-          grammar: {
-            topic: "formal vs informal",
-            focusPoints: ["tú vs usted", "te llamas vs se llama"],
+          realtime: {
+            scenario: "Asking someone's name",
+            prompt: "Meet someone new and ask what their name is",
+            successCriteria:
+              "The learner asks for the other person's name using an appropriate phrase.",
           },
         },
       },
@@ -1048,26 +990,15 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "realtime"],
+        modes: ["reading", "stories"],
         content: {
-          vocabulary: {
+          reading: {
             topic: "meeting expressions",
-            focusPoints: [
-              "mucho gusto",
-              "encantado/a",
-              "el gusto es mío",
-              "igualmente",
-            ],
+            prompt: "Read a dialogue where two people meet for the first time and exchange polite greetings",
           },
-          grammar: {
-            topic: "gender in expressions",
-            focusPoints: ["encantado (male) vs encantada (female)"],
-          },
-          realtime: {
-            scenario: "Meeting someone new",
-            prompt: "Introduce yourself and learn someone's name",
-            successCriteria:
-              "The learner introduces themselves and asks for the other person's name.",
+          stories: {
+            topic: "nice to meet you",
+            prompt: "A story about a welcome party where everyone introduces themselves",
           },
         },
       },

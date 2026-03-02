@@ -788,7 +788,7 @@ function speechScoreColor(score) {
   if (score >= 8) return "green";
   if (score >= 6) return "teal";
   if (score >= 4) return "yellow";
-  return "red";
+  return "purple";
 }
 
 /* ---------------------------
@@ -2256,7 +2256,7 @@ Return ONLY valid JSON:
                                       green: "#48BB78",
                                       teal: "#38B2AC",
                                       yellow: "#ECC94B",
-                                      red: "#FC8181",
+                                      purple: "#B794F4",
                                     };
                                     let totalScore = 0;
                                     let count = 0;
@@ -2364,7 +2364,7 @@ Return ONLY valid JSON:
                                             green: "#48BB78",
                                             teal: "#38B2AC",
                                             yellow: "#ECC94B",
-                                            red: "#FC8181",
+                                            purple: "#B794F4",
                                           };
                                           const accent =
                                             colorMap[color] || "#A0AEC0";
