@@ -990,10 +990,6 @@ export default function History({
     setExplanationText("");
   }
 
-  function scrollHistoryToTop() {
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }
-
   async function translateLectureLines() {
     if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
       return;
@@ -1922,7 +1918,7 @@ Return ONLY valid JSON:
             border="1px solid"
             borderColor="rgba(255, 255, 255, 0.1)"
             rounded="xl"
-            p={[4, 5]}
+            p={[3, 5]}
             minH="280px"
             width="100%"
           >
@@ -2000,7 +1996,7 @@ Return ONLY valid JSON:
                   borderLeft="3px solid"
                   borderColor="teal.400"
                   rounded="lg"
-                  p={4}
+                  p={3}
                 >
                   {isTranslationVisible ? (
                     <VStack align="stretch" spacing={2}>
@@ -2146,7 +2142,7 @@ Return ONLY valid JSON:
                   )}
                   {showTranslations ? (
                     <HStack justify="flex-end" mt={4}>
-                      {!lineTranslations.length ? (
+                      {isTranslatingLecture || !lineTranslations.length ? (
                         <Button
                           size="sm"
                           // variant="outline"
@@ -2154,10 +2150,12 @@ Return ONLY valid JSON:
                           boxShadow={"0px 4px 0px #39534f"}
                           onClick={() => {
                             playSound(selectSound);
-                            scrollHistoryToTop();
                             translateLectureLines();
                           }}
                           isLoading={isTranslatingLecture}
+                          loadingText={
+                            t("history_translating") || "Translating"
+                          }
                         >
                           {t("history_translate")}
                         </Button>
@@ -2184,7 +2182,6 @@ Return ONLY valid JSON:
                           boxShadow={"0px 4px 0px #39534f"}
                           onClick={() => {
                             playSound(selectSound);
-                            scrollHistoryToTop();
                             if (!viewLecture?.id) return;
                             setTranslationsVisibleByLecture((prev) => ({
                               ...prev,
