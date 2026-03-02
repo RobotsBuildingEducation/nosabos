@@ -931,6 +931,8 @@ export default function History({
   const [lineTranslationsByLecture, setLineTranslationsByLecture] = useState(
     {},
   );
+  const [translationsVisibleByLecture, setTranslationsVisibleByLecture] =
+    useState({});
   const [isTranslatingLecture, setIsTranslatingLecture] = useState(false);
 
   const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
@@ -1005,6 +1007,10 @@ export default function History({
     if ((lineTranslationsByLecture[viewLecture.id] || []).length) return;
 
     setIsTranslatingLecture(true);
+    setTranslationsVisibleByLecture((prev) => ({
+      ...prev,
+      [viewLecture.id]: true,
+    }));
     setLineTranslationsByLecture((prev) => ({
       ...prev,
       [viewLecture.id]: Array(targetSentences.length).fill(""),
@@ -1068,6 +1074,10 @@ export default function History({
             delete copy[viewLecture.id];
             return copy;
           });
+          setTranslationsVisibleByLecture((prev) => ({
+            ...prev,
+            [viewLecture.id]: false,
+          }));
         }
       }
     } catch {
@@ -1134,6 +1144,9 @@ export default function History({
   const lineTranslations = viewLecture?.id
     ? lineTranslationsByLecture[viewLecture.id] || []
     : [];
+  const isTranslationVisible = viewLecture?.id
+    ? translationsVisibleByLecture[viewLecture.id] === true
+    : false;
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
@@ -2080,7 +2093,7 @@ Return ONLY valid JSON:
                           >
                             {sentence}
                           </Text>
-                          {lineTranslations[i] ? (
+                          {isTranslationVisible && lineTranslations[i] ? (
                             <Text
                               fontSize="sm"
                               ml={1}
@@ -2098,18 +2111,49 @@ Return ONLY valid JSON:
                   </Text>
                   {showTranslations ? (
                     <HStack justify="flex-end" mt={4}>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          playSound(selectSound);
-                          translateLectureLines();
-                        }}
-                        isLoading={isTranslatingLecture}
-                        isDisabled={!!lineTranslations.length}
-                      >
-                        {t("history_translate")}
-                      </Button>
+                      {!lineTranslations.length ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            translateLectureLines();
+                          }}
+                          isLoading={isTranslatingLecture}
+                        >
+                          {t("history_translate")}
+                        </Button>
+                      ) : isTranslationVisible ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            if (!viewLecture?.id) return;
+                            setTranslationsVisibleByLecture((prev) => ({
+                              ...prev,
+                              [viewLecture.id]: false,
+                            }));
+                          }}
+                        >
+                          {t("history_hide_translation") || "Hide translation"}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            playSound(selectSound);
+                            if (!viewLecture?.id) return;
+                            setTranslationsVisibleByLecture((prev) => ({
+                              ...prev,
+                              [viewLecture.id]: true,
+                            }));
+                          }}
+                        >
+                          {t("history_show_translation") || "Show translation"}
+                        </Button>
+                      )}
                     </HStack>
                   ) : null}
                 </Box>
