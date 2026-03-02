@@ -7,11 +7,6 @@ import React, {
   useState,
 } from "react";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
   Box,
   Badge,
   Button,
@@ -933,6 +928,10 @@ export default function History({
   const [speechSubmitted, setSpeechSubmitted] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const speechRecRef = useRef(null);
+  const [lineTranslationsByLecture, setLineTranslationsByLecture] = useState(
+    {},
+  );
+  const [isTranslatingLecture, setIsTranslatingLecture] = useState(false);
 
   const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
     targetLang,
@@ -999,6 +998,53 @@ export default function History({
     setExplanationText("");
   }
 
+  async function translateLectureLines() {
+    if (!viewLecture?.id || !targetSentences.length || isTranslatingLecture)
+      return;
+
+    if ((lineTranslationsByLecture[viewLecture.id] || []).length) return;
+
+    setIsTranslatingLecture(true);
+    try {
+      const prompt = [
+        `Translate each sentence below from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
+        "Return ONLY valid JSON with this exact shape:",
+        '{"translations":["...","..."]}',
+        `The translations array must have exactly ${targetSentences.length} items in the same order.`,
+        "Do not include numbering or extra text.",
+        "",
+        "Sentences:",
+        ...targetSentences.map((sentence, i) => `${i + 1}. ${sentence}`),
+      ].join("\n");
+
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      const parsed = safeParseJSON(raw);
+      const mapped = Array.isArray(parsed?.translations)
+        ? parsed.translations
+            .slice(0, targetSentences.length)
+            .map((item) => String(item || "").trim())
+        : [];
+
+      if (mapped.length === targetSentences.length && mapped.every(Boolean)) {
+        setLineTranslationsByLecture((prev) => ({
+          ...prev,
+          [viewLecture.id]: mapped,
+        }));
+        return;
+      }
+
+      const supportFallback = splitIntoSentences(viewLecture.support || "");
+      if (supportFallback.length === targetSentences.length) {
+        setLineTranslationsByLecture((prev) => ({
+          ...prev,
+          [viewLecture.id]: supportFallback,
+        }));
+      }
+    } finally {
+      setIsTranslatingLecture(false);
+    }
+  }
+
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
@@ -1037,6 +1083,13 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+  const targetSentences = useMemo(
+    () => splitIntoSentences(viewLecture?.target || ""),
+    [viewLecture?.target],
+  );
+  const lineTranslations = viewLecture?.id
+    ? lineTranslationsByLecture[viewLecture.id] || []
+    : [];
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
@@ -1925,30 +1978,29 @@ Return ONLY valid JSON:
                   p={4}
                 >
                   <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
-                    {splitIntoSentences(viewLecture.target || "").map(
-                      (sentence, i) => {
-                        const colors = [
-                          "rgba(56, 178, 172, 0.12)",
-                          "rgba(128, 90, 213, 0.12)",
-                          "rgba(237, 137, 54, 0.12)",
-                          "rgba(99, 179, 237, 0.12)",
-                          "rgba(246, 173, 85, 0.12)",
-                        ];
-                        const shadowColors = [
-                          "rgba(56, 178, 172, 0.3)",
-                          "rgba(128, 90, 213, 0.3)",
-                          "rgba(237, 137, 54, 0.3)",
-                          "rgba(99, 179, 237, 0.3)",
-                          "rgba(246, 173, 85, 0.3)",
-                        ];
-                        const defaultBg = colors[i % colors.length];
-                        const shadow = shadowColors[i % shadowColors.length];
-                        return (
+                    {targetSentences.map((sentence, i) => {
+                      const colors = [
+                        "rgba(56, 178, 172, 0.12)",
+                        "rgba(128, 90, 213, 0.12)",
+                        "rgba(237, 137, 54, 0.12)",
+                        "rgba(99, 179, 237, 0.12)",
+                        "rgba(246, 173, 85, 0.12)",
+                      ];
+                      const shadowColors = [
+                        "rgba(56, 178, 172, 0.3)",
+                        "rgba(128, 90, 213, 0.3)",
+                        "rgba(237, 137, 54, 0.3)",
+                        "rgba(99, 179, 237, 0.3)",
+                        "rgba(246, 173, 85, 0.3)",
+                      ];
+                      const defaultBg = colors[i % colors.length];
+                      const shadow = shadowColors[i % shadowColors.length];
+                      return (
+                        <Box key={i} mb={lineTranslations[i] ? 3 : 1.5}>
                           <Text
                             as="span"
                             role="button"
                             tabIndex={0}
-                            key={i}
                             position="relative"
                             bg={
                               activeSentenceIndex === i
@@ -1982,12 +2034,40 @@ Return ONLY valid JSON:
                               readSingleSentence(sentence, i);
                             }}
                           >
-                            {sentence}{" "}
+                            {sentence}
                           </Text>
-                        );
-                      },
-                    )}
+                          {lineTranslations[i] ? (
+                            <Text
+                              fontSize="sm"
+                              ml={1}
+                              mt={1}
+                              color="whiteAlpha.800"
+                              opacity={0.9}
+                              fontStyle="italic"
+                            >
+                              {lineTranslations[i]}
+                            </Text>
+                          ) : null}
+                        </Box>
+                      );
+                    })}
                   </Text>
+                  {showTranslations ? (
+                    <HStack justify="flex-end" mt={4}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          playSound(selectSound);
+                          translateLectureLines();
+                        }}
+                        isLoading={isTranslatingLecture}
+                        isDisabled={!!lineTranslations.length}
+                      >
+                        {t("history_translate")}
+                      </Button>
+                    </HStack>
+                  ) : null}
                 </Box>
 
                 {/* Review: question or speech format */}
@@ -2793,54 +2873,6 @@ Return ONLY valid JSON:
                       </Button>
                     )}
                   </Box>
-                ) : null}
-
-                {/* Translation & takeaways in accordion */}
-                {showTranslations && viewLecture.support ? (
-                  <Accordion allowToggle>
-                    <AccordionItem border="none">
-                      <Box display="flex" justifyContent="center">
-                        <AccordionButton
-                          px={4}
-                          py={2}
-                          mt={6}
-                          borderRadius="lg"
-                          borderWidth="1px"
-                          borderColor="whiteAlpha.200"
-                          bg="whiteAlpha.50"
-                          _hover={{ bg: "whiteAlpha.100" }}
-                          w="fit-content"
-                        >
-                          <Text
-                            fontWeight="600"
-                            fontSize="sm"
-                            opacity={0.9}
-                            mr={2}
-                          >
-                            {t("history_translate")}
-                          </Text>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </Box>
-                      <AccordionPanel px={0} pb={3} pt={3}>
-                        <Box
-                          bg="rgba(99, 102, 241, 0.15)"
-                          borderLeft="3px solid"
-                          borderColor="purple.400"
-                          rounded="lg"
-                          p={4}
-                        >
-                          <Text
-                            fontSize={{ base: "sm", md: "sm" }}
-                            opacity={0.95}
-                            lineHeight="1.8"
-                          >
-                            {viewLecture.support}
-                          </Text>
-                        </Box>
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
                 ) : null}
 
                 {Array.isArray(viewLecture.takeaways) &&
