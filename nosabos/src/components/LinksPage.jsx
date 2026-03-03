@@ -1027,10 +1027,6 @@ export default function LinksPage() {
         {/* Social Media Icons */}
         <HStack spacing={4} justify="center" mt={8}>
           <Box
-            as="a"
-            href="https://www.instagram.com/sheilfer"
-            target="_blank"
-            rel="noopener noreferrer"
             aria-label="Instagram"
             bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
             borderRadius="full"
@@ -1048,15 +1044,16 @@ export default function LinksPage() {
                   platform: "instagram",
                 });
               }
+              window.open(
+                "https://www.instagram.com/sheilfer",
+                "_blank",
+                "noopener,noreferrer",
+              );
             }}
           >
             <FaInstagram size={12} />
           </Box>
           <Box
-            as="a"
-            href="https://www.linkedin.com/in/sheilfer"
-            target="_blank"
-            rel="noopener noreferrer"
             aria-label="LinkedIn"
             bg="#0A66C2"
             borderRadius="full"
@@ -1074,6 +1071,11 @@ export default function LinksPage() {
                   platform: "linkedin",
                 });
               }
+              window.open(
+                "https://www.linkedin.com/in/sheilfer",
+                "_blank",
+                "noopener,noreferrer",
+              );
             }}
           >
             <FaLinkedinIn size={12} />
