@@ -1025,13 +1025,13 @@ export default function LinksPage() {
         </VStack>
 
         {/* Social Media Icons */}
-        <HStack spacing={4} justify="center" mt={8}>
+        <HStack spacing={8} justify="center" mt={16}>
           <Box
             aria-label="Instagram"
             bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
-            borderRadius="full"
-            w="28px"
-            h="28px"
+            borderRadius="12px"
+            w="36px"
+            h="36px"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -1051,14 +1051,14 @@ export default function LinksPage() {
               );
             }}
           >
-            <FaInstagram size={12} />
+            <FaInstagram size={24} />
           </Box>
           <Box
             aria-label="LinkedIn"
             bg="#0A66C2"
-            borderRadius="full"
-            w="28px"
-            h="28px"
+            borderRadius="12px"
+            w="36px"
+            h="36px"
             display="flex"
             alignItems="center"
             justifyContent="center"
@@ -1078,7 +1078,7 @@ export default function LinksPage() {
               );
             }}
           >
-            <FaLinkedinIn size={12} />
+            <FaLinkedinIn size={18} />
           </Box>
         </HStack>
       </Container>
