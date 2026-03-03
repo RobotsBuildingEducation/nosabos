@@ -1025,19 +1025,16 @@ export default function LinksPage() {
             rel="noopener noreferrer"
             aria-label="Instagram"
             icon={<FaInstagram size={12} />}
-            variant="ghost"
+            variant="unstyled"
             color="white"
             bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
             borderRadius="full"
-            size="xs"
             minW="28px"
+            w="28px"
             h="28px"
-            _hover={{
-              bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
-            }}
-            _active={{
-              bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
-            }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
@@ -1054,19 +1051,16 @@ export default function LinksPage() {
             rel="noopener noreferrer"
             aria-label="LinkedIn"
             icon={<FaLinkedinIn size={12} />}
-            variant="ghost"
+            variant="unstyled"
             color="white"
             bg="#0A66C2"
             borderRadius="full"
-            size="xs"
             minW="28px"
+            w="28px"
             h="28px"
-            _hover={{
-              bg: "#0A66C2",
-            }}
-            _active={{
-              bg: "#0A66C2",
-            }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
