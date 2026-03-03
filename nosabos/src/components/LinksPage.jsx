@@ -24,6 +24,7 @@ import {
   Spinner,
   Switch,
   Text,
+  IconButton,
   useDisclosure,
   useToast,
   VStack,
@@ -32,7 +33,7 @@ import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
-import { FaKey } from "react-icons/fa";
+import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -296,6 +297,23 @@ function LinkCard({
             px={6}
             py={4}
             minH="44px"
+            _hover={{
+              bg: "transparent",
+              borderColor: "#00ffff",
+              color: "#00ffff",
+              textDecoration: "none",
+              opacity: 0.8,
+            }}
+            _active={{
+              bg: "transparent",
+              color: "#00ffff",
+            }}
+            _focus={{
+              boxShadow: "none",
+            }}
+            sx={{
+              "&:visited": { color: "#00ffff" },
+            }}
           >
             {launchAppText || "Launch app"}
           </Button>
@@ -865,7 +883,7 @@ export default function LinksPage() {
 
   return (
     <Box
-      minH="100vh"
+      minH="100dvh"
       // py={{ base: 12, md: 16 }}
 
       bg="rgba(7,16,29)"
@@ -1005,6 +1023,64 @@ export default function LinksPage() {
             />
           ))}
         </VStack>
+
+        {/* Social Media Icons */}
+        <HStack spacing={8} justify="center" mt={16}>
+          <Box
+            aria-label="Instagram"
+            bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
+            borderRadius="12px"
+            w="36px"
+            h="36px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            color="white"
+            cursor="pointer"
+            onClick={() => {
+              handleSelectSound();
+              if (!isLocalhost()) {
+                logEvent(analytics, "links_social_click", {
+                  platform: "instagram",
+                });
+              }
+              window.open(
+                "https://www.instagram.com/sheilfer",
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+          >
+            <FaInstagram size={24} />
+          </Box>
+          <Box
+            aria-label="LinkedIn"
+            bg="#0A66C2"
+            borderRadius="12px"
+            w="36px"
+            h="36px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            color="white"
+            cursor="pointer"
+            onClick={() => {
+              handleSelectSound();
+              if (!isLocalhost()) {
+                logEvent(analytics, "links_social_click", {
+                  platform: "linkedin",
+                });
+              }
+              window.open(
+                "https://www.linkedin.com/in/sheilfer",
+                "_blank",
+                "noopener,noreferrer",
+              );
+            }}
+          >
+            <FaLinkedinIn size={18} />
+          </Box>
+        </HStack>
       </Container>
 
       {/* Robots Building Education Modal */}
