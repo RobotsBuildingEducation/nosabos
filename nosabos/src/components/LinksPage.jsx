@@ -301,10 +301,18 @@ function LinkCard({
               bg: "transparent",
               borderColor: "#00ffff",
               color: "#00ffff",
+              textDecoration: "none",
               opacity: 0.8,
             }}
             _active={{
               bg: "transparent",
+              color: "#00ffff",
+            }}
+            _focus={{
+              boxShadow: "none",
+            }}
+            sx={{
+              "&:visited": { color: "#00ffff" },
             }}
           >
             {launchAppText || "Launch app"}
@@ -1018,23 +1026,21 @@ export default function LinksPage() {
 
         {/* Social Media Icons */}
         <HStack spacing={4} justify="center" mt={8}>
-          <IconButton
+          <Box
             as="a"
             href="https://www.instagram.com/sheilfer"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            icon={<FaInstagram size={12} />}
-            variant="unstyled"
-            color="white"
             bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
             borderRadius="full"
-            minW="28px"
             w="28px"
             h="28px"
             display="flex"
             alignItems="center"
             justifyContent="center"
+            color="white"
+            cursor="pointer"
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
@@ -1043,24 +1049,24 @@ export default function LinksPage() {
                 });
               }
             }}
-          />
-          <IconButton
+          >
+            <FaInstagram size={12} />
+          </Box>
+          <Box
             as="a"
             href="https://www.linkedin.com/in/sheilfer"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="LinkedIn"
-            icon={<FaLinkedinIn size={12} />}
-            variant="unstyled"
-            color="white"
             bg="#0A66C2"
             borderRadius="full"
-            minW="28px"
             w="28px"
             h="28px"
             display="flex"
             alignItems="center"
             justifyContent="center"
+            color="white"
+            cursor="pointer"
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
@@ -1069,7 +1075,9 @@ export default function LinksPage() {
                 });
               }
             }}
-          />
+          >
+            <FaLinkedinIn size={12} />
+          </Box>
         </HStack>
       </Container>
 
