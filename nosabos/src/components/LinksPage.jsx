@@ -24,6 +24,7 @@ import {
   Spinner,
   Switch,
   Text,
+  IconButton,
   useDisclosure,
   useToast,
   VStack,
@@ -32,7 +33,7 @@ import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
-import { FaKey } from "react-icons/fa";
+import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -1005,6 +1006,62 @@ export default function LinksPage() {
             />
           ))}
         </VStack>
+
+        {/* Social Media Icons */}
+        <HStack spacing={4} justify="center" mt={8}>
+          <IconButton
+            as="a"
+            href="https://www.instagram.com/robotsbuildingeducation"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Instagram"
+            icon={<FaInstagram size={20} />}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            borderRadius="full"
+            size="md"
+            _hover={{
+              bg: "rgba(0, 255, 255, 0.15)",
+              transform: "scale(1.1)",
+            }}
+            transition="all 0.2s ease"
+            onClick={() => {
+              handleSelectSound();
+              if (!isLocalhost()) {
+                logEvent(analytics, "links_social_click", {
+                  platform: "instagram",
+                });
+              }
+            }}
+          />
+          <IconButton
+            as="a"
+            href="https://www.linkedin.com/in/sheilfer"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="LinkedIn"
+            icon={<FaLinkedinIn size={20} />}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            borderRadius="full"
+            size="md"
+            _hover={{
+              bg: "rgba(0, 255, 255, 0.15)",
+              transform: "scale(1.1)",
+            }}
+            transition="all 0.2s ease"
+            onClick={() => {
+              handleSelectSound();
+              if (!isLocalhost()) {
+                logEvent(analytics, "links_social_click", {
+                  platform: "linkedin",
+                });
+              }
+            }}
+          />
+        </HStack>
       </Container>
 
       {/* Robots Building Education Modal */}
