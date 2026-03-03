@@ -297,6 +297,9 @@ function LinkCard({
             px={6}
             py={4}
             minH="44px"
+            _hover={{
+              bg: "rgba(0, 255, 255, 0.1)",
+            }}
           >
             {launchAppText || "Launch app"}
           </Button>
@@ -866,7 +869,7 @@ export default function LinksPage() {
 
   return (
     <Box
-      minH="100vh"
+      minH="100dvh"
       // py={{ base: 12, md: 16 }}
 
       bg="rgba(7,16,29)"
@@ -1011,21 +1014,19 @@ export default function LinksPage() {
         <HStack spacing={4} justify="center" mt={8}>
           <IconButton
             as="a"
-            href="https://www.instagram.com/robotsbuildingeducation"
+            href="https://www.instagram.com/sheilfer"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Instagram"
-            icon={<FaInstagram size={20} />}
-            variant="outline"
-            borderColor="#00ffff"
-            color="#00ffff"
+            icon={<FaInstagram size={12} />}
+            variant="ghost"
+            color="white"
+            bg="radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"
             borderRadius="full"
-            size="md"
-            _hover={{
-              bg: "rgba(0, 255, 255, 0.15)",
-              transform: "scale(1.1)",
-            }}
-            transition="all 0.2s ease"
+            size="xs"
+            minW="28px"
+            h="28px"
+            _hover={{}}
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
@@ -1041,17 +1042,15 @@ export default function LinksPage() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="LinkedIn"
-            icon={<FaLinkedinIn size={20} />}
-            variant="outline"
-            borderColor="#00ffff"
-            color="#00ffff"
+            icon={<FaLinkedinIn size={12} />}
+            variant="ghost"
+            color="white"
+            bg="#0A66C2"
             borderRadius="full"
-            size="md"
-            _hover={{
-              bg: "rgba(0, 255, 255, 0.15)",
-              transform: "scale(1.1)",
-            }}
-            transition="all 0.2s ease"
+            size="xs"
+            minW="28px"
+            h="28px"
+            _hover={{}}
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
