@@ -298,7 +298,13 @@ function LinkCard({
             py={4}
             minH="44px"
             _hover={{
-              bg: "rgba(0, 255, 255, 0.1)",
+              bg: "transparent",
+              borderColor: "#00ffff",
+              color: "#00ffff",
+              opacity: 0.8,
+            }}
+            _active={{
+              bg: "transparent",
             }}
           >
             {launchAppText || "Launch app"}
@@ -1026,7 +1032,12 @@ export default function LinksPage() {
             size="xs"
             minW="28px"
             h="28px"
-            _hover={{}}
+            _hover={{
+              bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
+            }}
+            _active={{
+              bg: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)",
+            }}
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
@@ -1050,7 +1061,12 @@ export default function LinksPage() {
             size="xs"
             minW="28px"
             h="28px"
-            _hover={{}}
+            _hover={{
+              bg: "#0A66C2",
+            }}
+            _active={{
+              bg: "#0A66C2",
+            }}
             onClick={() => {
               handleSelectSound();
               if (!isLocalhost()) {
