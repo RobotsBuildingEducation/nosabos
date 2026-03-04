@@ -10,7 +10,7 @@ import LandingPage from "./components/LandingPage.jsx";
 import LinksPage from "./components/LinksPage.jsx";
 import SoundExperiment from "./components/SoundExperiment.jsx";
 import ProficiencyTest from "./components/ProficiencyTest.jsx";
-import RPGGame from "./components/RPGGame.jsx";
+import RPGGame from "./components/RPGGame/index.jsx";
 
 import "@coinbase/onchainkit/styles.css";
 import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
