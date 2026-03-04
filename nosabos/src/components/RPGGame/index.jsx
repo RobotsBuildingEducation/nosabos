@@ -14,7 +14,7 @@ import {
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
-import { getGeneratedScenarios } from "./scenarios";
+import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
 import {
   createTileTexture,
   createCharacterTexture,
@@ -87,12 +87,8 @@ export default function RPGGame() {
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
-  const scenarios = useMemo(
-    () => getGeneratedScenarios(targetLang, supportLang),
-    [targetLang, supportLang],
-  );
-  const scenarioList = useMemo(() => Object.keys(scenarios), [scenarios]);
-  const scenario = scenarioId ? scenarios[scenarioId] : null;
+  const [scenario, setScenario] = useState(null);
+  const [loadingScenarioId, setLoadingScenarioId] = useState(null);
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -128,6 +124,22 @@ export default function RPGGame() {
   }, [scenario, supportLang]);
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
+
+  const handleSelectScenario = useCallback(
+    async (mapId) => {
+      setLoadingScenarioId(mapId);
+      setScenarioId(mapId);
+      setDialogue(null);
+      setFeedback(null);
+      setGameComplete(false);
+      setAnsweredNPCs(new Set());
+
+      const generated = await generateScenarioWithAI(mapId, targetLang, supportLang);
+      setScenario(generated);
+      setLoadingScenarioId(null);
+    },
+    [targetLang, supportLang],
+  );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
   useEffect(() => {
@@ -734,6 +746,8 @@ export default function RPGGame() {
       }
     }
     setScenarioId(null);
+    setScenario(null);
+    setLoadingScenarioId(null);
     setAnsweredNPCs(new Set());
     setDialogue(null);
     setFeedback(null);
@@ -784,10 +798,9 @@ export default function RPGGame() {
           </Text>
 
           <Wrap spacing={4} justify="center">
-            {scenarioList.map((id, idx) => {
-              const s = scenarios[id];
+            {MAP_CHOICES.map((choice, idx) => {
               return (
-                <WrapItem key={id}>
+                <WrapItem key={choice.id}>
                   <Button
                     size="lg"
                     h="auto"
@@ -804,21 +817,43 @@ export default function RPGGame() {
                       transform: "scale(1.05)",
                     }}
                     transition="all 0.2s"
-                    onClick={() => setScenarioId(id)}
+                    onClick={() => handleSelectScenario(choice.id)}
                     flexDir="column"
                     minW="140px"
+                    isLoading={loadingScenarioId === choice.id}
+                    loadingText="Loading"
                   >
                     <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[s?.id] || Object.values(SCENARIO_EMOJIS)[idx % 3] || "🎮"}
+                      {SCENARIO_EMOJIS[choice.id] || Object.values(SCENARIO_EMOJIS)[idx % 3] || "🎮"}
                     </Text>
                     <Text fontSize="md" fontWeight="bold">
-                      {s.name[supportLang] || s.name.en}
+                      {choice.name[supportLang] || choice.name.en}
                     </Text>
                   </Button>
                 </WrapItem>
               );
             })}
           </Wrap>
+        </VStack>
+      </Box>
+    );
+  }
+
+  if (!scenario) {
+    return (
+      <Box
+        w="100vw"
+        h="100vh"
+        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <VStack spacing={4}>
+          <Text color="white" fontSize="xl" fontWeight="bold">
+            Generating scenario with AI...
+          </Text>
+          <Button onClick={goToScenarioSelect}>{ui.back}</Button>
         </VStack>
       </Box>
     );

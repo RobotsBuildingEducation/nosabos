@@ -1,303 +1,292 @@
 import { getMultiLevelLearningPath } from "../../data/skillTreeData";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "../../utils/llm";
 
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
-const MAP_IDS = ["livingRoom", "park", "airport"];
+
+export const MAP_CHOICES = [
+  { id: "livingRoom", name: { en: "Living Room", es: "Sala" } },
+  { id: "park", name: { en: "Park", es: "Parque" } },
+  { id: "airport", name: { en: "Airport", es: "Aeropuerto" } },
+];
+
+const TILE_LIBRARY = {
+  0: { name: "ground", solid: false, colors: [[0xd4dde6, 0xc9d2db]], detail: "linoleum" },
+  1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbfa063]], detail: "dirt" },
+  2: { name: "wall", solid: true, colors: [[0xb9c3cf, 0xaab4c0]], detail: "wall" },
+  3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "tree" },
+  4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
+  5: { name: "flower", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
+  6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
+};
+
+function clampInt(n, min, max, fallback) {
+  const num = Number.isFinite(Number(n)) ? Number(n) : fallback;
+  return Math.max(min, Math.min(max, Math.round(num)));
+}
+
+function safeHex(value, fallback = 0x1a1a2e) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const cleaned = value.trim().replace(/^#/, "");
+    const parsed = Number.parseInt(cleaned, 16);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
 
 function uniqueWords(items = []) {
   return Array.from(new Set(items.filter(Boolean).map((item) => String(item).trim())));
 }
 
-function shuffle(rng, list) {
-  const out = [...list];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
-function extractLessonTerms(lesson) {
-  const terms = [];
-  const content = lesson?.content || {};
-
-  Object.values(content).forEach((modeData) => {
-    if (!modeData || typeof modeData !== "object") return;
-    if (Array.isArray(modeData.focusPoints)) terms.push(...modeData.focusPoints);
-    if (Array.isArray(modeData.topics)) terms.push(...modeData.topics);
-    if (modeData.topic) terms.push(modeData.topic);
-    if (modeData.scenario) terms.push(modeData.scenario);
-    if (modeData.prompt) terms.push(modeData.prompt);
-  });
-
-  return uniqueWords(terms);
-}
-
-function buildQuestionBank(targetLang, supportLang) {
+function getLessonTerms(targetLang) {
   const units = getMultiLevelLearningPath(targetLang, CEFR_LEVELS_FOR_GAME);
-  const lessonRows = units.flatMap((unit) =>
-    (unit.lessons || []).map((lesson) => ({ lesson, unit })),
+  return uniqueWords(
+    units.flatMap((unit) =>
+      (unit.lessons || []).flatMap((lesson) => {
+        const content = lesson?.content || {};
+        return Object.values(content).flatMap((modeData) => {
+          if (!modeData || typeof modeData !== "object") return [];
+          const terms = [];
+          if (Array.isArray(modeData.focusPoints)) terms.push(...modeData.focusPoints);
+          if (modeData.topic) terms.push(modeData.topic);
+          if (modeData.scenario) terms.push(modeData.scenario);
+          return terms;
+        });
+      }),
+    ),
   );
+}
 
-  if (lessonRows.length === 0) {
-    return [
-      {
-        prompt: supportLang === "es" ? "Completa esta misión" : "Complete this mission",
-        options: ["✅", "❌"],
-        correct: 0,
-      },
-    ];
+function normalizeNPCs(npcs, mapWidth, mapHeight) {
+  const raw = Array.isArray(npcs) ? npcs : [];
+  const normalized = raw
+    .slice(0, 3)
+    .map((npc, idx) => ({
+      tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
+      ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
+      name: String(npc?.name || `Guide ${idx + 1}`),
+      presetIdx: clampInt(npc?.presetIdx, 0, 2, idx),
+    }));
+
+  while (normalized.length < 3) {
+    const idx = normalized.length;
+    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx });
   }
 
-  const allTerms = uniqueWords(lessonRows.flatMap(({ lesson }) => extractLessonTerms(lesson)));
-  const bank = [];
+  return normalized;
+}
 
-  lessonRows.forEach(({ lesson }) => {
-    const lessonTitle = lesson?.title?.[supportLang] || lesson?.title?.en || "Lesson";
-    const terms = extractLessonTerms(lesson).slice(0, 3);
-
-    terms.forEach((term) => {
-      const distractors = allTerms.filter((entry) => entry !== term).slice(0, 10);
-      const options = uniqueWords([term, ...distractors]).slice(0, 4);
-      const correct = options.indexOf(term);
-      if (options.length < 2 || correct === -1) return;
-
-      bank.push({
-        prompt:
-          supportLang === "es"
-            ? `¿Cuál término pertenece a la lección "${lessonTitle}"?`
-            : `Which term belongs to the lesson "${lessonTitle}"?`,
+function normalizeQuestions(questions, supportLang) {
+  const basePrompt = supportLang === "es" ? "Elige la opción correcta." : "Choose the correct option.";
+  const list = Array.isArray(questions) ? questions : [];
+  const normalized = list
+    .slice(0, 20)
+    .map((q) => {
+      const options = Array.isArray(q?.options)
+        ? q.options.map((opt) => String(opt)).filter(Boolean).slice(0, 4)
+        : [];
+      if (options.length < 2) return null;
+      const correct = clampInt(q?.correct, 0, options.length - 1, 0);
+      return {
+        prompt: String(q?.prompt || basePrompt),
         options,
         correct,
-      });
-    });
-  });
+      };
+    })
+    .filter(Boolean);
 
-  return bank.length ? bank : [{ prompt: "Complete this mission", options: ["✅", "❌"], correct: 0 }];
+  if (normalized.length) return normalized;
+
+  return [
+    {
+      prompt: basePrompt,
+      options: ["✅", "❌"],
+      correct: 0,
+    },
+  ];
 }
 
-function getScenarioQuestions(mapId, targetLang, supportLang) {
-  const bank = buildQuestionBank(targetLang, supportLang);
-  const seed = mapId.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
-  const rng = mulberry32(seed + targetLang.length + supportLang.length);
-  return shuffle(rng, bank).slice(0, 18);
+function normalizeMapData(mapData, mapWidth, mapHeight) {
+  const expectedLength = mapWidth * mapHeight;
+  if (!Array.isArray(mapData) || mapData.length !== expectedLength) {
+    return null;
+  }
+
+  return mapData.map((value) => clampInt(value, 0, 6, 0));
 }
 
-function generateLivingRoom(seed, W, H) {
-  const rng = mulberry32(seed);
-  const map = new Array(W * H).fill(0);
-  const set = (x, y, v) => {
-    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
+function fallbackScenario(mapId, targetLang, supportLang) {
+  const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || { en: mapId, es: mapId };
+  const mapWidth = 18;
+  const mapHeight = 14;
+
+  return {
+    id: mapId,
+    name,
+    tileSize: 32,
+    mapWidth,
+    mapHeight,
+    playerStart: { x: 3, y: 3 },
+    ambientColor: 0x1f2937,
+    tiles: TILE_LIBRARY,
+    generate() {
+      const map = new Array(mapWidth * mapHeight).fill(0);
+      for (let x = 0; x < mapWidth; x++) {
+        map[x] = 2;
+        map[(mapHeight - 1) * mapWidth + x] = 2;
+      }
+      for (let y = 0; y < mapHeight; y++) {
+        map[y * mapWidth] = 2;
+        map[y * mapWidth + (mapWidth - 1)] = 2;
+      }
+      return map;
+    },
+    npcs: [
+      { tx: 4, ty: 4, name: "Guide 1", presetIdx: 0 },
+      { tx: 8, ty: 6, name: "Guide 2", presetIdx: 1 },
+      { tx: 12, ty: 8, name: "Guide 3", presetIdx: 2 },
+    ],
+    questions: {
+      [targetLang]: normalizeQuestions([], supportLang),
+      en: normalizeQuestions([], supportLang),
+      es: normalizeQuestions([], supportLang),
+    },
+    greetings: {
+      en: ["Generating scenario unavailable; using safe fallback."],
+      es: ["Generación no disponible; usando respaldo."],
+    },
   };
-
-  for (let x = 0; x < W; x++) {
-    set(x, 0, 2);
-    set(x, H - 1, 2);
-  }
-  for (let y = 0; y < H; y++) {
-    set(0, y, 2);
-    set(W - 1, y, 2);
-  }
-
-  const rugW = 5 + Math.floor(rng() * 4);
-  const rugH = 3 + Math.floor(rng() * 2);
-  const rugX = Math.floor((W - rugW) / 2);
-  const rugY = Math.floor((H - rugH) / 2);
-  for (let y = rugY; y < rugY + rugH; y++) {
-    for (let x = rugX; x < rugX + rugW; x++) set(x, y, 1);
-  }
-
-  for (let x = 2; x < W - 2; x++) set(x, 2, 3);
-  set(2 + Math.floor(rng() * 4), H - 3, 6);
-  set(W - 3 - Math.floor(rng() * 4), H - 3, 4);
-
-  return map;
 }
 
-function generatePark(seed, W, H) {
-  const rng = mulberry32(seed);
-  const map = new Array(W * H).fill(0);
-  const set = (x, y, v) => {
-    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-  };
+function buildPrompt({ mapId, targetLang, supportLang, lessonTerms }) {
+  const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
 
-  for (let x = 0; x < W; x++) {
-    set(x, 0, 3);
-    set(x, H - 1, 3);
-  }
-  for (let y = 0; y < H; y++) {
-    set(0, y, 3);
-    set(W - 1, y, 3);
-  }
+  return `You generate JSON for a 2D JRPG language-learning scenario.
+Return ONLY valid JSON (no markdown).
 
-  let pathY = Math.floor(H / 2);
-  for (let x = 1; x < W - 1; x++) {
-    if (rng() > 0.7) pathY += rng() > 0.5 ? 1 : -1;
-    pathY = Math.max(2, Math.min(H - 3, pathY));
-    set(x, pathY, 1);
-    if (rng() > 0.5) set(x, pathY + 1, 1);
-  }
+Map theme requested: ${mapLabel} (${mapId}).
+Target language: ${targetLang}
+Support language: ${supportLang}
 
-  for (let i = 0; i < 22; i++) {
-    const tx = 2 + Math.floor(rng() * (W - 4));
-    const ty = 2 + Math.floor(rng() * (H - 4));
-    if (map[ty * W + tx] === 0) set(tx, ty, rng() > 0.75 ? 4 : 3);
-  }
+Use some of these curriculum terms for question content:
+${lessonTerms.slice(0, 120).join(", ")}
 
-  set(Math.floor(W / 2), Math.floor(H / 2), 6);
-  return map;
+Required JSON shape:
+{
+  "name": {"en": "...", "es": "..."},
+  "ambientColor": "hex like #87ceeb",
+  "mapWidth": 18-26,
+  "mapHeight": 12-18,
+  "playerStart": {"x": int, "y": int},
+  "npcs": [
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2}
+  ],
+  "mapData": [flat array length mapWidth*mapHeight, values only 0..6],
+  "questions": [
+    {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
+  ],
+  "greetings": {
+    "en": ["...", "...", "..."],
+    "es": ["...", "...", "..."]
+  }
 }
 
-function generateAirport(seed, W, H) {
-  const rng = mulberry32(seed);
-  const map = new Array(W * H).fill(0);
-  const set = (x, y, v) => {
-    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-  };
+Tile semantics for mapData:
+0 walkable ground
+1 walkable path
+2 solid wall/boundary
+3 solid tree/object
+4 solid bench/object
+5 walkable decoration
+6 solid indoor object
 
-  for (let x = 0; x < W; x++) {
-    set(x, 0, 2);
-    set(x, H - 1, 2);
-  }
-  for (let y = 0; y < H; y++) {
-    set(0, y, 2);
-    set(W - 1, y, 2);
+Constraints:
+- Exactly 3 NPCs.
+- At least 8 questions.
+- Ensure playerStart and NPCs are in-bounds.
+- Keep mapData playable (not all solid).
+- No extra keys.`;
+}
+
+function parseJSON(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // fall through to relaxed extraction below
   }
 
-  const laneCount = 3;
-  for (let lane = 0; lane < laneCount; lane++) {
-    const x = 4 + lane * 4;
-    for (let y = 2; y < H - 2; y++) {
-      set(x, y, 1);
-      if (rng() > 0.8) set(x + 1, y, 3);
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start !== -1 && end !== -1 && end > start) {
+    try {
+      return JSON.parse(trimmed.slice(start, end + 1));
+    } catch {
+      return null;
     }
   }
 
-  for (let x = W - 6; x < W - 1; x++) {
-    set(x, 3, 4);
-    if (x % 2 === 0) set(x, 4, 5);
-  }
-
-  for (let i = 0; i < 10; i++) {
-    const ox = 2 + Math.floor(rng() * (W - 4));
-    const oy = 2 + Math.floor(rng() * (H - 4));
-    if (map[oy * W + ox] === 0 && rng() > 0.7) set(ox, oy, 6);
-  }
-
-  return map;
+  return null;
 }
 
-function buildScenario(mapId, targetLang, supportLang) {
-  const questions = getScenarioQuestions(mapId, targetLang, supportLang);
+function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
+  const mapWidth = clampInt(raw?.mapWidth, 16, 28, 20);
+  const mapHeight = clampInt(raw?.mapHeight, 12, 20, 14);
+  const mapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
+  if (!mapData) return null;
 
-  if (mapId === "livingRoom") {
-    return {
-      id: "livingRoom",
-      name: { en: "Living Room", es: "Sala" },
-      tileSize: 32,
-      mapWidth: 18,
-      mapHeight: 14,
-      playerStart: { x: 9, y: 10 },
-      ambientColor: 0xf4e9d8,
-      tiles: {
-        0: { name: "floor", solid: false, colors: [[0xd9c7a8, 0xcfbd9f]], detail: "tile_floor" },
-        1: { name: "rug", solid: false, colors: [[0xb85c3a, 0xa85230]], detail: "rug" },
-        2: { name: "wall", solid: true, colors: [[0xf1e6cf, 0xe7dcc5]], detail: "wall" },
-        3: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
-        4: { name: "stove", solid: true, colors: [[0x4a4a4a]], sprite: "stove" },
-        5: { name: "mat", solid: false, colors: [[0x6b8e5a]], detail: "mat" },
-        6: { name: "fridge", solid: true, colors: [[0xd0d0d0]], sprite: "fridge" },
-      },
-      generate(seed) {
-        return generateLivingRoom(seed, this.mapWidth, this.mapHeight);
-      },
-      npcs: [
-        { tx: 4, ty: 8, name: "Housemate Mira", presetIdx: 0 },
-        { tx: 13, ty: 8, name: "Guest Theo", presetIdx: 1 },
-        { tx: 9, ty: 4, name: "Tutor Sol", presetIdx: 2 },
-      ],
-      questions: { [targetLang]: questions, en: questions, es: questions },
-      greetings: {
-        en: ["Welcome home!", "Quick check before tea?", "Practice time in the living room!"],
-        es: ["¡Bienvenido a casa!", "¿Un repaso rápido?", "¡Hora de practicar en la sala!"],
-      },
-    };
-  }
-
-  if (mapId === "park") {
-    return {
-      id: "park",
-      name: { en: "Park", es: "Parque" },
-      tileSize: 32,
-      mapWidth: 24,
-      mapHeight: 16,
-      playerStart: { x: 12, y: 8 },
-      ambientColor: 0x98d66b,
-      tiles: {
-        0: { name: "grass", solid: false, colors: [[0x5a9e3e, 0x4e8b36]], detail: "grass" },
-        1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbfa063]], detail: "dirt" },
-        2: { name: "wall", solid: true, colors: [[0x8aa08f]], detail: "wall" },
-        3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "tree" },
-        4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
-        5: { name: "flowers", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
-        6: { name: "fountain", solid: true, colors: [[0x8ac5ff]], sprite: "fountain" },
-      },
-      generate(seed) {
-        return generatePark(seed, this.mapWidth, this.mapHeight);
-      },
-      npcs: [
-        { tx: 5, ty: 6, name: "Ranger Pia", presetIdx: 0 },
-        { tx: 18, ty: 9, name: "Runner Nico", presetIdx: 1 },
-        { tx: 12, ty: 12, name: "Poet Emi", presetIdx: 2 },
-      ],
-      questions: { [targetLang]: questions, en: questions, es: questions },
-      greetings: {
-        en: ["Fresh air and fresh vocabulary!", "Walk and learn?", "Let’s train in the park."],
-        es: ["¡Aire fresco y vocabulario!", "¿Caminamos y aprendemos?", "Entrenemos en el parque."],
-      },
-    };
-  }
+  const playerStart = {
+    x: clampInt(raw?.playerStart?.x, 1, mapWidth - 2, 2),
+    y: clampInt(raw?.playerStart?.y, 1, mapHeight - 2, 2),
+  };
 
   return {
-    id: "airport",
-    name: { en: "Airport", es: "Aeropuerto" },
+    id: mapId,
+    name: {
+      en: String(raw?.name?.en || MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId),
+      es: String(raw?.name?.es || MAP_CHOICES.find((m) => m.id === mapId)?.name?.es || mapId),
+    },
     tileSize: 32,
-    mapWidth: 22,
-    mapHeight: 14,
-    playerStart: { x: 3, y: 10 },
-    ambientColor: 0xdfe6ef,
-    tiles: {
-      0: { name: "terminal", solid: false, colors: [[0xd4dde6, 0xc9d2db]], detail: "linoleum" },
-      1: { name: "lane", solid: false, colors: [[0xaec7dc, 0x9db5ca]], detail: "dirt" },
-      2: { name: "wall", solid: true, colors: [[0xb9c3cf]], detail: "wall" },
-      3: { name: "counter", solid: true, colors: [[0x6b7280]], sprite: "counter" },
-      4: { name: "register", solid: true, colors: [[0x5a5a5a]], sprite: "register" },
-      5: { name: "shelf", solid: true, colors: [[0x8a8f9a]], sprite: "shelf" },
-      6: { name: "freezer", solid: true, colors: [[0xc0d8e8]], sprite: "freezer" },
+    mapWidth,
+    mapHeight,
+    playerStart,
+    ambientColor: safeHex(raw?.ambientColor, 0x1a1a2e),
+    tiles: TILE_LIBRARY,
+    generate() {
+      return mapData;
     },
-    generate(seed) {
-      return generateAirport(seed, this.mapWidth, this.mapHeight);
+    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight),
+    questions: {
+      [targetLang]: normalizeQuestions(raw?.questions, supportLang),
+      en: normalizeQuestions(raw?.questions, supportLang),
+      es: normalizeQuestions(raw?.questions, supportLang),
     },
-    npcs: [
-      { tx: 6, ty: 9, name: "Agent Lio", presetIdx: 0 },
-      { tx: 12, ty: 6, name: "Traveler Ana", presetIdx: 1 },
-      { tx: 17, ty: 10, name: "Pilot Ren", presetIdx: 2 },
-    ],
-    questions: { [targetLang]: questions, en: questions, es: questions },
     greetings: {
-      en: ["Boarding soon — one quick quiz!", "Passport, ticket, and vocabulary.", "Welcome to departures."],
-      es: ["¡Abordamos pronto — un quiz rápido!", "Pasaporte, boleto y vocabulario.", "Bienvenido a salidas."],
+      en: Array.isArray(raw?.greetings?.en) ? raw.greetings.en.slice(0, 6).map(String) : ["Let's practice!"],
+      es: Array.isArray(raw?.greetings?.es) ? raw.greetings.es.slice(0, 6).map(String) : ["¡Vamos a practicar!"],
     },
   };
 }
 
-export function getGeneratedScenarios(targetLang = "es", supportLang = "en") {
-  return MAP_IDS.reduce((acc, mapId) => {
-    acc[mapId] = buildScenario(mapId, targetLang, supportLang);
-    return acc;
-  }, {});
+export async function generateScenarioWithAI(mapId, targetLang = "es", supportLang = "en") {
+  const lessonTerms = getLessonTerms(targetLang);
+  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms });
+
+  const text = await callResponses({
+    model: DEFAULT_RESPONSES_MODEL,
+    input: prompt,
+  });
+
+  const parsed = parseJSON(text);
+  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
+
+  return normalized || fallbackScenario(mapId, targetLang, supportLang);
 }
 
-// ─── Seeded RNG ──────────────────────────────────────────────────────────────
 export function mulberry32(a) {
   return function () {
     a |= 0;
