@@ -1,3 +1,5 @@
+import { getMultiLevelLearningPath } from "../../data/skillTreeData";
+
 // ─── Scenario definitions ────────────────────────────────────────────────────
 // Each scenario defines: map theme, tile types, procedural generation rules,
 // NPC characters, decoration objects, and themed language questions.
@@ -324,7 +326,7 @@ export const SCENARIOS = {
         sprite: "fridge",
       },
     },
-    generate(seed) {
+    generate() {
       const W = this.mapWidth;
       const H = this.mapHeight;
       const map = new Array(W * H).fill(0);
@@ -547,7 +549,7 @@ export const SCENARIOS = {
         sprite: "freezer",
       },
     },
-    generate(seed) {
+    generate() {
       const W = this.mapWidth;
       const H = this.mapHeight;
       const map = new Array(W * H).fill(0);
@@ -986,6 +988,127 @@ export const SCENARIOS = {
 };
 
 export const SCENARIO_LIST = Object.keys(SCENARIOS);
+
+const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+const SCENARIO_TEMPLATE_IDS = Object.keys(SCENARIOS);
+
+function uniqueWords(items = []) {
+  return Array.from(new Set(items.filter(Boolean).map((item) => String(item).trim())));
+}
+
+function extractLessonTerms(lesson) {
+  const terms = [];
+  const content = lesson?.content || {};
+
+  Object.values(content).forEach((modeData) => {
+    if (!modeData || typeof modeData !== "object") return;
+
+    if (Array.isArray(modeData.focusPoints)) {
+      terms.push(...modeData.focusPoints);
+    }
+
+    if (modeData.topic) terms.push(modeData.topic);
+    if (modeData.scenario) terms.push(modeData.scenario);
+  });
+
+  return uniqueWords(terms);
+}
+
+function makeQuestion(correctTerm, distractors, lessonTitle, supportLang) {
+  const questionPrompt =
+    supportLang === "es"
+      ? `¿Cuál término pertenece a la lección "${lessonTitle}"?`
+      : `Which term belongs to the lesson "${lessonTitle}"?`;
+
+  const options = uniqueWords([correctTerm, ...distractors]).slice(0, 4);
+  const correct = options.indexOf(correctTerm);
+
+  if (options.length < 2 || correct === -1) return null;
+
+  return {
+    prompt: questionPrompt,
+    options,
+    correct,
+  };
+}
+
+function buildLessonQuestions(lesson, globalTermPool, supportLang) {
+  const lessonTerms = extractLessonTerms(lesson);
+  const title = lesson?.title?.[supportLang] || lesson?.title?.en || "Lesson";
+
+  if (lessonTerms.length === 0) {
+    return [
+      {
+        prompt:
+          supportLang === "es"
+            ? `Completa esta misión: ${title}`
+            : `Complete this mission: ${title}`,
+        options: ["✅", "❌"],
+        correct: 0,
+      },
+    ];
+  }
+
+  return lessonTerms
+    .slice(0, 5)
+    .map((term, idx) => {
+      const distractors = globalTermPool
+        .filter((candidate) => candidate !== term)
+        .slice(idx, idx + 5);
+      return makeQuestion(term, distractors, title, supportLang);
+    })
+    .filter(Boolean);
+}
+
+export function getGeneratedScenarios(targetLang = "es", supportLang = "en") {
+  const units = getMultiLevelLearningPath(targetLang, CEFR_LEVELS_FOR_GAME);
+  const lessonRows = units.flatMap((unit) =>
+    (unit.lessons || []).map((lesson) => ({ lesson, unit })),
+  );
+
+  if (lessonRows.length === 0) {
+    return SCENARIOS;
+  }
+
+  const globalTermPool = uniqueWords(
+    lessonRows.flatMap(({ lesson }) => extractLessonTerms(lesson)),
+  );
+
+  return lessonRows.reduce((acc, { lesson, unit }, idx) => {
+    const templateId = SCENARIO_TEMPLATE_IDS[idx % SCENARIO_TEMPLATE_IDS.length];
+    const template = SCENARIOS[templateId];
+    const lessonQuestions = buildLessonQuestions(lesson, globalTermPool, supportLang);
+    const lessonNameEn = lesson?.title?.en || unit?.title?.en || lesson.id;
+    const lessonNameEs = lesson?.title?.es || lessonNameEn;
+
+    acc[lesson.id] = {
+      ...template,
+      id: lesson.id,
+      templateId,
+      name: {
+        en: lessonNameEn,
+        es: lessonNameEs,
+      },
+      questions: {
+        [targetLang]: lessonQuestions,
+        es: lessonQuestions,
+        en: lessonQuestions,
+      },
+      greetings: {
+        en: [
+          `Unit: ${unit?.title?.en || "Lesson"}`,
+          `Let's practice: ${lessonNameEn}`,
+        ],
+        es: [
+          `Unidad: ${unit?.title?.es || unit?.title?.en || "Lección"}`,
+          `Practiquemos: ${lessonNameEs}`,
+        ],
+      },
+    };
+
+    return acc;
+  }, {});
+}
 
 // ─── Seeded RNG ──────────────────────────────────────────────────────────────
 export function mulberry32(a) {

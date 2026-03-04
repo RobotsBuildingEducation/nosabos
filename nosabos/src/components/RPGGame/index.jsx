@@ -14,7 +14,7 @@ import {
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
-import { SCENARIOS, SCENARIO_LIST, mulberry32 } from "./scenarios";
+import { getGeneratedScenarios } from "./scenarios";
 import {
   createTileTexture,
   createCharacterTexture,
@@ -88,7 +88,12 @@ export default function RPGGame() {
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
-  const scenario = scenarioId ? SCENARIOS[scenarioId] : null;
+  const scenarios = useMemo(
+    () => getGeneratedScenarios(targetLang, supportLang),
+    [targetLang, supportLang],
+  );
+  const scenarioList = useMemo(() => Object.keys(scenarios), [scenarios]);
+  const scenario = scenarioId ? scenarios[scenarioId] : null;
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -363,7 +368,7 @@ export default function RPGGame() {
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
     const npcIndicators = [];
-    scenario.npcs.forEach((npc, idx) => {
+    scenario.npcs.forEach((npc) => {
       const preset = NPC_PRESETS[npc.presetIdx % NPC_PRESETS.length];
       const npcTex = createCharacterTexture(preset, "down", 0);
       const npcGeo = new THREE.PlaneGeometry(TILE * 0.95, TILE * 1.2);
@@ -780,8 +785,8 @@ export default function RPGGame() {
           </Text>
 
           <Wrap spacing={4} justify="center">
-            {SCENARIO_LIST.map((id) => {
-              const s = SCENARIOS[id];
+            {scenarioList.map((id, idx) => {
+              const s = scenarios[id];
               return (
                 <WrapItem key={id}>
                   <Button
@@ -805,7 +810,7 @@ export default function RPGGame() {
                     minW="140px"
                   >
                     <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[id] || "🎮"}
+                      {SCENARIO_EMOJIS[s?.templateId] || Object.values(SCENARIO_EMOJIS)[idx % 4] || "🎮"}
                     </Text>
                     <Text fontSize="md" fontWeight="bold">
                       {s.name[supportLang] || s.name.en}
@@ -865,7 +870,7 @@ export default function RPGGame() {
             py={1}
             borderRadius="md"
           >
-            {SCENARIO_EMOJIS[scenarioId]}{" "}
+            {SCENARIO_EMOJIS[scenario.templateId] || "🎮"}{" "}
             {scenario.name[supportLang] || scenario.name.en}
           </Badge>
         </HStack>
