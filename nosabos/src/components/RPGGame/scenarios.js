@@ -1,999 +1,19 @@
 import { getMultiLevelLearningPath } from "../../data/skillTreeData";
 
-// ─── Scenario definitions ────────────────────────────────────────────────────
-// Each scenario defines: map theme, tile types, procedural generation rules,
-// NPC characters, decoration objects, and themed language questions.
-//
-// Tile legend per scenario:
-//   0 = floor/ground (walkable)
-//   1 = path/aisle (walkable, visual distinction)
-//   2 = wall/water/boundary (solid)
-//   3 = furniture/object A (solid, decorated)
-//   4 = furniture/object B (solid, decorated)
-//   5 = decoration A (walkable)
-//   6 = decoration B (solid)
-//   7 = special walkable
-
-export const SCENARIOS = {
-  // ─── Village ────────────────────────────────────────────────────────────
-  village: {
-    id: "village",
-    name: { en: "Village Square", es: "Plaza del Pueblo" },
-    tileSize: 32,
-    mapWidth: 24,
-    mapHeight: 18,
-    playerStart: { x: 11, y: 9 },
-    ambientColor: 0x87ceeb,
-    tiles: {
-      0: {
-        name: "grass",
-        solid: false,
-        colors: [
-          [0x5a9e3e, 0x4e8b36, 0x66ad48],
-          [0x4e8b36, 0x5a9e3e, 0x448030],
-        ],
-        detail: "grass",
-      },
-      1: {
-        name: "path",
-        solid: false,
-        colors: [
-          [0xc8a96e, 0xbfa063, 0xd4b87a],
-          [0xb89a5f, 0xc8a96e, 0xae9055],
-        ],
-        detail: "dirt",
-      },
-      2: {
-        name: "water",
-        solid: true,
-        colors: [
-          [0x3a7fd5, 0x2c6fbb, 0x4a8fe5],
-          [0x2c6fbb, 0x3a7fd5, 0x5599ee],
-        ],
-        detail: "water",
-      },
-      3: {
-        name: "tree",
-        solid: true,
-        colors: [[0x5a9e3e]],
-        sprite: "tree",
-      },
-      4: {
-        name: "house",
-        solid: true,
-        colors: [[0x5a9e3e]],
-        sprite: "house",
-      },
-      5: { name: "flower", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
-      6: { name: "fence", solid: true, colors: [[0x5a9e3e]], sprite: "fence" },
-    },
-    generate(seed) {
-      const W = this.mapWidth;
-      const H = this.mapHeight;
-      const map = new Array(W * H).fill(0);
-      const set = (x, y, v) => {
-        if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-      };
-
-      // Border trees
-      for (let x = 0; x < W; x++) {
-        set(x, 0, 3);
-        set(x, H - 1, 3);
-      }
-      for (let y = 0; y < H; y++) {
-        set(0, y, 3);
-        set(W - 1, y, 3);
-      }
-
-      // Central crossroads path
-      for (let x = 1; x < W - 1; x++) {
-        set(x, 8, 1);
-        set(x, 9, 1);
-      }
-      for (let y = 1; y < H - 1; y++) {
-        set(11, y, 1);
-        set(12, y, 1);
-      }
-
-      // Houses (2x2 clusters)
-      const houses = [
-        [3, 2],
-        [19, 2],
-        [3, 14],
-        [19, 14],
-      ];
-      houses.forEach(([hx, hy]) => {
-        set(hx, hy, 4);
-        set(hx + 1, hy, 4);
-        set(hx, hy + 1, 4);
-        set(hx + 1, hy + 1, 4);
-      });
-
-      // Fenced gardens
-      for (let x = 4; x <= 7; x++) {
-        set(x, 5, 6);
-        set(x, 7, 6);
-      }
-      set(4, 6, 6);
-      set(7, 6, 6);
-      set(5, 6, 5);
-      set(6, 6, 5);
-
-      for (let x = 16; x <= 19; x++) {
-        set(x, 5, 6);
-        set(x, 7, 6);
-      }
-      set(16, 6, 6);
-      set(19, 6, 6);
-      set(17, 6, 5);
-      set(18, 6, 5);
-
-      // Scatter flowers and extra trees
-      const rng = mulberry32(seed);
-      for (let i = 0; i < 20; i++) {
-        const fx = 2 + Math.floor(rng() * (W - 4));
-        const fy = 2 + Math.floor(rng() * (H - 4));
-        if (map[fy * W + fx] === 0) {
-          map[fy * W + fx] = rng() > 0.5 ? 5 : 0;
-        }
-      }
-      // Extra trees along edges
-      for (let i = 0; i < 8; i++) {
-        const tx = 1 + Math.floor(rng() * 3);
-        const ty = 2 + Math.floor(rng() * (H - 4));
-        if (map[ty * W + tx] === 0) set(tx, ty, 3);
-        const tx2 = W - 2 - Math.floor(rng() * 3);
-        if (map[ty * W + tx2] === 0) set(tx2, ty, 3);
-      }
-
-      return map;
-    },
-    npcs: [
-      { tx: 6, ty: 4, name: "Elder Rosa", presetIdx: 0 },
-      { tx: 17, ty: 4, name: "Scholar Kai", presetIdx: 1 },
-      { tx: 11, ty: 13, name: "Merchant Lina", presetIdx: 2 },
-    ],
-    questions: {
-      es: [
-        {
-          prompt: "How do you say 'Hello' in Spanish?",
-          options: ["Hola", "Adiós", "Gracias", "Por favor"],
-          correct: 0,
-        },
-        {
-          prompt: "How do you say 'Thank you' in Spanish?",
-          options: ["De nada", "Gracias", "Lo siento", "Perdón"],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'Buenos días' mean?",
-          options: ["Good night", "Good morning", "Goodbye", "Good afternoon"],
-          correct: 1,
-        },
-        {
-          prompt: "How do you say 'Water' in Spanish?",
-          options: ["Fuego", "Tierra", "Agua", "Aire"],
-          correct: 2,
-        },
-        {
-          prompt: "What does '¿Cómo estás?' mean?",
-          options: [
-            "What is your name?",
-            "How are you?",
-            "Where are you from?",
-            "How old are you?",
-          ],
-          correct: 1,
-        },
-      ],
-      en: [
-        {
-          prompt: "¿Cómo se dice 'Hola' en inglés?",
-          options: ["Hello", "Goodbye", "Thanks", "Please"],
-          correct: 0,
-        },
-        {
-          prompt: "¿Cómo se dice 'Gracias' en inglés?",
-          options: ["Sorry", "Thank you", "Please", "Welcome"],
-          correct: 1,
-        },
-        {
-          prompt: "¿Qué significa 'Good morning'?",
-          options: ["Buenas noches", "Buenas tardes", "Buenos días", "Hasta luego"],
-          correct: 2,
-        },
-      ],
-      fr: [
-        {
-          prompt: "How do you say 'Hello' in French?",
-          options: ["Bonjour", "Au revoir", "Merci", "S'il vous plaît"],
-          correct: 0,
-        },
-        {
-          prompt: "How do you say 'Thank you' in French?",
-          options: ["De rien", "Merci", "Pardon", "Excusez-moi"],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'Bonsoir' mean?",
-          options: ["Good morning", "Good evening", "Goodbye", "Good night"],
-          correct: 1,
-        },
-      ],
-      ja: [
-        {
-          prompt: "How do you say 'Hello' in Japanese?",
-          options: ["こんにちは", "さようなら", "ありがとう", "すみません"],
-          correct: 0,
-        },
-        {
-          prompt: "How do you say 'Thank you' in Japanese?",
-          options: ["ごめんなさい", "ありがとう", "おねがいします", "どういたしまして"],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'おはようございます' mean?",
-          options: ["Good night", "Good morning", "Goodbye", "Good afternoon"],
-          correct: 1,
-        },
-      ],
-      nl: [
-        {
-          prompt: "How do you say 'Hello' in Dutch?",
-          options: ["Hallo", "Tot ziens", "Dank je", "Alstublieft"],
-          correct: 0,
-        },
-        {
-          prompt: "How do you say 'Thank you' in Dutch?",
-          options: ["Sorry", "Dank je", "Alstublieft", "Graag gedaan"],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'Goedemorgen' mean?",
-          options: ["Good night", "Good morning", "Goodbye", "Good afternoon"],
-          correct: 1,
-        },
-      ],
-    },
-    greetings: {
-      en: [
-        "Hey traveler! Can you help me?",
-        "Welcome! I have a question for you.",
-        "Greetings! Test your knowledge!",
-      ],
-      es: [
-        "¡Hola viajero! ¿Puedes ayudarme?",
-        "¡Bienvenido! Tengo una pregunta para ti.",
-        "¡Saludos! ¡Pon a prueba tu conocimiento!",
-      ],
-    },
-  },
-
-  // ─── Kitchen ────────────────────────────────────────────────────────────
-  kitchen: {
-    id: "kitchen",
-    name: { en: "Kitchen", es: "Cocina" },
-    tileSize: 32,
-    mapWidth: 16,
-    mapHeight: 12,
-    playerStart: { x: 8, y: 8 },
-    ambientColor: 0xfff8dc,
-    tiles: {
-      0: {
-        name: "floor",
-        solid: false,
-        colors: [
-          [0xdec9a0, 0xd4bf96, 0xe8d3aa],
-          [0xc8b68a, 0xdec9a0, 0xbfad80],
-        ],
-        detail: "tile_floor",
-      },
-      1: {
-        name: "rug",
-        solid: false,
-        colors: [
-          [0xb85c3a, 0xa85230, 0xc86644],
-          [0xa85230, 0xb85c3a, 0x984828],
-        ],
-        detail: "rug",
-      },
-      2: {
-        name: "wall",
-        solid: true,
-        colors: [
-          [0xf5e6c8, 0xeadcbe, 0xfff0d2],
-          [0xeadcbe, 0xf5e6c8, 0xe0d2b4],
-        ],
-        detail: "wall",
-      },
-      3: {
-        name: "counter",
-        solid: true,
-        colors: [[0x8b7355]],
-        sprite: "counter",
-      },
-      4: {
-        name: "stove",
-        solid: true,
-        colors: [[0x4a4a4a]],
-        sprite: "stove",
-      },
-      5: { name: "mat", solid: false, colors: [[0x6b8e5a]], detail: "mat" },
-      6: {
-        name: "fridge",
-        solid: true,
-        colors: [[0xd0d0d0]],
-        sprite: "fridge",
-      },
-    },
-    generate() {
-      const W = this.mapWidth;
-      const H = this.mapHeight;
-      const map = new Array(W * H).fill(0);
-      const set = (x, y, v) => {
-        if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-      };
-
-      // Walls on top and sides
-      for (let x = 0; x < W; x++) {
-        set(x, 0, 2);
-        set(x, 1, 2);
-        set(x, H - 1, 2);
-      }
-      for (let y = 0; y < H; y++) {
-        set(0, y, 2);
-        set(W - 1, y, 2);
-      }
-
-      // Counter along top wall
-      for (let x = 1; x < W - 1; x++) set(x, 2, 3);
-
-      // Stove
-      set(4, 2, 4);
-      set(5, 2, 4);
-
-      // Fridge in corner
-      set(W - 2, 2, 6);
-      set(W - 2, 3, 6);
-
-      // Island counter in middle
-      for (let x = 5; x <= 10; x++) set(x, 6, 3);
-
-      // Rug near door
-      for (let x = 6; x <= 9; x++) {
-        set(x, 9, 1);
-        set(x, 10, 1);
-      }
-
-      // Mat by sink area
-      set(2, 3, 5);
-      set(3, 3, 5);
-
-      return map;
-    },
-    npcs: [
-      { tx: 3, ty: 5, name: "Chef Marco", presetIdx: 0 },
-      { tx: 12, ty: 5, name: "Sous Chef Yuki", presetIdx: 1 },
-      { tx: 8, ty: 9, name: "Baker Amara", presetIdx: 2 },
-    ],
-    questions: {
-      es: [
-        {
-          prompt: "How do you say 'Kitchen' in Spanish?",
-          options: ["Cocina", "Baño", "Sala", "Comedor"],
-          correct: 0,
-        },
-        {
-          prompt: "What is 'Spoon' in Spanish?",
-          options: ["Tenedor", "Cuchillo", "Cuchara", "Plato"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'To cook' in Spanish?",
-          options: ["Comer", "Cocinar", "Beber", "Cortar"],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'Horno' mean?",
-          options: ["Fridge", "Oven", "Sink", "Stove"],
-          correct: 1,
-        },
-        {
-          prompt: "How do you say 'Salt' in Spanish?",
-          options: ["Azúcar", "Pimienta", "Sal", "Aceite"],
-          correct: 2,
-        },
-      ],
-      en: [
-        {
-          prompt: "¿Cómo se dice 'Cocina' en inglés?",
-          options: ["Kitchen", "Bathroom", "Bedroom", "Dining room"],
-          correct: 0,
-        },
-        {
-          prompt: "¿Cómo se dice 'Cuchara' en inglés?",
-          options: ["Fork", "Knife", "Spoon", "Plate"],
-          correct: 2,
-        },
-        {
-          prompt: "¿Qué significa 'To cook'?",
-          options: ["Comer", "Cocinar", "Beber", "Cortar"],
-          correct: 1,
-        },
-      ],
-      fr: [
-        {
-          prompt: "How do you say 'Kitchen' in French?",
-          options: ["Cuisine", "Chambre", "Salon", "Salle de bain"],
-          correct: 0,
-        },
-        {
-          prompt: "What is 'Spoon' in French?",
-          options: ["Fourchette", "Couteau", "Cuillère", "Assiette"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'To cook' in French?",
-          options: ["Manger", "Cuisiner", "Boire", "Couper"],
-          correct: 1,
-        },
-      ],
-      ja: [
-        {
-          prompt: "How do you say 'Kitchen' in Japanese?",
-          options: ["台所 (だいどころ)", "寝室 (しんしつ)", "風呂 (ふろ)", "居間 (いま)"],
-          correct: 0,
-        },
-        {
-          prompt: "What is 'Spoon' in Japanese?",
-          options: ["フォーク", "ナイフ", "スプーン", "皿 (さら)"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'To cook' in Japanese?",
-          options: ["食べる", "料理する", "飲む", "切る"],
-          correct: 1,
-        },
-      ],
-      nl: [
-        {
-          prompt: "How do you say 'Kitchen' in Dutch?",
-          options: ["Keuken", "Badkamer", "Slaapkamer", "Woonkamer"],
-          correct: 0,
-        },
-        {
-          prompt: "What is 'Spoon' in Dutch?",
-          options: ["Vork", "Mes", "Lepel", "Bord"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'To cook' in Dutch?",
-          options: ["Eten", "Koken", "Drinken", "Snijden"],
-          correct: 1,
-        },
-      ],
-    },
-    greetings: {
-      en: [
-        "Welcome to the kitchen! Quick quiz!",
-        "Hey there, taste-tester! Answer this!",
-        "Good to see you! Let me test your food vocab!",
-      ],
-      es: [
-        "¡Bienvenido a la cocina! ¡Prueba rápida!",
-        "¡Hola! ¡Responde esto!",
-        "¡Me alegra verte! ¡Probemos tu vocabulario!",
-      ],
-    },
-  },
-
-  // ─── Grocery Store ─────────────────────────────────────────────────────
-  grocery: {
-    id: "grocery",
-    name: { en: "Grocery Store", es: "Supermercado" },
-    tileSize: 32,
-    mapWidth: 20,
-    mapHeight: 14,
-    playerStart: { x: 10, y: 12 },
-    ambientColor: 0xf0f0f0,
-    tiles: {
-      0: {
-        name: "floor",
-        solid: false,
-        colors: [
-          [0xe8e0d0, 0xded6c6, 0xf2ead8],
-          [0xd4ccc0, 0xe8e0d0, 0xcac2b6],
-        ],
-        detail: "linoleum",
-      },
-      1: {
-        name: "aisle",
-        solid: false,
-        colors: [
-          [0xd0d8e0, 0xc6ced6, 0xdae2ea],
-          [0xbcc4cc, 0xd0d8e0, 0xb2bac2],
-        ],
-        detail: "linoleum",
-      },
-      2: {
-        name: "wall",
-        solid: true,
-        colors: [
-          [0xb0b8c0, 0xa6aeb6, 0xbac2ca],
-          [0x9ca4ac, 0xb0b8c0, 0x929aa2],
-        ],
-        detail: "wall",
-      },
-      3: {
-        name: "shelf",
-        solid: true,
-        colors: [[0x8b6e50]],
-        sprite: "shelf",
-      },
-      4: {
-        name: "register",
-        solid: true,
-        colors: [[0x5a5a5a]],
-        sprite: "register",
-      },
-      5: {
-        name: "produce",
-        solid: false,
-        colors: [[0x6b9e3e]],
-        detail: "produce",
-      },
-      6: {
-        name: "freezer",
-        solid: true,
-        colors: [[0xc0d8e8]],
-        sprite: "freezer",
-      },
-    },
-    generate() {
-      const W = this.mapWidth;
-      const H = this.mapHeight;
-      const map = new Array(W * H).fill(0);
-      const set = (x, y, v) => {
-        if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-      };
-
-      // Walls
-      for (let x = 0; x < W; x++) {
-        set(x, 0, 2);
-        set(x, H - 1, 2);
-      }
-      for (let y = 0; y < H; y++) {
-        set(0, y, 2);
-        set(W - 1, y, 2);
-      }
-      // Door opening
-      set(9, H - 1, 0);
-      set(10, H - 1, 0);
-
-      // Freezer section along back wall
-      for (let x = 1; x < W - 1; x++) set(x, 1, 6);
-
-      // Shelf aisles (3 rows)
-      for (let x = 2; x <= 7; x++) {
-        set(x, 4, 3);
-        set(x, 7, 3);
-        set(x, 10, 3);
-      }
-      for (let x = 12; x <= 17; x++) {
-        set(x, 4, 3);
-        set(x, 7, 3);
-        set(x, 10, 3);
-      }
-
-      // Aisles between shelves
-      for (let y = 3; y <= 11; y++) {
-        set(9, y, 1);
-        set(10, y, 1);
-      }
-
-      // Checkout registers
-      set(3, 12, 4);
-      set(7, 12, 4);
-
-      // Produce area
-      set(15, 12, 5);
-      set(16, 12, 5);
-
-      return map;
-    },
-    npcs: [
-      { tx: 4, ty: 6, name: "Cashier Sam", presetIdx: 0 },
-      { tx: 14, ty: 6, name: "Stocker Mia", presetIdx: 1 },
-      { tx: 10, ty: 3, name: "Manager Dev", presetIdx: 2 },
-    ],
-    questions: {
-      es: [
-        {
-          prompt: "How do you say 'Bread' in Spanish?",
-          options: ["Leche", "Pan", "Queso", "Huevo"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Apple' in Spanish?",
-          options: ["Naranja", "Plátano", "Manzana", "Uva"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'How much does it cost?' in Spanish?",
-          options: [
-            "¿Dónde está?",
-            "¿Cuánto cuesta?",
-            "¿Qué hora es?",
-            "¿Cómo se llama?",
-          ],
-          correct: 1,
-        },
-        {
-          prompt: "What does 'Leche' mean?",
-          options: ["Lettuce", "Milk", "Meat", "Rice"],
-          correct: 1,
-        },
-        {
-          prompt: "How do you say 'Cart' in Spanish?",
-          options: ["Bolsa", "Carrito", "Caja", "Estante"],
-          correct: 1,
-        },
-      ],
-      en: [
-        {
-          prompt: "¿Cómo se dice 'Pan' en inglés?",
-          options: ["Bread", "Milk", "Cheese", "Egg"],
-          correct: 0,
-        },
-        {
-          prompt: "¿Cómo se dice 'Manzana' en inglés?",
-          options: ["Orange", "Banana", "Apple", "Grape"],
-          correct: 2,
-        },
-        {
-          prompt: "¿Qué significa 'How much does it cost?'?",
-          options: [
-            "¿Dónde está?",
-            "¿Cuánto cuesta?",
-            "¿Qué hora es?",
-            "¿Cómo se llama?",
-          ],
-          correct: 1,
-        },
-      ],
-      fr: [
-        {
-          prompt: "How do you say 'Bread' in French?",
-          options: ["Lait", "Pain", "Fromage", "Oeuf"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Apple' in French?",
-          options: ["Orange", "Banane", "Pomme", "Raisin"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'How much does it cost?' in French?",
-          options: [
-            "Où est-ce?",
-            "Combien ça coûte?",
-            "Quelle heure est-il?",
-            "Comment vous appelez-vous?",
-          ],
-          correct: 1,
-        },
-      ],
-      ja: [
-        {
-          prompt: "How do you say 'Bread' in Japanese?",
-          options: ["牛乳 (ぎゅうにゅう)", "パン", "チーズ", "卵 (たまご)"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Apple' in Japanese?",
-          options: ["みかん", "バナナ", "りんご", "ぶどう"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'How much?' in Japanese?",
-          options: ["どこですか?", "いくらですか?", "何時ですか?", "お名前は?"],
-          correct: 1,
-        },
-      ],
-      nl: [
-        {
-          prompt: "How do you say 'Bread' in Dutch?",
-          options: ["Melk", "Brood", "Kaas", "Ei"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Apple' in Dutch?",
-          options: ["Sinaasappel", "Banaan", "Appel", "Druif"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'How much does it cost?' in Dutch?",
-          options: [
-            "Waar is het?",
-            "Hoeveel kost het?",
-            "Hoe laat is het?",
-            "Hoe heet u?",
-          ],
-          correct: 1,
-        },
-      ],
-    },
-    greetings: {
-      en: [
-        "Welcome shopper! Quick question!",
-        "Hey, can you help me stock these?",
-        "Attention shoppers! Pop quiz!",
-      ],
-      es: [
-        "¡Bienvenido! ¡Pregunta rápida!",
-        "¡Oye! ¿Me ayudas con esto?",
-        "¡Atención! ¡Cuestionario sorpresa!",
-      ],
-    },
-  },
-
-  // ─── Park ──────────────────────────────────────────────────────────────
-  park: {
-    id: "park",
-    name: { en: "City Park", es: "Parque" },
-    tileSize: 32,
-    mapWidth: 22,
-    mapHeight: 16,
-    playerStart: { x: 11, y: 12 },
-    ambientColor: 0x98d4e8,
-    tiles: {
-      0: {
-        name: "grass",
-        solid: false,
-        colors: [
-          [0x5a9e3e, 0x4e8b36, 0x66ad48],
-          [0x4e8b36, 0x5a9e3e, 0x448030],
-        ],
-        detail: "grass",
-      },
-      1: {
-        name: "path",
-        solid: false,
-        colors: [
-          [0xc0b090, 0xb6a686, 0xcaba9a],
-          [0xac9c7c, 0xc0b090, 0xa29272],
-        ],
-        detail: "gravel",
-      },
-      2: {
-        name: "pond",
-        solid: true,
-        colors: [
-          [0x4a9ad5, 0x3a8ac5, 0x5aaae5],
-          [0x3a8ac5, 0x4a9ad5, 0x6abaee],
-        ],
-        detail: "water",
-      },
-      3: {
-        name: "tree",
-        solid: true,
-        colors: [[0x5a9e3e]],
-        sprite: "tree",
-      },
-      4: {
-        name: "bench",
-        solid: true,
-        colors: [[0x8b6e50]],
-        sprite: "bench",
-      },
-      5: { name: "flower", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
-      6: {
-        name: "fountain",
-        solid: true,
-        colors: [[0x8899aa]],
-        sprite: "fountain",
-      },
-    },
-    generate(seed) {
-      const W = this.mapWidth;
-      const H = this.mapHeight;
-      const map = new Array(W * H).fill(0);
-      const set = (x, y, v) => {
-        if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
-      };
-
-      // Tree border
-      for (let x = 0; x < W; x++) {
-        set(x, 0, 3);
-        set(x, H - 1, 3);
-      }
-      for (let y = 0; y < H; y++) {
-        set(0, y, 3);
-        set(W - 1, y, 3);
-      }
-      // Entrance
-      set(10, H - 1, 0);
-      set(11, H - 1, 0);
-
-      // Winding path
-      for (let x = 1; x < W - 1; x++) set(x, 12, 1);
-      for (let y = 4; y <= 12; y++) {
-        set(5, y, 1);
-        set(16, y, 1);
-      }
-      for (let x = 5; x <= 16; x++) set(x, 4, 1);
-      set(10, 12, 1);
-      set(11, 12, 1);
-
-      // Central fountain
-      set(10, 7, 6);
-      set(11, 7, 6);
-      set(10, 8, 6);
-      set(11, 8, 6);
-
-      // Pond
-      for (let x = 2; x <= 4; x++) {
-        for (let y = 6; y <= 9; y++) set(x, y, 2);
-      }
-
-      // Benches along path
-      set(7, 11, 4);
-      set(14, 11, 4);
-      set(7, 5, 4);
-      set(14, 5, 4);
-
-      // Flowers
-      const rng = mulberry32(seed);
-      for (let i = 0; i < 25; i++) {
-        const fx = 2 + Math.floor(rng() * (W - 4));
-        const fy = 2 + Math.floor(rng() * (H - 4));
-        if (map[fy * W + fx] === 0) map[fy * W + fx] = 5;
-      }
-
-      // Extra trees
-      const treeSpots = [
-        [2, 2],
-        [8, 3],
-        [13, 3],
-        [19, 2],
-        [2, 13],
-        [19, 13],
-        [8, 9],
-        [13, 9],
-      ];
-      treeSpots.forEach(([tx, ty]) => set(tx, ty, 3));
-
-      return map;
-    },
-    npcs: [
-      { tx: 6, ty: 8, name: "Jogger Elise", presetIdx: 0 },
-      { tx: 15, ty: 8, name: "Artist Tomás", presetIdx: 1 },
-      { tx: 10, ty: 5, name: "Ranger Priya", presetIdx: 2 },
-    ],
-    questions: {
-      es: [
-        {
-          prompt: "How do you say 'Tree' in Spanish?",
-          options: ["Flor", "Árbol", "Hierba", "Hoja"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Bench' in Spanish?",
-          options: ["Mesa", "Silla", "Banco", "Cama"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'The weather is nice' in Spanish?",
-          options: [
-            "Hace frío",
-            "Está lloviendo",
-            "Hace buen tiempo",
-            "Está nublado",
-          ],
-          correct: 2,
-        },
-        {
-          prompt: "What does 'Pájaro' mean?",
-          options: ["Dog", "Cat", "Bird", "Fish"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'To walk' in Spanish?",
-          options: ["Correr", "Caminar", "Nadar", "Saltar"],
-          correct: 1,
-        },
-      ],
-      en: [
-        {
-          prompt: "¿Cómo se dice 'Árbol' en inglés?",
-          options: ["Flower", "Tree", "Grass", "Leaf"],
-          correct: 1,
-        },
-        {
-          prompt: "¿Cómo se dice 'Banco' en inglés?",
-          options: ["Table", "Chair", "Bench", "Bed"],
-          correct: 2,
-        },
-        {
-          prompt: "¿Qué significa 'The weather is nice'?",
-          options: ["Hace frío", "Está lloviendo", "Hace buen tiempo", "Está nublado"],
-          correct: 2,
-        },
-      ],
-      fr: [
-        {
-          prompt: "How do you say 'Tree' in French?",
-          options: ["Fleur", "Arbre", "Herbe", "Feuille"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Bench' in French?",
-          options: ["Table", "Chaise", "Banc", "Lit"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'The weather is nice' in French?",
-          options: ["Il fait froid", "Il pleut", "Il fait beau", "C'est nuageux"],
-          correct: 2,
-        },
-      ],
-      ja: [
-        {
-          prompt: "How do you say 'Tree' in Japanese?",
-          options: ["花 (はな)", "木 (き)", "草 (くさ)", "葉 (は)"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Bench' in Japanese?",
-          options: ["テーブル", "椅子 (いす)", "ベンチ", "ベッド"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'The weather is nice' in Japanese?",
-          options: ["寒いです", "雨が降っています", "いい天気です", "曇りです"],
-          correct: 2,
-        },
-      ],
-      nl: [
-        {
-          prompt: "How do you say 'Tree' in Dutch?",
-          options: ["Bloem", "Boom", "Gras", "Blad"],
-          correct: 1,
-        },
-        {
-          prompt: "What is 'Bench' in Dutch?",
-          options: ["Tafel", "Stoel", "Bank", "Bed"],
-          correct: 2,
-        },
-        {
-          prompt: "How do you say 'The weather is nice' in Dutch?",
-          options: ["Het is koud", "Het regent", "Het is mooi weer", "Het is bewolkt"],
-          correct: 2,
-        },
-      ],
-    },
-    greetings: {
-      en: [
-        "Beautiful day for a quiz!",
-        "Hey there! Mind a quick question?",
-        "Welcome to the park! Test yourself!",
-      ],
-      es: [
-        "¡Hermoso día para un cuestionario!",
-        "¡Hola! ¿Te importa una pregunta?",
-        "¡Bienvenido al parque! ¡Ponte a prueba!",
-      ],
-    },
-  },
-};
-
-export const SCENARIO_LIST = Object.keys(SCENARIOS);
-
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
-const SCENARIO_TEMPLATE_IDS = Object.keys(SCENARIOS);
+const MAP_IDS = ["livingRoom", "park", "airport"];
 
 function uniqueWords(items = []) {
   return Array.from(new Set(items.filter(Boolean).map((item) => String(item).trim())));
+}
+
+function shuffle(rng, list) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
 
 function extractLessonTerms(lesson) {
@@ -1002,110 +22,277 @@ function extractLessonTerms(lesson) {
 
   Object.values(content).forEach((modeData) => {
     if (!modeData || typeof modeData !== "object") return;
-
-    if (Array.isArray(modeData.focusPoints)) {
-      terms.push(...modeData.focusPoints);
-    }
-
+    if (Array.isArray(modeData.focusPoints)) terms.push(...modeData.focusPoints);
+    if (Array.isArray(modeData.topics)) terms.push(...modeData.topics);
     if (modeData.topic) terms.push(modeData.topic);
     if (modeData.scenario) terms.push(modeData.scenario);
+    if (modeData.prompt) terms.push(modeData.prompt);
   });
 
   return uniqueWords(terms);
 }
 
-function makeQuestion(correctTerm, distractors, lessonTitle, supportLang) {
-  const questionPrompt =
-    supportLang === "es"
-      ? `¿Cuál término pertenece a la lección "${lessonTitle}"?`
-      : `Which term belongs to the lesson "${lessonTitle}"?`;
-
-  const options = uniqueWords([correctTerm, ...distractors]).slice(0, 4);
-  const correct = options.indexOf(correctTerm);
-
-  if (options.length < 2 || correct === -1) return null;
-
-  return {
-    prompt: questionPrompt,
-    options,
-    correct,
-  };
-}
-
-function buildLessonQuestions(lesson, globalTermPool, supportLang) {
-  const lessonTerms = extractLessonTerms(lesson);
-  const title = lesson?.title?.[supportLang] || lesson?.title?.en || "Lesson";
-
-  if (lessonTerms.length === 0) {
-    return [
-      {
-        prompt:
-          supportLang === "es"
-            ? `Completa esta misión: ${title}`
-            : `Complete this mission: ${title}`,
-        options: ["✅", "❌"],
-        correct: 0,
-      },
-    ];
-  }
-
-  return lessonTerms
-    .slice(0, 5)
-    .map((term, idx) => {
-      const distractors = globalTermPool
-        .filter((candidate) => candidate !== term)
-        .slice(idx, idx + 5);
-      return makeQuestion(term, distractors, title, supportLang);
-    })
-    .filter(Boolean);
-}
-
-export function getGeneratedScenarios(targetLang = "es", supportLang = "en") {
+function buildQuestionBank(targetLang, supportLang) {
   const units = getMultiLevelLearningPath(targetLang, CEFR_LEVELS_FOR_GAME);
   const lessonRows = units.flatMap((unit) =>
     (unit.lessons || []).map((lesson) => ({ lesson, unit })),
   );
 
   if (lessonRows.length === 0) {
-    return SCENARIOS;
+    return [
+      {
+        prompt: supportLang === "es" ? "Completa esta misión" : "Complete this mission",
+        options: ["✅", "❌"],
+        correct: 0,
+      },
+    ];
   }
 
-  const globalTermPool = uniqueWords(
-    lessonRows.flatMap(({ lesson }) => extractLessonTerms(lesson)),
-  );
+  const allTerms = uniqueWords(lessonRows.flatMap(({ lesson }) => extractLessonTerms(lesson)));
+  const bank = [];
 
-  return lessonRows.reduce((acc, { lesson, unit }, idx) => {
-    const templateId = SCENARIO_TEMPLATE_IDS[idx % SCENARIO_TEMPLATE_IDS.length];
-    const template = SCENARIOS[templateId];
-    const lessonQuestions = buildLessonQuestions(lesson, globalTermPool, supportLang);
-    const lessonNameEn = lesson?.title?.en || unit?.title?.en || lesson.id;
-    const lessonNameEs = lesson?.title?.es || lessonNameEn;
+  lessonRows.forEach(({ lesson }) => {
+    const lessonTitle = lesson?.title?.[supportLang] || lesson?.title?.en || "Lesson";
+    const terms = extractLessonTerms(lesson).slice(0, 3);
 
-    acc[lesson.id] = {
-      ...template,
-      id: lesson.id,
-      templateId,
-      name: {
-        en: lessonNameEn,
-        es: lessonNameEs,
+    terms.forEach((term) => {
+      const distractors = allTerms.filter((entry) => entry !== term).slice(0, 10);
+      const options = uniqueWords([term, ...distractors]).slice(0, 4);
+      const correct = options.indexOf(term);
+      if (options.length < 2 || correct === -1) return;
+
+      bank.push({
+        prompt:
+          supportLang === "es"
+            ? `¿Cuál término pertenece a la lección "${lessonTitle}"?`
+            : `Which term belongs to the lesson "${lessonTitle}"?`,
+        options,
+        correct,
+      });
+    });
+  });
+
+  return bank.length ? bank : [{ prompt: "Complete this mission", options: ["✅", "❌"], correct: 0 }];
+}
+
+function getScenarioQuestions(mapId, targetLang, supportLang) {
+  const bank = buildQuestionBank(targetLang, supportLang);
+  const seed = mapId.split("").reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  const rng = mulberry32(seed + targetLang.length + supportLang.length);
+  return shuffle(rng, bank).slice(0, 18);
+}
+
+function generateLivingRoom(seed, W, H) {
+  const rng = mulberry32(seed);
+  const map = new Array(W * H).fill(0);
+  const set = (x, y, v) => {
+    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
+  };
+
+  for (let x = 0; x < W; x++) {
+    set(x, 0, 2);
+    set(x, H - 1, 2);
+  }
+  for (let y = 0; y < H; y++) {
+    set(0, y, 2);
+    set(W - 1, y, 2);
+  }
+
+  const rugW = 5 + Math.floor(rng() * 4);
+  const rugH = 3 + Math.floor(rng() * 2);
+  const rugX = Math.floor((W - rugW) / 2);
+  const rugY = Math.floor((H - rugH) / 2);
+  for (let y = rugY; y < rugY + rugH; y++) {
+    for (let x = rugX; x < rugX + rugW; x++) set(x, y, 1);
+  }
+
+  for (let x = 2; x < W - 2; x++) set(x, 2, 3);
+  set(2 + Math.floor(rng() * 4), H - 3, 6);
+  set(W - 3 - Math.floor(rng() * 4), H - 3, 4);
+
+  return map;
+}
+
+function generatePark(seed, W, H) {
+  const rng = mulberry32(seed);
+  const map = new Array(W * H).fill(0);
+  const set = (x, y, v) => {
+    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
+  };
+
+  for (let x = 0; x < W; x++) {
+    set(x, 0, 3);
+    set(x, H - 1, 3);
+  }
+  for (let y = 0; y < H; y++) {
+    set(0, y, 3);
+    set(W - 1, y, 3);
+  }
+
+  let pathY = Math.floor(H / 2);
+  for (let x = 1; x < W - 1; x++) {
+    if (rng() > 0.7) pathY += rng() > 0.5 ? 1 : -1;
+    pathY = Math.max(2, Math.min(H - 3, pathY));
+    set(x, pathY, 1);
+    if (rng() > 0.5) set(x, pathY + 1, 1);
+  }
+
+  for (let i = 0; i < 22; i++) {
+    const tx = 2 + Math.floor(rng() * (W - 4));
+    const ty = 2 + Math.floor(rng() * (H - 4));
+    if (map[ty * W + tx] === 0) set(tx, ty, rng() > 0.75 ? 4 : 3);
+  }
+
+  set(Math.floor(W / 2), Math.floor(H / 2), 6);
+  return map;
+}
+
+function generateAirport(seed, W, H) {
+  const rng = mulberry32(seed);
+  const map = new Array(W * H).fill(0);
+  const set = (x, y, v) => {
+    if (x >= 0 && x < W && y >= 0 && y < H) map[y * W + x] = v;
+  };
+
+  for (let x = 0; x < W; x++) {
+    set(x, 0, 2);
+    set(x, H - 1, 2);
+  }
+  for (let y = 0; y < H; y++) {
+    set(0, y, 2);
+    set(W - 1, y, 2);
+  }
+
+  const laneCount = 3;
+  for (let lane = 0; lane < laneCount; lane++) {
+    const x = 4 + lane * 4;
+    for (let y = 2; y < H - 2; y++) {
+      set(x, y, 1);
+      if (rng() > 0.8) set(x + 1, y, 3);
+    }
+  }
+
+  for (let x = W - 6; x < W - 1; x++) {
+    set(x, 3, 4);
+    if (x % 2 === 0) set(x, 4, 5);
+  }
+
+  for (let i = 0; i < 10; i++) {
+    const ox = 2 + Math.floor(rng() * (W - 4));
+    const oy = 2 + Math.floor(rng() * (H - 4));
+    if (map[oy * W + ox] === 0 && rng() > 0.7) set(ox, oy, 6);
+  }
+
+  return map;
+}
+
+function buildScenario(mapId, targetLang, supportLang) {
+  const questions = getScenarioQuestions(mapId, targetLang, supportLang);
+
+  if (mapId === "livingRoom") {
+    return {
+      id: "livingRoom",
+      name: { en: "Living Room", es: "Sala" },
+      tileSize: 32,
+      mapWidth: 18,
+      mapHeight: 14,
+      playerStart: { x: 9, y: 10 },
+      ambientColor: 0xf4e9d8,
+      tiles: {
+        0: { name: "floor", solid: false, colors: [[0xd9c7a8, 0xcfbd9f]], detail: "tile_floor" },
+        1: { name: "rug", solid: false, colors: [[0xb85c3a, 0xa85230]], detail: "rug" },
+        2: { name: "wall", solid: true, colors: [[0xf1e6cf, 0xe7dcc5]], detail: "wall" },
+        3: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
+        4: { name: "stove", solid: true, colors: [[0x4a4a4a]], sprite: "stove" },
+        5: { name: "mat", solid: false, colors: [[0x6b8e5a]], detail: "mat" },
+        6: { name: "fridge", solid: true, colors: [[0xd0d0d0]], sprite: "fridge" },
       },
-      questions: {
-        [targetLang]: lessonQuestions,
-        es: lessonQuestions,
-        en: lessonQuestions,
+      generate(seed) {
+        return generateLivingRoom(seed, this.mapWidth, this.mapHeight);
       },
+      npcs: [
+        { tx: 4, ty: 8, name: "Housemate Mira", presetIdx: 0 },
+        { tx: 13, ty: 8, name: "Guest Theo", presetIdx: 1 },
+        { tx: 9, ty: 4, name: "Tutor Sol", presetIdx: 2 },
+      ],
+      questions: { [targetLang]: questions, en: questions, es: questions },
       greetings: {
-        en: [
-          `Unit: ${unit?.title?.en || "Lesson"}`,
-          `Let's practice: ${lessonNameEn}`,
-        ],
-        es: [
-          `Unidad: ${unit?.title?.es || unit?.title?.en || "Lección"}`,
-          `Practiquemos: ${lessonNameEs}`,
-        ],
+        en: ["Welcome home!", "Quick check before tea?", "Practice time in the living room!"],
+        es: ["¡Bienvenido a casa!", "¿Un repaso rápido?", "¡Hora de practicar en la sala!"],
       },
     };
+  }
 
+  if (mapId === "park") {
+    return {
+      id: "park",
+      name: { en: "Park", es: "Parque" },
+      tileSize: 32,
+      mapWidth: 24,
+      mapHeight: 16,
+      playerStart: { x: 12, y: 8 },
+      ambientColor: 0x98d66b,
+      tiles: {
+        0: { name: "grass", solid: false, colors: [[0x5a9e3e, 0x4e8b36]], detail: "grass" },
+        1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbfa063]], detail: "dirt" },
+        2: { name: "wall", solid: true, colors: [[0x8aa08f]], detail: "wall" },
+        3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "tree" },
+        4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
+        5: { name: "flowers", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
+        6: { name: "fountain", solid: true, colors: [[0x8ac5ff]], sprite: "fountain" },
+      },
+      generate(seed) {
+        return generatePark(seed, this.mapWidth, this.mapHeight);
+      },
+      npcs: [
+        { tx: 5, ty: 6, name: "Ranger Pia", presetIdx: 0 },
+        { tx: 18, ty: 9, name: "Runner Nico", presetIdx: 1 },
+        { tx: 12, ty: 12, name: "Poet Emi", presetIdx: 2 },
+      ],
+      questions: { [targetLang]: questions, en: questions, es: questions },
+      greetings: {
+        en: ["Fresh air and fresh vocabulary!", "Walk and learn?", "Let’s train in the park."],
+        es: ["¡Aire fresco y vocabulario!", "¿Caminamos y aprendemos?", "Entrenemos en el parque."],
+      },
+    };
+  }
+
+  return {
+    id: "airport",
+    name: { en: "Airport", es: "Aeropuerto" },
+    tileSize: 32,
+    mapWidth: 22,
+    mapHeight: 14,
+    playerStart: { x: 3, y: 10 },
+    ambientColor: 0xdfe6ef,
+    tiles: {
+      0: { name: "terminal", solid: false, colors: [[0xd4dde6, 0xc9d2db]], detail: "linoleum" },
+      1: { name: "lane", solid: false, colors: [[0xaec7dc, 0x9db5ca]], detail: "dirt" },
+      2: { name: "wall", solid: true, colors: [[0xb9c3cf]], detail: "wall" },
+      3: { name: "counter", solid: true, colors: [[0x6b7280]], sprite: "counter" },
+      4: { name: "register", solid: true, colors: [[0x5a5a5a]], sprite: "register" },
+      5: { name: "shelf", solid: true, colors: [[0x8a8f9a]], sprite: "shelf" },
+      6: { name: "freezer", solid: true, colors: [[0xc0d8e8]], sprite: "freezer" },
+    },
+    generate(seed) {
+      return generateAirport(seed, this.mapWidth, this.mapHeight);
+    },
+    npcs: [
+      { tx: 6, ty: 9, name: "Agent Lio", presetIdx: 0 },
+      { tx: 12, ty: 6, name: "Traveler Ana", presetIdx: 1 },
+      { tx: 17, ty: 10, name: "Pilot Ren", presetIdx: 2 },
+    ],
+    questions: { [targetLang]: questions, en: questions, es: questions },
+    greetings: {
+      en: ["Boarding soon — one quick quiz!", "Passport, ticket, and vocabulary.", "Welcome to departures."],
+      es: ["¡Abordamos pronto — un quiz rápido!", "Pasaporte, boleto y vocabulario.", "Bienvenido a salidas."],
+    },
+  };
+}
+
+export function getGeneratedScenarios(targetLang = "es", supportLang = "en") {
+  return MAP_IDS.reduce((acc, mapId) => {
+    acc[mapId] = buildScenario(mapId, targetLang, supportLang);
     return acc;
   }, {});
 }

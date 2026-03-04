@@ -57,10 +57,9 @@ const UI_TEXT = {
 };
 
 const SCENARIO_EMOJIS = {
-  village: "🏘️",
-  kitchen: "🍳",
-  grocery: "🛒",
+  livingRoom: "🛋️",
   park: "🌳",
+  airport: "✈️",
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -810,7 +809,7 @@ export default function RPGGame() {
                     minW="140px"
                   >
                     <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[s?.templateId] || Object.values(SCENARIO_EMOJIS)[idx % 4] || "🎮"}
+                      {SCENARIO_EMOJIS[s?.id] || Object.values(SCENARIO_EMOJIS)[idx % 3] || "🎮"}
                     </Text>
                     <Text fontSize="md" fontWeight="bold">
                       {s.name[supportLang] || s.name.en}
@@ -870,7 +869,7 @@ export default function RPGGame() {
             py={1}
             borderRadius="md"
           >
-            {SCENARIO_EMOJIS[scenario.templateId] || "🎮"}{" "}
+            {SCENARIO_EMOJIS[scenario.id] || "🎮"}{" "}
             {scenario.name[supportLang] || scenario.name.en}
           </Badge>
         </HStack>
