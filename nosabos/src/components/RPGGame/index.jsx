@@ -382,7 +382,7 @@ export default function RPGGame() {
     const npcSprites = [];
     const npcIndicators = [];
     scenario.npcs.forEach((npc) => {
-      const preset = NPC_PRESETS[npc.presetIdx % NPC_PRESETS.length];
+      const preset = NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
       const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
       const npcMat = new THREE.MeshBasicMaterial({

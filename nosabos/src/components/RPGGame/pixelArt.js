@@ -261,6 +261,8 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
   const ear = colors.ear || darken(fur, 0.3);
   const paw = colors.paw || furDark;
   const accent = colors.accent || 0xe11d48;
+  const species = colors.species || "animal";
+  const isDog = species === "dog";
 
   const phase = frame % 6;
   const stride = phase === 1 || phase === 5 ? 1 : phase === 3 ? -1 : 0;
@@ -275,12 +277,18 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
   };
 
   const drawHeadFront = () => {
-    // ears
-    for (let y = 5; y <= 10; y++) {
+    // ears (dog has longer floppy ears)
+    const earTop = isDog ? 4 : 5;
+    const earBottom = isDog ? 13 : 10;
+    for (let y = earTop; y <= earBottom; y++) {
       draw(12, y, outline);
       draw(27, y, outline);
       for (let x = 13; x <= 15; x++) draw(x, y, ear);
       for (let x = 24; x <= 26; x++) draw(x, y, ear);
+      if (isDog && y >= 10) {
+        draw(11, y, furDark);
+        draw(28, y, furDark);
+      }
     }
 
     // head
@@ -292,9 +300,11 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
       }
     }
 
-    // muzzle
-    for (let y = 16; y <= 22; y++) {
-      for (let x = 15; x <= 24; x++) draw(x, y, belly);
+    // muzzle (dog gets longer snout)
+    const muzzleStart = isDog ? 15 : 16;
+    const muzzleEnd = isDog ? 23 : 22;
+    for (let y = muzzleStart; y <= muzzleEnd; y++) {
+      for (let x = 14; x <= 25; x++) draw(x, y, belly);
     }
 
     // eyes + nose
@@ -304,6 +314,11 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
     draw(20, 18, 0x111827);
     draw(19, 19, 0xb45309);
     draw(20, 19, 0xb45309);
+    if (isDog) {
+      draw(19, 20, 0xfb7185);
+      draw(20, 20, 0xfb7185);
+      draw(25, 13, darken(fur, 0.28)); // face spot
+    }
   };
 
   const drawHeadBack = () => {
@@ -330,6 +345,10 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
     draw(xf(14), 16, 0x1f2937);
     draw(xf(12), 18, 0x111827);
     draw(xf(12), 19, 0xb45309);
+    if (isDog) {
+      draw(xf(11), 19, 0xb45309);
+      draw(xf(12), 20, 0xfb7185);
+    }
   };
 
   const drawBody = (flip = false) => {
@@ -352,11 +371,15 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
     for (let x = 13; x <= 26; x++) draw(xf(x), 24, accent);
     draw(xf(19), 24, lighten(accent, 0.2));
 
-    // tail
+    // tail (dog tail thicker with tip)
     const tailX = flip ? 10 : 29;
     draw(tailX + tailWag, 28, outline);
     draw(tailX + tailWag, 29, furDark);
     draw(tailX + tailWag, 30, furDark);
+    if (isDog) {
+      draw(tailX + tailWag + (flip ? -1 : 1), 29, fur);
+      draw(tailX + tailWag + (flip ? -1 : 1), 30, furLight);
+    }
   };
 
   const drawPaws = (flip = false) => {
@@ -927,15 +950,16 @@ export function createNPCIndicatorTexture() {
 
 // ─── NPC appearance presets ──────────────────────────────────────────────────
 export const NPC_PRESETS = [
-  { fur: 0xf59e0b, belly: 0xfde68a, ear: 0xb45309, paw: 0x92400e, accent: 0xef4444 }, // fox
-  { fur: 0x9ca3af, belly: 0xe5e7eb, ear: 0x4b5563, paw: 0x6b7280, accent: 0x2563eb }, // wolf
-  { fur: 0x111827, belly: 0xd1d5db, ear: 0x1f2937, paw: 0x374151, accent: 0x22c55e }, // cat
-  { fur: 0xc08457, belly: 0xfde68a, ear: 0x92400e, paw: 0x78350f, accent: 0x8b5cf6 }, // bear cub
-  { fur: 0xec4899, belly: 0xfce7f3, ear: 0xbe185d, paw: 0xdb2777, accent: 0xf59e0b }, // bunny
-  { fur: 0x14b8a6, belly: 0xccfbf1, ear: 0x0f766e, paw: 0x115e59, accent: 0xe11d48 }, // fantasy pet
+  { species: "fox", fur: 0xf59e0b, belly: 0xfde68a, ear: 0xb45309, paw: 0x92400e, accent: 0xef4444 }, // fox
+  { species: "wolf", fur: 0x9ca3af, belly: 0xe5e7eb, ear: 0x4b5563, paw: 0x6b7280, accent: 0x2563eb }, // wolf
+  { species: "cat", fur: 0x111827, belly: 0xd1d5db, ear: 0x1f2937, paw: 0x374151, accent: 0x22c55e }, // cat
+  { species: "bear", fur: 0xc08457, belly: 0xfde68a, ear: 0x92400e, paw: 0x78350f, accent: 0x8b5cf6 }, // bear cub
+  { species: "bunny", fur: 0xec4899, belly: 0xfce7f3, ear: 0xbe185d, paw: 0xdb2777, accent: 0xf59e0b }, // bunny
+  { species: "otter", fur: 0x14b8a6, belly: 0xccfbf1, ear: 0x0f766e, paw: 0x115e59, accent: 0xe11d48 }, // fantasy pet
 ];
 
 export const PLAYER_COLORS = {
+  species: "dog",
   fur: 0xd97706,
   belly: 0xfef3c7,
   ear: 0x92400e,
