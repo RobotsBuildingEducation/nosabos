@@ -23,6 +23,7 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
+import playerSpriteSheetUrl from "../../sprites/sprite_sheet.png";
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -110,6 +111,68 @@ export default function RPGGame() {
   const mapDataRef = useRef(null);
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
+  const playerSheetFramesRef = useRef(null);
+
+  const buildPlayerSheetFrames = useCallback((sourceImage) => {
+    const rowCount = 5;
+    const frameSize = Math.floor(sourceImage.height / rowCount);
+    const frameCount = Math.max(1, Math.floor(sourceImage.width / frameSize));
+    const directionRows = {
+      down: 4,
+      up: 3,
+      left: 2,
+      right: 1,
+      idle: 0,
+    };
+
+    const createFrameTexture = (row, col) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = frameSize;
+      canvas.height = frameSize;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, frameSize, frameSize);
+      ctx.drawImage(
+        sourceImage,
+        col * frameSize,
+        row * frameSize,
+        frameSize,
+        frameSize,
+        0,
+        0,
+        frameSize,
+        frameSize,
+      );
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    const animations = Object.fromEntries(
+      Object.entries(directionRows).map(([dir, row]) => [
+        dir,
+        Array.from({ length: frameCount }, (_, col) => createFrameTexture(row, col)),
+      ]),
+    );
+
+    return {
+      animations,
+      frameCount,
+      getFrame(direction = "down", frame = 0) {
+        const key = directionRows[direction] !== undefined ? direction : "down";
+        const frames = animations[key] || animations.down;
+        return frames[frame % frames.length] || frames[0];
+      },
+      dispose() {
+        Object.values(animations).forEach((frames) => {
+          frames.forEach((tex) => tex.dispose());
+        });
+      },
+    };
+  }, []);
 
   const questions = useMemo(() => {
     if (!scenario) return [];
@@ -223,6 +286,29 @@ export default function RPGGame() {
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
+
+    const fallbackPlayerTexture = createCharacterTexture(PLAYER_COLORS, "down", 0);
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      playerSpriteSheetUrl,
+      (sheetTexture) => {
+        const frameSet = buildPlayerSheetFrames(sheetTexture.image);
+        playerSheetFramesRef.current = frameSet;
+
+        if (playerSpriteRef.current?.material) {
+          const nextFrame = frameSet.getFrame(
+            gameStateRef.current?.playerDir || "down",
+            walkFrameRef.current,
+          );
+          playerSpriteRef.current.material.map = nextFrame;
+          playerSpriteRef.current.material.needsUpdate = true;
+        }
+      },
+      undefined,
+      () => {
+        playerSheetFramesRef.current = null;
+      },
+    );
 
     // Camera
     const aspect = width / height;
@@ -363,7 +449,7 @@ export default function RPGGame() {
     scene.add(spriteGroup);
 
     // ── Player sprite ─────────────────────────────────────────────────────
-    const playerTex = createCharacterTexture(PLAYER_COLORS, "down", 0);
+    const playerTex = fallbackPlayerTexture;
     const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
@@ -483,11 +569,10 @@ export default function RPGGame() {
             walkTimerRef.current++;
             walkFrameRef.current = walkTimerRef.current % 6;
 
-            playerSprite.material.map = createCharacterTexture(
-              PLAYER_COLORS,
-              gs.playerDir,
-              walkFrameRef.current,
-            );
+            const sheetFrames = playerSheetFramesRef.current;
+            playerSprite.material.map = sheetFrames
+              ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
+              : createCharacterTexture(PLAYER_COLORS, gs.playerDir, walkFrameRef.current);
             playerSprite.material.needsUpdate = true;
           }
         }
@@ -551,6 +636,11 @@ export default function RPGGame() {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
+      fallbackPlayerTexture.dispose();
+      if (playerSheetFramesRef.current) {
+        playerSheetFramesRef.current.dispose();
+        playerSheetFramesRef.current = null;
+      }
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
