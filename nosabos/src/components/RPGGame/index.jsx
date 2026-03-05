@@ -30,6 +30,17 @@ import {
   PLAYER_COLORS,
 } from "./pixelArt";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
+import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
+import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
+import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
+import catSpriteSheetUrl from "../../sprites/cat_sprites.png";
+
+const NPC_SPRITE_SHEETS = [
+  { id: "purple-girl", url: purpleGirlSpriteSheetUrl },
+  { id: "hamster", url: hamsterSpriteSheetUrl },
+  { id: "frog", url: frogSpriteSheetUrl },
+  { id: "cat", url: catSpriteSheetUrl },
+];
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -113,11 +124,44 @@ export default function RPGGame() {
   const playerSpriteRef = useRef(null);
   const npcSpritesRef = useRef([]);
   const npcIndicatorsRef = useRef([]);
+  const npcSheetFramesRef = useRef(new Map());
   const animFrameRef = useRef(null);
   const mapDataRef = useRef(null);
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
   const playerSheetFramesRef = useRef(null);
+
+  const chooseRandomNPCVariants = useCallback(() => {
+    const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
+    const selectedCount =
+      2 + Math.floor(Math.random() * Math.min(3, shuffled.length));
+
+    return shuffled.slice(0, selectedCount).map((sheet) => ({
+      ...sheet,
+      modelIndex: Math.floor(Math.random() * 4),
+    }));
+  }, []);
+
+  const extractModelCanvas = useCallback((image, modelIndex) => {
+    const rows = 2;
+    const cols = 2;
+    const clampedModelIndex = Math.max(0, Math.min(3, modelIndex));
+    const row = Math.floor(clampedModelIndex / cols);
+    const col = clampedModelIndex % cols;
+    const width = Math.floor(image.width / cols);
+    const height = Math.floor(image.height / rows);
+    const sx = col * width;
+    const sy = row * height;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, sx, sy, width, height, 0, 0, width, height);
+    return canvas;
+  }, []);
 
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
     const expectedRows = 5;
@@ -578,9 +622,14 @@ export default function RPGGame() {
     scene.add(playerSprite);
     playerSpriteRef.current = playerSprite;
 
+    const selectedNPCVariants = chooseRandomNPCVariants();
+
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
     const npcIndicators = [];
+    const npcAssignments = scenario.npcs.map(
+      (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
+    );
     scenario.npcs.forEach((npc) => {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
@@ -615,6 +664,33 @@ export default function RPGGame() {
       scene.add(indicator);
       npcIndicators.push(indicator);
     });
+
+    selectedNPCVariants.forEach((variant) => {
+      textureLoader.load(
+        variant.url,
+        (sheetTexture) => {
+          const croppedModel = extractModelCanvas(
+            sheetTexture.image,
+            variant.modelIndex,
+          );
+          const frameSet = buildPlayerSheetFrames(croppedModel);
+          npcSheetFramesRef.current.set(variant.id, frameSet);
+
+          npcAssignments.forEach((assignment, index) => {
+            if (assignment.id !== variant.id) return;
+            const npcMesh = npcSprites[index];
+            if (!npcMesh?.material) return;
+            npcMesh.material.map = frameSet.getFrame("down", 0);
+            npcMesh.material.needsUpdate = true;
+          });
+        },
+        undefined,
+        () => {
+          // Keep generated fallback sprites for NPCs if loading fails.
+        },
+      );
+    });
+
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
 
@@ -771,6 +847,8 @@ export default function RPGGame() {
         playerSheetFramesRef.current.dispose();
         playerSheetFramesRef.current = null;
       }
+      npcSheetFramesRef.current.forEach((frameSet) => frameSet.dispose());
+      npcSheetFramesRef.current.clear();
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -778,7 +856,12 @@ export default function RPGGame() {
         canvasRef.current.removeChild(renderer.domElement);
       }
     };
-  }, [scenario]);
+  }, [
+    buildPlayerSheetFrames,
+    chooseRandomNPCVariants,
+    extractModelCanvas,
+    scenario,
+  ]);
 
   // ─── Interact with NPCs ───────────────────────────────────────────────
   useEffect(() => {
