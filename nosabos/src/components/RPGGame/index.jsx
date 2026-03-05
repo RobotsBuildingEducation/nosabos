@@ -29,6 +29,7 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
+import useSoundSettings from "../../hooks/useSoundSettings";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
 import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
@@ -115,6 +116,9 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const isTouchDevice = useRef(false);
+  const levelCompleteSoundPlayedRef = useRef(false);
+
+  const playSound = useSoundSettings((state) => state.playSound);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -415,6 +419,13 @@ export default function RPGGame() {
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
 
+  const playGameSound = useCallback(
+    (name) => {
+      void playSound(name);
+    },
+    [playSound],
+  );
+
   const handleSelectScenario = useCallback(
     async (mapId) => {
       setLoadingScenarioId(mapId);
@@ -431,6 +442,7 @@ export default function RPGGame() {
       );
       setScenario(generated);
       setLoadingScenarioId(null);
+      levelCompleteSoundPlayedRef.current = false;
     },
     [targetLang, supportLang],
   );
@@ -878,6 +890,8 @@ export default function RPGGame() {
                   walkFrameRef.current,
                 );
             playerSprite.material.needsUpdate = true;
+
+            playGameSound("rpgStep");
           }
         } else {
           gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
@@ -967,6 +981,7 @@ export default function RPGGame() {
     buildPlayerSheetFrames,
     chooseRandomNPCVariants,
     createNPCTextureFromSheet,
+    playGameSound,
     scenario,
   ]);
 
@@ -1002,6 +1017,7 @@ export default function RPGGame() {
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
+          playGameSound("rpgDialogueOpen");
           return;
         }
       }
@@ -1078,6 +1094,7 @@ export default function RPGGame() {
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
+          playGameSound("rpgDialogueOpen");
         }
         return;
       }
@@ -1109,6 +1126,7 @@ export default function RPGGame() {
     gameComplete,
     getQuestionForNPC,
     greetings,
+    playGameSound,
   ]);
 
   // ─── Update NPC indicators ────────────────────────────────────────────
@@ -1122,7 +1140,10 @@ export default function RPGGame() {
   const handleAnswer = (optionIdx) => {
     if (!dialogue) return;
 
+    playGameSound("rpgDialogueSelect");
+
     if (optionIdx === dialogue.question.correct) {
+      playGameSound("correct");
       setFeedback("correct");
       const newAnswered = new Set(answeredNPCs);
       newAnswered.add(dialogue.npcIdx);
@@ -1136,13 +1157,22 @@ export default function RPGGame() {
         }
       }, 1000);
     } else {
+      playGameSound("incorrect");
       setFeedback("incorrect");
       setTimeout(() => setFeedback(null), 1200);
     }
   };
 
+  useEffect(() => {
+    if (!gameComplete || levelCompleteSoundPlayedRef.current) return;
+    levelCompleteSoundPlayedRef.current = true;
+    playGameSound("rpgLevelComplete");
+    setTimeout(() => playGameSound("sparkle"), 250);
+  }, [gameComplete, playGameSound]);
+
   // ─── Reset / change scenario ──────────────────────────────────────────
   const resetGame = () => {
+    playGameSound("submitAction");
     setAnsweredNPCs(new Set());
     setDialogue(null);
     setFeedback(null);
@@ -1154,6 +1184,7 @@ export default function RPGGame() {
   };
 
   const goToScenarioSelect = () => {
+    playGameSound("submitAction");
     // Clean up Three.js
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (rendererRef.current) {
@@ -1517,6 +1548,7 @@ export default function RPGGame() {
               variant="ghost"
               color="gray.500"
               onClick={() => {
+                playGameSound("click");
                 setDialogue(null);
                 setFeedback(null);
               }}
