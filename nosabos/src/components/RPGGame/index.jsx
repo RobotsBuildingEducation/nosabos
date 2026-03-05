@@ -1424,31 +1424,6 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
-      {/* Movement hint */}
-      {!dialogue && !gameComplete && (
-        <Box
-          position="absolute"
-          bottom={20}
-          left="50%"
-          transform="translateX(-50%)"
-          zIndex={10}
-        >
-          <Text
-            color="whiteAlpha.500"
-            fontSize="xs"
-            textAlign="center"
-            bg="blackAlpha.500"
-            px={3}
-            py={1}
-            borderRadius="md"
-          >
-            {isTouchDevice.current ? ui.touchMove : ui.moveHint}
-            {" · "}
-            {ui.talkHint}
-          </Text>
-        </Box>
-      )}
-
       {/* Mobile D-pad */}
       <Box
         position="absolute"
