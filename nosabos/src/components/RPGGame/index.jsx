@@ -332,6 +332,7 @@ export default function RPGGame() {
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
+      idleHoldMs: 0,
       npcBobPhase: 0,
       getTile,
       isSolid,
@@ -576,6 +577,7 @@ export default function RPGGame() {
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
+    const IDLE_DELAY_MS = 220;
 
     function gameLoop(time) {
       animFrameRef.current = requestAnimationFrame(gameLoop);
@@ -634,6 +636,7 @@ export default function RPGGame() {
             gs.playerX = nx;
             gs.playerY = ny;
             gs.moveTimer = MOVE_COOLDOWN;
+            gs.idleHoldMs = IDLE_DELAY_MS;
 
             // Walk animation frame
             walkTimerRef.current++;
@@ -646,10 +649,13 @@ export default function RPGGame() {
             playerSprite.material.needsUpdate = true;
           }
         } else {
-          const sheetFrames = playerSheetFramesRef.current;
-          if (sheetFrames) {
-            playerSprite.material.map = sheetFrames.getFrame("idle", 0);
-            playerSprite.material.needsUpdate = true;
+          gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
+          if (gs.idleHoldMs <= 0) {
+            const sheetFrames = playerSheetFramesRef.current;
+            if (sheetFrames) {
+              playerSprite.material.map = sheetFrames.getFrame("idle", 0);
+              playerSprite.material.needsUpdate = true;
+            }
           }
         }
       }
