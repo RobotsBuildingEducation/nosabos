@@ -1,5 +1,7 @@
 import { getMultiLevelLearningPath } from "../../data/skillTreeData";
-import { callResponses, DEFAULT_RESPONSES_MODEL } from "../../utils/llm";
+
+const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
+const SCENARIO_MODEL = "gpt-5-nano";
 
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -276,10 +278,41 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
   const lessonTerms = getLessonTerms(targetLang);
   const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms });
 
-  const text = await callResponses({
-    model: DEFAULT_RESPONSES_MODEL,
-    input: prompt,
-  });
+  let text = "";
+  try {
+    const r = await fetch(RESPONSES_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        model: SCENARIO_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      }),
+    });
+
+    const contentType = r.headers.get("content-type") || "";
+    const payload = contentType.includes("application/json")
+      ? await r.json()
+      : await r.text();
+
+    text =
+      (typeof payload?.output_text === "string" && payload.output_text) ||
+      (Array.isArray(payload?.output) &&
+        payload.output
+          .map((it) =>
+            (it?.content || []).map((seg) => seg?.text || "").join(""),
+          )
+          .join(" ")
+          .trim()) ||
+      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+      (Array.isArray(payload?.choices) && payload.choices[0]?.message?.content) ||
+      (typeof payload === "string" ? payload : "");
+  } catch {
+    text = "";
+  }
 
   const parsed = parseJSON(text);
   const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
