@@ -21,7 +21,8 @@ import {
   createSpriteTexture,
   createNPCIndicatorTexture,
   NPC_PRESETS,
-  PLAYER_COLORS,
+  createPlayerSpriteSheet,
+  updatePlayerSpriteFrame,
 } from "./pixelArt";
 
 // ─── UI text per support language ────────────────────────────────────────────
@@ -110,6 +111,9 @@ export default function RPGGame() {
   const mapDataRef = useRef(null);
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
+  const idleTimerRef = useRef(0);
+  const idleFrameRef = useRef(0);
+  const playerTexRef = useRef(null);
 
   const questions = useMemo(() => {
     if (!scenario) return [];
@@ -362,9 +366,10 @@ export default function RPGGame() {
     scene.add(tileGroup);
     scene.add(spriteGroup);
 
-    // ── Player sprite ─────────────────────────────────────────────────────
-    const playerTex = createCharacterTexture(PLAYER_COLORS, "down", 0);
-    const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
+    // ── Player sprite (sprite sheet) ──────────────────────────────────────
+    const playerTex = createPlayerSpriteSheet();
+    playerTexRef.current = playerTex;
+    const playerGeo = new THREE.PlaneGeometry(TILE * 1.2, TILE * 1.45);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
       transparent: true,
@@ -479,17 +484,33 @@ export default function RPGGame() {
             gs.playerY = ny;
             gs.moveTimer = MOVE_COOLDOWN;
 
-            // Walk animation frame
+            // Walk animation frame (3 frames per direction row)
             walkTimerRef.current++;
-            walkFrameRef.current = walkTimerRef.current % 6;
+            walkFrameRef.current = walkTimerRef.current % 3;
 
-            playerSprite.material.map = createCharacterTexture(
-              PLAYER_COLORS,
+            updatePlayerSpriteFrame(
+              playerTex,
               gs.playerDir,
               walkFrameRef.current,
             );
-            playerSprite.material.needsUpdate = true;
+            idleTimerRef.current = 0;
           }
+        }
+      }
+
+      // Idle animation when not pressing any movement keys
+      const isMoving =
+        gs.keysDown.has("ArrowUp") || gs.keysDown.has("w") ||
+        gs.keysDown.has("ArrowDown") || gs.keysDown.has("s") ||
+        gs.keysDown.has("ArrowLeft") || gs.keysDown.has("a") ||
+        gs.keysDown.has("ArrowRight") || gs.keysDown.has("d");
+
+      if (!isMoving) {
+        idleTimerRef.current += delta;
+        if (idleTimerRef.current > 400) {
+          idleTimerRef.current = 0;
+          idleFrameRef.current = (idleFrameRef.current + 1) % 3;
+          updatePlayerSpriteFrame(playerTex, "idle", idleFrameRef.current);
         }
       }
 

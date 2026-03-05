@@ -1,5 +1,45 @@
 import * as THREE from "three";
 import { mulberry32 } from "./scenarios";
+import spriteSheetUrl from "../../sprites/sprite_sheet.png";
+
+// ─── Sprite sheet configuration ─────────────────────────────────────────────
+const SPRITE_COLS = 3;
+const SPRITE_ROWS = 5;
+const SPRITE_ROW_MAP = {
+  idle: 0,
+  right: 1,
+  left: 2,
+  up: 3,
+  down: 4,
+};
+
+/**
+ * Creates a Three.js texture from the player sprite sheet.
+ * Uses UV repeat/offset to display one frame at a time.
+ */
+export function createPlayerSpriteSheet() {
+  const texture = new THREE.TextureLoader().load(spriteSheetUrl);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.repeat.set(1 / SPRITE_COLS, 1 / SPRITE_ROWS);
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  // Start with idle frame 0
+  updatePlayerSpriteFrame(texture, "idle", 0);
+  return texture;
+}
+
+/**
+ * Updates the sprite sheet texture to show a specific frame.
+ * @param {THREE.Texture} texture - The sprite sheet texture
+ * @param {string} direction - "idle", "right", "left", "up", or "down"
+ * @param {number} frame - Frame index (0, 1, or 2)
+ */
+export function updatePlayerSpriteFrame(texture, direction, frame) {
+  const col = frame % SPRITE_COLS;
+  const row = SPRITE_ROW_MAP[direction] ?? SPRITE_ROW_MAP.idle;
+  texture.offset.set(col / SPRITE_COLS, 1 - (row + 1) / SPRITE_ROWS);
+}
 
 // ─── Color helpers ───────────────────────────────────────────────────────────
 function hexToRgb(hex) {
