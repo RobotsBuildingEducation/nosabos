@@ -588,6 +588,7 @@ export default function RPGGame() {
     // ── Build tiles ─────────────────────────────────────────────────────
     const tileGroup = new THREE.Group();
     const spriteGroup = new THREE.Group();
+    const TILE_OVERDRAW = 0.35;
 
     // Track house clusters to avoid duplicate sprites
     const visitedClusters = new Set();
@@ -602,7 +603,10 @@ export default function RPGGame() {
         const groundDef = scenario.tiles[0];
         if (tileDef.solid && groundDef) {
           const groundTex = createTileTexture(groundDef, x, y, seed);
-          const groundGeo = new THREE.PlaneGeometry(TILE, TILE);
+          const groundGeo = new THREE.PlaneGeometry(
+            TILE + TILE_OVERDRAW,
+            TILE + TILE_OVERDRAW,
+          );
           const groundMat = new THREE.MeshBasicMaterial({ map: groundTex });
           const groundMesh = new THREE.Mesh(groundGeo, groundMat);
           groundMesh.position.set(
@@ -616,7 +620,10 @@ export default function RPGGame() {
         // Tile surface
         if (!tileDef.sprite) {
           const tex = createTileTexture(tileDef, x, y, seed);
-          const geo = new THREE.PlaneGeometry(TILE, TILE);
+          const geo = new THREE.PlaneGeometry(
+            TILE + TILE_OVERDRAW,
+            TILE + TILE_OVERDRAW,
+          );
           const mat = new THREE.MeshBasicMaterial({ map: tex });
           const mesh = new THREE.Mesh(geo, mat);
           mesh.position.set(
@@ -1054,6 +1061,71 @@ export default function RPGGame() {
       const tileX = Math.floor(worldX / TILE);
       const tileY = gs.mapH - 1 - Math.floor(worldY / TILE);
 
+      const moveOneStepToward = (targetX, targetY) => {
+        const deltaX = targetX - gs.playerX;
+        const deltaY = targetY - gs.playerY;
+        if (deltaX === 0 && deltaY === 0) return false;
+
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        const primary =
+          absX >= absY
+            ? { dx: Math.sign(deltaX), dy: 0 }
+            : { dx: 0, dy: Math.sign(deltaY) };
+        const secondary =
+          absX >= absY
+            ? { dx: 0, dy: Math.sign(deltaY) }
+            : { dx: Math.sign(deltaX), dy: 0 };
+
+        const moveCandidates = [primary];
+        if (secondary.dx !== 0 || secondary.dy !== 0) {
+          moveCandidates.push(secondary);
+        }
+
+        const playerSprite = playerSpriteRef.current;
+        const sheetFrames = playerSheetFramesRef.current;
+
+        for (const candidate of moveCandidates) {
+          const stepX = gs.playerX + candidate.dx;
+          const stepY = gs.playerY + candidate.dy;
+          if (candidate.dx === 0 && candidate.dy === 0) continue;
+
+          const npcBlocking = scenario.npcs.some(
+            (n) => n.tx === stepX && n.ty === stepY,
+          );
+          if (gs.isSolid(stepX, stepY) || npcBlocking) continue;
+
+          gs.playerX = stepX;
+          gs.playerY = stepY;
+          gs.moveTimer = 140;
+          gs.idleHoldMs = 400;
+
+          if (candidate.dy < 0) gs.playerDir = "up";
+          else if (candidate.dy > 0) gs.playerDir = "down";
+          else if (candidate.dx < 0) gs.playerDir = "left";
+          else if (candidate.dx > 0) gs.playerDir = "right";
+
+          walkTimerRef.current += 1;
+          walkFrameRef.current = walkTimerRef.current % 6;
+
+          if (playerSprite?.material) {
+            playerSprite.material.map = sheetFrames
+              ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
+              : createCharacterTexture(
+                  PLAYER_COLORS,
+                  gs.playerDir,
+                  walkFrameRef.current,
+                );
+            playerSprite.material.needsUpdate = true;
+          }
+
+          playGameSound("rpgStep");
+          return true;
+        }
+
+        return false;
+      };
+
       // Check NPC click
       const npcIdx = scenario.npcs.findIndex(
         (n) => Math.abs(n.tx - tileX) <= 1 && Math.abs(n.ty - tileY) <= 1,
@@ -1061,29 +1133,12 @@ export default function RPGGame() {
 
       if (npcIdx !== -1 && !answeredNPCs.has(npcIdx) && !dialogue) {
         const npc = scenario.npcs[npcIdx];
-        const adjacentSpots = [
-          { x: npc.tx, y: npc.ty - 1 },
-          { x: npc.tx, y: npc.ty + 1 },
-          { x: npc.tx - 1, y: npc.ty },
-          { x: npc.tx + 1, y: npc.ty },
-        ].filter(
-          (s) =>
-            !gs.isSolid(s.x, s.y) &&
-            !scenario.npcs.some((n) => n.tx === s.x && n.ty === s.y),
-        );
+        const npcDistance =
+          Math.abs(npc.tx - gs.playerX) + Math.abs(npc.ty - gs.playerY);
 
-        if (adjacentSpots.length > 0) {
-          let best = adjacentSpots[0];
-          let bestDist = Infinity;
-          adjacentSpots.forEach((s) => {
-            const d = Math.abs(s.x - gs.playerX) + Math.abs(s.y - gs.playerY);
-            if (d < bestDist) {
-              bestDist = d;
-              best = s;
-            }
-          });
-          gs.playerX = best.x;
-          gs.playerY = best.y;
+        if (npcDistance > 1) {
+          moveOneStepToward(npc.tx, npc.ty);
+          return;
         }
 
         const question = getQuestionForNPC(npcIdx);
@@ -1101,13 +1156,7 @@ export default function RPGGame() {
 
       // Move toward clicked tile
       if (!dialogue) {
-        if (
-          !gs.isSolid(tileX, tileY) &&
-          !scenario.npcs.some((n) => n.tx === tileX && n.ty === tileY)
-        ) {
-          gs.playerX = Math.max(0, Math.min(gs.mapW - 1, tileX));
-          gs.playerY = Math.max(0, Math.min(gs.mapH - 1, tileY));
-        }
+        moveOneStepToward(tileX, tileY);
       }
     };
 
