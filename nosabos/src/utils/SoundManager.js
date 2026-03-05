@@ -473,6 +473,73 @@ class SoundManager {
 
     // === APP-SPECIFIC SOUNDS (replacing MP3 files) ===
 
+    // Cute RPG movement step
+    rpgStep: () => {
+      const synth = this.getSynth({
+        type: "triangle",
+        attack: 0.001,
+        decay: 0.05,
+        sustain: 0,
+        release: 0.03,
+      });
+      synth.volume.value = VOL.QUIET;
+      synth.triggerAttackRelease("C6", "128n");
+      setTimeout(() => synth.triggerAttackRelease("G5", "128n"), 20);
+      this.releaseSynth(synth, 120);
+    },
+
+    // Dialogue open cue
+    rpgDialogueOpen: () => {
+      const synth = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.01,
+          decay: 0.08,
+          sustain: 0.05,
+          release: 0.1,
+        },
+        VOL.SOFT,
+        350
+      );
+      const now = Tone.now();
+      synth.triggerAttackRelease("D5", "32n", now);
+      synth.triggerAttackRelease("A5", "32n", now + 0.04);
+      synth.triggerAttackRelease("D6", "32n", now + 0.08);
+    },
+
+    // Dialogue button/select cue
+    rpgDialogueSelect: () => {
+      const synth = this.getSynth({
+        type: "sine",
+        attack: 0.001,
+        decay: 0.05,
+        sustain: 0,
+        release: 0.05,
+      });
+      synth.volume.value = VOL.SOFT;
+      synth.triggerAttackRelease("F5", "64n");
+      this.releaseSynth(synth, 120);
+    },
+
+    // Level complete fanfare for RPG mode
+    rpgLevelComplete: () => {
+      const synth = this.createDisposablePolySynth(
+        {
+          type: "triangle",
+          attack: 0.01,
+          decay: 0.25,
+          sustain: 0.12,
+          release: 0.35,
+        },
+        VOL.PROMINENT,
+        1200
+      );
+      const now = Tone.now();
+      ["C5", "E5", "G5", "C6", "E6"].forEach((note, i) => {
+        synth.triggerAttackRelease(note, "16n", now + i * 0.08);
+      });
+    },
+
     // Incorrect answer - descending minor tone (replaces click.mp3 for errors)
     incorrect: () => {
       const synth = this.createDisposablePolySynth(

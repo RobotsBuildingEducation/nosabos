@@ -29,7 +29,19 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
+import useSoundSettings from "../../hooks/useSoundSettings";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
+import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
+import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
+import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
+import catSpriteSheetUrl from "../../sprites/cat_sprites.png";
+
+const NPC_SPRITE_SHEETS = [
+  { id: "purple-girl", url: purpleGirlSpriteSheetUrl },
+  { id: "hamster", url: hamsterSpriteSheetUrl },
+  { id: "frog", url: frogSpriteSheetUrl },
+  { id: "cat", url: catSpriteSheetUrl },
+];
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -104,6 +116,9 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const isTouchDevice = useRef(false);
+  const levelCompleteSoundPlayedRef = useRef(false);
+
+  const playSound = useSoundSettings((state) => state.playSound);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -113,11 +128,143 @@ export default function RPGGame() {
   const playerSpriteRef = useRef(null);
   const npcSpritesRef = useRef([]);
   const npcIndicatorsRef = useRef([]);
+  const npcSheetFramesRef = useRef(new Map());
   const animFrameRef = useRef(null);
   const mapDataRef = useRef(null);
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
   const playerSheetFramesRef = useRef(null);
+
+  const chooseRandomNPCVariants = useCallback(() => {
+    const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
+    const selectedCount =
+      2 + Math.floor(Math.random() * Math.min(3, shuffled.length));
+
+    return shuffled.slice(0, selectedCount).map((sheet) => ({
+      ...sheet,
+      modelIndex: Math.floor(Math.random() * 4),
+    }));
+  }, []);
+
+  const createNPCTextureFromSheet = useCallback((image, modelIndex) => {
+    const width = image.width;
+    const height = image.height;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0);
+
+    const pixels = ctx.getImageData(0, 0, width, height).data;
+    const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
+
+    const visited = new Uint8Array(width * height);
+    const components = [];
+    const neighbors = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        if (visited[idx] || !isOpaque(x, y)) continue;
+
+        const queue = [[x, y]];
+        visited[idx] = 1;
+
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        let size = 0;
+
+        while (queue.length > 0) {
+          const [cx, cy] = queue.pop();
+          size += 1;
+          minX = Math.min(minX, cx);
+          minY = Math.min(minY, cy);
+          maxX = Math.max(maxX, cx);
+          maxY = Math.max(maxY, cy);
+
+          neighbors.forEach(([dx, dy]) => {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
+            const nIdx = ny * width + nx;
+            if (visited[nIdx] || !isOpaque(nx, ny)) return;
+            visited[nIdx] = 1;
+            queue.push([nx, ny]);
+          });
+        }
+
+        // Ignore tiny sparkles/noise.
+        if (size >= 24) {
+          components.push({ minX, minY, maxX, maxY, size });
+        }
+      }
+    }
+
+    if (components.length === 0) return null;
+
+    const expectedCols = 4;
+    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
+    const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
+
+    components.sort((a, b) => {
+      const aCenterX = (a.minX + a.maxX) / 2;
+      const bCenterX = (b.minX + b.maxX) / 2;
+      const aDist = Math.abs(aCenterX - expectedCenterX);
+      const bDist = Math.abs(bCenterX - expectedCenterX);
+
+      // Prioritize horizontal position match for model slot, then size.
+      if (Math.abs(aDist - bDist) > 6) return aDist - bDist;
+      return b.size - a.size;
+    });
+
+    const chosen = components[0];
+    const pad = 2;
+    const minX = Math.max(0, chosen.minX - pad);
+    const minY = Math.max(0, chosen.minY - pad);
+    const maxX = Math.min(width - 1, chosen.maxX + pad);
+    const maxY = Math.min(height - 1, chosen.maxY + pad);
+
+    const trimmedWidth = maxX - minX + 1;
+    const trimmedHeight = maxY - minY + 1;
+    const trimmedCanvas = document.createElement("canvas");
+    trimmedCanvas.width = trimmedWidth;
+    trimmedCanvas.height = trimmedHeight;
+    const trimmedCtx = trimmedCanvas.getContext("2d");
+    trimmedCtx.imageSmoothingEnabled = false;
+    trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
+    trimmedCtx.drawImage(
+      canvas,
+      minX,
+      minY,
+      trimmedWidth,
+      trimmedHeight,
+      0,
+      0,
+      trimmedWidth,
+      trimmedHeight,
+    );
+
+    const texture = new THREE.CanvasTexture(trimmedCanvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+
+    return {
+      texture,
+      aspect: trimmedWidth / trimmedHeight,
+    };
+  }, []);
 
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
     const expectedRows = 5;
@@ -272,6 +419,13 @@ export default function RPGGame() {
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
 
+  const playGameSound = useCallback(
+    (name) => {
+      void playSound(name);
+    },
+    [playSound],
+  );
+
   const handleSelectScenario = useCallback(
     async (mapId) => {
       setLoadingScenarioId(mapId);
@@ -288,6 +442,7 @@ export default function RPGGame() {
       );
       setScenario(generated);
       setLoadingScenarioId(null);
+      levelCompleteSoundPlayedRef.current = false;
     },
     [targetLang, supportLang],
   );
@@ -578,9 +733,14 @@ export default function RPGGame() {
     scene.add(playerSprite);
     playerSpriteRef.current = playerSprite;
 
+    const selectedNPCVariants = chooseRandomNPCVariants();
+
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
     const npcIndicators = [];
+    const npcAssignments = scenario.npcs.map(
+      (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
+    );
     scenario.npcs.forEach((npc) => {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
@@ -615,6 +775,41 @@ export default function RPGGame() {
       scene.add(indicator);
       npcIndicators.push(indicator);
     });
+
+    selectedNPCVariants.forEach((variant) => {
+      textureLoader.load(
+        variant.url,
+        (sheetTexture) => {
+          const npcTexture = createNPCTextureFromSheet(
+            sheetTexture.image,
+            variant.modelIndex,
+          );
+          if (!npcTexture) return;
+
+          npcSheetFramesRef.current.set(variant.id, npcTexture.texture);
+
+          const fallbackNPCAspect = 1.05 / 1.45;
+          const widthScale = Math.max(
+            0.5,
+            Math.min(2.5, npcTexture.aspect / fallbackNPCAspect),
+          );
+
+          npcAssignments.forEach((assignment, index) => {
+            if (assignment.id !== variant.id) return;
+            const npcMesh = npcSprites[index];
+            if (!npcMesh?.material) return;
+            npcMesh.material.map = npcTexture.texture;
+            npcMesh.material.needsUpdate = true;
+            npcMesh.scale.set(widthScale, 1, 1);
+          });
+        },
+        undefined,
+        () => {
+          // Keep generated fallback sprites for NPCs if loading fails.
+        },
+      );
+    });
+
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
 
@@ -695,6 +890,8 @@ export default function RPGGame() {
                   walkFrameRef.current,
                 );
             playerSprite.material.needsUpdate = true;
+
+            playGameSound("rpgStep");
           }
         } else {
           gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
@@ -771,6 +968,8 @@ export default function RPGGame() {
         playerSheetFramesRef.current.dispose();
         playerSheetFramesRef.current = null;
       }
+      npcSheetFramesRef.current.forEach((frameSet) => frameSet.dispose());
+      npcSheetFramesRef.current.clear();
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -778,7 +977,13 @@ export default function RPGGame() {
         canvasRef.current.removeChild(renderer.domElement);
       }
     };
-  }, [scenario]);
+  }, [
+    buildPlayerSheetFrames,
+    chooseRandomNPCVariants,
+    createNPCTextureFromSheet,
+    playGameSound,
+    scenario,
+  ]);
 
   // ─── Interact with NPCs ───────────────────────────────────────────────
   useEffect(() => {
@@ -812,6 +1017,7 @@ export default function RPGGame() {
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
+          playGameSound("rpgDialogueOpen");
           return;
         }
       }
@@ -888,6 +1094,7 @@ export default function RPGGame() {
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
+          playGameSound("rpgDialogueOpen");
         }
         return;
       }
@@ -919,6 +1126,7 @@ export default function RPGGame() {
     gameComplete,
     getQuestionForNPC,
     greetings,
+    playGameSound,
   ]);
 
   // ─── Update NPC indicators ────────────────────────────────────────────
@@ -932,7 +1140,10 @@ export default function RPGGame() {
   const handleAnswer = (optionIdx) => {
     if (!dialogue) return;
 
+    playGameSound("rpgDialogueSelect");
+
     if (optionIdx === dialogue.question.correct) {
+      playGameSound("correct");
       setFeedback("correct");
       const newAnswered = new Set(answeredNPCs);
       newAnswered.add(dialogue.npcIdx);
@@ -946,13 +1157,22 @@ export default function RPGGame() {
         }
       }, 1000);
     } else {
+      playGameSound("incorrect");
       setFeedback("incorrect");
       setTimeout(() => setFeedback(null), 1200);
     }
   };
 
+  useEffect(() => {
+    if (!gameComplete || levelCompleteSoundPlayedRef.current) return;
+    levelCompleteSoundPlayedRef.current = true;
+    playGameSound("rpgLevelComplete");
+    setTimeout(() => playGameSound("sparkle"), 250);
+  }, [gameComplete, playGameSound]);
+
   // ─── Reset / change scenario ──────────────────────────────────────────
   const resetGame = () => {
+    playGameSound("submitAction");
     setAnsweredNPCs(new Set());
     setDialogue(null);
     setFeedback(null);
@@ -964,6 +1184,7 @@ export default function RPGGame() {
   };
 
   const goToScenarioSelect = () => {
+    playGameSound("submitAction");
     // Clean up Three.js
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (rendererRef.current) {
@@ -1327,6 +1548,7 @@ export default function RPGGame() {
               variant="ghost"
               color="gray.500"
               onClick={() => {
+                playGameSound("click");
                 setDialogue(null);
                 setFeedback(null);
               }}
