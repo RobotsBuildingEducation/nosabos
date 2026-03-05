@@ -143,8 +143,9 @@ export default function RPGGame() {
   }, []);
 
   const extractModelCanvas = useCallback((image, modelIndex) => {
-    const rows = 2;
-    const cols = 2;
+    // New sheets are laid out as 4 models across a single row.
+    const rows = 1;
+    const cols = 4;
     const clampedModelIndex = Math.max(0, Math.min(3, modelIndex));
     const row = Math.floor(clampedModelIndex / cols);
     const col = clampedModelIndex % cols;
@@ -676,12 +677,17 @@ export default function RPGGame() {
           const frameSet = buildPlayerSheetFrames(croppedModel);
           npcSheetFramesRef.current.set(variant.id, frameSet);
 
+          const fallbackNPCAspect = 1.05 / 1.45;
+          const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
+          const widthScale = detectedAspect / fallbackNPCAspect;
+
           npcAssignments.forEach((assignment, index) => {
             if (assignment.id !== variant.id) return;
             const npcMesh = npcSprites[index];
             if (!npcMesh?.material) return;
             npcMesh.material.map = frameSet.getFrame("down", 0);
             npcMesh.material.needsUpdate = true;
+            npcMesh.scale.set(widthScale, 1, 1);
           });
         },
         undefined,
