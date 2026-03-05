@@ -159,25 +159,76 @@ export default function RPGGame() {
     sourceCtx.drawImage(image, sx, 0, width, height, 0, 0, width, height);
 
     const pixels = sourceCtx.getImageData(0, 0, width, height).data;
-    let minX = width;
-    let minY = height;
-    let maxX = -1;
-    let maxY = -1;
+    const visited = new Uint8Array(width * height);
+    const components = [];
+    const neighbors = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
+
+    const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        if (pixels[(y * width + x) * 4 + 3] <= 10) continue;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+        const idx = y * width + x;
+        if (visited[idx] || !isOpaque(x, y)) continue;
+
+        const queue = [[x, y]];
+        visited[idx] = 1;
+
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        let size = 0;
+
+        while (queue.length > 0) {
+          const [cx, cy] = queue.pop();
+          size += 1;
+          minX = Math.min(minX, cx);
+          minY = Math.min(minY, cy);
+          maxX = Math.max(maxX, cx);
+          maxY = Math.max(maxY, cy);
+
+          neighbors.forEach(([dx, dy]) => {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
+            const nIdx = ny * width + nx;
+            if (visited[nIdx] || !isOpaque(nx, ny)) return;
+            visited[nIdx] = 1;
+            queue.push([nx, ny]);
+          });
+        }
+
+        components.push({ minX, minY, maxX, maxY, size });
       }
     }
 
-    if (maxX < minX || maxY < minY) return null;
+    if (components.length === 0) return null;
 
-    const trimmedWidth = maxX - minX + 1;
-    const trimmedHeight = maxY - minY + 1;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    components.sort((a, b) => {
+      const aCenterX = (a.minX + a.maxX) / 2;
+      const aCenterY = (a.minY + a.maxY) / 2;
+      const bCenterX = (b.minX + b.maxX) / 2;
+      const bCenterY = (b.minY + b.maxY) / 2;
+
+      const aDist = Math.hypot(aCenterX - centerX, aCenterY - centerY);
+      const bDist = Math.hypot(bCenterX - centerX, bCenterY - centerY);
+
+      // Prefer larger components; break ties by proximity to center.
+      if (Math.abs(a.size - b.size) > 20) return b.size - a.size;
+      return aDist - bDist;
+    });
+
+    const chosen = components[0];
+    const trimmedWidth = chosen.maxX - chosen.minX + 1;
+    const trimmedHeight = chosen.maxY - chosen.minY + 1;
+
     const trimmedCanvas = document.createElement("canvas");
     trimmedCanvas.width = trimmedWidth;
     trimmedCanvas.height = trimmedHeight;
@@ -186,8 +237,8 @@ export default function RPGGame() {
     trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
     trimmedCtx.drawImage(
       sourceCanvas,
-      minX,
-      minY,
+      chosen.minX,
+      chosen.minY,
       trimmedWidth,
       trimmedHeight,
       0,
