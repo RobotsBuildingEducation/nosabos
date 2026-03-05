@@ -113,8 +113,8 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
     // Animated-ish water highlights
     const phase = (tileX * 3 + tileY * 7) % 8;
     for (let i = 0; i < 3; i++) {
-      const wx = (phase + i * 5) % 14 + 1;
-      const wy = (phase + i * 3) % 12 + 2;
+      const wx = ((phase + i * 5) % 14) + 1;
+      const wy = ((phase + i * 3) % 12) + 2;
       px(ctx, wx, wy, lighten(base, 0.25));
       px(ctx, wx + 1, wy, lighten(base, 0.15));
     }
@@ -388,8 +388,10 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
     const rightOffset = -stride;
 
     for (let y = 34; y <= 38; y++) {
-      for (let x = 14 + leftOffset; x <= 17 + leftOffset; x++) draw(xf(x), y, y > 36 ? paw : furDark);
-      for (let x = 22 + rightOffset; x <= 25 + rightOffset; x++) draw(xf(x), y, y > 36 ? paw : furDark);
+      for (let x = 14 + leftOffset; x <= 17 + leftOffset; x++)
+        draw(xf(x), y, y > 36 ? paw : furDark);
+      for (let x = 22 + rightOffset; x <= 25 + rightOffset; x++)
+        draw(xf(x), y, y > 36 ? paw : furDark);
       draw(xf(13 + leftOffset), y, outline);
       draw(xf(26 + rightOffset), y, outline);
     }
@@ -950,12 +952,54 @@ export function createNPCIndicatorTexture() {
 
 // ─── NPC appearance presets ──────────────────────────────────────────────────
 export const NPC_PRESETS = [
-  { species: "fox", fur: 0xf59e0b, belly: 0xfde68a, ear: 0xb45309, paw: 0x92400e, accent: 0xef4444 }, // fox
-  { species: "wolf", fur: 0x9ca3af, belly: 0xe5e7eb, ear: 0x4b5563, paw: 0x6b7280, accent: 0x2563eb }, // wolf
-  { species: "cat", fur: 0x111827, belly: 0xd1d5db, ear: 0x1f2937, paw: 0x374151, accent: 0x22c55e }, // cat
-  { species: "bear", fur: 0xc08457, belly: 0xfde68a, ear: 0x92400e, paw: 0x78350f, accent: 0x8b5cf6 }, // bear cub
-  { species: "bunny", fur: 0xec4899, belly: 0xfce7f3, ear: 0xbe185d, paw: 0xdb2777, accent: 0xf59e0b }, // bunny
-  { species: "otter", fur: 0x14b8a6, belly: 0xccfbf1, ear: 0x0f766e, paw: 0x115e59, accent: 0xe11d48 }, // fantasy pet
+  {
+    species: "fox",
+    fur: 0xf59e0b,
+    belly: 0xfde68a,
+    ear: 0xb45309,
+    paw: 0x92400e,
+    accent: 0xef4444,
+  }, // fox
+  {
+    species: "wolf",
+    fur: 0x9ca3af,
+    belly: 0xe5e7eb,
+    ear: 0x4b5563,
+    paw: 0x6b7280,
+    accent: 0x2563eb,
+  }, // wolf
+  {
+    species: "cat",
+    fur: 0x111827,
+    belly: 0xd1d5db,
+    ear: 0x1f2937,
+    paw: 0x374151,
+    accent: 0x22c55e,
+  }, // cat
+  {
+    species: "bear",
+    fur: 0xc08457,
+    belly: 0xfde68a,
+    ear: 0x92400e,
+    paw: 0x78350f,
+    accent: 0x8b5cf6,
+  }, // bear cub
+  {
+    species: "bunny",
+    fur: 0xec4899,
+    belly: 0xfce7f3,
+    ear: 0xbe185d,
+    paw: 0xdb2777,
+    accent: 0xf59e0b,
+  }, // bunny
+  {
+    species: "otter",
+    fur: 0x14b8a6,
+    belly: 0xccfbf1,
+    ear: 0x0f766e,
+    paw: 0x115e59,
+    accent: 0xe11d48,
+  }, // fantasy pet
 ];
 
 export const PLAYER_COLORS = {
