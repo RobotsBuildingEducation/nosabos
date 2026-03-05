@@ -11,15 +11,39 @@ export const MAP_CHOICES = [
   { id: "airport", name: { en: "Airport", es: "Aeropuerto" } },
 ];
 
-const TILE_LIBRARY = {
-  0: { name: "ground", solid: false, colors: [[0xd4dde6, 0xc9d2db]], detail: "linoleum" },
-  1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbfa063]], detail: "dirt" },
-  2: { name: "wall", solid: true, colors: [[0xb9c3cf, 0xaab4c0]], detail: "wall" },
-  3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "tree" },
-  4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
-  5: { name: "flower", solid: false, colors: [[0x5a9e3e]], detail: "flower" },
-  6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
+const TILE_LIBRARY_BY_MAP = {
+  livingRoom: {
+    0: { name: "ground", solid: false, colors: [[0xc89b6d, 0xb78456, 0xd4aa7b]], detail: "wood_floor" },
+    1: { name: "path", solid: false, colors: [[0xa86f43, 0x9b643b]], detail: "rug" },
+    2: { name: "wall", solid: true, colors: [[0xcab9a5, 0xb7a38d]], detail: "wall" },
+    3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "shelf" },
+    4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
+    5: { name: "flower", solid: false, colors: [[0xb66aa1]], detail: "rug" },
+    6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
+  },
+  park: {
+    0: { name: "ground", solid: false, colors: [[0x6da84d, 0x5e9a42, 0x7bb55a]], detail: "grass" },
+    1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbf9d63]], detail: "dirt" },
+    2: { name: "wall", solid: true, colors: [[0x7e6a53, 0x6b5946]], detail: "wall" },
+    3: { name: "tree", solid: true, colors: [[0x4b8f38]], sprite: "tree" },
+    4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
+    5: { name: "flower", solid: false, colors: [[0x6da84d]], detail: "flower" },
+    6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "fence" },
+  },
+  airport: {
+    0: { name: "ground", solid: false, colors: [[0xd5dde5, 0xc9d3dd]], detail: "tile_floor" },
+    1: { name: "path", solid: false, colors: [[0x7c8b99, 0x6f7d8a]], detail: "runway" },
+    2: { name: "wall", solid: true, colors: [[0xaeb9c4, 0x9caab7]], detail: "wall" },
+    3: { name: "tree", solid: true, colors: [[0x9fb3c7]], sprite: "freezer" },
+    4: { name: "bench", solid: true, colors: [[0x5e6e7c]], sprite: "bench" },
+    5: { name: "flower", solid: false, colors: [[0xd5dde5]], detail: "linoleum" },
+    6: { name: "counter", solid: true, colors: [[0x8da0b1]], sprite: "register" },
+  },
 };
+
+function getTileLibrary(mapId) {
+  return TILE_LIBRARY_BY_MAP[mapId] || TILE_LIBRARY_BY_MAP.park;
+}
 
 function clampInt(n, min, max, fallback) {
   const num = Number.isFinite(Number(n)) ? Number(n) : fallback;
@@ -130,7 +154,7 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     mapHeight,
     playerStart: { x: 3, y: 3 },
     ambientColor: 0x1f2937,
-    tiles: TILE_LIBRARY,
+    tiles: getTileLibrary(mapId),
     generate() {
       const map = new Array(mapWidth * mapHeight).fill(0);
       for (let x = 0; x < mapWidth; x++) {
@@ -257,7 +281,7 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
     mapHeight,
     playerStart,
     ambientColor: safeHex(raw?.ambientColor, 0x1a1a2e),
-    tiles: TILE_LIBRARY,
+    tiles: getTileLibrary(mapId),
     generate() {
       return mapData;
     },

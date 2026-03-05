@@ -150,6 +150,31 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
       const sy = Math.floor(rng() * SIZE);
       pxA(ctx, sx, sy, 0xffffff, 0.06, 1);
     }
+  } else if (detail === "wood_floor") {
+    // Warm plank floor with seam lines and knots
+    for (let py = 0; py < SIZE; py++) {
+      if (py % 4 === 0) {
+        for (let x = 0; x < SIZE; x++) pxA(ctx, x, py, 0x000000, 0.12);
+      }
+    }
+    for (let i = 0; i < 3; i++) {
+      const kx = 2 + Math.floor(rng() * 12);
+      const ky = 2 + Math.floor(rng() * 12);
+      px(ctx, kx, ky, darken(base, 0.2));
+      pxA(ctx, kx + 1, ky, lighten(base, 0.15), 0.5);
+    }
+  } else if (detail === "runway") {
+    // Airport stripe lane
+    for (let py = 0; py < SIZE; py++) {
+      for (let pxI = 0; pxI < SIZE; pxI++) {
+        if ((pxI + tileX * 2) % 8 === 0) {
+          pxA(ctx, pxI, py, 0xffffff, 0.18);
+        }
+      }
+    }
+    if (tileY % 3 === 0) {
+      for (let x = 4; x <= 11; x++) pxA(ctx, x, 7, 0xfff3b0, 0.25);
+    }
   } else if (detail === "flower") {
     // Flower on grass
     const colors = [0xff6b9d, 0xffd93d, 0xff8fab, 0x7eb8da, 0xd4a5ff];
@@ -631,7 +656,7 @@ function createTreeSprite(rng) {
   return makeTexture(canvas);
 }
 
-function createHouseSprite(rng) {
+function createHouseSprite() {
   const SIZE = 48;
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
@@ -643,7 +668,6 @@ function createHouseSprite(rng) {
   const S = 1;
   const wallC = 0xd4a574;
   const wallD = darken(wallC, 0.15);
-  const wallL = lighten(wallC, 0.1);
   const roofC = 0x8b3a3a;
   const roofD = darken(roofC, 0.2);
   const roofL = lighten(roofC, 0.15);
@@ -1057,28 +1081,52 @@ export function createNPCIndicatorTexture() {
 // ─── NPC appearance presets ──────────────────────────────────────────────────
 export const NPC_PRESETS = [
   {
-    hair: 0xc0392b,
-    skin: 0xf5c5a3,
-    shirt: 0x8b5cf6,
-    pants: 0x4a3728,
-    boots: 0x3b2507,
-    accessory: 0xffd700,
+    hair: 0x5a321b,
+    skin: 0xf2c2a0,
+    shirt: 0x7f5af0,
+    pants: 0x3a2e2a,
+    boots: 0x2a1b0f,
+    accessory: 0xf6c453,
   },
   {
-    hair: 0xf1c40f,
-    skin: 0xdeb887,
-    shirt: 0x16a085,
+    hair: 0xd29b2e,
+    skin: 0xe2b184,
+    shirt: 0x198f7a,
     pants: 0x2c3e50,
     boots: 0x5c3317,
-    accessory: 0xff6b9d,
+    accessory: 0xff7ca8,
   },
   {
-    hair: 0x1a1a2e,
+    hair: 0x1f2233,
     skin: 0x8d6e63,
-    shirt: 0xe74c3c,
-    pants: 0x212121,
+    shirt: 0xd94f3d,
+    pants: 0x1c1f2a,
     boots: 0x3e2723,
-    accessory: 0x4fc3f7,
+    accessory: 0x5ac8fa,
+  },
+  {
+    hair: 0x8f4f8f,
+    skin: 0xf0c9a7,
+    shirt: 0x3b82f6,
+    pants: 0x334155,
+    boots: 0x3b2b1f,
+    accessory: 0x93c5fd,
+  },
+  {
+    hair: 0x2f6b2f,
+    skin: 0xc8956d,
+    shirt: 0xeab308,
+    pants: 0x4b5563,
+    boots: 0x3f2d20,
+    accessory: 0xfb7185,
+  },
+  {
+    hair: 0xa13a2f,
+    skin: 0xe9bf96,
+    shirt: 0x14b8a6,
+    pants: 0x312e81,
+    boots: 0x4c1d12,
+    accessory: 0xf9a8d4,
   },
 ];
 
