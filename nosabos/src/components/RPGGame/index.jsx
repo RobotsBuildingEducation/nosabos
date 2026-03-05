@@ -114,9 +114,7 @@ export default function RPGGame() {
   const playerSheetFramesRef = useRef(null);
 
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
-    const rowCount = 5;
-    const frameSize = Math.floor(sourceImage.height / rowCount);
-    const frameCount = Math.max(1, Math.floor(sourceImage.width / frameSize));
+    const expectedRows = 5;
     const directionRows = {
       down: 4,
       up: 3,
@@ -125,24 +123,83 @@ export default function RPGGame() {
       idle: 0,
     };
 
-    const createFrameTexture = (row, col) => {
+    const sample = document.createElement("canvas");
+    sample.width = sourceImage.width;
+    sample.height = sourceImage.height;
+    const sampleCtx = sample.getContext("2d", { willReadFrequently: true });
+    sampleCtx.imageSmoothingEnabled = false;
+    sampleCtx.drawImage(sourceImage, 0, 0);
+    const pixels = sampleCtx.getImageData(0, 0, sample.width, sample.height).data;
+
+    const alphaAt = (x, y) => pixels[(y * sample.width + x) * 4 + 3] > 10;
+    const toRuns = (occupied) => {
+      const runs = [];
+      let start = -1;
+      for (let i = 0; i < occupied.length; i++) {
+        if (occupied[i] && start === -1) start = i;
+        if ((!occupied[i] || i === occupied.length - 1) && start !== -1) {
+          const end = occupied[i] ? i : i - 1;
+          if (end - start + 1 >= 2) runs.push({ start, end });
+          start = -1;
+        }
+      }
+      return runs;
+    };
+
+    const occupiedRows = Array.from({ length: sample.height }, (_, y) => {
+      for (let x = 0; x < sample.width; x++) {
+        if (alphaAt(x, y)) return true;
+      }
+      return false;
+    });
+
+    let rowRuns = toRuns(occupiedRows);
+    if (rowRuns.length >= expectedRows) {
+      rowRuns = rowRuns
+        .sort((a, b) => (b.end - b.start) - (a.end - a.start))
+        .slice(0, expectedRows)
+        .sort((a, b) => a.start - b.start);
+    }
+
+    if (rowRuns.length < expectedRows) {
+      const fallbackRowHeight = Math.floor(sourceImage.height / expectedRows);
+      rowRuns = Array.from({ length: expectedRows }, (_, rowIdx) => {
+        const start = rowIdx * fallbackRowHeight;
+        const end = rowIdx === expectedRows - 1
+          ? sourceImage.height - 1
+          : start + fallbackRowHeight - 1;
+        return { start, end };
+      });
+    }
+
+    const rowFrames = rowRuns.map((row) => {
+      const occupiedCols = Array.from({ length: sample.width }, (_, x) => {
+        for (let y = row.start; y <= row.end; y++) {
+          if (alphaAt(x, y)) return true;
+        }
+        return false;
+      });
+      const colRuns = toRuns(occupiedCols);
+      return colRuns.length > 0
+        ? colRuns
+        : [{ start: 0, end: sample.width - 1 }];
+    });
+
+    const frameHeight = Math.max(...rowRuns.map((r) => r.end - r.start + 1));
+    const frameWidth = Math.max(
+      ...rowFrames.flat().map((r) => r.end - r.start + 1),
+    );
+
+    const createFrameTexture = (sx, sy, sw, sh) => {
       const canvas = document.createElement("canvas");
-      canvas.width = frameSize;
-      canvas.height = frameSize;
+      canvas.width = frameWidth;
+      canvas.height = frameHeight;
       const ctx = canvas.getContext("2d");
       ctx.imageSmoothingEnabled = false;
-      ctx.clearRect(0, 0, frameSize, frameSize);
-      ctx.drawImage(
-        sourceImage,
-        col * frameSize,
-        row * frameSize,
-        frameSize,
-        frameSize,
-        0,
-        0,
-        frameSize,
-        frameSize,
-      );
+      ctx.clearRect(0, 0, frameWidth, frameHeight);
+      const dx = Math.floor((frameWidth - sw) / 2);
+      const dy = Math.floor((frameHeight - sh) / 2);
+      ctx.drawImage(sourceImage, sx, sy, sw, sh, dx, dy, sw, sh);
       const texture = new THREE.CanvasTexture(canvas);
       texture.magFilter = THREE.NearestFilter;
       texture.minFilter = THREE.NearestFilter;
@@ -151,20 +208,33 @@ export default function RPGGame() {
       return texture;
     };
 
-    const animations = Object.fromEntries(
-      Object.entries(directionRows).map(([dir, row]) => [
-        dir,
-        Array.from({ length: frameCount }, (_, col) => createFrameTexture(row, col)),
-      ]),
-    );
+    const makeAnimationsForRow = (rowIdx) => {
+      const row = rowRuns[rowIdx] || rowRuns[0];
+      const cols = rowFrames[rowIdx] || rowFrames[0];
+      return cols.map((col) =>
+        createFrameTexture(
+          col.start,
+          row.start,
+          col.end - col.start + 1,
+          row.end - row.start + 1,
+        ),
+      );
+    };
+
+    const animations = {
+      idle: makeAnimationsForRow(directionRows.idle),
+      right: makeAnimationsForRow(directionRows.right),
+      left: makeAnimationsForRow(directionRows.left),
+      up: makeAnimationsForRow(directionRows.up),
+      down: makeAnimationsForRow(directionRows.down),
+    };
 
     return {
       animations,
-      frameCount,
+      frameCount: Math.max(...Object.values(animations).map((f) => f.length)),
       getFrame(direction = "down", frame = 0) {
-        const key = directionRows[direction] !== undefined ? direction : "down";
-        const frames = animations[key] || animations.down;
-        return frames[frame % frames.length] || frames[0];
+        const frames = animations[direction] || animations.down;
+        return frames[frame % frames.length] || animations.down[0];
       },
       dispose() {
         Object.values(animations).forEach((frames) => {
@@ -573,6 +643,12 @@ export default function RPGGame() {
             playerSprite.material.map = sheetFrames
               ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
               : createCharacterTexture(PLAYER_COLORS, gs.playerDir, walkFrameRef.current);
+            playerSprite.material.needsUpdate = true;
+          }
+        } else {
+          const sheetFrames = playerSheetFramesRef.current;
+          if (sheetFrames) {
+            playerSprite.material.map = sheetFrames.getFrame("idle", 0);
             playerSprite.material.needsUpdate = true;
           }
         }
