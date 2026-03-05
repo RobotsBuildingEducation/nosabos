@@ -29,7 +29,7 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
-import playerSpriteSheetUrl from "../../sprites/sprite_sheet.png";
+import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -122,11 +122,11 @@ export default function RPGGame() {
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
     const expectedRows = 5;
     const directionRows = {
-      down: 4,
+      down: 0,
       up: 3,
       left: 2,
       right: 1,
-      idle: 0,
+      idle: 4,
     };
 
     const sample = document.createElement("canvas");
