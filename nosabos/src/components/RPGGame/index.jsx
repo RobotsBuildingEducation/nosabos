@@ -243,6 +243,8 @@ export default function RPGGame() {
 
     return {
       animations,
+      frameWidth,
+      frameHeight,
       frameCount: Math.max(...Object.values(animations).map((f) => f.length)),
       getFrame(direction = "down", frame = 0) {
         const frames = animations[direction] || animations.down;
@@ -379,6 +381,7 @@ export default function RPGGame() {
       "down",
       0,
     );
+    const fallbackPlayerAspect = 1.05 / 1.45;
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       playerSpriteSheetUrl,
@@ -393,11 +396,18 @@ export default function RPGGame() {
           );
           playerSpriteRef.current.material.map = nextFrame;
           playerSpriteRef.current.material.needsUpdate = true;
+
+          const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
+          const widthScale = detectedAspect / fallbackPlayerAspect;
+          playerSpriteRef.current.scale.set(widthScale, 1, 1);
         }
       },
       undefined,
       () => {
         playerSheetFramesRef.current = null;
+        if (playerSpriteRef.current) {
+          playerSpriteRef.current.scale.set(1, 1, 1);
+        }
       },
     );
 
