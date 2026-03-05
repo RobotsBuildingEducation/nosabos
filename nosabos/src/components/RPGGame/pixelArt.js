@@ -1011,6 +1011,377 @@ export const PLAYER_COLORS = {
   accent: 0x2563eb,
 };
 
+// ─── Programmatic male chibi sprite sheet (16-bit JRPG style) ───────────────
+// Returns a canvas that can be used as a sprite sheet image source.
+// Layout: 256x256, 5 rows x 6 columns (same as sprite_sheet_6.png)
+//   Row 0 = down, Row 1 = right, Row 2 = left, Row 3 = up, Row 4 = idle
+export function createMaleChibiSpriteSheet() {
+  const SHEET = 256;
+  const COLS = 6;
+  const ROWS = 5;
+  const FW = Math.floor(SHEET / COLS); // ~42px per frame
+  const FH = Math.floor(SHEET / ROWS); // ~51px per frame
+
+  const canvas = document.createElement("canvas");
+  canvas.width = SHEET;
+  canvas.height = SHEET;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SHEET, SHEET);
+
+  // Character colors
+  const skin = 0xffdbac;
+  const skinD = darken(skin, 0.15);
+  const skinL = lighten(skin, 0.1);
+  const hair = 0x4a3728;
+  const hairD = darken(hair, 0.25);
+  const hairL = lighten(hair, 0.3);
+  const eyeWhite = 0xffffff;
+  const eyeColor = 0x2563eb;
+  const eyeDark = 0x111827;
+  const outline = 0x1a1a2e;
+  const tunicBase = 0x2d7d46;
+  const tunicD = darken(tunicBase, 0.2);
+  const tunicL = lighten(tunicBase, 0.15);
+  const belt = 0x8b6e50;
+  const beltBuckle = 0xffd700;
+  const pants = 0x3b5998;
+  const pantsD = darken(pants, 0.2);
+  const boots = 0x5c3317;
+  const bootsD = darken(boots, 0.25);
+  const bootsL = lighten(boots, 0.15);
+  const cape = 0xc0392b;
+  const capeD = darken(cape, 0.2);
+
+  // Helper to draw a pixel in a frame cell
+  const fpx = (col, row, lx, ly, c) => {
+    const gx = col * FW + lx;
+    const gy = row * FH + ly;
+    if (gx >= 0 && gx < SHEET && gy >= 0 && gy < SHEET) {
+      px(ctx, gx, gy, c, 1);
+    }
+  };
+
+  const frect = (col, row, lx, ly, w, h, c) => {
+    for (let dy = 0; dy < h; dy++) {
+      for (let dx = 0; dx < w; dx++) {
+        fpx(col, row, lx + dx, ly + dy, c);
+      }
+    }
+  };
+
+  // Symmetry helper: mirror around center x
+  const fmirror = (col, row, cx, off, ly, c) => {
+    fpx(col, row, cx - off, ly, c);
+    fpx(col, row, cx + off, ly, c);
+  };
+
+  // Draw one frame of the male chibi character
+  // cx = horizontal center of character within frame (~21)
+  const drawFrame = (col, row, direction, frame) => {
+    const cx = 21; // center x in frame
+    const phase = frame % 6;
+    const stride = phase === 1 || phase === 5 ? 1 : phase === 3 ? -1 : 0;
+    const bob = phase === 2 || phase === 4 ? 1 : 0;
+    const armSwing = phase === 1 || phase === 2 ? 1 : phase === 4 || phase === 5 ? -1 : 0;
+
+    const by = bob; // vertical bob offset
+
+    if (direction === "down") {
+      // ── HAIR (spiky top) ──
+      // Spiky tufts on top
+      for (let i = -2; i <= 2; i++) {
+        fpx(col, row, cx + i * 3, 3 + by, hairD);
+        fpx(col, row, cx + i * 3, 4 + by, hair);
+      }
+      fpx(col, row, cx - 1, 2 + by, hairD);
+      fpx(col, row, cx, 2 + by, hair);
+      fpx(col, row, cx + 1, 2 + by, hairD);
+      fpx(col, row, cx, 1 + by, hairL);
+
+      // Hair mass
+      frect(col, row, cx - 8, 5 + by, 17, 4, hair);
+      frect(col, row, cx - 9, 7 + by, 19, 3, hair);
+      // Hair highlights
+      fpx(col, row, cx - 4, 5 + by, hairL);
+      fpx(col, row, cx - 3, 6 + by, hairL);
+      fpx(col, row, cx + 3, 5 + by, hairL);
+
+      // ── HEAD (face) ──
+      // Head outline + fill
+      frect(col, row, cx - 8, 9 + by, 17, 14, skin);
+      // Outline edges
+      for (let y = 9; y <= 22; y++) {
+        fpx(col, row, cx - 9, y + by, outline);
+        fpx(col, row, cx + 9, y + by, outline);
+      }
+      for (let x = cx - 8; x <= cx + 8; x++) {
+        fpx(col, row, x, 22 + by, outline);
+      }
+      // Sideburns
+      frect(col, row, cx - 8, 9 + by, 2, 6, hair);
+      frect(col, row, cx + 7, 9 + by, 2, 6, hair);
+
+      // ── EYES ──
+      // Left eye
+      fpx(col, row, cx - 5, 14 + by, eyeWhite);
+      fpx(col, row, cx - 4, 14 + by, eyeWhite);
+      fpx(col, row, cx - 5, 15 + by, eyeColor);
+      fpx(col, row, cx - 4, 15 + by, eyeDark);
+      fpx(col, row, cx - 5, 16 + by, eyeColor);
+      fpx(col, row, cx - 4, 16 + by, eyeColor);
+      // Eye highlight
+      fpx(col, row, cx - 5, 14 + by, 0xffffff);
+      // Right eye
+      fpx(col, row, cx + 4, 14 + by, eyeWhite);
+      fpx(col, row, cx + 5, 14 + by, eyeWhite);
+      fpx(col, row, cx + 4, 15 + by, eyeDark);
+      fpx(col, row, cx + 5, 15 + by, eyeColor);
+      fpx(col, row, cx + 4, 16 + by, eyeColor);
+      fpx(col, row, cx + 5, 16 + by, eyeColor);
+      fpx(col, row, cx + 5, 14 + by, 0xffffff);
+
+      // ── MOUTH ──
+      fpx(col, row, cx - 1, 19 + by, skinD);
+      fpx(col, row, cx, 19 + by, skinD);
+      fpx(col, row, cx + 1, 19 + by, skinD);
+
+      // ── EARS ──
+      fpx(col, row, cx - 9, 13 + by, skin);
+      fpx(col, row, cx - 9, 14 + by, skin);
+      fpx(col, row, cx + 9, 13 + by, skin);
+      fpx(col, row, cx + 9, 14 + by, skin);
+
+      // ── BODY (tunic) ──
+      frect(col, row, cx - 7, 23 + by, 15, 10, tunicBase);
+      // Tunic shading
+      frect(col, row, cx - 7, 23 + by, 2, 10, tunicD);
+      frect(col, row, cx + 6, 23 + by, 2, 10, tunicD);
+      frect(col, row, cx - 2, 23 + by, 5, 2, tunicL);
+      // Collar / V-neck
+      fpx(col, row, cx - 1, 23 + by, skinD);
+      fpx(col, row, cx, 23 + by, skinD);
+      fpx(col, row, cx + 1, 23 + by, skinD);
+      fpx(col, row, cx, 24 + by, skinD);
+      // Body outline
+      for (let y = 23; y <= 32; y++) {
+        fpx(col, row, cx - 8, y + by, outline);
+        fpx(col, row, cx + 8, y + by, outline);
+      }
+
+      // ── BELT ──
+      frect(col, row, cx - 7, 30 + by, 15, 2, belt);
+      fpx(col, row, cx, 30 + by, beltBuckle);
+      fpx(col, row, cx, 31 + by, beltBuckle);
+
+      // ── ARMS ──
+      const leftArmX = cx - 9 + armSwing;
+      const rightArmX = cx + 9 - armSwing;
+      frect(col, row, leftArmX, 24 + by, 2, 7, tunicBase);
+      frect(col, row, leftArmX, 30 + by, 2, 2, skin);
+      frect(col, row, rightArmX, 24 + by, 2, 7, tunicBase);
+      frect(col, row, rightArmX, 30 + by, 2, 2, skin);
+
+      // ── PANTS ──
+      frect(col, row, cx - 6, 32 + by, 6, 5, pants);
+      frect(col, row, cx + 1, 32 + by, 6, 5, pants);
+      // Gap between legs
+      fpx(col, row, cx - 1, 35 + by, pantsD);
+      fpx(col, row, cx, 35 + by, pantsD);
+      fpx(col, row, cx + 1, 35 + by, pantsD);
+
+      // ── BOOTS ──
+      // Left boot
+      frect(col, row, cx - 7 + stride, 37 + by, 6, 4, boots);
+      frect(col, row, cx - 7 + stride, 37 + by, 6, 1, bootsL);
+      fpx(col, row, cx - 8 + stride, 40 + by, bootsD);
+      fpx(col, row, cx - 1 + stride, 40 + by, bootsD);
+      // Right boot
+      frect(col, row, cx + 2 - stride, 37 + by, 6, 4, boots);
+      frect(col, row, cx + 2 - stride, 37 + by, 6, 1, bootsL);
+      fpx(col, row, cx + 1 - stride, 40 + by, bootsD);
+      fpx(col, row, cx + 8 - stride, 40 + by, bootsD);
+
+      // ── SHADOW ──
+      for (let x = cx - 6; x <= cx + 6; x++) {
+        const [sr, sg, sb] = hexToRgb(0x000000);
+        const gx = col * FW + x;
+        const gy = row * FH + 42;
+        if (gx >= 0 && gx < SHEET && gy >= 0 && gy < SHEET) {
+          ctx.fillStyle = `rgba(${sr},${sg},${sb},0.15)`;
+          ctx.fillRect(gx, gy, 1, 1);
+        }
+      }
+    } else if (direction === "up") {
+      // ── HAIR (back view, spiky) ──
+      fpx(col, row, cx - 1, 2 + by, hairD);
+      fpx(col, row, cx, 1 + by, hair);
+      fpx(col, row, cx + 1, 2 + by, hairD);
+      for (let i = -2; i <= 2; i++) {
+        fpx(col, row, cx + i * 3, 3 + by, hairD);
+        fpx(col, row, cx + i * 3, 4 + by, hair);
+      }
+      frect(col, row, cx - 9, 5 + by, 19, 18, hair);
+      // Hair texture
+      for (let y = 7; y <= 20; y += 3) {
+        fpx(col, row, cx - 3, y + by, hairL);
+        fpx(col, row, cx + 4, y + by, hairL);
+      }
+      // Outline
+      for (let y = 5; y <= 22; y++) {
+        fpx(col, row, cx - 10, y + by, outline);
+        fpx(col, row, cx + 10, y + by, outline);
+      }
+
+      // ── EARS (peeking out) ──
+      fpx(col, row, cx - 10, 13 + by, skin);
+      fpx(col, row, cx - 10, 14 + by, skin);
+      fpx(col, row, cx + 10, 13 + by, skin);
+      fpx(col, row, cx + 10, 14 + by, skin);
+
+      // ── BODY (back of tunic) ──
+      frect(col, row, cx - 7, 23 + by, 15, 10, tunicD);
+      for (let y = 23; y <= 32; y++) {
+        fpx(col, row, cx - 8, y + by, outline);
+        fpx(col, row, cx + 8, y + by, outline);
+      }
+      // Cape hint on back
+      frect(col, row, cx - 5, 23 + by, 11, 8, cape);
+      frect(col, row, cx - 4, 23 + by, 9, 2, lighten(cape, 0.1));
+      frect(col, row, cx - 5, 29 + by, 11, 2, capeD);
+
+      // Belt
+      frect(col, row, cx - 7, 30 + by, 15, 2, belt);
+
+      // Arms
+      const leftArmX = cx - 9 + armSwing;
+      const rightArmX = cx + 9 - armSwing;
+      frect(col, row, leftArmX, 24 + by, 2, 7, tunicD);
+      frect(col, row, leftArmX, 30 + by, 2, 2, skin);
+      frect(col, row, rightArmX, 24 + by, 2, 7, tunicD);
+      frect(col, row, rightArmX, 30 + by, 2, 2, skin);
+
+      // Pants
+      frect(col, row, cx - 6, 32 + by, 6, 5, pantsD);
+      frect(col, row, cx + 1, 32 + by, 6, 5, pantsD);
+
+      // Boots
+      frect(col, row, cx - 7 + stride, 37 + by, 6, 4, bootsD);
+      frect(col, row, cx + 2 - stride, 37 + by, 6, 4, bootsD);
+
+      // Shadow
+      for (let x = cx - 6; x <= cx + 6; x++) {
+        const gx = col * FW + x;
+        const gy = row * FH + 42;
+        if (gx >= 0 && gx < SHEET && gy >= 0 && gy < SHEET) {
+          ctx.fillStyle = `rgba(0,0,0,0.15)`;
+          ctx.fillRect(gx, gy, 1, 1);
+        }
+      }
+    } else if (direction === "left" || direction === "right") {
+      const flip = direction === "right";
+      const fx = (lx) => (flip ? FW - 1 - lx : lx);
+      const fdir = flip ? -1 : 1;
+
+      // ── HAIR (side view, spiky) ──
+      fpx(col, row, fx(cx), 1 + by, hairL);
+      fpx(col, row, fx(cx - 1), 2 + by, hair);
+      fpx(col, row, fx(cx + 1), 2 + by, hairD);
+      fpx(col, row, fx(cx - 3), 3 + by, hairD);
+      fpx(col, row, fx(cx + 3), 3 + by, hair);
+      frect(col, row, flip ? cx - 1 : cx - 8, 5 + by, 10, 4, hair);
+      frect(col, row, flip ? cx - 2 : cx - 9, 7 + by, 12, 3, hair);
+      // Back spikes
+      fpx(col, row, fx(cx + 8), 6 + by, hairD);
+      fpx(col, row, fx(cx + 9), 5 + by, hairD);
+      fpx(col, row, fx(cx + 7), 5 + by, hair);
+
+      // ── HEAD (side) ──
+      const headLeft = flip ? cx - 2 : cx - 9;
+      frect(col, row, headLeft, 9 + by, 12, 14, skin);
+      // Hair over forehead
+      frect(col, row, headLeft, 9 + by, 12, 3, hair);
+      // Outline
+      for (let y = 9; y <= 22; y++) {
+        fpx(col, row, headLeft - 1, y + by, outline);
+        fpx(col, row, headLeft + 12, y + by, outline);
+      }
+
+      // ── EYE (side, one visible) ──
+      fpx(col, row, fx(cx - 4), 14 + by, eyeWhite);
+      fpx(col, row, fx(cx - 4), 15 + by, eyeColor);
+      fpx(col, row, fx(cx - 4), 16 + by, eyeDark);
+      fpx(col, row, fx(cx - 3), 14 + by, eyeWhite);
+      fpx(col, row, fx(cx - 3), 15 + by, eyeColor);
+
+      // ── NOSE ──
+      fpx(col, row, fx(cx - 6), 17 + by, skinD);
+
+      // ── MOUTH ──
+      fpx(col, row, fx(cx - 4), 19 + by, skinD);
+      fpx(col, row, fx(cx - 3), 19 + by, skinD);
+
+      // ── EAR ──
+      fpx(col, row, fx(cx + 6), 13 + by, skin);
+      fpx(col, row, fx(cx + 6), 14 + by, skin);
+
+      // ── BODY (side tunic) ──
+      const bodyLeft = flip ? cx - 1 : cx - 7;
+      frect(col, row, bodyLeft, 23 + by, 9, 10, tunicBase);
+      frect(col, row, bodyLeft, 23 + by, 2, 10, tunicD);
+      for (let y = 23; y <= 32; y++) {
+        fpx(col, row, bodyLeft - 1, y + by, outline);
+        fpx(col, row, bodyLeft + 9, y + by, outline);
+      }
+
+      // Cape (back side)
+      frect(col, row, fx(cx + 5), 23 + by, 3, 9, cape);
+      frect(col, row, fx(cx + 5), 30 + by, 3, 2, capeD);
+
+      // Belt
+      frect(col, row, bodyLeft, 30 + by, 9, 2, belt);
+      fpx(col, row, fx(cx - 2), 30 + by, beltBuckle);
+
+      // ── ARM (one visible, in front) ──
+      const armX = fx(cx - 8) + armSwing * fdir;
+      frect(col, row, armX, 24 + by, 2, 7, tunicBase);
+      frect(col, row, armX, 30 + by, 2, 2, skin);
+
+      // ── PANTS (side) ──
+      frect(col, row, bodyLeft + 1, 32 + by, 4, 5, pants);
+      frect(col, row, bodyLeft + 4, 32 + by, 4, 5, pantsD);
+
+      // ── BOOTS ──
+      frect(col, row, bodyLeft + stride, 37 + by, 4, 4, boots);
+      frect(col, row, bodyLeft + 4 - stride, 37 + by, 4, 4, boots);
+      frect(col, row, bodyLeft + stride, 37 + by, 4, 1, bootsL);
+      frect(col, row, bodyLeft + 4 - stride, 37 + by, 4, 1, bootsL);
+
+      // Shadow
+      for (let x = bodyLeft; x <= bodyLeft + 8; x++) {
+        const gx = col * FW + x;
+        const gy = row * FH + 42;
+        if (gx >= 0 && gx < SHEET && gy >= 0 && gy < SHEET) {
+          ctx.fillStyle = `rgba(0,0,0,0.15)`;
+          ctx.fillRect(gx, gy, 1, 1);
+        }
+      }
+    }
+  };
+
+  // Row 0 = down, Row 1 = right, Row 2 = left, Row 3 = up, Row 4 = idle
+  const directions = ["down", "right", "left", "up", "down"];
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      const dir = directions[row];
+      const frame = row === 4 ? col % 2 : col; // idle has subtle bobbing
+      drawFrame(col, row, dir, frame);
+    }
+  }
+
+  return canvas;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function clamp(v) {
   return Math.max(0, Math.min(255, Math.round(v)));

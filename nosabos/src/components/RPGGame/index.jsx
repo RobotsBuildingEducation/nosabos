@@ -26,11 +26,11 @@ import {
   createCharacterTexture,
   createSpriteTexture,
   createNPCIndicatorTexture,
+  createMaleChibiSpriteSheet,
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
-import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
 import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
 import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
@@ -537,34 +537,24 @@ export default function RPGGame() {
       0,
     );
     const fallbackPlayerAspect = 1.05 / 1.45;
+    // Use programmatic male chibi sprite sheet instead of PNG
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      playerSpriteSheetUrl,
-      (sheetTexture) => {
-        const frameSet = buildPlayerSheetFrames(sheetTexture.image);
-        playerSheetFramesRef.current = frameSet;
+    const chibiCanvas = createMaleChibiSpriteSheet();
+    const frameSet = buildPlayerSheetFrames(chibiCanvas);
+    playerSheetFramesRef.current = frameSet;
 
-        if (playerSpriteRef.current?.material) {
-          const nextFrame = frameSet.getFrame(
-            gameStateRef.current?.playerDir || "down",
-            walkFrameRef.current,
-          );
-          playerSpriteRef.current.material.map = nextFrame;
-          playerSpriteRef.current.material.needsUpdate = true;
+    if (playerSpriteRef.current?.material) {
+      const nextFrame = frameSet.getFrame(
+        gameStateRef.current?.playerDir || "down",
+        walkFrameRef.current,
+      );
+      playerSpriteRef.current.material.map = nextFrame;
+      playerSpriteRef.current.material.needsUpdate = true;
 
-          const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
-          const widthScale = detectedAspect / fallbackPlayerAspect;
-          playerSpriteRef.current.scale.set(widthScale, 1, 1);
-        }
-      },
-      undefined,
-      () => {
-        playerSheetFramesRef.current = null;
-        if (playerSpriteRef.current) {
-          playerSpriteRef.current.scale.set(1, 1, 1);
-        }
-      },
-    );
+      const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
+      const widthScale = detectedAspect / fallbackPlayerAspect;
+      playerSpriteRef.current.scale.set(widthScale, 1, 1);
+    }
 
     // Camera
     const aspect = width / height;
