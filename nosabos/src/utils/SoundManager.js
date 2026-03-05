@@ -182,7 +182,8 @@ class SoundManager {
    * Play color switch with a unique chord for each color
    * Each color has a chord that matches its emotional vibe
    */
-  playColorSwitch(index, _total) {
+  playColorSwitch(index, total) {
+    void total;
     if (!this.initialized || !this.enabled) return;
 
     // Chords mapped to colors (index 0-9):
@@ -476,15 +477,15 @@ class SoundManager {
     // Cute RPG movement step
     rpgStep: () => {
       const synth = this.getSynth({
-        type: "triangle",
-        attack: 0.001,
-        decay: 0.05,
+        type: "sine",
+        attack: 0.002,
+        decay: 0.035,
         sustain: 0,
-        release: 0.03,
+        release: 0.05,
       });
-      synth.volume.value = VOL.QUIET;
-      synth.triggerAttackRelease("C6", "128n");
-      setTimeout(() => synth.triggerAttackRelease("G5", "128n"), 20);
+      synth.volume.value = VOL.QUIET - 4;
+      synth.triggerAttackRelease("A5", "256n");
+      setTimeout(() => synth.triggerAttackRelease("E6", "256n"), 18);
       this.releaseSynth(synth, 120);
     },
 

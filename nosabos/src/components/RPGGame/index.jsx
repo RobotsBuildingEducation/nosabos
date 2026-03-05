@@ -17,7 +17,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { ArrowBackIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -35,6 +35,7 @@ import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
 import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
 import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
 import catSpriteSheetUrl from "../../sprites/cat_sprites.png";
+import RandomCharacter from "../RandomCharacter";
 
 const NPC_SPRITE_SHEETS = [
   { id: "purple-girl", url: purpleGirlSpriteSheetUrl },
@@ -79,6 +80,29 @@ const SCENARIO_EMOJIS = {
   livingRoom: "🛋️",
   park: "🌳",
   airport: "✈️",
+};
+
+const DIALOGUE_CHARACTER_POOLS = {
+  hamster: ["35", "24", "27", "28"],
+  frog: ["31", "34", "38"],
+  cat: ["26", "30", "39", "40", "42"],
+  "purple-girl": ["36", "41", "33"],
+  // fallback: [
+  //   "34",
+  //   "23",
+  //   "26",
+  //   "27",
+  //   "30",
+  //   "33",
+  //   "37",
+  //   "25",
+  //   "29",
+  //   "38",
+  //   "39",
+  //   "35",
+  //   "40",
+  //   "32",
+  // ],
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -134,13 +158,14 @@ export default function RPGGame() {
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
   const playerSheetFramesRef = useRef(null);
+  const npcVariantAssignmentsRef = useRef([]);
+  const npcDialogueCharactersRef = useRef(new Map());
 
-  const chooseRandomNPCVariants = useCallback(() => {
+  const chooseRandomNPCVariants = useCallback((npcCount) => {
     const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
-    const selectedCount =
-      2 + Math.floor(Math.random() * Math.min(3, shuffled.length));
+    const desiredCount = Math.max(1, Math.min(npcCount, shuffled.length));
 
-    return shuffled.slice(0, selectedCount).map((sheet) => ({
+    return shuffled.slice(0, desiredCount).map((sheet) => ({
       ...sheet,
       modelIndex: Math.floor(Math.random() * 4),
     }));
@@ -213,7 +238,10 @@ export default function RPGGame() {
     if (components.length === 0) return null;
 
     const expectedCols = 4;
-    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
+    const clampedModelIndex = Math.max(
+      0,
+      Math.min(expectedCols - 1, modelIndex),
+    );
     const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
 
     components.sort((a, b) => {
@@ -426,6 +454,25 @@ export default function RPGGame() {
     [playSound],
   );
 
+  const getDialogueCharacterForNPC = useCallback((npcIdx) => {
+    const existingCharacter = npcDialogueCharactersRef.current.get(npcIdx);
+    if (existingCharacter) return existingCharacter;
+
+    const variantId = npcVariantAssignmentsRef.current[npcIdx];
+    const pool =
+      DIALOGUE_CHARACTER_POOLS[variantId] || DIALOGUE_CHARACTER_POOLS.fallback;
+    const nextCharacter = pool[Math.floor(Math.random() * pool.length)] || "35";
+    npcDialogueCharactersRef.current.set(npcIdx, nextCharacter);
+    return nextCharacter;
+  }, []);
+
+  const closeDialogue = useCallback(() => {
+    if (!dialogue) return;
+    playGameSound("click");
+    setDialogue(null);
+    setFeedback(null);
+  }, [dialogue, playGameSound]);
+
   const handleSelectScenario = useCallback(
     async (mapId) => {
       setLoadingScenarioId(mapId);
@@ -588,6 +635,7 @@ export default function RPGGame() {
     // ── Build tiles ─────────────────────────────────────────────────────
     const tileGroup = new THREE.Group();
     const spriteGroup = new THREE.Group();
+    const TILE_OVERDRAW = 0.35;
 
     // Track house clusters to avoid duplicate sprites
     const visitedClusters = new Set();
@@ -602,7 +650,10 @@ export default function RPGGame() {
         const groundDef = scenario.tiles[0];
         if (tileDef.solid && groundDef) {
           const groundTex = createTileTexture(groundDef, x, y, seed);
-          const groundGeo = new THREE.PlaneGeometry(TILE, TILE);
+          const groundGeo = new THREE.PlaneGeometry(
+            TILE + TILE_OVERDRAW,
+            TILE + TILE_OVERDRAW,
+          );
           const groundMat = new THREE.MeshBasicMaterial({ map: groundTex });
           const groundMesh = new THREE.Mesh(groundGeo, groundMat);
           groundMesh.position.set(
@@ -616,7 +667,10 @@ export default function RPGGame() {
         // Tile surface
         if (!tileDef.sprite) {
           const tex = createTileTexture(tileDef, x, y, seed);
-          const geo = new THREE.PlaneGeometry(TILE, TILE);
+          const geo = new THREE.PlaneGeometry(
+            TILE + TILE_OVERDRAW,
+            TILE + TILE_OVERDRAW,
+          );
           const mat = new THREE.MeshBasicMaterial({ map: tex });
           const mesh = new THREE.Mesh(geo, mat);
           mesh.position.set(
@@ -733,7 +787,7 @@ export default function RPGGame() {
     scene.add(playerSprite);
     playerSpriteRef.current = playerSprite;
 
-    const selectedNPCVariants = chooseRandomNPCVariants();
+    const selectedNPCVariants = chooseRandomNPCVariants(scenario.npcs.length);
 
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
@@ -741,6 +795,10 @@ export default function RPGGame() {
     const npcAssignments = scenario.npcs.map(
       (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
     );
+    npcVariantAssignmentsRef.current = npcAssignments.map(
+      (assignment) => assignment.id,
+    );
+    npcDialogueCharactersRef.current.clear();
     scenario.npcs.forEach((npc) => {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
@@ -1014,6 +1072,7 @@ export default function RPGGame() {
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
+            npcCharacter: getDialogueCharacterForNPC(npcIdx),
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
@@ -1054,6 +1113,71 @@ export default function RPGGame() {
       const tileX = Math.floor(worldX / TILE);
       const tileY = gs.mapH - 1 - Math.floor(worldY / TILE);
 
+      const moveOneStepToward = (targetX, targetY) => {
+        const deltaX = targetX - gs.playerX;
+        const deltaY = targetY - gs.playerY;
+        if (deltaX === 0 && deltaY === 0) return false;
+
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        const primary =
+          absX >= absY
+            ? { dx: Math.sign(deltaX), dy: 0 }
+            : { dx: 0, dy: Math.sign(deltaY) };
+        const secondary =
+          absX >= absY
+            ? { dx: 0, dy: Math.sign(deltaY) }
+            : { dx: Math.sign(deltaX), dy: 0 };
+
+        const moveCandidates = [primary];
+        if (secondary.dx !== 0 || secondary.dy !== 0) {
+          moveCandidates.push(secondary);
+        }
+
+        const playerSprite = playerSpriteRef.current;
+        const sheetFrames = playerSheetFramesRef.current;
+
+        for (const candidate of moveCandidates) {
+          const stepX = gs.playerX + candidate.dx;
+          const stepY = gs.playerY + candidate.dy;
+          if (candidate.dx === 0 && candidate.dy === 0) continue;
+
+          const npcBlocking = scenario.npcs.some(
+            (n) => n.tx === stepX && n.ty === stepY,
+          );
+          if (gs.isSolid(stepX, stepY) || npcBlocking) continue;
+
+          gs.playerX = stepX;
+          gs.playerY = stepY;
+          gs.moveTimer = 140;
+          gs.idleHoldMs = 400;
+
+          if (candidate.dy < 0) gs.playerDir = "up";
+          else if (candidate.dy > 0) gs.playerDir = "down";
+          else if (candidate.dx < 0) gs.playerDir = "left";
+          else if (candidate.dx > 0) gs.playerDir = "right";
+
+          walkTimerRef.current += 1;
+          walkFrameRef.current = walkTimerRef.current % 6;
+
+          if (playerSprite?.material) {
+            playerSprite.material.map = sheetFrames
+              ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
+              : createCharacterTexture(
+                  PLAYER_COLORS,
+                  gs.playerDir,
+                  walkFrameRef.current,
+                );
+            playerSprite.material.needsUpdate = true;
+          }
+
+          playGameSound("rpgStep");
+          return true;
+        }
+
+        return false;
+      };
+
       // Check NPC click
       const npcIdx = scenario.npcs.findIndex(
         (n) => Math.abs(n.tx - tileX) <= 1 && Math.abs(n.ty - tileY) <= 1,
@@ -1061,29 +1185,12 @@ export default function RPGGame() {
 
       if (npcIdx !== -1 && !answeredNPCs.has(npcIdx) && !dialogue) {
         const npc = scenario.npcs[npcIdx];
-        const adjacentSpots = [
-          { x: npc.tx, y: npc.ty - 1 },
-          { x: npc.tx, y: npc.ty + 1 },
-          { x: npc.tx - 1, y: npc.ty },
-          { x: npc.tx + 1, y: npc.ty },
-        ].filter(
-          (s) =>
-            !gs.isSolid(s.x, s.y) &&
-            !scenario.npcs.some((n) => n.tx === s.x && n.ty === s.y),
-        );
+        const npcDistance =
+          Math.abs(npc.tx - gs.playerX) + Math.abs(npc.ty - gs.playerY);
 
-        if (adjacentSpots.length > 0) {
-          let best = adjacentSpots[0];
-          let bestDist = Infinity;
-          adjacentSpots.forEach((s) => {
-            const d = Math.abs(s.x - gs.playerX) + Math.abs(s.y - gs.playerY);
-            if (d < bestDist) {
-              bestDist = d;
-              best = s;
-            }
-          });
-          gs.playerX = best.x;
-          gs.playerY = best.y;
+        if (npcDistance > 1) {
+          moveOneStepToward(npc.tx, npc.ty);
+          return;
         }
 
         const question = getQuestionForNPC(npcIdx);
@@ -1091,6 +1198,7 @@ export default function RPGGame() {
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
+            npcCharacter: getDialogueCharacterForNPC(npcIdx),
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
@@ -1101,13 +1209,7 @@ export default function RPGGame() {
 
       // Move toward clicked tile
       if (!dialogue) {
-        if (
-          !gs.isSolid(tileX, tileY) &&
-          !scenario.npcs.some((n) => n.tx === tileX && n.ty === tileY)
-        ) {
-          gs.playerX = Math.max(0, Math.min(gs.mapW - 1, tileX));
-          gs.playerY = Math.max(0, Math.min(gs.mapH - 1, tileY));
-        }
+        moveOneStepToward(tileX, tileY);
       }
     };
 
@@ -1125,9 +1227,24 @@ export default function RPGGame() {
     answeredNPCs,
     gameComplete,
     getQuestionForNPC,
+    getDialogueCharacterForNPC,
     greetings,
     playGameSound,
   ]);
+
+  useEffect(() => {
+    if (!dialogue || gameComplete) return;
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeDialogue();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [closeDialogue, dialogue, gameComplete]);
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
@@ -1375,31 +1492,6 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
-      {/* Movement hint */}
-      {!dialogue && !gameComplete && (
-        <Box
-          position="absolute"
-          bottom={20}
-          left="50%"
-          transform="translateX(-50%)"
-          zIndex={10}
-        >
-          <Text
-            color="whiteAlpha.500"
-            fontSize="xs"
-            textAlign="center"
-            bg="blackAlpha.500"
-            px={3}
-            py={1}
-            borderRadius="md"
-          >
-            {isTouchDevice.current ? ui.touchMove : ui.moveHint}
-            {" · "}
-            {ui.talkHint}
-          </Text>
-        </Box>
-      )}
-
       {/* Mobile D-pad */}
       <Box
         position="absolute"
@@ -1469,93 +1561,111 @@ export default function RPGGame() {
 
       {/* Dialogue box */}
       {dialogue && !gameComplete && (
-        <Box
-          position="absolute"
-          bottom={4}
-          left="50%"
-          transform="translateX(-50%)"
-          w={{ base: "92%", md: "500px" }}
-          bg="gray.900"
-          border="3px solid"
-          borderColor="yellow.400"
-          borderRadius="lg"
-          p={4}
-          zIndex={20}
-          boxShadow="0 0 30px rgba(0,0,0,0.8)"
-        >
-          <VStack align="stretch" spacing={3}>
-            <HStack>
-              <Badge colorScheme="purple" fontSize="sm" px={2}>
-                {dialogue.npcName}
-              </Badge>
-              {feedback === "correct" && (
-                <Badge colorScheme="green" variant="solid">
-                  {ui.correct}
-                </Badge>
-              )}
-              {feedback === "incorrect" && (
-                <Badge colorScheme="red" variant="solid">
-                  {ui.incorrect}
-                </Badge>
-              )}
-            </HStack>
-
-            <Text color="gray.300" fontSize="sm" fontStyle="italic">
-              &ldquo;{dialogue.greeting}&rdquo;
-            </Text>
-
-            <Text color="white" fontSize="md" fontWeight="bold">
-              {dialogue.question.prompt}
-            </Text>
-
-            <VStack spacing={2}>
-              {dialogue.question.options.map((opt, idx) => (
-                <Button
-                  key={idx}
-                  w="100%"
-                  size="sm"
-                  variant="outline"
-                  colorScheme={
-                    feedback === "correct" && idx === dialogue.question.correct
-                      ? "green"
-                      : feedback === "incorrect" &&
-                          idx === dialogue.question.correct
-                        ? "yellow"
-                        : "whiteAlpha"
-                  }
-                  color="white"
-                  borderColor={
-                    feedback === "correct" && idx === dialogue.question.correct
-                      ? "green.400"
-                      : "whiteAlpha.300"
-                  }
-                  _hover={{ bg: "whiteAlpha.200" }}
-                  onClick={() => handleAnswer(idx)}
-                  isDisabled={feedback === "correct"}
-                  justifyContent="flex-start"
-                  textAlign="left"
-                  whiteSpace="normal"
-                  h="auto"
-                  py={2}
-                >
-                  {String.fromCharCode(65 + idx)}. {opt}
-                </Button>
-              ))}
-            </VStack>
-
-            <Button
+        <Box position="absolute" inset={0} zIndex={20} onClick={closeDialogue}>
+          <Box
+            position="absolute"
+            bottom={4}
+            left="50%"
+            transform="translateX(-50%)"
+            w={{ base: "92%", md: "500px" }}
+            bg="gray.900"
+            border="3px solid"
+            borderColor="yellow.400"
+            borderRadius="lg"
+            p={4}
+            boxShadow="0 0 30px rgba(0,0,0,0.8)"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              aria-label="Close dialogue"
+              icon={<CloseIcon boxSize={2.5} />}
               size="xs"
+              position="absolute"
+              top={2}
+              right={2}
               variant="ghost"
-              color="gray.500"
-              onClick={() => {
-                playGameSound("click");
-                setDialogue(null);
-                setFeedback(null);
-              }}
-            >
-              {ui.back}
-            </Button>
-          </VStack>
+              color="gray.300"
+              _hover={{ bg: "whiteAlpha.200" }}
+              onClick={closeDialogue}
+            />
+            <VStack align="stretch" spacing={3}>
+              <HStack align="center" spacing={2}>
+                <Box pt={1}>
+                  <RandomCharacter
+                    width="42px"
+                    notSoRandomCharacter={dialogue.npcCharacter}
+                  />{" "}
+                </Box>
+                <Badge colorScheme="purple" fontSize="sm" px={2}>
+                  {dialogue.npcName}
+                </Badge>
+                {feedback === "correct" && (
+                  <Badge colorScheme="green" variant="solid">
+                    {ui.correct}
+                  </Badge>
+                )}
+                {feedback === "incorrect" && (
+                  <Badge colorScheme="red" variant="solid">
+                    {ui.incorrect}
+                  </Badge>
+                )}
+              </HStack>
+
+              <Text color="gray.300" fontSize="sm" fontStyle="italic">
+                &ldquo;{dialogue.greeting}&rdquo;
+              </Text>
+
+              <Text color="white" fontSize="md" fontWeight="bold">
+                {dialogue.question.prompt}
+              </Text>
+
+              <VStack spacing={2}>
+                {dialogue.question.options.map((opt, idx) => (
+                  <Button
+                    key={idx}
+                    w="100%"
+                    size="sm"
+                    variant="outline"
+                    colorScheme={
+                      feedback === "correct" &&
+                      idx === dialogue.question.correct
+                        ? "green"
+                        : feedback === "incorrect" &&
+                            idx === dialogue.question.correct
+                          ? "yellow"
+                          : "whiteAlpha"
+                    }
+                    color="white"
+                    borderColor={
+                      feedback === "correct" &&
+                      idx === dialogue.question.correct
+                        ? "green.400"
+                        : "whiteAlpha.300"
+                    }
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    onClick={() => handleAnswer(idx)}
+                    isDisabled={feedback === "correct"}
+                    justifyContent="flex-start"
+                    textAlign="left"
+                    whiteSpace="normal"
+                    h="auto"
+                    py={2}
+                  >
+                    {String.fromCharCode(65 + idx)}. {opt}
+                  </Button>
+                ))}
+              </VStack>
+
+              <Button
+                size="xs"
+                variant="ghost"
+                color="gray.500"
+                onClick={closeDialogue}
+              >
+                {ui.back}
+              </Button>
+            </VStack>
+          </Box>
         </Box>
       )}
 
