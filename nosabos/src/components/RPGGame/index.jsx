@@ -538,6 +538,7 @@ export default function RPGGame() {
     );
     const fallbackPlayerAspect = 1.05 / 1.45;
     // Use programmatic male chibi sprite sheet instead of PNG
+    const textureLoader = new THREE.TextureLoader();
     const chibiCanvas = createMaleChibiSpriteSheet();
     const frameSet = buildPlayerSheetFrames(chibiCanvas);
     playerSheetFramesRef.current = frameSet;
