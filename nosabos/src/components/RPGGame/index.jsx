@@ -31,17 +31,14 @@ import {
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
-import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
-import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
-import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
-import catSpriteSheetUrl from "../../sprites/cat_sprites.png";
+import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
 
-const NPC_SPRITE_SHEETS = [
-  { id: "purple-girl", url: purpleGirlSpriteSheetUrl },
-  { id: "hamster", url: hamsterSpriteSheetUrl },
-  { id: "frog", url: frogSpriteSheetUrl },
-  { id: "cat", url: catSpriteSheetUrl },
+const NPC_SPRITE_ROWS = [
+  { id: "hamster", rowIndex: 0 },
+  { id: "frog", rowIndex: 1 },
+  { id: "purple-girl", rowIndex: 2 },
+  { id: "cat", rowIndex: 3 },
 ];
 
 // ─── UI text per support language ────────────────────────────────────────────
@@ -146,7 +143,7 @@ export default function RPGGame() {
   const npcDialogueCharactersRef = useRef(new Map());
 
   const chooseRandomNPCVariants = useCallback((npcCount) => {
-    const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
+    const shuffled = [...NPC_SPRITE_ROWS].sort(() => Math.random() - 0.5);
     const desiredCount = Math.max(1, Math.min(npcCount, shuffled.length));
 
     return shuffled.slice(0, desiredCount).map((sheet) => ({
@@ -155,7 +152,7 @@ export default function RPGGame() {
     }));
   }, []);
 
-  const createNPCTextureFromSheet = useCallback((image, modelIndex) => {
+  const createNPCTextureFromSheet = useCallback((image, rowIndex, modelIndex) => {
     const width = image.width;
     const height = image.height;
 
@@ -222,19 +219,28 @@ export default function RPGGame() {
     if (components.length === 0) return null;
 
     const expectedCols = 4;
+    const expectedRows = 4;
     const clampedModelIndex = Math.max(
       0,
       Math.min(expectedCols - 1, modelIndex),
     );
+    const clampedRowIndex = Math.max(0, Math.min(expectedRows - 1, rowIndex));
     const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
+    const expectedCenterY = ((clampedRowIndex + 0.5) * height) / expectedRows;
 
     components.sort((a, b) => {
       const aCenterX = (a.minX + a.maxX) / 2;
       const bCenterX = (b.minX + b.maxX) / 2;
+      const aCenterY = (a.minY + a.maxY) / 2;
+      const bCenterY = (b.minY + b.maxY) / 2;
       const aDist = Math.abs(aCenterX - expectedCenterX);
       const bDist = Math.abs(bCenterX - expectedCenterX);
+      const aRowDist = Math.abs(aCenterY - expectedCenterY);
+      const bRowDist = Math.abs(bCenterY - expectedCenterY);
 
-      // Prioritize horizontal position match for model slot, then size.
+      // Prioritize row match first, then model slot match, then size.
+      if (Math.abs(aRowDist - bRowDist) > 6) return aRowDist - bRowDist;
+
       if (Math.abs(aDist - bDist) > 6) return aDist - bDist;
       return b.size - a.size;
     });
@@ -818,12 +824,13 @@ export default function RPGGame() {
       npcIndicators.push(indicator);
     });
 
-    selectedNPCVariants.forEach((variant) => {
-      textureLoader.load(
-        variant.url,
-        (sheetTexture) => {
+    textureLoader.load(
+      npcSpriteSheetUrl,
+      (sheetTexture) => {
+        selectedNPCVariants.forEach((variant) => {
           const npcTexture = createNPCTextureFromSheet(
             sheetTexture.image,
+            variant.rowIndex,
             variant.modelIndex,
           );
           if (!npcTexture) return;
@@ -844,13 +851,13 @@ export default function RPGGame() {
             npcMesh.material.needsUpdate = true;
             npcMesh.scale.set(widthScale, 1, 1);
           });
-        },
-        undefined,
-        () => {
-          // Keep generated fallback sprites for NPCs if loading fails.
-        },
-      );
-    });
+        });
+      },
+      undefined,
+      () => {
+        // Keep generated fallback sprites for NPCs if loading fails.
+      },
+    );
 
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
