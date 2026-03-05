@@ -17,7 +17,7 @@ import {
   Wrap,
   WrapItem,
 } from "@chakra-ui/react";
-import { ArrowBackIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -35,6 +35,7 @@ import purpleGirlSpriteSheetUrl from "../../sprites/purple_girl_sprites.png";
 import hamsterSpriteSheetUrl from "../../sprites/hamster_sprites.png";
 import frogSpriteSheetUrl from "../../sprites/frog_sprites.png";
 import catSpriteSheetUrl from "../../sprites/cat_sprites.png";
+import RandomCharacter from "../RandomCharacter";
 
 const NPC_SPRITE_SHEETS = [
   { id: "purple-girl", url: purpleGirlSpriteSheetUrl },
@@ -79,6 +80,14 @@ const SCENARIO_EMOJIS = {
   livingRoom: "🛋️",
   park: "🌳",
   airport: "✈️",
+};
+
+const DIALOGUE_CHARACTER_POOLS = {
+  hamster: ["35", "24", "27", "28"],
+  frog: ["31", "34", "38"],
+  cat: ["26", "30", "39", "40"],
+  "purple-girl": ["36", "41", "33"],
+  fallback: ["35", "24", "27", "28", "31", "34", "38", "26", "30", "39", "40", "36", "41", "33"],
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -134,6 +143,8 @@ export default function RPGGame() {
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
   const playerSheetFramesRef = useRef(null);
+  const npcVariantAssignmentsRef = useRef([]);
+  const npcDialogueCharactersRef = useRef(new Map());
 
   const chooseRandomNPCVariants = useCallback(() => {
     const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
@@ -425,6 +436,24 @@ export default function RPGGame() {
     },
     [playSound],
   );
+
+  const getDialogueCharacterForNPC = useCallback((npcIdx) => {
+    const existingCharacter = npcDialogueCharactersRef.current.get(npcIdx);
+    if (existingCharacter) return existingCharacter;
+
+    const variantId = npcVariantAssignmentsRef.current[npcIdx];
+    const pool = DIALOGUE_CHARACTER_POOLS[variantId] || DIALOGUE_CHARACTER_POOLS.fallback;
+    const nextCharacter = pool[Math.floor(Math.random() * pool.length)] || "35";
+    npcDialogueCharactersRef.current.set(npcIdx, nextCharacter);
+    return nextCharacter;
+  }, []);
+
+  const closeDialogue = useCallback(() => {
+    if (!dialogue) return;
+    playGameSound("click");
+    setDialogue(null);
+    setFeedback(null);
+  }, [dialogue, playGameSound]);
 
   const handleSelectScenario = useCallback(
     async (mapId) => {
@@ -748,6 +777,8 @@ export default function RPGGame() {
     const npcAssignments = scenario.npcs.map(
       (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
     );
+    npcVariantAssignmentsRef.current = npcAssignments.map((assignment) => assignment.id);
+    npcDialogueCharactersRef.current.clear();
     scenario.npcs.forEach((npc) => {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
@@ -1021,6 +1052,7 @@ export default function RPGGame() {
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
+            npcCharacter: getDialogueCharacterForNPC(npcIdx),
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
@@ -1146,6 +1178,7 @@ export default function RPGGame() {
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
+            npcCharacter: getDialogueCharacterForNPC(npcIdx),
             greeting: greetings[npcIdx % greetings.length],
             question,
           });
@@ -1174,9 +1207,24 @@ export default function RPGGame() {
     answeredNPCs,
     gameComplete,
     getQuestionForNPC,
+    getDialogueCharacterForNPC,
     greetings,
     playGameSound,
   ]);
+
+  useEffect(() => {
+    if (!dialogue || gameComplete) return;
+
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeDialogue();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [closeDialogue, dialogue, gameComplete]);
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
@@ -1495,91 +1543,112 @@ export default function RPGGame() {
       {dialogue && !gameComplete && (
         <Box
           position="absolute"
-          bottom={4}
-          left="50%"
-          transform="translateX(-50%)"
-          w={{ base: "92%", md: "500px" }}
-          bg="gray.900"
-          border="3px solid"
-          borderColor="yellow.400"
-          borderRadius="lg"
-          p={4}
+          inset={0}
           zIndex={20}
-          boxShadow="0 0 30px rgba(0,0,0,0.8)"
+          onClick={closeDialogue}
         >
-          <VStack align="stretch" spacing={3}>
-            <HStack>
-              <Badge colorScheme="purple" fontSize="sm" px={2}>
-                {dialogue.npcName}
-              </Badge>
-              {feedback === "correct" && (
-                <Badge colorScheme="green" variant="solid">
-                  {ui.correct}
-                </Badge>
-              )}
-              {feedback === "incorrect" && (
-                <Badge colorScheme="red" variant="solid">
-                  {ui.incorrect}
-                </Badge>
-              )}
-            </HStack>
-
-            <Text color="gray.300" fontSize="sm" fontStyle="italic">
-              &ldquo;{dialogue.greeting}&rdquo;
-            </Text>
-
-            <Text color="white" fontSize="md" fontWeight="bold">
-              {dialogue.question.prompt}
-            </Text>
-
-            <VStack spacing={2}>
-              {dialogue.question.options.map((opt, idx) => (
-                <Button
-                  key={idx}
-                  w="100%"
-                  size="sm"
-                  variant="outline"
-                  colorScheme={
-                    feedback === "correct" && idx === dialogue.question.correct
-                      ? "green"
-                      : feedback === "incorrect" &&
-                          idx === dialogue.question.correct
-                        ? "yellow"
-                        : "whiteAlpha"
-                  }
-                  color="white"
-                  borderColor={
-                    feedback === "correct" && idx === dialogue.question.correct
-                      ? "green.400"
-                      : "whiteAlpha.300"
-                  }
-                  _hover={{ bg: "whiteAlpha.200" }}
-                  onClick={() => handleAnswer(idx)}
-                  isDisabled={feedback === "correct"}
-                  justifyContent="flex-start"
-                  textAlign="left"
-                  whiteSpace="normal"
-                  h="auto"
-                  py={2}
-                >
-                  {String.fromCharCode(65 + idx)}. {opt}
-                </Button>
-              ))}
-            </VStack>
-
-            <Button
+          <Box
+            position="absolute"
+            bottom={4}
+            left="50%"
+            transform="translateX(-50%)"
+            w={{ base: "92%", md: "500px" }}
+            bg="gray.900"
+            border="3px solid"
+            borderColor="yellow.400"
+            borderRadius="lg"
+            p={4}
+            boxShadow="0 0 30px rgba(0,0,0,0.8)"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IconButton
+              aria-label="Close dialogue"
+              icon={<CloseIcon boxSize={2.5} />}
               size="xs"
+              position="absolute"
+              top={2}
+              right={2}
               variant="ghost"
-              color="gray.500"
-              onClick={() => {
-                playGameSound("click");
-                setDialogue(null);
-                setFeedback(null);
-              }}
-            >
-              {ui.back}
-            </Button>
-          </VStack>
+              color="gray.300"
+              _hover={{ bg: "whiteAlpha.200" }}
+              onClick={closeDialogue}
+            />
+            <VStack align="stretch" spacing={3}>
+              <HStack align="center" spacing={2}>
+                <Box pt={1}>
+                  <RandomCharacter
+                    width="42px"
+                    notSoRandomCharacter={dialogue.npcCharacter}
+                  />
+                </Box>
+                <Badge colorScheme="purple" fontSize="sm" px={2}>
+                  {dialogue.npcName}
+                </Badge>
+                {feedback === "correct" && (
+                  <Badge colorScheme="green" variant="solid">
+                    {ui.correct}
+                  </Badge>
+                )}
+                {feedback === "incorrect" && (
+                  <Badge colorScheme="red" variant="solid">
+                    {ui.incorrect}
+                  </Badge>
+                )}
+              </HStack>
+
+              <Text color="gray.300" fontSize="sm" fontStyle="italic">
+                &ldquo;{dialogue.greeting}&rdquo;
+              </Text>
+
+              <Text color="white" fontSize="md" fontWeight="bold">
+                {dialogue.question.prompt}
+              </Text>
+
+              <VStack spacing={2}>
+                {dialogue.question.options.map((opt, idx) => (
+                  <Button
+                    key={idx}
+                    w="100%"
+                    size="sm"
+                    variant="outline"
+                    colorScheme={
+                      feedback === "correct" && idx === dialogue.question.correct
+                        ? "green"
+                        : feedback === "incorrect" &&
+                            idx === dialogue.question.correct
+                          ? "yellow"
+                          : "whiteAlpha"
+                    }
+                    color="white"
+                    borderColor={
+                      feedback === "correct" && idx === dialogue.question.correct
+                        ? "green.400"
+                        : "whiteAlpha.300"
+                    }
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    onClick={() => handleAnswer(idx)}
+                    isDisabled={feedback === "correct"}
+                    justifyContent="flex-start"
+                    textAlign="left"
+                    whiteSpace="normal"
+                    h="auto"
+                    py={2}
+                  >
+                    {String.fromCharCode(65 + idx)}. {opt}
+                  </Button>
+                ))}
+              </VStack>
+
+              <Button
+                size="xs"
+                variant="ghost"
+                color="gray.500"
+                onClick={closeDialogue}
+              >
+                {ui.back}
+              </Button>
+            </VStack>
+          </Box>
         </Box>
       )}
 
