@@ -245,7 +245,7 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
 
 // ─── Stardew-style character sprite (32x32 with rich detail) ─────────────────
 export function createCharacterTexture(colors, direction = "down", frame = 0) {
-  const SIZE = 48;
+  const SIZE = 40;
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;
@@ -254,147 +254,144 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
   ctx.clearRect(0, 0, SIZE, SIZE);
 
   const outline = 0x1a1a2e;
-  const hairDark = darken(colors.hair, 0.28);
-  const hairLight = lighten(colors.hair, 0.18);
-  const skinDark = darken(colors.skin, 0.2);
-  const skinLight = lighten(colors.skin, 0.16);
-  const shirtDark = darken(colors.shirt, 0.22);
-  const shirtLight = lighten(colors.shirt, 0.14);
-  const pantsDark = darken(colors.pants, 0.2);
-  const bootsDark = darken(colors.boots, 0.2);
+  const fur = colors.fur;
+  const furDark = darken(fur, 0.22);
+  const furLight = lighten(fur, 0.2);
+  const belly = colors.belly || lighten(fur, 0.28);
+  const ear = colors.ear || darken(fur, 0.3);
+  const paw = colors.paw || furDark;
+  const accent = colors.accent || 0xe11d48;
 
   const phase = frame % 6;
   const stride = phase === 1 || phase === 5 ? 1 : phase === 3 ? -1 : 0;
-  const bodyBob = phase === 2 || phase === 4 ? 1 : 0;
+  const bob = phase === 2 || phase === 4 ? 1 : 0;
+  const tailWag = phase % 2 === 0 ? -1 : 1;
 
-  const draw = (x, y, c) => px(ctx, x, y + bodyBob, c);
+  const draw = (x, y, c) => px(ctx, x, y + bob, c);
 
-  const drawSym = (x, y, c) => {
-    draw(24 - x, y, c);
-    draw(23 + x, y, c);
+  const mirror = (cx, off, y, c) => {
+    draw(cx - off, y, c);
+    draw(cx + off - 1, y, c);
   };
 
   const drawHeadFront = () => {
-    for (let y = 6; y <= 18; y++) {
-      const w = y < 10 ? 6 : y < 15 ? 7 : 6;
-      for (let x = -w; x <= w; x++) {
-        const edge = Math.abs(x) >= w;
-        draw(24 + x, y, edge ? skinDark : colors.skin);
+    // ears
+    for (let y = 5; y <= 10; y++) {
+      draw(12, y, outline);
+      draw(27, y, outline);
+      for (let x = 13; x <= 15; x++) draw(x, y, ear);
+      for (let x = 24; x <= 26; x++) draw(x, y, ear);
+    }
+
+    // head
+    for (let y = 9; y <= 22; y++) {
+      const w = y < 13 ? 8 : y < 19 ? 9 : 8;
+      for (let x = 20 - w; x <= 19 + w; x++) {
+        const edge = x === 20 - w || x === 19 + w;
+        draw(x, y, edge ? outline : y < 14 ? furLight : fur);
       }
     }
-    for (let y = 4; y <= 13; y++) {
-      const w = y < 7 ? 6 : 8;
-      for (let x = -w; x <= w; x++) {
-        const edge = Math.abs(x) >= w;
-        draw(24 + x, y, edge ? outline : y < 7 ? hairLight : colors.hair);
-      }
+
+    // muzzle
+    for (let y = 16; y <= 22; y++) {
+      for (let x = 15; x <= 24; x++) draw(x, y, belly);
     }
-    drawSym(4, 12, 0xffffff);
-    drawSym(4, 13, 0x28384d);
-    drawSym(3, 12, lighten(0x28384d, 0.4));
-    draw(23, 15, skinLight);
-    draw(24, 15, skinDark);
-    draw(23, 16, 0xc86b5d);
-    draw(24, 16, 0xb3584f);
-    draw(20, 15, 0xffb1c9);
-    draw(27, 15, 0xffb1c9);
+
+    // eyes + nose
+    mirror(20, 4, 14, 0xffffff);
+    mirror(20, 4, 15, 0x1f2937);
+    draw(19, 18, 0x111827);
+    draw(20, 18, 0x111827);
+    draw(19, 19, 0xb45309);
+    draw(20, 19, 0xb45309);
   };
 
   const drawHeadBack = () => {
-    for (let y = 5; y <= 18; y++) {
-      const w = y < 9 ? 6 : y < 14 ? 8 : 7;
-      for (let x = -w; x <= w; x++) {
-        const edge = Math.abs(x) >= w;
-        const c = y < 8 ? hairLight : y < 14 ? colors.hair : hairDark;
-        draw(24 + x, y, edge ? outline : c);
+    for (let y = 6; y <= 22; y++) {
+      const w = y < 12 ? 8 : y < 19 ? 9 : 8;
+      for (let x = 20 - w; x <= 19 + w; x++) {
+        const edge = x === 20 - w || x === 19 + w;
+        draw(x, y, edge ? outline : y < 12 ? furLight : furDark);
       }
     }
   };
 
-  const drawSideHead = (flip) => {
+  const drawHeadSide = (flip) => {
     const xf = (x) => (flip ? SIZE - 1 - x : x);
-    for (let y = 5; y <= 18; y++) {
-      const w = y < 9 ? 6 : y < 14 ? 7 : 6;
-      for (let x = 17; x <= 17 + w * 2; x++) {
-        const edge = x === 17 || x === 17 + w * 2;
-        const hairLine = x >= 27;
-        const c = hairLine ? (y < 9 ? hairLight : colors.hair) : colors.skin;
-        draw(xf(x), y, edge ? outline : c);
+    for (let y = 6; y <= 22; y++) {
+      const w = y < 12 ? 8 : y < 19 ? 9 : 8;
+      for (let x = 11; x <= 11 + w * 2; x++) {
+        const edge = x === 11 || x === 11 + w * 2;
+        const muzzle = x <= 15;
+        draw(xf(x), y, edge ? outline : muzzle && y > 14 ? belly : fur);
       }
     }
-    draw(xf(20), 12, 0xffffff);
-    draw(xf(20), 13, 0x26374e);
-    draw(xf(19), 14, skinDark);
-    draw(xf(19), 15, 0xbc6157);
+    draw(xf(14), 15, 0xffffff);
+    draw(xf(14), 16, 0x1f2937);
+    draw(xf(12), 18, 0x111827);
+    draw(xf(12), 19, 0xb45309);
   };
 
   const drawBody = (flip = false) => {
     const xf = (x) => (flip ? SIZE - 1 - x : x);
-    for (let y = 19; y <= 30; y++) {
-      const w = y < 22 ? 7 : 8;
-      for (let x = 24 - w; x <= 24 + w; x++) {
-        const edge = x === 24 - w || x === 24 + w;
-        const c = y < 24 ? colors.shirt : y < 28 ? shirtDark : colors.pants;
-        draw(xf(x), y, edge ? outline : c);
+
+    for (let y = 23; y <= 33; y++) {
+      const w = y < 27 ? 8 : 9;
+      for (let x = 20 - w; x <= 19 + w; x++) {
+        const edge = x === 20 - w || x === 19 + w;
+        draw(xf(x), y, edge ? outline : y < 28 ? fur : furDark);
       }
     }
 
-    draw(xf(23), 20, shirtLight);
-    draw(xf(24), 20, shirtLight);
-    if (colors.accessory) {
-      for (let x = 18; x <= 29; x++) draw(xf(x), 27, colors.accessory);
-      draw(xf(23), 27, lighten(colors.accessory, 0.2));
+    // belly patch
+    for (let y = 27; y <= 33; y++) {
+      for (let x = 16; x <= 23; x++) draw(xf(x), y, belly);
     }
 
-    for (let y = 21; y <= 27; y++) {
-      draw(xf(15), y, y < 26 ? colors.skin : skinDark);
-      draw(xf(14), y, outline);
-      draw(xf(33), y, y < 26 ? colors.skin : skinDark);
-      draw(xf(34), y, outline);
-    }
+    // scarf/collar
+    for (let x = 13; x <= 26; x++) draw(xf(x), 24, accent);
+    draw(xf(19), 24, lighten(accent, 0.2));
+
+    // tail
+    const tailX = flip ? 10 : 29;
+    draw(tailX + tailWag, 28, outline);
+    draw(tailX + tailWag, 29, furDark);
+    draw(tailX + tailWag, 30, furDark);
   };
 
-  const drawLegs = (flip = false) => {
+  const drawPaws = (flip = false) => {
     const xf = (x) => (flip ? SIZE - 1 - x : x);
     const leftOffset = stride;
     const rightOffset = -stride;
 
-    for (let y = 31; y <= 39; y++) {
-      for (let x = 19 + leftOffset; x <= 22 + leftOffset; x++) draw(xf(x), y, y > 36 ? pantsDark : colors.pants);
-      for (let x = 25 + rightOffset; x <= 28 + rightOffset; x++) draw(xf(x), y, y > 36 ? pantsDark : colors.pants);
-      draw(xf(18 + leftOffset), y, outline);
-      draw(xf(29 + rightOffset), y, outline);
-    }
-
-    for (let y = 40; y <= 43; y++) {
-      for (let x = 18 + leftOffset; x <= 23 + leftOffset; x++) draw(xf(x), y, y === 43 ? bootsDark : colors.boots);
-      for (let x = 24 + rightOffset; x <= 29 + rightOffset; x++) draw(xf(x), y, y === 43 ? bootsDark : colors.boots);
-      draw(xf(17 + leftOffset), y, outline);
-      draw(xf(30 + rightOffset), y, outline);
+    for (let y = 34; y <= 38; y++) {
+      for (let x = 14 + leftOffset; x <= 17 + leftOffset; x++) draw(xf(x), y, y > 36 ? paw : furDark);
+      for (let x = 22 + rightOffset; x <= 25 + rightOffset; x++) draw(xf(x), y, y > 36 ? paw : furDark);
+      draw(xf(13 + leftOffset), y, outline);
+      draw(xf(26 + rightOffset), y, outline);
     }
   };
 
   if (direction === "up") {
     drawHeadBack();
     drawBody();
-    drawLegs();
+    drawPaws();
   } else if (direction === "left") {
-    drawSideHead(false);
+    drawHeadSide(false);
     drawBody(false);
-    drawLegs(false);
+    drawPaws(false);
   } else if (direction === "right") {
-    drawSideHead(true);
+    drawHeadSide(true);
     drawBody(true);
-    drawLegs(true);
+    drawPaws(true);
   } else {
     drawHeadFront();
     drawBody();
-    drawLegs();
+    drawPaws();
   }
 
-  // soft grounding shadow for depth
-  for (let x = 17; x <= 30; x++) {
-    pxA(ctx, x, 45 + bodyBob, 0x000000, 0.16);
+  for (let x = 13; x <= 26; x++) {
+    pxA(ctx, x, 39, 0x000000, 0.16);
   }
 
   return makeTexture(canvas);
@@ -930,62 +927,20 @@ export function createNPCIndicatorTexture() {
 
 // ─── NPC appearance presets ──────────────────────────────────────────────────
 export const NPC_PRESETS = [
-  {
-    hair: 0x5a321b,
-    skin: 0xf2c2a0,
-    shirt: 0x7f5af0,
-    pants: 0x3a2e2a,
-    boots: 0x2a1b0f,
-    accessory: 0xf6c453,
-  },
-  {
-    hair: 0xd29b2e,
-    skin: 0xe2b184,
-    shirt: 0x198f7a,
-    pants: 0x2c3e50,
-    boots: 0x5c3317,
-    accessory: 0xff7ca8,
-  },
-  {
-    hair: 0x1f2233,
-    skin: 0x8d6e63,
-    shirt: 0xd94f3d,
-    pants: 0x1c1f2a,
-    boots: 0x3e2723,
-    accessory: 0x5ac8fa,
-  },
-  {
-    hair: 0x8f4f8f,
-    skin: 0xf0c9a7,
-    shirt: 0x3b82f6,
-    pants: 0x334155,
-    boots: 0x3b2b1f,
-    accessory: 0x93c5fd,
-  },
-  {
-    hair: 0x2f6b2f,
-    skin: 0xc8956d,
-    shirt: 0xeab308,
-    pants: 0x4b5563,
-    boots: 0x3f2d20,
-    accessory: 0xfb7185,
-  },
-  {
-    hair: 0xa13a2f,
-    skin: 0xe9bf96,
-    shirt: 0x14b8a6,
-    pants: 0x312e81,
-    boots: 0x4c1d12,
-    accessory: 0xf9a8d4,
-  },
+  { fur: 0xf59e0b, belly: 0xfde68a, ear: 0xb45309, paw: 0x92400e, accent: 0xef4444 }, // fox
+  { fur: 0x9ca3af, belly: 0xe5e7eb, ear: 0x4b5563, paw: 0x6b7280, accent: 0x2563eb }, // wolf
+  { fur: 0x111827, belly: 0xd1d5db, ear: 0x1f2937, paw: 0x374151, accent: 0x22c55e }, // cat
+  { fur: 0xc08457, belly: 0xfde68a, ear: 0x92400e, paw: 0x78350f, accent: 0x8b5cf6 }, // bear cub
+  { fur: 0xec4899, belly: 0xfce7f3, ear: 0xbe185d, paw: 0xdb2777, accent: 0xf59e0b }, // bunny
+  { fur: 0x14b8a6, belly: 0xccfbf1, ear: 0x0f766e, paw: 0x115e59, accent: 0xe11d48 }, // fantasy pet
 ];
 
 export const PLAYER_COLORS = {
-  hair: 0x3b2507,
-  skin: 0xf5c5a3,
-  shirt: 0x2563eb,
-  pants: 0x374151,
-  boots: 0x5c3317,
+  fur: 0xd97706,
+  belly: 0xfef3c7,
+  ear: 0x92400e,
+  paw: 0x78350f,
+  accent: 0x2563eb,
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
