@@ -554,7 +554,15 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
-    const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
+    const PLAYER_WIDTH_TILES = 1.05;
+    const PLAYER_HEIGHT_TILES = 1.45;
+    const PLAYER_FOOT_MARGIN_TILES = 0.04;
+    const playerVerticalOffset =
+      TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
+    const playerGeo = new THREE.PlaneGeometry(
+      TILE * PLAYER_WIDTH_TILES,
+      TILE * PLAYER_HEIGHT_TILES,
+    );
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
       transparent: true,
@@ -562,7 +570,7 @@ export default function RPGGame() {
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
       scenario.playerStart.x * TILE + TILE / 2,
-      (MAP_H - 1 - scenario.playerStart.y) * TILE + TILE / 2,
+      (MAP_H - 1 - scenario.playerStart.y) * TILE + TILE / 2 + playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
@@ -703,7 +711,7 @@ export default function RPGGame() {
       gs.renderY += (gs.playerY - gs.renderY) * 0.35;
       playerSprite.position.set(
         gs.renderX * TILE + TILE / 2,
-        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2,
+        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2 + playerVerticalOffset,
         5,
       );
 
