@@ -157,65 +157,78 @@ export default function RPGGame() {
     const pixels = ctx.getImageData(0, 0, width, height).data;
     const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
 
-    const occupiedCols = Array.from({ length: width }, (_, x) => {
-      for (let y = 0; y < height; y++) {
-        if (isOpaque(x, y)) return true;
-      }
-      return false;
-    });
-
-    const colRuns = [];
-    let runStart = -1;
-    for (let x = 0; x < occupiedCols.length; x++) {
-      if (occupiedCols[x] && runStart === -1) runStart = x;
-      if ((!occupiedCols[x] || x === occupiedCols.length - 1) && runStart !== -1) {
-        const end = occupiedCols[x] ? x : x - 1;
-        if (end - runStart + 1 >= 2) colRuns.push({ start: runStart, end });
-        runStart = -1;
-      }
-    }
-
-    // Expected layout is 4 side-by-side models; fall back to equal bins if needed.
-    const expectedCols = 4;
-    const bins =
-      colRuns.length >= expectedCols
-        ? colRuns.slice(0, expectedCols)
-        : Array.from({ length: expectedCols }, (_, idx) => {
-            const binWidth = Math.floor(width / expectedCols);
-            const start = idx * binWidth;
-            const end = idx === expectedCols - 1 ? width - 1 : start + binWidth - 1;
-            return { start, end };
-          });
-
-    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
-    const chosenRun = bins[clampedModelIndex];
-    const prevRun = bins[clampedModelIndex - 1];
-    const nextRun = bins[clampedModelIndex + 1];
-
-    // Expand to nearest gap midpoints so we don't clip models that sit near run edges.
-    const srcLeft = prevRun
-      ? Math.max(0, Math.floor((prevRun.end + chosenRun.start) / 2))
-      : 0;
-    const srcRight = nextRun
-      ? Math.min(width - 1, Math.ceil((chosenRun.end + nextRun.start) / 2))
-      : width - 1;
-
-    let minX = srcRight;
-    let minY = height - 1;
-    let maxX = srcLeft;
-    let maxY = 0;
+    const visited = new Uint8Array(width * height);
+    const components = [];
+    const neighbors = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
 
     for (let y = 0; y < height; y++) {
-      for (let x = srcLeft; x <= srcRight; x++) {
-        if (!isOpaque(x, y)) continue;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        if (visited[idx] || !isOpaque(x, y)) continue;
+
+        const queue = [[x, y]];
+        visited[idx] = 1;
+
+        let minX = x;
+        let minY = y;
+        let maxX = x;
+        let maxY = y;
+        let size = 0;
+
+        while (queue.length > 0) {
+          const [cx, cy] = queue.pop();
+          size += 1;
+          minX = Math.min(minX, cx);
+          minY = Math.min(minY, cy);
+          maxX = Math.max(maxX, cx);
+          maxY = Math.max(maxY, cy);
+
+          neighbors.forEach(([dx, dy]) => {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
+            const nIdx = ny * width + nx;
+            if (visited[nIdx] || !isOpaque(nx, ny)) return;
+            visited[nIdx] = 1;
+            queue.push([nx, ny]);
+          });
+        }
+
+        // Ignore tiny sparkles/noise.
+        if (size >= 24) {
+          components.push({ minX, minY, maxX, maxY, size });
+        }
       }
     }
 
-    if (maxX < minX || maxY < minY) return null;
+    if (components.length === 0) return null;
+
+    const expectedCols = 4;
+    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
+    const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
+
+    components.sort((a, b) => {
+      const aCenterX = (a.minX + a.maxX) / 2;
+      const bCenterX = (b.minX + b.maxX) / 2;
+      const aDist = Math.abs(aCenterX - expectedCenterX);
+      const bDist = Math.abs(bCenterX - expectedCenterX);
+
+      // Prioritize horizontal position match for model slot, then size.
+      if (Math.abs(aDist - bDist) > 6) return aDist - bDist;
+      return b.size - a.size;
+    });
+
+    const chosen = components[0];
+    const pad = 2;
+    const minX = Math.max(0, chosen.minX - pad);
+    const minY = Math.max(0, chosen.minY - pad);
+    const maxX = Math.min(width - 1, chosen.maxX + pad);
+    const maxY = Math.min(height - 1, chosen.maxY + pad);
 
     const trimmedWidth = maxX - minX + 1;
     const trimmedHeight = maxY - minY + 1;
