@@ -194,6 +194,8 @@ export default function RPGGame() {
     gameStateRef.current = {
       playerX: scenario.playerStart.x,
       playerY: scenario.playerStart.y,
+      renderX: scenario.playerStart.x,
+      renderY: scenario.playerStart.y,
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
@@ -362,7 +364,7 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = createCharacterTexture(PLAYER_COLORS, "down", 0);
-    const playerGeo = new THREE.PlaneGeometry(TILE * 0.95, TILE * 1.2);
+    const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
       transparent: true,
@@ -382,7 +384,7 @@ export default function RPGGame() {
     scenario.npcs.forEach((npc) => {
       const preset = NPC_PRESETS[npc.presetIdx % NPC_PRESETS.length];
       const npcTex = createCharacterTexture(preset, "down", 0);
-      const npcGeo = new THREE.PlaneGeometry(TILE * 0.95, TILE * 1.2);
+      const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
       const npcMat = new THREE.MeshBasicMaterial({
         map: npcTex,
         transparent: true,
@@ -479,7 +481,7 @@ export default function RPGGame() {
 
             // Walk animation frame
             walkTimerRef.current++;
-            walkFrameRef.current = walkTimerRef.current % 4;
+            walkFrameRef.current = walkTimerRef.current % 6;
 
             playerSprite.material.map = createCharacterTexture(
               PLAYER_COLORS,
@@ -491,16 +493,18 @@ export default function RPGGame() {
         }
       }
 
-      // Update player position
+      // Update player position with interpolation for smoother movement
+      gs.renderX += (gs.playerX - gs.renderX) * 0.35;
+      gs.renderY += (gs.playerY - gs.renderY) * 0.35;
       playerSprite.position.set(
-        gs.playerX * TILE + TILE / 2,
-        (MAP_H - 1 - gs.playerY) * TILE + TILE / 2,
+        gs.renderX * TILE + TILE / 2,
+        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2,
         5,
       );
 
       // Camera follow (smooth)
-      const camTargetX = gs.playerX * TILE + TILE / 2;
-      const camTargetY = (MAP_H - 1 - gs.playerY) * TILE + TILE / 2;
+      const camTargetX = gs.renderX * TILE + TILE / 2;
+      const camTargetY = (MAP_H - 1 - gs.renderY) * TILE + TILE / 2;
       camera.position.x += (camTargetX - camera.position.x) * 0.1;
       camera.position.y += (camTargetY - camera.position.y) * 0.1;
 

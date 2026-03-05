@@ -15,16 +15,6 @@ function rgbToHex(r, g, b) {
   );
 }
 
-function lerpColor(hex1, hex2, t) {
-  const [r1, g1, b1] = hexToRgb(hex1);
-  const [r2, g2, b2] = hexToRgb(hex2);
-  return rgbToHex(
-    Math.round(r1 + (r2 - r1) * t),
-    Math.round(g1 + (g2 - g1) * t),
-    Math.round(b1 + (b2 - b1) * t),
-  );
-}
-
 function darken(hex, amount) {
   const [r, g, b] = hexToRgb(hex);
   return rgbToHex(
@@ -255,7 +245,7 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
 
 // ─── Stardew-style character sprite (32x32 with rich detail) ─────────────────
 export function createCharacterTexture(colors, direction = "down", frame = 0) {
-  const SIZE = 32;
+  const SIZE = 48;
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
   canvas.height = SIZE;
@@ -263,288 +253,148 @@ export function createCharacterTexture(colors, direction = "down", frame = 0) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, SIZE, SIZE);
 
-  const S = 1; // scale
   const outline = 0x1a1a2e;
-  const hairDark = darken(colors.hair, 0.25);
+  const hairDark = darken(colors.hair, 0.28);
+  const hairLight = lighten(colors.hair, 0.18);
   const skinDark = darken(colors.skin, 0.2);
-  const skinLight = lighten(colors.skin, 0.15);
-  const shirtDark = darken(colors.shirt, 0.25);
-  const shirtLight = lighten(colors.shirt, 0.15);
+  const skinLight = lighten(colors.skin, 0.16);
+  const shirtDark = darken(colors.shirt, 0.22);
+  const shirtLight = lighten(colors.shirt, 0.14);
   const pantsDark = darken(colors.pants, 0.2);
-  const bootsDark = darken(colors.boots, 0.25);
+  const bootsDark = darken(colors.boots, 0.2);
 
-  const isWalk = frame % 2 === 1;
-  const walkSide = frame % 4 < 2 ? -1 : 1;
+  const phase = frame % 6;
+  const stride = phase === 1 || phase === 5 ? 1 : phase === 3 ? -1 : 0;
+  const bodyBob = phase === 2 || phase === 4 ? 1 : 0;
 
-  if (direction === "down") {
-    // ── Hair (rows 2-7) ──
-    // Outline top
-    for (let x = 11; x <= 20; x++) px(ctx, x, 1, outline, S);
-    px(ctx, 10, 2, outline, S);
-    px(ctx, 21, 2, outline, S);
-    // Hair fill
-    for (let y = 2; y <= 6; y++) {
-      for (let x = 11; x <= 20; x++) {
-        const c = y < 4 ? colors.hair : y === 4 ? lerpColor(colors.hair, hairDark, 0.3) : hairDark;
-        px(ctx, x, y, c, S);
+  const draw = (x, y, c) => px(ctx, x, y + bodyBob, c);
+
+  const drawSym = (x, y, c) => {
+    draw(24 - x, y, c);
+    draw(23 + x, y, c);
+  };
+
+  const drawHeadFront = () => {
+    for (let y = 6; y <= 18; y++) {
+      const w = y < 10 ? 6 : y < 15 ? 7 : 6;
+      for (let x = -w; x <= w; x++) {
+        const edge = Math.abs(x) >= w;
+        draw(24 + x, y, edge ? skinDark : colors.skin);
       }
     }
-    // Side hair
-    for (let y = 3; y <= 8; y++) {
-      px(ctx, 10, y, colors.hair, S);
-      px(ctx, 9, y, outline, S);
-      px(ctx, 21, y, colors.hair, S);
-      px(ctx, 22, y, outline, S);
-    }
-
-    // ── Face (rows 7-12) ──
-    for (let y = 7; y <= 12; y++) {
-      for (let x = 11; x <= 20; x++) {
-        const c = x <= 12 ? skinDark : x >= 19 ? skinDark : colors.skin;
-        px(ctx, x, y, c, S);
+    for (let y = 4; y <= 13; y++) {
+      const w = y < 7 ? 6 : 8;
+      for (let x = -w; x <= w; x++) {
+        const edge = Math.abs(x) >= w;
+        draw(24 + x, y, edge ? outline : y < 7 ? hairLight : colors.hair);
       }
     }
-    // Eyes (row 9) - big Stardew-style eyes
-    // Left eye
-    px(ctx, 13, 8, 0xffffff, S);
-    px(ctx, 14, 8, 0xffffff, S);
-    px(ctx, 13, 9, 0x2c3e50, S);
-    px(ctx, 14, 9, 0x1a1a2e, S);
-    px(ctx, 14, 8, lighten(0x2c3e50, 0.5), S); // highlight
-    // Right eye
-    px(ctx, 17, 8, 0xffffff, S);
-    px(ctx, 18, 8, 0xffffff, S);
-    px(ctx, 17, 9, 0x1a1a2e, S);
-    px(ctx, 18, 9, 0x2c3e50, S);
-    px(ctx, 17, 8, lighten(0x2c3e50, 0.5), S);
-    // Nose
-    px(ctx, 15, 10, skinLight, S);
-    px(ctx, 16, 10, skinDark, S);
-    // Mouth
-    px(ctx, 15, 11, 0xd4726a, S);
-    px(ctx, 16, 11, 0xc4625a, S);
-    // Blush
-    pxA(ctx, 12, 10, 0xff8fab, 0.3, S);
-    pxA(ctx, 19, 10, 0xff8fab, 0.3, S);
+    drawSym(4, 12, 0xffffff);
+    drawSym(4, 13, 0x28384d);
+    drawSym(3, 12, lighten(0x28384d, 0.4));
+    draw(23, 15, skinLight);
+    draw(24, 15, skinDark);
+    draw(23, 16, 0xc86b5d);
+    draw(24, 16, 0xb3584f);
+    draw(20, 15, 0xffb1c9);
+    draw(27, 15, 0xffb1c9);
+  };
 
-    // Face outline
-    for (let y = 7; y <= 12; y++) {
-      px(ctx, 9, y, outline, S);
-      px(ctx, 22, y, outline, S);
-    }
-    for (let x = 10; x <= 21; x++) px(ctx, x, 13, outline, S);
-
-    // ── Shirt (rows 13-20) ──
-    for (let y = 13; y <= 19; y++) {
-      for (let x = 9; x <= 22; x++) {
-        const c = x <= 10 ? shirtDark : x >= 21 ? shirtDark : y >= 18 ? shirtDark : colors.shirt;
-        px(ctx, x, y, c, S);
+  const drawHeadBack = () => {
+    for (let y = 5; y <= 18; y++) {
+      const w = y < 9 ? 6 : y < 14 ? 8 : 7;
+      for (let x = -w; x <= w; x++) {
+        const edge = Math.abs(x) >= w;
+        const c = y < 8 ? hairLight : y < 14 ? colors.hair : hairDark;
+        draw(24 + x, y, edge ? outline : c);
       }
-      px(ctx, 8, y, outline, S);
-      px(ctx, 23, y, outline, S);
     }
-    // Shirt collar/detail
-    px(ctx, 15, 13, shirtLight, S);
-    px(ctx, 16, 13, shirtLight, S);
-    px(ctx, 15, 14, shirtLight, S);
-    px(ctx, 16, 14, shirtLight, S);
-    // Shirt bottom outline
-    for (let x = 9; x <= 22; x++) px(ctx, x, 20, outline, S);
+  };
 
-    // Accessory (belt or necklace)
+  const drawSideHead = (flip) => {
+    const xf = (x) => (flip ? SIZE - 1 - x : x);
+    for (let y = 5; y <= 18; y++) {
+      const w = y < 9 ? 6 : y < 14 ? 7 : 6;
+      for (let x = 17; x <= 17 + w * 2; x++) {
+        const edge = x === 17 || x === 17 + w * 2;
+        const hairLine = x >= 27;
+        const c = hairLine ? (y < 9 ? hairLight : colors.hair) : colors.skin;
+        draw(xf(x), y, edge ? outline : c);
+      }
+    }
+    draw(xf(20), 12, 0xffffff);
+    draw(xf(20), 13, 0x26374e);
+    draw(xf(19), 14, skinDark);
+    draw(xf(19), 15, 0xbc6157);
+  };
+
+  const drawBody = (flip = false) => {
+    const xf = (x) => (flip ? SIZE - 1 - x : x);
+    for (let y = 19; y <= 30; y++) {
+      const w = y < 22 ? 7 : 8;
+      for (let x = 24 - w; x <= 24 + w; x++) {
+        const edge = x === 24 - w || x === 24 + w;
+        const c = y < 24 ? colors.shirt : y < 28 ? shirtDark : colors.pants;
+        draw(xf(x), y, edge ? outline : c);
+      }
+    }
+
+    draw(xf(23), 20, shirtLight);
+    draw(xf(24), 20, shirtLight);
     if (colors.accessory) {
-      for (let x = 10; x <= 21; x++) px(ctx, x, 19, colors.accessory, S);
-      px(ctx, 15, 19, lighten(colors.accessory, 0.3), S);
-      px(ctx, 16, 19, lighten(colors.accessory, 0.3), S);
+      for (let x = 18; x <= 29; x++) draw(xf(x), 27, colors.accessory);
+      draw(xf(23), 27, lighten(colors.accessory, 0.2));
     }
 
-    // ── Arms ──
-    for (let y = 14; y <= 18; y++) {
-      px(ctx, 7, y, colors.skin, S);
-      px(ctx, 6, y, outline, S);
-      px(ctx, 24, y, colors.skin, S);
-      px(ctx, 25, y, outline, S);
+    for (let y = 21; y <= 27; y++) {
+      draw(xf(15), y, y < 26 ? colors.skin : skinDark);
+      draw(xf(14), y, outline);
+      draw(xf(33), y, y < 26 ? colors.skin : skinDark);
+      draw(xf(34), y, outline);
     }
-    px(ctx, 7, 19, skinDark, S);
-    px(ctx, 24, 19, skinDark, S);
-    px(ctx, 6, 19, outline, S);
-    px(ctx, 25, 19, outline, S);
+  };
 
-    // ── Pants (rows 20-25) ──
-    for (let y = 20; y <= 25; y++) {
-      // Left leg
-      for (let x = 10; x <= 14; x++) {
-        px(ctx, x, y, y >= 24 ? pantsDark : colors.pants, S);
-      }
-      // Right leg
-      for (let x = 17; x <= 21; x++) {
-        px(ctx, x, y, y >= 24 ? pantsDark : colors.pants, S);
-      }
-      // Gap
-      px(ctx, 15, y, outline, S);
-      px(ctx, 16, y, outline, S);
-      px(ctx, 9, y, outline, S);
-      px(ctx, 22, y, outline, S);
+  const drawLegs = (flip = false) => {
+    const xf = (x) => (flip ? SIZE - 1 - x : x);
+    const leftOffset = stride;
+    const rightOffset = -stride;
+
+    for (let y = 31; y <= 39; y++) {
+      for (let x = 19 + leftOffset; x <= 22 + leftOffset; x++) draw(xf(x), y, y > 36 ? pantsDark : colors.pants);
+      for (let x = 25 + rightOffset; x <= 28 + rightOffset; x++) draw(xf(x), y, y > 36 ? pantsDark : colors.pants);
+      draw(xf(18 + leftOffset), y, outline);
+      draw(xf(29 + rightOffset), y, outline);
     }
 
-    // ── Boots (rows 26-29) ──
-    for (let y = 26; y <= 28; y++) {
-      for (let x = 9; x <= 15; x++) px(ctx, x, y, y === 28 ? bootsDark : colors.boots, S);
-      for (let x = 16; x <= 22; x++) px(ctx, x, y, y === 28 ? bootsDark : colors.boots, S);
-      px(ctx, 8, y, outline, S);
-      px(ctx, 23, y, outline, S);
+    for (let y = 40; y <= 43; y++) {
+      for (let x = 18 + leftOffset; x <= 23 + leftOffset; x++) draw(xf(x), y, y === 43 ? bootsDark : colors.boots);
+      for (let x = 24 + rightOffset; x <= 29 + rightOffset; x++) draw(xf(x), y, y === 43 ? bootsDark : colors.boots);
+      draw(xf(17 + leftOffset), y, outline);
+      draw(xf(30 + rightOffset), y, outline);
     }
-    // Boot outline bottom
-    for (let x = 9; x <= 22; x++) px(ctx, x, 29, outline, S);
+  };
 
-    // Walk animation - shift legs
-    if (isWalk) {
-      px(ctx, 9 + walkSide, 28, colors.boots, S);
-      px(ctx, 22 + walkSide, 28, colors.boots, S);
-    }
-  } else if (direction === "up") {
-    // Back of head - mostly hair
-    for (let x = 11; x <= 20; x++) px(ctx, x, 1, outline, S);
-    px(ctx, 10, 2, outline, S);
-    px(ctx, 21, 2, outline, S);
-    for (let y = 2; y <= 12; y++) {
-      for (let x = 11; x <= 20; x++) {
-        const c = y < 5 ? colors.hair : y < 8 ? hairDark : darken(hairDark, 0.1);
-        px(ctx, x, y, c, S);
-      }
-      px(ctx, 10, y, y <= 3 ? outline : colors.hair, S);
-      px(ctx, 21, y, y <= 3 ? outline : colors.hair, S);
-      px(ctx, 9, y, outline, S);
-      px(ctx, 22, y, outline, S);
-    }
-    for (let x = 10; x <= 21; x++) px(ctx, x, 13, outline, S);
-
-    // Shirt from behind
-    for (let y = 13; y <= 19; y++) {
-      for (let x = 9; x <= 22; x++) px(ctx, x, y, shirtDark, S);
-      px(ctx, 8, y, outline, S);
-      px(ctx, 23, y, outline, S);
-    }
-    for (let x = 9; x <= 22; x++) px(ctx, x, 20, outline, S);
-    if (colors.accessory) {
-      for (let x = 10; x <= 21; x++) px(ctx, x, 19, darken(colors.accessory, 0.2), S);
-    }
-
-    // Arms from behind
-    for (let y = 14; y <= 19; y++) {
-      px(ctx, 7, y, skinDark, S);
-      px(ctx, 6, y, outline, S);
-      px(ctx, 24, y, skinDark, S);
-      px(ctx, 25, y, outline, S);
-    }
-
-    // Pants from behind
-    for (let y = 20; y <= 25; y++) {
-      for (let x = 10; x <= 14; x++) px(ctx, x, y, pantsDark, S);
-      for (let x = 17; x <= 21; x++) px(ctx, x, y, pantsDark, S);
-      px(ctx, 15, y, outline, S);
-      px(ctx, 16, y, outline, S);
-      px(ctx, 9, y, outline, S);
-      px(ctx, 22, y, outline, S);
-    }
-
-    // Boots from behind
-    for (let y = 26; y <= 28; y++) {
-      for (let x = 9; x <= 15; x++) px(ctx, x, y, bootsDark, S);
-      for (let x = 16; x <= 22; x++) px(ctx, x, y, bootsDark, S);
-      px(ctx, 8, y, outline, S);
-      px(ctx, 23, y, outline, S);
-    }
-    for (let x = 9; x <= 22; x++) px(ctx, x, 29, outline, S);
+  if (direction === "up") {
+    drawHeadBack();
+    drawBody();
+    drawLegs();
+  } else if (direction === "left") {
+    drawSideHead(false);
+    drawBody(false);
+    drawLegs(false);
+  } else if (direction === "right") {
+    drawSideHead(true);
+    drawBody(true);
+    drawLegs(true);
   } else {
-    // Side views (left / right)
-    const flipX = direction === "right";
-    const draw = (x, y, c) => {
-      px(ctx, flipX ? SIZE - 1 - x : x, y, c, S);
-    };
+    drawHeadFront();
+    drawBody();
+    drawLegs();
+  }
 
-    // Hair side
-    for (let x = 10; x <= 20; x++) draw(x, 1, outline);
-    draw(9, 2, outline);
-    draw(21, 2, outline);
-    for (let y = 2; y <= 6; y++) {
-      for (let x = 10; x <= 20; x++) draw(x, y, y < 4 ? colors.hair : hairDark);
-      draw(9, y, outline);
-      draw(21, y, outline);
-    }
-    // Extra hair on back side
-    for (let y = 3; y <= 8; y++) {
-      draw(21, y, colors.hair);
-      draw(22, y, outline);
-    }
-
-    // Face side
-    for (let y = 7; y <= 12; y++) {
-      for (let x = 10; x <= 18; x++) draw(x, y, x <= 11 ? skinDark : colors.skin);
-      draw(9, y, outline);
-      draw(19, y, outline);
-    }
-    // Hair covers back
-    for (let y = 7; y <= 10; y++) {
-      draw(19, y, colors.hair);
-      draw(20, y, colors.hair);
-      draw(21, y, outline);
-    }
-    // Eye
-    draw(12, 8, 0xffffff);
-    draw(13, 8, 0xffffff);
-    draw(12, 9, 0x1a1a2e);
-    draw(13, 9, 0x2c3e50);
-    draw(12, 8, lighten(0x2c3e50, 0.5));
-    // Nose
-    draw(10, 10, skinLight);
-    draw(9, 10, outline);
-    // Mouth
-    draw(11, 11, 0xd4726a);
-    // Blush
-    pxA(ctx, flipX ? SIZE - 1 - 11 : 11, 10, 0xff8fab, 0.25, S);
-
-    for (let x = 10; x <= 20; x++) draw(x, 13, outline);
-
-    // Shirt side
-    for (let y = 13; y <= 19; y++) {
-      for (let x = 9; x <= 20; x++) {
-        draw(x, y, x <= 10 ? shirtDark : x >= 19 ? shirtDark : colors.shirt);
-      }
-      draw(8, y, outline);
-      draw(21, y, outline);
-    }
-    if (colors.accessory) {
-      for (let x = 9; x <= 20; x++) draw(x, 19, colors.accessory);
-    }
-    for (let x = 9; x <= 20; x++) draw(x, 20, outline);
-
-    // Arm (front)
-    for (let y = 14; y <= 19; y++) {
-      draw(7, y, colors.skin);
-      draw(6, y, outline);
-    }
-
-    // Pants side
-    for (let y = 20; y <= 25; y++) {
-      for (let x = 10; x <= 19; x++) draw(x, y, colors.pants);
-      draw(9, y, outline);
-      draw(20, y, outline);
-    }
-
-    // Boots side
-    for (let y = 26; y <= 28; y++) {
-      for (let x = 9; x <= 19; x++) draw(x, y, colors.boots);
-      draw(8, y, outline);
-      draw(20, y, outline);
-    }
-    for (let x = 8; x <= 20; x++) draw(x, 29, outline);
-
-    // Walk animation
-    if (isWalk) {
-      draw(9, 28, 0x000000);
-      draw(19, 27, colors.boots);
-    }
+  // soft grounding shadow for depth
+  for (let x = 17; x <= 30; x++) {
+    pxA(ctx, x, 45 + bodyBob, 0x000000, 0.16);
   }
 
   return makeTexture(canvas);
@@ -555,7 +405,7 @@ export function createSpriteTexture(type, seed) {
   const rng = mulberry32(seed);
 
   if (type === "tree") return createTreeSprite(rng);
-  if (type === "house") return createHouseSprite(rng);
+  if (type === "house") return createHouseSprite();
   if (type === "fence") return createFenceSprite();
   if (type === "counter") return createCounterSprite();
   if (type === "stove") return createStoveSprite();
