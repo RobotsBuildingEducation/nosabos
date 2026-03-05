@@ -142,26 +142,70 @@ export default function RPGGame() {
     }));
   }, []);
 
-  const extractModelCanvas = useCallback((image, modelIndex) => {
-    // New sheets are laid out as 4 models across a single row.
-    const rows = 1;
+  const createNPCTextureFromSheet = useCallback((image, modelIndex) => {
+    // NPC sheets are 4 models across in a single row.
     const cols = 4;
-    const clampedModelIndex = Math.max(0, Math.min(3, modelIndex));
-    const row = Math.floor(clampedModelIndex / cols);
-    const col = clampedModelIndex % cols;
     const width = Math.floor(image.width / cols);
-    const height = Math.floor(image.height / rows);
-    const sx = col * width;
-    const sy = row * height;
+    const height = image.height;
+    const clampedModelIndex = Math.max(0, Math.min(3, modelIndex));
+    const sx = clampedModelIndex * width;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(image, sx, sy, width, height, 0, 0, width, height);
-    return canvas;
+    const sourceCanvas = document.createElement("canvas");
+    sourceCanvas.width = width;
+    sourceCanvas.height = height;
+    const sourceCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
+    sourceCtx.imageSmoothingEnabled = false;
+    sourceCtx.clearRect(0, 0, width, height);
+    sourceCtx.drawImage(image, sx, 0, width, height, 0, 0, width, height);
+
+    const pixels = sourceCtx.getImageData(0, 0, width, height).data;
+    let minX = width;
+    let minY = height;
+    let maxX = -1;
+    let maxY = -1;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (pixels[(y * width + x) * 4 + 3] <= 10) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+
+    if (maxX < minX || maxY < minY) return null;
+
+    const trimmedWidth = maxX - minX + 1;
+    const trimmedHeight = maxY - minY + 1;
+    const trimmedCanvas = document.createElement("canvas");
+    trimmedCanvas.width = trimmedWidth;
+    trimmedCanvas.height = trimmedHeight;
+    const trimmedCtx = trimmedCanvas.getContext("2d");
+    trimmedCtx.imageSmoothingEnabled = false;
+    trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
+    trimmedCtx.drawImage(
+      sourceCanvas,
+      minX,
+      minY,
+      trimmedWidth,
+      trimmedHeight,
+      0,
+      0,
+      trimmedWidth,
+      trimmedHeight,
+    );
+
+    const texture = new THREE.CanvasTexture(trimmedCanvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+
+    return {
+      texture,
+      aspect: trimmedWidth / trimmedHeight,
+    };
   }, []);
 
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
@@ -670,22 +714,25 @@ export default function RPGGame() {
       textureLoader.load(
         variant.url,
         (sheetTexture) => {
-          const croppedModel = extractModelCanvas(
+          const npcTexture = createNPCTextureFromSheet(
             sheetTexture.image,
             variant.modelIndex,
           );
-          const frameSet = buildPlayerSheetFrames(croppedModel);
-          npcSheetFramesRef.current.set(variant.id, frameSet);
+          if (!npcTexture) return;
+
+          npcSheetFramesRef.current.set(variant.id, npcTexture.texture);
 
           const fallbackNPCAspect = 1.05 / 1.45;
-          const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
-          const widthScale = detectedAspect / fallbackNPCAspect;
+          const widthScale = Math.max(
+            0.5,
+            Math.min(2.5, npcTexture.aspect / fallbackNPCAspect),
+          );
 
           npcAssignments.forEach((assignment, index) => {
             if (assignment.id !== variant.id) return;
             const npcMesh = npcSprites[index];
             if (!npcMesh?.material) return;
-            npcMesh.material.map = frameSet.getFrame("down", 0);
+            npcMesh.material.map = npcTexture.texture;
             npcMesh.material.needsUpdate = true;
             npcMesh.scale.set(widthScale, 1, 1);
           });
@@ -865,7 +912,7 @@ export default function RPGGame() {
   }, [
     buildPlayerSheetFrames,
     chooseRandomNPCVariants,
-    extractModelCanvas,
+    createNPCTextureFromSheet,
     scenario,
   ]);
 
