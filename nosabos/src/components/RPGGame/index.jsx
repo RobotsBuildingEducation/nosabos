@@ -83,11 +83,13 @@ const SCENARIO_EMOJIS = {
 };
 
 const DIALOGUE_CHARACTER_POOLS = {
-  hamster: ["35", "24", "27", "28"],
-  frog: ["31", "34", "38"],
-  cat: ["26", "30", "39", "40"],
-  "purple-girl": ["36", "41", "33"],
-  fallback: ["35", "24", "27", "28", "31", "34", "38", "26", "30", "39", "40", "36", "41", "33"],
+  // RandomCharacter's internal map is shifted after 1 (no character2 import),
+  // so these values use that map's keys to target the intended sprite files.
+  hamster: ["34", "23", "26", "27"], // requested 35,24,27,28
+  frog: ["30", "33", "37"], // requested 31,34,38
+  cat: ["25", "29", "38", "39"], // requested 26,30,39,40 (42 unavailable in assets)
+  "purple-girl": ["35", "40", "32"], // requested 36,41,33
+  fallback: ["34", "23", "26", "27", "30", "33", "37", "25", "29", "38", "39", "35", "40", "32"],
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -146,12 +148,11 @@ export default function RPGGame() {
   const npcVariantAssignmentsRef = useRef([]);
   const npcDialogueCharactersRef = useRef(new Map());
 
-  const chooseRandomNPCVariants = useCallback(() => {
+  const chooseRandomNPCVariants = useCallback((npcCount) => {
     const shuffled = [...NPC_SPRITE_SHEETS].sort(() => Math.random() - 0.5);
-    const selectedCount =
-      2 + Math.floor(Math.random() * Math.min(3, shuffled.length));
+    const desiredCount = Math.max(1, Math.min(npcCount, shuffled.length));
 
-    return shuffled.slice(0, selectedCount).map((sheet) => ({
+    return shuffled.slice(0, desiredCount).map((sheet) => ({
       ...sheet,
       modelIndex: Math.floor(Math.random() * 4),
     }));
@@ -769,7 +770,7 @@ export default function RPGGame() {
     scene.add(playerSprite);
     playerSpriteRef.current = playerSprite;
 
-    const selectedNPCVariants = chooseRandomNPCVariants();
+    const selectedNPCVariants = chooseRandomNPCVariants(scenario.npcs.length);
 
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
