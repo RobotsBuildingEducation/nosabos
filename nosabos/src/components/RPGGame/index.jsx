@@ -14,7 +14,7 @@ import {
 import { ArrowBackIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
-import { SCENARIOS, SCENARIO_LIST, mulberry32 } from "./scenarios";
+import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
 import {
   createTileTexture,
   createCharacterTexture,
@@ -57,10 +57,9 @@ const UI_TEXT = {
 };
 
 const SCENARIO_EMOJIS = {
-  village: "🏘️",
-  kitchen: "🍳",
-  grocery: "🛒",
+  livingRoom: "🛋️",
   park: "🌳",
+  airport: "✈️",
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -88,7 +87,8 @@ export default function RPGGame() {
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
-  const scenario = scenarioId ? SCENARIOS[scenarioId] : null;
+  const [scenario, setScenario] = useState(null);
+  const [loadingScenarioId, setLoadingScenarioId] = useState(null);
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -124,6 +124,22 @@ export default function RPGGame() {
   }, [scenario, supportLang]);
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
+
+  const handleSelectScenario = useCallback(
+    async (mapId) => {
+      setLoadingScenarioId(mapId);
+      setScenarioId(mapId);
+      setDialogue(null);
+      setFeedback(null);
+      setGameComplete(false);
+      setAnsweredNPCs(new Set());
+
+      const generated = await generateScenarioWithAI(mapId, targetLang, supportLang);
+      setScenario(generated);
+      setLoadingScenarioId(null);
+    },
+    [targetLang, supportLang],
+  );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
   useEffect(() => {
@@ -178,6 +194,8 @@ export default function RPGGame() {
     gameStateRef.current = {
       playerX: scenario.playerStart.x,
       playerY: scenario.playerStart.y,
+      renderX: scenario.playerStart.x,
+      renderY: scenario.playerStart.y,
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
@@ -346,7 +364,7 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = createCharacterTexture(PLAYER_COLORS, "down", 0);
-    const playerGeo = new THREE.PlaneGeometry(TILE * 0.95, TILE * 1.2);
+    const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
       transparent: true,
@@ -363,10 +381,10 @@ export default function RPGGame() {
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
     const npcIndicators = [];
-    scenario.npcs.forEach((npc, idx) => {
-      const preset = NPC_PRESETS[npc.presetIdx % NPC_PRESETS.length];
+    scenario.npcs.forEach((npc) => {
+      const preset = NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
-      const npcGeo = new THREE.PlaneGeometry(TILE * 0.95, TILE * 1.2);
+      const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
       const npcMat = new THREE.MeshBasicMaterial({
         map: npcTex,
         transparent: true,
@@ -463,7 +481,7 @@ export default function RPGGame() {
 
             // Walk animation frame
             walkTimerRef.current++;
-            walkFrameRef.current = walkTimerRef.current % 4;
+            walkFrameRef.current = walkTimerRef.current % 6;
 
             playerSprite.material.map = createCharacterTexture(
               PLAYER_COLORS,
@@ -475,16 +493,18 @@ export default function RPGGame() {
         }
       }
 
-      // Update player position
+      // Update player position with interpolation for smoother movement
+      gs.renderX += (gs.playerX - gs.renderX) * 0.35;
+      gs.renderY += (gs.playerY - gs.renderY) * 0.35;
       playerSprite.position.set(
-        gs.playerX * TILE + TILE / 2,
-        (MAP_H - 1 - gs.playerY) * TILE + TILE / 2,
+        gs.renderX * TILE + TILE / 2,
+        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2,
         5,
       );
 
       // Camera follow (smooth)
-      const camTargetX = gs.playerX * TILE + TILE / 2;
-      const camTargetY = (MAP_H - 1 - gs.playerY) * TILE + TILE / 2;
+      const camTargetX = gs.renderX * TILE + TILE / 2;
+      const camTargetY = (MAP_H - 1 - gs.renderY) * TILE + TILE / 2;
       camera.position.x += (camTargetX - camera.position.x) * 0.1;
       camera.position.y += (camTargetY - camera.position.y) * 0.1;
 
@@ -730,6 +750,8 @@ export default function RPGGame() {
       }
     }
     setScenarioId(null);
+    setScenario(null);
+    setLoadingScenarioId(null);
     setAnsweredNPCs(new Set());
     setDialogue(null);
     setFeedback(null);
@@ -780,10 +802,9 @@ export default function RPGGame() {
           </Text>
 
           <Wrap spacing={4} justify="center">
-            {SCENARIO_LIST.map((id) => {
-              const s = SCENARIOS[id];
+            {MAP_CHOICES.map((choice, idx) => {
               return (
-                <WrapItem key={id}>
+                <WrapItem key={choice.id}>
                   <Button
                     size="lg"
                     h="auto"
@@ -800,21 +821,43 @@ export default function RPGGame() {
                       transform: "scale(1.05)",
                     }}
                     transition="all 0.2s"
-                    onClick={() => setScenarioId(id)}
+                    onClick={() => handleSelectScenario(choice.id)}
                     flexDir="column"
                     minW="140px"
+                    isLoading={loadingScenarioId === choice.id}
+                    loadingText="Loading"
                   >
                     <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[id] || "🎮"}
+                      {SCENARIO_EMOJIS[choice.id] || Object.values(SCENARIO_EMOJIS)[idx % 3] || "🎮"}
                     </Text>
                     <Text fontSize="md" fontWeight="bold">
-                      {s.name[supportLang] || s.name.en}
+                      {choice.name[supportLang] || choice.name.en}
                     </Text>
                   </Button>
                 </WrapItem>
               );
             })}
           </Wrap>
+        </VStack>
+      </Box>
+    );
+  }
+
+  if (!scenario) {
+    return (
+      <Box
+        w="100vw"
+        h="100vh"
+        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+      >
+        <VStack spacing={4}>
+          <Text color="white" fontSize="xl" fontWeight="bold">
+            Generating scenario with AI...
+          </Text>
+          <Button onClick={goToScenarioSelect}>{ui.back}</Button>
         </VStack>
       </Box>
     );
@@ -865,7 +908,7 @@ export default function RPGGame() {
             py={1}
             borderRadius="md"
           >
-            {SCENARIO_EMOJIS[scenarioId]}{" "}
+            {SCENARIO_EMOJIS[scenario.id] || "🎮"}{" "}
             {scenario.name[supportLang] || scenario.name.en}
           </Badge>
         </HStack>

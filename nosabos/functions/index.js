@@ -22,7 +22,7 @@ const OPENAI_API_KEY =
 
 if (!OPENAI_API_KEY) {
   functions.logger.warn(
-    "OPENAI_API_KEY not set. Use 'firebase functions:config:set openai.key=\"...\"' or env var."
+    "OPENAI_API_KEY not set. Use 'firebase functions:config:set openai.key=\"...\"' or env var.",
   );
 }
 
@@ -50,7 +50,7 @@ function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Firebase-AppCheck"
+    "Content-Type, Authorization, X-Firebase-AppCheck",
   );
   if (req.method === "OPTIONS") {
     res.status(204).send("");
@@ -131,7 +131,7 @@ exports.exchangeRealtimeSDP = onRequest(
     if (!offerSDP) badRequest("Missing SDP offer.");
 
     const url = `https://api.openai.com/v1/realtime?model=${encodeURIComponent(
-      model
+      model,
     )}`;
 
     let upstream;
@@ -147,11 +147,11 @@ exports.exchangeRealtimeSDP = onRequest(
     } catch (e) {
       functions.logger.error(
         "Realtime upstream fetch failed:",
-        e?.message || e
+        e?.message || e,
       );
       throw new functions.https.HttpsError(
         "internal",
-        "Realtime upstream error."
+        "Realtime upstream error.",
       );
     }
 
@@ -160,14 +160,14 @@ exports.exchangeRealtimeSDP = onRequest(
       functions.logger.error(
         "Realtime upstream non-OK:",
         upstream.status,
-        answerSDP
+        answerSDP,
       );
       return res.status(502).send(answerSDP || "Upstream error.");
     }
 
     res.setHeader("Content-Type", "application/sdp");
     return res.status(200).send(answerSDP);
-  }
+  },
 );
 
 // ======================================================
@@ -195,8 +195,8 @@ exports.proxyResponses = onRequest(
     if (!ALLOWED_RESPONSE_MODELS.has(model)) {
       badRequest(
         `Model '${model}' not allowed. Allowed: ${Array.from(
-          ALLOWED_RESPONSE_MODELS
-        ).join(", ")}`
+          ALLOWED_RESPONSE_MODELS,
+        ).join(", ")}`,
       );
     }
 
@@ -218,11 +218,11 @@ exports.proxyResponses = onRequest(
     } catch (e) {
       functions.logger.error(
         "Responses upstream fetch failed:",
-        e?.message || e
+        e?.message || e,
       );
       throw new functions.https.HttpsError(
         "internal",
-        "Responses upstream error."
+        "Responses upstream error.",
       );
     }
 
@@ -231,7 +231,7 @@ exports.proxyResponses = onRequest(
     res.status(upstream.status);
     res.setHeader("Content-Type", ct);
     return res.send(text);
-  }
+  },
 );
 
 exports.proxyTTS = onRequest(
@@ -257,13 +257,13 @@ exports.proxyTTS = onRequest(
     }
 
     functions.logger.warn(
-      "Legacy REST TTS proxy is disabled; use Realtime TTS instead."
+      "Legacy REST TTS proxy is disabled; use Realtime TTS instead.",
     );
     return res.status(410).json({
       error: "Legacy TTS path removed",
       details: "Use realtime GPT playback instead of /proxyTTS.",
     });
-  }
+  },
 );
 
 exports.generateStory = onRequest(
@@ -355,7 +355,7 @@ Generate an engaging Spanish story now:`;
             temperature: 0.7,
             max_tokens: 1500,
           }),
-        }
+        },
       );
 
       if (!response.ok) {
@@ -407,7 +407,7 @@ Generate an engaging Spanish story now:`;
             }
             storyData.sentences = reconstructedSentences;
             functions.logger.info(
-              "Reconstructed sentences to match full story"
+              "Reconstructed sentences to match full story",
             );
           }
         }
@@ -457,7 +457,7 @@ Generate an engaging Spanish story now:`;
         details: error.message,
       });
     }
-  }
+  },
 );
 
 // ======================================================
@@ -501,14 +501,14 @@ exports.handleRealtimeStory = onRequest(
         details: error.message,
       });
     }
-  }
+  },
 );
 
 // Generate story in real-time using streaming
 async function generateRealtimeStory(res, level, language, userLanguage) {
   try {
     functions.logger.info(
-      `Starting real-time story generation for ${level} level`
+      `Starting real-time story generation for ${level} level`,
     );
 
     // Set up Server-Sent Events for real-time streaming
@@ -573,13 +573,13 @@ When the story is complete, send:
       functions.logger.error(
         "OpenAI streaming error:",
         response.status,
-        errorText
+        errorText,
       );
       res.write(
         `data: ${JSON.stringify({
           type: "error",
           message: "Story generation failed",
-        })}\n\n`
+        })}\n\n`,
       );
       res.end();
       return;
@@ -609,7 +609,7 @@ When the story is complete, send:
                 `data: ${JSON.stringify({
                   type: "story_complete",
                   message: "Story generation complete",
-                })}\n\n`
+                })}\n\n`,
               );
               res.end();
               return;
@@ -640,7 +640,7 @@ When the story is complete, send:
                           type: "story_text",
                           text: newSentence + ".",
                           sentenceNumber: sentenceCount,
-                        })}\n\n`
+                        })}\n\n`,
                       );
                     }
                   }
@@ -668,7 +668,7 @@ When the story is complete, send:
               type: "story_text",
               text: sentence + ".",
               sentenceNumber: i + 1,
-            })}\n\n`
+            })}\n\n`,
           );
         }
       }
@@ -678,13 +678,13 @@ When the story is complete, send:
       `data: ${JSON.stringify({
         type: "story_complete",
         message: "Story generation complete",
-      })}\n\n`
+      })}\n\n`,
     );
     res.end();
   } catch (error) {
     functions.logger.error("Real-time story generation error:", error);
     res.write(
-      `data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`
+      `data: ${JSON.stringify({ type: "error", message: error.message })}\n\n`,
     );
     res.end();
   }
