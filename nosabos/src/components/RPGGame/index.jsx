@@ -570,7 +570,9 @@ export default function RPGGame() {
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
       scenario.playerStart.x * TILE + TILE / 2,
-      (MAP_H - 1 - scenario.playerStart.y) * TILE + TILE / 2 + playerVerticalOffset,
+      (MAP_H - 1 - scenario.playerStart.y) * TILE +
+        TILE / 2 +
+        playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
@@ -619,7 +621,7 @@ export default function RPGGame() {
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
-    const IDLE_DELAY_MS = 1200;
+    const IDLE_DELAY_MS = 400;
 
     function gameLoop(time) {
       animFrameRef.current = requestAnimationFrame(gameLoop);
