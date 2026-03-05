@@ -29,7 +29,7 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
-import playerSpriteSheetUrl from "../../sprites/sprite_sheet.png";
+import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -122,11 +122,11 @@ export default function RPGGame() {
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
     const expectedRows = 5;
     const directionRows = {
-      down: 4,
+      down: 0,
       up: 3,
       left: 2,
       right: 1,
-      idle: 0,
+      idle: 4,
     };
 
     const sample = document.createElement("canvas");
@@ -243,6 +243,8 @@ export default function RPGGame() {
 
     return {
       animations,
+      frameWidth,
+      frameHeight,
       frameCount: Math.max(...Object.values(animations).map((f) => f.length)),
       getFrame(direction = "down", frame = 0) {
         const frames = animations[direction] || animations.down;
@@ -379,6 +381,7 @@ export default function RPGGame() {
       "down",
       0,
     );
+    const fallbackPlayerAspect = 1.05 / 1.45;
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       playerSpriteSheetUrl,
@@ -393,11 +396,18 @@ export default function RPGGame() {
           );
           playerSpriteRef.current.material.map = nextFrame;
           playerSpriteRef.current.material.needsUpdate = true;
+
+          const detectedAspect = frameSet.frameWidth / frameSet.frameHeight;
+          const widthScale = detectedAspect / fallbackPlayerAspect;
+          playerSpriteRef.current.scale.set(widthScale, 1, 1);
         }
       },
       undefined,
       () => {
         playerSheetFramesRef.current = null;
+        if (playerSpriteRef.current) {
+          playerSpriteRef.current.scale.set(1, 1, 1);
+        }
       },
     );
 
@@ -544,7 +554,15 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
-    const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
+    const PLAYER_WIDTH_TILES = 1.05;
+    const PLAYER_HEIGHT_TILES = 1.45;
+    const PLAYER_FOOT_MARGIN_TILES = 0.04;
+    const playerVerticalOffset =
+      TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
+    const playerGeo = new THREE.PlaneGeometry(
+      TILE * PLAYER_WIDTH_TILES,
+      TILE * PLAYER_HEIGHT_TILES,
+    );
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
       transparent: true,
@@ -552,7 +570,9 @@ export default function RPGGame() {
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
       scenario.playerStart.x * TILE + TILE / 2,
-      (MAP_H - 1 - scenario.playerStart.y) * TILE + TILE / 2,
+      (MAP_H - 1 - scenario.playerStart.y) * TILE +
+        TILE / 2 +
+        playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
@@ -601,7 +621,7 @@ export default function RPGGame() {
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
-    const IDLE_DELAY_MS = 1200;
+    const IDLE_DELAY_MS = 400;
 
     function gameLoop(time) {
       animFrameRef.current = requestAnimationFrame(gameLoop);
@@ -693,7 +713,7 @@ export default function RPGGame() {
       gs.renderY += (gs.playerY - gs.renderY) * 0.35;
       playerSprite.position.set(
         gs.renderX * TILE + TILE / 2,
-        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2,
+        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2 + playerVerticalOffset,
         5,
       );
 
