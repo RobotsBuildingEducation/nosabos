@@ -1,4 +1,10 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Box,
   Text,
@@ -23,6 +29,7 @@ import {
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
+import playerSpriteSheetUrl from "../../sprites/sprite_sheet.png";
 
 // ─── UI text per support language ────────────────────────────────────────────
 const UI_TEXT = {
@@ -110,6 +117,144 @@ export default function RPGGame() {
   const mapDataRef = useRef(null);
   const walkFrameRef = useRef(0);
   const walkTimerRef = useRef(0);
+  const playerSheetFramesRef = useRef(null);
+
+  const buildPlayerSheetFrames = useCallback((sourceImage) => {
+    const expectedRows = 5;
+    const directionRows = {
+      down: 4,
+      up: 3,
+      left: 2,
+      right: 1,
+      idle: 0,
+    };
+
+    const sample = document.createElement("canvas");
+    sample.width = sourceImage.width;
+    sample.height = sourceImage.height;
+    const sampleCtx = sample.getContext("2d", { willReadFrequently: true });
+    sampleCtx.imageSmoothingEnabled = false;
+    sampleCtx.drawImage(sourceImage, 0, 0);
+    const pixels = sampleCtx.getImageData(
+      0,
+      0,
+      sample.width,
+      sample.height,
+    ).data;
+
+    const alphaAt = (x, y) => pixels[(y * sample.width + x) * 4 + 3] > 10;
+    const toRuns = (occupied) => {
+      const runs = [];
+      let start = -1;
+      for (let i = 0; i < occupied.length; i++) {
+        if (occupied[i] && start === -1) start = i;
+        if ((!occupied[i] || i === occupied.length - 1) && start !== -1) {
+          const end = occupied[i] ? i : i - 1;
+          if (end - start + 1 >= 2) runs.push({ start, end });
+          start = -1;
+        }
+      }
+      return runs;
+    };
+
+    const occupiedRows = Array.from({ length: sample.height }, (_, y) => {
+      for (let x = 0; x < sample.width; x++) {
+        if (alphaAt(x, y)) return true;
+      }
+      return false;
+    });
+
+    let rowRuns = toRuns(occupiedRows);
+    if (rowRuns.length >= expectedRows) {
+      rowRuns = rowRuns
+        .sort((a, b) => b.end - b.start - (a.end - a.start))
+        .slice(0, expectedRows)
+        .sort((a, b) => a.start - b.start);
+    }
+
+    if (rowRuns.length < expectedRows) {
+      const fallbackRowHeight = Math.floor(sourceImage.height / expectedRows);
+      rowRuns = Array.from({ length: expectedRows }, (_, rowIdx) => {
+        const start = rowIdx * fallbackRowHeight;
+        const end =
+          rowIdx === expectedRows - 1
+            ? sourceImage.height - 1
+            : start + fallbackRowHeight - 1;
+        return { start, end };
+      });
+    }
+
+    const rowFrames = rowRuns.map((row) => {
+      const occupiedCols = Array.from({ length: sample.width }, (_, x) => {
+        for (let y = row.start; y <= row.end; y++) {
+          if (alphaAt(x, y)) return true;
+        }
+        return false;
+      });
+      const colRuns = toRuns(occupiedCols);
+      return colRuns.length > 0
+        ? colRuns
+        : [{ start: 0, end: sample.width - 1 }];
+    });
+
+    const frameHeight = Math.max(...rowRuns.map((r) => r.end - r.start + 1));
+    const frameWidth = Math.max(
+      ...rowFrames.flat().map((r) => r.end - r.start + 1),
+    );
+
+    const createFrameTexture = (sx, sy, sw, sh) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = frameWidth;
+      canvas.height = frameHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, frameWidth, frameHeight);
+      const dx = Math.floor((frameWidth - sw) / 2);
+      const dy = Math.floor((frameHeight - sh) / 2);
+      ctx.drawImage(sourceImage, sx, sy, sw, sh, dx, dy, sw, sh);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    const makeAnimationsForRow = (rowIdx) => {
+      const row = rowRuns[rowIdx] || rowRuns[0];
+      const cols = rowFrames[rowIdx] || rowFrames[0];
+      return cols.map((col) =>
+        createFrameTexture(
+          col.start,
+          row.start,
+          col.end - col.start + 1,
+          row.end - row.start + 1,
+        ),
+      );
+    };
+
+    const animations = {
+      idle: makeAnimationsForRow(directionRows.idle),
+      right: makeAnimationsForRow(directionRows.right),
+      left: makeAnimationsForRow(directionRows.left),
+      up: makeAnimationsForRow(directionRows.up),
+      down: makeAnimationsForRow(directionRows.down),
+    };
+
+    return {
+      animations,
+      frameCount: Math.max(...Object.values(animations).map((f) => f.length)),
+      getFrame(direction = "down", frame = 0) {
+        const frames = animations[direction] || animations.down;
+        return frames[frame % frames.length] || animations.down[0];
+      },
+      dispose() {
+        Object.values(animations).forEach((frames) => {
+          frames.forEach((tex) => tex.dispose());
+        });
+      },
+    };
+  }, []);
 
   const questions = useMemo(() => {
     if (!scenario) return [];
@@ -134,7 +279,11 @@ export default function RPGGame() {
       setGameComplete(false);
       setAnsweredNPCs(new Set());
 
-      const generated = await generateScenarioWithAI(mapId, targetLang, supportLang);
+      const generated = await generateScenarioWithAI(
+        mapId,
+        targetLang,
+        supportLang,
+      );
       setScenario(generated);
       setLoadingScenarioId(null);
     },
@@ -199,6 +348,7 @@ export default function RPGGame() {
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
+      idleHoldMs: 0,
       npcBobPhase: 0,
       getTile,
       isSolid,
@@ -223,6 +373,33 @@ export default function RPGGame() {
     // Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
+
+    const fallbackPlayerTexture = createCharacterTexture(
+      PLAYER_COLORS,
+      "down",
+      0,
+    );
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      playerSpriteSheetUrl,
+      (sheetTexture) => {
+        const frameSet = buildPlayerSheetFrames(sheetTexture.image);
+        playerSheetFramesRef.current = frameSet;
+
+        if (playerSpriteRef.current?.material) {
+          const nextFrame = frameSet.getFrame(
+            gameStateRef.current?.playerDir || "down",
+            walkFrameRef.current,
+          );
+          playerSpriteRef.current.material.map = nextFrame;
+          playerSpriteRef.current.material.needsUpdate = true;
+        }
+      },
+      undefined,
+      () => {
+        playerSheetFramesRef.current = null;
+      },
+    );
 
     // Camera
     const aspect = width / height;
@@ -293,7 +470,10 @@ export default function RPGGame() {
             if (visitedClusters.has(clusterKey)) continue;
             visitedClusters.add(clusterKey);
 
-            const spriteTex = createSpriteTexture("house", seed + x * 7 + y * 13);
+            const spriteTex = createSpriteTexture(
+              "house",
+              seed + x * 7 + y * 13,
+            );
             if (spriteTex) {
               const sGeo = new THREE.PlaneGeometry(TILE * 2.4, TILE * 3);
               const sMat = new THREE.MeshBasicMaterial({
@@ -363,7 +543,7 @@ export default function RPGGame() {
     scene.add(spriteGroup);
 
     // ── Player sprite ─────────────────────────────────────────────────────
-    const playerTex = createCharacterTexture(PLAYER_COLORS, "down", 0);
+    const playerTex = fallbackPlayerTexture;
     const playerGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTex,
@@ -382,7 +562,8 @@ export default function RPGGame() {
     const npcSprites = [];
     const npcIndicators = [];
     scenario.npcs.forEach((npc) => {
-      const preset = NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
+      const preset =
+        NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
       const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
       const npcMat = new THREE.MeshBasicMaterial({
@@ -420,6 +601,7 @@ export default function RPGGame() {
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
+    const IDLE_DELAY_MS = 1200;
 
     function gameLoop(time) {
       animFrameRef.current = requestAnimationFrame(gameLoop);
@@ -478,17 +660,30 @@ export default function RPGGame() {
             gs.playerX = nx;
             gs.playerY = ny;
             gs.moveTimer = MOVE_COOLDOWN;
+            gs.idleHoldMs = IDLE_DELAY_MS;
 
             // Walk animation frame
             walkTimerRef.current++;
             walkFrameRef.current = walkTimerRef.current % 6;
 
-            playerSprite.material.map = createCharacterTexture(
-              PLAYER_COLORS,
-              gs.playerDir,
-              walkFrameRef.current,
-            );
+            const sheetFrames = playerSheetFramesRef.current;
+            playerSprite.material.map = sheetFrames
+              ? sheetFrames.getFrame(gs.playerDir, walkFrameRef.current)
+              : createCharacterTexture(
+                  PLAYER_COLORS,
+                  gs.playerDir,
+                  walkFrameRef.current,
+                );
             playerSprite.material.needsUpdate = true;
+          }
+        } else {
+          gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
+          if (gs.idleHoldMs <= 0) {
+            const sheetFrames = playerSheetFramesRef.current;
+            if (sheetFrames) {
+              playerSprite.material.map = sheetFrames.getFrame("idle", 0);
+              playerSprite.material.needsUpdate = true;
+            }
           }
         }
       }
@@ -551,6 +746,11 @@ export default function RPGGame() {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("resize", handleResize);
       renderer.dispose();
+      fallbackPlayerTexture.dispose();
+      if (playerSheetFramesRef.current) {
+        playerSheetFramesRef.current.dispose();
+        playerSheetFramesRef.current = null;
+      }
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -650,8 +850,7 @@ export default function RPGGame() {
           let best = adjacentSpots[0];
           let bestDist = Infinity;
           adjacentSpots.forEach((s) => {
-            const d =
-              Math.abs(s.x - gs.playerX) + Math.abs(s.y - gs.playerY);
+            const d = Math.abs(s.x - gs.playerX) + Math.abs(s.y - gs.playerY);
             if (d < bestDist) {
               bestDist = d;
               best = s;
@@ -693,7 +892,14 @@ export default function RPGGame() {
       window.removeEventListener("keydown", handleKeyDown);
       currentCanvas?.removeEventListener("click", handleClick);
     };
-  }, [scenario, dialogue, answeredNPCs, gameComplete, getQuestionForNPC, greetings]);
+  }, [
+    scenario,
+    dialogue,
+    answeredNPCs,
+    gameComplete,
+    getQuestionForNPC,
+    greetings,
+  ]);
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
@@ -828,7 +1034,9 @@ export default function RPGGame() {
                     loadingText="Loading"
                   >
                     <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[choice.id] || Object.values(SCENARIO_EMOJIS)[idx % 3] || "🎮"}
+                      {SCENARIO_EMOJIS[choice.id] ||
+                        Object.values(SCENARIO_EMOJIS)[idx % 3] ||
+                        "🎮"}
                     </Text>
                     <Text fontSize="md" fontWeight="bold">
                       {choice.name[supportLang] || choice.name.en}
@@ -912,13 +1120,7 @@ export default function RPGGame() {
             {scenario.name[supportLang] || scenario.name.en}
           </Badge>
         </HStack>
-        <HStack
-          bg="blackAlpha.700"
-          borderRadius="md"
-          px={3}
-          py={1}
-          spacing={2}
-        >
+        <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
             {answeredNPCs.size}/{totalQuestions}
           </Text>
@@ -1073,8 +1275,7 @@ export default function RPGGame() {
                   size="sm"
                   variant="outline"
                   colorScheme={
-                    feedback === "correct" &&
-                    idx === dialogue.question.correct
+                    feedback === "correct" && idx === dialogue.question.correct
                       ? "green"
                       : feedback === "incorrect" &&
                           idx === dialogue.question.correct
@@ -1083,8 +1284,7 @@ export default function RPGGame() {
                   }
                   color="white"
                   borderColor={
-                    feedback === "correct" &&
-                    idx === dialogue.question.correct
+                    feedback === "correct" && idx === dialogue.question.correct
                       ? "green.400"
                       : "whiteAlpha.300"
                   }
@@ -1143,9 +1343,7 @@ export default function RPGGame() {
             textAlign="center"
             boxShadow="0 0 40px rgba(255,215,0,0.3)"
           >
-            <Text fontSize="4xl">
-              {SCENARIO_EMOJIS[scenarioId] || "🏆"}
-            </Text>
+            <Text fontSize="4xl">{SCENARIO_EMOJIS[scenarioId] || "🏆"}</Text>
             <Text color="yellow.300" fontSize="xl" fontWeight="bold">
               {ui.completed}
             </Text>
