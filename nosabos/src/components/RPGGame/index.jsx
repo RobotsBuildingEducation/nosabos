@@ -83,13 +83,26 @@ const SCENARIO_EMOJIS = {
 };
 
 const DIALOGUE_CHARACTER_POOLS = {
-  // RandomCharacter's internal map is shifted after 1 (no character2 import),
-  // so these values use that map's keys to target the intended sprite files.
-  hamster: ["34", "23", "26", "27"], // requested 35,24,27,28
-  frog: ["30", "33", "37"], // requested 31,34,38
-  cat: ["25", "29", "38", "39"], // requested 26,30,39,40 (42 unavailable in assets)
-  "purple-girl": ["35", "40", "32"], // requested 36,41,33
-  fallback: ["34", "23", "26", "27", "30", "33", "37", "25", "29", "38", "39", "35", "40", "32"],
+  hamster: ["35", "24", "27", "28"],
+  frog: ["31", "34", "38"],
+  cat: ["26", "30", "39", "40", "42"],
+  "purple-girl": ["36", "41", "33"],
+  // fallback: [
+  //   "34",
+  //   "23",
+  //   "26",
+  //   "27",
+  //   "30",
+  //   "33",
+  //   "37",
+  //   "25",
+  //   "29",
+  //   "38",
+  //   "39",
+  //   "35",
+  //   "40",
+  //   "32",
+  // ],
 };
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -225,7 +238,10 @@ export default function RPGGame() {
     if (components.length === 0) return null;
 
     const expectedCols = 4;
-    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
+    const clampedModelIndex = Math.max(
+      0,
+      Math.min(expectedCols - 1, modelIndex),
+    );
     const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
 
     components.sort((a, b) => {
@@ -443,7 +459,8 @@ export default function RPGGame() {
     if (existingCharacter) return existingCharacter;
 
     const variantId = npcVariantAssignmentsRef.current[npcIdx];
-    const pool = DIALOGUE_CHARACTER_POOLS[variantId] || DIALOGUE_CHARACTER_POOLS.fallback;
+    const pool =
+      DIALOGUE_CHARACTER_POOLS[variantId] || DIALOGUE_CHARACTER_POOLS.fallback;
     const nextCharacter = pool[Math.floor(Math.random() * pool.length)] || "35";
     npcDialogueCharactersRef.current.set(npcIdx, nextCharacter);
     return nextCharacter;
@@ -778,7 +795,9 @@ export default function RPGGame() {
     const npcAssignments = scenario.npcs.map(
       (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
     );
-    npcVariantAssignmentsRef.current = npcAssignments.map((assignment) => assignment.id);
+    npcVariantAssignmentsRef.current = npcAssignments.map(
+      (assignment) => assignment.id,
+    );
     npcDialogueCharactersRef.current.clear();
     scenario.npcs.forEach((npc) => {
       const preset =
@@ -1542,12 +1561,7 @@ export default function RPGGame() {
 
       {/* Dialogue box */}
       {dialogue && !gameComplete && (
-        <Box
-          position="absolute"
-          inset={0}
-          zIndex={20}
-          onClick={closeDialogue}
-        >
+        <Box position="absolute" inset={0} zIndex={20} onClick={closeDialogue}>
           <Box
             position="absolute"
             bottom={4}
@@ -1580,7 +1594,7 @@ export default function RPGGame() {
                   <RandomCharacter
                     width="42px"
                     notSoRandomCharacter={dialogue.npcCharacter}
-                  />
+                  />{" "}
                 </Box>
                 <Badge colorScheme="purple" fontSize="sm" px={2}>
                   {dialogue.npcName}
@@ -1613,7 +1627,8 @@ export default function RPGGame() {
                     size="sm"
                     variant="outline"
                     colorScheme={
-                      feedback === "correct" && idx === dialogue.question.correct
+                      feedback === "correct" &&
+                      idx === dialogue.question.correct
                         ? "green"
                         : feedback === "incorrect" &&
                             idx === dialogue.question.correct
@@ -1622,7 +1637,8 @@ export default function RPGGame() {
                     }
                     color="white"
                     borderColor={
-                      feedback === "correct" && idx === dialogue.question.correct
+                      feedback === "correct" &&
+                      idx === dialogue.question.correct
                         ? "green.400"
                         : "whiteAlpha.300"
                     }
