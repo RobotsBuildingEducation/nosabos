@@ -143,92 +143,82 @@ export default function RPGGame() {
   }, []);
 
   const createNPCTextureFromSheet = useCallback((image, modelIndex) => {
-    // NPC sheets are 4 models across in a single row.
-    const cols = 4;
-    const width = Math.floor(image.width / cols);
+    const width = image.width;
     const height = image.height;
-    const clampedModelIndex = Math.max(0, Math.min(3, modelIndex));
-    const sx = clampedModelIndex * width;
 
-    const sourceCanvas = document.createElement("canvas");
-    sourceCanvas.width = width;
-    sourceCanvas.height = height;
-    const sourceCtx = sourceCanvas.getContext("2d", { willReadFrequently: true });
-    sourceCtx.imageSmoothingEnabled = false;
-    sourceCtx.clearRect(0, 0, width, height);
-    sourceCtx.drawImage(image, sx, 0, width, height, 0, 0, width, height);
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0);
 
-    const pixels = sourceCtx.getImageData(0, 0, width, height).data;
-    const visited = new Uint8Array(width * height);
-    const components = [];
-    const neighbors = [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ];
-
+    const pixels = ctx.getImageData(0, 0, width, height).data;
     const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = y * width + x;
-        if (visited[idx] || !isOpaque(x, y)) continue;
+    const occupiedCols = Array.from({ length: width }, (_, x) => {
+      for (let y = 0; y < height; y++) {
+        if (isOpaque(x, y)) return true;
+      }
+      return false;
+    });
 
-        const queue = [[x, y]];
-        visited[idx] = 1;
-
-        let minX = x;
-        let minY = y;
-        let maxX = x;
-        let maxY = y;
-        let size = 0;
-
-        while (queue.length > 0) {
-          const [cx, cy] = queue.pop();
-          size += 1;
-          minX = Math.min(minX, cx);
-          minY = Math.min(minY, cy);
-          maxX = Math.max(maxX, cx);
-          maxY = Math.max(maxY, cy);
-
-          neighbors.forEach(([dx, dy]) => {
-            const nx = cx + dx;
-            const ny = cy + dy;
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
-            const nIdx = ny * width + nx;
-            if (visited[nIdx] || !isOpaque(nx, ny)) return;
-            visited[nIdx] = 1;
-            queue.push([nx, ny]);
-          });
-        }
-
-        components.push({ minX, minY, maxX, maxY, size });
+    const colRuns = [];
+    let runStart = -1;
+    for (let x = 0; x < occupiedCols.length; x++) {
+      if (occupiedCols[x] && runStart === -1) runStart = x;
+      if ((!occupiedCols[x] || x === occupiedCols.length - 1) && runStart !== -1) {
+        const end = occupiedCols[x] ? x : x - 1;
+        if (end - runStart + 1 >= 2) colRuns.push({ start: runStart, end });
+        runStart = -1;
       }
     }
 
-    if (components.length === 0) return null;
+    // Expected layout is 4 side-by-side models; fall back to equal bins if needed.
+    const expectedCols = 4;
+    const bins =
+      colRuns.length >= expectedCols
+        ? colRuns.slice(0, expectedCols)
+        : Array.from({ length: expectedCols }, (_, idx) => {
+            const binWidth = Math.floor(width / expectedCols);
+            const start = idx * binWidth;
+            const end = idx === expectedCols - 1 ? width - 1 : start + binWidth - 1;
+            return { start, end };
+          });
 
-    const centerX = width / 2;
-    const centerY = height / 2;
-    components.sort((a, b) => {
-      const aCenterX = (a.minX + a.maxX) / 2;
-      const aCenterY = (a.minY + a.maxY) / 2;
-      const bCenterX = (b.minX + b.maxX) / 2;
-      const bCenterY = (b.minY + b.maxY) / 2;
+    const clampedModelIndex = Math.max(0, Math.min(expectedCols - 1, modelIndex));
+    const chosenRun = bins[clampedModelIndex];
+    const prevRun = bins[clampedModelIndex - 1];
+    const nextRun = bins[clampedModelIndex + 1];
 
-      const aDist = Math.hypot(aCenterX - centerX, aCenterY - centerY);
-      const bDist = Math.hypot(bCenterX - centerX, bCenterY - centerY);
+    // Expand to nearest gap midpoints so we don't clip models that sit near run edges.
+    const srcLeft = prevRun
+      ? Math.max(0, Math.floor((prevRun.end + chosenRun.start) / 2))
+      : 0;
+    const srcRight = nextRun
+      ? Math.min(width - 1, Math.ceil((chosenRun.end + nextRun.start) / 2))
+      : width - 1;
 
-      // Prefer larger components; break ties by proximity to center.
-      if (Math.abs(a.size - b.size) > 20) return b.size - a.size;
-      return aDist - bDist;
-    });
+    let minX = srcRight;
+    let minY = height - 1;
+    let maxX = srcLeft;
+    let maxY = 0;
 
-    const chosen = components[0];
-    const trimmedWidth = chosen.maxX - chosen.minX + 1;
-    const trimmedHeight = chosen.maxY - chosen.minY + 1;
+    for (let y = 0; y < height; y++) {
+      for (let x = srcLeft; x <= srcRight; x++) {
+        if (!isOpaque(x, y)) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
 
+    if (maxX < minX || maxY < minY) return null;
+
+    const trimmedWidth = maxX - minX + 1;
+    const trimmedHeight = maxY - minY + 1;
     const trimmedCanvas = document.createElement("canvas");
     trimmedCanvas.width = trimmedWidth;
     trimmedCanvas.height = trimmedHeight;
@@ -236,9 +226,9 @@ export default function RPGGame() {
     trimmedCtx.imageSmoothingEnabled = false;
     trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
     trimmedCtx.drawImage(
-      sourceCanvas,
-      chosen.minX,
-      chosen.minY,
+      canvas,
+      minX,
+      minY,
       trimmedWidth,
       trimmedHeight,
       0,
