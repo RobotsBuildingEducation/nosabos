@@ -132,6 +132,80 @@ function normalizeQuestions(questions, supportLang) {
   ];
 }
 
+function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
+  const baseStory =
+    supportLang === "es"
+      ? "La ciudad está en caos porque alguien cambió todas las señales."
+      : "The town is in chaos because someone swapped every sign.";
+
+  const defaultQuest = {
+    intro:
+      supportLang === "es"
+        ? "Comienza con la bibliotecaria Ada y descubre quién alteró los letreros."
+        : "Start with librarian Ada and discover who tampered with the signs.",
+    storySeed: baseStory,
+    startNpcIdx: 0,
+  };
+
+  const questionPool = questionsByLang?.en || questionsByLang?.es || [];
+  const treeByNpc = npcs.map((npc, npcIdx) => {
+    const q1 = questionPool[(npcIdx * 2) % Math.max(1, questionPool.length)] || {
+      prompt: supportLang === "es" ? "¿Cuál es la pista correcta?" : "Which clue is right?",
+      options: ["A", "B"],
+      correct: 0,
+    };
+    const q2 = questionPool[(npcIdx * 2 + 1) % Math.max(1, questionPool.length)] || q1;
+
+    const makeNode = (id, q, terminal = false) => ({
+      id,
+      prompt: q.prompt,
+      terminal,
+      options: q.options.map((opt, idx) => ({
+        text: opt,
+        isCorrect: idx === q.correct,
+        npcReply:
+          idx === q.correct
+            ? supportLang === "es"
+              ? `¡Exacto! ${npc.name} te da una pista dramática.`
+              : `Exactly! ${npc.name} gives you a dramatic clue.`
+            : supportLang === "es"
+              ? `${npc.name} se ríe: "casi... pero no".`
+              : `${npc.name} laughs: "close... but nope".`,
+        nextNodeId: terminal ? null : `npc-${npcIdx}-node-2`,
+      })),
+    });
+
+    return {
+      npcIdx,
+      title:
+        supportLang === "es"
+          ? `${npc.name}: capítulo ${npcIdx + 1}`
+          : `${npc.name}: chapter ${npcIdx + 1}`,
+      intro:
+        supportLang === "es"
+          ? `${npc.name} conoce un secreto ridículo y peligroso.`
+          : `${npc.name} knows a secret that is both ridiculous and dangerous.`,
+      nodes: [makeNode(`npc-${npcIdx}-node-1`, q1), makeNode(`npc-${npcIdx}-node-2`, q2, true)],
+    };
+  });
+
+  if (!rawQuest || typeof rawQuest !== "object") {
+    return {
+      ...defaultQuest,
+      treeByNpc,
+    };
+  }
+
+  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
+
+  return {
+    intro: String(rawQuest?.intro || defaultQuest.intro),
+    storySeed: String(rawQuest?.storySeed || defaultQuest.storySeed),
+    startNpcIdx,
+    treeByNpc,
+  };
+}
+
 function normalizeMapData(mapData, mapWidth, mapHeight) {
   const expectedLength = mapWidth * mapHeight;
   if (!Array.isArray(mapData) || mapData.length !== expectedLength) {
@@ -145,6 +219,18 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || { en: mapId, es: mapId };
   const mapWidth = 18;
   const mapHeight = 14;
+
+  const questionsByLang = {
+    [targetLang]: normalizeQuestions([], supportLang),
+    en: normalizeQuestions([], supportLang),
+    es: normalizeQuestions([], supportLang),
+  };
+
+  const npcs = [
+    { tx: 4, ty: 4, name: "Ada", presetIdx: 0 },
+    { tx: 8, ty: 6, name: "Bruno", presetIdx: 1 },
+    { tx: 12, ty: 8, name: "Cleo", presetIdx: 2 },
+  ];
 
   return {
     id: mapId,
@@ -167,16 +253,9 @@ function fallbackScenario(mapId, targetLang, supportLang) {
       }
       return map;
     },
-    npcs: [
-      { tx: 4, ty: 4, name: "Guide 1", presetIdx: 0 },
-      { tx: 8, ty: 6, name: "Guide 2", presetIdx: 1 },
-      { tx: 12, ty: 8, name: "Guide 3", presetIdx: 2 },
-    ],
-    questions: {
-      [targetLang]: normalizeQuestions([], supportLang),
-      en: normalizeQuestions([], supportLang),
-      es: normalizeQuestions([], supportLang),
-    },
+    npcs,
+    questions: questionsByLang,
+    quest: normalizeQuest(null, npcs, questionsByLang, supportLang),
     greetings: {
       en: ["Generating scenario unavailable; using safe fallback."],
       es: ["Generación no disponible; usando respaldo."],
@@ -213,6 +292,11 @@ Required JSON shape:
   "questions": [
     {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
   ],
+  "quest": {
+    "intro": "one sentence",
+    "storySeed": "one sentence",
+    "startNpcIdx": 0-2
+  },
   "greetings": {
     "en": ["...", "...", "..."],
     "es": ["...", "...", "..."]
@@ -291,10 +375,19 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
       en: normalizeQuestions(raw?.questions, supportLang),
       es: normalizeQuestions(raw?.questions, supportLang),
     },
+    quest: null,
     greetings: {
       en: Array.isArray(raw?.greetings?.en) ? raw.greetings.en.slice(0, 6).map(String) : ["Let's practice!"],
       es: Array.isArray(raw?.greetings?.es) ? raw.greetings.es.slice(0, 6).map(String) : ["¡Vamos a practicar!"],
     },
+  };
+}
+
+function withQuest(scenario, raw, supportLang) {
+  const questionsByLang = scenario.questions;
+  return {
+    ...scenario,
+    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang),
   };
 }
 
@@ -340,8 +433,8 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
 
   const parsed = parseJSON(text);
   const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
-
-  return normalized || fallbackScenario(mapId, targetLang, supportLang);
+  if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
+  return withQuest(normalized, parsed, supportLang);
 }
 
 export function mulberry32(a) {
