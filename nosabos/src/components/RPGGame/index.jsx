@@ -131,7 +131,8 @@ export default function RPGGame() {
   const targetLang = settings.targetLang;
   const supportLang = settings.supportLang;
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
-  const isMobileDialogueLayout = useBreakpointValue({ base: true, md: false }) ?? false;
+  const isMobileDialogueLayout =
+    useBreakpointValue({ base: true, md: false }) ?? false;
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
@@ -187,138 +188,142 @@ export default function RPGGame() {
     }));
   }, []);
 
-  const createNPCTextureFromSheet = useCallback((image, rowIndex, modelIndex) => {
-    const width = image.width;
-    const height = image.height;
+  const createNPCTextureFromSheet = useCallback(
+    (image, rowIndex, modelIndex) => {
+      const width = image.width;
+      const height = image.height;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(image, 0, 0);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.imageSmoothingEnabled = false;
+      ctx.clearRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0);
 
-    const pixels = ctx.getImageData(0, 0, width, height).data;
-    const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
+      const pixels = ctx.getImageData(0, 0, width, height).data;
+      const isOpaque = (x, y) => pixels[(y * width + x) * 4 + 3] > 10;
 
-    const visited = new Uint8Array(width * height);
-    const components = [];
-    const neighbors = [
-      [-1, 0],
-      [1, 0],
-      [0, -1],
-      [0, 1],
-    ];
+      const visited = new Uint8Array(width * height);
+      const components = [];
+      const neighbors = [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ];
 
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = y * width + x;
-        if (visited[idx] || !isOpaque(x, y)) continue;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = y * width + x;
+          if (visited[idx] || !isOpaque(x, y)) continue;
 
-        const queue = [[x, y]];
-        visited[idx] = 1;
+          const queue = [[x, y]];
+          visited[idx] = 1;
 
-        let minX = x;
-        let minY = y;
-        let maxX = x;
-        let maxY = y;
-        let size = 0;
+          let minX = x;
+          let minY = y;
+          let maxX = x;
+          let maxY = y;
+          let size = 0;
 
-        while (queue.length > 0) {
-          const [cx, cy] = queue.pop();
-          size += 1;
-          minX = Math.min(minX, cx);
-          minY = Math.min(minY, cy);
-          maxX = Math.max(maxX, cx);
-          maxY = Math.max(maxY, cy);
+          while (queue.length > 0) {
+            const [cx, cy] = queue.pop();
+            size += 1;
+            minX = Math.min(minX, cx);
+            minY = Math.min(minY, cy);
+            maxX = Math.max(maxX, cx);
+            maxY = Math.max(maxY, cy);
 
-          neighbors.forEach(([dx, dy]) => {
-            const nx = cx + dx;
-            const ny = cy + dy;
-            if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
-            const nIdx = ny * width + nx;
-            if (visited[nIdx] || !isOpaque(nx, ny)) return;
-            visited[nIdx] = 1;
-            queue.push([nx, ny]);
-          });
-        }
+            neighbors.forEach(([dx, dy]) => {
+              const nx = cx + dx;
+              const ny = cy + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) return;
+              const nIdx = ny * width + nx;
+              if (visited[nIdx] || !isOpaque(nx, ny)) return;
+              visited[nIdx] = 1;
+              queue.push([nx, ny]);
+            });
+          }
 
-        // Ignore tiny sparkles/noise.
-        if (size >= 24) {
-          components.push({ minX, minY, maxX, maxY, size });
+          // Ignore tiny sparkles/noise.
+          if (size >= 24) {
+            components.push({ minX, minY, maxX, maxY, size });
+          }
         }
       }
-    }
 
-    if (components.length === 0) return null;
+      if (components.length === 0) return null;
 
-    const expectedCols = 4;
-    const expectedRows = 4;
-    const clampedModelIndex = Math.max(
-      0,
-      Math.min(expectedCols - 1, modelIndex),
-    );
-    const clampedRowIndex = Math.max(0, Math.min(expectedRows - 1, rowIndex));
-    const expectedCenterX = ((clampedModelIndex + 0.5) * width) / expectedCols;
-    const expectedCenterY = ((clampedRowIndex + 0.5) * height) / expectedRows;
+      const expectedCols = 4;
+      const expectedRows = 4;
+      const clampedModelIndex = Math.max(
+        0,
+        Math.min(expectedCols - 1, modelIndex),
+      );
+      const clampedRowIndex = Math.max(0, Math.min(expectedRows - 1, rowIndex));
+      const expectedCenterX =
+        ((clampedModelIndex + 0.5) * width) / expectedCols;
+      const expectedCenterY = ((clampedRowIndex + 0.5) * height) / expectedRows;
 
-    components.sort((a, b) => {
-      const aCenterX = (a.minX + a.maxX) / 2;
-      const bCenterX = (b.minX + b.maxX) / 2;
-      const aCenterY = (a.minY + a.maxY) / 2;
-      const bCenterY = (b.minY + b.maxY) / 2;
-      const aDist = Math.abs(aCenterX - expectedCenterX);
-      const bDist = Math.abs(bCenterX - expectedCenterX);
-      const aRowDist = Math.abs(aCenterY - expectedCenterY);
-      const bRowDist = Math.abs(bCenterY - expectedCenterY);
+      components.sort((a, b) => {
+        const aCenterX = (a.minX + a.maxX) / 2;
+        const bCenterX = (b.minX + b.maxX) / 2;
+        const aCenterY = (a.minY + a.maxY) / 2;
+        const bCenterY = (b.minY + b.maxY) / 2;
+        const aDist = Math.abs(aCenterX - expectedCenterX);
+        const bDist = Math.abs(bCenterX - expectedCenterX);
+        const aRowDist = Math.abs(aCenterY - expectedCenterY);
+        const bRowDist = Math.abs(bCenterY - expectedCenterY);
 
-      // Prioritize row match first, then model slot match, then size.
-      if (Math.abs(aRowDist - bRowDist) > 6) return aRowDist - bRowDist;
+        // Prioritize row match first, then model slot match, then size.
+        if (Math.abs(aRowDist - bRowDist) > 6) return aRowDist - bRowDist;
 
-      if (Math.abs(aDist - bDist) > 6) return aDist - bDist;
-      return b.size - a.size;
-    });
+        if (Math.abs(aDist - bDist) > 6) return aDist - bDist;
+        return b.size - a.size;
+      });
 
-    const chosen = components[0];
-    const pad = 2;
-    const minX = Math.max(0, chosen.minX - pad);
-    const minY = Math.max(0, chosen.minY - pad);
-    const maxX = Math.min(width - 1, chosen.maxX + pad);
-    const maxY = Math.min(height - 1, chosen.maxY + pad);
+      const chosen = components[0];
+      const pad = 2;
+      const minX = Math.max(0, chosen.minX - pad);
+      const minY = Math.max(0, chosen.minY - pad);
+      const maxX = Math.min(width - 1, chosen.maxX + pad);
+      const maxY = Math.min(height - 1, chosen.maxY + pad);
 
-    const trimmedWidth = maxX - minX + 1;
-    const trimmedHeight = maxY - minY + 1;
-    const trimmedCanvas = document.createElement("canvas");
-    trimmedCanvas.width = trimmedWidth;
-    trimmedCanvas.height = trimmedHeight;
-    const trimmedCtx = trimmedCanvas.getContext("2d");
-    trimmedCtx.imageSmoothingEnabled = false;
-    trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
-    trimmedCtx.drawImage(
-      canvas,
-      minX,
-      minY,
-      trimmedWidth,
-      trimmedHeight,
-      0,
-      0,
-      trimmedWidth,
-      trimmedHeight,
-    );
+      const trimmedWidth = maxX - minX + 1;
+      const trimmedHeight = maxY - minY + 1;
+      const trimmedCanvas = document.createElement("canvas");
+      trimmedCanvas.width = trimmedWidth;
+      trimmedCanvas.height = trimmedHeight;
+      const trimmedCtx = trimmedCanvas.getContext("2d");
+      trimmedCtx.imageSmoothingEnabled = false;
+      trimmedCtx.clearRect(0, 0, trimmedWidth, trimmedHeight);
+      trimmedCtx.drawImage(
+        canvas,
+        minX,
+        minY,
+        trimmedWidth,
+        trimmedHeight,
+        0,
+        0,
+        trimmedWidth,
+        trimmedHeight,
+      );
 
-    const texture = new THREE.CanvasTexture(trimmedCanvas);
-    texture.magFilter = THREE.NearestFilter;
-    texture.minFilter = THREE.NearestFilter;
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.generateMipmaps = false;
-    texture.needsUpdate = true;
+      const texture = new THREE.CanvasTexture(trimmedCanvas);
+      texture.magFilter = THREE.NearestFilter;
+      texture.minFilter = THREE.NearestFilter;
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.generateMipmaps = false;
+      texture.needsUpdate = true;
 
-    return {
-      texture,
-      aspect: trimmedWidth / trimmedHeight,
-    };
-  }, []);
+      return {
+        texture,
+        aspect: trimmedWidth / trimmedHeight,
+      };
+    },
+    [],
+  );
 
   const buildPlayerSheetFrames = useCallback((sourceImage) => {
     const expectedRows = 5;
@@ -499,7 +504,13 @@ export default function RPGGame() {
   }, [dialogue, playGameSound]);
 
   const updateDialogueBubblePosition = useCallback(() => {
-    if (isMobileDialogueLayout || !dialogue || !canvasRef.current || !cameraRef.current) return;
+    if (
+      isMobileDialogueLayout ||
+      !dialogue ||
+      !canvasRef.current ||
+      !cameraRef.current
+    )
+      return;
 
     const npcMesh = npcSpritesRef.current?.[dialogue.npcIdx];
     if (!npcMesh) return;
@@ -936,7 +947,9 @@ export default function RPGGame() {
       const decorMesh = new THREE.Mesh(decorGeo, decorMat);
       decorMesh.position.set(
         x * TILE + TILE * 0.5 + (Math.random() - 0.5) * TILE * 0.2,
-        (MAP_H - 1 - y) * TILE + TILE * 0.5 + (Math.random() - 0.5) * TILE * 0.15,
+        (MAP_H - 1 - y) * TILE +
+          TILE * 0.5 +
+          (Math.random() - 0.5) * TILE * 0.15,
         0.8,
       );
       decalGroup.add(decorMesh);
@@ -1276,7 +1289,8 @@ export default function RPGGame() {
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
           const npcArc = questTreeByNpc[npcIdx];
-          const nodeId = questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
+          const nodeId =
+            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
           const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
@@ -1408,7 +1422,8 @@ export default function RPGGame() {
         const question = getQuestionForNPC(npcIdx);
         if (question) {
           const npcArc = questTreeByNpc[npcIdx];
-          const nodeId = questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
+          const nodeId =
+            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
           const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
@@ -1828,201 +1843,223 @@ export default function RPGGame() {
       </HStack>
 
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
-      {dialogue && !gameComplete && (isMobileDialogueLayout || dialogueBubblePosition) && (
-        <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
-          <Box
-            position="absolute"
-            left={
-              isMobileDialogueLayout
-                ? { base: 3, md: `${dialogueBubblePosition?.left || 0}px` }
-                : `${dialogueBubblePosition?.left || 0}px`
-            }
-            right={isMobileDialogueLayout ? { base: 3, md: "auto" } : "auto"}
-            top={
-              isMobileDialogueLayout
-                ? { base: "auto", md: `${dialogueBubblePosition?.top || 0}px` }
-                : `${dialogueBubblePosition?.top || 0}px`
-            }
-            bottom={isMobileDialogueLayout ? { base: 4, md: "auto" } : "auto"}
-            transform={
-              isMobileDialogueLayout
-                ? "none"
-                : dialogueBubblePosition?.preferredRight
-                  ? "translate(0, -50%)"
-                  : "translate(-100%, -50%)"
-            }
-            w={isMobileDialogueLayout ? { base: "auto", md: "360px" } : { base: "min(86vw, 340px)", md: "360px" }}
-            maxH={isMobileDialogueLayout ? { base: "44vh", md: "62vh" } : { base: "70vh", md: "62vh" }}
-            overflowY="auto"
-            bg="rgba(250, 244, 232, 0.96)"
-            border="2px solid"
-            borderColor="orange.200"
-            borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
-            p={4}
-            boxShadow="0 18px 38px rgba(0,0,0,0.52)"
-            pointerEvents="auto"
-          >
-            {!isMobileDialogueLayout && dialogueBubblePosition && (
-              <Box
-                position="absolute"
-                top="50%"
-                transform="translateY(-50%)"
-                left={dialogueBubblePosition.preferredRight ? "-12px" : "auto"}
-                right={dialogueBubblePosition.preferredRight ? "auto" : "-12px"}
-                w="0"
-                h="0"
-                borderTop="10px solid transparent"
-                borderBottom="10px solid transparent"
-                borderRight={
-                  dialogueBubblePosition.preferredRight
-                    ? "12px solid rgba(250, 244, 232, 0.96)"
-                    : "none"
-                }
-                borderLeft={
-                  dialogueBubblePosition.preferredRight
-                    ? "none"
-                    : "12px solid rgba(250, 244, 232, 0.96)"
-                }
-              />
-            )}
-
-            <IconButton
-              aria-label="Close dialogue"
-              icon={<CloseIcon boxSize={2.5} />}
-              size="xs"
+      {dialogue &&
+        !gameComplete &&
+        (isMobileDialogueLayout || dialogueBubblePosition) && (
+          <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
+            <Box
               position="absolute"
-              top={2}
-              right={2}
-              variant="ghost"
-              color="gray.600"
-              _hover={{ bg: "whiteAlpha.200" }}
-              onClick={closeDialogue}
-            />
+              left={
+                isMobileDialogueLayout
+                  ? { base: 3, md: `${dialogueBubblePosition?.left || 0}px` }
+                  : `${dialogueBubblePosition?.left || 0}px`
+              }
+              right={isMobileDialogueLayout ? { base: 3, md: "auto" } : "auto"}
+              top={
+                isMobileDialogueLayout
+                  ? {
+                      base: "auto",
+                      md: `${dialogueBubblePosition?.top || 0}px`,
+                    }
+                  : `${dialogueBubblePosition?.top || 0}px`
+              }
+              bottom={isMobileDialogueLayout ? { base: 4, md: "auto" } : "auto"}
+              transform={
+                isMobileDialogueLayout
+                  ? "none"
+                  : dialogueBubblePosition?.preferredRight
+                    ? "translate(0, -50%)"
+                    : "translate(-100%, -50%)"
+              }
+              w={
+                isMobileDialogueLayout
+                  ? { base: "auto", md: "360px" }
+                  : { base: "min(86vw, 340px)", md: "360px" }
+              }
+              maxH={
+                isMobileDialogueLayout
+                  ? { base: "44vh", md: "62vh" }
+                  : { base: "70vh", md: "62vh" }
+              }
+              overflowY="auto"
+              bg="rgba(250, 244, 232, 0.96)"
+              border="2px solid"
+              borderColor="orange.200"
+              borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
+              p={4}
+              boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+              pointerEvents="auto"
+            >
+              {!isMobileDialogueLayout && dialogueBubblePosition && (
+                <Box
+                  position="absolute"
+                  top="50%"
+                  transform="translateY(-50%)"
+                  left={
+                    dialogueBubblePosition.preferredRight ? "-12px" : "auto"
+                  }
+                  right={
+                    dialogueBubblePosition.preferredRight ? "auto" : "-12px"
+                  }
+                  w="0"
+                  h="0"
+                  borderTop="10px solid transparent"
+                  borderBottom="10px solid transparent"
+                  borderRight={
+                    dialogueBubblePosition.preferredRight
+                      ? "12px solid rgba(250, 244, 232, 0.96)"
+                      : "none"
+                  }
+                  borderLeft={
+                    dialogueBubblePosition.preferredRight
+                      ? "none"
+                      : "12px solid rgba(250, 244, 232, 0.96)"
+                  }
+                />
+              )}
 
-            <VStack align="stretch" spacing={3}>
-              <HStack align="center" spacing={2} pr={8}>
-                <Box pt={1}>
-                  <RandomCharacter
-                    width="42px"
-                    notSoRandomCharacter={dialogue.npcCharacter}
-                  />{' '}
-                </Box>
-                <Badge colorScheme="purple" fontSize="sm" px={2}>
-                  {dialogue.npcName}
-                </Badge>
-                {feedback === "correct" && (
-                  <Badge colorScheme="green" variant="solid">
-                    {ui.correct}
+              <IconButton
+                aria-label="Close dialogue"
+                icon={<CloseIcon boxSize={2.5} />}
+                size="xs"
+                position="absolute"
+                top={2}
+                right={2}
+                variant="ghost"
+                color="gray.600"
+                _hover={{ bg: "whiteAlpha.200" }}
+                onClick={closeDialogue}
+              />
+
+              <VStack align="stretch" spacing={3}>
+                <HStack align="center" spacing={2} pr={8}>
+                  <Box pt={1}>
+                    <RandomCharacter
+                      width="42px"
+                      notSoRandomCharacter={dialogue.npcCharacter}
+                    />{" "}
+                  </Box>
+                  <Badge colorScheme="purple" fontSize="sm" px={2}>
+                    {dialogue.npcName}
                   </Badge>
-                )}
-                {feedback === "incorrect" && (
-                  <Badge colorScheme="red" variant="solid">
-                    {ui.incorrect}
-                  </Badge>
-                )}
-              </HStack>
-
-              {!(dialogue.node?.responseMode === "speech" && dialogue.npcReply) && (
-                <Text color="gray.800" fontSize="md" fontWeight="bold">
-                  {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
-                </Text>
-              )}
-
-              {!!dialogue.npcReply && (
-                <Text color="orange.700" fontSize="sm">
-                  {dialogue.npcReply}
-                </Text>
-              )}
-
-              {lastHeardSpeech && dialogue.node?.responseMode === "speech" && (
-                <Text color="teal.700" fontSize="xs">
-                  {ui.heardYou}: {lastHeardSpeech}
-                </Text>
-              )}
-
-              {dialogue.node?.responseMode === "choice" && (
-                <VStack spacing={2}>
-                  {(dialogue.node?.choices || []).map((optRaw, idx) => {
-                    const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
-
-                    return (
-                      <Button
-                        key={idx}
-                        w="100%"
-                        size="sm"
-                        variant="solid"
-                        bg="rgba(255,255,255,0.92)"
-                        color="gray.900"
-                        border="1px solid"
-                        borderColor="blackAlpha.200"
-                        _hover={{ bg: "white", borderColor: "blackAlpha.300" }}
-                        _active={{ bg: "gray.100" }}
-                        onClick={() => handleAnswer(idx)}
-                        isDisabled={isRecording || isConnecting}
-                        justifyContent="flex-start"
-                        textAlign="left"
-                        whiteSpace="normal"
-                        h="auto"
-                        py={2}
-                      >
-                        {String.fromCharCode(65 + idx)}. {opt}
-                      </Button>
-                    );
-                  })}
-                </VStack>
-              )}
-
-              {dialogue.node?.responseMode === "speech" && (
-                <HStack justify="flex-end">
-                  <IconButton
-                    aria-label={isRecording ? ui.micStop : ui.micStart}
-                    size="sm"
-                    colorScheme={isRecording ? "red" : "teal"}
-                    icon={<Text as="span">🎤</Text>}
-                    isLoading={isConnecting}
-                    onClick={async () => {
-                      if (!supportsSpeech) {
-                        toast({
-                          title: ui.speechUnavailable,
-                          status: "warning",
-                          duration: 2500,
-                          isClosable: true,
-                        });
-                        return;
-                      }
-                      if (isRecording) {
-                        stopRecording();
-                        return;
-                      }
-                      try {
-                        await startRecording();
-                      } catch {
-                        toast({
-                          title: ui.speechUnavailable,
-                          status: "warning",
-                          duration: 2500,
-                          isClosable: true,
-                        });
-                      }
-                    }}
-                  />
+                  {feedback === "correct" && (
+                    <Badge colorScheme="green" variant="solid">
+                      {ui.correct}
+                    </Badge>
+                  )}
+                  {feedback === "incorrect" && (
+                    <Badge colorScheme="red" variant="solid">
+                      {ui.incorrect}
+                    </Badge>
+                  )}
                 </HStack>
-              )}
 
-              {dialogue.node?.responseMode === "none" && (
-                <Button
-                  size="sm"
-                  colorScheme="yellow"
-                  onClick={() => completeNPCChapter(dialogue.npcIdx)}
-                >
-                  {ui.continue}
-                </Button>
-              )}
+                {!(
+                  dialogue.node?.responseMode === "speech" && dialogue.npcReply
+                ) && (
+                  <Text color="gray.800" fontSize="md" fontWeight="bold">
+                    {dialogue.node?.npcLine ||
+                      dialogue.node?.prompt ||
+                      dialogue.question.prompt}
+                  </Text>
+                )}
 
-            </VStack>
+                {!!dialogue.npcReply && (
+                  <Text color="orange.700" fontSize="sm">
+                    {dialogue.npcReply}
+                  </Text>
+                )}
+
+                {lastHeardSpeech &&
+                  dialogue.node?.responseMode === "speech" && (
+                    <Text color="teal.700" fontSize="xs">
+                      {ui.heardYou}: {lastHeardSpeech}
+                    </Text>
+                  )}
+
+                {dialogue.node?.responseMode === "choice" && (
+                  <VStack spacing={2}>
+                    {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                      const opt =
+                        typeof optRaw === "string" ? optRaw : optRaw.text;
+
+                      return (
+                        <Button
+                          key={idx}
+                          w="100%"
+                          size="sm"
+                          variant="solid"
+                          bg="rgba(255,255,255,0.92)"
+                          color="gray.900"
+                          border="1px solid"
+                          borderColor="blackAlpha.200"
+                          boxShadow="0px 4px 0px #a9a18c"
+                          _active={{ bg: "gray.100" }}
+                          onClick={() => handleAnswer(idx)}
+                          isDisabled={isRecording || isConnecting}
+                          justifyContent="flex-start"
+                          textAlign="left"
+                          whiteSpace="normal"
+                          h="auto"
+                          py={2}
+                        >
+                          {String.fromCharCode(65 + idx)}. {opt}
+                        </Button>
+                      );
+                    })}
+                  </VStack>
+                )}
+
+                {dialogue.node?.responseMode === "speech" && (
+                  <HStack justify="flex-end">
+                    <IconButton
+                      aria-label={isRecording ? ui.micStop : ui.micStart}
+                      size="sm"
+                      colorScheme={isRecording ? "red" : "teal"}
+                      icon={<Text as="span">🎤</Text>}
+                      isLoading={isConnecting}
+                      onClick={async () => {
+                        if (!supportsSpeech) {
+                          toast({
+                            title: ui.speechUnavailable,
+                            status: "warning",
+                            duration: 2500,
+                            isClosable: true,
+                          });
+                          return;
+                        }
+                        if (isRecording) {
+                          stopRecording();
+                          return;
+                        }
+                        try {
+                          await startRecording();
+                        } catch {
+                          toast({
+                            title: ui.speechUnavailable,
+                            status: "warning",
+                            duration: 2500,
+                            isClosable: true,
+                          });
+                        }
+                      }}
+                    />
+                  </HStack>
+                )}
+
+                {dialogue.node?.responseMode === "none" && (
+                  <Button
+                    size="sm"
+                    colorScheme="yellow"
+                    onClick={() => completeNPCChapter(dialogue.npcIdx)}
+                  >
+                    {ui.continue}
+                  </Button>
+                )}
+              </VStack>
+            </Box>
           </Box>
-        </Box>
-      )}
+        )}
 
       {/* Game complete */}
       {gameComplete && (
