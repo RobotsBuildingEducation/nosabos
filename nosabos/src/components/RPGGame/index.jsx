@@ -874,6 +874,12 @@ export default function RPGGame() {
     playerSpriteRef.current = playerSprite;
 
     const selectedNPCVariants = chooseRandomNPCVariants(scenario.npcs.length);
+    const NPC_WIDTH_TILES = 0.9;
+    const NPC_HEIGHT_TILES = 1.2;
+    const NPC_BASE_SCALE = 0.92;
+    const NPC_FOOT_MARGIN_TILES = 0.02;
+    const npcVerticalOffset =
+      TILE * ((NPC_HEIGHT_TILES - 1) / 2 + NPC_FOOT_MARGIN_TILES);
 
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
@@ -889,7 +895,10 @@ export default function RPGGame() {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
-      const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
+      const npcGeo = new THREE.PlaneGeometry(
+        TILE * NPC_WIDTH_TILES,
+        TILE * NPC_HEIGHT_TILES,
+      );
       const npcMat = new THREE.MeshBasicMaterial({
         map: npcTex,
         transparent: true,
@@ -897,7 +906,7 @@ export default function RPGGame() {
       const npcMesh = new THREE.Mesh(npcGeo, npcMat);
       npcMesh.position.set(
         npc.tx * TILE + TILE / 2,
-        (MAP_H - 1 - npc.ty) * TILE + TILE / 2,
+        (MAP_H - 1 - npc.ty) * TILE + TILE / 2 + npcVerticalOffset,
         4,
       );
       scene.add(npcMesh);
@@ -913,7 +922,7 @@ export default function RPGGame() {
       const indicator = new THREE.Mesh(indGeo, indMat);
       indicator.position.set(
         npc.tx * TILE + TILE / 2,
-        (MAP_H - 1 - npc.ty) * TILE + TILE * 1.3,
+        (MAP_H - 1 - npc.ty) * TILE + TILE * 1.15,
         6,
       );
       scene.add(indicator);
@@ -936,8 +945,8 @@ export default function RPGGame() {
 
           const fallbackNPCAspect = 1.05 / 1.45;
           const widthScale = Math.max(
-            0.5,
-            Math.min(2.5, npcTexture.aspect / fallbackNPCAspect),
+            0.45,
+            Math.min(1.4, npcTexture.aspect / fallbackNPCAspect),
           );
 
           npcAssignments.forEach((assignment, index) => {
@@ -946,7 +955,7 @@ export default function RPGGame() {
             if (!npcMesh?.material) return;
             npcMesh.material.map = npcTexture.texture;
             npcMesh.material.needsUpdate = true;
-            npcMesh.scale.set(widthScale, 1, 1);
+            npcMesh.scale.set(widthScale * NPC_BASE_SCALE, NPC_BASE_SCALE, 1);
           });
         });
       },
@@ -979,13 +988,14 @@ export default function RPGGame() {
         sprite.position.y =
           (MAP_H - 1 - npc.ty) * TILE +
           TILE / 2 +
+          npcVerticalOffset +
           Math.sin(gs.npcBobPhase + i * 2.1) * 2;
       });
       npcIndicators.forEach((ind, i) => {
         const npc = scenario.npcs[i];
         ind.position.y =
           (MAP_H - 1 - npc.ty) * TILE +
-          TILE * 1.3 +
+          TILE * 1.15 +
           Math.sin(gs.npcBobPhase + i * 2.1) * 2;
         // Pulse scale
         const pulse = 1 + Math.sin(gs.npcBobPhase * 2 + i) * 0.08;
