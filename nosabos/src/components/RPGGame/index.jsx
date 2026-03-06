@@ -1888,11 +1888,13 @@ export default function RPGGame() {
                         key={idx}
                         w="100%"
                         size="sm"
-                        variant="outline"
-                        colorScheme="gray"
-                        color="gray.800"
-                        borderColor="blackAlpha.300"
-                        _hover={{ bg: "blackAlpha.50" }}
+                        variant="solid"
+                        bg="rgba(255,255,255,0.92)"
+                        color="gray.900"
+                        border="1px solid"
+                        borderColor="blackAlpha.200"
+                        _hover={{ bg: "white", borderColor: "blackAlpha.300" }}
+                        _active={{ bg: "gray.100" }}
                         onClick={() => handleAnswer(idx)}
                         isDisabled={isRecording || isConnecting}
                         justifyContent="flex-start"
