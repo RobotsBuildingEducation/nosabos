@@ -1424,11 +1424,21 @@ export default function RPGGame() {
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
-    const questGiverIdx = scenario?.quest?.startNpcIdx ?? 0;
+    if (gameComplete) {
+      npcIndicatorsRef.current.forEach((ind) => {
+        ind.visible = false;
+      });
+      return;
+    }
+
+    const nextTargetIdx = [...questProgress.unlockedNPCs].find(
+      (idx) => !questProgress.completedNPCs.has(idx),
+    );
+
     npcIndicatorsRef.current.forEach((ind, i) => {
-      ind.visible = i === questGiverIdx && !gameComplete;
+      ind.visible = nextTargetIdx !== undefined && i === nextTargetIdx;
     });
-  }, [gameComplete, scenario]);
+  }, [gameComplete, questProgress]);
 
   const completeNPCChapter = useCallback(
     (npcIdx) => {
