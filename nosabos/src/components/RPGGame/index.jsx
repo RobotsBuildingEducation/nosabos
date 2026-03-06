@@ -729,7 +729,7 @@ export default function RPGGame() {
       "down",
       0,
     );
-    const fallbackPlayerAspect = 1.05 / 1.45;
+    const fallbackPlayerAspect = 0.9 / 1.2;
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       playerSpriteSheetUrl,
@@ -910,9 +910,9 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
-    const PLAYER_WIDTH_TILES = 1.05;
-    const PLAYER_HEIGHT_TILES = 1.45;
-    const PLAYER_FOOT_MARGIN_TILES = 0.04;
+    const PLAYER_WIDTH_TILES = 0.9;
+    const PLAYER_HEIGHT_TILES = 1.2;
+    const PLAYER_FOOT_MARGIN_TILES = 0.02;
     const playerVerticalOffset =
       TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
     const playerGeo = new THREE.PlaneGeometry(
