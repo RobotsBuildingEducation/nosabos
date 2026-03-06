@@ -981,22 +981,16 @@ export default function RPGGame() {
       const gs = gameStateRef.current;
       if (!gs) return;
 
-      // NPC bob
+      // Keep NPCs anchored in place (no floating bob).
       gs.npcBobPhase += delta * 0.003;
       npcSprites.forEach((sprite, i) => {
         const npc = scenario.npcs[i];
         sprite.position.y =
-          (MAP_H - 1 - npc.ty) * TILE +
-          TILE / 2 +
-          npcVerticalOffset +
-          Math.sin(gs.npcBobPhase + i * 2.1) * 2;
+          (MAP_H - 1 - npc.ty) * TILE + TILE / 2 + npcVerticalOffset;
       });
       npcIndicators.forEach((ind, i) => {
         const npc = scenario.npcs[i];
-        ind.position.y =
-          (MAP_H - 1 - npc.ty) * TILE +
-          TILE * 1.15 +
-          Math.sin(gs.npcBobPhase + i * 2.1) * 2;
+        ind.position.y = (MAP_H - 1 - npc.ty) * TILE + TILE * 1.15;
         // Pulse scale
         const pulse = 1 + Math.sin(gs.npcBobPhase * 2 + i) * 0.08;
         ind.scale.set(pulse, pulse, 1);
