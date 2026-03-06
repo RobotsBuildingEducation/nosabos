@@ -244,6 +244,86 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
   return makeTexture(canvas);
 }
 
+export function createGroundDecalTexture(kind, seed) {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const rng = mulberry32(seed * 17 + 991);
+
+  if (kind === "grass_tuft") {
+    const blade = [0x3f7f2f, 0x4d9640, 0x6bb85a];
+    for (let i = 0; i < 3; i++) {
+      const baseX = 5 + i * 2 + Math.floor(rng() * 2);
+      const baseY = 14 - Math.floor(rng() * 2);
+      px(ctx, baseX, baseY, blade[0]);
+      px(ctx, baseX - 1, baseY - 1, blade[1]);
+      px(ctx, baseX, baseY - 2, blade[2]);
+      if (rng() > 0.5) px(ctx, baseX + 1, baseY - 1, blade[1]);
+    }
+    pxA(ctx, 6, 15, 0x000000, 0.15);
+    pxA(ctx, 9, 15, 0x000000, 0.12);
+  }
+
+  if (kind === "flower_patch") {
+    const petals = [0xff6ea8, 0xffd166, 0xc084fc, 0x7dd3fc, 0xfb7185];
+    const bloomCount = 2 + Math.floor(rng() * 3);
+    for (let i = 0; i < bloomCount; i++) {
+      const cx = 4 + Math.floor(rng() * 8);
+      const cy = 5 + Math.floor(rng() * 7);
+      const p = petals[Math.floor(rng() * petals.length)];
+      px(ctx, cx, cy, 0xfef08a);
+      px(ctx, cx - 1, cy, p);
+      px(ctx, cx + 1, cy, p);
+      px(ctx, cx, cy - 1, p);
+      px(ctx, cx, cy + 1, p);
+      px(ctx, cx, cy + 2, 0x4a8a35);
+    }
+  }
+
+  if (kind === "stones") {
+    const tone = [0xcbd5e1, 0x94a3b8, 0x64748b];
+    const pebbleCount = 3 + Math.floor(rng() * 5);
+    for (let i = 0; i < pebbleCount; i++) {
+      const x = 3 + Math.floor(rng() * 10);
+      const y = 6 + Math.floor(rng() * 8);
+      const c = tone[Math.floor(rng() * tone.length)];
+      px(ctx, x, y, c);
+      if (rng() > 0.4) px(ctx, x + 1, y, darken(c, 0.12));
+    }
+  }
+
+  if (kind === "wood_scraps") {
+    const woods = [0x8b5e3c, 0xa36f43, 0x6b4226];
+    const pieceCount = 2 + Math.floor(rng() * 3);
+    for (let i = 0; i < pieceCount; i++) {
+      const x = 3 + Math.floor(rng() * 10);
+      const y = 6 + Math.floor(rng() * 8);
+      const w = 2 + Math.floor(rng() * 3);
+      const c = woods[Math.floor(rng() * woods.length)];
+      rect(ctx, x, y, w, 1, c);
+      pxA(ctx, x, y + 1, 0x000000, 0.2);
+    }
+  }
+
+  if (kind === "paper_bits") {
+    const papers = [0xf8fafc, 0xe2e8f0, 0xf1f5f9];
+    const pieceCount = 2 + Math.floor(rng() * 4);
+    for (let i = 0; i < pieceCount; i++) {
+      const x = 3 + Math.floor(rng() * 9);
+      const y = 5 + Math.floor(rng() * 9);
+      const c = papers[Math.floor(rng() * papers.length)];
+      rect(ctx, x, y, 2, 2, c);
+      pxA(ctx, x + 1, y + 1, 0x64748b, 0.25);
+    }
+  }
+
+  return makeTexture(canvas);
+}
+
 // ─── Stardew-style character sprite (32x32 with rich detail) ─────────────────
 export function createCharacterTexture(colors, direction = "down", frame = 0) {
   const SIZE = 40;
