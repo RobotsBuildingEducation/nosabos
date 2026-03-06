@@ -1401,10 +1401,10 @@ export default function RPGGame() {
     if (!selected) return;
 
     const nextNodeId = selected.nextNodeId || null;
-    setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
-    if (selected.npcReply) speakNPCText(selected.npcReply);
 
     if (!nextNodeId) {
+      setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
+      if (selected.npcReply) speakNPCText(selected.npcReply);
       completeNPCChapter(dialogue.npcIdx);
       return;
     }
@@ -1426,7 +1426,7 @@ export default function RPGGame() {
       setDialogue((prev) => ({
         ...prev,
         node: nextNode,
-        npcReply: "",
+        npcReply: selected.npcReply || "",
       }));
       speakNPCText(nextNode.npcLine || nextNode.prompt || "");
     }, 300);
@@ -1460,13 +1460,15 @@ export default function RPGGame() {
       );
 
       const heardReply =
-        supportLang === "es"
+        targetLang === "es"
           ? `Perfecto, escuché: "${heard}".`
           : `Perfect, I heard: "${heard}."`;
       setDialogue((prev) => ({ ...prev, npcReply: heardReply }));
-      speakNPCText(heardReply);
 
-      if (!nextNode) return;
+      if (!nextNode) {
+        speakNPCText(heardReply);
+        return;
+      }
       setQuestProgress((prev) => ({
         ...prev,
         nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },

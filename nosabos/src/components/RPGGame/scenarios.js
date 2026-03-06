@@ -132,18 +132,36 @@ function normalizeQuestions(questions, supportLang) {
   ];
 }
 
-function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
-  const questionPool = questionsByLang?.en || questionsByLang?.es || [];
+function sanitizeDialogueLine(line, npcName) {
+  const raw = String(line || "").trim();
+  if (!raw) return "";
+
+  const escapedName = String(npcName || "")
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .trim();
+
+  const noPrefix = escapedName
+    ? raw.replace(new RegExp(`^${escapedName}\\s*:\\s*`, "i"), "")
+    : raw;
+
+  return noPrefix.replace(/^"|"$/g, "").trim();
+}
+
+function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang) {
+  const questionPool =
+    questionsByLang?.[targetLang] || questionsByLang?.en || questionsByLang?.es || [];
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
+  const useSpanish = targetLang === "es";
+
   const storySeed =
     rawStorySeed ||
-    (supportLang === "es"
+    (useSpanish
       ? "La campana del pueblo desapareció y nadie sabe quién la tomó."
       : "The town bell disappeared and nobody knows who took it.");
   const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
   const intro =
     String(rawQuest?.intro || "").trim() ||
-    (supportLang === "es"
+    (useSpanish
       ? `Comienza con ${npcs[startNpcIdx]?.name || "la guía"} y sigue las pistas para resolver el misterio.`
       : `Start with ${npcs[startNpcIdx]?.name || "the guide"} and follow the clues to solve the mystery.`);
 
@@ -155,7 +173,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
   const treeByNpc = npcs.map((npc, npcIdx) => {
     const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
     const nextNpc = npcs[(npcIdx + 1) % npcs.length];
-    const topic = topicAt(npcIdx, supportLang === "es" ? "las pistas del caso" : "the case clues");
+    const topic = topicAt(npcIdx, useSpanish ? "las pistas del caso" : "the case clues");
 
     const node1Id = `npc-${npcIdx}-node-1`;
     const node2Id = `npc-${npcIdx}-node-2`;
@@ -164,62 +182,68 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
     return {
       npcIdx,
       title:
-        supportLang === "es"
+        useSpanish
           ? `${npc.name} · acto ${npcIdx + 1}`
           : `${npc.name} · act ${npcIdx + 1}`,
       intro:
-        supportLang === "es"
+        useSpanish
           ? `${npc.name} conecta la pista anterior con ${nextNpc.name}.`
           : `${npc.name} connects the previous clue to ${nextNpc.name}.`,
       nodes: [
         {
           id: node1Id,
-          npcLine:
-            supportLang === "es"
-              ? `${npc.name}: "Hola. ${previousNpc.name} dijo que podrías ayudar."`
-              : `${npc.name}: "Hello. ${previousNpc.name} said you could help."`,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Hola. ${previousNpc.name} dijo que podrías ayudar.`
+              : `Hello. ${previousNpc.name} said you could help.`,
+            npc.name,
+          ),
           responseMode: "choice",
           choices: [
             {
-              text: supportLang === "es" ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
+              text: useSpanish ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
               npcReply:
-                supportLang === "es"
-                  ? `${npc.name}: "Gracias. Escucha: ${topic}."`
-                  : `${npc.name}: "Thanks. Listen: ${topic}."`,
+                useSpanish
+                  ? `Gracias. Escucha: ${topic}.`
+                  : `Thanks. Listen: ${topic}.`,
               nextNodeId: node2Id,
             },
             {
               text:
-                supportLang === "es"
+                useSpanish
                   ? "Suena ridículo, pero quiero oír la historia completa."
                   : "This sounds ridiculous, but I want the full story.",
               npcReply:
-                supportLang === "es"
-                  ? `${npc.name}: "Suena raro, sí, pero es urgente. ${topic}."`
-                  : `${npc.name}: "It sounds weird, yes, but it's urgent. ${topic}."`,
+                useSpanish
+                  ? `Suena raro, sí, pero es urgente. ${topic}.`
+                  : `It sounds weird, yes, but it's urgent. ${topic}.`,
               nextNodeId: node2Id,
             },
           ],
         },
         {
           id: node2Id,
-          npcLine:
-            supportLang === "es"
-              ? `${npc.name}: "Respóndeme con tu voz y deja un mensaje corto para ${nextNpc.name}."`
-              : `${npc.name}: "Answer me with your voice and leave a short message for ${nextNpc.name}."`,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Respóndeme con tu voz y deja un mensaje corto para ${nextNpc.name}.`
+              : `Answer me with your voice and leave a short message for ${nextNpc.name}.`,
+            npc.name,
+          ),
           responseMode: "speech",
           speechFallbackReply:
-            supportLang === "es"
-              ? `${npc.name}: "No alcancé a oírte bien. Inténtalo otra vez."`
-              : `${npc.name}: "I couldn't hear you clearly. Try again."`,
+            useSpanish
+              ? "No alcancé a oírte bien. Inténtalo otra vez."
+              : "I couldn't hear you clearly. Try again.",
           nextNodeId: node3Id,
         },
         {
           id: node3Id,
-          npcLine:
-            supportLang === "es"
-              ? `${npc.name}: "Perfecto. Ahora habla con ${nextNpc.name}. ${storySeed}"`
-              : `${npc.name}: "Perfect. Now talk to ${nextNpc.name}. ${storySeed}"`,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Perfecto. Ahora habla con ${nextNpc.name}. ${storySeed}`
+              : `Perfect. Now talk to ${nextNpc.name}. ${storySeed}`,
+            npc.name,
+          ),
           responseMode: "none",
           terminal: true,
         },
@@ -284,7 +308,7 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     },
     npcs,
     questions: questionsByLang,
-    quest: normalizeQuest(null, npcs, questionsByLang, supportLang),
+    quest: normalizeQuest(null, npcs, questionsByLang, supportLang, targetLang),
     greetings: {
       en: ["Generating scenario unavailable; using safe fallback."],
       es: ["Generación no disponible; usando respaldo."],
@@ -412,11 +436,11 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
   };
 }
 
-function withQuest(scenario, raw, supportLang) {
+function withQuest(scenario, raw, supportLang, targetLang) {
   const questionsByLang = scenario.questions;
   return {
     ...scenario,
-    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang),
+    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang, targetLang),
   };
 }
 
@@ -463,7 +487,7 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
   const parsed = parseJSON(text);
   const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
   if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
-  return withQuest(normalized, parsed, supportLang);
+  return withQuest(normalized, parsed, supportLang, targetLang);
 }
 
 export function mulberry32(a) {
