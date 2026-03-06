@@ -225,8 +225,8 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           id: node2Id,
           npcLine: sanitizeDialogueLine(
             useSpanish
-              ? `Respóndeme con tu voz y deja un mensaje corto para ${nextNpc.name}.`
-              : `Answer me with your voice and leave a short message for ${nextNpc.name}.`,
+              ? `Suena bien. ${topic}`
+              : `Sounds good. ${topic}`,
             npc.name,
           ),
           responseMode: "speech",

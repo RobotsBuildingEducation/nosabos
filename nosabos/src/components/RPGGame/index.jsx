@@ -1832,7 +1832,7 @@ export default function RPGGame() {
 
               {!!dialogue.npcReply && (
                 <Text color="yellow.200" fontSize="sm">
-                  {ui.response}: {dialogue.npcReply}
+                  {dialogue.npcReply}
                 </Text>
               )}
 
