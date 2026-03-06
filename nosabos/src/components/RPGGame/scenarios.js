@@ -133,74 +133,103 @@ function normalizeQuestions(questions, supportLang) {
 }
 
 function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
-  const baseStory =
-    supportLang === "es"
-      ? "La ciudad está en caos porque alguien cambió todas las señales."
-      : "The town is in chaos because someone swapped every sign.";
+  const questionPool = questionsByLang?.en || questionsByLang?.es || [];
+  const rawStorySeed = String(rawQuest?.storySeed || "").trim();
+  const storySeed =
+    rawStorySeed ||
+    (supportLang === "es"
+      ? "Anoche desapareció la campana del pueblo y todos culpan al gato del alcalde."
+      : "Last night the town bell disappeared and everyone blames the mayor's cat.");
+  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
+  const intro =
+    String(rawQuest?.intro || "").trim() ||
+    (supportLang === "es"
+      ? `Comienza con ${npcs[startNpcIdx]?.name || "la guía"} y sigue las pistas para resolver el misterio.`
+      : `Start with ${npcs[startNpcIdx]?.name || "the guide"} and follow the clues to solve the mystery.`);
 
-  const defaultQuest = {
-    intro:
-      supportLang === "es"
-        ? "Comienza con la bibliotecaria Ada y descubre quién alteró los letreros."
-        : "Start with librarian Ada and discover who tampered with the signs.",
-    storySeed: baseStory,
-    startNpcIdx: 0,
+  const topicAt = (idx, fallback) => {
+    const q = questionPool[idx % Math.max(1, questionPool.length)];
+    return String(q?.prompt || fallback);
   };
 
-  const questionPool = questionsByLang?.en || questionsByLang?.es || [];
   const treeByNpc = npcs.map((npc, npcIdx) => {
-    const q1 = questionPool[(npcIdx * 2) % Math.max(1, questionPool.length)] || {
-      prompt: supportLang === "es" ? "¿Cuál es la pista correcta?" : "Which clue is right?",
-      options: ["A", "B"],
-      correct: 0,
-    };
-    const q2 = questionPool[(npcIdx * 2 + 1) % Math.max(1, questionPool.length)] || q1;
+    const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
+    const nextNpc = npcs[(npcIdx + 1) % npcs.length];
+    const topic = topicAt(npcIdx, supportLang === "es" ? "las pistas del caso" : "the case clues");
 
-    const makeNode = (id, q, terminal = false) => ({
-      id,
-      prompt: q.prompt,
-      terminal,
-      options: q.options.map((opt, idx) => ({
-        text: opt,
-        isCorrect: idx === q.correct,
-        npcReply:
-          idx === q.correct
-            ? supportLang === "es"
-              ? `¡Exacto! ${npc.name} te da una pista dramática.`
-              : `Exactly! ${npc.name} gives you a dramatic clue.`
-            : supportLang === "es"
-              ? `${npc.name} se ríe: "casi... pero no".`
-              : `${npc.name} laughs: "close... but nope".`,
-        nextNodeId: terminal ? null : `npc-${npcIdx}-node-2`,
-      })),
-    });
+    const node1Id = `npc-${npcIdx}-node-1`;
+    const node2Id = `npc-${npcIdx}-node-2`;
+    const node3Id = `npc-${npcIdx}-node-3`;
 
     return {
       npcIdx,
       title:
         supportLang === "es"
-          ? `${npc.name}: capítulo ${npcIdx + 1}`
-          : `${npc.name}: chapter ${npcIdx + 1}`,
+          ? `${npc.name} · acto ${npcIdx + 1}`
+          : `${npc.name} · act ${npcIdx + 1}`,
       intro:
         supportLang === "es"
-          ? `${npc.name} conoce un secreto ridículo y peligroso.`
-          : `${npc.name} knows a secret that is both ridiculous and dangerous.`,
-      nodes: [makeNode(`npc-${npcIdx}-node-1`, q1), makeNode(`npc-${npcIdx}-node-2`, q2, true)],
+          ? `${npc.name} conecta la pista anterior con ${nextNpc.name}.`
+          : `${npc.name} connects the previous clue to ${nextNpc.name}.`,
+      nodes: [
+        {
+          id: node1Id,
+          npcLine:
+            supportLang === "es"
+              ? `${storySeed} ${npc.name} baja la voz: "${previousNpc.name} me dijo que tú podías ayudar."`
+              : `${storySeed} ${npc.name} lowers their voice: "${previousNpc.name} said you could help."`,
+          responseMode: "choice",
+          choices: [
+            {
+              text: supportLang === "es" ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
+              npcReply:
+                supportLang === "es"
+                  ? `Perfecto. Entonces escucha con calma: ${topic}.`
+                  : `Perfect. Then listen carefully: ${topic}.`,
+              nextNodeId: node2Id,
+            },
+            {
+              text:
+                supportLang === "es"
+                  ? "Suena ridículo, pero quiero oír la historia completa."
+                  : "This sounds ridiculous, but I want the full story.",
+              npcReply:
+                supportLang === "es"
+                  ? `Ridículo sí, pero urgente también. ${topic}.`
+                  : `Ridiculous, yes, but urgent too. ${topic}.`,
+              nextNodeId: node2Id,
+            },
+          ],
+        },
+        {
+          id: node2Id,
+          npcLine:
+            supportLang === "es"
+              ? `${npc.name}: "Responde con tu voz y deja una frase breve para ${nextNpc.name}."`
+              : `${npc.name}: "Answer with your voice and leave a short line for ${nextNpc.name}."`,
+          responseMode: "speech",
+          speechFallbackReply:
+            supportLang === "es"
+              ? "No escuché nada útil, pero improvisaremos con estilo dramático."
+              : "I didn't catch anything useful, but we'll improvise with dramatic flair.",
+          nextNodeId: node3Id,
+        },
+        {
+          id: node3Id,
+          npcLine:
+            supportLang === "es"
+              ? `${npc.name} asiente: "Genial. Ahora ve con ${nextNpc.name}; esa pista cierra este acto."`
+              : `${npc.name} nods: "Great. Now go to ${nextNpc.name}; that clue closes this act."`,
+          responseMode: "none",
+          terminal: true,
+        },
+      ],
     };
   });
 
-  if (!rawQuest || typeof rawQuest !== "object") {
-    return {
-      ...defaultQuest,
-      treeByNpc,
-    };
-  }
-
-  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
-
   return {
-    intro: String(rawQuest?.intro || defaultQuest.intro),
-    storySeed: String(rawQuest?.storySeed || defaultQuest.storySeed),
+    intro,
+    storySeed,
     startNpcIdx,
     treeByNpc,
   };

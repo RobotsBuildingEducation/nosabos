@@ -62,13 +62,12 @@ const UI_TEXT = {
     quest: "Quest",
     lockedNpc: "You should start with",
     response: "Response",
-    speechMode: "Speech mode",
-    choiceMode: "Choice mode",
     micStart: "Start mic",
     micStop: "Stop mic",
     heardYou: "I heard",
     speechUnavailable: "Speech unavailable in this browser",
-    noSpeechMatch: "I couldn't map that response. Try again.",
+    noSpeechMatch: "I didn't catch that. Try again.",
+    continue: "Continue",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -86,13 +85,12 @@ const UI_TEXT = {
     quest: "Misión",
     lockedNpc: "Debes comenzar con",
     response: "Respuesta",
-    speechMode: "Modo voz",
-    choiceMode: "Modo opciones",
     micStart: "Iniciar mic",
     micStop: "Detener mic",
     heardYou: "Escuché",
     speechUnavailable: "Voz no disponible en este navegador",
-    noSpeechMatch: "No pude mapear esa respuesta. Intenta otra vez.",
+    noSpeechMatch: "No entendí eso. Inténtalo otra vez.",
+    continue: "Continuar",
   },
 };
 
@@ -144,7 +142,6 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const [storyBanner, setStoryBanner] = useState("");
-  const [speechMode, setSpeechMode] = useState(false);
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
@@ -471,7 +468,7 @@ export default function RPGGame() {
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
-  const questTreeByNpc = quest?.treeByNpc || [];
+  const questTreeByNpc = useMemo(() => quest?.treeByNpc || [], [quest]);
 
   const playGameSound = useCallback(
     (name) => {
@@ -1164,7 +1161,7 @@ export default function RPGGame() {
             npcReply: "",
           });
           speakNPCText(
-            `${greetings[npcIdx % greetings.length]} ${node?.prompt || question.prompt}`,
+            `${greetings[npcIdx % greetings.length]} ${node?.npcLine || node?.prompt || question.prompt}`,
           );
           playGameSound("rpgDialogueOpen");
           return;
@@ -1300,7 +1297,7 @@ export default function RPGGame() {
             npcReply: "",
           });
           speakNPCText(
-            `${greetings[npcIdx % greetings.length]} ${node?.prompt || question.prompt}`,
+            `${greetings[npcIdx % greetings.length]} ${node?.npcLine || node?.prompt || question.prompt}`,
           );
           playGameSound("rpgDialogueOpen");
         }
@@ -1352,10 +1349,42 @@ export default function RPGGame() {
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
+    const questGiverIdx = scenario?.quest?.startNpcIdx ?? 0;
     npcIndicatorsRef.current.forEach((ind, i) => {
-      ind.visible = !answeredNPCs.has(i);
+      ind.visible = i === questGiverIdx && !gameComplete;
     });
-  }, [answeredNPCs]);
+  }, [gameComplete, scenario]);
+
+  const completeNPCChapter = useCallback(
+    (npcIdx) => {
+      const newAnswered = new Set(answeredNPCs);
+      newAnswered.add(npcIdx);
+      setAnsweredNPCs(newAnswered);
+
+      setQuestProgress((prev) => {
+        const completedNPCs = new Set(prev.completedNPCs);
+        completedNPCs.add(npcIdx);
+        const unlockedNPCs = new Set(prev.unlockedNPCs);
+        const nextNpcIdx = scenario.npcs.findIndex(
+          (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
+        );
+        if (nextNpcIdx !== -1) unlockedNPCs.add(nextNpcIdx);
+        return {
+          ...prev,
+          completedNPCs,
+          unlockedNPCs,
+          nodeByNPC: { ...prev.nodeByNPC, [npcIdx]: null },
+        };
+      });
+
+      setTimeout(() => {
+        setDialogue(null);
+        setFeedback(null);
+        if (newAnswered.size >= totalQuestions) setGameComplete(true);
+      }, 800);
+    },
+    [answeredNPCs, scenario, totalQuestions],
+  );
 
   // ─── Handle answer ────────────────────────────────────────────────────
   const handleAnswer = (optionIdx) => {
@@ -1363,76 +1392,39 @@ export default function RPGGame() {
 
     playGameSound("rpgDialogueSelect");
 
-    const nodeOptions = dialogue.node?.options || [];
-    const selectedNodeOption = nodeOptions[optionIdx];
-    const isCorrect = selectedNodeOption
-      ? !!selectedNodeOption.isCorrect
-      : optionIdx === dialogue.question.correct;
+    const selected = dialogue.node?.choices?.[optionIdx];
+    if (!selected) return;
 
-    if (isCorrect) {
-      playGameSound("correct");
-      setFeedback("correct");
+    const nextNodeId = selected.nextNodeId || null;
+    setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
+    if (selected.npcReply) speakNPCText(selected.npcReply);
 
-      const nextNodeId = selectedNodeOption?.nextNodeId || null;
-      if (nextNodeId) {
-        setQuestProgress((prev) => ({
-          ...prev,
-          nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNodeId },
-        }));
-        const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
-          (n) => n.id === nextNodeId,
-        );
-        setDialogue((prev) => ({
-          ...prev,
-          node: nextNode,
-          npcReply: selectedNodeOption?.npcReply || "",
-        }));
-        speakNPCText(`${selectedNodeOption?.npcReply || ""} ${nextNode?.prompt || ""}`);
-        setFeedback(null);
-        return;
-      }
-
-      const newAnswered = new Set(answeredNPCs);
-      newAnswered.add(dialogue.npcIdx);
-      setAnsweredNPCs(newAnswered);
-
-      setQuestProgress((prev) => {
-        const completedNPCs = new Set(prev.completedNPCs);
-        completedNPCs.add(dialogue.npcIdx);
-        const unlockedNPCs = new Set(prev.unlockedNPCs);
-        const nextNpcIdx = scenario.npcs.findIndex(
-          (_, idx) => idx !== dialogue.npcIdx && !completedNPCs.has(idx),
-        );
-        if (nextNpcIdx !== -1) unlockedNPCs.add(nextNpcIdx);
-        return {
-          ...prev,
-          completedNPCs,
-          unlockedNPCs,
-          nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: null },
-        };
-      });
-
-      if (selectedNodeOption?.npcReply) {
-        setDialogue((prev) => ({ ...prev, npcReply: selectedNodeOption.npcReply }));
-        speakNPCText(selectedNodeOption.npcReply);
-      }
-
-      setTimeout(() => {
-        setDialogue(null);
-        setFeedback(null);
-        if (newAnswered.size >= totalQuestions) {
-          setGameComplete(true);
-        }
-      }, 1000);
-    } else {
-      playGameSound("incorrect");
-      setFeedback("incorrect");
-      if (selectedNodeOption?.npcReply) {
-        setDialogue((prev) => ({ ...prev, npcReply: selectedNodeOption.npcReply }));
-        speakNPCText(selectedNodeOption.npcReply);
-      }
-      setTimeout(() => setFeedback(null), 1200);
+    if (!nextNodeId) {
+      completeNPCChapter(dialogue.npcIdx);
+      return;
     }
+
+    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      (n) => n.id === nextNodeId,
+    );
+    setQuestProgress((prev) => ({
+      ...prev,
+      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNodeId },
+    }));
+
+    if (!nextNode) {
+      completeNPCChapter(dialogue.npcIdx);
+      return;
+    }
+
+    setTimeout(() => {
+      setDialogue((prev) => ({
+        ...prev,
+        node: nextNode,
+        npcReply: "",
+      }));
+      speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+    }, 300);
   };
 
   const {
@@ -1442,39 +1434,42 @@ export default function RPGGame() {
     isConnecting,
     supportsSpeech,
   } = useSpeechPractice({
-    targetText: dialogue?.node?.options?.map((o) => o.text).join(" | ") || "",
+    targetText: dialogue?.node?.npcLine || "",
     targetLang,
     onResult: ({ recognizedText }) => {
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);
-      if (!heard || !dialogue?.node?.options?.length) return;
+      if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
 
-      const normalizedHeard = heard.toLowerCase();
-      let bestIdx = -1;
-      let bestScore = 0;
-
-      dialogue.node.options.forEach((opt, idx) => {
-        const tokens = String(opt.text)
-          .toLowerCase()
-          .split(/\s+/)
-          .filter(Boolean);
-        const score = tokens.reduce(
-          (acc, tk) => (normalizedHeard.includes(tk) ? acc + 1 : acc),
-          0,
-        );
-        if (score > bestScore) {
-          bestScore = score;
-          bestIdx = idx;
-        }
-      });
-
-      if (bestIdx === -1 || bestScore === 0) {
-        setDialogue((prev) => ({ ...prev, npcReply: ui.noSpeechMatch }));
-        speakNPCText(ui.noSpeechMatch);
+      if (!heard) {
+        const fallbackReply =
+          dialogue.node.speechFallbackReply || ui.noSpeechMatch;
+        setDialogue((prev) => ({ ...prev, npcReply: fallbackReply }));
+        speakNPCText(fallbackReply);
         return;
       }
 
-      handleAnswer(bestIdx);
+      const nextNodeId = dialogue.node.nextNodeId || null;
+      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+        (n) => n.id === nextNodeId,
+      );
+
+      const heardReply =
+        supportLang === "es"
+          ? `Perfecto, escuché: "${heard}".`
+          : `Perfect, I heard: "${heard}."`;
+      setDialogue((prev) => ({ ...prev, npcReply: heardReply }));
+      speakNPCText(heardReply);
+
+      if (!nextNode) return;
+      setQuestProgress((prev) => ({
+        ...prev,
+        nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+      }));
+      setTimeout(() => {
+        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
+        speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+      }, 300);
     },
   });
 
@@ -1493,7 +1488,6 @@ export default function RPGGame() {
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
-    setSpeechMode(false);
     setLastHeardSpeech("");
     setQuestProgress({
       unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
@@ -1527,7 +1521,6 @@ export default function RPGGame() {
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
-    setSpeechMode(false);
     setLastHeardSpeech("");
     setStoryBanner("");
   };
@@ -1837,7 +1830,7 @@ export default function RPGGame() {
               )}
 
               <Text color="white" fontSize="md" fontWeight="bold">
-                {dialogue.node?.prompt || dialogue.question.prompt}
+                {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
               </Text>
 
               {!!dialogue.npcReply && (
@@ -1846,34 +1839,44 @@ export default function RPGGame() {
                 </Text>
               )}
 
-              {lastHeardSpeech && speechMode && (
+              {lastHeardSpeech && dialogue.node?.responseMode === "speech" && (
                 <Text color="teal.200" fontSize="xs">
                   {ui.heardYou}: {lastHeardSpeech}
                 </Text>
               )}
 
-              <HStack justify="space-between">
-                <Button
-                  size="xs"
-                  variant="outline"
-                  colorScheme="purple"
-                  onClick={() => {
-                    if (!supportsSpeech && !speechMode) {
-                      toast({
-                        title: ui.speechUnavailable,
-                        status: "warning",
-                        duration: 2500,
-                        isClosable: true,
-                      });
-                      return;
-                    }
-                    setSpeechMode((prev) => !prev);
-                  }}
-                >
-                  {speechMode ? ui.choiceMode : ui.speechMode}
-                </Button>
+              {dialogue.node?.responseMode === "choice" && (
+                <VStack spacing={2}>
+                  {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                    const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
 
-                {speechMode && (
+                    return (
+                  <Button
+                    key={idx}
+                    w="100%"
+                    size="sm"
+                    variant="outline"
+                    colorScheme="whiteAlpha"
+                    color="white"
+                    borderColor="whiteAlpha.300"
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    onClick={() => handleAnswer(idx)}
+                    isDisabled={isRecording || isConnecting}
+                    justifyContent="flex-start"
+                    textAlign="left"
+                    whiteSpace="normal"
+                    h="auto"
+                    py={2}
+                  >
+                    {String.fromCharCode(65 + idx)}. {opt}
+                  </Button>
+                    );
+                  })}
+                </VStack>
+              )}
+
+              {dialogue.node?.responseMode === "speech" && (
+                <HStack justify="flex-end">
                   <IconButton
                     aria-label={isRecording ? ui.micStop : ui.micStart}
                     size="sm"
@@ -1881,6 +1884,15 @@ export default function RPGGame() {
                     icon={<Text as="span">🎤</Text>}
                     isLoading={isConnecting}
                     onClick={async () => {
+                      if (!supportsSpeech) {
+                        toast({
+                          title: ui.speechUnavailable,
+                          status: "warning",
+                          duration: 2500,
+                          isClosable: true,
+                        });
+                        return;
+                      }
                       if (isRecording) {
                         stopRecording();
                         return;
@@ -1897,53 +1909,17 @@ export default function RPGGame() {
                       }
                     }}
                   />
-                )}
-              </HStack>
+                </HStack>
+              )}
 
-              {!speechMode && (
-                <VStack spacing={2}>
-                  {(dialogue.node?.options || dialogue.question.options).map((optRaw, idx) => {
-                    const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
-                    const effectiveCorrect =
-                      dialogue.node?.options?.[idx]?.isCorrect ??
-                      idx === dialogue.question.correct;
-
-                    return (
-                  <Button
-                    key={idx}
-                    w="100%"
-                    size="sm"
-                    variant="outline"
-                    colorScheme={
-                      feedback === "correct" &&
-                      effectiveCorrect
-                        ? "green"
-                        : feedback === "incorrect" &&
-                            effectiveCorrect
-                          ? "yellow"
-                          : "whiteAlpha"
-                    }
-                    color="white"
-                    borderColor={
-                      feedback === "correct" &&
-                      effectiveCorrect
-                        ? "green.400"
-                        : "whiteAlpha.300"
-                    }
-                    _hover={{ bg: "whiteAlpha.200" }}
-                    onClick={() => handleAnswer(idx)}
-                    isDisabled={feedback === "correct"}
-                    justifyContent="flex-start"
-                    textAlign="left"
-                    whiteSpace="normal"
-                    h="auto"
-                    py={2}
-                  >
-                    {String.fromCharCode(65 + idx)}. {opt}
-                  </Button>
-                    );
-                  })}
-                </VStack>
+              {dialogue.node?.responseMode === "none" && (
+                <Button
+                  size="sm"
+                  colorScheme="yellow"
+                  onClick={() => completeNPCChapter(dialogue.npcIdx)}
+                >
+                  {ui.continue}
+                </Button>
               )}
 
               <Button
