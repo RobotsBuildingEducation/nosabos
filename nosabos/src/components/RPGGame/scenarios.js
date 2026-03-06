@@ -138,8 +138,8 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
   const storySeed =
     rawStorySeed ||
     (supportLang === "es"
-      ? "Anoche desapareció la campana del pueblo y todos culpan al gato del alcalde."
-      : "Last night the town bell disappeared and everyone blames the mayor's cat.");
+      ? "La campana del pueblo desapareció y nadie sabe quién la tomó."
+      : "The town bell disappeared and nobody knows who took it.");
   const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
   const intro =
     String(rawQuest?.intro || "").trim() ||
@@ -176,16 +176,16 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
           id: node1Id,
           npcLine:
             supportLang === "es"
-              ? `${storySeed} ${npc.name} baja la voz: "${previousNpc.name} me dijo que tú podías ayudar."`
-              : `${storySeed} ${npc.name} lowers their voice: "${previousNpc.name} said you could help."`,
+              ? `${npc.name}: "Hola. ${previousNpc.name} dijo que podrías ayudar."`
+              : `${npc.name}: "Hello. ${previousNpc.name} said you could help."`,
           responseMode: "choice",
           choices: [
             {
               text: supportLang === "es" ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
               npcReply:
                 supportLang === "es"
-                  ? `Perfecto. Entonces escucha con calma: ${topic}.`
-                  : `Perfect. Then listen carefully: ${topic}.`,
+                  ? `${npc.name}: "Gracias. Escucha: ${topic}."`
+                  : `${npc.name}: "Thanks. Listen: ${topic}."`,
               nextNodeId: node2Id,
             },
             {
@@ -195,8 +195,8 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
                   : "This sounds ridiculous, but I want the full story.",
               npcReply:
                 supportLang === "es"
-                  ? `Ridículo sí, pero urgente también. ${topic}.`
-                  : `Ridiculous, yes, but urgent too. ${topic}.`,
+                  ? `${npc.name}: "Suena raro, sí, pero es urgente. ${topic}."`
+                  : `${npc.name}: "It sounds weird, yes, but it's urgent. ${topic}."`,
               nextNodeId: node2Id,
             },
           ],
@@ -205,21 +205,21 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang) {
           id: node2Id,
           npcLine:
             supportLang === "es"
-              ? `${npc.name}: "Responde con tu voz y deja una frase breve para ${nextNpc.name}."`
-              : `${npc.name}: "Answer with your voice and leave a short line for ${nextNpc.name}."`,
+              ? `${npc.name}: "Respóndeme con tu voz y deja un mensaje corto para ${nextNpc.name}."`
+              : `${npc.name}: "Answer me with your voice and leave a short message for ${nextNpc.name}."`,
           responseMode: "speech",
           speechFallbackReply:
             supportLang === "es"
-              ? "No escuché nada útil, pero improvisaremos con estilo dramático."
-              : "I didn't catch anything useful, but we'll improvise with dramatic flair.",
+              ? `${npc.name}: "No alcancé a oírte bien. Inténtalo otra vez."`
+              : `${npc.name}: "I couldn't hear you clearly. Try again."`,
           nextNodeId: node3Id,
         },
         {
           id: node3Id,
           npcLine:
             supportLang === "es"
-              ? `${npc.name} asiente: "Genial. Ahora ve con ${nextNpc.name}; esa pista cierra este acto."`
-              : `${npc.name} nods: "Great. Now go to ${nextNpc.name}; that clue closes this act."`,
+              ? `${npc.name}: "Perfecto. Ahora habla con ${nextNpc.name}. ${storySeed}"`
+              : `${npc.name}: "Perfect. Now talk to ${nextNpc.name}. ${storySeed}"`,
           responseMode: "none",
           terminal: true,
         },

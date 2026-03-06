@@ -149,6 +149,7 @@ export default function RPGGame() {
   const toast = useToast();
 
   const playSound = useSoundSettings((state) => state.playSound);
+  const warmupAudio = useSoundSettings((state) => state.warmupAudio);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -562,6 +563,26 @@ export default function RPGGame() {
       stopNPCSpeech();
     };
   }, [stopNPCSpeech]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      void warmupAudio();
+    };
+
+    window.addEventListener("touchstart", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+    window.addEventListener("pointerdown", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+
+    return () => {
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("pointerdown", unlockAudio);
+    };
+  }, [warmupAudio]);
 
   useEffect(() => {
     if (!scenario || questions.length === 0) return;
