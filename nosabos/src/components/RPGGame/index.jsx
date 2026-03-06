@@ -28,6 +28,7 @@ import {
   createCharacterTexture,
   createSpriteTexture,
   createNPCIndicatorTexture,
+  createGroundDecalTexture,
   NPC_PRESETS,
   PLAYER_COLORS,
 } from "./pixelArt";
@@ -782,7 +783,15 @@ export default function RPGGame() {
     // ── Build tiles ─────────────────────────────────────────────────────
     const tileGroup = new THREE.Group();
     const spriteGroup = new THREE.Group();
+    const decalGroup = new THREE.Group();
     const TILE_OVERDRAW = 0.35;
+
+    const mapDecorTheme =
+      scenario.id === "park"
+        ? ["grass_tuft", "flower_patch", "stones"]
+        : scenario.id === "livingRoom"
+          ? ["wood_scraps", "paper_bits"]
+          : ["paper_bits", "stones"];
 
     // Track house clusters to avoid duplicate sprites
     const visitedClusters = new Set();
@@ -905,7 +914,39 @@ export default function RPGGame() {
         }
       }
     }
+    const addGroundDecor = (x, y, tileType) => {
+      const tileDef = scenario.tiles[tileType];
+      if (!tileDef || tileDef.solid || tileDef.sprite) return;
+      if (Math.random() > 0.3) return;
+
+      const decorKind =
+        mapDecorTheme[Math.floor(Math.random() * mapDecorTheme.length)];
+      const decorTex = createGroundDecalTexture(
+        decorKind,
+        seed + x * 113 + y * 197,
+      );
+      const decorGeo = new THREE.PlaneGeometry(TILE * 0.72, TILE * 0.72);
+      const decorMat = new THREE.MeshBasicMaterial({
+        map: decorTex,
+        transparent: true,
+      });
+      const decorMesh = new THREE.Mesh(decorGeo, decorMat);
+      decorMesh.position.set(
+        x * TILE + TILE * 0.5 + (Math.random() - 0.5) * TILE * 0.2,
+        (MAP_H - 1 - y) * TILE + TILE * 0.5 + (Math.random() - 0.5) * TILE * 0.15,
+        0.8,
+      );
+      decalGroup.add(decorMesh);
+    };
+
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        addGroundDecor(x, y, getTile(x, y));
+      }
+    }
+
     scene.add(tileGroup);
+    scene.add(decalGroup);
     scene.add(spriteGroup);
 
     // ── Player sprite ─────────────────────────────────────────────────────
