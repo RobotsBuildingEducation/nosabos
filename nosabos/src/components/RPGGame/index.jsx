@@ -16,6 +16,7 @@ import {
   Progress,
   Wrap,
   WrapItem,
+  useToast,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +31,8 @@ import {
   PLAYER_COLORS,
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
+import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
+import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -56,6 +59,15 @@ const UI_TEXT = {
     touchMove: "Tap to move, tap NPC to talk",
     chooseScenario: "Choose a scenario",
     scenario: "Scenario",
+    quest: "Quest",
+    lockedNpc: "You should start with",
+    response: "Response",
+    micStart: "Start mic",
+    micStop: "Stop mic",
+    heardYou: "I heard",
+    speechUnavailable: "Speech unavailable in this browser",
+    noSpeechMatch: "I didn't catch that. Try again.",
+    continue: "Continue",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -70,6 +82,15 @@ const UI_TEXT = {
     touchMove: "Toca para mover, toca NPC para hablar",
     chooseScenario: "Elige un escenario",
     scenario: "Escenario",
+    quest: "Misión",
+    lockedNpc: "Debes comenzar con",
+    response: "Respuesta",
+    micStart: "Iniciar mic",
+    micStop: "Detener mic",
+    heardYou: "Escuché",
+    speechUnavailable: "Voz no disponible en este navegador",
+    noSpeechMatch: "No entendí eso. Inténtalo otra vez.",
+    continue: "Continuar",
   },
 };
 
@@ -120,10 +141,15 @@ export default function RPGGame() {
   const [feedback, setFeedback] = useState(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
+  const [storyBanner, setStoryBanner] = useState("");
+  const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
+  const ttsPlayerRef = useRef(null);
+  const toast = useToast();
 
   const playSound = useSoundSettings((state) => state.playSound);
+  const warmupAudio = useSoundSettings((state) => state.warmupAudio);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -141,6 +167,12 @@ export default function RPGGame() {
   const playerSheetFramesRef = useRef(null);
   const npcVariantAssignmentsRef = useRef([]);
   const npcDialogueCharactersRef = useRef(new Map());
+
+  const [questProgress, setQuestProgress] = useState({
+    unlockedNPCs: new Set([0]),
+    completedNPCs: new Set(),
+    nodeByNPC: {},
+  });
 
   const chooseRandomNPCVariants = useCallback((npcCount) => {
     const shuffled = [...NPC_SPRITE_ROWS].sort(() => Math.random() - 0.5);
@@ -428,14 +460,9 @@ export default function RPGGame() {
     return scenario.questions[targetLang] || scenario.questions.es || [];
   }, [scenario, targetLang]);
 
-  const greetings = useMemo(() => {
-    if (!scenario) return [];
-    return (
-      scenario.greetings[supportLang] || scenario.greetings.en || ["Hello!"]
-    );
-  }, [scenario, supportLang]);
-
   const totalQuestions = scenario ? scenario.npcs.length : 0;
+  const quest = scenario?.quest;
+  const questTreeByNpc = useMemo(() => quest?.treeByNpc || [], [quest]);
 
   const playGameSound = useCallback(
     (name) => {
@@ -463,6 +490,33 @@ export default function RPGGame() {
     setFeedback(null);
   }, [dialogue, playGameSound]);
 
+  const stopNPCSpeech = useCallback(() => {
+    try {
+      ttsPlayerRef.current?.stop?.();
+    } catch {
+      // ignore
+    }
+    ttsPlayerRef.current = null;
+  }, []);
+
+  const speakNPCText = useCallback(
+    async (text) => {
+      if (!text) return;
+      stopNPCSpeech();
+      try {
+        const player = await getTTSPlayer({
+          text,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        });
+        ttsPlayerRef.current = player;
+        await player.play();
+      } catch {
+        // non-blocking
+      }
+    },
+    [stopNPCSpeech, targetLang],
+  );
+
   const handleSelectScenario = useCallback(
     async (mapId) => {
       setLoadingScenarioId(mapId);
@@ -471,6 +525,12 @@ export default function RPGGame() {
       setFeedback(null);
       setGameComplete(false);
       setAnsweredNPCs(new Set());
+      setQuestProgress({
+        unlockedNPCs: new Set([0]),
+        completedNPCs: new Set(),
+        nodeByNPC: {},
+      });
+      setStoryBanner("");
 
       const generated = await generateScenarioWithAI(
         mapId,
@@ -478,6 +538,12 @@ export default function RPGGame() {
         supportLang,
       );
       setScenario(generated);
+      setQuestProgress({
+        unlockedNPCs: new Set([generated?.quest?.startNpcIdx ?? 0]),
+        completedNPCs: new Set(),
+        nodeByNPC: {},
+      });
+      setStoryBanner(generated?.quest?.intro || "");
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
@@ -485,6 +551,32 @@ export default function RPGGame() {
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
+  useEffect(() => {
+    return () => {
+      stopNPCSpeech();
+    };
+  }, [stopNPCSpeech]);
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      void warmupAudio();
+    };
+
+    window.addEventListener("touchstart", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+    window.addEventListener("pointerdown", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+
+    return () => {
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("pointerdown", unlockAudio);
+    };
+  }, [warmupAudio]);
+
   useEffect(() => {
     if (!scenario || questions.length === 0) return;
     const indices = questions.map((_, i) => i);
@@ -1058,15 +1150,29 @@ export default function RPGGame() {
         );
 
         if (npcIdx !== -1 && !answeredNPCs.has(npcIdx)) {
+          if (!questProgress.unlockedNPCs.has(npcIdx)) {
+            const startNpc =
+              scenario.npcs[scenario.quest?.startNpcIdx ?? 0]?.name ||
+              scenario.npcs[0]?.name ||
+              "NPC";
+            setFeedback(`${ui.lockedNpc} ${startNpc}`);
+            setTimeout(() => setFeedback(null), 1200);
+            return;
+          }
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
+          const npcArc = questTreeByNpc[npcIdx];
+          const nodeId = questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
+          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
-            greeting: greetings[npcIdx % greetings.length],
             question,
+            node,
+            npcReply: "",
           });
+          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
           playGameSound("rpgDialogueOpen");
           return;
         }
@@ -1175,6 +1281,7 @@ export default function RPGGame() {
       );
 
       if (npcIdx !== -1 && !answeredNPCs.has(npcIdx) && !dialogue) {
+        if (!questProgress.unlockedNPCs.has(npcIdx)) return;
         const npc = scenario.npcs[npcIdx];
         const npcDistance =
           Math.abs(npc.tx - gs.playerX) + Math.abs(npc.ty - gs.playerY);
@@ -1186,13 +1293,18 @@ export default function RPGGame() {
 
         const question = getQuestionForNPC(npcIdx);
         if (question) {
+          const npcArc = questTreeByNpc[npcIdx];
+          const nodeId = questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
+          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
-            greeting: greetings[npcIdx % greetings.length],
             question,
+            node,
+            npcReply: "",
           });
+          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
           playGameSound("rpgDialogueOpen");
         }
         return;
@@ -1219,8 +1331,11 @@ export default function RPGGame() {
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
-    greetings,
     playGameSound,
+    questProgress,
+    questTreeByNpc,
+    speakNPCText,
+    ui.lockedNpc,
   ]);
 
   useEffect(() => {
@@ -1239,10 +1354,42 @@ export default function RPGGame() {
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
+    const questGiverIdx = scenario?.quest?.startNpcIdx ?? 0;
     npcIndicatorsRef.current.forEach((ind, i) => {
-      ind.visible = !answeredNPCs.has(i);
+      ind.visible = i === questGiverIdx && !gameComplete;
     });
-  }, [answeredNPCs]);
+  }, [gameComplete, scenario]);
+
+  const completeNPCChapter = useCallback(
+    (npcIdx) => {
+      const newAnswered = new Set(answeredNPCs);
+      newAnswered.add(npcIdx);
+      setAnsweredNPCs(newAnswered);
+
+      setQuestProgress((prev) => {
+        const completedNPCs = new Set(prev.completedNPCs);
+        completedNPCs.add(npcIdx);
+        const unlockedNPCs = new Set(prev.unlockedNPCs);
+        const nextNpcIdx = scenario.npcs.findIndex(
+          (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
+        );
+        if (nextNpcIdx !== -1) unlockedNPCs.add(nextNpcIdx);
+        return {
+          ...prev,
+          completedNPCs,
+          unlockedNPCs,
+          nodeByNPC: { ...prev.nodeByNPC, [npcIdx]: null },
+        };
+      });
+
+      setTimeout(() => {
+        setDialogue(null);
+        setFeedback(null);
+        if (newAnswered.size >= totalQuestions) setGameComplete(true);
+      }, 800);
+    },
+    [answeredNPCs, scenario, totalQuestions],
+  );
 
   // ─── Handle answer ────────────────────────────────────────────────────
   const handleAnswer = (optionIdx) => {
@@ -1250,26 +1397,92 @@ export default function RPGGame() {
 
     playGameSound("rpgDialogueSelect");
 
-    if (optionIdx === dialogue.question.correct) {
-      playGameSound("correct");
-      setFeedback("correct");
-      const newAnswered = new Set(answeredNPCs);
-      newAnswered.add(dialogue.npcIdx);
-      setAnsweredNPCs(newAnswered);
+    const selected = dialogue.node?.choices?.[optionIdx];
+    if (!selected) return;
 
-      setTimeout(() => {
-        setDialogue(null);
-        setFeedback(null);
-        if (newAnswered.size >= totalQuestions) {
-          setGameComplete(true);
-        }
-      }, 1000);
-    } else {
-      playGameSound("incorrect");
-      setFeedback("incorrect");
-      setTimeout(() => setFeedback(null), 1200);
+    const nextNodeId = selected.nextNodeId || null;
+
+    if (!nextNodeId) {
+      setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
+      if (selected.npcReply) speakNPCText(selected.npcReply);
+      completeNPCChapter(dialogue.npcIdx);
+      return;
     }
+
+    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      (n) => n.id === nextNodeId,
+    );
+    setQuestProgress((prev) => ({
+      ...prev,
+      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNodeId },
+    }));
+
+    if (!nextNode) {
+      completeNPCChapter(dialogue.npcIdx);
+      return;
+    }
+
+    setTimeout(() => {
+      setDialogue((prev) => ({
+        ...prev,
+        node: nextNode,
+        npcReply: selected.npcReply || "",
+      }));
+      const transitionLine =
+        nextNode.responseMode === "speech" && selected.npcReply
+          ? selected.npcReply
+          : nextNode.npcLine || nextNode.prompt || "";
+      speakNPCText(transitionLine);
+    }, 300);
   };
+
+  const {
+    startRecording,
+    stopRecording,
+    isRecording,
+    isConnecting,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: dialogue?.node?.npcLine || "",
+    targetLang,
+    onResult: ({ recognizedText }) => {
+      const heard = (recognizedText || "").trim();
+      setLastHeardSpeech(heard);
+      if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
+
+      if (!heard) {
+        const fallbackReply =
+          dialogue.node.speechFallbackReply || ui.noSpeechMatch;
+        setDialogue((prev) => ({ ...prev, npcReply: fallbackReply }));
+        speakNPCText(fallbackReply);
+        return;
+      }
+
+      const nextNodeId = dialogue.node.nextNodeId || null;
+      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+        (n) => n.id === nextNodeId,
+      );
+
+      const heardReply =
+        targetLang === "es"
+          ? `Perfecto, escuché: "${heard}".`
+          : `Perfect, I heard: "${heard}."`;
+      setDialogue((prev) => ({ ...prev, npcReply: heardReply }));
+
+      if (!nextNode) {
+        speakNPCText(heardReply);
+        return;
+      }
+      setQuestProgress((prev) => ({
+        ...prev,
+        nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+      }));
+      setTimeout(() => {
+        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
+        speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+      }, 300);
+    },
+  });
 
   useEffect(() => {
     if (!gameComplete || levelCompleteSoundPlayedRef.current) return;
@@ -1281,10 +1494,17 @@ export default function RPGGame() {
   // ─── Reset / change scenario ──────────────────────────────────────────
   const resetGame = () => {
     playGameSound("submitAction");
+    stopNPCSpeech();
     setAnsweredNPCs(new Set());
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
+    setLastHeardSpeech("");
+    setQuestProgress({
+      unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
+      completedNPCs: new Set(),
+      nodeByNPC: {},
+    });
     if (scenario && gameStateRef.current) {
       gameStateRef.current.playerX = scenario.playerStart.x;
       gameStateRef.current.playerY = scenario.playerStart.y;
@@ -1293,6 +1513,7 @@ export default function RPGGame() {
 
   const goToScenarioSelect = () => {
     playGameSound("submitAction");
+    stopNPCSpeech();
     // Clean up Three.js
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (rendererRef.current) {
@@ -1311,6 +1532,8 @@ export default function RPGGame() {
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
+    setLastHeardSpeech("");
+    setStoryBanner("");
   };
 
   // ─── D-pad ────────────────────────────────────────────────────────────
@@ -1468,6 +1691,11 @@ export default function RPGGame() {
             {SCENARIO_EMOJIS[scenario.id] || "🎮"}{" "}
             {scenario.name[supportLang] || scenario.name.en}
           </Badge>
+          {storyBanner && (
+            <Badge colorScheme="orange" fontSize="xs" px={2} py={1} borderRadius="md">
+              {ui.quest}: {storyBanner}
+            </Badge>
+          )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
@@ -1602,40 +1830,41 @@ export default function RPGGame() {
                 )}
               </HStack>
 
-              <Text color="gray.300" fontSize="sm" fontStyle="italic">
-                &ldquo;{dialogue.greeting}&rdquo;
-              </Text>
+              {!(dialogue.node?.responseMode === "speech" && dialogue.npcReply) && (
+                <Text color="white" fontSize="md" fontWeight="bold">
+                  {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
+                </Text>
+              )}
 
-              <Text color="white" fontSize="md" fontWeight="bold">
-                {dialogue.question.prompt}
-              </Text>
+              {!!dialogue.npcReply && (
+                <Text color="yellow.200" fontSize="sm">
+                  {dialogue.npcReply}
+                </Text>
+              )}
 
-              <VStack spacing={2}>
-                {dialogue.question.options.map((opt, idx) => (
+              {lastHeardSpeech && dialogue.node?.responseMode === "speech" && (
+                <Text color="teal.200" fontSize="xs">
+                  {ui.heardYou}: {lastHeardSpeech}
+                </Text>
+              )}
+
+              {dialogue.node?.responseMode === "choice" && (
+                <VStack spacing={2}>
+                  {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                    const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
+
+                    return (
                   <Button
                     key={idx}
                     w="100%"
                     size="sm"
                     variant="outline"
-                    colorScheme={
-                      feedback === "correct" &&
-                      idx === dialogue.question.correct
-                        ? "green"
-                        : feedback === "incorrect" &&
-                            idx === dialogue.question.correct
-                          ? "yellow"
-                          : "whiteAlpha"
-                    }
+                    colorScheme="whiteAlpha"
                     color="white"
-                    borderColor={
-                      feedback === "correct" &&
-                      idx === dialogue.question.correct
-                        ? "green.400"
-                        : "whiteAlpha.300"
-                    }
+                    borderColor="whiteAlpha.300"
                     _hover={{ bg: "whiteAlpha.200" }}
                     onClick={() => handleAnswer(idx)}
-                    isDisabled={feedback === "correct"}
+                    isDisabled={isRecording || isConnecting}
                     justifyContent="flex-start"
                     textAlign="left"
                     whiteSpace="normal"
@@ -1644,8 +1873,57 @@ export default function RPGGame() {
                   >
                     {String.fromCharCode(65 + idx)}. {opt}
                   </Button>
-                ))}
-              </VStack>
+                    );
+                  })}
+                </VStack>
+              )}
+
+              {dialogue.node?.responseMode === "speech" && (
+                <HStack justify="flex-end">
+                  <IconButton
+                    aria-label={isRecording ? ui.micStop : ui.micStart}
+                    size="sm"
+                    colorScheme={isRecording ? "red" : "teal"}
+                    icon={<Text as="span">🎤</Text>}
+                    isLoading={isConnecting}
+                    onClick={async () => {
+                      if (!supportsSpeech) {
+                        toast({
+                          title: ui.speechUnavailable,
+                          status: "warning",
+                          duration: 2500,
+                          isClosable: true,
+                        });
+                        return;
+                      }
+                      if (isRecording) {
+                        stopRecording();
+                        return;
+                      }
+                      try {
+                        await startRecording();
+                      } catch {
+                        toast({
+                          title: ui.speechUnavailable,
+                          status: "warning",
+                          duration: 2500,
+                          isClosable: true,
+                        });
+                      }
+                    }}
+                  />
+                </HStack>
+              )}
+
+              {dialogue.node?.responseMode === "none" && (
+                <Button
+                  size="sm"
+                  colorScheme="yellow"
+                  onClick={() => completeNPCChapter(dialogue.npcIdx)}
+                >
+                  {ui.continue}
+                </Button>
+              )}
 
               <Button
                 size="xs"

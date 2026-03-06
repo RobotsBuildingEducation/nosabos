@@ -132,6 +132,133 @@ function normalizeQuestions(questions, supportLang) {
   ];
 }
 
+function sanitizeDialogueLine(line, npcName) {
+  const raw = String(line || "").trim();
+  if (!raw) return "";
+
+  const escapedName = String(npcName || "")
+    .replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    .trim();
+
+  const noPrefix = escapedName
+    ? raw.replace(new RegExp(`^${escapedName}\\s*:\\s*`, "i"), "")
+    : raw;
+
+  return noPrefix.replace(/^"|"$/g, "").trim();
+}
+
+function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang) {
+  const questionPool =
+    questionsByLang?.[targetLang] || questionsByLang?.en || questionsByLang?.es || [];
+  const rawStorySeed = String(rawQuest?.storySeed || "").trim();
+  const useSpanish = targetLang === "es";
+
+  const storySeed =
+    rawStorySeed ||
+    (useSpanish
+      ? "La campana del pueblo desapareció y nadie sabe quién la tomó."
+      : "The town bell disappeared and nobody knows who took it.");
+  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
+  const intro =
+    String(rawQuest?.intro || "").trim() ||
+    (useSpanish
+      ? `Comienza con ${npcs[startNpcIdx]?.name || "la guía"} y sigue las pistas para resolver el misterio.`
+      : `Start with ${npcs[startNpcIdx]?.name || "the guide"} and follow the clues to solve the mystery.`);
+
+  const topicAt = (idx, fallback) => {
+    const q = questionPool[idx % Math.max(1, questionPool.length)];
+    return String(q?.prompt || fallback);
+  };
+
+  const treeByNpc = npcs.map((npc, npcIdx) => {
+    const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
+    const nextNpc = npcs[(npcIdx + 1) % npcs.length];
+    const topic = topicAt(npcIdx, useSpanish ? "las pistas del caso" : "the case clues");
+
+    const node1Id = `npc-${npcIdx}-node-1`;
+    const node2Id = `npc-${npcIdx}-node-2`;
+    const node3Id = `npc-${npcIdx}-node-3`;
+
+    return {
+      npcIdx,
+      title:
+        useSpanish
+          ? `${npc.name} · acto ${npcIdx + 1}`
+          : `${npc.name} · act ${npcIdx + 1}`,
+      intro:
+        useSpanish
+          ? `${npc.name} conecta la pista anterior con ${nextNpc.name}.`
+          : `${npc.name} connects the previous clue to ${nextNpc.name}.`,
+      nodes: [
+        {
+          id: node1Id,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Hola. ${previousNpc.name} dijo que podrías ayudar.`
+              : `Hello. ${previousNpc.name} said you could help.`,
+            npc.name,
+          ),
+          responseMode: "choice",
+          choices: [
+            {
+              text: useSpanish ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
+              npcReply:
+                useSpanish
+                  ? `Gracias. Escucha: ${topic}.`
+                  : `Thanks. Listen: ${topic}.`,
+              nextNodeId: node2Id,
+            },
+            {
+              text:
+                useSpanish
+                  ? "Suena ridículo, pero quiero oír la historia completa."
+                  : "This sounds ridiculous, but I want the full story.",
+              npcReply:
+                useSpanish
+                  ? `Suena raro, sí, pero es urgente. ${topic}.`
+                  : `It sounds weird, yes, but it's urgent. ${topic}.`,
+              nextNodeId: node2Id,
+            },
+          ],
+        },
+        {
+          id: node2Id,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Suena bien. ${topic}`
+              : `Sounds good. ${topic}`,
+            npc.name,
+          ),
+          responseMode: "speech",
+          speechFallbackReply:
+            useSpanish
+              ? "No alcancé a oírte bien. Inténtalo otra vez."
+              : "I couldn't hear you clearly. Try again.",
+          nextNodeId: node3Id,
+        },
+        {
+          id: node3Id,
+          npcLine: sanitizeDialogueLine(
+            useSpanish
+              ? `Perfecto. Ahora habla con ${nextNpc.name}. ${storySeed}`
+              : `Perfect. Now talk to ${nextNpc.name}. ${storySeed}`,
+            npc.name,
+          ),
+          responseMode: "none",
+          terminal: true,
+        },
+      ],
+    };
+  });
+
+  return {
+    intro,
+    storySeed,
+    startNpcIdx,
+    treeByNpc,
+  };
+}
+
 function normalizeMapData(mapData, mapWidth, mapHeight) {
   const expectedLength = mapWidth * mapHeight;
   if (!Array.isArray(mapData) || mapData.length !== expectedLength) {
@@ -145,6 +272,18 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || { en: mapId, es: mapId };
   const mapWidth = 18;
   const mapHeight = 14;
+
+  const questionsByLang = {
+    [targetLang]: normalizeQuestions([], supportLang),
+    en: normalizeQuestions([], supportLang),
+    es: normalizeQuestions([], supportLang),
+  };
+
+  const npcs = [
+    { tx: 4, ty: 4, name: "Ada", presetIdx: 0 },
+    { tx: 8, ty: 6, name: "Bruno", presetIdx: 1 },
+    { tx: 12, ty: 8, name: "Cleo", presetIdx: 2 },
+  ];
 
   return {
     id: mapId,
@@ -167,16 +306,9 @@ function fallbackScenario(mapId, targetLang, supportLang) {
       }
       return map;
     },
-    npcs: [
-      { tx: 4, ty: 4, name: "Guide 1", presetIdx: 0 },
-      { tx: 8, ty: 6, name: "Guide 2", presetIdx: 1 },
-      { tx: 12, ty: 8, name: "Guide 3", presetIdx: 2 },
-    ],
-    questions: {
-      [targetLang]: normalizeQuestions([], supportLang),
-      en: normalizeQuestions([], supportLang),
-      es: normalizeQuestions([], supportLang),
-    },
+    npcs,
+    questions: questionsByLang,
+    quest: normalizeQuest(null, npcs, questionsByLang, supportLang, targetLang),
     greetings: {
       en: ["Generating scenario unavailable; using safe fallback."],
       es: ["Generación no disponible; usando respaldo."],
@@ -213,6 +345,11 @@ Required JSON shape:
   "questions": [
     {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
   ],
+  "quest": {
+    "intro": "one sentence",
+    "storySeed": "one sentence",
+    "startNpcIdx": 0-2
+  },
   "greetings": {
     "en": ["...", "...", "..."],
     "es": ["...", "...", "..."]
@@ -291,10 +428,19 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
       en: normalizeQuestions(raw?.questions, supportLang),
       es: normalizeQuestions(raw?.questions, supportLang),
     },
+    quest: null,
     greetings: {
       en: Array.isArray(raw?.greetings?.en) ? raw.greetings.en.slice(0, 6).map(String) : ["Let's practice!"],
       es: Array.isArray(raw?.greetings?.es) ? raw.greetings.es.slice(0, 6).map(String) : ["¡Vamos a practicar!"],
     },
+  };
+}
+
+function withQuest(scenario, raw, supportLang, targetLang) {
+  const questionsByLang = scenario.questions;
+  return {
+    ...scenario,
+    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang, targetLang),
   };
 }
 
@@ -340,8 +486,8 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
 
   const parsed = parseJSON(text);
   const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
-
-  return normalized || fallbackScenario(mapId, targetLang, supportLang);
+  if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
+  return withQuest(normalized, parsed, supportLang, targetLang);
 }
 
 export function mulberry32(a) {
