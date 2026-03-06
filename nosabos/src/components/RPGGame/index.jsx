@@ -1609,16 +1609,6 @@ export default function RPGGame() {
     setStoryBanner("");
   };
 
-  // ─── D-pad ────────────────────────────────────────────────────────────
-  const pressDir = (dir) => {
-    if (gameStateRef.current) {
-      gameStateRef.current.keysDown.add(dir);
-      setTimeout(() => {
-        if (gameStateRef.current) gameStateRef.current.keysDown.delete(dir);
-      }, 180);
-    }
-  };
-
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {
     return (
@@ -1784,73 +1774,6 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
-      {/* Mobile D-pad */}
-      <Box
-        position="absolute"
-        bottom={6}
-        left={6}
-        zIndex={10}
-        display={{ base: "block", md: "none" }}
-      >
-        <VStack spacing={0}>
-          <Button
-            size="sm"
-            w="48px"
-            h="48px"
-            bg="blackAlpha.600"
-            color="white"
-            borderRadius="lg"
-            _active={{ bg: "blackAlpha.800" }}
-            onTouchStart={() => pressDir("ArrowUp")}
-            onMouseDown={() => pressDir("ArrowUp")}
-          >
-            ▲
-          </Button>
-          <HStack spacing={0}>
-            <Button
-              size="sm"
-              w="48px"
-              h="48px"
-              bg="blackAlpha.600"
-              color="white"
-              borderRadius="lg"
-              _active={{ bg: "blackAlpha.800" }}
-              onTouchStart={() => pressDir("ArrowLeft")}
-              onMouseDown={() => pressDir("ArrowLeft")}
-            >
-              ◀
-            </Button>
-            <Box w="48px" h="48px" />
-            <Button
-              size="sm"
-              w="48px"
-              h="48px"
-              bg="blackAlpha.600"
-              color="white"
-              borderRadius="lg"
-              _active={{ bg: "blackAlpha.800" }}
-              onTouchStart={() => pressDir("ArrowRight")}
-              onMouseDown={() => pressDir("ArrowRight")}
-            >
-              ▶
-            </Button>
-          </HStack>
-          <Button
-            size="sm"
-            w="48px"
-            h="48px"
-            bg="blackAlpha.600"
-            color="white"
-            borderRadius="lg"
-            _active={{ bg: "blackAlpha.800" }}
-            onTouchStart={() => pressDir("ArrowDown")}
-            onMouseDown={() => pressDir("ArrowDown")}
-          >
-            ▼
-          </Button>
-        </VStack>
-      </Box>
-
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
       {dialogue && !gameComplete && (isMobileDialogueLayout || dialogueBubblePosition) && (
         <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
@@ -1878,9 +1801,9 @@ export default function RPGGame() {
             w={isMobileDialogueLayout ? { base: "auto", md: "360px" } : { base: "min(86vw, 340px)", md: "360px" }}
             maxH={isMobileDialogueLayout ? { base: "44vh", md: "62vh" } : { base: "70vh", md: "62vh" }}
             overflowY="auto"
-            bg="rgba(10, 14, 33, 0.94)"
+            bg="rgba(250, 244, 232, 0.96)"
             border="2px solid"
-            borderColor="yellow.300"
+            borderColor="orange.200"
             borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
             p={4}
             boxShadow="0 18px 38px rgba(0,0,0,0.52)"
@@ -1899,13 +1822,13 @@ export default function RPGGame() {
                 borderBottom="10px solid transparent"
                 borderRight={
                   dialogueBubblePosition.preferredRight
-                    ? "12px solid rgba(10, 14, 33, 0.94)"
+                    ? "12px solid rgba(250, 244, 232, 0.96)"
                     : "none"
                 }
                 borderLeft={
                   dialogueBubblePosition.preferredRight
                     ? "none"
-                    : "12px solid rgba(10, 14, 33, 0.94)"
+                    : "12px solid rgba(250, 244, 232, 0.96)"
                 }
               />
             )}
@@ -1918,7 +1841,7 @@ export default function RPGGame() {
               top={2}
               right={2}
               variant="ghost"
-              color="gray.300"
+              color="gray.600"
               _hover={{ bg: "whiteAlpha.200" }}
               onClick={closeDialogue}
             />
@@ -1947,19 +1870,19 @@ export default function RPGGame() {
               </HStack>
 
               {!(dialogue.node?.responseMode === "speech" && dialogue.npcReply) && (
-                <Text color="white" fontSize="md" fontWeight="bold">
+                <Text color="gray.800" fontSize="md" fontWeight="bold">
                   {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
                 </Text>
               )}
 
               {!!dialogue.npcReply && (
-                <Text color="yellow.200" fontSize="sm">
+                <Text color="orange.700" fontSize="sm">
                   {dialogue.npcReply}
                 </Text>
               )}
 
               {lastHeardSpeech && dialogue.node?.responseMode === "speech" && (
-                <Text color="teal.200" fontSize="xs">
+                <Text color="teal.700" fontSize="xs">
                   {ui.heardYou}: {lastHeardSpeech}
                 </Text>
               )}
@@ -1975,10 +1898,10 @@ export default function RPGGame() {
                         w="100%"
                         size="sm"
                         variant="outline"
-                        colorScheme="whiteAlpha"
-                        color="white"
-                        borderColor="whiteAlpha.300"
-                        _hover={{ bg: "whiteAlpha.200" }}
+                        colorScheme="gray"
+                        color="gray.800"
+                        borderColor="blackAlpha.300"
+                        _hover={{ bg: "blackAlpha.50" }}
                         onClick={() => handleAnswer(idx)}
                         isDisabled={isRecording || isConnecting}
                         justifyContent="flex-start"
@@ -2044,7 +1967,7 @@ export default function RPGGame() {
               <Button
                 size="xs"
                 variant="ghost"
-                color="gray.400"
+                color="gray.600"
                 alignSelf="flex-start"
                 onClick={closeDialogue}
               >
