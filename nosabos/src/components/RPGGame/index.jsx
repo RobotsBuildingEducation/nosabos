@@ -17,6 +17,7 @@ import {
   Wrap,
   WrapItem,
   useToast,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -129,6 +130,7 @@ export default function RPGGame() {
   const targetLang = settings.targetLang;
   const supportLang = settings.supportLang;
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
+  const isMobileDialogueLayout = useBreakpointValue({ base: true, md: false }) ?? false;
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
@@ -494,7 +496,7 @@ export default function RPGGame() {
   }, [dialogue, playGameSound]);
 
   const updateDialogueBubblePosition = useCallback(() => {
-    if (!dialogue || !canvasRef.current || !cameraRef.current) return;
+    if (isMobileDialogueLayout || !dialogue || !canvasRef.current || !cameraRef.current) return;
 
     const npcMesh = npcSpritesRef.current?.[dialogue.npcIdx];
     if (!npcMesh) return;
@@ -534,10 +536,10 @@ export default function RPGGame() {
       }
       return { left: nextLeft, top: nextTop, preferredRight };
     });
-  }, [dialogue, scenario?.tileSize]);
+  }, [dialogue, isMobileDialogueLayout, scenario?.tileSize]);
 
   useEffect(() => {
-    if (!dialogue) {
+    if (!dialogue || isMobileDialogueLayout) {
       setDialogueBubblePosition(null);
       return undefined;
     }
@@ -552,7 +554,7 @@ export default function RPGGame() {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [dialogue, updateDialogueBubblePosition]);
+  }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
     try {
@@ -1849,50 +1851,64 @@ export default function RPGGame() {
         </VStack>
       </Box>
 
-      {/* Dialogue bubble */}
-      {dialogue && !gameComplete && dialogueBubblePosition && (
+      {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
+      {dialogue && !gameComplete && (isMobileDialogueLayout || dialogueBubblePosition) && (
         <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
           <Box
             position="absolute"
-            left={`${dialogueBubblePosition.left}px`}
-            top={`${dialogueBubblePosition.top}px`}
-            transform={
-              dialogueBubblePosition.preferredRight
-                ? "translate(0, -50%)"
-                : "translate(-100%, -50%)"
+            left={
+              isMobileDialogueLayout
+                ? { base: 3, md: `${dialogueBubblePosition?.left || 0}px` }
+                : `${dialogueBubblePosition?.left || 0}px`
             }
-            w={{ base: "min(86vw, 340px)", md: "360px" }}
-            maxH={{ base: "70vh", md: "62vh" }}
+            right={isMobileDialogueLayout ? { base: 3, md: "auto" } : "auto"}
+            top={
+              isMobileDialogueLayout
+                ? { base: "auto", md: `${dialogueBubblePosition?.top || 0}px` }
+                : `${dialogueBubblePosition?.top || 0}px`
+            }
+            bottom={isMobileDialogueLayout ? { base: 4, md: "auto" } : "auto"}
+            transform={
+              isMobileDialogueLayout
+                ? "none"
+                : dialogueBubblePosition?.preferredRight
+                  ? "translate(0, -50%)"
+                  : "translate(-100%, -50%)"
+            }
+            w={isMobileDialogueLayout ? { base: "auto", md: "360px" } : { base: "min(86vw, 340px)", md: "360px" }}
+            maxH={isMobileDialogueLayout ? { base: "44vh", md: "62vh" } : { base: "70vh", md: "62vh" }}
             overflowY="auto"
             bg="rgba(10, 14, 33, 0.94)"
             border="2px solid"
             borderColor="yellow.300"
-            borderRadius="2xl"
+            borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
             p={4}
             boxShadow="0 18px 38px rgba(0,0,0,0.52)"
             pointerEvents="auto"
           >
-            <Box
-              position="absolute"
-              top="50%"
-              transform="translateY(-50%)"
-              left={dialogueBubblePosition.preferredRight ? "-12px" : "auto"}
-              right={dialogueBubblePosition.preferredRight ? "auto" : "-12px"}
-              w="0"
-              h="0"
-              borderTop="10px solid transparent"
-              borderBottom="10px solid transparent"
-              borderRight={
-                dialogueBubblePosition.preferredRight
-                  ? "12px solid rgba(10, 14, 33, 0.94)"
-                  : "none"
-              }
-              borderLeft={
-                dialogueBubblePosition.preferredRight
-                  ? "none"
-                  : "12px solid rgba(10, 14, 33, 0.94)"
-              }
-            />
+            {!isMobileDialogueLayout && dialogueBubblePosition && (
+              <Box
+                position="absolute"
+                top="50%"
+                transform="translateY(-50%)"
+                left={dialogueBubblePosition.preferredRight ? "-12px" : "auto"}
+                right={dialogueBubblePosition.preferredRight ? "auto" : "-12px"}
+                w="0"
+                h="0"
+                borderTop="10px solid transparent"
+                borderBottom="10px solid transparent"
+                borderRight={
+                  dialogueBubblePosition.preferredRight
+                    ? "12px solid rgba(10, 14, 33, 0.94)"
+                    : "none"
+                }
+                borderLeft={
+                  dialogueBubblePosition.preferredRight
+                    ? "none"
+                    : "12px solid rgba(10, 14, 33, 0.94)"
+                }
+              />
+            )}
 
             <IconButton
               aria-label="Close dialogue"
