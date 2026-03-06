@@ -96,8 +96,10 @@ const useSoundSettings = create((set, get) => ({
   warmupAudio: async () => {
     const state = get();
     if (!state.isInitialized) {
-      await state.initAudio();
+      const ready = await state.initAudio();
+      if (!ready) return false;
     }
+    return soundManager.ensureContextRunning();
   },
 
   /**
@@ -117,6 +119,9 @@ const useSoundSettings = create((set, get) => ({
       const success = await state.initAudio();
       if (!success) return;
     }
+
+    const ready = await soundManager.ensureContextRunning();
+    if (!ready) return;
 
     // Map legacy MP3 path to Tone.js sound name, or use direct name
     const soundName = SOUND_MAP.get(soundFileOrName) || soundFileOrName;

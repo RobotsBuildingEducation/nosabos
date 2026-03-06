@@ -471,9 +471,12 @@ export default function RPGGame() {
 
   const playGameSound = useCallback(
     (name) => {
-      void playSound(name);
+      void (async () => {
+        await warmupAudio();
+        await playSound(name);
+      })();
     },
-    [playSound],
+    [playSound, warmupAudio],
   );
 
   const getDialogueCharacterForNPC = useCallback((npcIdx) => {
@@ -1666,6 +1669,12 @@ export default function RPGGame() {
         display="flex"
         alignItems="center"
         justifyContent="center"
+        onPointerDownCapture={() => {
+          void warmupAudio();
+        }}
+        onTouchStartCapture={() => {
+          void warmupAudio();
+        }}
       >
         <VStack spacing={6} maxW="500px" mx={4}>
           <IconButton
@@ -1742,6 +1751,12 @@ export default function RPGGame() {
         display="flex"
         alignItems="center"
         justifyContent="center"
+        onPointerDownCapture={() => {
+          void warmupAudio();
+        }}
+        onTouchStartCapture={() => {
+          void warmupAudio();
+        }}
       >
         <VStack spacing={4}>
           <Text color="white" fontSize="xl" fontWeight="bold">
@@ -1762,6 +1777,12 @@ export default function RPGGame() {
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
+      onPointerDownCapture={() => {
+        void warmupAudio();
+      }}
+      onTouchStartCapture={() => {
+        void warmupAudio();
+      }}
     >
       {/* Three.js canvas */}
       <Box

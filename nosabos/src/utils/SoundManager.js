@@ -51,10 +51,7 @@ class SoundManager {
     try {
       await Tone.start();
 
-      // Resume AudioContext if suspended (required for iOS Safari)
-      if (Tone.context.state === "suspended") {
-        await Tone.context.resume();
-      }
+      await this.ensureContextRunning();
 
       Tone.Destination.volume.value = Tone.gainToDb(this.volume);
       this.initialized = true;
@@ -63,6 +60,21 @@ class SoundManager {
       console.error("[SoundManager] Failed to initialize:", err);
       this.initPromise = null; // Allow retry on failure
       throw err;
+    }
+  }
+
+  async ensureContextRunning() {
+    try {
+      if (Tone.context.state !== "running") {
+        await Tone.start();
+      }
+      if (Tone.context.state === "suspended") {
+        await Tone.context.resume();
+      }
+      return Tone.context.state === "running";
+    } catch (err) {
+      console.warn("[SoundManager] Could not resume audio context:", err);
+      return false;
     }
   }
 
