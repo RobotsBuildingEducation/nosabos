@@ -1448,10 +1448,25 @@ export default function RPGGame() {
     window.addEventListener("keydown", handleKeyDown);
     canvasRef.current?.addEventListener("click", handleClick);
 
+    // On mobile, synthesized `click` events from touch don't carry the user
+    // activation needed to unlock the AudioContext on iOS Safari (pre-14.5).
+    // Using `touchend` directly ensures audio unlocks properly on all devices.
+    const handleTouchEnd = (e) => {
+      if (e.changedTouches.length === 0) return;
+      e.preventDefault(); // Prevent the synthesized click from double-firing
+      void warmupAudio(); // Unlock audio within the touchend user gesture
+      const touch = e.changedTouches[0];
+      handleClick({ clientX: touch.clientX, clientY: touch.clientY });
+    };
+    canvasRef.current?.addEventListener("touchend", handleTouchEnd, {
+      passive: false,
+    });
+
     const currentCanvas = canvasRef.current;
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       currentCanvas?.removeEventListener("click", handleClick);
+      currentCanvas?.removeEventListener("touchend", handleTouchEnd);
     };
   }, [
     scenario,
@@ -1461,6 +1476,7 @@ export default function RPGGame() {
     getQuestionForNPC,
     getDialogueCharacterForNPC,
     playGameSound,
+    warmupAudio,
     questProgress,
     questTreeByNpc,
     speakNPCText,
