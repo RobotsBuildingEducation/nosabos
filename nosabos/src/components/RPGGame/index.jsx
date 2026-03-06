@@ -143,7 +143,6 @@ export default function RPGGame() {
   const [feedback, setFeedback] = useState(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
-  const [storyBanner, setStoryBanner] = useState("");
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const isTouchDevice = useRef(false);
@@ -596,7 +595,6 @@ export default function RPGGame() {
         completedNPCs: new Set(),
         nodeByNPC: {},
       });
-      setStoryBanner("");
 
       const generated = await generateScenarioWithAI(
         mapId,
@@ -609,7 +607,6 @@ export default function RPGGame() {
         completedNPCs: new Set(),
         nodeByNPC: {},
       });
-      setStoryBanner(generated?.quest?.intro || "");
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
@@ -1606,7 +1603,6 @@ export default function RPGGame() {
     setFeedback(null);
     setGameComplete(false);
     setLastHeardSpeech("");
-    setStoryBanner("");
   };
 
   // ─── Scenario selection screen ─────────────────────────────────────────
@@ -1744,21 +1740,6 @@ export default function RPGGame() {
             colorScheme="blackAlpha"
             onClick={goToScenarioSelect}
           />
-          <Badge
-            colorScheme="purple"
-            fontSize="xs"
-            px={2}
-            py={1}
-            borderRadius="md"
-          >
-            {SCENARIO_EMOJIS[scenario.id] || "🎮"}{" "}
-            {scenario.name[supportLang] || scenario.name.en}
-          </Badge>
-          {storyBanner && (
-            <Badge colorScheme="orange" fontSize="xs" px={2} py={1} borderRadius="md">
-              {ui.quest}: {storyBanner}
-            </Badge>
-          )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
