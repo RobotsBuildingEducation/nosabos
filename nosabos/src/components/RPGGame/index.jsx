@@ -1428,7 +1428,11 @@ export default function RPGGame() {
         node: nextNode,
         npcReply: selected.npcReply || "",
       }));
-      speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+      const transitionLine =
+        nextNode.responseMode === "speech" && selected.npcReply
+          ? selected.npcReply
+          : nextNode.npcLine || nextNode.prompt || "";
+      speakNPCText(transitionLine);
     }, 300);
   };
 
@@ -1826,9 +1830,11 @@ export default function RPGGame() {
                 )}
               </HStack>
 
-              <Text color="white" fontSize="md" fontWeight="bold">
-                {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
-              </Text>
+              {!(dialogue.node?.responseMode === "speech" && dialogue.npcReply) && (
+                <Text color="white" fontSize="md" fontWeight="bold">
+                  {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
+                </Text>
+              )}
 
               {!!dialogue.npcReply && (
                 <Text color="yellow.200" fontSize="sm">
