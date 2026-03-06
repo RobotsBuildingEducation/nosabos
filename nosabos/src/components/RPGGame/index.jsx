@@ -1964,15 +1964,6 @@ export default function RPGGame() {
                 </Button>
               )}
 
-              <Button
-                size="xs"
-                variant="ghost"
-                color="gray.600"
-                alignSelf="flex-start"
-                onClick={closeDialogue}
-              >
-                {ui.back}
-              </Button>
             </VStack>
           </Box>
         </Box>
