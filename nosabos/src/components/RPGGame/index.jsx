@@ -307,6 +307,7 @@ export default function RPGGame() {
     const texture = new THREE.CanvasTexture(trimmedCanvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.generateMipmaps = false;
     texture.needsUpdate = true;
 
@@ -412,6 +413,7 @@ export default function RPGGame() {
       const texture = new THREE.CanvasTexture(canvas);
       texture.magFilter = THREE.NearestFilter;
       texture.minFilter = THREE.NearestFilter;
+      texture.colorSpace = THREE.SRGBColorSpace;
       texture.generateMipmaps = false;
       texture.needsUpdate = true;
       return texture;
@@ -652,6 +654,7 @@ export default function RPGGame() {
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(1);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(scenario.ambientColor);
     canvasRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -670,6 +673,7 @@ export default function RPGGame() {
     textureLoader.load(
       playerSpriteSheetUrl,
       (sheetTexture) => {
+        sheetTexture.colorSpace = THREE.SRGBColorSpace;
         const frameSet = buildPlayerSheetFrames(sheetTexture.image);
         playerSheetFramesRef.current = frameSet;
 
@@ -919,6 +923,7 @@ export default function RPGGame() {
     textureLoader.load(
       npcSpriteSheetUrl,
       (sheetTexture) => {
+        sheetTexture.colorSpace = THREE.SRGBColorSpace;
         selectedNPCVariants.forEach((variant) => {
           const npcTexture = createNPCTextureFromSheet(
             sheetTexture.image,
