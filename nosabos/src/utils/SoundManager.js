@@ -51,7 +51,13 @@ class SoundManager {
     try {
       await Tone.start();
 
-      await this.ensureContextRunning();
+      const running = await this.ensureContextRunning();
+      if (!running) {
+        // AudioContext is still suspended — don't claim we're initialized.
+        // The next user gesture will retry via startSync() + warmupAudio().
+        this.initPromise = null;
+        return;
+      }
 
       Tone.Destination.volume.value = Tone.gainToDb(this.volume);
       this.initialized = true;
@@ -61,6 +67,15 @@ class SoundManager {
       this.initPromise = null; // Allow retry on failure
       throw err;
     }
+  }
+
+  /**
+   * Fire AudioContext.resume() synchronously within a user gesture handler.
+   * Must be called WITHOUT any preceding await so iOS Safari accepts the call.
+   * Follow with warmupAudio() to complete async initialization.
+   */
+  startSync() {
+    void Tone.start();
   }
 
   async ensureContextRunning() {

@@ -154,6 +154,7 @@ export default function RPGGame() {
 
   const playSound = useSoundSettings((state) => state.playSound);
   const warmupAudio = useSoundSettings((state) => state.warmupAudio);
+  const kickAudio = useSoundSettings((state) => state.kickAudio);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -599,6 +600,7 @@ export default function RPGGame() {
 
   const handleSelectScenario = useCallback(
     async (mapId) => {
+      void playGameSound("select");
       setLoadingScenarioId(mapId);
       setScenarioId(mapId);
       setDialogue(null);
@@ -625,7 +627,7 @@ export default function RPGGame() {
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
-    [targetLang, supportLang],
+    [targetLang, supportLang, playGameSound],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
@@ -1454,7 +1456,8 @@ export default function RPGGame() {
     const handleTouchEnd = (e) => {
       if (e.changedTouches.length === 0) return;
       e.preventDefault(); // Prevent the synthesized click from double-firing
-      void warmupAudio(); // Unlock audio within the touchend user gesture
+      kickAudio(); // Fire AudioContext.resume() synchronously (iOS requirement)
+      void warmupAudio(); // Complete async initialization
       const touch = e.changedTouches[0];
       handleClick({ clientX: touch.clientX, clientY: touch.clientY });
     };
@@ -1477,6 +1480,7 @@ export default function RPGGame() {
     getDialogueCharacterForNPC,
     playGameSound,
     warmupAudio,
+    kickAudio,
     questProgress,
     questTreeByNpc,
     speakNPCText,
@@ -1701,9 +1705,11 @@ export default function RPGGame() {
         alignItems="center"
         justifyContent="center"
         onPointerDownCapture={() => {
+          kickAudio();
           void warmupAudio();
         }}
         onTouchStartCapture={() => {
+          kickAudio();
           void warmupAudio();
         }}
       >
@@ -1783,9 +1789,11 @@ export default function RPGGame() {
         alignItems="center"
         justifyContent="center"
         onPointerDownCapture={() => {
+          kickAudio();
           void warmupAudio();
         }}
         onTouchStartCapture={() => {
+          kickAudio();
           void warmupAudio();
         }}
       >
@@ -1809,9 +1817,11 @@ export default function RPGGame() {
       overflow="hidden"
       userSelect="none"
       onPointerDownCapture={() => {
+        kickAudio();
         void warmupAudio();
       }}
       onTouchStartCapture={() => {
+        kickAudio();
         void warmupAudio();
       }}
     >

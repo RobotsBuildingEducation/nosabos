@@ -90,6 +90,15 @@ const useSoundSettings = create((set, get) => ({
   },
 
   /**
+   * Fire AudioContext.resume() synchronously within a user gesture handler.
+   * Call this WITHOUT any preceding await so iOS Safari accepts the call.
+   * Always pair with warmupAudio() immediately after to finish async init.
+   */
+  kickAudio: () => {
+    soundManager.startSync();
+  },
+
+  /**
    * Warm up the audio system on first user interaction.
    * Call this on a user gesture (click, touch) to initialize Tone.js.
    */
