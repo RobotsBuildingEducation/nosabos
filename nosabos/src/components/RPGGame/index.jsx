@@ -460,13 +460,6 @@ export default function RPGGame() {
     return scenario.questions[targetLang] || scenario.questions.es || [];
   }, [scenario, targetLang]);
 
-  const greetings = useMemo(() => {
-    if (!scenario) return [];
-    return (
-      scenario.greetings[supportLang] || scenario.greetings.en || ["Hello!"]
-    );
-  }, [scenario, supportLang]);
-
   const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
   const questTreeByNpc = useMemo(() => quest?.treeByNpc || [], [quest]);
@@ -1175,15 +1168,11 @@ export default function RPGGame() {
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
-            greeting: greetings[npcIdx % greetings.length],
             question,
             node,
-            npcArcTitle: npcArc?.title,
             npcReply: "",
           });
-          speakNPCText(
-            `${greetings[npcIdx % greetings.length]} ${node?.npcLine || node?.prompt || question.prompt}`,
-          );
+          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
           playGameSound("rpgDialogueOpen");
           return;
         }
@@ -1311,15 +1300,11 @@ export default function RPGGame() {
             npcIdx,
             npcName: scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
-            greeting: greetings[npcIdx % greetings.length],
             question,
             node,
-            npcArcTitle: npcArc?.title,
             npcReply: "",
           });
-          speakNPCText(
-            `${greetings[npcIdx % greetings.length]} ${node?.npcLine || node?.prompt || question.prompt}`,
-          );
+          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
           playGameSound("rpgDialogueOpen");
         }
         return;
@@ -1346,7 +1331,6 @@ export default function RPGGame() {
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
-    greetings,
     playGameSound,
     questProgress,
     questTreeByNpc,
@@ -1839,16 +1823,6 @@ export default function RPGGame() {
                   </Badge>
                 )}
               </HStack>
-
-              <Text color="gray.300" fontSize="sm" fontStyle="italic">
-                &ldquo;{dialogue.greeting}&rdquo;
-              </Text>
-
-              {dialogue.npcArcTitle && (
-                <Badge colorScheme="orange" alignSelf="flex-start">
-                  {dialogue.npcArcTitle}
-                </Badge>
-              )}
 
               <Text color="white" fontSize="md" fontWeight="bold">
                 {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
