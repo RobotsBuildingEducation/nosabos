@@ -143,6 +143,7 @@ export default function RPGGame() {
   const [questionMapping, setQuestionMapping] = useState({});
   const [storyBanner, setStoryBanner] = useState("");
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
@@ -491,6 +492,67 @@ export default function RPGGame() {
     setDialogue(null);
     setFeedback(null);
   }, [dialogue, playGameSound]);
+
+  const updateDialogueBubblePosition = useCallback(() => {
+    if (!dialogue || !canvasRef.current || !cameraRef.current) return;
+
+    const npcMesh = npcSpritesRef.current?.[dialogue.npcIdx];
+    if (!npcMesh) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const anchorPoint = new THREE.Vector3(
+      npcMesh.position.x,
+      npcMesh.position.y + (scenario?.tileSize || 32) * 0.55,
+      npcMesh.position.z,
+    ).project(cameraRef.current);
+
+    const screenX = (anchorPoint.x * 0.5 + 0.5) * rect.width;
+    const screenY = (-anchorPoint.y * 0.5 + 0.5) * rect.height;
+    const preferredRight = screenX < rect.width * 0.58;
+
+    const horizontalOffset = preferredRight ? 110 : -110;
+    const margin = 16;
+    const nextLeft = Math.max(
+      margin,
+      Math.min(rect.width - margin, screenX + horizontalOffset),
+    );
+    const nextTop = Math.max(
+      margin,
+      Math.min(rect.height - margin, screenY - 36),
+    );
+
+    setDialogueBubblePosition((prev) => {
+      if (
+        prev &&
+        Math.abs(prev.left - nextLeft) < 0.5 &&
+        Math.abs(prev.top - nextTop) < 0.5 &&
+        prev.preferredRight === preferredRight
+      ) {
+        return prev;
+      }
+      return { left: nextLeft, top: nextTop, preferredRight };
+    });
+  }, [dialogue, scenario?.tileSize]);
+
+  useEffect(() => {
+    if (!dialogue) {
+      setDialogueBubblePosition(null);
+      return undefined;
+    }
+
+    let rafId = 0;
+    const tick = () => {
+      updateDialogueBubblePosition();
+      rafId = requestAnimationFrame(tick);
+    };
+
+    tick();
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [dialogue, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
     try {
@@ -1787,23 +1849,51 @@ export default function RPGGame() {
         </VStack>
       </Box>
 
-      {/* Dialogue box */}
-      {dialogue && !gameComplete && (
-        <Box position="absolute" inset={0} zIndex={20} onClick={closeDialogue}>
+      {/* Dialogue bubble */}
+      {dialogue && !gameComplete && dialogueBubblePosition && (
+        <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
           <Box
             position="absolute"
-            bottom={4}
-            left="50%"
-            transform="translateX(-50%)"
-            w={{ base: "92%", md: "500px" }}
-            bg="gray.900"
-            border="3px solid"
-            borderColor="yellow.400"
-            borderRadius="lg"
+            left={`${dialogueBubblePosition.left}px`}
+            top={`${dialogueBubblePosition.top}px`}
+            transform={
+              dialogueBubblePosition.preferredRight
+                ? "translate(0, -50%)"
+                : "translate(-100%, -50%)"
+            }
+            w={{ base: "min(86vw, 340px)", md: "360px" }}
+            maxH={{ base: "70vh", md: "62vh" }}
+            overflowY="auto"
+            bg="rgba(10, 14, 33, 0.94)"
+            border="2px solid"
+            borderColor="yellow.300"
+            borderRadius="2xl"
             p={4}
-            boxShadow="0 0 30px rgba(0,0,0,0.8)"
-            onClick={(e) => e.stopPropagation()}
+            boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+            pointerEvents="auto"
           >
+            <Box
+              position="absolute"
+              top="50%"
+              transform="translateY(-50%)"
+              left={dialogueBubblePosition.preferredRight ? "-12px" : "auto"}
+              right={dialogueBubblePosition.preferredRight ? "auto" : "-12px"}
+              w="0"
+              h="0"
+              borderTop="10px solid transparent"
+              borderBottom="10px solid transparent"
+              borderRight={
+                dialogueBubblePosition.preferredRight
+                  ? "12px solid rgba(10, 14, 33, 0.94)"
+                  : "none"
+              }
+              borderLeft={
+                dialogueBubblePosition.preferredRight
+                  ? "none"
+                  : "12px solid rgba(10, 14, 33, 0.94)"
+              }
+            />
+
             <IconButton
               aria-label="Close dialogue"
               icon={<CloseIcon boxSize={2.5} />}
@@ -1816,13 +1906,14 @@ export default function RPGGame() {
               _hover={{ bg: "whiteAlpha.200" }}
               onClick={closeDialogue}
             />
+
             <VStack align="stretch" spacing={3}>
-              <HStack align="center" spacing={2}>
+              <HStack align="center" spacing={2} pr={8}>
                 <Box pt={1}>
                   <RandomCharacter
                     width="42px"
                     notSoRandomCharacter={dialogue.npcCharacter}
-                  />{" "}
+                  />{' '}
                 </Box>
                 <Badge colorScheme="purple" fontSize="sm" px={2}>
                   {dialogue.npcName}
@@ -1863,25 +1954,25 @@ export default function RPGGame() {
                     const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
 
                     return (
-                  <Button
-                    key={idx}
-                    w="100%"
-                    size="sm"
-                    variant="outline"
-                    colorScheme="whiteAlpha"
-                    color="white"
-                    borderColor="whiteAlpha.300"
-                    _hover={{ bg: "whiteAlpha.200" }}
-                    onClick={() => handleAnswer(idx)}
-                    isDisabled={isRecording || isConnecting}
-                    justifyContent="flex-start"
-                    textAlign="left"
-                    whiteSpace="normal"
-                    h="auto"
-                    py={2}
-                  >
-                    {String.fromCharCode(65 + idx)}. {opt}
-                  </Button>
+                      <Button
+                        key={idx}
+                        w="100%"
+                        size="sm"
+                        variant="outline"
+                        colorScheme="whiteAlpha"
+                        color="white"
+                        borderColor="whiteAlpha.300"
+                        _hover={{ bg: "whiteAlpha.200" }}
+                        onClick={() => handleAnswer(idx)}
+                        isDisabled={isRecording || isConnecting}
+                        justifyContent="flex-start"
+                        textAlign="left"
+                        whiteSpace="normal"
+                        h="auto"
+                        py={2}
+                      >
+                        {String.fromCharCode(65 + idx)}. {opt}
+                      </Button>
                     );
                   })}
                 </VStack>
@@ -1937,7 +2028,8 @@ export default function RPGGame() {
               <Button
                 size="xs"
                 variant="ghost"
-                color="gray.500"
+                color="gray.400"
+                alignSelf="flex-start"
                 onClick={closeDialogue}
               >
                 {ui.back}
