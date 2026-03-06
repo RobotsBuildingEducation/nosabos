@@ -17,6 +17,7 @@ import {
   Wrap,
   WrapItem,
   useToast,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -129,6 +130,7 @@ export default function RPGGame() {
   const targetLang = settings.targetLang;
   const supportLang = settings.supportLang;
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
+  const isMobileDialogueLayout = useBreakpointValue({ base: true, md: false }) ?? false;
 
   // Scenario selection
   const [scenarioId, setScenarioId] = useState(null);
@@ -141,8 +143,8 @@ export default function RPGGame() {
   const [feedback, setFeedback] = useState(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
-  const [storyBanner, setStoryBanner] = useState("");
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
@@ -307,6 +309,7 @@ export default function RPGGame() {
     const texture = new THREE.CanvasTexture(trimmedCanvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
+    texture.colorSpace = THREE.SRGBColorSpace;
     texture.generateMipmaps = false;
     texture.needsUpdate = true;
 
@@ -412,6 +415,7 @@ export default function RPGGame() {
       const texture = new THREE.CanvasTexture(canvas);
       texture.magFilter = THREE.NearestFilter;
       texture.minFilter = THREE.NearestFilter;
+      texture.colorSpace = THREE.SRGBColorSpace;
       texture.generateMipmaps = false;
       texture.needsUpdate = true;
       return texture;
@@ -490,6 +494,67 @@ export default function RPGGame() {
     setFeedback(null);
   }, [dialogue, playGameSound]);
 
+  const updateDialogueBubblePosition = useCallback(() => {
+    if (isMobileDialogueLayout || !dialogue || !canvasRef.current || !cameraRef.current) return;
+
+    const npcMesh = npcSpritesRef.current?.[dialogue.npcIdx];
+    if (!npcMesh) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const anchorPoint = new THREE.Vector3(
+      npcMesh.position.x,
+      npcMesh.position.y + (scenario?.tileSize || 32) * 0.55,
+      npcMesh.position.z,
+    ).project(cameraRef.current);
+
+    const screenX = (anchorPoint.x * 0.5 + 0.5) * rect.width;
+    const screenY = (-anchorPoint.y * 0.5 + 0.5) * rect.height;
+    const preferredRight = screenX < rect.width * 0.58;
+
+    const horizontalOffset = preferredRight ? 110 : -110;
+    const margin = 16;
+    const nextLeft = Math.max(
+      margin,
+      Math.min(rect.width - margin, screenX + horizontalOffset),
+    );
+    const nextTop = Math.max(
+      margin,
+      Math.min(rect.height - margin, screenY - 36),
+    );
+
+    setDialogueBubblePosition((prev) => {
+      if (
+        prev &&
+        Math.abs(prev.left - nextLeft) < 0.5 &&
+        Math.abs(prev.top - nextTop) < 0.5 &&
+        prev.preferredRight === preferredRight
+      ) {
+        return prev;
+      }
+      return { left: nextLeft, top: nextTop, preferredRight };
+    });
+  }, [dialogue, isMobileDialogueLayout, scenario?.tileSize]);
+
+  useEffect(() => {
+    if (!dialogue || isMobileDialogueLayout) {
+      setDialogueBubblePosition(null);
+      return undefined;
+    }
+
+    let rafId = 0;
+    const tick = () => {
+      updateDialogueBubblePosition();
+      rafId = requestAnimationFrame(tick);
+    };
+
+    tick();
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
+
   const stopNPCSpeech = useCallback(() => {
     try {
       ttsPlayerRef.current?.stop?.();
@@ -530,7 +595,6 @@ export default function RPGGame() {
         completedNPCs: new Set(),
         nodeByNPC: {},
       });
-      setStoryBanner("");
 
       const generated = await generateScenarioWithAI(
         mapId,
@@ -543,7 +607,6 @@ export default function RPGGame() {
         completedNPCs: new Set(),
         nodeByNPC: {},
       });
-      setStoryBanner(generated?.quest?.intro || "");
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
@@ -652,6 +715,7 @@ export default function RPGGame() {
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(1);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.setClearColor(scenario.ambientColor);
     canvasRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
@@ -665,11 +729,12 @@ export default function RPGGame() {
       "down",
       0,
     );
-    const fallbackPlayerAspect = 1.05 / 1.45;
+    const fallbackPlayerAspect = 0.9 / 1.2;
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       playerSpriteSheetUrl,
       (sheetTexture) => {
+        sheetTexture.colorSpace = THREE.SRGBColorSpace;
         const frameSet = buildPlayerSheetFrames(sheetTexture.image);
         playerSheetFramesRef.current = frameSet;
 
@@ -845,9 +910,9 @@ export default function RPGGame() {
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
-    const PLAYER_WIDTH_TILES = 1.05;
-    const PLAYER_HEIGHT_TILES = 1.45;
-    const PLAYER_FOOT_MARGIN_TILES = 0.04;
+    const PLAYER_WIDTH_TILES = 0.9;
+    const PLAYER_HEIGHT_TILES = 1.2;
+    const PLAYER_FOOT_MARGIN_TILES = 0.02;
     const playerVerticalOffset =
       TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
     const playerGeo = new THREE.PlaneGeometry(
@@ -870,6 +935,12 @@ export default function RPGGame() {
     playerSpriteRef.current = playerSprite;
 
     const selectedNPCVariants = chooseRandomNPCVariants(scenario.npcs.length);
+    const NPC_WIDTH_TILES = 0.9;
+    const NPC_HEIGHT_TILES = 1.2;
+    const NPC_BASE_SCALE = 0.92;
+    const NPC_FOOT_MARGIN_TILES = 0.02;
+    const npcVerticalOffset =
+      TILE * ((NPC_HEIGHT_TILES - 1) / 2 + NPC_FOOT_MARGIN_TILES);
 
     // ── NPC sprites ───────────────────────────────────────────────────────
     const npcSprites = [];
@@ -885,7 +956,10 @@ export default function RPGGame() {
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
-      const npcGeo = new THREE.PlaneGeometry(TILE * 1.05, TILE * 1.45);
+      const npcGeo = new THREE.PlaneGeometry(
+        TILE * NPC_WIDTH_TILES,
+        TILE * NPC_HEIGHT_TILES,
+      );
       const npcMat = new THREE.MeshBasicMaterial({
         map: npcTex,
         transparent: true,
@@ -893,7 +967,7 @@ export default function RPGGame() {
       const npcMesh = new THREE.Mesh(npcGeo, npcMat);
       npcMesh.position.set(
         npc.tx * TILE + TILE / 2,
-        (MAP_H - 1 - npc.ty) * TILE + TILE / 2,
+        (MAP_H - 1 - npc.ty) * TILE + TILE / 2 + npcVerticalOffset,
         4,
       );
       scene.add(npcMesh);
@@ -909,7 +983,7 @@ export default function RPGGame() {
       const indicator = new THREE.Mesh(indGeo, indMat);
       indicator.position.set(
         npc.tx * TILE + TILE / 2,
-        (MAP_H - 1 - npc.ty) * TILE + TILE * 1.3,
+        (MAP_H - 1 - npc.ty) * TILE + TILE * 1.15,
         6,
       );
       scene.add(indicator);
@@ -919,6 +993,7 @@ export default function RPGGame() {
     textureLoader.load(
       npcSpriteSheetUrl,
       (sheetTexture) => {
+        sheetTexture.colorSpace = THREE.SRGBColorSpace;
         selectedNPCVariants.forEach((variant) => {
           const npcTexture = createNPCTextureFromSheet(
             sheetTexture.image,
@@ -931,8 +1006,8 @@ export default function RPGGame() {
 
           const fallbackNPCAspect = 1.05 / 1.45;
           const widthScale = Math.max(
-            0.5,
-            Math.min(2.5, npcTexture.aspect / fallbackNPCAspect),
+            0.45,
+            Math.min(1.4, npcTexture.aspect / fallbackNPCAspect),
           );
 
           npcAssignments.forEach((assignment, index) => {
@@ -941,7 +1016,7 @@ export default function RPGGame() {
             if (!npcMesh?.material) return;
             npcMesh.material.map = npcTexture.texture;
             npcMesh.material.needsUpdate = true;
-            npcMesh.scale.set(widthScale, 1, 1);
+            npcMesh.scale.set(widthScale * NPC_BASE_SCALE, NPC_BASE_SCALE, 1);
           });
         });
       },
@@ -967,21 +1042,16 @@ export default function RPGGame() {
       const gs = gameStateRef.current;
       if (!gs) return;
 
-      // NPC bob
+      // Keep NPCs anchored in place (no floating bob).
       gs.npcBobPhase += delta * 0.003;
       npcSprites.forEach((sprite, i) => {
         const npc = scenario.npcs[i];
         sprite.position.y =
-          (MAP_H - 1 - npc.ty) * TILE +
-          TILE / 2 +
-          Math.sin(gs.npcBobPhase + i * 2.1) * 2;
+          (MAP_H - 1 - npc.ty) * TILE + TILE / 2 + npcVerticalOffset;
       });
       npcIndicators.forEach((ind, i) => {
         const npc = scenario.npcs[i];
-        ind.position.y =
-          (MAP_H - 1 - npc.ty) * TILE +
-          TILE * 1.3 +
-          Math.sin(gs.npcBobPhase + i * 2.1) * 2;
+        ind.position.y = (MAP_H - 1 - npc.ty) * TILE + TILE * 1.15;
         // Pulse scale
         const pulse = 1 + Math.sin(gs.npcBobPhase * 2 + i) * 0.08;
         ind.scale.set(pulse, pulse, 1);
@@ -1354,11 +1424,21 @@ export default function RPGGame() {
 
   // ─── Update NPC indicators ────────────────────────────────────────────
   useEffect(() => {
-    const questGiverIdx = scenario?.quest?.startNpcIdx ?? 0;
+    if (gameComplete) {
+      npcIndicatorsRef.current.forEach((ind) => {
+        ind.visible = false;
+      });
+      return;
+    }
+
+    const nextTargetIdx = [...questProgress.unlockedNPCs].find(
+      (idx) => !questProgress.completedNPCs.has(idx),
+    );
+
     npcIndicatorsRef.current.forEach((ind, i) => {
-      ind.visible = i === questGiverIdx && !gameComplete;
+      ind.visible = nextTargetIdx !== undefined && i === nextTargetIdx;
     });
-  }, [gameComplete, scenario]);
+  }, [gameComplete, questProgress]);
 
   const completeNPCChapter = useCallback(
     (npcIdx) => {
@@ -1533,17 +1613,6 @@ export default function RPGGame() {
     setFeedback(null);
     setGameComplete(false);
     setLastHeardSpeech("");
-    setStoryBanner("");
-  };
-
-  // ─── D-pad ────────────────────────────────────────────────────────────
-  const pressDir = (dir) => {
-    if (gameStateRef.current) {
-      gameStateRef.current.keysDown.add(dir);
-      setTimeout(() => {
-        if (gameStateRef.current) gameStateRef.current.keysDown.delete(dir);
-      }, 180);
-    }
   };
 
   // ─── Scenario selection screen ─────────────────────────────────────────
@@ -1681,21 +1750,6 @@ export default function RPGGame() {
             colorScheme="blackAlpha"
             onClick={goToScenarioSelect}
           />
-          <Badge
-            colorScheme="purple"
-            fontSize="xs"
-            px={2}
-            py={1}
-            borderRadius="md"
-          >
-            {SCENARIO_EMOJIS[scenario.id] || "🎮"}{" "}
-            {scenario.name[supportLang] || scenario.name.en}
-          </Badge>
-          {storyBanner && (
-            <Badge colorScheme="orange" fontSize="xs" px={2} py={1} borderRadius="md">
-              {ui.quest}: {storyBanner}
-            </Badge>
-          )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
@@ -1711,90 +1765,65 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
-      {/* Mobile D-pad */}
-      <Box
-        position="absolute"
-        bottom={6}
-        left={6}
-        zIndex={10}
-        display={{ base: "block", md: "none" }}
-      >
-        <VStack spacing={0}>
-          <Button
-            size="sm"
-            w="48px"
-            h="48px"
-            bg="blackAlpha.600"
-            color="white"
-            borderRadius="lg"
-            _active={{ bg: "blackAlpha.800" }}
-            onTouchStart={() => pressDir("ArrowUp")}
-            onMouseDown={() => pressDir("ArrowUp")}
-          >
-            ▲
-          </Button>
-          <HStack spacing={0}>
-            <Button
-              size="sm"
-              w="48px"
-              h="48px"
-              bg="blackAlpha.600"
-              color="white"
-              borderRadius="lg"
-              _active={{ bg: "blackAlpha.800" }}
-              onTouchStart={() => pressDir("ArrowLeft")}
-              onMouseDown={() => pressDir("ArrowLeft")}
-            >
-              ◀
-            </Button>
-            <Box w="48px" h="48px" />
-            <Button
-              size="sm"
-              w="48px"
-              h="48px"
-              bg="blackAlpha.600"
-              color="white"
-              borderRadius="lg"
-              _active={{ bg: "blackAlpha.800" }}
-              onTouchStart={() => pressDir("ArrowRight")}
-              onMouseDown={() => pressDir("ArrowRight")}
-            >
-              ▶
-            </Button>
-          </HStack>
-          <Button
-            size="sm"
-            w="48px"
-            h="48px"
-            bg="blackAlpha.600"
-            color="white"
-            borderRadius="lg"
-            _active={{ bg: "blackAlpha.800" }}
-            onTouchStart={() => pressDir("ArrowDown")}
-            onMouseDown={() => pressDir("ArrowDown")}
-          >
-            ▼
-          </Button>
-        </VStack>
-      </Box>
-
-      {/* Dialogue box */}
-      {dialogue && !gameComplete && (
-        <Box position="absolute" inset={0} zIndex={20} onClick={closeDialogue}>
+      {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
+      {dialogue && !gameComplete && (isMobileDialogueLayout || dialogueBubblePosition) && (
+        <Box position="absolute" inset={0} zIndex={20} pointerEvents="none">
           <Box
             position="absolute"
-            bottom={4}
-            left="50%"
-            transform="translateX(-50%)"
-            w={{ base: "92%", md: "500px" }}
-            bg="gray.900"
-            border="3px solid"
-            borderColor="yellow.400"
-            borderRadius="lg"
+            left={
+              isMobileDialogueLayout
+                ? { base: 3, md: `${dialogueBubblePosition?.left || 0}px` }
+                : `${dialogueBubblePosition?.left || 0}px`
+            }
+            right={isMobileDialogueLayout ? { base: 3, md: "auto" } : "auto"}
+            top={
+              isMobileDialogueLayout
+                ? { base: "auto", md: `${dialogueBubblePosition?.top || 0}px` }
+                : `${dialogueBubblePosition?.top || 0}px`
+            }
+            bottom={isMobileDialogueLayout ? { base: 4, md: "auto" } : "auto"}
+            transform={
+              isMobileDialogueLayout
+                ? "none"
+                : dialogueBubblePosition?.preferredRight
+                  ? "translate(0, -50%)"
+                  : "translate(-100%, -50%)"
+            }
+            w={isMobileDialogueLayout ? { base: "auto", md: "360px" } : { base: "min(86vw, 340px)", md: "360px" }}
+            maxH={isMobileDialogueLayout ? { base: "44vh", md: "62vh" } : { base: "70vh", md: "62vh" }}
+            overflowY="auto"
+            bg="rgba(250, 244, 232, 0.96)"
+            border="2px solid"
+            borderColor="orange.200"
+            borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
             p={4}
-            boxShadow="0 0 30px rgba(0,0,0,0.8)"
-            onClick={(e) => e.stopPropagation()}
+            boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+            pointerEvents="auto"
           >
+            {!isMobileDialogueLayout && dialogueBubblePosition && (
+              <Box
+                position="absolute"
+                top="50%"
+                transform="translateY(-50%)"
+                left={dialogueBubblePosition.preferredRight ? "-12px" : "auto"}
+                right={dialogueBubblePosition.preferredRight ? "auto" : "-12px"}
+                w="0"
+                h="0"
+                borderTop="10px solid transparent"
+                borderBottom="10px solid transparent"
+                borderRight={
+                  dialogueBubblePosition.preferredRight
+                    ? "12px solid rgba(250, 244, 232, 0.96)"
+                    : "none"
+                }
+                borderLeft={
+                  dialogueBubblePosition.preferredRight
+                    ? "none"
+                    : "12px solid rgba(250, 244, 232, 0.96)"
+                }
+              />
+            )}
+
             <IconButton
               aria-label="Close dialogue"
               icon={<CloseIcon boxSize={2.5} />}
@@ -1803,17 +1832,18 @@ export default function RPGGame() {
               top={2}
               right={2}
               variant="ghost"
-              color="gray.300"
+              color="gray.600"
               _hover={{ bg: "whiteAlpha.200" }}
               onClick={closeDialogue}
             />
+
             <VStack align="stretch" spacing={3}>
-              <HStack align="center" spacing={2}>
+              <HStack align="center" spacing={2} pr={8}>
                 <Box pt={1}>
                   <RandomCharacter
                     width="42px"
                     notSoRandomCharacter={dialogue.npcCharacter}
-                  />{" "}
+                  />{' '}
                 </Box>
                 <Badge colorScheme="purple" fontSize="sm" px={2}>
                   {dialogue.npcName}
@@ -1831,19 +1861,19 @@ export default function RPGGame() {
               </HStack>
 
               {!(dialogue.node?.responseMode === "speech" && dialogue.npcReply) && (
-                <Text color="white" fontSize="md" fontWeight="bold">
+                <Text color="gray.800" fontSize="md" fontWeight="bold">
                   {dialogue.node?.npcLine || dialogue.node?.prompt || dialogue.question.prompt}
                 </Text>
               )}
 
               {!!dialogue.npcReply && (
-                <Text color="yellow.200" fontSize="sm">
+                <Text color="orange.700" fontSize="sm">
                   {dialogue.npcReply}
                 </Text>
               )}
 
               {lastHeardSpeech && dialogue.node?.responseMode === "speech" && (
-                <Text color="teal.200" fontSize="xs">
+                <Text color="teal.700" fontSize="xs">
                   {ui.heardYou}: {lastHeardSpeech}
                 </Text>
               )}
@@ -1854,25 +1884,27 @@ export default function RPGGame() {
                     const opt = typeof optRaw === "string" ? optRaw : optRaw.text;
 
                     return (
-                  <Button
-                    key={idx}
-                    w="100%"
-                    size="sm"
-                    variant="outline"
-                    colorScheme="whiteAlpha"
-                    color="white"
-                    borderColor="whiteAlpha.300"
-                    _hover={{ bg: "whiteAlpha.200" }}
-                    onClick={() => handleAnswer(idx)}
-                    isDisabled={isRecording || isConnecting}
-                    justifyContent="flex-start"
-                    textAlign="left"
-                    whiteSpace="normal"
-                    h="auto"
-                    py={2}
-                  >
-                    {String.fromCharCode(65 + idx)}. {opt}
-                  </Button>
+                      <Button
+                        key={idx}
+                        w="100%"
+                        size="sm"
+                        variant="solid"
+                        bg="rgba(255,255,255,0.92)"
+                        color="gray.900"
+                        border="1px solid"
+                        borderColor="blackAlpha.200"
+                        _hover={{ bg: "white", borderColor: "blackAlpha.300" }}
+                        _active={{ bg: "gray.100" }}
+                        onClick={() => handleAnswer(idx)}
+                        isDisabled={isRecording || isConnecting}
+                        justifyContent="flex-start"
+                        textAlign="left"
+                        whiteSpace="normal"
+                        h="auto"
+                        py={2}
+                      >
+                        {String.fromCharCode(65 + idx)}. {opt}
+                      </Button>
                     );
                   })}
                 </VStack>
@@ -1925,14 +1957,6 @@ export default function RPGGame() {
                 </Button>
               )}
 
-              <Button
-                size="xs"
-                variant="ghost"
-                color="gray.500"
-                onClick={closeDialogue}
-              >
-                {ui.back}
-              </Button>
             </VStack>
           </Box>
         </Box>

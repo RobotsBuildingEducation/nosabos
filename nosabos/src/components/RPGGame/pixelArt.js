@@ -56,6 +56,7 @@ function makeTexture(canvas) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 
