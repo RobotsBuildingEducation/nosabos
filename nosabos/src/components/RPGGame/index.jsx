@@ -28,6 +28,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
 import {
@@ -43,6 +44,7 @@ import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
+import HelpChatFab from "../HelpChatFab";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -612,6 +614,8 @@ export default function RPGGame() {
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
   const inventoryModal = useDisclosure();
+  const helpChat = useDisclosure();
+  const helpChatRef = useRef(null);
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
@@ -620,6 +624,43 @@ export default function RPGGame() {
 
   const playSound = useSoundSettings((state) => state.playSound);
   const warmupAudio = useSoundSettings((state) => state.warmupAudio);
+
+  const supportLangName = useMemo(
+    () =>
+      ({
+        en: "English",
+        es: "Spanish",
+        pt: "Portuguese",
+        fr: "French",
+        it: "Italian",
+        nl: "Dutch",
+        nah: "Nahuatl",
+        ru: "Russian",
+        de: "German",
+        el: "Greek",
+        pl: "Polish",
+      })[supportLang] || supportLang,
+    [supportLang],
+  );
+
+  const askHelpForCurrentLine = useCallback(() => {
+    const npcLine =
+      dialogue?.node?.npcLine ||
+      dialogue?.node?.prompt ||
+      dialogue?.question?.prompt ||
+      dialogue?.npcReply ||
+      "";
+    if (!npcLine.trim()) {
+      helpChat.onOpen();
+      return;
+    }
+
+    const prompt =
+      `Translate and explain this NPC message in ${supportLangName}. ` +
+      "Keep the meaning natural for a learner and include one short clarification if helpful.\n\n" +
+      `Original (${targetLang}): "${npcLine}"`;
+    helpChatRef.current?.openAndSend?.(prompt);
+  }, [dialogue, helpChat, supportLangName, targetLang]);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -2547,42 +2588,61 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         </HStack>
       </HStack>
 
-      {/* Inventory icon button */}
+      {/* Quick actions */}
       {!gameComplete && (
-        <IconButton
-          aria-label="Inventory"
-          icon={
-            <Box position="relative">
-              <Text as="span" fontSize="lg">🎒</Text>
-              {inventory.length > 0 && (
-                <Badge
-                  position="absolute"
-                  top="-6px"
-                  right="-8px"
-                  colorScheme="yellow"
-                  borderRadius="full"
-                  fontSize="9px"
-                  minW="16px"
-                  h="16px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  {inventory.length}
-                </Badge>
-              )}
-            </Box>
-          }
-          position="absolute"
-          top={14}
-          left={3}
-          zIndex={10}
-          size="sm"
-          variant="solid"
-          colorScheme="blackAlpha"
-          onClick={inventoryModal.onOpen}
-        />
+        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={2}>
+          <IconButton
+            aria-label="Inventory"
+            icon={
+              <Box position="relative">
+                <Text as="span" fontSize="lg">🎒</Text>
+                {inventory.length > 0 && (
+                  <Badge
+                    position="absolute"
+                    top="-6px"
+                    right="-8px"
+                    colorScheme="yellow"
+                    borderRadius="full"
+                    fontSize="9px"
+                    minW="16px"
+                    h="16px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    {inventory.length}
+                  </Badge>
+                )}
+              </Box>
+            }
+            size="sm"
+            variant="solid"
+            colorScheme="blackAlpha"
+            onClick={inventoryModal.onOpen}
+          />
+          <IconButton
+            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
+            icon={<MdOutlineSupportAgent size={16} />}
+            size="sm"
+            variant="solid"
+            bg="white"
+            color="blue.600"
+            boxShadow="0 2px 0 #2b6cb0"
+            _hover={{ bg: "gray.50" }}
+            onClick={helpChat.onOpen}
+          />
+        </VStack>
       )}
+
+      <HelpChatFab
+        ref={helpChatRef}
+        progress={{ targetLang, supportLang }}
+        appLanguage={supportLang}
+        isOpen={helpChat.isOpen}
+        onOpen={helpChat.onOpen}
+        onClose={helpChat.onClose}
+        showFloatingTrigger={false}
+      />
 
       {/* Inventory modal */}
       <Modal isOpen={inventoryModal.isOpen} onClose={inventoryModal.onClose} isCentered size="sm">
@@ -2672,9 +2732,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
               border="2px solid"
               borderColor="orange.200"
               borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
-              p={4}
+              p={0}
               boxShadow="0 18px 38px rgba(0,0,0,0.52)"
               pointerEvents="auto"
+              overflow="hidden"
             >
               {!isMobileDialogueLayout && dialogueBubblePosition && (
                 <Box
@@ -2717,7 +2778,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 onClick={closeDialogue}
               />
 
-              <VStack align="stretch" spacing={3}>
+              <VStack align="stretch" spacing={0}>
                 {/* Player dialogue line (bridges narrative between NPCs) */}
                 {dialogue.node?.playerLine && (
                   <Box
@@ -2727,7 +2788,9 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     borderRadius="lg"
                     px={3}
                     py={2}
-                    mb={1}
+                    mx={3}
+                    mt={3}
+                    mb={2}
                   >
                     <Text color="blue.800" fontSize="sm" fontStyle="italic">
                       {dialogue.node.playerLine}
@@ -2735,8 +2798,17 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   </Box>
                 )}
 
-                <HStack align="center" spacing={2} pr={8}>
-                  <Box pt={1}>
+                <HStack
+                  align="center"
+                  spacing={2}
+                  px={2}
+                  py={1}
+                  pr={8}
+                  bg="orange.50"
+                  borderBottom="1px solid"
+                  borderColor="orange.100"
+                >
+                  <Box>
                     <RandomCharacter
                       width="42px"
                       notSoRandomCharacter={dialogue.npcCharacter}
@@ -2757,10 +2829,29 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   )}
                 </HStack>
 
+                <VStack align="stretch" spacing={2} px={3} py={2}>
+                  <HStack justify="flex-end">
+                    <IconButton
+                      aria-label={
+                        supportLang === "es"
+                          ? "Pedir ayuda con este texto"
+                          : "Get help with this text"
+                      }
+                      icon={<MdOutlineSupportAgent size={14} />}
+                      size="xs"
+                      rounded="md"
+                      bg="white"
+                      color="blue.600"
+                      boxShadow="0 1px 0 #2b6cb0"
+                      _hover={{ bg: "gray.50" }}
+                      onClick={askHelpForCurrentLine}
+                    />
+                  </HStack>
+
                 {!(
                   dialogue.node?.responseMode === "speech" && dialogue.npcReply
                 ) && (
-                  <Text color="gray.800" fontSize="md" fontWeight="bold">
+                  <Text color="gray.800" fontSize="md" fontWeight="bold" m={0}>
                     {dialogue.node?.npcLine ||
                       dialogue.node?.prompt ||
                       dialogue.question.prompt}
@@ -2768,14 +2859,14 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 )}
 
                 {!!dialogue.npcReply && (
-                  <Text color="orange.700" fontSize="sm">
+                  <Text color="orange.700" fontSize="sm" m={0}>
                     {dialogue.npcReply}
                   </Text>
                 )}
 
                 {lastHeardSpeech &&
                   dialogue.node?.responseMode === "speech" && (
-                    <Text color="teal.700" fontSize="xs">
+                    <Text color="teal.700" fontSize="xs" m={0}>
                       {ui.heardYou}: {lastHeardSpeech}
                     </Text>
                   )}
@@ -2906,6 +2997,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     {ui.continue}
                   </Button>
                 )}
+                </VStack>
               </VStack>
             </Box>
           </Box>
