@@ -147,9 +147,12 @@ export default function RPGGame() {
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [gatherItemsOnMap, setGatherItemsOnMap] = useState([]);
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
+  const gatherSpritesRef = useRef([]);
   const toast = useToast();
 
   const playSound = useSoundSettings((state) => state.playSound);
@@ -1086,6 +1089,70 @@ export default function RPGGame() {
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
 
+    // ── Gather item sprites ───────────────────────────────────────────────
+    const gatherItems = scenario.quest?.gatherItems || [];
+    if (gatherItems.length > 0) {
+      const playerStart = scenario.playerStart;
+      const placed = [];
+      const occupied = new Set();
+      scenario.npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
+      occupied.add(`${playerStart.x},${playerStart.y}`);
+
+      gatherItems.forEach((item) => {
+        let tx, ty;
+        let attempts = 0;
+        do {
+          tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
+          ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
+          attempts++;
+        } while ((isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) && attempts < 80);
+        occupied.add(`${tx},${ty}`);
+
+        // Create a glowing marker sprite for the item
+        const canvas = document.createElement("canvas");
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext("2d");
+        // Diamond/gem shape
+        ctx.fillStyle = "#ffd700";
+        ctx.beginPath();
+        ctx.moveTo(8, 1);
+        ctx.lineTo(14, 8);
+        ctx.lineTo(8, 15);
+        ctx.lineTo(2, 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "#fff8dc";
+        ctx.beginPath();
+        ctx.moveTo(8, 3);
+        ctx.lineTo(11, 8);
+        ctx.lineTo(8, 5);
+        ctx.closePath();
+        ctx.fill();
+
+        const itemTex = new THREE.CanvasTexture(canvas);
+        itemTex.magFilter = THREE.NearestFilter;
+        itemTex.minFilter = THREE.NearestFilter;
+        const itemGeo = new THREE.PlaneGeometry(TILE * 0.5, TILE * 0.5);
+        const itemMat = new THREE.MeshBasicMaterial({
+          map: itemTex,
+          transparent: true,
+        });
+        const itemMesh = new THREE.Mesh(itemGeo, itemMat);
+        itemMesh.position.set(
+          tx * TILE + TILE / 2,
+          (MAP_H - 1 - ty) * TILE + TILE / 2,
+          3,
+        );
+        scene.add(itemMesh);
+
+        placed.push({ ...item, tx, ty, mesh: itemMesh, collected: false });
+      });
+
+      gatherSpritesRef.current = placed;
+      setGatherItemsOnMap(placed.map((p) => ({ name: p.name, hint: p.hint, tx: p.tx, ty: p.ty, collected: false })));
+    }
+
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
@@ -1182,6 +1249,31 @@ export default function RPGGame() {
         5,
       );
 
+      // Check gather item pickup
+      gatherSpritesRef.current.forEach((item) => {
+        if (item.collected) return;
+        if (gs.playerX === item.tx && gs.playerY === item.ty) {
+          item.collected = true;
+          item.mesh.visible = false;
+          setInventory((prev) => [...prev, item.name]);
+          setGatherItemsOnMap((prev) =>
+            prev.map((g) =>
+              g.tx === item.tx && g.ty === item.ty
+                ? { ...g, collected: true }
+                : g
+            )
+          );
+          playGameSound("rpgDialogueSelect");
+        }
+      });
+
+      // Pulse gather items
+      gatherSpritesRef.current.forEach((item) => {
+        if (item.collected || !item.mesh) return;
+        const pulse = 1 + Math.sin(time * 0.004) * 0.15;
+        item.mesh.scale.set(pulse, pulse, 1);
+      });
+
       // Camera follow (smooth)
       const camTargetX = gs.renderX * TILE + TILE / 2;
       const camTargetY = (MAP_H - 1 - gs.renderY) * TILE + TILE / 2;
@@ -1238,6 +1330,12 @@ export default function RPGGame() {
       }
       npcSheetFramesRef.current.forEach((frameSet) => frameSet.dispose());
       npcSheetFramesRef.current.clear();
+      gatherSpritesRef.current.forEach((item) => {
+        item.mesh?.geometry?.dispose();
+        item.mesh?.material?.map?.dispose();
+        item.mesh?.material?.dispose();
+      });
+      gatherSpritesRef.current = [];
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -1575,6 +1673,42 @@ export default function RPGGame() {
     }, 300);
   };
 
+  const handleGatherReturn = () => {
+    if (!dialogue?.node || dialogue.node.responseMode !== "gather") return;
+    const requiredItem = dialogue.node.gatherItem?.name;
+    if (!requiredItem || !inventory.includes(requiredItem)) return;
+
+    playGameSound("rpgDialogueSelect");
+    const nextNodeId = dialogue.node.nextNodeId;
+    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      (n) => n.id === nextNodeId,
+    );
+
+    // Remove item from inventory
+    setInventory((prev) => {
+      const idx = prev.indexOf(requiredItem);
+      if (idx === -1) return prev;
+      const copy = [...prev];
+      copy.splice(idx, 1);
+      return copy;
+    });
+
+    if (!nextNode) {
+      completeNPCChapter(dialogue.npcIdx);
+      return;
+    }
+
+    setQuestProgress((prev) => ({
+      ...prev,
+      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+    }));
+
+    setTimeout(() => {
+      setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
+      speakNPCText(nextNode.npcLine || "");
+    }, 300);
+  };
+
   const {
     startRecording,
     stopRecording,
@@ -1639,6 +1773,12 @@ export default function RPGGame() {
     setFeedback(null);
     setGameComplete(false);
     setLastHeardSpeech("");
+    setInventory([]);
+    setGatherItemsOnMap([]);
+    gatherSpritesRef.current.forEach((item) => {
+      item.collected = false;
+      if (item.mesh) item.mesh.visible = true;
+    });
     setQuestProgress({
       unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
       completedNPCs: new Set(),
@@ -1842,6 +1982,25 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
+      {/* Inventory HUD */}
+      {inventory.length > 0 && !gameComplete && (
+        <HStack
+          position="absolute"
+          bottom={3}
+          left={3}
+          bg="blackAlpha.700"
+          borderRadius="md"
+          px={3}
+          py={1}
+          spacing={2}
+          zIndex={10}
+        >
+          <Text color="yellow.300" fontSize="xs" fontWeight="bold">
+            {inventory.map((item) => `◆ ${item}`).join("  ")}
+          </Text>
+        </HStack>
+      )}
+
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
       {dialogue &&
         !gameComplete &&
@@ -1932,6 +2091,23 @@ export default function RPGGame() {
               />
 
               <VStack align="stretch" spacing={3}>
+                {/* Player dialogue line (bridges narrative between NPCs) */}
+                {dialogue.node?.playerLine && (
+                  <Box
+                    bg="blue.50"
+                    border="1px solid"
+                    borderColor="blue.200"
+                    borderRadius="lg"
+                    px={3}
+                    py={2}
+                    mb={1}
+                  >
+                    <Text color="blue.800" fontSize="sm" fontStyle="italic">
+                      {dialogue.node.playerLine}
+                    </Text>
+                  </Box>
+                )}
+
                 <HStack align="center" spacing={2} pr={8}>
                   <Box pt={1}>
                     <RandomCharacter
@@ -2046,6 +2222,39 @@ export default function RPGGame() {
                     />
                   </HStack>
                 )}
+
+                {dialogue.node?.responseMode === "gather" && (() => {
+                  const requiredItem = dialogue.node.gatherItem?.name;
+                  const hasItem = requiredItem && inventory.includes(requiredItem);
+                  return (
+                    <VStack spacing={2}>
+                      {hasItem ? (
+                        <Button
+                          size="sm"
+                          colorScheme="green"
+                          onClick={handleGatherReturn}
+                          w="100%"
+                        >
+                          {targetLang === "es"
+                            ? `Entregar ${requiredItem}`
+                            : `Hand over ${requiredItem}`}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          colorScheme="orange"
+                          variant="outline"
+                          onClick={closeDialogue}
+                          w="100%"
+                        >
+                          {targetLang === "es"
+                            ? `Buscar ${requiredItem}`
+                            : `Search for ${requiredItem}`}
+                        </Button>
+                      )}
+                    </VStack>
+                  );
+                })()}
 
                 {dialogue.node?.responseMode === "none" && (
                   <Button

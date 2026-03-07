@@ -147,107 +147,309 @@ function sanitizeDialogueLine(line, npcName) {
   return noPrefix.replace(/^"|"$/g, "").trim();
 }
 
-function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang) {
+// ─── Gather-quest item definitions per map theme ──────────────────────────
+const GATHER_ITEMS_BY_MAP = {
+  livingRoom: {
+    es: [
+      { name: "la llave dorada", hint: "Busca cerca de los estantes." },
+      { name: "el libro antiguo", hint: "Mira debajo de los muebles." },
+      { name: "la carta sellada", hint: "Revisa junto a la puerta." },
+    ],
+    en: [
+      { name: "the golden key", hint: "Look near the shelves." },
+      { name: "the old book", hint: "Check under the furniture." },
+      { name: "the sealed letter", hint: "Search by the door." },
+    ],
+  },
+  park: {
+    es: [
+      { name: "la flor rara", hint: "Crece entre los árboles." },
+      { name: "la piedra brillante", hint: "Está escondida en el camino." },
+      { name: "la pluma azul", hint: "Cerca de la fuente." },
+    ],
+    en: [
+      { name: "the rare flower", hint: "It grows among the trees." },
+      { name: "the shiny stone", hint: "Hidden on the path." },
+      { name: "the blue feather", hint: "Near the fountain." },
+    ],
+  },
+  airport: {
+    es: [
+      { name: "el pasaporte perdido", hint: "Alguien lo dejó en una banca." },
+      { name: "la etiqueta de equipaje", hint: "Revisa los mostradores." },
+      { name: "el boleto dorado", hint: "Mira cerca de la entrada." },
+    ],
+    en: [
+      { name: "the lost passport", hint: "Someone left it on a bench." },
+      { name: "the luggage tag", hint: "Check the counters." },
+      { name: "the golden ticket", hint: "Look near the entrance." },
+    ],
+  },
+};
+
+function pickGatherItems(mapId, targetLang, count = 2) {
+  const pool = GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
+    GATHER_ITEMS_BY_MAP[mapId]?.es ||
+    GATHER_ITEMS_BY_MAP.park.es;
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.min(count, shuffled.length));
+}
+
+function placeGatherItems(items, mapWidth, mapHeight, npcs, playerStart) {
+  const occupied = new Set();
+  npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
+  occupied.add(`${playerStart.x},${playerStart.y}`);
+
+  return items.map((item) => {
+    let tx, ty;
+    let attempts = 0;
+    do {
+      tx = 2 + Math.floor(Math.random() * (mapWidth - 4));
+      ty = 2 + Math.floor(Math.random() * (mapHeight - 4));
+      attempts++;
+    } while (occupied.has(`${tx},${ty}`) && attempts < 50);
+    occupied.add(`${tx},${ty}`);
+    return { ...item, tx, ty };
+  });
+}
+
+function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
   const questionPool =
     questionsByLang?.[targetLang] || questionsByLang?.en || questionsByLang?.es || [];
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
-  const useSpanish = targetLang === "es";
+  const tl = targetLang;
 
-  const storySeed =
-    rawStorySeed ||
-    (useSpanish
-      ? "La campana del pueblo desapareció y nadie sabe quién la tomó."
-      : "The town bell disappeared and nobody knows who took it.");
+  const L = {
+    es: {
+      defaultSeed: "La campana del pueblo desapareció y nadie sabe quién la tomó.",
+      defaultIntro: (name) => `Comienza con ${name} y sigue las pistas para resolver el misterio.`,
+      actLabel: (name, n) => `${name} · acto ${n}`,
+      connectClue: (name, next) => `${name} conecta la pista anterior con ${next}.`,
+      defaultTopic: "las pistas del caso",
+      fallbackSpeech: "No alcancé a oírte bien. Inténtalo otra vez.",
+      heardPrefix: "Perfecto, escuché",
+      // NPC dialogue — all in target language now
+      npc0Greet: (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
+      npc0Choice1: "¿Qué pasó exactamente? Cuéntame todo.",
+      npc0Choice2: "Estoy listo para ayudar. ¿Por dónde empiezo?",
+      npc0Reply1: (topic) => `Todo empezó esta mañana. Escucha con atención: ${topic}`,
+      npc0Reply2: (topic) => `Gracias por ofrecerte. Primero, necesito que entiendas esto: ${topic}`,
+      npcSpeechPrompt: (topic) => `Ahora repite lo que entendiste sobre: ${topic}`,
+      // Player dialogue bridging NPCs
+      playerBridge: (fromNpc, toNpc) => `${fromNpc} me envió. Dice que tú sabes algo importante.`,
+      npcMidGreet: (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
+      npcMidChoice1: "Exacto. ¿Qué sabes tú sobre esto?",
+      npcMidChoice2: "Necesito más información para continuar.",
+      npcMidReply1: (topic) => `Escuché rumores. Presta atención: ${topic}`,
+      npcMidReply2: (topic) => `Claro, aquí está lo que sé: ${topic}`,
+      npcHandoff: (nextNpc, detail) => `Ve con ${nextNpc}. ${detail}`,
+      npcFinalGreet: (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
+      npcFinalChoice1: "Terminemos con esto. ¿Qué falta?",
+      npcFinalChoice2: "¿Cuál es el último paso?",
+      npcFinalReply1: (topic) => `Solo queda una cosa. Escucha bien: ${topic}`,
+      npcFinalReply2: (topic) => `Casi terminamos. Confirma que entiendes: ${topic}`,
+      questComplete: "¡Misión cumplida! Has resuelto el misterio.",
+      // Gather quest
+      gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar.`,
+      gatherHint: (hint) => `Una pista: ${hint}`,
+      gatherReturn: (itemName) => `¡Encontraste ${itemName}! Tráemelo de vuelta.`,
+      gatherSuccess: (itemName) => `¡Excelente! Tienes ${itemName}. Eso me ayuda mucho.`,
+      gatherPlayerReport: (itemName) => `Encontré ${itemName}. Aquí está.`,
+    },
+    en: {
+      defaultSeed: "The town bell disappeared and nobody knows who took it.",
+      defaultIntro: (name) => `Start with ${name} and follow the clues to solve the mystery.`,
+      actLabel: (name, n) => `${name} · act ${n}`,
+      connectClue: (name, next) => `${name} connects the previous clue to ${next}.`,
+      defaultTopic: "the case clues",
+      fallbackSpeech: "I couldn't hear you clearly. Try again.",
+      heardPrefix: "Perfect, I heard",
+      npc0Greet: (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
+      npc0Choice1: "What exactly happened? Tell me everything.",
+      npc0Choice2: "I'm ready to help. Where do I start?",
+      npc0Reply1: (topic) => `It all started this morning. Listen carefully: ${topic}`,
+      npc0Reply2: (topic) => `Thanks for volunteering. First, you need to understand this: ${topic}`,
+      npcSpeechPrompt: (topic) => `Now repeat what you understood about: ${topic}`,
+      playerBridge: (fromNpc, toNpc) => `${fromNpc} sent me. They say you know something important.`,
+      npcMidGreet: (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
+      npcMidChoice1: "Exactly. What do you know about this?",
+      npcMidChoice2: "I need more information to continue.",
+      npcMidReply1: (topic) => `I've heard rumors. Pay attention: ${topic}`,
+      npcMidReply2: (topic) => `Sure, here's what I know: ${topic}`,
+      npcHandoff: (nextNpc, detail) => `Go find ${nextNpc}. ${detail}`,
+      npcFinalGreet: (fromNpc) => `You arrived just in time! ${fromNpc} told me you were coming.`,
+      npcFinalChoice1: "Let's finish this. What's left?",
+      npcFinalChoice2: "What's the last step?",
+      npcFinalReply1: (topic) => `Just one thing left. Listen closely: ${topic}`,
+      npcFinalReply2: (topic) => `We're almost done. Confirm you understand: ${topic}`,
+      questComplete: "Quest complete! You solved the mystery.",
+      gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here.`,
+      gatherHint: (hint) => `A clue: ${hint}`,
+      gatherReturn: (itemName) => `You found ${itemName}! Bring it back to me.`,
+      gatherSuccess: (itemName) => `Excellent! You have ${itemName}. That helps a lot.`,
+      gatherPlayerReport: (itemName) => `I found ${itemName}. Here it is.`,
+    },
+  };
+
+  const t = L[tl] || L.es;
+
+  const storySeed = rawStorySeed || t.defaultSeed;
   const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
   const intro =
     String(rawQuest?.intro || "").trim() ||
-    (useSpanish
-      ? `Comienza con ${npcs[startNpcIdx]?.name || "la guía"} y sigue las pistas para resolver el misterio.`
-      : `Start with ${npcs[startNpcIdx]?.name || "the guide"} and follow the clues to solve the mystery.`);
+    t.defaultIntro(npcs[startNpcIdx]?.name || "NPC");
 
   const topicAt = (idx, fallback) => {
     const q = questionPool[idx % Math.max(1, questionPool.length)];
     return String(q?.prompt || fallback);
   };
 
+  // Pick gather items for the middle NPC's gather quest
+  const gatherItems = pickGatherItems(mapId, tl, 2);
+
   const treeByNpc = npcs.map((npc, npcIdx) => {
     const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
     const nextNpc = npcs[(npcIdx + 1) % npcs.length];
-    const topic = topicAt(npcIdx, useSpanish ? "las pistas del caso" : "the case clues");
+    const topic = topicAt(npcIdx, t.defaultTopic);
+    const isFirst = npcIdx === 0;
+    const isLast = npcIdx === npcs.length - 1;
+    const isMid = !isFirst && !isLast;
 
-    const node1Id = `npc-${npcIdx}-node-1`;
-    const node2Id = `npc-${npcIdx}-node-2`;
-    const node3Id = `npc-${npcIdx}-node-3`;
+    const nodeId = (n) => `npc-${npcIdx}-node-${n}`;
 
-    return {
-      npcIdx,
-      title:
-        useSpanish
-          ? `${npc.name} · acto ${npcIdx + 1}`
-          : `${npc.name} · act ${npcIdx + 1}`,
-      intro:
-        useSpanish
-          ? `${npc.name} conecta la pista anterior con ${nextNpc.name}.`
-          : `${npc.name} connects the previous clue to ${nextNpc.name}.`,
-      nodes: [
+    // Build nodes depending on NPC position in the quest
+    let nodes;
+
+    if (isFirst) {
+      // NPC 0: story introduction, speech practice, handoff to NPC 1
+      nodes = [
         {
-          id: node1Id,
-          npcLine: sanitizeDialogueLine(
-            useSpanish
-              ? `Hola. ${previousNpc.name} dijo que podrías ayudar.`
-              : `Hello. ${previousNpc.name} said you could help.`,
-            npc.name,
-          ),
+          id: nodeId(1),
+          npcLine: sanitizeDialogueLine(t.npc0Greet(storySeed), npc.name),
           responseMode: "choice",
           choices: [
             {
-              text: useSpanish ? "Cuenta conmigo, ¿qué necesitas?" : "I'm in. What do you need?",
-              npcReply:
-                useSpanish
-                  ? `Gracias. Escucha: ${topic}.`
-                  : `Thanks. Listen: ${topic}.`,
-              nextNodeId: node2Id,
+              text: t.npc0Choice1,
+              npcReply: t.npc0Reply1(topic),
+              nextNodeId: nodeId(2),
             },
             {
-              text:
-                useSpanish
-                  ? "Suena ridículo, pero quiero oír la historia completa."
-                  : "This sounds ridiculous, but I want the full story.",
-              npcReply:
-                useSpanish
-                  ? `Suena raro, sí, pero es urgente. ${topic}.`
-                  : `It sounds weird, yes, but it's urgent. ${topic}.`,
-              nextNodeId: node2Id,
+              text: t.npc0Choice2,
+              npcReply: t.npc0Reply2(topic),
+              nextNodeId: nodeId(2),
             },
           ],
         },
         {
-          id: node2Id,
-          npcLine: sanitizeDialogueLine(
-            useSpanish
-              ? `Suena bien. ${topic}`
-              : `Sounds good. ${topic}`,
-            npc.name,
-          ),
+          id: nodeId(2),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
           responseMode: "speech",
-          speechFallbackReply:
-            useSpanish
-              ? "No alcancé a oírte bien. Inténtalo otra vez."
-              : "I couldn't hear you clearly. Try again.",
-          nextNodeId: node3Id,
+          speechFallbackReply: t.fallbackSpeech,
+          nextNodeId: nodeId(3),
         },
         {
-          id: node3Id,
+          id: nodeId(3),
+          npcLine: sanitizeDialogueLine(t.npcHandoff(nextNpc.name, storySeed), npc.name),
+          responseMode: "none",
+          terminal: true,
+          // Player dialogue to show when approaching the next NPC
+          playerBridge: t.playerBridge(npc.name, nextNpc.name),
+        },
+      ];
+    } else if (isMid) {
+      // Middle NPC: gather quest — player must find items then return
+      const gatherItem = gatherItems[0] || { name: t.defaultTopic, hint: "" };
+      nodes = [
+        {
+          id: nodeId(1),
+          // Player arrives and speaks first (bridge from previous NPC)
+          playerLine: t.playerBridge(previousNpc.name, npc.name),
+          npcLine: sanitizeDialogueLine(t.npcMidGreet(previousNpc.name), npc.name),
+          responseMode: "choice",
+          choices: [
+            {
+              text: t.npcMidChoice1,
+              npcReply: t.npcMidReply1(topic),
+              nextNodeId: nodeId(2),
+            },
+            {
+              text: t.npcMidChoice2,
+              npcReply: t.npcMidReply2(topic),
+              nextNodeId: nodeId(2),
+            },
+          ],
+        },
+        {
+          id: nodeId(2),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
+          responseMode: "speech",
+          speechFallbackReply: t.fallbackSpeech,
+          nextNodeId: nodeId(3),
+        },
+        {
+          id: nodeId(3),
           npcLine: sanitizeDialogueLine(
-            useSpanish
-              ? `Perfecto. Ahora habla con ${nextNpc.name}. ${storySeed}`
-              : `Perfect. Now talk to ${nextNpc.name}. ${storySeed}`,
+            `${t.gatherIntro(gatherItem.name)} ${t.gatherHint(gatherItem.hint)}`,
+            npc.name,
+          ),
+          responseMode: "gather",
+          gatherItem,
+          nextNodeId: nodeId(4),
+        },
+        {
+          id: nodeId(4),
+          playerLine: t.gatherPlayerReport(gatherItem.name),
+          npcLine: sanitizeDialogueLine(
+            `${t.gatherSuccess(gatherItem.name)} ${t.npcHandoff(nextNpc.name, storySeed)}`,
             npc.name,
           ),
           responseMode: "none",
           terminal: true,
+          playerBridge: t.playerBridge(npc.name, nextNpc.name),
         },
-      ],
+      ];
+    } else {
+      // Last NPC: conclusion
+      nodes = [
+        {
+          id: nodeId(1),
+          playerLine: t.playerBridge(previousNpc.name, npc.name),
+          npcLine: sanitizeDialogueLine(t.npcFinalGreet(previousNpc.name), npc.name),
+          responseMode: "choice",
+          choices: [
+            {
+              text: t.npcFinalChoice1,
+              npcReply: t.npcFinalReply1(topic),
+              nextNodeId: nodeId(2),
+            },
+            {
+              text: t.npcFinalChoice2,
+              npcReply: t.npcFinalReply2(topic),
+              nextNodeId: nodeId(2),
+            },
+          ],
+        },
+        {
+          id: nodeId(2),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
+          responseMode: "speech",
+          speechFallbackReply: t.fallbackSpeech,
+          nextNodeId: nodeId(3),
+        },
+        {
+          id: nodeId(3),
+          npcLine: sanitizeDialogueLine(t.questComplete, npc.name),
+          responseMode: "none",
+          terminal: true,
+        },
+      ];
+    }
+
+    return {
+      npcIdx,
+      title: t.actLabel(npc.name, npcIdx + 1),
+      intro: t.connectClue(npc.name, nextNpc.name),
+      nodes,
     };
   });
 
@@ -256,6 +458,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     storySeed,
     startNpcIdx,
     treeByNpc,
+    gatherItems,
   };
 }
 
@@ -308,7 +511,7 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     },
     npcs,
     questions: questionsByLang,
-    quest: normalizeQuest(null, npcs, questionsByLang, supportLang, targetLang),
+    quest: normalizeQuest(null, npcs, questionsByLang, supportLang, targetLang, mapId),
     greetings: {
       en: ["Generating scenario unavailable; using safe fallback."],
       es: ["Generación no disponible; usando respaldo."],
@@ -346,8 +549,8 @@ Required JSON shape:
     {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
   ],
   "quest": {
-    "intro": "one sentence",
-    "storySeed": "one sentence",
+    "intro": "one sentence in TARGET language",
+    "storySeed": "one dramatic sentence in TARGET language describing the main mystery",
     "startNpcIdx": 0-2
   },
   "greetings": {
@@ -440,7 +643,7 @@ function withQuest(scenario, raw, supportLang, targetLang) {
   const questionsByLang = scenario.questions;
   return {
     ...scenario,
-    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang, targetLang),
+    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang, targetLang, scenario.id),
   };
 }
 
