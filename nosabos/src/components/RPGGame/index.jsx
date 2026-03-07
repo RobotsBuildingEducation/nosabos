@@ -1921,6 +1921,54 @@ export default function RPGGame() {
     }, 300);
   };
 
+  // Return an item from inventory back to the map near the player
+  const returnItemToMap = (itemName) => {
+    const gs = gameStateRef.current;
+    if (!gs || !scenario) return;
+    const sprite = gatherSpritesRef.current.find(
+      (s) => s.name === itemName && s.collected,
+    );
+    if (!sprite) return;
+    const MAP_W = scenario.mapWidth;
+    const MAP_H = scenario.mapHeight;
+    const TILE = scenario.tileSize;
+    const offsets = [
+      [1, 0], [-1, 0], [0, 1], [0, -1],
+      [1, 1], [-1, -1], [1, -1], [-1, 1],
+    ];
+    let dropX = gs.playerX;
+    let dropY = gs.playerY;
+    for (const [dx, dy] of offsets) {
+      const nx = gs.playerX + dx;
+      const ny = gs.playerY + dy;
+      if (nx >= 1 && nx < MAP_W - 1 && ny >= 1 && ny < MAP_H - 1) {
+        dropX = nx;
+        dropY = ny;
+        break;
+      }
+    }
+    sprite.tx = dropX;
+    sprite.ty = dropY;
+    sprite.collected = false;
+    sprite.mesh.position.set(
+      dropX * TILE + TILE / 2,
+      (MAP_H - 1 - dropY) * TILE + TILE / 2,
+      3,
+    );
+    sprite.mesh.visible = gatherUnlocked;
+  };
+
+  const dropInventoryItem = (itemIndex) => {
+    const droppedItem = inventory[itemIndex];
+    if (!droppedItem) return;
+    setInventory((prev) => {
+      const copy = [...prev];
+      copy.splice(itemIndex, 1);
+      return copy;
+    });
+    returnItemToMap(droppedItem.name);
+  };
+
   const handleGatherSubmit = (itemIndex) => {
     if (!dialogue?.node || dialogue.node.responseMode !== "gather") return;
     const submittedItem = inventory[itemIndex];
@@ -1943,43 +1991,7 @@ export default function RPGGame() {
         : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
       speakNPCText(wrongText);
-
-      // Return the item sprite to an adjacent tile so it can be picked up again
-      const gs = gameStateRef.current;
-      if (gs) {
-        const sprite = gatherSpritesRef.current.find(
-          (s) => s.name === submittedItem.name && s.collected,
-        );
-        if (sprite) {
-          const MAP_W = scenario.mapWidth;
-          const MAP_H = scenario.mapHeight;
-          const TILE = scenario.tileSize;
-          const offsets = [
-            [1, 0], [-1, 0], [0, 1], [0, -1],
-            [1, 1], [-1, -1], [1, -1], [-1, 1],
-          ];
-          let dropX = gs.playerX;
-          let dropY = gs.playerY;
-          for (const [dx, dy] of offsets) {
-            const nx = gs.playerX + dx;
-            const ny = gs.playerY + dy;
-            if (nx >= 1 && nx < MAP_W - 1 && ny >= 1 && ny < MAP_H - 1) {
-              dropX = nx;
-              dropY = ny;
-              break;
-            }
-          }
-          sprite.tx = dropX;
-          sprite.ty = dropY;
-          sprite.collected = false;
-          sprite.mesh.position.set(
-            dropX * TILE + TILE / 2,
-            (MAP_H - 1 - dropY) * TILE + TILE / 2,
-            3,
-          );
-          sprite.mesh.visible = true;
-        }
-      }
+      returnItemToMap(submittedItem.name);
       return;
     }
 
@@ -2384,13 +2396,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       size="xs"
                       colorScheme="red"
                       variant="ghost"
-                      onClick={() => {
-                        setInventory((prev) => {
-                          const copy = [...prev];
-                          copy.splice(idx, 1);
-                          return copy;
-                        });
-                      }}
+                      onClick={() => dropInventoryItem(idx)}
                     >
                       {targetLang === "es" ? "Soltar" : "Drop"}
                     </Button>
