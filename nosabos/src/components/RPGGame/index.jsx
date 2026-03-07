@@ -2801,8 +2801,8 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 <HStack
                   align="center"
                   spacing={2}
-                  px={3}
-                  py={2}
+                  px={2}
+                  py={1}
                   pr={8}
                   bg="orange.50"
                   borderBottom="1px solid"
