@@ -1067,8 +1067,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     playSound(submitActionSound);
     setErr("");
     setStatus("connecting");
-    setUiState("thinking");
-    setMood("thoughtful");
+    setUiState("listening");
+    setMood("happy");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
