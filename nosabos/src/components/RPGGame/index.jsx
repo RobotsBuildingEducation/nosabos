@@ -2487,14 +2487,13 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       // Log the NPC's response
       conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
 
-      setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
-
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
         (n) => n.id === nextNodeId,
       );
 
       if (!nextNode) {
+        setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
         speakNPCText(dynamicReply);
         return;
       }
