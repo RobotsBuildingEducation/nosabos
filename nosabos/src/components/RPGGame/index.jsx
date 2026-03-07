@@ -25,6 +25,9 @@ import {
   ModalBody,
   ModalCloseButton,
   useDisclosure,
+  Tooltip,
+  Image,
+  SimpleGrid,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -49,10 +52,12 @@ import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
 
-// ─── Pixel-art drawing for gather-quest items (16×16 canvas) ──────────────
+// ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
+const GATHER_SPRITE_SIZE = 32;
 function drawGatherItemSprite(ctx, spriteId) {
-  const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
-  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+  const S = 2; // scale factor
+  const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, S, S); };
+  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, w * S, h * S); };
 
   switch (spriteId) {
     // ── Living Room items ───────────────────────────
@@ -611,6 +616,7 @@ export default function RPGGame() {
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [inventory, setInventory] = useState([]);
+  const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
   const inventoryModal = useDisclosure();
@@ -990,6 +996,41 @@ export default function RPGGame() {
     },
     [playSound, warmupAudio],
   );
+
+  // Generate a data URL for a gather item sprite (for UI display)
+  const getItemSpriteDataURL = useCallback((spriteId) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = GATHER_SPRITE_SIZE;
+    canvas.height = GATHER_SPRITE_SIZE;
+    const ctx = canvas.getContext("2d");
+    drawGatherItemSprite(ctx, spriteId || "default");
+    return canvas.toDataURL();
+  }, []);
+
+  // Show a quick toast when picking up an item
+  const showPickupToast = useCallback((itemName) => {
+    toast({
+      duration: 1500,
+      isClosable: false,
+      position: "bottom",
+      render: () => (
+        <HStack
+          bg="gray.800"
+          border="1px solid"
+          borderColor="yellow.400"
+          borderRadius="lg"
+          px={3}
+          py={2}
+          spacing={2}
+          justify="center"
+          boxShadow="0 0 12px rgba(236,201,75,0.3)"
+        >
+          <Text color="yellow.300" fontSize="sm" fontWeight="bold">+</Text>
+          <Text color="white" fontSize="sm">{itemName}</Text>
+        </HStack>
+      ),
+    });
+  }, [toast]);
 
   const getDialogueCharacterForNPC = useCallback((npcIdx) => {
     const existingCharacter = npcDialogueCharactersRef.current.get(npcIdx);
@@ -1615,15 +1656,15 @@ export default function RPGGame() {
 
         // Create illustrated pixel-art sprite for each item
         const canvas = document.createElement("canvas");
-        canvas.width = 16;
-        canvas.height = 16;
+        canvas.width = GATHER_SPRITE_SIZE;
+        canvas.height = GATHER_SPRITE_SIZE;
         const ctx = canvas.getContext("2d");
         drawGatherItemSprite(ctx, item.sprite || "default");
 
         const itemTex = new THREE.CanvasTexture(canvas);
         itemTex.magFilter = THREE.NearestFilter;
         itemTex.minFilter = THREE.NearestFilter;
-        const itemGeo = new THREE.PlaneGeometry(TILE * 0.5, TILE * 0.5);
+        const itemGeo = new THREE.PlaneGeometry(TILE * 0.85, TILE * 0.85);
         const itemMat = new THREE.MeshBasicMaterial({
           map: itemTex,
           transparent: true,
@@ -1746,8 +1787,9 @@ export default function RPGGame() {
         if (gs.playerX === item.tx && gs.playerY === item.ty) {
           item.collected = true;
           item.mesh.visible = false;
-          setInventory((prev) => [...prev, { name: item.name, isCorrect: item.isCorrect }]);
+          setInventory((prev) => [...prev, { name: item.name, isCorrect: item.isCorrect, sprite: item.sprite || "default" }]);
           playGameSound("rpgDialogueSelect");
+          showPickupToast(item.name);
         }
       });
 
@@ -2590,22 +2632,22 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
 
       {/* Quick actions */}
       {!gameComplete && (
-        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={2}>
+        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={3}>
           <IconButton
             aria-label="Inventory"
             icon={
               <Box position="relative">
-                <Text as="span" fontSize="lg">🎒</Text>
+                <Text as="span" fontSize="xl">🎒</Text>
                 {inventory.length > 0 && (
                   <Badge
                     position="absolute"
                     top="-6px"
-                    right="-8px"
+                    right="-10px"
                     colorScheme="yellow"
                     borderRadius="full"
-                    fontSize="9px"
-                    minW="16px"
-                    h="16px"
+                    fontSize="10px"
+                    minW="18px"
+                    h="18px"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -2615,15 +2657,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 )}
               </Box>
             }
-            size="sm"
+            size="md"
             variant="solid"
             colorScheme="blackAlpha"
             onClick={inventoryModal.onOpen}
           />
           <IconButton
             aria-label={supportLang === "es" ? "Ayuda" : "Help"}
-            icon={<MdOutlineSupportAgent size={16} />}
-            size="sm"
+            icon={<MdOutlineSupportAgent size={20} />}
+            size="md"
             variant="solid"
             bg="white"
             color="blue.600"
@@ -2645,7 +2687,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       />
 
       {/* Inventory modal */}
-      <Modal isOpen={inventoryModal.isOpen} onClose={inventoryModal.onClose} isCentered size="sm">
+      <Modal
+        isOpen={inventoryModal.isOpen}
+        onClose={() => { inventoryModal.onClose(); setSelectedInvItem(null); }}
+        isCentered
+        size="sm"
+      >
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg="gray.900" border="2px solid" borderColor="yellow.400" borderRadius="xl">
           <ModalHeader color="yellow.300" fontSize="md" pb={1}>
@@ -2658,30 +2705,59 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 {targetLang === "es" ? "No tienes objetos." : "No items yet."}
               </Text>
             ) : (
-              <VStack spacing={2} align="stretch">
-                {inventory.map((item, idx) => (
+              <VStack spacing={3} align="stretch">
+                <SimpleGrid columns={4} spacing={3}>
+                  {inventory.map((item, idx) => (
+                    <VStack
+                      key={`${item.name}-${idx}`}
+                      spacing={0}
+                      cursor="pointer"
+                      onClick={() => setSelectedInvItem(selectedInvItem === idx ? null : idx)}
+                      bg={selectedInvItem === idx ? "whiteAlpha.200" : "whiteAlpha.50"}
+                      borderRadius="lg"
+                      border="2px solid"
+                      borderColor={selectedInvItem === idx ? "yellow.400" : "transparent"}
+                      p={2}
+                      transition="all 0.15s"
+                      _hover={{ bg: "whiteAlpha.200" }}
+                    >
+                      <Image
+                        src={getItemSpriteDataURL(item.sprite)}
+                        alt={item.name}
+                        w="48px"
+                        h="48px"
+                        imageRendering="pixelated"
+                      />
+                    </VStack>
+                  ))}
+                </SimpleGrid>
+                {selectedInvItem !== null && inventory[selectedInvItem] && (
                   <HStack
-                    key={`${item.name}-${idx}`}
                     bg="whiteAlpha.100"
-                    borderRadius="md"
+                    borderRadius="lg"
                     px={3}
                     py={2}
                     justify="space-between"
+                    border="1px solid"
+                    borderColor="whiteAlpha.200"
                   >
-                    <HStack spacing={2}>
-                      <Text fontSize="sm">{item.isCorrect ? "◆" : "◇"}</Text>
-                      <Text color="white" fontSize="sm">{item.name}</Text>
-                    </HStack>
+                    <Text color="white" fontSize="sm" fontWeight="medium">
+                      {inventory[selectedInvItem].name}
+                    </Text>
                     <Button
                       size="xs"
                       colorScheme="red"
                       variant="ghost"
-                      onClick={() => dropInventoryItem(idx)}
+                      onClick={() => {
+                        const idx = selectedInvItem;
+                        setSelectedInvItem(null);
+                        dropInventoryItem(idx);
+                      }}
                     >
                       {targetLang === "es" ? "Soltar" : "Drop"}
                     </Button>
                   </HStack>
-                ))}
+                )}
               </VStack>
             )}
           </ModalBody>
@@ -2802,15 +2878,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   align="center"
                   spacing={2}
                   px={2}
-                  py={1}
+                  py={0}
                   pr={8}
                   bg="orange.50"
                   borderBottom="1px solid"
                   borderColor="orange.100"
                 >
-                  <Box>
+                  <Box flexShrink={0}>
                     <RandomCharacter
-                      width="42px"
+                      width="36px"
                       notSoRandomCharacter={dialogue.npcCharacter}
                     />{" "}
                   </Box>
@@ -2829,7 +2905,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   )}
                 </HStack>
 
-                <VStack align="stretch" spacing={2} px={3} py={2}>
+                <VStack align="stretch" spacing={2} px={3} py={1}>
                   <HStack justify="flex-end">
                     <IconButton
                       aria-label={
