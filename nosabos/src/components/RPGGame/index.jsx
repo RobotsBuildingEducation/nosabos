@@ -599,7 +599,7 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
   if (!text) return null;
 
   return (
-    <Text {...textProps}>
+    <Text {...textProps} whiteSpace="pre-wrap">
       {text.split("").map((ch, i) => (
         <span
           key={`${i}-${ch}`}
@@ -2249,15 +2249,19 @@ export default function RPGGame() {
     }
 
     setTimeout(() => {
+      let reply = selected.npcReply || "";
+      // When transitioning into a gather or non-speech node with a reply,
+      // append the node's instructions so the player knows what to do
+      if (reply && nextNode.npcLine && nextNode.responseMode !== "speech") {
+        reply = `${reply}\n\n${nextNode.npcLine}`;
+      }
       setDialogue((prev) => ({
         ...prev,
         node: nextNode,
-        npcReply: selected.npcReply || "",
+        npcReply: reply,
       }));
       const transitionLine =
-        nextNode.responseMode === "speech" && selected.npcReply
-          ? selected.npcReply
-          : nextNode.npcLine || nextNode.prompt || "";
+        reply || nextNode.npcLine || nextNode.prompt || "";
       speakNPCText(transitionLine);
     }, 300);
   };
@@ -2436,9 +2440,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
       }));
       // Advance to next node but keep the custom reply visible
-      // so default story text doesn't replace it
+      // For gather/non-speech nodes, append the node's instructions
       setTimeout(() => {
-        setDialogue((prev) => ({ ...prev, node: nextNode }));
+        setDialogue((prev) => {
+          let reply = prev.npcReply || "";
+          if (reply && nextNode.npcLine && nextNode.responseMode !== "speech") {
+            reply = `${reply}\n\n${nextNode.npcLine}`;
+          }
+          return { ...prev, node: nextNode, npcReply: reply };
+        });
       }, 300);
     },
   });
@@ -2963,9 +2973,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     />
                   </HStack>
 
-                {!(
-                  dialogue.node?.responseMode === "speech" && dialogue.npcReply
-                ) && (
+                {!dialogue.npcReply && (
                   <AnimatedText
                     text={
                       dialogue.node?.npcLine ||
