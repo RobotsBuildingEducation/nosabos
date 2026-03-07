@@ -1186,6 +1186,7 @@ export default function RPGGame() {
 
   const handleSelectScenario = useCallback(
     async (mapId) => {
+      playGameSound("select");
       setLoadingScenarioId(mapId);
       setScenarioId(mapId);
       setDialogue(null);
