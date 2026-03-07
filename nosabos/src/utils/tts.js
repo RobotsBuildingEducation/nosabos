@@ -442,7 +442,63 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   };
   audio._ttsCleanup = cleanupFn;
 
-  return { audio, audioUrl: null, ready, finalize, cleanup: cleanupFn };
+  const waitForUserGesture = () =>
+    new Promise((resolve) => {
+      const unlock = () => {
+        window.removeEventListener("touchstart", unlock);
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("click", unlock);
+        resolve();
+      };
+      window.addEventListener("touchstart", unlock, {
+        passive: true,
+        once: true,
+      });
+      window.addEventListener("pointerdown", unlock, {
+        passive: true,
+        once: true,
+      });
+      window.addEventListener("click", unlock, { once: true });
+    });
+
+  const startPlayback = async () => {
+    await ready;
+    try {
+      await audio.play();
+    } catch (err) {
+      const blockedByGesture =
+        err?.name === "NotAllowedError" ||
+        /gesture|user/i.test(String(err?.message || ""));
+      if (!blockedByGesture || typeof window === "undefined") {
+        throw err;
+      }
+
+      // Mobile browsers may block autoplay after speech capture; retry on next tap.
+      await waitForUserGesture();
+      await audio.play();
+    }
+  };
+
+  const done = startPlayback().then(() => finalize);
+
+  const stop = () => {
+    try {
+      audio.pause();
+    } catch {}
+    cleanupFn();
+  };
+
+  return {
+    audio,
+    pc,
+    audioUrl: null,
+    ready,
+    finalize,
+    done,
+    play: () => done,
+    stop,
+    cleanup: cleanupFn,
+  };
 }
 
 /**
