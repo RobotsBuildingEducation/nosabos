@@ -2377,6 +2377,9 @@ export default function RPGGame() {
   } = useSpeechPractice({
     targetText: dialogue?.node?.npcLine || "",
     targetLang,
+    serverSilenceMs: 600,
+    finalTranscriptWaitMs: 300,
+    postSpeechStopWaitMs: 250,
     onResult: async ({ recognizedText }) => {
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);

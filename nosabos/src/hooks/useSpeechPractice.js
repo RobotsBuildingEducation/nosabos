@@ -39,6 +39,9 @@ export function useSpeechPractice({
   targetLang = "es",
   onResult,
   timeoutMs = 15000,
+  serverSilenceMs = 700,
+  finalTranscriptWaitMs = 350,
+  postSpeechStopWaitMs = 350,
 } = {}) {
   const pcRef = useRef(null);
   const dcRef = useRef(null);
@@ -209,7 +212,7 @@ export function useSpeechPractice({
               modalities: ["audio", "text"], // Need audio to process incoming speech
               turn_detection: {
                 type: "server_vad",
-                silence_duration_ms: Math.min(timeoutMs, 2000), // End after silence
+                silence_duration_ms: Math.max(300, Math.min(serverSilenceMs, 2000)), // End after silence
                 threshold: 0.35,
                 prefix_padding_ms: 120,
               },
@@ -247,7 +250,7 @@ export function useSpeechPractice({
               // Start silence detection - wait for no more speech
               evalRef.current.silenceTimeoutId = setTimeout(() => {
                 finishRecording();
-              }, timeoutMs);
+              }, finalTranscriptWaitMs);
             }
           }
 
@@ -266,7 +269,7 @@ export function useSpeechPractice({
               // Give a bit of time for the final transcription to come through
               evalRef.current.silenceTimeoutId = setTimeout(() => {
                 finishRecording();
-              }, 1500);
+              }, postSpeechStopWaitMs);
             }
           }
 
@@ -277,7 +280,7 @@ export function useSpeechPractice({
               if (!evalRef.current.speechDone) {
                 finishRecording();
               }
-            }, 500);
+            }, Math.max(150, finalTranscriptWaitMs));
           }
 
           // Handle errors
@@ -359,7 +362,17 @@ export function useSpeechPractice({
         err?.message || "Failed to connect to realtime API"
       );
     }
-  }, [report, targetLang, targetText, timeoutMs, onResult, cleanup]);
+  }, [
+    report,
+    targetLang,
+    targetText,
+    timeoutMs,
+    serverSilenceMs,
+    finalTranscriptWaitMs,
+    postSpeechStopWaitMs,
+    onResult,
+    cleanup,
+  ]);
 
   const stopRecording = useCallback(() => {
     if (!evalRef.current.inProgress) return;

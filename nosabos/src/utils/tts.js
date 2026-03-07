@@ -274,9 +274,7 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });
 
-  // Track when audio playback has actually started (play() resolved)
   let audioStarted = false;
-  let audioEnded = false;
   audio.addEventListener(
     "playing",
     () => {
@@ -299,10 +297,7 @@ async function getRealtimePlayer({ text, voice, langTag }) {
 
   const dc = pc.createDataChannel("oai-events");
 
-  // Track when we're intentionally ending to prevent spurious error events
   let intentionalEnd = false;
-
-  // Track when response is done via data channel messages
   let resolveFinalize;
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
@@ -314,21 +309,15 @@ async function getRealtimePlayer({ text, voice, langTag }) {
       }
     };
     audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout based on text length (minimum 15s, ~70ms per char + buffer)
-    // This is only a safety net - normal cleanup happens via response.done
     const fallbackTimeoutMs = Math.max(15000, text.length * 70 + 5000);
     setTimeout(resolve, fallbackTimeoutMs);
   }).finally(() => {
-    // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
-    audioEnded = true;
-    // Dispatch 'ended' event as fallback to ensure cleanup handlers fire
     try {
       if (audio.onended) {
         audio.dispatchEvent(new Event("ended"));
       }
     } catch {}
-    // Clear error handler first to prevent AbortError from firing
     try {
       audio.onerror = null;
     } catch {}
@@ -341,88 +330,79 @@ async function getRealtimePlayer({ text, voice, langTag }) {
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
-    // Note: Don't set audio.srcObject = null as it causes AbortError
-    // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done to know when speech synthesis is complete
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
         let pollCount = 0;
-        const maxPolls = 40; // Max 2 seconds of polling (40 * 50ms)
+        const maxPolls = 40;
         const checkAndFinalize = () => {
           pollCount++;
           if (audioStarted || pollCount >= maxPolls) {
-            // Audio has started or we've waited long enough, safe to dispatch ended and clean up
             try {
               audio.dispatchEvent(new Event("ended"));
             } catch {}
             resolveFinalize?.();
           } else {
-            // Audio hasn't started yet, wait a bit more
             setTimeout(checkAndFinalize, 50);
           }
         };
-        // Estimate audio duration based on text length
-        // Average TTS speaking rate is ~12-15 characters per second
-        // Use ~70ms per character as a safe estimate, minimum 1 second
         const estimatedDurationMs = Math.max(1000, text.length * 70);
-        // Give audio buffer time to play, then clean up
         setTimeout(checkAndFinalize, estimatedDurationMs);
       }
     } catch {}
   };
 
-  // Expose intentionalEnd flag on audio element for components to check
   audio._ttsIntentionalEnd = () => intentionalEnd;
 
+  let resolveDataChannelOpen;
+  const dataChannelOpen = new Promise((resolve) => {
+    resolveDataChannelOpen = resolve;
+  });
+
+  const sendNarrationPrompt = () => {
+    dc.send(
+      JSON.stringify({
+        type: "session.update",
+        session: {
+          modalities: ["audio", "text"],
+          output_audio_format: "pcm16",
+          voice: sanitizedVoice,
+          instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
+          turn_detection: null,
+        },
+      })
+    );
+    dc.send(
+      JSON.stringify({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
+            },
+          ],
+        },
+      })
+    );
+    dc.send(
+      JSON.stringify({
+        type: "response.create",
+        response: {
+          modalities: ["audio", "text"],
+        },
+      })
+    );
+  };
+
   dc.onopen = () => {
-    try {
-      // Configure session for narration/read-aloud mode
-      dc.send(
-        JSON.stringify({
-          type: "session.update",
-          session: {
-            modalities: ["audio", "text"],
-            output_audio_format: "pcm16",
-            voice: sanitizedVoice,
-            instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
-            turn_detection: null,
-          },
-        })
-      );
-      // Send text as content to narrate
-      dc.send(
-        JSON.stringify({
-          type: "conversation.item.create",
-          item: {
-            type: "message",
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
-              },
-            ],
-          },
-        })
-      );
-      dc.send(
-        JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["audio", "text"],
-          },
-        })
-      );
-    } catch (err) {
-      console.warn("Realtime prompt send failed", err);
-    }
+    resolveDataChannelOpen?.();
   };
 
   const offer = await pc.createOffer();
@@ -442,7 +422,97 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   };
   audio._ttsCleanup = cleanupFn;
 
-  return { audio, audioUrl: null, ready, finalize, cleanup: cleanupFn };
+  const waitForUserGesture = () =>
+    new Promise((resolve) => {
+      const unlock = () => {
+        window.removeEventListener("touchstart", unlock);
+        window.removeEventListener("pointerdown", unlock);
+        window.removeEventListener("click", unlock);
+        resolve();
+      };
+      window.addEventListener("touchstart", unlock, {
+        passive: true,
+        once: true,
+      });
+      window.addEventListener("pointerdown", unlock, {
+        passive: true,
+        once: true,
+      });
+      window.addEventListener("click", unlock, { once: true });
+    });
+
+  const startPlayback = async () => {
+    try {
+      await audio.play();
+      return;
+    } catch (err) {
+      const errMsg = String(err?.message || "");
+      const blockedByGesture =
+        err?.name === "NotAllowedError" || /gesture|user/i.test(errMsg);
+      const noBufferedSourceYet =
+        err?.name === "NotSupportedError" || /no supported sources?/i.test(errMsg);
+
+      if (blockedByGesture && typeof window !== "undefined") {
+        await waitForUserGesture();
+        await audio.play();
+        return;
+      }
+
+      if (noBufferedSourceYet) {
+        // No audio track yet; we'll retry once the remote stream starts.
+        return;
+      }
+
+      throw err;
+    }
+  };
+
+  let playPromise = null;
+  let promptSent = false;
+
+  const play = () => {
+    if (playPromise) return playPromise;
+
+    playPromise = (async () => {
+      // Try to unlock playback early to satisfy autoplay policies.
+      await startPlayback();
+
+      await dataChannelOpen;
+      if (!promptSent) {
+        promptSent = true;
+        sendNarrationPrompt();
+      }
+
+      // Ensure playback starts once we actually have an incoming track.
+      await ready;
+      await startPlayback();
+
+      await finalize;
+    })();
+
+    return playPromise;
+  };
+
+  const done = play();
+
+  const stop = () => {
+    try {
+      audio.pause();
+    } catch {}
+    cleanupFn();
+  };
+
+  return {
+    audio,
+    pc,
+    audioUrl: null,
+    ready,
+    finalize,
+    done,
+    play,
+    stop,
+    cleanup: cleanupFn,
+  };
 }
 
 /**
