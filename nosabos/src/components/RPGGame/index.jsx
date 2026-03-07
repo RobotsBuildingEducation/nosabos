@@ -577,6 +577,44 @@ const DIALOGUE_CHARACTER_POOLS = {
   "purple-girl": ["31", "39", "34"],
 };
 
+// ─── Animated text: fade-in per character ────────────────────────────────────
+function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const prevTextRef = useRef("");
+
+  useEffect(() => {
+    if (text !== prevTextRef.current) {
+      prevTextRef.current = text;
+      setVisibleCount(0);
+    }
+    if (!text) return;
+    if (visibleCount >= text.length) return;
+    const timer = setTimeout(
+      () => setVisibleCount((c) => c + 1),
+      charDelayMs,
+    );
+    return () => clearTimeout(timer);
+  }, [text, visibleCount, charDelayMs]);
+
+  if (!text) return null;
+
+  return (
+    <Text {...textProps} whiteSpace="pre-wrap">
+      {text.split("").map((ch, i) => (
+        <span
+          key={`${i}-${ch}`}
+          style={{
+            opacity: i < visibleCount ? 1 : 0,
+            transition: "opacity 0.12s ease-in",
+          }}
+        >
+          {ch}
+        </span>
+      ))}
+    </Text>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function RPGGame() {
   const canvasRef = useRef(null);
@@ -2211,15 +2249,19 @@ export default function RPGGame() {
     }
 
     setTimeout(() => {
+      let reply = selected.npcReply || "";
+      // When transitioning into a gather or non-speech node with a reply,
+      // append the node's instructions so the player knows what to do
+      if (reply && nextNode.npcLine && nextNode.responseMode !== "speech") {
+        reply = `${reply}\n\n${nextNode.npcLine}`;
+      }
       setDialogue((prev) => ({
         ...prev,
         node: nextNode,
-        npcReply: selected.npcReply || "",
+        npcReply: reply,
       }));
       const transitionLine =
-        nextNode.responseMode === "speech" && selected.npcReply
-          ? selected.npcReply
-          : nextNode.npcLine || nextNode.prompt || "";
+        reply || nextNode.npcLine || nextNode.prompt || "";
       speakNPCText(transitionLine);
     }, 300);
   };
@@ -2397,9 +2439,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         ...prev,
         nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
       }));
+      // Advance to next node but keep the custom reply visible
+      // For non-speech nodes, append instructions and speak the full text
       setTimeout(() => {
-        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
-        speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+        let fullReply = dynamicReply;
+        if (nextNode.npcLine && nextNode.responseMode !== "speech") {
+          fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
+        }
+        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: fullReply }));
+        speakNPCText(fullReply);
       }, 300);
     },
   });
@@ -2924,20 +2972,27 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     />
                   </HStack>
 
-                {!(
-                  dialogue.node?.responseMode === "speech" && dialogue.npcReply
-                ) && (
-                  <Text color="gray.800" fontSize="md" fontWeight="bold" m={0}>
-                    {dialogue.node?.npcLine ||
+                {!dialogue.npcReply && (
+                  <AnimatedText
+                    text={
+                      dialogue.node?.npcLine ||
                       dialogue.node?.prompt ||
-                      dialogue.question.prompt}
-                  </Text>
+                      dialogue.question.prompt
+                    }
+                    color="gray.800"
+                    fontSize="md"
+                    fontWeight="bold"
+                    m={0}
+                  />
                 )}
 
                 {!!dialogue.npcReply && (
-                  <Text color="orange.700" fontSize="sm" m={0}>
-                    {dialogue.npcReply}
-                  </Text>
+                  <AnimatedText
+                    text={dialogue.npcReply}
+                    color="orange.700"
+                    fontSize="sm"
+                    m={0}
+                  />
                 )}
 
                 {lastHeardSpeech &&
