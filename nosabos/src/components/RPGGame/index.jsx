@@ -1937,12 +1937,49 @@ export default function RPGGame() {
     });
 
     if (!submittedItem.isCorrect) {
-      // Wrong item — NPC tells you it's wrong
+      // Wrong item — NPC tells you it's wrong, drop item back near the player
       const wrongText = targetLang === "es"
         ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
         : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
       speakNPCText(wrongText);
+
+      // Return the item sprite to an adjacent tile so it can be picked up again
+      const gs = gameStateRef.current;
+      if (gs) {
+        const sprite = gatherSpritesRef.current.find(
+          (s) => s.name === submittedItem.name && s.collected,
+        );
+        if (sprite) {
+          const MAP_W = scenario.mapWidth;
+          const MAP_H = scenario.mapHeight;
+          const TILE = scenario.tileSize;
+          const offsets = [
+            [1, 0], [-1, 0], [0, 1], [0, -1],
+            [1, 1], [-1, -1], [1, -1], [-1, 1],
+          ];
+          let dropX = gs.playerX;
+          let dropY = gs.playerY;
+          for (const [dx, dy] of offsets) {
+            const nx = gs.playerX + dx;
+            const ny = gs.playerY + dy;
+            if (nx >= 1 && nx < MAP_W - 1 && ny >= 1 && ny < MAP_H - 1) {
+              dropX = nx;
+              dropY = ny;
+              break;
+            }
+          }
+          sprite.tx = dropX;
+          sprite.ty = dropY;
+          sprite.collected = false;
+          sprite.mesh.position.set(
+            dropX * TILE + TILE / 2,
+            (MAP_H - 1 - dropY) * TILE + TILE / 2,
+            3,
+          );
+          sprite.mesh.visible = true;
+        }
+      }
       return;
     }
 
