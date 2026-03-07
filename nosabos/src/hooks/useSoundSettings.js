@@ -120,8 +120,10 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
-    const ready = await soundManager.ensureContextRunning();
-    if (!ready) return;
+    // Try to ensure context is running, but still attempt to play even if
+    // resume fails — on mobile the context may resume mid-gesture and the
+    // sound can still fire.  Haptic feedback should always trigger.
+    await soundManager.ensureContextRunning();
 
     // Map legacy MP3 path to Tone.js sound name, or use direct name
     const soundName = SOUND_MAP.get(soundFileOrName) || soundFileOrName;

@@ -32,6 +32,7 @@ import {
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import * as Tone from "tone";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
 import {
@@ -1223,6 +1224,9 @@ export default function RPGGame() {
 
   useEffect(() => {
     const unlockAudio = () => {
+      // Call Tone.start() synchronously inside the user gesture so the
+      // browser treats it as user-initiated (required on iOS / mobile).
+      Tone.start();
       void warmupAudio();
     };
 
@@ -2521,9 +2525,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         alignItems="center"
         justifyContent="center"
         onPointerDownCapture={() => {
+          Tone.start();
           void warmupAudio();
         }}
         onTouchStartCapture={() => {
+          Tone.start();
           void warmupAudio();
         }}
       >
@@ -2603,9 +2609,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         alignItems="center"
         justifyContent="center"
         onPointerDownCapture={() => {
+          Tone.start();
           void warmupAudio();
         }}
         onTouchStartCapture={() => {
+          Tone.start();
           void warmupAudio();
         }}
       >
@@ -2629,9 +2637,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       overflow="hidden"
       userSelect="none"
       onPointerDownCapture={() => {
+        Tone.start();
         void warmupAudio();
       }}
       onTouchStartCapture={() => {
+        Tone.start();
         void warmupAudio();
       }}
     >
