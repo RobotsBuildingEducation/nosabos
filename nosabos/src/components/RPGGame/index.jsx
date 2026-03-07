@@ -579,7 +579,7 @@ const DIALOGUE_CHARACTER_POOLS = {
 };
 
 // ─── Animated text: fade-in per character ────────────────────────────────────
-function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
+function AnimatedText({ text, charDelayMs = 18, isPaused = false, ...textProps }) {
   const [visibleCount, setVisibleCount] = useState(0);
   const prevTextRef = useRef("");
 
@@ -590,12 +590,13 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
     }
     if (!text) return;
     if (visibleCount >= text.length) return;
+    if (isPaused) return;
     const timer = setTimeout(
       () => setVisibleCount((c) => c + 1),
       charDelayMs,
     );
     return () => clearTimeout(timer);
-  }, [text, visibleCount, charDelayMs]);
+  }, [text, visibleCount, charDelayMs, isPaused]);
 
   if (!text) return null;
 
@@ -664,6 +665,9 @@ export default function RPGGame() {
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
+  const speechStartTimeoutRef = useRef(null);
+  const ttsRequestIdRef = useRef(0);
+  const [isNPCSpeechPending, setIsNPCSpeechPending] = useState(false);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
 
@@ -1158,8 +1162,28 @@ export default function RPGGame() {
   }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
+    if (speechStartTimeoutRef.current) {
+      clearTimeout(speechStartTimeoutRef.current);
+      speechStartTimeoutRef.current = null;
+    }
+    setIsNPCSpeechPending(false);
+
+    const activePlayer = ttsPlayerRef.current;
     try {
-      ttsPlayerRef.current?.stop?.();
+      activePlayer?.audio?.pause?.();
+      if (activePlayer?.audio) {
+        activePlayer.audio.currentTime = 0;
+      }
+    } catch {
+      // ignore
+    }
+    try {
+      activePlayer?.audio?._ttsCleanup?.();
+    } catch {
+      // ignore
+    }
+    try {
+      activePlayer?.cleanup?.();
     } catch {
       // ignore
     }
@@ -1170,14 +1194,52 @@ export default function RPGGame() {
     async (text) => {
       if (!text) return;
       stopNPCSpeech();
+      const requestId = ttsRequestIdRef.current + 1;
+      ttsRequestIdRef.current = requestId;
+      setIsNPCSpeechPending(true);
+
+      speechStartTimeoutRef.current = setTimeout(() => {
+        setIsNPCSpeechPending(false);
+        speechStartTimeoutRef.current = null;
+      }, 2500);
+
       try {
         const player = await getTTSPlayer({
           text,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         });
+
+        if (requestId !== ttsRequestIdRef.current) {
+          // A newer request already replaced this one.
+          player.cleanup?.();
+          return;
+        }
+
         ttsPlayerRef.current = player;
-        await player.play();
+
+        const markSpeechStarted = () => {
+          if (speechStartTimeoutRef.current) {
+            clearTimeout(speechStartTimeoutRef.current);
+            speechStartTimeoutRef.current = null;
+          }
+          setIsNPCSpeechPending(false);
+        };
+
+        player.audio?.addEventListener("playing", markSpeechStarted, {
+          once: true,
+        });
+
+        await player.ready;
+        await player.audio?.play?.();
+
+        player.finalize?.finally(() => {
+          markSpeechStarted();
+          if (ttsPlayerRef.current === player) {
+            ttsPlayerRef.current = null;
+          }
+        });
       } catch {
+        setIsNPCSpeechPending(false);
         // non-blocking
       }
     },
@@ -2990,6 +3052,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       dialogue.node?.prompt ||
                       dialogue.question.prompt
                     }
+                    isPaused={isNPCSpeechPending}
                     color="gray.800"
                     fontSize="md"
                     fontWeight="bold"
@@ -3000,6 +3063,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 {!!dialogue.npcReply && (
                   <AnimatedText
                     text={dialogue.npcReply}
+                    isPaused={isNPCSpeechPending}
                     color="orange.700"
                     fontSize="sm"
                     m={0}
