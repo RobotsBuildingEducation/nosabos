@@ -381,48 +381,53 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   // Expose intentionalEnd flag on audio element for components to check
   audio._ttsIntentionalEnd = () => intentionalEnd;
 
+  let resolveDataChannelOpen;
+  const dataChannelOpen = new Promise((resolve) => {
+    resolveDataChannelOpen = resolve;
+  });
+
+  const sendNarrationPrompt = () => {
+    // Configure session for narration/read-aloud mode
+    dc.send(
+      JSON.stringify({
+        type: "session.update",
+        session: {
+          modalities: ["audio", "text"],
+          output_audio_format: "pcm16",
+          voice: sanitizedVoice,
+          instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
+          turn_detection: null,
+        },
+      })
+    );
+    // Send text as content to narrate
+    dc.send(
+      JSON.stringify({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
+            },
+          ],
+        },
+      })
+    );
+    dc.send(
+      JSON.stringify({
+        type: "response.create",
+        response: {
+          modalities: ["audio", "text"],
+        },
+      })
+    );
+  };
+
   dc.onopen = () => {
-    try {
-      // Configure session for narration/read-aloud mode
-      dc.send(
-        JSON.stringify({
-          type: "session.update",
-          session: {
-            modalities: ["audio", "text"],
-            output_audio_format: "pcm16",
-            voice: sanitizedVoice,
-            instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
-            turn_detection: null,
-          },
-        })
-      );
-      // Send text as content to narrate
-      dc.send(
-        JSON.stringify({
-          type: "conversation.item.create",
-          item: {
-            type: "message",
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
-              },
-            ],
-          },
-        })
-      );
-      dc.send(
-        JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["audio", "text"],
-          },
-        })
-      );
-    } catch (err) {
-      console.warn("Realtime prompt send failed", err);
-    }
+    resolveDataChannelOpen?.();
   };
 
   const offer = await pc.createOffer();
@@ -462,7 +467,6 @@ async function getRealtimePlayer({ text, voice, langTag }) {
     });
 
   const startPlayback = async () => {
-    await ready;
     try {
       await audio.play();
     } catch (err) {
@@ -479,7 +483,17 @@ async function getRealtimePlayer({ text, voice, langTag }) {
     }
   };
 
-  const done = startPlayback().then(() => finalize);
+  const done = (async () => {
+    await startPlayback();
+    await dataChannelOpen;
+    try {
+      sendNarrationPrompt();
+    } catch (err) {
+      console.warn("Realtime prompt send failed", err);
+      throw err;
+    }
+    return finalize;
+  })();
 
   const stop = () => {
     try {
