@@ -2421,7 +2421,6 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
 
       setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
-      speakNPCText(dynamicReply);
 
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
@@ -2429,6 +2428,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       );
 
       if (!nextNode) {
+        speakNPCText(dynamicReply);
         return;
       }
       // Unlock gather items if next node is a gather quest
@@ -2440,15 +2440,14 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
       }));
       // Advance to next node but keep the custom reply visible
-      // For gather/non-speech nodes, append the node's instructions
+      // For non-speech nodes, append instructions and speak the full text
       setTimeout(() => {
-        setDialogue((prev) => {
-          let reply = prev.npcReply || "";
-          if (reply && nextNode.npcLine && nextNode.responseMode !== "speech") {
-            reply = `${reply}\n\n${nextNode.npcLine}`;
-          }
-          return { ...prev, node: nextNode, npcReply: reply };
-        });
+        let fullReply = dynamicReply;
+        if (nextNode.npcLine && nextNode.responseMode !== "speech") {
+          fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
+        }
+        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: fullReply }));
+        speakNPCText(fullReply);
       }, 300);
     },
   });
