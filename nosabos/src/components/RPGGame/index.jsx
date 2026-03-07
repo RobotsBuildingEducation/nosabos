@@ -18,6 +18,13 @@ import {
   WrapItem,
   useToast,
   useBreakpointValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -34,10 +41,464 @@ import {
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
+import { callResponses } from "../../utils/llm";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
+
+// ─── Pixel-art drawing for gather-quest items (16×16 canvas) ──────────────
+function drawGatherItemSprite(ctx, spriteId) {
+  const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
+  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+  switch (spriteId) {
+    // ── Living Room items ───────────────────────────
+    case "key": {
+      // Golden key
+      rect(3, 3, 4, 4, "#ffd700"); // head ring
+      rect(4, 4, 2, 2, "#1a1a2e"); // ring hole
+      rect(7, 5, 5, 2, "#ffd700"); // shaft
+      px(12, 5, "#daa520"); px(12, 6, "#daa520"); // tip
+      px(10, 7, "#ffd700"); px(11, 7, "#ffd700"); // teeth
+      px(10, 8, "#daa520"); px(11, 8, "#daa520");
+      rect(3, 3, 4, 1, "#fff8dc"); // highlight
+      break;
+    }
+    case "book": {
+      // Old brown book
+      rect(3, 2, 10, 12, "#8b4513"); // cover
+      rect(4, 3, 8, 10, "#f5deb3");  // pages
+      rect(3, 2, 1, 12, "#654321");  // spine
+      rect(4, 4, 6, 1, "#8b7355");   // text line
+      rect(4, 6, 5, 1, "#8b7355");   // text line
+      rect(4, 8, 7, 1, "#8b7355");   // text line
+      rect(4, 10, 4, 1, "#8b7355");  // text line
+      break;
+    }
+    case "letter": {
+      // Sealed envelope
+      rect(2, 4, 12, 8, "#f5f0e0");  // envelope body
+      rect(2, 4, 12, 1, "#e0d8c8");  // top edge
+      // Flap triangle
+      px(2, 4, "#d4c8a8"); px(3, 5, "#d4c8a8"); px(4, 6, "#d4c8a8");
+      px(13, 4, "#d4c8a8"); px(12, 5, "#d4c8a8"); px(11, 6, "#d4c8a8");
+      // Red wax seal
+      rect(6, 6, 4, 4, "#cc3333");
+      rect(7, 7, 2, 2, "#ee5555");
+      break;
+    }
+    case "vase": {
+      // Cracked vase
+      rect(6, 2, 4, 2, "#b87333");  // rim
+      rect(5, 4, 6, 6, "#cd853f");  // body
+      rect(6, 10, 4, 2, "#b87333"); // base
+      px(7, 5, "#8b6914"); px(8, 6, "#8b6914"); px(7, 7, "#8b6914"); // crack
+      rect(5, 4, 6, 1, "#daa520");  // highlight
+      break;
+    }
+    case "spoon": {
+      // Old spoon
+      rect(6, 2, 4, 3, "#a8a8a8");  // bowl
+      rect(7, 3, 2, 1, "#c8c8c8");  // bowl highlight
+      rect(7, 5, 2, 8, "#909090");  // handle
+      px(7, 12, "#787878"); px(8, 12, "#787878"); // handle end
+      break;
+    }
+    case "button": {
+      // Round button
+      rect(5, 4, 6, 6, "#8b7355");  // body
+      px(5, 4, "transparent"); px(10, 4, "transparent"); // round corners
+      px(5, 9, "transparent"); px(10, 9, "transparent");
+      px(6, 6, "#1a1a2e"); px(9, 6, "#1a1a2e"); // holes
+      px(6, 8, "#1a1a2e"); px(9, 8, "#1a1a2e");
+      rect(6, 4, 4, 1, "#a0906e"); // highlight
+      break;
+    }
+
+    // ── Park items ──────────────────────────────────
+    case "flower": {
+      // Colorful flower
+      rect(7, 9, 2, 5, "#2d8b2d");  // stem
+      px(5, 8, "#2d8b2d"); px(6, 9, "#2d8b2d"); // leaf
+      px(10, 10, "#2d8b2d"); px(11, 9, "#2d8b2d"); // leaf
+      rect(7, 4, 2, 2, "#ffdd00");  // center
+      px(6, 3, "#ff6699"); px(9, 3, "#ff6699"); // petals top
+      px(5, 4, "#ff6699"); px(10, 4, "#ff6699"); // petals side
+      px(5, 5, "#ff6699"); px(10, 5, "#ff6699");
+      px(6, 6, "#ff6699"); px(9, 6, "#ff6699"); // petals bottom
+      px(7, 3, "#ff88aa"); px(8, 3, "#ff88aa"); // top petals
+      px(7, 6, "#ff88aa"); px(8, 6, "#ff88aa"); // bottom petals
+      break;
+    }
+    case "stone": {
+      // Shiny gem stone
+      rect(5, 5, 6, 5, "#6699cc");  // body
+      rect(6, 4, 4, 1, "#7ab3e0");  // top facet
+      rect(6, 10, 4, 1, "#4477aa"); // bottom
+      px(5, 5, "#5588bb"); px(10, 5, "#5588bb"); // side facets
+      rect(6, 6, 2, 2, "#aaddff");  // shine
+      px(7, 5, "#cceeFF");          // highlight
+      break;
+    }
+    case "feather": {
+      // Blue feather
+      px(10, 2, "#3366cc");
+      px(9, 3, "#3366cc"); px(10, 3, "#4488dd");
+      px(8, 4, "#3366cc"); px(9, 4, "#4488dd"); px(10, 4, "#5599ee");
+      px(7, 5, "#3366cc"); px(8, 5, "#4488dd");
+      px(6, 6, "#2255bb"); px(7, 6, "#3366cc");
+      px(5, 7, "#2255bb"); px(6, 7, "#3366cc");
+      px(4, 8, "#1a44aa"); px(5, 8, "#2255bb");
+      px(3, 9, "#1a44aa"); px(4, 9, "#e8e0d0"); // quill start
+      px(3, 10, "#e8e0d0"); // quill
+      px(2, 11, "#d8d0c0"); // quill tip
+      break;
+    }
+    case "leaf": {
+      // Dry brown leaf
+      rect(6, 3, 4, 3, "#a0782c");  // top
+      rect(5, 5, 6, 4, "#8b6914");  // body
+      rect(6, 9, 4, 2, "#7a5c10");  // bottom
+      rect(7, 4, 2, 6, "#9b7924");  // vein
+      px(6, 6, "#9b7924"); px(9, 7, "#9b7924"); // side veins
+      rect(7, 11, 2, 3, "#654321"); // stem
+      break;
+    }
+    case "branch": {
+      // Crooked branch
+      rect(2, 7, 3, 2, "#8b6914");  // left segment
+      rect(5, 6, 4, 2, "#7a5c10");  // middle
+      rect(9, 5, 3, 2, "#8b6914");  // right upper
+      rect(9, 7, 3, 2, "#7a5c10");  // right lower fork
+      px(12, 5, "#654321"); px(12, 8, "#654321"); // tips
+      px(1, 7, "#654321"); // left tip
+      px(6, 5, "#9b7924"); // highlight
+      break;
+    }
+    case "shell": {
+      // Spiral shell
+      rect(5, 5, 6, 5, "#e8d8b8");  // body
+      rect(6, 4, 4, 1, "#f0e8d0");  // top
+      rect(6, 10, 4, 1, "#d0c098"); // bottom
+      // Spiral pattern
+      px(7, 6, "#c8a878"); px(8, 6, "#c8a878");
+      px(9, 7, "#c8a878"); px(9, 8, "#c8a878");
+      px(8, 8, "#c8a878"); px(7, 8, "#c8a878");
+      px(6, 7, "#c8a878");
+      px(7, 7, "#b89858"); // spiral center
+      rect(6, 4, 2, 1, "#f8f0e0"); // highlight
+      break;
+    }
+
+    // ── Airport items ───────────────────────────────
+    case "passport": {
+      // Blue passport booklet
+      rect(3, 2, 10, 12, "#1a3a6a");  // cover
+      rect(4, 3, 8, 10, "#f5f0e0");   // pages
+      rect(3, 2, 1, 12, "#102850");    // spine
+      rect(5, 4, 6, 6, "#e8e0d0");    // photo area
+      rect(6, 5, 4, 3, "#d4c8b0");    // face placeholder
+      rect(5, 10, 6, 1, "#aaa");      // text line
+      rect(5, 12, 4, 1, "#aaa");      // text line
+      break;
+    }
+    case "tag": {
+      // Luggage tag
+      rect(4, 3, 8, 10, "#f5e6c8");  // body
+      rect(6, 1, 4, 3, "#f5e6c8");   // top tab
+      rect(7, 2, 2, 1, "#1a1a2e");   // hole
+      // String
+      px(8, 1, "#888"); px(8, 0, "#888");
+      rect(5, 5, 6, 1, "#999");      // text line
+      rect(5, 7, 5, 1, "#999");      // text line
+      rect(5, 9, 6, 1, "#999");      // text line
+      rect(4, 3, 8, 1, "#e0d0a8");   // highlight
+      break;
+    }
+    case "ticket": {
+      // Golden ticket
+      rect(2, 5, 12, 6, "#ffd700");  // body
+      rect(2, 5, 12, 1, "#fff8dc");  // top edge highlight
+      rect(2, 10, 12, 1, "#daa520"); // bottom edge
+      // Perforated line
+      px(9, 5, "#daa520"); px(9, 7, "#daa520"); px(9, 9, "#daa520");
+      // Text
+      rect(3, 7, 5, 1, "#b8860b");
+      rect(3, 9, 3, 1, "#b8860b");
+      // Star
+      px(11, 7, "#fff8dc"); px(12, 7, "#fff8dc");
+      px(11, 8, "#fff8dc");
+      break;
+    }
+    case "receipt": {
+      // Crumpled receipt
+      rect(4, 2, 8, 12, "#f0ece0");  // body
+      px(4, 2, "#e0d8c8"); px(11, 2, "#e0d8c8"); // crumpled corners
+      px(4, 13, "#e0d8c8"); px(11, 13, "#d8d0c0");
+      rect(5, 4, 6, 1, "#bbb");     // text
+      rect(5, 6, 4, 1, "#bbb");
+      rect(5, 8, 5, 1, "#bbb");
+      rect(5, 10, 6, 1, "#999");    // total line (bold)
+      px(6, 3, "#d8d0c0"); px(9, 7, "#d8d0c0"); // crumple marks
+      break;
+    }
+    case "card": {
+      // Expired card
+      rect(2, 4, 12, 8, "#d8d0c8");  // body
+      rect(2, 4, 12, 3, "#998877");  // stripe
+      rect(3, 8, 4, 2, "#c0b8a0");  // chip area
+      rect(3, 8, 4, 1, "#b0a890");  // chip line
+      rect(8, 9, 5, 1, "#999");     // number line
+      // Red X for expired
+      px(10, 5, "#cc3333"); px(12, 5, "#cc3333");
+      px(11, 6, "#cc3333");
+      px(10, 7, "#cc3333"); px(12, 7, "#cc3333");
+      break;
+    }
+    case "brochure": {
+      // Folded brochure
+      rect(2, 3, 5, 10, "#e8e0d0");  // left panel
+      rect(7, 3, 1, 10, "#d0c8b0");  // fold line
+      rect(8, 3, 5, 10, "#f0ece0");  // right panel
+      rect(3, 4, 3, 3, "#7ab87a");  // image placeholder
+      rect(9, 4, 3, 3, "#7a9ebb");  // image placeholder
+      rect(3, 8, 3, 1, "#aaa");    // text
+      rect(3, 10, 3, 1, "#aaa");
+      rect(9, 8, 3, 1, "#aaa");    // text
+      rect(9, 10, 3, 1, "#aaa");
+      break;
+    }
+    // ── Additional Living Room items ──────────────────
+    case "candle": {
+      rect(7, 8, 2, 6, "#f5e6c8");  // wax body
+      rect(6, 13, 4, 1, "#d4c8a8"); // base
+      rect(7, 7, 2, 1, "#e8d8b0");  // top
+      px(7, 6, "#ff8800"); px(8, 6, "#ffaa00"); // flame
+      px(7, 5, "#ffcc44"); px(8, 5, "#ffdd66"); // flame tip
+      px(8, 4, "#ffee88"); // flame top
+      break;
+    }
+    case "clock": {
+      rect(5, 3, 6, 6, "#c0a870");  // body
+      rect(6, 2, 4, 1, "#d0b880");  // top
+      rect(6, 9, 4, 2, "#b09860");  // base
+      rect(6, 4, 4, 4, "#f5f0e0");  // face
+      px(8, 4, "#333"); px(8, 7, "#333"); // 12, 6
+      px(6, 6, "#333"); px(9, 6, "#333"); // 9, 3
+      px(8, 5, "#cc3333"); px(7, 6, "#333"); // hands
+      break;
+    }
+    case "cup": {
+      rect(5, 4, 6, 7, "#e8e0d0");  // body
+      rect(5, 4, 6, 1, "#d8d0c0");  // rim
+      rect(5, 10, 6, 1, "#d0c8b0"); // base
+      rect(11, 6, 2, 3, "#d8d0c0"); // handle
+      px(12, 6, "#c8c0a8"); px(12, 8, "#c8c0a8");
+      px(7, 5, "#8b6914"); // crack line
+      px(8, 6, "#8b6914"); px(7, 7, "#8b6914");
+      break;
+    }
+    case "cushion": {
+      rect(3, 5, 10, 6, "#9966aa");  // body
+      rect(4, 4, 8, 1, "#aa77bb");   // top puff
+      rect(4, 11, 8, 1, "#885599");  // bottom
+      rect(5, 6, 6, 4, "#aa77bb");   // center highlight
+      px(6, 7, "#cc99dd"); px(9, 7, "#cc99dd"); // tufts
+      px(6, 9, "#cc99dd"); px(9, 9, "#cc99dd");
+      break;
+    }
+    case "frame": {
+      rect(3, 2, 10, 12, "#b8860b"); // outer frame
+      rect(4, 3, 8, 10, "#8b6914");  // inner frame
+      rect(5, 4, 6, 8, "#f5f0e0");   // empty inside
+      rect(5, 4, 6, 1, "#e8e0d0");
+      rect(5, 11, 6, 1, "#e8e0d0");
+      px(7, 7, "#ddd"); px(8, 8, "#ddd"); // empty marks
+      break;
+    }
+    case "scissors": {
+      // Open scissors
+      px(4, 3, "#888"); px(5, 4, "#888"); px(6, 5, "#888"); px(7, 6, "#888"); // blade 1
+      px(10, 3, "#888"); px(9, 4, "#888"); px(8, 5, "#888"); // blade 2
+      rect(6, 7, 4, 1, "#666"); // pivot
+      px(5, 8, "#cc3333"); px(6, 9, "#cc3333"); px(5, 10, "#cc3333"); // handle 1
+      px(9, 8, "#cc3333"); px(8, 9, "#cc3333"); px(9, 10, "#cc3333"); // handle 2
+      px(5, 11, "#cc3333"); px(9, 11, "#cc3333");
+      break;
+    }
+    case "coin": {
+      rect(5, 4, 6, 6, "#daa520");  // body
+      rect(6, 3, 4, 1, "#e8b830");  // top
+      rect(6, 10, 4, 1, "#c89418"); // bottom
+      px(5, 4, "#c89418"); px(10, 4, "#c89418"); // rounded
+      px(5, 9, "#c89418"); px(10, 9, "#c89418");
+      px(7, 6, "#f0d060"); px(8, 6, "#f0d060"); // symbol
+      px(7, 7, "#f0d060"); px(8, 7, "#f0d060");
+      break;
+    }
+
+    // ── Additional Park items ───────────────────────
+    case "acorn": {
+      rect(6, 3, 4, 3, "#8b6914");  // cap
+      rect(7, 2, 2, 1, "#7a5c10");  // cap top
+      px(8, 1, "#654321"); // stem
+      rect(6, 6, 4, 5, "#daa520");  // nut body
+      rect(7, 11, 2, 1, "#c89418"); // tip
+      px(7, 4, "#9b7924"); px(8, 4, "#9b7924"); // cap texture
+      px(7, 7, "#e8c840"); // highlight
+      break;
+    }
+    case "mushroom": {
+      rect(5, 3, 6, 4, "#cc3333");  // cap
+      rect(6, 2, 4, 1, "#dd4444");  // cap top
+      px(6, 4, "#fff"); px(9, 3, "#fff"); px(7, 5, "#fff"); // spots
+      rect(7, 7, 2, 5, "#f0e8d0");  // stem
+      rect(6, 11, 4, 1, "#e0d8c0"); // base
+      px(7, 8, "#f8f0e0"); // stem highlight
+      break;
+    }
+    case "pinecone": {
+      rect(6, 2, 4, 2, "#8b6914");  // top
+      rect(5, 4, 6, 4, "#7a5c10");  // body upper
+      rect(5, 8, 6, 3, "#654321");  // body lower
+      rect(6, 11, 4, 1, "#5a4a1a"); // base
+      // Scale pattern
+      px(6, 4, "#9b7924"); px(8, 4, "#9b7924"); px(10, 4, "#9b7924");
+      px(5, 6, "#9b7924"); px(7, 6, "#9b7924"); px(9, 6, "#9b7924");
+      px(6, 8, "#8b6914"); px(8, 8, "#8b6914"); px(10, 8, "#8b6914");
+      break;
+    }
+    case "butterfly": {
+      // Butterfly with spread wings
+      px(7, 5, "#333"); px(8, 5, "#333"); // body
+      px(7, 6, "#333"); px(8, 6, "#333");
+      px(7, 7, "#333"); px(8, 7, "#333");
+      // Left wing
+      px(4, 4, "#ff88aa"); px(5, 4, "#ff88aa"); px(6, 4, "#ff88aa");
+      px(4, 5, "#ff6699"); px(5, 5, "#ff6699"); px(6, 5, "#ff6699");
+      px(5, 6, "#ff88aa"); px(6, 6, "#ff88aa");
+      // Right wing
+      px(9, 4, "#ff88aa"); px(10, 4, "#ff88aa"); px(11, 4, "#ff88aa");
+      px(9, 5, "#ff6699"); px(10, 5, "#ff6699"); px(11, 5, "#ff6699");
+      px(9, 6, "#ff88aa"); px(10, 6, "#ff88aa");
+      // Antennae
+      px(6, 3, "#333"); px(9, 3, "#333");
+      break;
+    }
+    case "nest": {
+      rect(4, 8, 8, 3, "#8b6914");  // nest bowl
+      rect(5, 7, 6, 1, "#9b7924");  // rim
+      rect(5, 11, 6, 1, "#7a5c10"); // base
+      // Twigs texture
+      px(4, 9, "#a08030"); px(6, 8, "#a08030"); px(9, 9, "#a08030"); px(11, 8, "#a08030");
+      // Eggs
+      px(6, 8, "#e8e0d0"); px(8, 8, "#e8e0d0"); px(7, 9, "#f0e8e0");
+      break;
+    }
+    case "frog_statue": {
+      rect(5, 6, 6, 5, "#808080");  // body
+      rect(6, 5, 4, 1, "#909090");  // head top
+      rect(6, 11, 4, 1, "#707070"); // base
+      px(6, 6, "#a0a0a0"); px(9, 6, "#a0a0a0"); // eyes
+      px(6, 7, "#333"); px(9, 7, "#333"); // pupils
+      px(7, 9, "#909090"); px(8, 9, "#909090"); // mouth line
+      rect(4, 9, 2, 2, "#808080"); rect(10, 9, 2, 2, "#808080"); // legs
+      break;
+    }
+    case "seed": {
+      rect(6, 5, 4, 6, "#8b6914");  // body
+      rect(7, 4, 2, 1, "#9b7924");  // top
+      rect(7, 11, 2, 1, "#7a5c10"); // bottom
+      px(7, 6, "#a08030"); px(8, 6, "#a08030"); // stripe
+      px(7, 8, "#654321"); // dark line
+      px(8, 7, "#b09040"); // highlight
+      break;
+    }
+
+    // ── Additional Airport items ────────────────────
+    case "headphones": {
+      rect(5, 2, 6, 2, "#333");     // headband
+      px(4, 3, "#333"); px(11, 3, "#333"); // sides
+      px(4, 4, "#333"); px(11, 4, "#333");
+      rect(3, 5, 3, 4, "#444");     // left cup
+      rect(10, 5, 3, 4, "#444");    // right cup
+      px(4, 6, "#666"); px(11, 6, "#666"); // cup highlight
+      rect(4, 9, 1, 1, "#555"); rect(11, 9, 1, 1, "#555"); // cup base
+      break;
+    }
+    case "bottle": {
+      rect(7, 1, 2, 2, "#a0d0a0");  // cap
+      rect(7, 3, 2, 2, "#c8e8f0");  // neck
+      rect(5, 5, 6, 8, "#d0eef8");  // body
+      rect(5, 13, 6, 1, "#b0d0e0"); // base
+      px(6, 7, "#e8f4ff"); px(7, 8, "#e8f4ff"); // reflection
+      rect(6, 9, 4, 1, "#b0d8e8"); // label
+      rect(6, 10, 4, 1, "#a0c8d8");
+      break;
+    }
+    case "map": {
+      rect(3, 3, 10, 10, "#f5e6c8"); // paper
+      rect(3, 3, 10, 1, "#e0d0a8");  // top edge
+      // Fold lines
+      px(8, 3, "#d0c098"); px(8, 4, "#d0c098"); px(8, 5, "#d0c098");
+      px(8, 6, "#d0c098"); px(8, 7, "#d0c098"); px(8, 8, "#d0c098");
+      // Map markings
+      px(5, 5, "#cc3333"); px(5, 6, "#cc3333"); px(6, 5, "#cc3333"); // X mark
+      px(9, 8, "#4477aa"); px(10, 9, "#4477aa"); px(10, 7, "#4477aa"); // route
+      rect(4, 10, 3, 1, "#8b6914"); // text line
+      break;
+    }
+    case "suitcase": {
+      rect(3, 5, 10, 7, "#6699cc"); // body
+      rect(6, 3, 4, 2, "#5588bb");  // handle
+      rect(7, 4, 2, 1, "#888");     // handle grip
+      rect(3, 8, 10, 1, "#5588bb"); // strap
+      px(7, 8, "#daa520"); px(8, 8, "#daa520"); // buckle
+      rect(3, 11, 10, 1, "#5080aa"); // base
+      px(5, 12, "#444"); px(10, 12, "#444"); // wheels
+      break;
+    }
+    case "keychain": {
+      rect(6, 2, 4, 4, "#c0c0c0");  // ring
+      rect(7, 3, 2, 2, "#1a1a2e");  // ring hole
+      rect(7, 6, 2, 1, "#aaa");     // chain link
+      rect(6, 7, 4, 5, "#cc3333");  // fob body
+      rect(7, 8, 2, 3, "#dd5555");  // fob highlight
+      rect(6, 12, 4, 1, "#aa2222"); // fob base
+      break;
+    }
+    case "sunglasses": {
+      // Aviator-style sunglasses
+      rect(2, 5, 5, 4, "#333");     // left lens
+      rect(9, 5, 5, 4, "#333");     // right lens
+      rect(7, 5, 2, 1, "#888");     // bridge
+      px(1, 6, "#888"); px(14, 6, "#888"); // arms
+      px(3, 6, "#555"); px(10, 6, "#555"); // lens shine
+      rect(2, 5, 5, 1, "#444"); rect(9, 5, 5, 1, "#444"); // top rims
+      break;
+    }
+    case "charger": {
+      rect(4, 2, 4, 5, "#333");     // plug head
+      rect(5, 3, 2, 2, "#888");     // prongs area
+      px(5, 3, "#ccc"); px(6, 3, "#ccc"); // prongs
+      rect(5, 7, 2, 1, "#444");     // cable start
+      px(6, 8, "#444"); px(5, 9, "#444"); px(6, 10, "#444"); // cable curl
+      px(5, 11, "#444"); px(6, 12, "#444"); // cable end
+      rect(5, 12, 3, 2, "#555");    // USB connector
+      break;
+    }
+
+    default: {
+      // Fallback: simple colored circle
+      rect(5, 4, 6, 8, "#a080c0");
+      rect(6, 3, 4, 1, "#b090d0");
+      rect(6, 12, 4, 1, "#8060a0");
+      px(7, 5, "#c8b0e0"); // highlight
+      break;
+    }
+  }
+}
 
 const NPC_SPRITE_ROWS = [
   { id: "hamster", rowIndex: 0 },
@@ -147,9 +608,14 @@ export default function RPGGame() {
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const conversationLogRef = useRef([]);
+  const inventoryModal = useDisclosure();
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
+  const gatherSpritesRef = useRef([]);
   const toast = useToast();
 
   const playSound = useSoundSettings((state) => state.playSound);
@@ -1086,6 +1552,57 @@ export default function RPGGame() {
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
 
+    // ── Gather item sprites (correct + decoy, start hidden) ─────────────
+    const gatherData = scenario.quest?.gatherData;
+    const allGatherItems = gatherData?.all || [];
+    if (allGatherItems.length > 0) {
+      const playerStart = scenario.playerStart;
+      const placed = [];
+      const occupied = new Set();
+      scenario.npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
+      occupied.add(`${playerStart.x},${playerStart.y}`);
+
+      allGatherItems.forEach((item) => {
+        let tx, ty;
+        let attempts = 0;
+        do {
+          tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
+          ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
+          attempts++;
+        } while ((isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) && attempts < 80);
+        occupied.add(`${tx},${ty}`);
+
+        // Create illustrated pixel-art sprite for each item
+        const canvas = document.createElement("canvas");
+        canvas.width = 16;
+        canvas.height = 16;
+        const ctx = canvas.getContext("2d");
+        drawGatherItemSprite(ctx, item.sprite || "default");
+
+        const itemTex = new THREE.CanvasTexture(canvas);
+        itemTex.magFilter = THREE.NearestFilter;
+        itemTex.minFilter = THREE.NearestFilter;
+        const itemGeo = new THREE.PlaneGeometry(TILE * 0.5, TILE * 0.5);
+        const itemMat = new THREE.MeshBasicMaterial({
+          map: itemTex,
+          transparent: true,
+        });
+        const itemMesh = new THREE.Mesh(itemGeo, itemMat);
+        itemMesh.position.set(
+          tx * TILE + TILE / 2,
+          (MAP_H - 1 - ty) * TILE + TILE / 2,
+          3,
+        );
+        // Start hidden — only show after gather quest is unlocked
+        itemMesh.visible = false;
+        scene.add(itemMesh);
+
+        placed.push({ ...item, tx, ty, mesh: itemMesh, collected: false });
+      });
+
+      gatherSpritesRef.current = placed;
+    }
+
     // ── Game loop ─────────────────────────────────────────────────────────
     let lastTime = 0;
     const MOVE_COOLDOWN = 140;
@@ -1182,6 +1699,24 @@ export default function RPGGame() {
         5,
       );
 
+      // Check gather item pickup (only when gather quest is active)
+      gatherSpritesRef.current.forEach((item) => {
+        if (item.collected || !item.mesh?.visible) return;
+        if (gs.playerX === item.tx && gs.playerY === item.ty) {
+          item.collected = true;
+          item.mesh.visible = false;
+          setInventory((prev) => [...prev, { name: item.name, isCorrect: item.isCorrect }]);
+          playGameSound("rpgDialogueSelect");
+        }
+      });
+
+      // Pulse visible gather items
+      gatherSpritesRef.current.forEach((item) => {
+        if (item.collected || !item.mesh?.visible) return;
+        const pulse = 1 + Math.sin(time * 0.004) * 0.15;
+        item.mesh.scale.set(pulse, pulse, 1);
+      });
+
       // Camera follow (smooth)
       const camTargetX = gs.renderX * TILE + TILE / 2;
       const camTargetY = (MAP_H - 1 - gs.renderY) * TILE + TILE / 2;
@@ -1238,6 +1773,12 @@ export default function RPGGame() {
       }
       npcSheetFramesRef.current.forEach((frameSet) => frameSet.dispose());
       npcSheetFramesRef.current.clear();
+      gatherSpritesRef.current.forEach((item) => {
+        item.mesh?.geometry?.dispose();
+        item.mesh?.material?.map?.dispose();
+        item.mesh?.material?.dispose();
+      });
+      gatherSpritesRef.current = [];
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -1300,7 +1841,9 @@ export default function RPGGame() {
             node,
             npcReply: "",
           });
-          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
+          const greetLine = node?.npcLine || node?.prompt || question.prompt;
+          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine);
           playGameSound("rpgDialogueOpen");
           return;
         }
@@ -1433,7 +1976,9 @@ export default function RPGGame() {
             node,
             npcReply: "",
           });
-          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
+          const greetLine = node?.npcLine || node?.prompt || question.prompt;
+          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine);
           playGameSound("rpgDialogueOpen");
         }
         return;
@@ -1499,6 +2044,15 @@ export default function RPGGame() {
     });
   }, [gameComplete, questProgress]);
 
+  // ─── Show/hide gather items based on quest unlock ──────────────────
+  useEffect(() => {
+    gatherSpritesRef.current.forEach((item) => {
+      if (!item.collected && item.mesh) {
+        item.mesh.visible = gatherUnlocked;
+      }
+    });
+  }, [gatherUnlocked]);
+
   const completeNPCChapter = useCallback(
     (npcIdx) => {
       const newAnswered = new Set(answeredNPCs);
@@ -1539,6 +2093,13 @@ export default function RPGGame() {
     const selected = dialogue.node?.choices?.[optionIdx];
     if (!selected) return;
 
+    // Log choice exchange to conversation history
+    const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+    conversationLogRef.current.push({ speaker: "Player", text: selected.text, npcIdx: dialogue.npcIdx });
+    if (selected.npcReply) {
+      conversationLogRef.current.push({ speaker: npcName, text: selected.npcReply, npcIdx: dialogue.npcIdx });
+    }
+
     const nextNodeId = selected.nextNodeId || null;
 
     if (!nextNodeId) {
@@ -1561,6 +2122,11 @@ export default function RPGGame() {
       return;
     }
 
+    // Unlock gather items when reaching a gather node
+    if (nextNode.responseMode === "gather") {
+      setGatherUnlocked(true);
+    }
+
     setTimeout(() => {
       setDialogue((prev) => ({
         ...prev,
@@ -1575,6 +2141,103 @@ export default function RPGGame() {
     }, 300);
   };
 
+  // Return an item from inventory back to the map near the player
+  const returnItemToMap = (itemName) => {
+    const gs = gameStateRef.current;
+    if (!gs || !scenario) return;
+    const sprite = gatherSpritesRef.current.find(
+      (s) => s.name === itemName && s.collected,
+    );
+    if (!sprite) return;
+    const MAP_W = scenario.mapWidth;
+    const MAP_H = scenario.mapHeight;
+    const TILE = scenario.tileSize;
+    const offsets = [
+      [1, 0], [-1, 0], [0, 1], [0, -1],
+      [1, 1], [-1, -1], [1, -1], [-1, 1],
+    ];
+    let dropX = gs.playerX;
+    let dropY = gs.playerY;
+    for (const [dx, dy] of offsets) {
+      const nx = gs.playerX + dx;
+      const ny = gs.playerY + dy;
+      if (nx >= 1 && nx < MAP_W - 1 && ny >= 1 && ny < MAP_H - 1) {
+        dropX = nx;
+        dropY = ny;
+        break;
+      }
+    }
+    sprite.tx = dropX;
+    sprite.ty = dropY;
+    sprite.collected = false;
+    sprite.mesh.position.set(
+      dropX * TILE + TILE / 2,
+      (MAP_H - 1 - dropY) * TILE + TILE / 2,
+      3,
+    );
+    sprite.mesh.visible = gatherUnlocked;
+  };
+
+  const dropInventoryItem = (itemIndex) => {
+    const droppedItem = inventory[itemIndex];
+    if (!droppedItem) return;
+    setInventory((prev) => {
+      const copy = [...prev];
+      copy.splice(itemIndex, 1);
+      return copy;
+    });
+    returnItemToMap(droppedItem.name);
+  };
+
+  const handleGatherSubmit = (itemIndex) => {
+    if (!dialogue?.node || dialogue.node.responseMode !== "gather") return;
+    const submittedItem = inventory[itemIndex];
+    if (!submittedItem) return;
+
+    playGameSound("rpgDialogueSelect");
+    const requiredItem = dialogue.node.gatherItem?.name;
+
+    // Remove the submitted item from inventory
+    setInventory((prev) => {
+      const copy = [...prev];
+      copy.splice(itemIndex, 1);
+      return copy;
+    });
+
+    if (!submittedItem.isCorrect) {
+      // Wrong item — NPC tells you it's wrong, drop item back near the player
+      const wrongText = targetLang === "es"
+        ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
+        : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
+      setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
+      speakNPCText(wrongText);
+      returnItemToMap(submittedItem.name);
+      return;
+    }
+
+    // Correct item — advance quest
+    setGatherUnlocked(false);
+    const nextNodeId = dialogue.node.nextNodeId;
+    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      (n) => n.id === nextNodeId,
+    );
+
+    if (!nextNode) {
+      completeNPCChapter(dialogue.npcIdx);
+      return;
+    }
+
+    setQuestProgress((prev) => ({
+      ...prev,
+      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+    }));
+
+    setTimeout(() => {
+      setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
+      speakNPCText(nextNode.npcLine || "");
+    }, 300);
+  };
+
   const {
     startRecording,
     stopRecording,
@@ -1584,7 +2247,7 @@ export default function RPGGame() {
   } = useSpeechPractice({
     targetText: dialogue?.node?.npcLine || "",
     targetLang,
-    onResult: ({ recognizedText }) => {
+    onResult: async ({ recognizedText }) => {
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);
       if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
@@ -1597,20 +2260,55 @@ export default function RPGGame() {
         return;
       }
 
+      const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+      const seed = quest?.storySeed || "";
+      const historyContext = conversationLogRef.current
+        .slice(-10)
+        .map((e) => `${e.speaker}: ${e.text}`)
+        .join("\n");
+
+      // Log the user's speech
+      conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
+
+      // Generate dynamic NPC response via LLM
+      const staticFallback = dialogue.node.speechContinueReply ||
+        (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
+
+      const llmPrompt = targetLang === "es"
+        ? `Eres ${npcName}, un personaje en una aventura. La historia: ${seed}
+${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
+Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
+        : `You are ${npcName}, a character in an adventure. The story: ${seed}
+${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
+Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
+
+      let dynamicReply = staticFallback;
+      try {
+        const llmResult = await callResponses({ input: llmPrompt });
+        if (llmResult && llmResult.trim().length > 0) {
+          dynamicReply = llmResult.trim();
+        }
+      } catch {
+        // fallback to static reply
+      }
+
+      // Log the NPC's response
+      conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
+
+      setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
+
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
         (n) => n.id === nextNodeId,
       );
 
-      const heardReply =
-        targetLang === "es"
-          ? `Perfecto, escuché: "${heard}".`
-          : `Perfect, I heard: "${heard}."`;
-      setDialogue((prev) => ({ ...prev, npcReply: heardReply }));
-
       if (!nextNode) {
-        speakNPCText(heardReply);
+        speakNPCText(dynamicReply);
         return;
+      }
+      // Unlock gather items if next node is a gather quest
+      if (nextNode.responseMode === "gather") {
+        setGatherUnlocked(true);
       }
       setQuestProgress((prev) => ({
         ...prev,
@@ -1639,6 +2337,13 @@ export default function RPGGame() {
     setFeedback(null);
     setGameComplete(false);
     setLastHeardSpeech("");
+    setInventory([]);
+    setGatherUnlocked(false);
+    conversationLogRef.current = [];
+    gatherSpritesRef.current.forEach((item) => {
+      item.collected = false;
+      if (item.mesh) item.mesh.visible = false;
+    });
     setQuestProgress({
       unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
       completedNPCs: new Set(),
@@ -1842,6 +2547,87 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
+      {/* Inventory icon button */}
+      {!gameComplete && (
+        <IconButton
+          aria-label="Inventory"
+          icon={
+            <Box position="relative">
+              <Text as="span" fontSize="lg">🎒</Text>
+              {inventory.length > 0 && (
+                <Badge
+                  position="absolute"
+                  top="-6px"
+                  right="-8px"
+                  colorScheme="yellow"
+                  borderRadius="full"
+                  fontSize="9px"
+                  minW="16px"
+                  h="16px"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  {inventory.length}
+                </Badge>
+              )}
+            </Box>
+          }
+          position="absolute"
+          top={14}
+          left={3}
+          zIndex={10}
+          size="sm"
+          variant="solid"
+          colorScheme="blackAlpha"
+          onClick={inventoryModal.onOpen}
+        />
+      )}
+
+      {/* Inventory modal */}
+      <Modal isOpen={inventoryModal.isOpen} onClose={inventoryModal.onClose} isCentered size="sm">
+        <ModalOverlay bg="blackAlpha.700" />
+        <ModalContent bg="gray.900" border="2px solid" borderColor="yellow.400" borderRadius="xl">
+          <ModalHeader color="yellow.300" fontSize="md" pb={1}>
+            {targetLang === "es" ? "Inventario" : "Inventory"}
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody pb={4}>
+            {inventory.length === 0 ? (
+              <Text color="gray.400" fontSize="sm" textAlign="center" py={4}>
+                {targetLang === "es" ? "No tienes objetos." : "No items yet."}
+              </Text>
+            ) : (
+              <VStack spacing={2} align="stretch">
+                {inventory.map((item, idx) => (
+                  <HStack
+                    key={`${item.name}-${idx}`}
+                    bg="whiteAlpha.100"
+                    borderRadius="md"
+                    px={3}
+                    py={2}
+                    justify="space-between"
+                  >
+                    <HStack spacing={2}>
+                      <Text fontSize="sm">{item.isCorrect ? "◆" : "◇"}</Text>
+                      <Text color="white" fontSize="sm">{item.name}</Text>
+                    </HStack>
+                    <Button
+                      size="xs"
+                      colorScheme="red"
+                      variant="ghost"
+                      onClick={() => dropInventoryItem(idx)}
+                    >
+                      {targetLang === "es" ? "Soltar" : "Drop"}
+                    </Button>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
       {dialogue &&
         !gameComplete &&
@@ -1932,6 +2718,23 @@ export default function RPGGame() {
               />
 
               <VStack align="stretch" spacing={3}>
+                {/* Player dialogue line (bridges narrative between NPCs) */}
+                {dialogue.node?.playerLine && (
+                  <Box
+                    bg="blue.50"
+                    border="1px solid"
+                    borderColor="blue.200"
+                    borderRadius="lg"
+                    px={3}
+                    py={2}
+                    mb={1}
+                  >
+                    <Text color="blue.800" fontSize="sm" fontStyle="italic">
+                      {dialogue.node.playerLine}
+                    </Text>
+                  </Box>
+                )}
+
                 <HStack align="center" spacing={2} pr={8}>
                   <Box pt={1}>
                     <RandomCharacter
@@ -2045,6 +2848,53 @@ export default function RPGGame() {
                       }}
                     />
                   </HStack>
+                )}
+
+                {dialogue.node?.responseMode === "gather" && (
+                  <VStack spacing={2}>
+                    {inventory.length > 0 ? (
+                      <>
+                        <Text color="gray.600" fontSize="xs">
+                          {targetLang === "es"
+                            ? "Elige un objeto para entregar:"
+                            : "Choose an item to hand over:"}
+                        </Text>
+                        {inventory.map((item, idx) => (
+                          <Button
+                            key={`${item.name}-${idx}`}
+                            w="100%"
+                            size="sm"
+                            variant="solid"
+                            bg="rgba(255,255,255,0.92)"
+                            color="gray.900"
+                            border="1px solid"
+                            borderColor="blackAlpha.200"
+                            boxShadow="0px 4px 0px #a9a18c"
+                            _active={{ bg: "gray.100" }}
+                            onClick={() => handleGatherSubmit(idx)}
+                            justifyContent="flex-start"
+                            textAlign="left"
+                            whiteSpace="normal"
+                            h="auto"
+                            py={2}
+                          >
+                            {item.isCorrect ? "◆" : "◇"} {item.name}
+                          </Button>
+                        ))}
+                      </>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      colorScheme="orange"
+                      variant="outline"
+                      onClick={closeDialogue}
+                      w="100%"
+                    >
+                      {targetLang === "es"
+                        ? "Seguir buscando"
+                        : "Keep searching"}
+                    </Button>
+                  </VStack>
                 )}
 
                 {dialogue.node?.responseMode === "none" && (
