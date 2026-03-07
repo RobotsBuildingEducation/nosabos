@@ -68,20 +68,26 @@ export function useSpeechPractice({
     // Close data channel
     try {
       dcRef.current?.close?.();
-    } catch {}
+    } catch {
+      // ignore cleanup errors
+    }
     dcRef.current = null;
 
     // Close peer connection
     try {
       pcRef.current?.close?.();
-    } catch {}
+    } catch {
+      // ignore cleanup errors
+    }
     pcRef.current = null;
 
     // Stop local media stream
     try {
       const tracks = localStreamRef.current?.getTracks?.();
       tracks?.forEach((t) => t.stop());
-    } catch {}
+    } catch {
+      // ignore cleanup errors
+    }
     localStreamRef.current = null;
 
     // Clear timeouts
@@ -185,6 +191,11 @@ export function useSpeechPractice({
 
         const finalTranscript = transcriptRef.current.trim();
 
+        // IMPORTANT: tear down mic/RTC before invoking consumer callbacks.
+        // Some mobile browsers keep the audio session in "record" mode while
+        // onResult runs, which can delay or suppress immediate TTS playback.
+        cleanup();
+
         // Report result
         await report({
           recognizedText: finalTranscript,
@@ -192,8 +203,6 @@ export function useSpeechPractice({
           audioMetrics: null,
           method: "realtime-whisper",
         });
-
-        cleanup();
       };
 
       dc.onopen = () => {
@@ -367,6 +376,10 @@ export function useSpeechPractice({
     const finalTranscript = transcriptRef.current.trim();
     evalRef.current.speechDone = true;
 
+    // Release recording resources first to avoid mobile audio-session conflicts
+    // when onResult triggers TTS immediately after stop.
+    cleanup();
+
     // Report whatever we have
     report({
       recognizedText: finalTranscript,
@@ -374,8 +387,6 @@ export function useSpeechPractice({
       audioMetrics: null,
       method: "realtime-whisper",
     });
-
-    cleanup();
   }, [report, cleanup]);
 
   return { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech };
