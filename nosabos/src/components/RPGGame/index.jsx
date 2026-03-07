@@ -41,6 +41,7 @@ import {
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
+import { callResponses } from "../../utils/llm";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
@@ -156,6 +157,7 @@ export default function RPGGame() {
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const conversationLogRef = useRef([]);
   const inventoryModal = useDisclosure();
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
@@ -1402,7 +1404,9 @@ export default function RPGGame() {
             node,
             npcReply: "",
           });
-          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
+          const greetLine = node?.npcLine || node?.prompt || question.prompt;
+          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine);
           playGameSound("rpgDialogueOpen");
           return;
         }
@@ -1535,7 +1539,9 @@ export default function RPGGame() {
             node,
             npcReply: "",
           });
-          speakNPCText(node?.npcLine || node?.prompt || question.prompt);
+          const greetLine = node?.npcLine || node?.prompt || question.prompt;
+          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine);
           playGameSound("rpgDialogueOpen");
         }
         return;
@@ -1650,6 +1656,13 @@ export default function RPGGame() {
     const selected = dialogue.node?.choices?.[optionIdx];
     if (!selected) return;
 
+    // Log choice exchange to conversation history
+    const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+    conversationLogRef.current.push({ speaker: "Player", text: selected.text, npcIdx: dialogue.npcIdx });
+    if (selected.npcReply) {
+      conversationLogRef.current.push({ speaker: npcName, text: selected.npcReply, npcIdx: dialogue.npcIdx });
+    }
+
     const nextNodeId = selected.nextNodeId || null;
 
     if (!nextNodeId) {
@@ -1748,7 +1761,7 @@ export default function RPGGame() {
   } = useSpeechPractice({
     targetText: dialogue?.node?.npcLine || "",
     targetLang,
-    onResult: ({ recognizedText }) => {
+    onResult: async ({ recognizedText }) => {
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);
       if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
@@ -1761,17 +1774,50 @@ export default function RPGGame() {
         return;
       }
 
+      const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+      const seed = quest?.storySeed || "";
+      const historyContext = conversationLogRef.current
+        .slice(-10)
+        .map((e) => `${e.speaker}: ${e.text}`)
+        .join("\n");
+
+      // Log the user's speech
+      conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
+
+      // Generate dynamic NPC response via LLM
+      const staticFallback = dialogue.node.speechContinueReply ||
+        (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
+
+      const llmPrompt = targetLang === "es"
+        ? `Eres ${npcName}, un personaje en una aventura. La historia: ${seed}
+${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
+Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
+        : `You are ${npcName}, a character in an adventure. The story: ${seed}
+${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
+Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
+
+      let dynamicReply = staticFallback;
+      try {
+        const llmResult = await callResponses({ input: llmPrompt });
+        if (llmResult && llmResult.trim().length > 0) {
+          dynamicReply = llmResult.trim();
+        }
+      } catch {
+        // fallback to static reply
+      }
+
+      // Log the NPC's response
+      conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
+
+      setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
+
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
         (n) => n.id === nextNodeId,
       );
 
-      const continueReply = dialogue.node.speechContinueReply ||
-        (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
-      setDialogue((prev) => ({ ...prev, npcReply: continueReply }));
-
       if (!nextNode) {
-        speakNPCText(continueReply);
+        speakNPCText(dynamicReply);
         return;
       }
       // Unlock gather items if next node is a gather quest
@@ -1807,6 +1853,7 @@ export default function RPGGame() {
     setLastHeardSpeech("");
     setInventory([]);
     setGatherUnlocked(false);
+    conversationLogRef.current = [];
     gatherSpritesRef.current.forEach((item) => {
       item.collected = false;
       if (item.mesh) item.mesh.visible = false;

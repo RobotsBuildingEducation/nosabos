@@ -242,8 +242,6 @@ function pickGatherItems(mapId, targetLang) {
 }
 
 function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
-  const questionPool =
-    questionsByLang?.[targetLang] || questionsByLang?.en || questionsByLang?.es || [];
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
   const tl = targetLang;
 
@@ -260,22 +258,22 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npc0Greet: (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
       npc0Choice1: "¿Qué pasó exactamente? Cuéntame todo.",
       npc0Choice2: "Estoy listo para ayudar. ¿Por dónde empiezo?",
-      npc0Reply1: (topic) => `Todo empezó esta mañana. Escucha con atención: ${topic}`,
-      npc0Reply2: (topic) => `Gracias por ofrecerte. Primero, necesito que entiendas esto: ${topic}`,
+      npc0Reply1: (seed) => `Todo empezó esta mañana. ${seed} Necesitamos actuar rápido.`,
+      npc0Reply2: (seed) => `Gracias por ofrecerte. ${seed} Por eso necesito tu ayuda.`,
       npcSpeechPrompt: (seed) => `Interesante... ¿Y tú qué opinas sobre todo esto? ${seed}`,
       // Player dialogue bridging NPCs
       playerBridge: (fromNpc, toNpc) => `${fromNpc} me envió. Dice que tú sabes algo importante.`,
       npcMidGreet: (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
       npcMidChoice1: "Exacto. ¿Qué sabes tú sobre esto?",
       npcMidChoice2: "Necesito más información para continuar.",
-      npcMidReply1: (topic) => `Escuché rumores. Presta atención: ${topic}`,
-      npcMidReply2: (topic) => `Claro, aquí está lo que sé: ${topic}`,
+      npcMidReply1: (seed) => `Escuché rumores sobre eso. ${seed} Hay que investigar más.`,
+      npcMidReply2: (seed) => `Claro, esto es lo que sé: ${seed} La situación es más compleja de lo que parece.`,
       npcHandoff: (nextNpc, detail) => `Ve con ${nextNpc}. ${detail}`,
       npcFinalGreet: (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
       npcFinalChoice1: "Terminemos con esto. ¿Qué falta?",
       npcFinalChoice2: "¿Cuál es el último paso?",
-      npcFinalReply1: (topic) => `Solo queda una cosa. Escucha bien: ${topic}`,
-      npcFinalReply2: (topic) => `Casi terminamos. Confirma que entiendes: ${topic}`,
+      npcFinalReply1: (seed) => `Solo queda una cosa. ${seed} Estamos a punto de resolverlo.`,
+      npcFinalReply2: (seed) => `Casi terminamos. ${seed} Todo depende de este último paso.`,
       questComplete: "¡Misión cumplida! Has resuelto el misterio.",
       // Gather quest
       gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
@@ -296,21 +294,21 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npc0Greet: (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
       npc0Choice1: "What exactly happened? Tell me everything.",
       npc0Choice2: "I'm ready to help. Where do I start?",
-      npc0Reply1: (topic) => `It all started this morning. Listen carefully: ${topic}`,
-      npc0Reply2: (topic) => `Thanks for volunteering. First, you need to understand this: ${topic}`,
+      npc0Reply1: (seed) => `It all started this morning. ${seed} We need to act fast.`,
+      npc0Reply2: (seed) => `Thanks for volunteering. ${seed} That's why I need your help.`,
       npcSpeechPrompt: (seed) => `Interesting... What do you think about all of this? ${seed}`,
       playerBridge: (fromNpc, toNpc) => `${fromNpc} sent me. They say you know something important.`,
       npcMidGreet: (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
       npcMidChoice1: "Exactly. What do you know about this?",
       npcMidChoice2: "I need more information to continue.",
-      npcMidReply1: (topic) => `I've heard rumors. Pay attention: ${topic}`,
-      npcMidReply2: (topic) => `Sure, here's what I know: ${topic}`,
+      npcMidReply1: (seed) => `I've heard rumors about that. ${seed} We need to dig deeper.`,
+      npcMidReply2: (seed) => `Sure, here's what I know: ${seed} The situation is more complex than it seems.`,
       npcHandoff: (nextNpc, detail) => `Go find ${nextNpc}. ${detail}`,
       npcFinalGreet: (fromNpc) => `You arrived just in time! ${fromNpc} told me you were coming.`,
       npcFinalChoice1: "Let's finish this. What's left?",
       npcFinalChoice2: "What's the last step?",
-      npcFinalReply1: (topic) => `Just one thing left. Listen closely: ${topic}`,
-      npcFinalReply2: (topic) => `We're almost done. Confirm you understand: ${topic}`,
+      npcFinalReply1: (seed) => `Just one thing left. ${seed} We're about to solve this.`,
+      npcFinalReply2: (seed) => `We're almost done. ${seed} It all comes down to this last step.`,
       questComplete: "Quest complete! You solved the mystery.",
       gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
       gatherHint: (hint) => `A clue: ${hint}`,
@@ -329,18 +327,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     String(rawQuest?.intro || "").trim() ||
     t.defaultIntro(npcs[startNpcIdx]?.name || "NPC");
 
-  const topicAt = (idx, fallback) => {
-    const q = questionPool[idx % Math.max(1, questionPool.length)];
-    return String(q?.prompt || fallback);
-  };
-
   // Pick gather items for the middle NPC's gather quest
   const gatherData = pickGatherItems(mapId, tl);
 
   const treeByNpc = npcs.map((npc, npcIdx) => {
     const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
     const nextNpc = npcs[(npcIdx + 1) % npcs.length];
-    const topic = topicAt(npcIdx, t.defaultTopic);
     const isFirst = npcIdx === 0;
     const isLast = npcIdx === npcs.length - 1;
     const isMid = !isFirst && !isLast;
@@ -360,12 +352,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           choices: [
             {
               text: t.npc0Choice1,
-              npcReply: t.npc0Reply1(topic),
+              npcReply: t.npc0Reply1(storySeed),
               nextNodeId: nodeId(2),
             },
             {
               text: t.npc0Choice2,
-              npcReply: t.npc0Reply2(topic),
+              npcReply: t.npc0Reply2(storySeed),
               nextNodeId: nodeId(2),
             },
           ],
@@ -398,12 +390,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           choices: [
             {
               text: t.npcMidChoice1,
-              npcReply: t.npcMidReply1(topic),
+              npcReply: t.npcMidReply1(storySeed),
               nextNodeId: nodeId(2),
             },
             {
               text: t.npcMidChoice2,
-              npcReply: t.npcMidReply2(topic),
+              npcReply: t.npcMidReply2(storySeed),
               nextNodeId: nodeId(2),
             },
           ],
@@ -449,12 +441,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           choices: [
             {
               text: t.npcFinalChoice1,
-              npcReply: t.npcFinalReply1(topic),
+              npcReply: t.npcFinalReply1(storySeed),
               nextNodeId: nodeId(2),
             },
             {
               text: t.npcFinalChoice2,
-              npcReply: t.npcFinalReply2(topic),
+              npcReply: t.npcFinalReply2(storySeed),
               nextNodeId: nodeId(2),
             },
           ],
