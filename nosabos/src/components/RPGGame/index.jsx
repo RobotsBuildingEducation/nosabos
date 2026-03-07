@@ -47,6 +47,239 @@ import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
 
+// ─── Pixel-art drawing for gather-quest items (16×16 canvas) ──────────────
+function drawGatherItemSprite(ctx, spriteId) {
+  const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
+  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+  switch (spriteId) {
+    // ── Living Room items ───────────────────────────
+    case "key": {
+      // Golden key
+      rect(3, 3, 4, 4, "#ffd700"); // head ring
+      rect(4, 4, 2, 2, "#1a1a2e"); // ring hole
+      rect(7, 5, 5, 2, "#ffd700"); // shaft
+      px(12, 5, "#daa520"); px(12, 6, "#daa520"); // tip
+      px(10, 7, "#ffd700"); px(11, 7, "#ffd700"); // teeth
+      px(10, 8, "#daa520"); px(11, 8, "#daa520");
+      rect(3, 3, 4, 1, "#fff8dc"); // highlight
+      break;
+    }
+    case "book": {
+      // Old brown book
+      rect(3, 2, 10, 12, "#8b4513"); // cover
+      rect(4, 3, 8, 10, "#f5deb3");  // pages
+      rect(3, 2, 1, 12, "#654321");  // spine
+      rect(4, 4, 6, 1, "#8b7355");   // text line
+      rect(4, 6, 5, 1, "#8b7355");   // text line
+      rect(4, 8, 7, 1, "#8b7355");   // text line
+      rect(4, 10, 4, 1, "#8b7355");  // text line
+      break;
+    }
+    case "letter": {
+      // Sealed envelope
+      rect(2, 4, 12, 8, "#f5f0e0");  // envelope body
+      rect(2, 4, 12, 1, "#e0d8c8");  // top edge
+      // Flap triangle
+      px(2, 4, "#d4c8a8"); px(3, 5, "#d4c8a8"); px(4, 6, "#d4c8a8");
+      px(13, 4, "#d4c8a8"); px(12, 5, "#d4c8a8"); px(11, 6, "#d4c8a8");
+      // Red wax seal
+      rect(6, 6, 4, 4, "#cc3333");
+      rect(7, 7, 2, 2, "#ee5555");
+      break;
+    }
+    case "vase": {
+      // Cracked vase
+      rect(6, 2, 4, 2, "#b87333");  // rim
+      rect(5, 4, 6, 6, "#cd853f");  // body
+      rect(6, 10, 4, 2, "#b87333"); // base
+      px(7, 5, "#8b6914"); px(8, 6, "#8b6914"); px(7, 7, "#8b6914"); // crack
+      rect(5, 4, 6, 1, "#daa520");  // highlight
+      break;
+    }
+    case "spoon": {
+      // Old spoon
+      rect(6, 2, 4, 3, "#a8a8a8");  // bowl
+      rect(7, 3, 2, 1, "#c8c8c8");  // bowl highlight
+      rect(7, 5, 2, 8, "#909090");  // handle
+      px(7, 12, "#787878"); px(8, 12, "#787878"); // handle end
+      break;
+    }
+    case "button": {
+      // Round button
+      rect(5, 4, 6, 6, "#8b7355");  // body
+      px(5, 4, "transparent"); px(10, 4, "transparent"); // round corners
+      px(5, 9, "transparent"); px(10, 9, "transparent");
+      px(6, 6, "#1a1a2e"); px(9, 6, "#1a1a2e"); // holes
+      px(6, 8, "#1a1a2e"); px(9, 8, "#1a1a2e");
+      rect(6, 4, 4, 1, "#a0906e"); // highlight
+      break;
+    }
+
+    // ── Park items ──────────────────────────────────
+    case "flower": {
+      // Colorful flower
+      rect(7, 9, 2, 5, "#2d8b2d");  // stem
+      px(5, 8, "#2d8b2d"); px(6, 9, "#2d8b2d"); // leaf
+      px(10, 10, "#2d8b2d"); px(11, 9, "#2d8b2d"); // leaf
+      rect(7, 4, 2, 2, "#ffdd00");  // center
+      px(6, 3, "#ff6699"); px(9, 3, "#ff6699"); // petals top
+      px(5, 4, "#ff6699"); px(10, 4, "#ff6699"); // petals side
+      px(5, 5, "#ff6699"); px(10, 5, "#ff6699");
+      px(6, 6, "#ff6699"); px(9, 6, "#ff6699"); // petals bottom
+      px(7, 3, "#ff88aa"); px(8, 3, "#ff88aa"); // top petals
+      px(7, 6, "#ff88aa"); px(8, 6, "#ff88aa"); // bottom petals
+      break;
+    }
+    case "stone": {
+      // Shiny gem stone
+      rect(5, 5, 6, 5, "#6699cc");  // body
+      rect(6, 4, 4, 1, "#7ab3e0");  // top facet
+      rect(6, 10, 4, 1, "#4477aa"); // bottom
+      px(5, 5, "#5588bb"); px(10, 5, "#5588bb"); // side facets
+      rect(6, 6, 2, 2, "#aaddff");  // shine
+      px(7, 5, "#cceeFF");          // highlight
+      break;
+    }
+    case "feather": {
+      // Blue feather
+      px(10, 2, "#3366cc");
+      px(9, 3, "#3366cc"); px(10, 3, "#4488dd");
+      px(8, 4, "#3366cc"); px(9, 4, "#4488dd"); px(10, 4, "#5599ee");
+      px(7, 5, "#3366cc"); px(8, 5, "#4488dd");
+      px(6, 6, "#2255bb"); px(7, 6, "#3366cc");
+      px(5, 7, "#2255bb"); px(6, 7, "#3366cc");
+      px(4, 8, "#1a44aa"); px(5, 8, "#2255bb");
+      px(3, 9, "#1a44aa"); px(4, 9, "#e8e0d0"); // quill start
+      px(3, 10, "#e8e0d0"); // quill
+      px(2, 11, "#d8d0c0"); // quill tip
+      break;
+    }
+    case "leaf": {
+      // Dry brown leaf
+      rect(6, 3, 4, 3, "#a0782c");  // top
+      rect(5, 5, 6, 4, "#8b6914");  // body
+      rect(6, 9, 4, 2, "#7a5c10");  // bottom
+      rect(7, 4, 2, 6, "#9b7924");  // vein
+      px(6, 6, "#9b7924"); px(9, 7, "#9b7924"); // side veins
+      rect(7, 11, 2, 3, "#654321"); // stem
+      break;
+    }
+    case "branch": {
+      // Crooked branch
+      rect(2, 7, 3, 2, "#8b6914");  // left segment
+      rect(5, 6, 4, 2, "#7a5c10");  // middle
+      rect(9, 5, 3, 2, "#8b6914");  // right upper
+      rect(9, 7, 3, 2, "#7a5c10");  // right lower fork
+      px(12, 5, "#654321"); px(12, 8, "#654321"); // tips
+      px(1, 7, "#654321"); // left tip
+      px(6, 5, "#9b7924"); // highlight
+      break;
+    }
+    case "shell": {
+      // Spiral shell
+      rect(5, 5, 6, 5, "#e8d8b8");  // body
+      rect(6, 4, 4, 1, "#f0e8d0");  // top
+      rect(6, 10, 4, 1, "#d0c098"); // bottom
+      // Spiral pattern
+      px(7, 6, "#c8a878"); px(8, 6, "#c8a878");
+      px(9, 7, "#c8a878"); px(9, 8, "#c8a878");
+      px(8, 8, "#c8a878"); px(7, 8, "#c8a878");
+      px(6, 7, "#c8a878");
+      px(7, 7, "#b89858"); // spiral center
+      rect(6, 4, 2, 1, "#f8f0e0"); // highlight
+      break;
+    }
+
+    // ── Airport items ───────────────────────────────
+    case "passport": {
+      // Blue passport booklet
+      rect(3, 2, 10, 12, "#1a3a6a");  // cover
+      rect(4, 3, 8, 10, "#f5f0e0");   // pages
+      rect(3, 2, 1, 12, "#102850");    // spine
+      rect(5, 4, 6, 6, "#e8e0d0");    // photo area
+      rect(6, 5, 4, 3, "#d4c8b0");    // face placeholder
+      rect(5, 10, 6, 1, "#aaa");      // text line
+      rect(5, 12, 4, 1, "#aaa");      // text line
+      break;
+    }
+    case "tag": {
+      // Luggage tag
+      rect(4, 3, 8, 10, "#f5e6c8");  // body
+      rect(6, 1, 4, 3, "#f5e6c8");   // top tab
+      rect(7, 2, 2, 1, "#1a1a2e");   // hole
+      // String
+      px(8, 1, "#888"); px(8, 0, "#888");
+      rect(5, 5, 6, 1, "#999");      // text line
+      rect(5, 7, 5, 1, "#999");      // text line
+      rect(5, 9, 6, 1, "#999");      // text line
+      rect(4, 3, 8, 1, "#e0d0a8");   // highlight
+      break;
+    }
+    case "ticket": {
+      // Golden ticket
+      rect(2, 5, 12, 6, "#ffd700");  // body
+      rect(2, 5, 12, 1, "#fff8dc");  // top edge highlight
+      rect(2, 10, 12, 1, "#daa520"); // bottom edge
+      // Perforated line
+      px(9, 5, "#daa520"); px(9, 7, "#daa520"); px(9, 9, "#daa520");
+      // Text
+      rect(3, 7, 5, 1, "#b8860b");
+      rect(3, 9, 3, 1, "#b8860b");
+      // Star
+      px(11, 7, "#fff8dc"); px(12, 7, "#fff8dc");
+      px(11, 8, "#fff8dc");
+      break;
+    }
+    case "receipt": {
+      // Crumpled receipt
+      rect(4, 2, 8, 12, "#f0ece0");  // body
+      px(4, 2, "#e0d8c8"); px(11, 2, "#e0d8c8"); // crumpled corners
+      px(4, 13, "#e0d8c8"); px(11, 13, "#d8d0c0");
+      rect(5, 4, 6, 1, "#bbb");     // text
+      rect(5, 6, 4, 1, "#bbb");
+      rect(5, 8, 5, 1, "#bbb");
+      rect(5, 10, 6, 1, "#999");    // total line (bold)
+      px(6, 3, "#d8d0c0"); px(9, 7, "#d8d0c0"); // crumple marks
+      break;
+    }
+    case "card": {
+      // Expired card
+      rect(2, 4, 12, 8, "#d8d0c8");  // body
+      rect(2, 4, 12, 3, "#998877");  // stripe
+      rect(3, 8, 4, 2, "#c0b8a0");  // chip area
+      rect(3, 8, 4, 1, "#b0a890");  // chip line
+      rect(8, 9, 5, 1, "#999");     // number line
+      // Red X for expired
+      px(10, 5, "#cc3333"); px(12, 5, "#cc3333");
+      px(11, 6, "#cc3333");
+      px(10, 7, "#cc3333"); px(12, 7, "#cc3333");
+      break;
+    }
+    case "brochure": {
+      // Folded brochure
+      rect(2, 3, 5, 10, "#e8e0d0");  // left panel
+      rect(7, 3, 1, 10, "#d0c8b0");  // fold line
+      rect(8, 3, 5, 10, "#f0ece0");  // right panel
+      rect(3, 4, 3, 3, "#7ab87a");  // image placeholder
+      rect(9, 4, 3, 3, "#7a9ebb");  // image placeholder
+      rect(3, 8, 3, 1, "#aaa");    // text
+      rect(3, 10, 3, 1, "#aaa");
+      rect(9, 8, 3, 1, "#aaa");    // text
+      rect(9, 10, 3, 1, "#aaa");
+      break;
+    }
+    default: {
+      // Fallback: simple colored circle
+      rect(5, 4, 6, 8, "#a080c0");
+      rect(6, 3, 4, 1, "#b090d0");
+      rect(6, 12, 4, 1, "#8060a0");
+      px(7, 5, "#c8b0e0"); // highlight
+      break;
+    }
+  }
+}
+
 const NPC_SPRITE_ROWS = [
   { id: "hamster", rowIndex: 0 },
   { id: "frog", rowIndex: 1 },
@@ -1119,28 +1352,12 @@ export default function RPGGame() {
         } while ((isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) && attempts < 80);
         occupied.add(`${tx},${ty}`);
 
-        // Create marker sprite — gold for correct, silver for decoys
+        // Create illustrated pixel-art sprite for each item
         const canvas = document.createElement("canvas");
         canvas.width = 16;
         canvas.height = 16;
         const ctx = canvas.getContext("2d");
-        const color = item.isCorrect ? "#ffd700" : "#c0c0c0";
-        const highlight = item.isCorrect ? "#fff8dc" : "#e8e8e8";
-        ctx.fillStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(8, 1);
-        ctx.lineTo(14, 8);
-        ctx.lineTo(8, 15);
-        ctx.lineTo(2, 8);
-        ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = highlight;
-        ctx.beginPath();
-        ctx.moveTo(8, 3);
-        ctx.lineTo(11, 8);
-        ctx.lineTo(8, 5);
-        ctx.closePath();
-        ctx.fill();
+        drawGatherItemSprite(ctx, item.sprite || "default");
 
         const itemTex = new THREE.CanvasTexture(canvas);
         itemTex.magFilter = THREE.NearestFilter;
