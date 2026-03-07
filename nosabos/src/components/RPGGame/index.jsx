@@ -18,6 +18,13 @@ import {
   WrapItem,
   useToast,
   useBreakpointValue,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -148,7 +155,8 @@ export default function RPGGame() {
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [inventory, setInventory] = useState([]);
-  const [gatherItemsOnMap, setGatherItemsOnMap] = useState([]);
+  const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const inventoryModal = useDisclosure();
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
@@ -1089,16 +1097,17 @@ export default function RPGGame() {
     npcSpritesRef.current = npcSprites;
     npcIndicatorsRef.current = npcIndicators;
 
-    // ── Gather item sprites ───────────────────────────────────────────────
-    const gatherItems = scenario.quest?.gatherItems || [];
-    if (gatherItems.length > 0) {
+    // ── Gather item sprites (correct + decoy, start hidden) ─────────────
+    const gatherData = scenario.quest?.gatherData;
+    const allGatherItems = gatherData?.all || [];
+    if (allGatherItems.length > 0) {
       const playerStart = scenario.playerStart;
       const placed = [];
       const occupied = new Set();
       scenario.npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
       occupied.add(`${playerStart.x},${playerStart.y}`);
 
-      gatherItems.forEach((item) => {
+      allGatherItems.forEach((item) => {
         let tx, ty;
         let attempts = 0;
         do {
@@ -1108,13 +1117,14 @@ export default function RPGGame() {
         } while ((isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) && attempts < 80);
         occupied.add(`${tx},${ty}`);
 
-        // Create a glowing marker sprite for the item
+        // Create marker sprite — gold for correct, silver for decoys
         const canvas = document.createElement("canvas");
         canvas.width = 16;
         canvas.height = 16;
         const ctx = canvas.getContext("2d");
-        // Diamond/gem shape
-        ctx.fillStyle = "#ffd700";
+        const color = item.isCorrect ? "#ffd700" : "#c0c0c0";
+        const highlight = item.isCorrect ? "#fff8dc" : "#e8e8e8";
+        ctx.fillStyle = color;
         ctx.beginPath();
         ctx.moveTo(8, 1);
         ctx.lineTo(14, 8);
@@ -1122,7 +1132,7 @@ export default function RPGGame() {
         ctx.lineTo(2, 8);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "#fff8dc";
+        ctx.fillStyle = highlight;
         ctx.beginPath();
         ctx.moveTo(8, 3);
         ctx.lineTo(11, 8);
@@ -1144,13 +1154,14 @@ export default function RPGGame() {
           (MAP_H - 1 - ty) * TILE + TILE / 2,
           3,
         );
+        // Start hidden — only show after gather quest is unlocked
+        itemMesh.visible = false;
         scene.add(itemMesh);
 
         placed.push({ ...item, tx, ty, mesh: itemMesh, collected: false });
       });
 
       gatherSpritesRef.current = placed;
-      setGatherItemsOnMap(placed.map((p) => ({ name: p.name, hint: p.hint, tx: p.tx, ty: p.ty, collected: false })));
     }
 
     // ── Game loop ─────────────────────────────────────────────────────────
@@ -1249,27 +1260,20 @@ export default function RPGGame() {
         5,
       );
 
-      // Check gather item pickup
+      // Check gather item pickup (only when gather quest is active)
       gatherSpritesRef.current.forEach((item) => {
-        if (item.collected) return;
+        if (item.collected || !item.mesh?.visible) return;
         if (gs.playerX === item.tx && gs.playerY === item.ty) {
           item.collected = true;
           item.mesh.visible = false;
-          setInventory((prev) => [...prev, item.name]);
-          setGatherItemsOnMap((prev) =>
-            prev.map((g) =>
-              g.tx === item.tx && g.ty === item.ty
-                ? { ...g, collected: true }
-                : g
-            )
-          );
+          setInventory((prev) => [...prev, { name: item.name, isCorrect: item.isCorrect }]);
           playGameSound("rpgDialogueSelect");
         }
       });
 
-      // Pulse gather items
+      // Pulse visible gather items
       gatherSpritesRef.current.forEach((item) => {
-        if (item.collected || !item.mesh) return;
+        if (item.collected || !item.mesh?.visible) return;
         const pulse = 1 + Math.sin(time * 0.004) * 0.15;
         item.mesh.scale.set(pulse, pulse, 1);
       });
@@ -1597,6 +1601,15 @@ export default function RPGGame() {
     });
   }, [gameComplete, questProgress]);
 
+  // ─── Show/hide gather items based on quest unlock ──────────────────
+  useEffect(() => {
+    gatherSpritesRef.current.forEach((item) => {
+      if (!item.collected && item.mesh) {
+        item.mesh.visible = gatherUnlocked;
+      }
+    });
+  }, [gatherUnlocked]);
+
   const completeNPCChapter = useCallback(
     (npcIdx) => {
       const newAnswered = new Set(answeredNPCs);
@@ -1659,6 +1672,11 @@ export default function RPGGame() {
       return;
     }
 
+    // Unlock gather items when reaching a gather node
+    if (nextNode.responseMode === "gather") {
+      setGatherUnlocked(true);
+    }
+
     setTimeout(() => {
       setDialogue((prev) => ({
         ...prev,
@@ -1673,25 +1691,37 @@ export default function RPGGame() {
     }, 300);
   };
 
-  const handleGatherReturn = () => {
+  const handleGatherSubmit = (itemIndex) => {
     if (!dialogue?.node || dialogue.node.responseMode !== "gather") return;
-    const requiredItem = dialogue.node.gatherItem?.name;
-    if (!requiredItem || !inventory.includes(requiredItem)) return;
+    const submittedItem = inventory[itemIndex];
+    if (!submittedItem) return;
 
     playGameSound("rpgDialogueSelect");
+    const requiredItem = dialogue.node.gatherItem?.name;
+
+    // Remove the submitted item from inventory
+    setInventory((prev) => {
+      const copy = [...prev];
+      copy.splice(itemIndex, 1);
+      return copy;
+    });
+
+    if (!submittedItem.isCorrect) {
+      // Wrong item — NPC tells you it's wrong
+      const wrongText = targetLang === "es"
+        ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
+        : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
+      setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
+      speakNPCText(wrongText);
+      return;
+    }
+
+    // Correct item — advance quest
+    setGatherUnlocked(false);
     const nextNodeId = dialogue.node.nextNodeId;
     const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
       (n) => n.id === nextNodeId,
     );
-
-    // Remove item from inventory
-    setInventory((prev) => {
-      const idx = prev.indexOf(requiredItem);
-      if (idx === -1) return prev;
-      const copy = [...prev];
-      copy.splice(idx, 1);
-      return copy;
-    });
 
     if (!nextNode) {
       completeNPCChapter(dialogue.npcIdx);
@@ -1736,15 +1766,17 @@ export default function RPGGame() {
         (n) => n.id === nextNodeId,
       );
 
-      const heardReply =
-        targetLang === "es"
-          ? `Perfecto, escuché: "${heard}".`
-          : `Perfect, I heard: "${heard}."`;
-      setDialogue((prev) => ({ ...prev, npcReply: heardReply }));
+      const continueReply = dialogue.node.speechContinueReply ||
+        (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
+      setDialogue((prev) => ({ ...prev, npcReply: continueReply }));
 
       if (!nextNode) {
-        speakNPCText(heardReply);
+        speakNPCText(continueReply);
         return;
+      }
+      // Unlock gather items if next node is a gather quest
+      if (nextNode.responseMode === "gather") {
+        setGatherUnlocked(true);
       }
       setQuestProgress((prev) => ({
         ...prev,
@@ -1774,10 +1806,10 @@ export default function RPGGame() {
     setGameComplete(false);
     setLastHeardSpeech("");
     setInventory([]);
-    setGatherItemsOnMap([]);
+    setGatherUnlocked(false);
     gatherSpritesRef.current.forEach((item) => {
       item.collected = false;
-      if (item.mesh) item.mesh.visible = true;
+      if (item.mesh) item.mesh.visible = false;
     });
     setQuestProgress({
       unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
@@ -1982,24 +2014,92 @@ export default function RPGGame() {
         </HStack>
       </HStack>
 
-      {/* Inventory HUD */}
-      {inventory.length > 0 && !gameComplete && (
-        <HStack
+      {/* Inventory icon button */}
+      {!gameComplete && (
+        <IconButton
+          aria-label="Inventory"
+          icon={
+            <Box position="relative">
+              <Text as="span" fontSize="lg">🎒</Text>
+              {inventory.length > 0 && (
+                <Badge
+                  position="absolute"
+                  top="-6px"
+                  right="-8px"
+                  colorScheme="yellow"
+                  borderRadius="full"
+                  fontSize="9px"
+                  minW="16px"
+                  h="16px"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  {inventory.length}
+                </Badge>
+              )}
+            </Box>
+          }
           position="absolute"
-          bottom={3}
+          top={14}
           left={3}
-          bg="blackAlpha.700"
-          borderRadius="md"
-          px={3}
-          py={1}
-          spacing={2}
           zIndex={10}
-        >
-          <Text color="yellow.300" fontSize="xs" fontWeight="bold">
-            {inventory.map((item) => `◆ ${item}`).join("  ")}
-          </Text>
-        </HStack>
+          size="sm"
+          variant="solid"
+          colorScheme="blackAlpha"
+          onClick={inventoryModal.onOpen}
+        />
       )}
+
+      {/* Inventory modal */}
+      <Modal isOpen={inventoryModal.isOpen} onClose={inventoryModal.onClose} isCentered size="sm">
+        <ModalOverlay bg="blackAlpha.700" />
+        <ModalContent bg="gray.900" border="2px solid" borderColor="yellow.400" borderRadius="xl">
+          <ModalHeader color="yellow.300" fontSize="md" pb={1}>
+            {targetLang === "es" ? "Inventario" : "Inventory"}
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody pb={4}>
+            {inventory.length === 0 ? (
+              <Text color="gray.400" fontSize="sm" textAlign="center" py={4}>
+                {targetLang === "es" ? "No tienes objetos." : "No items yet."}
+              </Text>
+            ) : (
+              <VStack spacing={2} align="stretch">
+                {inventory.map((item, idx) => (
+                  <HStack
+                    key={`${item.name}-${idx}`}
+                    bg="whiteAlpha.100"
+                    borderRadius="md"
+                    px={3}
+                    py={2}
+                    justify="space-between"
+                  >
+                    <HStack spacing={2}>
+                      <Text fontSize="sm">{item.isCorrect ? "◆" : "◇"}</Text>
+                      <Text color="white" fontSize="sm">{item.name}</Text>
+                    </HStack>
+                    <Button
+                      size="xs"
+                      colorScheme="red"
+                      variant="ghost"
+                      onClick={() => {
+                        setInventory((prev) => {
+                          const copy = [...prev];
+                          copy.splice(idx, 1);
+                          return copy;
+                        });
+                      }}
+                    >
+                      {targetLang === "es" ? "Soltar" : "Drop"}
+                    </Button>
+                  </HStack>
+                ))}
+              </VStack>
+            )}
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
       {dialogue &&
@@ -2223,38 +2323,52 @@ export default function RPGGame() {
                   </HStack>
                 )}
 
-                {dialogue.node?.responseMode === "gather" && (() => {
-                  const requiredItem = dialogue.node.gatherItem?.name;
-                  const hasItem = requiredItem && inventory.includes(requiredItem);
-                  return (
-                    <VStack spacing={2}>
-                      {hasItem ? (
-                        <Button
-                          size="sm"
-                          colorScheme="green"
-                          onClick={handleGatherReturn}
-                          w="100%"
-                        >
+                {dialogue.node?.responseMode === "gather" && (
+                  <VStack spacing={2}>
+                    {inventory.length > 0 ? (
+                      <>
+                        <Text color="gray.600" fontSize="xs">
                           {targetLang === "es"
-                            ? `Entregar ${requiredItem}`
-                            : `Hand over ${requiredItem}`}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          colorScheme="orange"
-                          variant="outline"
-                          onClick={closeDialogue}
-                          w="100%"
-                        >
-                          {targetLang === "es"
-                            ? `Buscar ${requiredItem}`
-                            : `Search for ${requiredItem}`}
-                        </Button>
-                      )}
-                    </VStack>
-                  );
-                })()}
+                            ? "Elige un objeto para entregar:"
+                            : "Choose an item to hand over:"}
+                        </Text>
+                        {inventory.map((item, idx) => (
+                          <Button
+                            key={`${item.name}-${idx}`}
+                            w="100%"
+                            size="sm"
+                            variant="solid"
+                            bg="rgba(255,255,255,0.92)"
+                            color="gray.900"
+                            border="1px solid"
+                            borderColor="blackAlpha.200"
+                            boxShadow="0px 4px 0px #a9a18c"
+                            _active={{ bg: "gray.100" }}
+                            onClick={() => handleGatherSubmit(idx)}
+                            justifyContent="flex-start"
+                            textAlign="left"
+                            whiteSpace="normal"
+                            h="auto"
+                            py={2}
+                          >
+                            {item.isCorrect ? "◆" : "◇"} {item.name}
+                          </Button>
+                        ))}
+                      </>
+                    ) : null}
+                    <Button
+                      size="sm"
+                      colorScheme="orange"
+                      variant="outline"
+                      onClick={closeDialogue}
+                      w="100%"
+                    >
+                      {targetLang === "es"
+                        ? "Seguir buscando"
+                        : "Keep searching"}
+                    </Button>
+                  </VStack>
+                )}
 
                 {dialogue.node?.responseMode === "none" && (
                   <Button

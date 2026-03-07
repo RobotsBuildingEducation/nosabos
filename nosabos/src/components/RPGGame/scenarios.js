@@ -150,67 +150,95 @@ function sanitizeDialogueLine(line, npcName) {
 // ─── Gather-quest item definitions per map theme ──────────────────────────
 const GATHER_ITEMS_BY_MAP = {
   livingRoom: {
-    es: [
-      { name: "la llave dorada", hint: "Busca cerca de los estantes." },
-      { name: "el libro antiguo", hint: "Mira debajo de los muebles." },
-      { name: "la carta sellada", hint: "Revisa junto a la puerta." },
-    ],
-    en: [
-      { name: "the golden key", hint: "Look near the shelves." },
-      { name: "the old book", hint: "Check under the furniture." },
-      { name: "the sealed letter", hint: "Search by the door." },
-    ],
+    es: {
+      correct: [
+        { name: "la llave dorada", hint: "Busca cerca de los estantes." },
+        { name: "el libro antiguo", hint: "Mira debajo de los muebles." },
+        { name: "la carta sellada", hint: "Revisa junto a la puerta." },
+      ],
+      decoys: [
+        { name: "el jarrón roto" },
+        { name: "la cuchara vieja" },
+        { name: "el botón suelto" },
+      ],
+    },
+    en: {
+      correct: [
+        { name: "the golden key", hint: "Look near the shelves." },
+        { name: "the old book", hint: "Check under the furniture." },
+        { name: "the sealed letter", hint: "Search by the door." },
+      ],
+      decoys: [
+        { name: "the broken vase" },
+        { name: "the old spoon" },
+        { name: "the loose button" },
+      ],
+    },
   },
   park: {
-    es: [
-      { name: "la flor rara", hint: "Crece entre los árboles." },
-      { name: "la piedra brillante", hint: "Está escondida en el camino." },
-      { name: "la pluma azul", hint: "Cerca de la fuente." },
-    ],
-    en: [
-      { name: "the rare flower", hint: "It grows among the trees." },
-      { name: "the shiny stone", hint: "Hidden on the path." },
-      { name: "the blue feather", hint: "Near the fountain." },
-    ],
+    es: {
+      correct: [
+        { name: "la flor rara", hint: "Crece entre los árboles." },
+        { name: "la piedra brillante", hint: "Está escondida en el camino." },
+        { name: "la pluma azul", hint: "Cerca de la fuente." },
+      ],
+      decoys: [
+        { name: "la hoja seca" },
+        { name: "la rama torcida" },
+        { name: "el caracol vacío" },
+      ],
+    },
+    en: {
+      correct: [
+        { name: "the rare flower", hint: "It grows among the trees." },
+        { name: "the shiny stone", hint: "Hidden on the path." },
+        { name: "the blue feather", hint: "Near the fountain." },
+      ],
+      decoys: [
+        { name: "the dry leaf" },
+        { name: "the crooked branch" },
+        { name: "the empty shell" },
+      ],
+    },
   },
   airport: {
-    es: [
-      { name: "el pasaporte perdido", hint: "Alguien lo dejó en una banca." },
-      { name: "la etiqueta de equipaje", hint: "Revisa los mostradores." },
-      { name: "el boleto dorado", hint: "Mira cerca de la entrada." },
-    ],
-    en: [
-      { name: "the lost passport", hint: "Someone left it on a bench." },
-      { name: "the luggage tag", hint: "Check the counters." },
-      { name: "the golden ticket", hint: "Look near the entrance." },
-    ],
+    es: {
+      correct: [
+        { name: "el pasaporte perdido", hint: "Alguien lo dejó en una banca." },
+        { name: "la etiqueta de equipaje", hint: "Revisa los mostradores." },
+        { name: "el boleto dorado", hint: "Mira cerca de la entrada." },
+      ],
+      decoys: [
+        { name: "el recibo arrugado" },
+        { name: "la tarjeta vencida" },
+        { name: "el folleto viejo" },
+      ],
+    },
+    en: {
+      correct: [
+        { name: "the lost passport", hint: "Someone left it on a bench." },
+        { name: "the luggage tag", hint: "Check the counters." },
+        { name: "the golden ticket", hint: "Look near the entrance." },
+      ],
+      decoys: [
+        { name: "the crumpled receipt" },
+        { name: "the expired card" },
+        { name: "the old brochure" },
+      ],
+    },
   },
 };
 
-function pickGatherItems(mapId, targetLang, count = 2) {
-  const pool = GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
+function pickGatherItems(mapId, targetLang) {
+  const data = GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
     GATHER_ITEMS_BY_MAP[mapId]?.es ||
     GATHER_ITEMS_BY_MAP.park.es;
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
-}
-
-function placeGatherItems(items, mapWidth, mapHeight, npcs, playerStart) {
-  const occupied = new Set();
-  npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
-  occupied.add(`${playerStart.x},${playerStart.y}`);
-
-  return items.map((item) => {
-    let tx, ty;
-    let attempts = 0;
-    do {
-      tx = 2 + Math.floor(Math.random() * (mapWidth - 4));
-      ty = 2 + Math.floor(Math.random() * (mapHeight - 4));
-      attempts++;
-    } while (occupied.has(`${tx},${ty}`) && attempts < 50);
-    occupied.add(`${tx},${ty}`);
-    return { ...item, tx, ty };
-  });
+  const correctPool = [...data.correct].sort(() => Math.random() - 0.5);
+  const decoyPool = [...data.decoys].sort(() => Math.random() - 0.5);
+  // 1 correct + 2 decoys
+  const correct = correctPool.slice(0, 1).map((item) => ({ ...item, isCorrect: true }));
+  const decoys = decoyPool.slice(0, 2).map((item) => ({ ...item, isCorrect: false }));
+  return { correct, decoys, all: [...correct, ...decoys].sort(() => Math.random() - 0.5) };
 }
 
 function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
@@ -234,7 +262,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npc0Choice2: "Estoy listo para ayudar. ¿Por dónde empiezo?",
       npc0Reply1: (topic) => `Todo empezó esta mañana. Escucha con atención: ${topic}`,
       npc0Reply2: (topic) => `Gracias por ofrecerte. Primero, necesito que entiendas esto: ${topic}`,
-      npcSpeechPrompt: (topic) => `Ahora repite lo que entendiste sobre: ${topic}`,
+      npcSpeechPrompt: (seed) => `Interesante... ¿Y tú qué opinas sobre todo esto? ${seed}`,
       // Player dialogue bridging NPCs
       playerBridge: (fromNpc, toNpc) => `${fromNpc} me envió. Dice que tú sabes algo importante.`,
       npcMidGreet: (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
@@ -250,11 +278,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npcFinalReply2: (topic) => `Casi terminamos. Confirma que entiendes: ${topic}`,
       questComplete: "¡Misión cumplida! Has resuelto el misterio.",
       // Gather quest
-      gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar.`,
+      gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
       gatherHint: (hint) => `Una pista: ${hint}`,
-      gatherReturn: (itemName) => `¡Encontraste ${itemName}! Tráemelo de vuelta.`,
+      gatherWrongItem: (wrongName, correctName) => `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
       gatherSuccess: (itemName) => `¡Excelente! Tienes ${itemName}. Eso me ayuda mucho.`,
       gatherPlayerReport: (itemName) => `Encontré ${itemName}. Aquí está.`,
+      speechContinue: "Entiendo lo que dices. Sigamos adelante.",
     },
     en: {
       defaultSeed: "The town bell disappeared and nobody knows who took it.",
@@ -269,7 +298,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npc0Choice2: "I'm ready to help. Where do I start?",
       npc0Reply1: (topic) => `It all started this morning. Listen carefully: ${topic}`,
       npc0Reply2: (topic) => `Thanks for volunteering. First, you need to understand this: ${topic}`,
-      npcSpeechPrompt: (topic) => `Now repeat what you understood about: ${topic}`,
+      npcSpeechPrompt: (seed) => `Interesting... What do you think about all of this? ${seed}`,
       playerBridge: (fromNpc, toNpc) => `${fromNpc} sent me. They say you know something important.`,
       npcMidGreet: (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
       npcMidChoice1: "Exactly. What do you know about this?",
@@ -283,11 +312,12 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       npcFinalReply1: (topic) => `Just one thing left. Listen closely: ${topic}`,
       npcFinalReply2: (topic) => `We're almost done. Confirm you understand: ${topic}`,
       questComplete: "Quest complete! You solved the mystery.",
-      gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here.`,
+      gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
       gatherHint: (hint) => `A clue: ${hint}`,
-      gatherReturn: (itemName) => `You found ${itemName}! Bring it back to me.`,
+      gatherWrongItem: (wrongName, correctName) => `That's ${wrongName}. Not what I need. Look for ${correctName}.`,
       gatherSuccess: (itemName) => `Excellent! You have ${itemName}. That helps a lot.`,
       gatherPlayerReport: (itemName) => `I found ${itemName}. Here it is.`,
+      speechContinue: "I understand what you're saying. Let's keep going.",
     },
   };
 
@@ -305,7 +335,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
   };
 
   // Pick gather items for the middle NPC's gather quest
-  const gatherItems = pickGatherItems(mapId, tl, 2);
+  const gatherData = pickGatherItems(mapId, tl);
 
   const treeByNpc = npcs.map((npc, npcIdx) => {
     const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
@@ -321,7 +351,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     let nodes;
 
     if (isFirst) {
-      // NPC 0: story introduction, speech practice, handoff to NPC 1
+      // NPC 0: story introduction, free conversation, handoff to NPC 1
       nodes = [
         {
           id: nodeId(1),
@@ -342,9 +372,10 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         },
         {
           id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(storySeed), npc.name),
           responseMode: "speech",
           speechFallbackReply: t.fallbackSpeech,
+          speechContinueReply: t.speechContinue,
           nextNodeId: nodeId(3),
         },
         {
@@ -352,17 +383,15 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           npcLine: sanitizeDialogueLine(t.npcHandoff(nextNpc.name, storySeed), npc.name),
           responseMode: "none",
           terminal: true,
-          // Player dialogue to show when approaching the next NPC
           playerBridge: t.playerBridge(npc.name, nextNpc.name),
         },
       ];
     } else if (isMid) {
-      // Middle NPC: gather quest — player must find items then return
-      const gatherItem = gatherItems[0] || { name: t.defaultTopic, hint: "" };
+      // Middle NPC: conversation then gather quest — player must find correct item
+      const correctItem = gatherData.correct[0] || { name: t.defaultTopic, hint: "", isCorrect: true };
       nodes = [
         {
           id: nodeId(1),
-          // Player arrives and speaks first (bridge from previous NPC)
           playerLine: t.playerBridge(previousNpc.name, npc.name),
           npcLine: sanitizeDialogueLine(t.npcMidGreet(previousNpc.name), npc.name),
           responseMode: "choice",
@@ -381,26 +410,27 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         },
         {
           id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(storySeed), npc.name),
           responseMode: "speech",
           speechFallbackReply: t.fallbackSpeech,
+          speechContinueReply: t.speechContinue,
           nextNodeId: nodeId(3),
         },
         {
           id: nodeId(3),
           npcLine: sanitizeDialogueLine(
-            `${t.gatherIntro(gatherItem.name)} ${t.gatherHint(gatherItem.hint)}`,
+            `${t.gatherIntro(correctItem.name)} ${t.gatherHint(correctItem.hint)}`,
             npc.name,
           ),
           responseMode: "gather",
-          gatherItem,
+          gatherItem: correctItem,
           nextNodeId: nodeId(4),
         },
         {
           id: nodeId(4),
-          playerLine: t.gatherPlayerReport(gatherItem.name),
+          playerLine: t.gatherPlayerReport(correctItem.name),
           npcLine: sanitizeDialogueLine(
-            `${t.gatherSuccess(gatherItem.name)} ${t.npcHandoff(nextNpc.name, storySeed)}`,
+            `${t.gatherSuccess(correctItem.name)} ${t.npcHandoff(nextNpc.name, storySeed)}`,
             npc.name,
           ),
           responseMode: "none",
@@ -431,9 +461,10 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         },
         {
           id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(topic), npc.name),
+          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(storySeed), npc.name),
           responseMode: "speech",
           speechFallbackReply: t.fallbackSpeech,
+          speechContinueReply: t.speechContinue,
           nextNodeId: nodeId(3),
         },
         {
@@ -458,7 +489,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     storySeed,
     startNpcIdx,
     treeByNpc,
-    gatherItems,
+    gatherData,
   };
 }
 
