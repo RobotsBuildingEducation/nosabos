@@ -2632,22 +2632,22 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
 
       {/* Quick actions */}
       {!gameComplete && (
-        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={2}>
+        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={3}>
           <IconButton
             aria-label="Inventory"
             icon={
               <Box position="relative">
-                <Text as="span" fontSize="lg">🎒</Text>
+                <Text as="span" fontSize="xl">🎒</Text>
                 {inventory.length > 0 && (
                   <Badge
                     position="absolute"
                     top="-6px"
-                    right="-8px"
+                    right="-10px"
                     colorScheme="yellow"
                     borderRadius="full"
-                    fontSize="9px"
-                    minW="16px"
-                    h="16px"
+                    fontSize="10px"
+                    minW="18px"
+                    h="18px"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -2657,15 +2657,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 )}
               </Box>
             }
-            size="sm"
+            size="md"
             variant="solid"
             colorScheme="blackAlpha"
             onClick={inventoryModal.onOpen}
           />
           <IconButton
             aria-label={supportLang === "es" ? "Ayuda" : "Help"}
-            icon={<MdOutlineSupportAgent size={16} />}
-            size="sm"
+            icon={<MdOutlineSupportAgent size={20} />}
+            size="md"
             variant="solid"
             bg="white"
             color="blue.600"
@@ -2878,15 +2878,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   align="center"
                   spacing={2}
                   px={2}
-                  py={1}
+                  py={0}
                   pr={8}
                   bg="orange.50"
                   borderBottom="1px solid"
                   borderColor="orange.100"
                 >
-                  <Box>
+                  <Box flexShrink={0}>
                     <RandomCharacter
-                      width="42px"
+                      width="36px"
                       notSoRandomCharacter={dialogue.npcCharacter}
                     />{" "}
                   </Box>
@@ -2905,7 +2905,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   )}
                 </HStack>
 
-                <VStack align="stretch" spacing={2} px={3} py={2}>
+                <VStack align="stretch" spacing={2} px={3} py={1}>
                   <HStack justify="flex-end">
                     <IconButton
                       aria-label={
