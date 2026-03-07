@@ -160,6 +160,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "el jarrón roto", sprite: "vase" },
         { name: "la cuchara vieja", sprite: "spoon" },
         { name: "el botón suelto", sprite: "button" },
+        { name: "la vela derretida", sprite: "candle" },
+        { name: "el reloj parado", sprite: "clock" },
+        { name: "la taza agrietada", sprite: "cup" },
+        { name: "el cojín viejo", sprite: "cushion" },
+        { name: "el marco vacío", sprite: "frame" },
+        { name: "las tijeras oxidadas", sprite: "scissors" },
+        { name: "la moneda antigua", sprite: "coin" },
       ],
     },
     en: {
@@ -172,6 +179,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "the broken vase", sprite: "vase" },
         { name: "the old spoon", sprite: "spoon" },
         { name: "the loose button", sprite: "button" },
+        { name: "the melted candle", sprite: "candle" },
+        { name: "the stopped clock", sprite: "clock" },
+        { name: "the cracked cup", sprite: "cup" },
+        { name: "the old cushion", sprite: "cushion" },
+        { name: "the empty frame", sprite: "frame" },
+        { name: "the rusty scissors", sprite: "scissors" },
+        { name: "the old coin", sprite: "coin" },
       ],
     },
   },
@@ -186,6 +200,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "la hoja seca", sprite: "leaf" },
         { name: "la rama torcida", sprite: "branch" },
         { name: "el caracol vacío", sprite: "shell" },
+        { name: "la bellota", sprite: "acorn" },
+        { name: "el hongo rojo", sprite: "mushroom" },
+        { name: "la piña caída", sprite: "pinecone" },
+        { name: "la mariposa seca", sprite: "butterfly" },
+        { name: "el nido abandonado", sprite: "nest" },
+        { name: "la rana de piedra", sprite: "frog_statue" },
+        { name: "la semilla extraña", sprite: "seed" },
       ],
     },
     en: {
@@ -198,6 +219,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "the dry leaf", sprite: "leaf" },
         { name: "the crooked branch", sprite: "branch" },
         { name: "the empty shell", sprite: "shell" },
+        { name: "the acorn", sprite: "acorn" },
+        { name: "the red mushroom", sprite: "mushroom" },
+        { name: "the fallen pinecone", sprite: "pinecone" },
+        { name: "the dried butterfly", sprite: "butterfly" },
+        { name: "the abandoned nest", sprite: "nest" },
+        { name: "the stone frog", sprite: "frog_statue" },
+        { name: "the strange seed", sprite: "seed" },
       ],
     },
   },
@@ -212,6 +240,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "el recibo arrugado", sprite: "receipt" },
         { name: "la tarjeta vencida", sprite: "card" },
         { name: "el folleto viejo", sprite: "brochure" },
+        { name: "los audífonos rotos", sprite: "headphones" },
+        { name: "la botella vacía", sprite: "bottle" },
+        { name: "el mapa doblado", sprite: "map" },
+        { name: "la maleta rota", sprite: "suitcase" },
+        { name: "el llavero perdido", sprite: "keychain" },
+        { name: "las gafas de sol", sprite: "sunglasses" },
+        { name: "el cargador viejo", sprite: "charger" },
       ],
     },
     en: {
@@ -224,6 +259,13 @@ const GATHER_ITEMS_BY_MAP = {
         { name: "the crumpled receipt", sprite: "receipt" },
         { name: "the expired card", sprite: "card" },
         { name: "the old brochure", sprite: "brochure" },
+        { name: "the broken headphones", sprite: "headphones" },
+        { name: "the empty bottle", sprite: "bottle" },
+        { name: "the folded map", sprite: "map" },
+        { name: "the broken suitcase", sprite: "suitcase" },
+        { name: "the lost keychain", sprite: "keychain" },
+        { name: "the sunglasses", sprite: "sunglasses" },
+        { name: "the old charger", sprite: "charger" },
       ],
     },
   },
@@ -235,9 +277,9 @@ function pickGatherItems(mapId, targetLang) {
     GATHER_ITEMS_BY_MAP.park.es;
   const correctPool = [...data.correct].sort(() => Math.random() - 0.5);
   const decoyPool = [...data.decoys].sort(() => Math.random() - 0.5);
-  // 1 correct + 2 decoys
-  const correct = correctPool.slice(0, 1).map((item) => ({ ...item, isCorrect: true }));
-  const decoys = decoyPool.slice(0, 2).map((item) => ({ ...item, isCorrect: false }));
+  // 2 correct + 8 decoys = 10 items
+  const correct = correctPool.slice(0, 2).map((item) => ({ ...item, isCorrect: true }));
+  const decoys = decoyPool.slice(0, 8).map((item) => ({ ...item, isCorrect: false }));
   return { correct, decoys, all: [...correct, ...decoys].sort(() => Math.random() - 0.5) };
 }
 

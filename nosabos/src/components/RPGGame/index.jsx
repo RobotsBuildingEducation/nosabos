@@ -269,6 +269,226 @@ function drawGatherItemSprite(ctx, spriteId) {
       rect(9, 10, 3, 1, "#aaa");
       break;
     }
+    // ── Additional Living Room items ──────────────────
+    case "candle": {
+      rect(7, 8, 2, 6, "#f5e6c8");  // wax body
+      rect(6, 13, 4, 1, "#d4c8a8"); // base
+      rect(7, 7, 2, 1, "#e8d8b0");  // top
+      px(7, 6, "#ff8800"); px(8, 6, "#ffaa00"); // flame
+      px(7, 5, "#ffcc44"); px(8, 5, "#ffdd66"); // flame tip
+      px(8, 4, "#ffee88"); // flame top
+      break;
+    }
+    case "clock": {
+      rect(5, 3, 6, 6, "#c0a870");  // body
+      rect(6, 2, 4, 1, "#d0b880");  // top
+      rect(6, 9, 4, 2, "#b09860");  // base
+      rect(6, 4, 4, 4, "#f5f0e0");  // face
+      px(8, 4, "#333"); px(8, 7, "#333"); // 12, 6
+      px(6, 6, "#333"); px(9, 6, "#333"); // 9, 3
+      px(8, 5, "#cc3333"); px(7, 6, "#333"); // hands
+      break;
+    }
+    case "cup": {
+      rect(5, 4, 6, 7, "#e8e0d0");  // body
+      rect(5, 4, 6, 1, "#d8d0c0");  // rim
+      rect(5, 10, 6, 1, "#d0c8b0"); // base
+      rect(11, 6, 2, 3, "#d8d0c0"); // handle
+      px(12, 6, "#c8c0a8"); px(12, 8, "#c8c0a8");
+      px(7, 5, "#8b6914"); // crack line
+      px(8, 6, "#8b6914"); px(7, 7, "#8b6914");
+      break;
+    }
+    case "cushion": {
+      rect(3, 5, 10, 6, "#9966aa");  // body
+      rect(4, 4, 8, 1, "#aa77bb");   // top puff
+      rect(4, 11, 8, 1, "#885599");  // bottom
+      rect(5, 6, 6, 4, "#aa77bb");   // center highlight
+      px(6, 7, "#cc99dd"); px(9, 7, "#cc99dd"); // tufts
+      px(6, 9, "#cc99dd"); px(9, 9, "#cc99dd");
+      break;
+    }
+    case "frame": {
+      rect(3, 2, 10, 12, "#b8860b"); // outer frame
+      rect(4, 3, 8, 10, "#8b6914");  // inner frame
+      rect(5, 4, 6, 8, "#f5f0e0");   // empty inside
+      rect(5, 4, 6, 1, "#e8e0d0");
+      rect(5, 11, 6, 1, "#e8e0d0");
+      px(7, 7, "#ddd"); px(8, 8, "#ddd"); // empty marks
+      break;
+    }
+    case "scissors": {
+      // Open scissors
+      px(4, 3, "#888"); px(5, 4, "#888"); px(6, 5, "#888"); px(7, 6, "#888"); // blade 1
+      px(10, 3, "#888"); px(9, 4, "#888"); px(8, 5, "#888"); // blade 2
+      rect(6, 7, 4, 1, "#666"); // pivot
+      px(5, 8, "#cc3333"); px(6, 9, "#cc3333"); px(5, 10, "#cc3333"); // handle 1
+      px(9, 8, "#cc3333"); px(8, 9, "#cc3333"); px(9, 10, "#cc3333"); // handle 2
+      px(5, 11, "#cc3333"); px(9, 11, "#cc3333");
+      break;
+    }
+    case "coin": {
+      rect(5, 4, 6, 6, "#daa520");  // body
+      rect(6, 3, 4, 1, "#e8b830");  // top
+      rect(6, 10, 4, 1, "#c89418"); // bottom
+      px(5, 4, "#c89418"); px(10, 4, "#c89418"); // rounded
+      px(5, 9, "#c89418"); px(10, 9, "#c89418");
+      px(7, 6, "#f0d060"); px(8, 6, "#f0d060"); // symbol
+      px(7, 7, "#f0d060"); px(8, 7, "#f0d060");
+      break;
+    }
+
+    // ── Additional Park items ───────────────────────
+    case "acorn": {
+      rect(6, 3, 4, 3, "#8b6914");  // cap
+      rect(7, 2, 2, 1, "#7a5c10");  // cap top
+      px(8, 1, "#654321"); // stem
+      rect(6, 6, 4, 5, "#daa520");  // nut body
+      rect(7, 11, 2, 1, "#c89418"); // tip
+      px(7, 4, "#9b7924"); px(8, 4, "#9b7924"); // cap texture
+      px(7, 7, "#e8c840"); // highlight
+      break;
+    }
+    case "mushroom": {
+      rect(5, 3, 6, 4, "#cc3333");  // cap
+      rect(6, 2, 4, 1, "#dd4444");  // cap top
+      px(6, 4, "#fff"); px(9, 3, "#fff"); px(7, 5, "#fff"); // spots
+      rect(7, 7, 2, 5, "#f0e8d0");  // stem
+      rect(6, 11, 4, 1, "#e0d8c0"); // base
+      px(7, 8, "#f8f0e0"); // stem highlight
+      break;
+    }
+    case "pinecone": {
+      rect(6, 2, 4, 2, "#8b6914");  // top
+      rect(5, 4, 6, 4, "#7a5c10");  // body upper
+      rect(5, 8, 6, 3, "#654321");  // body lower
+      rect(6, 11, 4, 1, "#5a4a1a"); // base
+      // Scale pattern
+      px(6, 4, "#9b7924"); px(8, 4, "#9b7924"); px(10, 4, "#9b7924");
+      px(5, 6, "#9b7924"); px(7, 6, "#9b7924"); px(9, 6, "#9b7924");
+      px(6, 8, "#8b6914"); px(8, 8, "#8b6914"); px(10, 8, "#8b6914");
+      break;
+    }
+    case "butterfly": {
+      // Butterfly with spread wings
+      px(7, 5, "#333"); px(8, 5, "#333"); // body
+      px(7, 6, "#333"); px(8, 6, "#333");
+      px(7, 7, "#333"); px(8, 7, "#333");
+      // Left wing
+      px(4, 4, "#ff88aa"); px(5, 4, "#ff88aa"); px(6, 4, "#ff88aa");
+      px(4, 5, "#ff6699"); px(5, 5, "#ff6699"); px(6, 5, "#ff6699");
+      px(5, 6, "#ff88aa"); px(6, 6, "#ff88aa");
+      // Right wing
+      px(9, 4, "#ff88aa"); px(10, 4, "#ff88aa"); px(11, 4, "#ff88aa");
+      px(9, 5, "#ff6699"); px(10, 5, "#ff6699"); px(11, 5, "#ff6699");
+      px(9, 6, "#ff88aa"); px(10, 6, "#ff88aa");
+      // Antennae
+      px(6, 3, "#333"); px(9, 3, "#333");
+      break;
+    }
+    case "nest": {
+      rect(4, 8, 8, 3, "#8b6914");  // nest bowl
+      rect(5, 7, 6, 1, "#9b7924");  // rim
+      rect(5, 11, 6, 1, "#7a5c10"); // base
+      // Twigs texture
+      px(4, 9, "#a08030"); px(6, 8, "#a08030"); px(9, 9, "#a08030"); px(11, 8, "#a08030");
+      // Eggs
+      px(6, 8, "#e8e0d0"); px(8, 8, "#e8e0d0"); px(7, 9, "#f0e8e0");
+      break;
+    }
+    case "frog_statue": {
+      rect(5, 6, 6, 5, "#808080");  // body
+      rect(6, 5, 4, 1, "#909090");  // head top
+      rect(6, 11, 4, 1, "#707070"); // base
+      px(6, 6, "#a0a0a0"); px(9, 6, "#a0a0a0"); // eyes
+      px(6, 7, "#333"); px(9, 7, "#333"); // pupils
+      px(7, 9, "#909090"); px(8, 9, "#909090"); // mouth line
+      rect(4, 9, 2, 2, "#808080"); rect(10, 9, 2, 2, "#808080"); // legs
+      break;
+    }
+    case "seed": {
+      rect(6, 5, 4, 6, "#8b6914");  // body
+      rect(7, 4, 2, 1, "#9b7924");  // top
+      rect(7, 11, 2, 1, "#7a5c10"); // bottom
+      px(7, 6, "#a08030"); px(8, 6, "#a08030"); // stripe
+      px(7, 8, "#654321"); // dark line
+      px(8, 7, "#b09040"); // highlight
+      break;
+    }
+
+    // ── Additional Airport items ────────────────────
+    case "headphones": {
+      rect(5, 2, 6, 2, "#333");     // headband
+      px(4, 3, "#333"); px(11, 3, "#333"); // sides
+      px(4, 4, "#333"); px(11, 4, "#333");
+      rect(3, 5, 3, 4, "#444");     // left cup
+      rect(10, 5, 3, 4, "#444");    // right cup
+      px(4, 6, "#666"); px(11, 6, "#666"); // cup highlight
+      rect(4, 9, 1, 1, "#555"); rect(11, 9, 1, 1, "#555"); // cup base
+      break;
+    }
+    case "bottle": {
+      rect(7, 1, 2, 2, "#a0d0a0");  // cap
+      rect(7, 3, 2, 2, "#c8e8f0");  // neck
+      rect(5, 5, 6, 8, "#d0eef8");  // body
+      rect(5, 13, 6, 1, "#b0d0e0"); // base
+      px(6, 7, "#e8f4ff"); px(7, 8, "#e8f4ff"); // reflection
+      rect(6, 9, 4, 1, "#b0d8e8"); // label
+      rect(6, 10, 4, 1, "#a0c8d8");
+      break;
+    }
+    case "map": {
+      rect(3, 3, 10, 10, "#f5e6c8"); // paper
+      rect(3, 3, 10, 1, "#e0d0a8");  // top edge
+      // Fold lines
+      px(8, 3, "#d0c098"); px(8, 4, "#d0c098"); px(8, 5, "#d0c098");
+      px(8, 6, "#d0c098"); px(8, 7, "#d0c098"); px(8, 8, "#d0c098");
+      // Map markings
+      px(5, 5, "#cc3333"); px(5, 6, "#cc3333"); px(6, 5, "#cc3333"); // X mark
+      px(9, 8, "#4477aa"); px(10, 9, "#4477aa"); px(10, 7, "#4477aa"); // route
+      rect(4, 10, 3, 1, "#8b6914"); // text line
+      break;
+    }
+    case "suitcase": {
+      rect(3, 5, 10, 7, "#6699cc"); // body
+      rect(6, 3, 4, 2, "#5588bb");  // handle
+      rect(7, 4, 2, 1, "#888");     // handle grip
+      rect(3, 8, 10, 1, "#5588bb"); // strap
+      px(7, 8, "#daa520"); px(8, 8, "#daa520"); // buckle
+      rect(3, 11, 10, 1, "#5080aa"); // base
+      px(5, 12, "#444"); px(10, 12, "#444"); // wheels
+      break;
+    }
+    case "keychain": {
+      rect(6, 2, 4, 4, "#c0c0c0");  // ring
+      rect(7, 3, 2, 2, "#1a1a2e");  // ring hole
+      rect(7, 6, 2, 1, "#aaa");     // chain link
+      rect(6, 7, 4, 5, "#cc3333");  // fob body
+      rect(7, 8, 2, 3, "#dd5555");  // fob highlight
+      rect(6, 12, 4, 1, "#aa2222"); // fob base
+      break;
+    }
+    case "sunglasses": {
+      // Aviator-style sunglasses
+      rect(2, 5, 5, 4, "#333");     // left lens
+      rect(9, 5, 5, 4, "#333");     // right lens
+      rect(7, 5, 2, 1, "#888");     // bridge
+      px(1, 6, "#888"); px(14, 6, "#888"); // arms
+      px(3, 6, "#555"); px(10, 6, "#555"); // lens shine
+      rect(2, 5, 5, 1, "#444"); rect(9, 5, 5, 1, "#444"); // top rims
+      break;
+    }
+    case "charger": {
+      rect(4, 2, 4, 5, "#333");     // plug head
+      rect(5, 3, 2, 2, "#888");     // prongs area
+      px(5, 3, "#ccc"); px(6, 3, "#ccc"); // prongs
+      rect(5, 7, 2, 1, "#444");     // cable start
+      px(6, 8, "#444"); px(5, 9, "#444"); px(6, 10, "#444"); // cable curl
+      px(5, 11, "#444"); px(6, 12, "#444"); // cable end
+      rect(5, 12, 3, 2, "#555");    // USB connector
+      break;
+    }
+
     default: {
       // Fallback: simple colored circle
       rect(5, 4, 6, 8, "#a080c0");
