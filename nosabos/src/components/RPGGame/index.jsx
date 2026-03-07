@@ -26,7 +26,7 @@ import {
   ModalCloseButton,
   useDisclosure,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, CloseIcon, QuestionOutlineIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -43,6 +43,7 @@ import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
+import HelpChatFab from "../HelpChatFab";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -612,6 +613,7 @@ export default function RPGGame() {
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
   const inventoryModal = useDisclosure();
+  const helpChat = useDisclosure();
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
@@ -2547,42 +2549,57 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         </HStack>
       </HStack>
 
-      {/* Inventory icon button */}
+      {/* Quick actions */}
       {!gameComplete && (
-        <IconButton
-          aria-label="Inventory"
-          icon={
-            <Box position="relative">
-              <Text as="span" fontSize="lg">🎒</Text>
-              {inventory.length > 0 && (
-                <Badge
-                  position="absolute"
-                  top="-6px"
-                  right="-8px"
-                  colorScheme="yellow"
-                  borderRadius="full"
-                  fontSize="9px"
-                  minW="16px"
-                  h="16px"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                >
-                  {inventory.length}
-                </Badge>
-              )}
-            </Box>
-          }
-          position="absolute"
-          top={14}
-          left={3}
-          zIndex={10}
-          size="sm"
-          variant="solid"
-          colorScheme="blackAlpha"
-          onClick={inventoryModal.onOpen}
-        />
+        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={2}>
+          <IconButton
+            aria-label="Inventory"
+            icon={
+              <Box position="relative">
+                <Text as="span" fontSize="lg">🎒</Text>
+                {inventory.length > 0 && (
+                  <Badge
+                    position="absolute"
+                    top="-6px"
+                    right="-8px"
+                    colorScheme="yellow"
+                    borderRadius="full"
+                    fontSize="9px"
+                    minW="16px"
+                    h="16px"
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    {inventory.length}
+                  </Badge>
+                )}
+              </Box>
+            }
+            size="sm"
+            variant="solid"
+            colorScheme="blackAlpha"
+            onClick={inventoryModal.onOpen}
+          />
+          <IconButton
+            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
+            icon={<QuestionOutlineIcon />}
+            size="sm"
+            variant="solid"
+            colorScheme="blackAlpha"
+            onClick={helpChat.onOpen}
+          />
+        </VStack>
       )}
+
+      <HelpChatFab
+        progress={{ targetLang, supportLang }}
+        appLanguage={supportLang}
+        isOpen={helpChat.isOpen}
+        onOpen={helpChat.onOpen}
+        onClose={helpChat.onClose}
+        showFloatingTrigger={false}
+      />
 
       {/* Inventory modal */}
       <Modal isOpen={inventoryModal.isOpen} onClose={inventoryModal.onClose} isCentered size="sm">
