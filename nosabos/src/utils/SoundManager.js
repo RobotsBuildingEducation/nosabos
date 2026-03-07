@@ -65,11 +65,15 @@ class SoundManager {
 
   async ensureContextRunning() {
     try {
-      if (Tone.context.state !== "running") {
+      const state = Tone.context.state;
+      if (state !== "running") {
+        // Always try Tone.start() first (handles initial unlock + resume)
         await Tone.start();
-      }
-      if (Tone.context.state === "suspended") {
-        await Tone.context.resume();
+
+        // If still not running (e.g. iOS "interrupted" state), force resume
+        if (Tone.context.state !== "running") {
+          await Tone.context.resume();
+        }
       }
       return Tone.context.state === "running";
     } catch (err) {

@@ -111,6 +111,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
+import * as Tone from "tone";
 import useSoundSettings from "./hooks/useSoundSettings";
 
 import GrammarBook from "./components/GrammarBook";
@@ -1710,6 +1711,9 @@ export default function App() {
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
     const handleFirstInteraction = () => {
+      // Call Tone.start() synchronously inside the user gesture so the
+      // browser treats it as user-initiated (required on iOS / mobile).
+      Tone.start();
       warmupAudio();
       // Remove listeners after first interaction
       document.removeEventListener("touchstart", handleFirstInteraction);
