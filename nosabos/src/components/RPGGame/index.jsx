@@ -577,6 +577,44 @@ const DIALOGUE_CHARACTER_POOLS = {
   "purple-girl": ["31", "39", "34"],
 };
 
+// ─── Animated text: fade-in per character ────────────────────────────────────
+function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const prevTextRef = useRef("");
+
+  useEffect(() => {
+    if (text !== prevTextRef.current) {
+      prevTextRef.current = text;
+      setVisibleCount(0);
+    }
+    if (!text) return;
+    if (visibleCount >= text.length) return;
+    const timer = setTimeout(
+      () => setVisibleCount((c) => c + 1),
+      charDelayMs,
+    );
+    return () => clearTimeout(timer);
+  }, [text, visibleCount, charDelayMs]);
+
+  if (!text) return null;
+
+  return (
+    <Text {...textProps}>
+      {text.split("").map((ch, i) => (
+        <span
+          key={`${i}-${ch}`}
+          style={{
+            opacity: i < visibleCount ? 1 : 0,
+            transition: "opacity 0.12s ease-in",
+          }}
+        >
+          {ch}
+        </span>
+      ))}
+    </Text>
+  );
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function RPGGame() {
   const canvasRef = useRef(null);
@@ -2379,6 +2417,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
 
       setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
+      speakNPCText(dynamicReply);
 
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
@@ -2386,7 +2425,6 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       );
 
       if (!nextNode) {
-        speakNPCText(dynamicReply);
         return;
       }
       // Unlock gather items if next node is a gather quest
@@ -2397,9 +2435,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         ...prev,
         nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
       }));
+      // Advance to next node but keep the custom reply visible
+      // so default story text doesn't replace it
       setTimeout(() => {
-        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
-        speakNPCText(nextNode.npcLine || nextNode.prompt || "");
+        setDialogue((prev) => ({ ...prev, node: nextNode }));
       }, 300);
     },
   });
@@ -2927,17 +2966,26 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 {!(
                   dialogue.node?.responseMode === "speech" && dialogue.npcReply
                 ) && (
-                  <Text color="gray.800" fontSize="md" fontWeight="bold" m={0}>
-                    {dialogue.node?.npcLine ||
+                  <AnimatedText
+                    text={
+                      dialogue.node?.npcLine ||
                       dialogue.node?.prompt ||
-                      dialogue.question.prompt}
-                  </Text>
+                      dialogue.question.prompt
+                    }
+                    color="gray.800"
+                    fontSize="md"
+                    fontWeight="bold"
+                    m={0}
+                  />
                 )}
 
                 {!!dialogue.npcReply && (
-                  <Text color="orange.700" fontSize="sm" m={0}>
-                    {dialogue.npcReply}
-                  </Text>
+                  <AnimatedText
+                    text={dialogue.npcReply}
+                    color="orange.700"
+                    fontSize="sm"
+                    m={0}
+                  />
                 )}
 
                 {lastHeardSpeech &&
