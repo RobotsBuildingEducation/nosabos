@@ -2545,10 +2545,23 @@ export default function RPGGame() {
       // Log the user's speech
       conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
 
-      // Generate dynamic NPC response via LLM
-      const staticFallback = dialogue.node.speechContinueReply ||
-        (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
+      const nextNodeId = dialogue.node.nextNodeId || null;
+      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+        (n) => n.id === nextNodeId,
+      );
 
+      // Advance dialogue state immediately (no delay)
+      if (nextNode) {
+        if (nextNode.responseMode === "gather") {
+          setGatherUnlocked(true);
+        }
+        setQuestProgress((prev) => ({
+          ...prev,
+          nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+        }));
+      }
+
+      // Build LLM prompt for a dynamic, personalized NPC reply
       const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
       const personality = characterId ? getCharacterPersonality(characterId) : null;
       const personalityHint = personality
@@ -2565,48 +2578,44 @@ Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. R
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
 Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
 
-      let dynamicReply = staticFallback;
-      try {
-        const llmResult = await callResponses({ input: llmPrompt });
-        if (llmResult && llmResult.trim().length > 0) {
-          dynamicReply = llmResult.trim();
-        }
-      } catch {
-        // fallback to static reply
-      }
+      // Fire LLM call without blocking dialogue progression
+      const npcIdx = dialogue.npcIdx;
+      callResponses({ input: llmPrompt }).then((llmResult) => {
+        const dynamicReply = (llmResult && llmResult.trim().length > 0)
+          ? llmResult.trim()
+          : (dialogue.node.speechContinueReply ||
+            (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue."));
 
-      // Log the NPC's response
-      conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
+        conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx });
 
-      setDialogue((prev) => ({ ...prev, npcReply: dynamicReply }));
-
-      const nextNodeId = dialogue.node.nextNodeId || null;
-      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
-        (n) => n.id === nextNodeId,
-      );
-
-      if (!nextNode) {
-        speakNPCText(dynamicReply, { warmAudio, npcIdx: dialogue.npcIdx });
-        return;
-      }
-      // Unlock gather items if next node is a gather quest
-      if (nextNode.responseMode === "gather") {
-        setGatherUnlocked(true);
-      }
-      setQuestProgress((prev) => ({
-        ...prev,
-        nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
-      }));
-      // Advance to next node but keep the custom reply visible
-      // For non-speech nodes, append instructions and speak the full text
-      setTimeout(() => {
         let fullReply = dynamicReply;
-        if (nextNode.npcLine && nextNode.responseMode !== "speech") {
+        if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
           fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
         }
-        setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: fullReply }));
-        speakNPCText(fullReply, { warmAudio, npcIdx: dialogue.npcIdx });
-      }, 300);
+
+        setDialogue((prev) => ({
+          ...prev,
+          ...(nextNode ? { node: nextNode } : {}),
+          npcReply: fullReply,
+        }));
+        speakNPCText(fullReply, { warmAudio, npcIdx });
+      }).catch(() => {
+        const fallback = dialogue.node.speechContinueReply ||
+          (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
+        conversationLogRef.current.push({ speaker: npcName, text: fallback, npcIdx });
+
+        let fullReply = fallback;
+        if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
+          fullReply = `${fallback}\n\n${nextNode.npcLine}`;
+        }
+
+        setDialogue((prev) => ({
+          ...prev,
+          ...(nextNode ? { node: nextNode } : {}),
+          npcReply: fullReply,
+        }));
+        speakNPCText(fullReply, { warmAudio, npcIdx });
+      });
     },
   });
 
