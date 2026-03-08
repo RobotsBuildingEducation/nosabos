@@ -77,7 +77,7 @@ export const CHARACTER_VOICES = {
       "a sarcastic female cat humanoid, dry wit and playful disdain in every word",
   },
   hamster: {
-    voice: "coral",
+    voice: "cedar",
     personality:
       "the narrator of the app, a relaxed but confident male voice guiding the experience",
   },
