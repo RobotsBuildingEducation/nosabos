@@ -645,6 +645,7 @@ export default function RPGGame() {
   const [scenarioId, setScenarioId] = useState(null);
   const [scenario, setScenario] = useState(null);
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
+  const [npcNameMap, setNpcNameMap] = useState(null);
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -1026,7 +1027,39 @@ export default function RPGGame() {
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
-  const questTreeByNpc = useMemo(() => quest?.treeByNpc || [], [quest]);
+  const questTreeByNpc = useMemo(() => {
+    const tree = quest?.treeByNpc || [];
+    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return tree;
+
+    // Replace scenario NPC names with character names in all dialogue text
+    const sub = (text) => {
+      if (!text) return text;
+      let result = text;
+      for (const [oldName, newName] of Object.entries(npcNameMap)) {
+        result = result.replaceAll(oldName, newName);
+      }
+      return result;
+    };
+
+    return tree.map((arc) => ({
+      ...arc,
+      title: sub(arc.title),
+      intro: sub(arc.intro),
+      nodes: arc.nodes.map((node) => ({
+        ...node,
+        npcLine: sub(node.npcLine),
+        playerLine: sub(node.playerLine),
+        playerBridge: sub(node.playerBridge),
+        speechFallbackReply: sub(node.speechFallbackReply),
+        speechContinueReply: sub(node.speechContinueReply),
+        choices: node.choices?.map((c) => ({
+          ...c,
+          text: sub(c.text),
+          npcReply: sub(c.npcReply),
+        })),
+      })),
+    }));
+  }, [quest, npcNameMap]);
 
   const playGameSound = useCallback(
     (name) => {
@@ -1612,6 +1645,15 @@ export default function RPGGame() {
     npcCharacterNamesRef.current = npcAssignments.map(
       (assignment) => assignment.name,
     );
+    // Build scenario-name → character-name mapping for quest dialogue substitution
+    const nameMapping = {};
+    scenario.npcs.forEach((npc, idx) => {
+      const charName = npcAssignments[idx % npcAssignments.length]?.name;
+      if (charName && npc.name !== charName) {
+        nameMapping[npc.name] = charName;
+      }
+    });
+    setNpcNameMap(nameMapping);
     npcDialogueCharactersRef.current.clear();
     scenario.npcs.forEach((npc) => {
       const preset =
@@ -2421,11 +2463,19 @@ export default function RPGGame() {
       const staticFallback = dialogue.node.speechContinueReply ||
         (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
 
+      const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
+      const personality = characterId ? getCharacterPersonality(characterId) : null;
+      const personalityHint = personality
+        ? (targetLang === "es"
+          ? ` Tu personalidad: ${personality}.`
+          : ` Your personality: ${personality}.`)
+        : "";
+
       const llmPrompt = targetLang === "es"
-        ? `Eres ${npcName}, un personaje en una aventura. La historia: ${seed}
+        ? `Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
 Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
-        : `You are ${npcName}, a character in an adventure. The story: ${seed}
+        : `You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
 Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
 
@@ -2524,6 +2574,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     }
     setScenarioId(null);
     setScenario(null);
+    setNpcNameMap(null);
     setLoadingScenarioId(null);
     setAnsweredNPCs(new Set());
     setDialogue(null);
