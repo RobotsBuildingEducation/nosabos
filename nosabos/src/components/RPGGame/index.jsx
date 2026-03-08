@@ -31,7 +31,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import * as Tone from "tone";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -654,6 +654,8 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [translatedText, setTranslatedText] = useState(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
@@ -690,24 +692,34 @@ export default function RPGGame() {
     [supportLang],
   );
 
-  const askHelpForCurrentLine = useCallback(() => {
+  const toggleTranslation = useCallback(async () => {
+    if (translatedText) {
+      setTranslatedText(null);
+      return;
+    }
+
     const npcLine =
       dialogue?.node?.npcLine ||
       dialogue?.node?.prompt ||
       dialogue?.question?.prompt ||
       dialogue?.npcReply ||
       "";
-    if (!npcLine.trim()) {
-      helpChat.onOpen();
-      return;
-    }
+    if (!npcLine.trim()) return;
 
-    const prompt =
-      `Translate and explain this NPC message in ${supportLangName}. ` +
-      "Keep the meaning natural for a learner and include one short clarification if helpful.\n\n" +
-      `Original (${targetLang}): "${npcLine}"`;
-    helpChatRef.current?.openAndSend?.(prompt);
-  }, [dialogue, helpChat, supportLangName, targetLang]);
+    setIsTranslating(true);
+    try {
+      const prompt =
+        `Translate the following text into ${supportLangName}. ` +
+        "Return only the translation, nothing else.\n\n" +
+        `"${npcLine}"`;
+      const result = await callResponses({ input: prompt });
+      setTranslatedText(result || npcLine);
+    } catch {
+      setTranslatedText(npcLine);
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [dialogue, translatedText, supportLangName]);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -1123,7 +1135,15 @@ export default function RPGGame() {
     playGameSound("click");
     setDialogue(null);
     setFeedback(null);
+    setTranslatedText(null);
   }, [dialogue, playGameSound]);
+
+  // Clear translation when dialogue node changes
+  const dialogueNodeId = dialogue?.node?.id;
+  const dialogueNpcReply = dialogue?.npcReply;
+  useEffect(() => {
+    setTranslatedText(null);
+  }, [dialogueNodeId, dialogueNpcReply]);
 
   const updateDialogueBubblePosition = useCallback(() => {
     if (
@@ -3036,29 +3056,31 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   <HStack justify="flex-end">
                     <IconButton
                       aria-label={
-                        supportLang === "es"
-                          ? "Pedir ayuda con este texto"
-                          : "Get help with this text"
+                        translatedText
+                          ? (supportLang === "es" ? "Deshacer traducción" : "Undo translation")
+                          : (supportLang === "es" ? "Traducir texto" : "Translate text")
                       }
-                      icon={<MdOutlineSupportAgent size={14} />}
+                      icon={translatedText ? <MdUndo size={14} /> : <MdOutlineSupportAgent size={14} />}
                       size="xs"
                       rounded="md"
                       bg="white"
-                      color="blue.600"
-                      boxShadow="0 1px 0 #2b6cb0"
+                      color={translatedText ? "orange.500" : "blue.600"}
+                      boxShadow={translatedText ? "0 1px 0 #c05621" : "0 1px 0 #2b6cb0"}
                       _hover={{ bg: "gray.50" }}
-                      onClick={askHelpForCurrentLine}
+                      onClick={toggleTranslation}
+                      isLoading={isTranslating}
                     />
                   </HStack>
 
                 {!dialogue.npcReply && (
                   <AnimatedText
                     text={
+                      translatedText ||
                       dialogue.node?.npcLine ||
                       dialogue.node?.prompt ||
                       dialogue.question.prompt
                     }
-                    color="gray.800"
+                    color={translatedText ? "blue.700" : "gray.800"}
                     fontSize="md"
                     fontWeight="bold"
                     m={0}
@@ -3067,8 +3089,8 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
 
                 {!!dialogue.npcReply && (
                   <AnimatedText
-                    text={dialogue.npcReply}
-                    color="orange.700"
+                    text={translatedText || dialogue.npcReply}
+                    color={translatedText ? "blue.700" : "orange.700"}
                     fontSize="sm"
                     m={0}
                   />
