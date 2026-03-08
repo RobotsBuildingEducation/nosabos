@@ -1176,7 +1176,8 @@ export default function RPGGame() {
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         });
         ttsPlayerRef.current = player;
-        await player.play();
+        await player.ready;
+        await player.audio.play();
       } catch {
         // non-blocking
       }
