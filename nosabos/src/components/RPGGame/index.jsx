@@ -31,7 +31,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import * as Tone from "tone";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -47,6 +47,7 @@ import {
 import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG, getCharacterVoice, getCharacterPersonality } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
+import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
@@ -579,6 +580,28 @@ const DIALOGUE_CHARACTER_POOLS = {
 };
 
 // ─── Animated text: fade-in per character ────────────────────────────────────
+function splitIntoSentences(text) {
+  if (!text) return [];
+  const result = text.match(/[^.!?¡¿。！？]*[.!?。！？]+/g);
+  if (!result) return text.trim() ? [text.trim()] : [];
+  const joined = result.join("");
+  const remainder = text.slice(joined.length).trim();
+  if (remainder) result.push(remainder);
+  return result.map((s) => s.trim()).filter(Boolean);
+}
+
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length)
+      return cand.content.parts.map((p) => p.text || "").join("");
+  } catch {}
+  return "";
+}
+
 function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
   const [visibleCount, setVisibleCount] = useState(0);
   const prevTextRef = useRef("");
@@ -654,6 +677,8 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [lineTranslations, setLineTranslations] = useState(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
@@ -690,24 +715,77 @@ export default function RPGGame() {
     [supportLang],
   );
 
-  const askHelpForCurrentLine = useCallback(() => {
-    const npcLine =
-      dialogue?.node?.npcLine ||
-      dialogue?.node?.prompt ||
-      dialogue?.question?.prompt ||
-      dialogue?.npcReply ||
-      "";
-    if (!npcLine.trim()) {
-      helpChat.onOpen();
+  const toggleTranslation = useCallback(async () => {
+    if (lineTranslations) {
+      setLineTranslations(null);
       return;
     }
 
-    const prompt =
-      `Translate and explain this NPC message in ${supportLangName}. ` +
-      "Keep the meaning natural for a learner and include one short clarification if helpful.\n\n" +
-      `Original (${targetLang}): "${npcLine}"`;
-    helpChatRef.current?.openAndSend?.(prompt);
-  }, [dialogue, helpChat, supportLangName, targetLang]);
+    const npcText =
+      dialogue?.npcReply ||
+      dialogue?.node?.npcLine ||
+      dialogue?.node?.prompt ||
+      dialogue?.question?.prompt ||
+      "";
+    if (!npcText.trim()) return;
+
+    const lines = splitIntoSentences(npcText);
+    if (!lines.length) return;
+
+    setIsTranslating(true);
+    const nextLines = Array(lines.length).fill("");
+    setLineTranslations([...nextLines]);
+
+    let receivedCount = 0;
+    let lineBuffer = "";
+
+    const applyLine = (rawLine) => {
+      if (receivedCount >= lines.length) return;
+      const clean = String(rawLine || "")
+        .replace(/^\s*\d+[\).:-]\s*/, "")
+        .trim();
+      if (!clean) return;
+      nextLines[receivedCount] = clean;
+      receivedCount += 1;
+      setLineTranslations([...nextLines]);
+    };
+
+    try {
+      const prompt = [
+        `Translate each line below into ${supportLangName}.`,
+        "Output plain text only.",
+        `Return exactly ${lines.length} line${lines.length > 1 ? "s" : ""}.`,
+        "Each line must be only the translation for the matching line index.",
+        "No numbering, labels, markdown, or commentary.",
+        "",
+        "Lines:",
+        ...lines.map((l, i) => `${i + 1}. ${l}`),
+      ].join("\n");
+
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+        for await (const chunk of resp.stream) {
+          const ct = textFromChunk(chunk);
+          if (!ct) continue;
+          lineBuffer += ct;
+          const segments = lineBuffer.split(/\r?\n/);
+          lineBuffer = segments.pop() || "";
+          for (const seg of segments) applyLine(seg);
+        }
+        if (lineBuffer.trim()) applyLine(lineBuffer);
+      } else {
+        const result = await callResponses({ input: prompt });
+        const resultLines = (result || "").split(/\r?\n/).filter((l) => l.trim());
+        for (const rl of resultLines) applyLine(rl);
+      }
+    } catch {
+      setLineTranslations(null);
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [dialogue, lineTranslations, supportLangName]);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -1123,7 +1201,15 @@ export default function RPGGame() {
     playGameSound("click");
     setDialogue(null);
     setFeedback(null);
+    setLineTranslations(null);
   }, [dialogue, playGameSound]);
+
+  // Clear translation when dialogue node changes
+  const dialogueNodeId = dialogue?.node?.id;
+  const dialogueNpcReply = dialogue?.npcReply;
+  useEffect(() => {
+    setLineTranslations(null);
+  }, [dialogueNodeId, dialogueNpcReply]);
 
   const updateDialogueBubblePosition = useCallback(() => {
     if (
@@ -2931,6 +3017,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   : { base: "70vh", md: "62vh" }
               }
               overflowY="auto"
+              overflowX="hidden"
+              css={{
+                "&::-webkit-scrollbar": { display: "none" },
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
               bg="rgba(250, 244, 232, 0.96)"
               border="2px solid"
               borderColor="orange.200"
@@ -2938,7 +3030,6 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
               p={0}
               boxShadow="0 18px 38px rgba(0,0,0,0.52)"
               pointerEvents="auto"
-              overflow="hidden"
             >
               {!isMobileDialogueLayout && dialogueBubblePosition && (
                 <Box
@@ -3036,42 +3127,79 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   <HStack justify="flex-end">
                     <IconButton
                       aria-label={
-                        supportLang === "es"
-                          ? "Pedir ayuda con este texto"
-                          : "Get help with this text"
+                        lineTranslations
+                          ? (supportLang === "es" ? "Deshacer traducción" : "Undo translation")
+                          : (supportLang === "es" ? "Traducir texto" : "Translate text")
                       }
-                      icon={<MdOutlineSupportAgent size={14} />}
+                      icon={lineTranslations ? <MdUndo size={14} /> : <MdOutlineSupportAgent size={14} />}
                       size="xs"
                       rounded="md"
                       bg="white"
-                      color="blue.600"
-                      boxShadow="0 1px 0 #2b6cb0"
+                      color={lineTranslations ? "orange.500" : "blue.600"}
+                      boxShadow={lineTranslations ? "0 1px 0 #c05621" : "0 1px 0 #2b6cb0"}
                       _hover={{ bg: "gray.50" }}
-                      onClick={askHelpForCurrentLine}
+                      onClick={toggleTranslation}
+                      isLoading={isTranslating}
                     />
                   </HStack>
 
-                {!dialogue.npcReply && (
-                  <AnimatedText
-                    text={
-                      dialogue.node?.npcLine ||
-                      dialogue.node?.prompt ||
-                      dialogue.question.prompt
-                    }
-                    color="gray.800"
-                    fontSize="md"
-                    fontWeight="bold"
-                    m={0}
-                  />
-                )}
-
-                {!!dialogue.npcReply && (
-                  <AnimatedText
-                    text={dialogue.npcReply}
-                    color="orange.700"
-                    fontSize="sm"
-                    m={0}
-                  />
+                {lineTranslations ? (
+                  <VStack align="stretch" spacing={1}>
+                    {(() => {
+                      const npcText =
+                        dialogue.npcReply ||
+                        dialogue.node?.npcLine ||
+                        dialogue.node?.prompt ||
+                        dialogue.question.prompt;
+                      const isReply = !!dialogue.npcReply;
+                      return splitIntoSentences(npcText).map((line, i) => (
+                          <Box key={i}>
+                            <Text
+                              color={isReply ? "orange.700" : "gray.800"}
+                              fontSize={isReply ? "sm" : "md"}
+                              fontWeight={isReply ? undefined : "bold"}
+                              m={0}
+                            >
+                              {line}
+                            </Text>
+                            {lineTranslations[i] && (
+                              <Text
+                                color="blue.700"
+                                fontSize="sm"
+                                fontStyle="italic"
+                                m={0}
+                              >
+                                {lineTranslations[i]}
+                              </Text>
+                            )}
+                          </Box>
+                        ));
+                    })()}
+                  </VStack>
+                ) : (
+                  <>
+                    {!dialogue.npcReply && (
+                      <AnimatedText
+                        text={
+                          dialogue.node?.npcLine ||
+                          dialogue.node?.prompt ||
+                          dialogue.question.prompt
+                        }
+                        color="gray.800"
+                        fontSize="md"
+                        fontWeight="bold"
+                        m={0}
+                      />
+                    )}
+                    {!!dialogue.npcReply && (
+                      <AnimatedText
+                        text={dialogue.npcReply}
+                        color="orange.700"
+                        fontSize="sm"
+                        m={0}
+                      />
+                    )}
+                  </>
                 )}
 
                 {lastHeardSpeech &&
