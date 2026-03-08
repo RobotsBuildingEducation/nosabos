@@ -3078,13 +3078,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                         // Pre-warm an Audio element during this user gesture
                         // so TTS can play after the async speech recognition
                         // callback (mobile browsers block audio.play() without
-                        // a gesture context).
+                        // a gesture context). Fire-and-forget – don't await.
                         try {
                           const warm = new Audio();
                           warm.playsInline = true;
                           warm.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                          await warm.play();
-                          warm.pause();
+                          warm.play().then(() => warm.pause()).catch(() => {});
                           preWarmedAudioRef.current = warm;
                         } catch {
                           // ignore – desktop doesn't need this
