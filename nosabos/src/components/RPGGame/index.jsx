@@ -664,6 +664,7 @@ export default function RPGGame() {
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
+  const preWarmedAudioRef = useRef(null);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
 
@@ -1167,13 +1168,14 @@ export default function RPGGame() {
   }, []);
 
   const speakNPCText = useCallback(
-    async (text) => {
+    async (text, { warmAudio } = {}) => {
       if (!text) return;
       stopNPCSpeech();
       try {
         const player = await getTTSPlayer({
           text,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          warmAudio,
         });
         ttsPlayerRef.current = player;
         await player.ready;
@@ -2383,11 +2385,15 @@ export default function RPGGame() {
       setLastHeardSpeech(heard);
       if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
 
+      // Grab the pre-warmed audio element (unlocked during user gesture)
+      const warmAudio = preWarmedAudioRef.current;
+      preWarmedAudioRef.current = null;
+
       if (!heard) {
         const fallbackReply =
           dialogue.node.speechFallbackReply || ui.noSpeechMatch;
         setDialogue((prev) => ({ ...prev, npcReply: fallbackReply }));
-        speakNPCText(fallbackReply);
+        speakNPCText(fallbackReply, { warmAudio });
         return;
       }
 
@@ -2434,7 +2440,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       );
 
       if (!nextNode) {
-        speakNPCText(dynamicReply);
+        speakNPCText(dynamicReply, { warmAudio });
         return;
       }
       // Unlock gather items if next node is a gather quest
@@ -2453,7 +2459,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
           fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
         }
         setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: fullReply }));
-        speakNPCText(fullReply);
+        speakNPCText(fullReply, { warmAudio });
       }, 300);
     },
   });
@@ -3068,6 +3074,20 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                         if (isRecording) {
                           stopRecording();
                           return;
+                        }
+                        // Pre-warm an Audio element during this user gesture
+                        // so TTS can play after the async speech recognition
+                        // callback (mobile browsers block audio.play() without
+                        // a gesture context).
+                        try {
+                          const warm = new Audio();
+                          warm.playsInline = true;
+                          warm.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+                          await warm.play();
+                          warm.pause();
+                          preWarmedAudioRef.current = warm;
+                        } catch {
+                          // ignore – desktop doesn't need this
                         }
                         try {
                           await startRecording();
