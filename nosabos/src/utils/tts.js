@@ -255,18 +255,20 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice, langTag } = {}) {
-  return getRealtimePlayer({ text, voice, langTag });
+export async function getTTSPlayer({ text, voice, langTag, warmAudio } = {}) {
+  return getRealtimePlayer({ text, voice, langTag, warmAudio });
 }
 
-async function getRealtimePlayer({ text, voice, langTag }) {
+async function getRealtimePlayer({ text, voice, langTag, warmAudio }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
   const targetLangTag = langTag || TTS_LANG_TAG.es;
 
   const remoteStream = new MediaStream();
-  const audio = new Audio();
+  // Reuse a pre-warmed Audio element if provided (already unlocked by user
+  // gesture on mobile) so that play() works outside a gesture context.
+  const audio = warmAudio || new Audio();
   audio.srcObject = remoteStream;
   audio.autoplay = true;
   audio.playsInline = true;
