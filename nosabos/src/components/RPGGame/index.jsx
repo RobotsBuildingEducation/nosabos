@@ -2536,44 +2536,13 @@ export default function RPGGame() {
       }
 
       const npcName = npcCharacterNamesRef.current[dialogue.npcIdx] || scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
-      const seed = quest?.storySeed || "";
-      const historyContext = conversationLogRef.current
-        .slice(-10)
-        .map((e) => `${e.speaker}: ${e.text}`)
-        .join("\n");
 
       // Log the user's speech
       conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
 
-      // Generate dynamic NPC response via LLM
-      const staticFallback = dialogue.node.speechContinueReply ||
+      // Use the static reply for the NPC response (no LLM call needed mid-interaction)
+      const dynamicReply = dialogue.node.speechContinueReply ||
         (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
-
-      const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
-      const personality = characterId ? getCharacterPersonality(characterId) : null;
-      const personalityHint = personality
-        ? (targetLang === "es"
-          ? ` Tu personalidad: ${personality}.`
-          : ` Your personality: ${personality}.`)
-        : "";
-
-      const llmPrompt = targetLang === "es"
-        ? `Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
-${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
-Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
-        : `You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
-${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
-Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
-
-      let dynamicReply = staticFallback;
-      try {
-        const llmResult = await callResponses({ input: llmPrompt });
-        if (llmResult && llmResult.trim().length > 0) {
-          dynamicReply = llmResult.trim();
-        }
-      } catch {
-        // fallback to static reply
-      }
 
       // Log the NPC's response
       conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx: dialogue.npcIdx });
