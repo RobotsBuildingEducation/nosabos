@@ -580,6 +580,16 @@ const DIALOGUE_CHARACTER_POOLS = {
 };
 
 // ─── Animated text: fade-in per character ────────────────────────────────────
+function splitIntoSentences(text) {
+  if (!text) return [];
+  const result = text.match(/[^.!?¡¿。！？]*[.!?。！？]+/g);
+  if (!result) return text.trim() ? [text.trim()] : [];
+  const joined = result.join("");
+  const remainder = text.slice(joined.length).trim();
+  if (remainder) result.push(remainder);
+  return result.map((s) => s.trim()).filter(Boolean);
+}
+
 function textFromChunk(chunk) {
   try {
     if (!chunk) return "";
@@ -719,7 +729,7 @@ export default function RPGGame() {
       "";
     if (!npcText.trim()) return;
 
-    const lines = npcText.split(/\n+/).filter((l) => l.trim());
+    const lines = splitIntoSentences(npcText);
     if (!lines.length) return;
 
     setIsTranslating(true);
@@ -3007,6 +3017,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   : { base: "70vh", md: "62vh" }
               }
               overflowY="auto"
+              overflowX="hidden"
+              css={{
+                "&::-webkit-scrollbar": { display: "none" },
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
               bg="rgba(250, 244, 232, 0.96)"
               border="2px solid"
               borderColor="orange.200"
@@ -3014,7 +3030,6 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
               p={0}
               boxShadow="0 18px 38px rgba(0,0,0,0.52)"
               pointerEvents="auto"
-              overflow="hidden"
             >
               {!isMobileDialogueLayout && dialogueBubblePosition && (
                 <Box
@@ -3137,10 +3152,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                         dialogue.node?.prompt ||
                         dialogue.question.prompt;
                       const isReply = !!dialogue.npcReply;
-                      return npcText
-                        .split(/\n+/)
-                        .filter((l) => l.trim())
-                        .map((line, i) => (
+                      return splitIntoSentences(npcText).map((line, i) => (
                           <Box key={i}>
                             <Text
                               color={isReply ? "orange.700" : "gray.800"}
