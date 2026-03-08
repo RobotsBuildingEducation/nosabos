@@ -45,7 +45,7 @@ import {
   PLAYER_COLORS,
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
-import { getTTSPlayer, TTS_LANG_TAG } from "../../utils/tts";
+import { getTTSPlayer, TTS_LANG_TAG, getCharacterVoice, getCharacterPersonality } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
@@ -509,10 +509,10 @@ function drawGatherItemSprite(ctx, spriteId) {
 }
 
 const NPC_SPRITE_ROWS = [
-  { id: "hamster", rowIndex: 0 },
-  { id: "frog", rowIndex: 1 },
-  { id: "purple-girl", rowIndex: 2 },
-  { id: "cat", rowIndex: 3 },
+  { id: "hamster", rowIndex: 0, name: "Sheilfer" },
+  { id: "frog", rowIndex: 1, name: "Jiraiya" },
+  { id: "purple-girl", rowIndex: 2, name: "Yoruichi" },
+  { id: "cat", rowIndex: 3, name: "Neko" },
 ];
 
 // ─── UI text per support language ────────────────────────────────────────────
@@ -645,6 +645,7 @@ export default function RPGGame() {
   const [scenarioId, setScenarioId] = useState(null);
   const [scenario, setScenario] = useState(null);
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
+  const [npcNameMap, setNpcNameMap] = useState(null);
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -723,6 +724,7 @@ export default function RPGGame() {
   const walkTimerRef = useRef(0);
   const playerSheetFramesRef = useRef(null);
   const npcVariantAssignmentsRef = useRef([]);
+  const npcCharacterNamesRef = useRef([]);
   const npcDialogueCharactersRef = useRef(new Map());
 
   const [questProgress, setQuestProgress] = useState({
@@ -1025,7 +1027,39 @@ export default function RPGGame() {
 
   const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
-  const questTreeByNpc = useMemo(() => quest?.treeByNpc || [], [quest]);
+  const questTreeByNpc = useMemo(() => {
+    const tree = quest?.treeByNpc || [];
+    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return tree;
+
+    // Replace scenario NPC names with character names in all dialogue text
+    const sub = (text) => {
+      if (!text) return text;
+      let result = text;
+      for (const [oldName, newName] of Object.entries(npcNameMap)) {
+        result = result.replaceAll(oldName, newName);
+      }
+      return result;
+    };
+
+    return tree.map((arc) => ({
+      ...arc,
+      title: sub(arc.title),
+      intro: sub(arc.intro),
+      nodes: arc.nodes.map((node) => ({
+        ...node,
+        npcLine: sub(node.npcLine),
+        playerLine: sub(node.playerLine),
+        playerBridge: sub(node.playerBridge),
+        speechFallbackReply: sub(node.speechFallbackReply),
+        speechContinueReply: sub(node.speechContinueReply),
+        choices: node.choices?.map((c) => ({
+          ...c,
+          text: sub(c.text),
+          npcReply: sub(c.npcReply),
+        })),
+      })),
+    }));
+  }, [quest, npcNameMap]);
 
   const playGameSound = useCallback(
     (name) => {
@@ -1168,12 +1202,18 @@ export default function RPGGame() {
   }, []);
 
   const speakNPCText = useCallback(
-    async (text, { warmAudio } = {}) => {
+    async (text, { warmAudio, npcIdx } = {}) => {
       if (!text) return;
       stopNPCSpeech();
       try {
+        const characterId =
+          npcIdx != null
+            ? npcVariantAssignmentsRef.current[npcIdx]
+            : undefined;
         const player = await getTTSPlayer({
           text,
+          voice: characterId ? getCharacterVoice(characterId) : undefined,
+          personality: characterId ? getCharacterPersonality(characterId) : undefined,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           warmAudio,
         });
@@ -1602,6 +1642,18 @@ export default function RPGGame() {
     npcVariantAssignmentsRef.current = npcAssignments.map(
       (assignment) => assignment.id,
     );
+    npcCharacterNamesRef.current = npcAssignments.map(
+      (assignment) => assignment.name,
+    );
+    // Build scenario-name → character-name mapping for quest dialogue substitution
+    const nameMapping = {};
+    scenario.npcs.forEach((npc, idx) => {
+      const charName = npcAssignments[idx % npcAssignments.length]?.name;
+      if (charName && npc.name !== charName) {
+        nameMapping[npc.name] = charName;
+      }
+    });
+    setNpcNameMap(nameMapping);
     npcDialogueCharactersRef.current.clear();
     scenario.npcs.forEach((npc) => {
       const preset =
@@ -1964,15 +2016,15 @@ export default function RPGGame() {
           const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
-            npcName: scenario.npcs[npcIdx].name,
+            npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
             node,
             npcReply: "",
           });
           const greetLine = node?.npcLine || node?.prompt || question.prompt;
-          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
-          speakNPCText(greetLine);
+          conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
           return;
         }
@@ -2099,15 +2151,15 @@ export default function RPGGame() {
           const node = npcArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
-            npcName: scenario.npcs[npcIdx].name,
+            npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
             node,
             npcReply: "",
           });
           const greetLine = node?.npcLine || node?.prompt || question.prompt;
-          conversationLogRef.current.push({ speaker: scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
-          speakNPCText(greetLine);
+          conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
         }
         return;
@@ -2223,7 +2275,7 @@ export default function RPGGame() {
     if (!selected) return;
 
     // Log choice exchange to conversation history
-    const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+    const npcName = npcCharacterNamesRef.current[dialogue.npcIdx] || scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
     conversationLogRef.current.push({ speaker: "Player", text: selected.text, npcIdx: dialogue.npcIdx });
     if (selected.npcReply) {
       conversationLogRef.current.push({ speaker: npcName, text: selected.npcReply, npcIdx: dialogue.npcIdx });
@@ -2233,7 +2285,7 @@ export default function RPGGame() {
 
     if (!nextNodeId) {
       setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
-      if (selected.npcReply) speakNPCText(selected.npcReply);
+      if (selected.npcReply) speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
       completeNPCChapter(dialogue.npcIdx);
       return;
     }
@@ -2270,7 +2322,7 @@ export default function RPGGame() {
       }));
       const transitionLine =
         reply || nextNode.npcLine || nextNode.prompt || "";
-      speakNPCText(transitionLine);
+      speakNPCText(transitionLine, { npcIdx: dialogue.npcIdx });
     }, 300);
   };
 
@@ -2343,7 +2395,7 @@ export default function RPGGame() {
         ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
         : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
-      speakNPCText(wrongText);
+      speakNPCText(wrongText, { npcIdx: dialogue.npcIdx });
       returnItemToMap(submittedItem.name);
       return;
     }
@@ -2367,7 +2419,7 @@ export default function RPGGame() {
 
     setTimeout(() => {
       setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
-      speakNPCText(nextNode.npcLine || "");
+      speakNPCText(nextNode.npcLine || "", { npcIdx: dialogue.npcIdx });
     }, 300);
   };
 
@@ -2393,11 +2445,11 @@ export default function RPGGame() {
         const fallbackReply =
           dialogue.node.speechFallbackReply || ui.noSpeechMatch;
         setDialogue((prev) => ({ ...prev, npcReply: fallbackReply }));
-        speakNPCText(fallbackReply, { warmAudio });
+        speakNPCText(fallbackReply, { warmAudio, npcIdx: dialogue.npcIdx });
         return;
       }
 
-      const npcName = scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+      const npcName = npcCharacterNamesRef.current[dialogue.npcIdx] || scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
       const seed = quest?.storySeed || "";
       const historyContext = conversationLogRef.current
         .slice(-10)
@@ -2411,11 +2463,19 @@ export default function RPGGame() {
       const staticFallback = dialogue.node.speechContinueReply ||
         (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
 
+      const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
+      const personality = characterId ? getCharacterPersonality(characterId) : null;
+      const personalityHint = personality
+        ? (targetLang === "es"
+          ? ` Tu personalidad: ${personality}.`
+          : ` Your personality: ${personality}.`)
+        : "";
+
       const llmPrompt = targetLang === "es"
-        ? `Eres ${npcName}, un personaje en una aventura. La historia: ${seed}
+        ? `Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
 Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
-        : `You are ${npcName}, a character in an adventure. The story: ${seed}
+        : `You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
 Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
 
@@ -2440,7 +2500,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       );
 
       if (!nextNode) {
-        speakNPCText(dynamicReply, { warmAudio });
+        speakNPCText(dynamicReply, { warmAudio, npcIdx: dialogue.npcIdx });
         return;
       }
       // Unlock gather items if next node is a gather quest
@@ -2459,7 +2519,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
           fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
         }
         setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: fullReply }));
-        speakNPCText(fullReply, { warmAudio });
+        speakNPCText(fullReply, { warmAudio, npcIdx: dialogue.npcIdx });
       }, 300);
     },
   });
@@ -2514,6 +2574,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     }
     setScenarioId(null);
     setScenario(null);
+    setNpcNameMap(null);
     setLoadingScenarioId(null);
     setAnsweredNPCs(new Set());
     setDialogue(null);

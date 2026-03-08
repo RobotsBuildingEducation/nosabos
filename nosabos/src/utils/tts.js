@@ -64,6 +64,44 @@ export function getRandomVoice() {
   return TTS_VOICES_ARRAY[index];
 }
 
+// Character-specific voice and personality mappings
+export const CHARACTER_VOICES = {
+  frog: {
+    voice: "ash",
+    personality:
+      "an ancient male toad sage, wise and measured with a deep gravelly tone",
+  },
+  cat: {
+    voice: "ballad",
+    personality:
+      "a sarcastic female cat humanoid, dry wit and playful disdain in every word",
+  },
+  hamster: {
+    voice: "cedar",
+    personality:
+      "the narrator of the app, a relaxed but confident male voice guiding the experience",
+  },
+  "purple-girl": {
+    voice: "marin",
+    personality:
+      "a joyful woman with a Japanese accent, warm and enthusiastic",
+  },
+};
+
+/**
+ * Returns the voice ID for a given character type, falling back to random.
+ */
+export function getCharacterVoice(characterId) {
+  return CHARACTER_VOICES[characterId]?.voice || getRandomVoice();
+}
+
+/**
+ * Returns the voice personality description for a given character type.
+ */
+export function getCharacterPersonality(characterId) {
+  return CHARACTER_VOICES[characterId]?.personality || null;
+}
+
 function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
 }
@@ -255,11 +293,11 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice, langTag, warmAudio } = {}) {
-  return getRealtimePlayer({ text, voice, langTag, warmAudio });
+export async function getTTSPlayer({ text, voice, personality, langTag, warmAudio } = {}) {
+  return getRealtimePlayer({ text, voice, personality, langTag, warmAudio });
 }
 
-async function getRealtimePlayer({ text, voice, langTag, warmAudio }) {
+async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
@@ -393,7 +431,9 @@ async function getRealtimePlayer({ text, voice, langTag, warmAudio }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
+            instructions: personality
+              ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities.`
+              : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
             turn_detection: null,
           },
         })
