@@ -72,7 +72,7 @@ export const CHARACTER_VOICES = {
       "an ancient male toad sage, wise and measured with a deep gravelly tone",
   },
   cat: {
-    voice: "ballad",
+    voice: "coral",
     personality:
       "a sarcastic female cat humanoid, dry wit and playful disdain in every word",
   },
