@@ -517,80 +517,90 @@ function BackpackIcon({ size = 28 }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    canvas.width = 32;
-    canvas.height = 32;
+    const RES = 64;
+    canvas.width = RES;
+    canvas.height = RES;
 
-    // Render a tiny Three.js scene to canvas
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: false,
-      alpha: true,
-    });
-    renderer.setSize(32, 32);
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+    renderer.setSize(RES, RES);
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-16, 16, 16, -16, 0.1, 100);
+    const half = RES / 2;
+    const camera = new THREE.OrthographicCamera(-half, half, half, -half, 0.1, 100);
     camera.position.z = 10;
 
-    // Draw pixel-art backpack onto a texture canvas
+    // 32×32 pixel-art canvas for a clear, chunky JRPG backpack
     const texCanvas = document.createElement("canvas");
-    texCanvas.width = 16;
-    texCanvas.height = 16;
+    texCanvas.width = 32;
+    texCanvas.height = 32;
     const ctx = texCanvas.getContext("2d");
-
     const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
     const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
 
-    // Backpack body (brown leather)
-    rect(4, 3, 8, 10, "#8b5e3c");
-    // Darker edges
-    rect(4, 3, 1, 10, "#6b3f1f");
-    rect(11, 3, 1, 10, "#6b3f1f");
-    rect(4, 12, 8, 1, "#6b3f1f");
-    // Top flap
-    rect(4, 2, 8, 2, "#a0714b");
-    rect(5, 1, 6, 1, "#a0714b");
-    // Flap clasp (gold buckle)
-    rect(7, 4, 2, 2, "#ffd700");
-    px(7, 4, "#ffec80");
-    // Front pocket
-    rect(5, 7, 6, 4, "#7a5030");
-    rect(6, 7, 4, 1, "#9b7040");
-    // Pocket stitch lines
-    px(5, 8, "#654020");
-    px(10, 8, "#654020");
-    // Straps (visible at top)
-    px(5, 1, "#6b3f1f");
-    px(10, 1, "#6b3f1f");
-    px(5, 0, "#6b3f1f");
-    px(10, 0, "#6b3f1f");
-    // Highlight on body
-    rect(5, 3, 2, 1, "#b88560");
-    px(5, 4, "#b88560");
-    // Bottom reinforcement
-    rect(5, 12, 6, 1, "#5a3018");
+    // ── Straps ──
+    rect(10, 1, 2, 4, "#6b3f1f");   // left strap
+    rect(20, 1, 2, 4, "#6b3f1f");   // right strap
+    px(10, 1, "#8b6040");            // strap highlights
+    px(20, 1, "#8b6040");
+
+    // ── Main body (rounded shape) ──
+    rect(9, 5, 14, 20, "#c07840");   // main fill
+    rect(8, 7, 1, 16, "#c07840");    // left round
+    rect(23, 7, 1, 16, "#c07840");   // right round
+    rect(10, 25, 12, 1, "#c07840");  // bottom round
+
+    // ── Dark outline / border ──
+    rect(9, 5, 14, 1, "#5a3018");    // top edge
+    rect(8, 6, 1, 1, "#5a3018");     // top-left corner
+    rect(23, 6, 1, 1, "#5a3018");    // top-right corner
+    rect(7, 7, 1, 16, "#5a3018");    // left edge
+    rect(24, 7, 1, 16, "#5a3018");   // right edge
+    rect(8, 23, 1, 1, "#5a3018");    // bottom-left corner
+    rect(23, 23, 1, 1, "#5a3018");   // bottom-right corner
+    rect(9, 24, 1, 1, "#5a3018");
+    rect(22, 24, 1, 1, "#5a3018");
+    rect(10, 25, 12, 1, "#5a3018");  // bottom edge
+
+    // ── Top flap ──
+    rect(9, 5, 14, 4, "#d89050");
+    rect(10, 4, 12, 1, "#d89050");   // flap peak
+    rect(10, 4, 12, 1, "#e0a060");   // flap highlight
+    rect(9, 5, 14, 1, "#e0a060");    // top highlight
+
+    // ── Gold buckle / clasp ──
+    rect(13, 8, 6, 3, "#ffd700");
+    rect(14, 9, 4, 1, "#5a3018");    // buckle hole
+    px(13, 8, "#ffec80");            // buckle shine
+    px(14, 8, "#ffec80");
+
+    // ── Front pocket ──
+    rect(10, 13, 12, 8, "#a86030");  // pocket body
+    rect(10, 13, 12, 1, "#b87040");  // pocket top highlight
+    rect(10, 13, 1, 8, "#904820");   // pocket left shadow
+    rect(21, 13, 1, 8, "#904820");   // pocket right shadow
+    rect(10, 20, 12, 1, "#904820");  // pocket bottom shadow
+
+    // ── Pocket buckle (small) ──
+    rect(14, 12, 4, 2, "#ffd700");
+    px(14, 12, "#ffec80");
+
+    // ── Body shading ──
+    rect(9, 6, 2, 4, "#d09858");     // left highlight
+    rect(21, 6, 2, 12, "#a06030");   // right shadow
+    rect(9, 22, 14, 2, "#a06030");   // bottom shadow
 
     const texture = new THREE.CanvasTexture(texCanvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
 
-    const geo = new THREE.PlaneGeometry(32, 32);
-    const mat = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-    });
+    const geo = new THREE.PlaneGeometry(RES, RES);
+    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
     const mesh = new THREE.Mesh(geo, mat);
     scene.add(mesh);
     renderer.render(scene, camera);
 
-    // Cleanup
-    return () => {
-      geo.dispose();
-      mat.dispose();
-      texture.dispose();
-      renderer.dispose();
-    };
+    return () => { geo.dispose(); mat.dispose(); texture.dispose(); renderer.dispose(); };
   }, []);
 
   return (
@@ -3013,14 +3023,20 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         size="sm"
       >
         <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg="gray.900" border="2px solid" borderColor="yellow.400" borderRadius="xl">
-          <ModalHeader color="yellow.300" fontSize="md" pb={1}>
+        <ModalContent
+          bg="rgba(250, 244, 232, 0.96)"
+          border="2px solid"
+          borderColor="orange.200"
+          borderRadius="xl"
+          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+        >
+          <ModalHeader color="orange.800" fontSize="md" pb={1}>
             {targetLang === "es" ? "Inventario" : "Inventory"}
           </ModalHeader>
-          <ModalCloseButton color="white" />
+          <ModalCloseButton color="gray.600" _hover={{ bg: "whiteAlpha.200" }} />
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
-              <Text color="gray.400" fontSize="sm" textAlign="center" py={4}>
+              <Text color="gray.500" fontSize="sm" textAlign="center" py={4}>
                 {targetLang === "es" ? "No tienes objetos." : "No items yet."}
               </Text>
             ) : (
@@ -3032,13 +3048,13 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       spacing={0}
                       cursor="pointer"
                       onClick={() => setSelectedInvItem(selectedInvItem === idx ? null : idx)}
-                      bg={selectedInvItem === idx ? "whiteAlpha.200" : "whiteAlpha.50"}
+                      bg={selectedInvItem === idx ? "orange.100" : "orange.50"}
                       borderRadius="lg"
                       border="2px solid"
-                      borderColor={selectedInvItem === idx ? "yellow.400" : "transparent"}
+                      borderColor={selectedInvItem === idx ? "orange.400" : "transparent"}
                       p={2}
                       transition="all 0.15s"
-                      _hover={{ bg: "whiteAlpha.200" }}
+                      _hover={{ bg: "orange.100" }}
                     >
                       <Image
                         src={getItemSpriteDataURL(item.sprite)}
@@ -3052,15 +3068,15 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                 </SimpleGrid>
                 {selectedInvItem !== null && inventory[selectedInvItem] && (
                   <HStack
-                    bg="whiteAlpha.100"
+                    bg="orange.50"
                     borderRadius="lg"
                     px={3}
                     py={2}
                     justify="space-between"
                     border="1px solid"
-                    borderColor="whiteAlpha.200"
+                    borderColor="orange.200"
                   >
-                    <Text color="white" fontSize="sm" fontWeight="medium">
+                    <Text color="gray.800" fontSize="sm" fontWeight="medium">
                       {inventory[selectedInvItem].name}
                     </Text>
                     <Button
