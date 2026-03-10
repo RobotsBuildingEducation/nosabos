@@ -32,6 +32,7 @@ import {
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
+import { FaMicrophone } from "react-icons/fa";
 import * as Tone from "tone";
 import * as THREE from "three";
 import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
@@ -507,6 +508,102 @@ function drawGatherItemSprite(ctx, spriteId) {
       break;
     }
   }
+}
+
+// ─── Pixel-art backpack icon (Three.js canvas sprite, JRPG style) ───────────
+function BackpackIcon({ size = 28 }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.width = 32;
+    canvas.height = 32;
+
+    // Render a tiny Three.js scene to canvas
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+    });
+    renderer.setSize(32, 32);
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-16, 16, 16, -16, 0.1, 100);
+    camera.position.z = 10;
+
+    // Draw pixel-art backpack onto a texture canvas
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = 16;
+    texCanvas.height = 16;
+    const ctx = texCanvas.getContext("2d");
+
+    const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
+    const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+    // Backpack body (brown leather)
+    rect(4, 3, 8, 10, "#8b5e3c");
+    // Darker edges
+    rect(4, 3, 1, 10, "#6b3f1f");
+    rect(11, 3, 1, 10, "#6b3f1f");
+    rect(4, 12, 8, 1, "#6b3f1f");
+    // Top flap
+    rect(4, 2, 8, 2, "#a0714b");
+    rect(5, 1, 6, 1, "#a0714b");
+    // Flap clasp (gold buckle)
+    rect(7, 4, 2, 2, "#ffd700");
+    px(7, 4, "#ffec80");
+    // Front pocket
+    rect(5, 7, 6, 4, "#7a5030");
+    rect(6, 7, 4, 1, "#9b7040");
+    // Pocket stitch lines
+    px(5, 8, "#654020");
+    px(10, 8, "#654020");
+    // Straps (visible at top)
+    px(5, 1, "#6b3f1f");
+    px(10, 1, "#6b3f1f");
+    px(5, 0, "#6b3f1f");
+    px(10, 0, "#6b3f1f");
+    // Highlight on body
+    rect(5, 3, 2, 1, "#b88560");
+    px(5, 4, "#b88560");
+    // Bottom reinforcement
+    rect(5, 12, 6, 1, "#5a3018");
+
+    const texture = new THREE.CanvasTexture(texCanvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    const geo = new THREE.PlaneGeometry(32, 32);
+    const mat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    renderer.render(scene, camera);
+
+    // Cleanup
+    return () => {
+      geo.dispose();
+      mat.dispose();
+      texture.dispose();
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        width: size,
+        height: size,
+        imageRendering: "pixelated",
+        display: "block",
+      }}
+    />
+  );
 }
 
 const NPC_SPRITE_ROWS = [
@@ -2859,7 +2956,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
             aria-label="Inventory"
             icon={
               <Box position="relative">
-                <Text as="span" fontSize="xl">🎒</Text>
+                <BackpackIcon size={22} />
                 {inventory.length > 0 && (
                   <Badge
                     position="absolute"
@@ -3257,7 +3354,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       aria-label={isRecording ? ui.micStop : ui.micStart}
                       size="sm"
                       colorScheme={isRecording ? "red" : "teal"}
-                      icon={<Text as="span">🎤</Text>}
+                      icon={<FaMicrophone />}
                       isLoading={isConnecting}
                       onClick={async () => {
                         if (!supportsSpeech) {
