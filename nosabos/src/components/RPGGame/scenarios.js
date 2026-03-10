@@ -85,18 +85,21 @@ function getLessonTerms(targetLang) {
 
 function normalizeNPCs(npcs, mapWidth, mapHeight) {
   const raw = Array.isArray(npcs) ? npcs : [];
+  // Accept 2-4 NPCs from the LLM response
+  const maxNpcs = 4;
+  const minNpcs = 2;
   const normalized = raw
-    .slice(0, 3)
+    .slice(0, maxNpcs)
     .map((npc, idx) => ({
       tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
       ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
       name: String(npc?.name || `Guide ${idx + 1}`),
-      presetIdx: clampInt(npc?.presetIdx, 0, 2, idx),
+      presetIdx: clampInt(npc?.presetIdx, 0, 3, idx % 4),
     }));
 
-  while (normalized.length < 3) {
+  while (normalized.length < minNpcs) {
     const idx = normalized.length;
-    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx });
+    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx % 4 });
   }
 
   return normalized;
@@ -733,11 +736,14 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     es: normalizeQuestions([], supportLang),
   };
 
-  const npcs = [
+  const allFallbackNpcs = [
     { tx: 4, ty: 4, name: "Ada", presetIdx: 0 },
     { tx: 8, ty: 6, name: "Bruno", presetIdx: 1 },
     { tx: 12, ty: 8, name: "Cleo", presetIdx: 2 },
+    { tx: 14, ty: 4, name: "Dana", presetIdx: 3 },
   ];
+  const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
+  const npcs = allFallbackNpcs.slice(0, npcCount);
 
   return {
     id: mapId,
@@ -791,9 +797,7 @@ Required JSON shape:
   "mapHeight": 12-18,
   "playerStart": {"x": int, "y": int},
   "npcs": [
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2}
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-3}
   ],
   "mapData": [flat array length mapWidth*mapHeight, values only 0..6],
   "questions": [
@@ -802,7 +806,7 @@ Required JSON shape:
   "quest": {
     "intro": "one sentence in TARGET language",
     "storySeed": "one dramatic sentence in TARGET language describing the main mystery",
-    "startNpcIdx": 0-2
+    "startNpcIdx": 0
   },
   "greetings": {
     "en": ["...", "...", "..."],
@@ -820,7 +824,7 @@ Tile semantics for mapData:
 6 solid indoor object
 
 Constraints:
-- Exactly 3 NPCs.
+- Between 2 and 4 NPCs (vary the count each time).
 - At least 8 questions.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable (not all solid).
