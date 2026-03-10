@@ -83,13 +83,11 @@ function getLessonTerms(targetLang) {
   );
 }
 
-function normalizeNPCs(npcs, mapWidth, mapHeight) {
+function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
   const raw = Array.isArray(npcs) ? npcs : [];
-  // Accept 2-4 NPCs from the LLM response
-  const maxNpcs = 4;
-  const minNpcs = 2;
+  const count = targetCount || (2 + Math.floor(Math.random() * 3)); // 2-4
   const normalized = raw
-    .slice(0, maxNpcs)
+    .slice(0, count)
     .map((npc, idx) => ({
       tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
       ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
@@ -97,7 +95,7 @@ function normalizeNPCs(npcs, mapWidth, mapHeight) {
       presetIdx: clampInt(npc?.presetIdx, 0, 3, idx % 4),
     }));
 
-  while (normalized.length < minNpcs) {
+  while (normalized.length < count) {
     const idx = normalized.length;
     normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx % 4 });
   }
@@ -776,7 +774,7 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   };
 }
 
-function buildPrompt({ mapId, targetLang, supportLang, lessonTerms }) {
+function buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount }) {
   const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
 
   return `You generate JSON for a 2D JRPG language-learning scenario.
@@ -824,7 +822,7 @@ Tile semantics for mapData:
 6 solid indoor object
 
 Constraints:
-- Between 2 and 4 NPCs (vary the count each time).
+- Exactly ${npcCount} NPCs in the npcs array.
 - At least 8 questions.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable (not all solid).
@@ -854,7 +852,7 @@ function parseJSON(text) {
   return null;
 }
 
-function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
+function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
   const mapWidth = clampInt(raw?.mapWidth, 16, 28, 20);
   const mapHeight = clampInt(raw?.mapHeight, 12, 20, 14);
   const mapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
@@ -880,7 +878,7 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
     generate() {
       return mapData;
     },
-    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight),
+    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount),
     questions: {
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
@@ -904,7 +902,8 @@ function withQuest(scenario, raw, supportLang, targetLang) {
 
 export async function generateScenarioWithAI(mapId, targetLang = "es", supportLang = "en") {
   const lessonTerms = getLessonTerms(targetLang);
-  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms });
+  const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
+  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount });
 
   let text = "";
   try {
@@ -943,7 +942,7 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
   }
 
   const parsed = parseJSON(text);
-  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
+  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang, npcCount });
   if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
   return withQuest(normalized, parsed, supportLang, targetLang);
 }
