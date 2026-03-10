@@ -297,42 +297,45 @@ function shuffle(arr) {
 }
 
 function generateQuestPlan(npcCount) {
-  // Generate a random NPC visit order (sometimes non-linear)
-  const linearOrders = [
-    [0, 1, 2],
-    [0, 1, 2],
-  ];
-  const nonLinearOrders = [
-    [0, 2, 1],
-    [2, 0, 1],
-    [1, 0, 2],
-    [1, 2, 0],
-  ];
-  const visitOrder = Math.random() < 0.5
-    ? pickRandom(linearOrders)
-    : pickRandom(nonLinearOrders);
+  // Build a variable-length visit sequence (2-6 steps)
+  // Each step targets an NPC and has random interactions
+  const npcIndices = Array.from({ length: npcCount }, (_, i) => i);
 
-  // For each NPC, pick a random number of interaction steps (1-3)
-  const interactionTypes = ["choice", "speech"];
-  const stepsPerNpc = {};
-  for (let i = 0; i < npcCount; i++) {
-    const stepCount = 1 + Math.floor(Math.random() * 3); // 1-3
-    const steps = [];
-    for (let s = 0; s < stepCount; s++) {
-      steps.push(pickRandom(interactionTypes));
-    }
-    stepsPerNpc[i] = steps;
+  // Start with a shuffled base visit of all NPCs
+  const base = shuffle(npcIndices);
+
+  // Randomly add 0-3 extra revisit steps
+  const extraCount = Math.floor(Math.random() * 4); // 0-3
+  const extras = [];
+  for (let i = 0; i < extraCount; i++) {
+    extras.push(pickRandom(npcIndices));
   }
 
-  // Pick which NPC gets the gather quest (60% chance any game has one)
-  // Never the last NPC in visit order (so there's still someone to hand off to after)
+  // Interleave extras at random positions (but never at the very end)
+  const visitOrder = [...base];
+  for (const extra of extras) {
+    const pos = Math.floor(Math.random() * visitOrder.length);
+    visitOrder.splice(pos, 0, extra);
+  }
+
+  // For each step, pick 1-3 random interaction types
+  const interactionTypes = ["choice", "speech"];
+  const stepsInteractions = visitOrder.map(() => {
+    const count = 1 + Math.floor(Math.random() * 3); // 1-3
+    const types = [];
+    for (let s = 0; s < count; s++) {
+      types.push(pickRandom(interactionTypes));
+    }
+    return types;
+  });
+
+  // Pick which step gets the gather quest (60% chance, never the last step)
   const hasGather = Math.random() < 0.6;
-  const gatherCandidates = visitOrder.slice(0, -1);
-  const gatherNpcIdx = hasGather && gatherCandidates.length > 0
-    ? pickRandom(gatherCandidates)
+  const gatherStepIdx = hasGather && visitOrder.length > 1
+    ? Math.floor(Math.random() * (visitOrder.length - 1))
     : -1;
 
-  return { visitOrder, stepsPerNpc, gatherNpcIdx };
+  return { visitOrder, stepsInteractions, gatherStepIdx };
 }
 
 function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
@@ -508,18 +511,15 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
   const t = L[tl] || L.es;
 
   const storySeed = rawStorySeed || t.defaultSeed;
-  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
   const intro =
     String(rawQuest?.intro || "").trim() ||
-    t.defaultIntro(npcs[startNpcIdx]?.name || "NPC");
+    t.defaultIntro(npcs[0]?.name || "NPC");
 
   // Generate a random quest plan for this game instance
   const plan = generateQuestPlan(npcs.length);
 
-  // Pick gather items (only if a gather step exists)
-  const gatherData = plan.gatherNpcIdx >= 0
-    ? pickGatherItems(mapId, tl)
-    : pickGatherItems(mapId, tl); // always prepare gather data for safety
+  // Prepare gather items
+  const gatherData = pickGatherItems(mapId, tl);
 
   // Track which choice sets have been used to avoid repeats
   const usedChoiceSets = new Set();
@@ -536,26 +536,27 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     return pick.set;
   }
 
-  const treeByNpc = npcs.map((npc, npcIdx) => {
-    const visitPos = plan.visitOrder.indexOf(npcIdx);
-    const isFirstVisit = visitPos === 0;
-    const isLastVisit = visitPos === plan.visitOrder.length - 1;
-    const prevNpcIdx = visitPos > 0 ? plan.visitOrder[visitPos - 1] : -1;
-    const nextNpcIdx = !isLastVisit ? plan.visitOrder[visitPos + 1] : -1;
+  // Build steps array — each step targets one NPC with its own dialogue nodes
+  const steps = plan.visitOrder.map((npcIdx, stepIdx) => {
+    const npc = npcs[npcIdx];
+    const isFirstStep = stepIdx === 0;
+    const isLastStep = stepIdx === plan.visitOrder.length - 1;
+    const prevNpcIdx = stepIdx > 0 ? plan.visitOrder[stepIdx - 1] : -1;
+    const nextNpcIdx = !isLastStep ? plan.visitOrder[stepIdx + 1] : -1;
     const prevNpc = prevNpcIdx >= 0 ? npcs[prevNpcIdx] : null;
     const nextNpc = nextNpcIdx >= 0 ? npcs[nextNpcIdx] : null;
-    const interactions = plan.stepsPerNpc[npcIdx]; // e.g. ["choice", "speech"] or ["speech"] etc.
-    const hasGather = npcIdx === plan.gatherNpcIdx;
+    const interactions = plan.stepsInteractions[stepIdx];
+    const hasGather = stepIdx === plan.gatherStepIdx;
 
-    const nodeId = (n) => `npc-${npcIdx}-node-${n}`;
+    const nodeId = (n) => `step-${stepIdx}-npc-${npcIdx}-node-${n}`;
     const nodes = [];
     let nodeCounter = 1;
 
-    // Pick greeting based on visit position
+    // Pick greeting based on step position
     let greetLine;
-    if (isFirstVisit) {
+    if (isFirstStep) {
       greetLine = pickRandom(t.firstGreetings)(storySeed);
-    } else if (isLastVisit) {
+    } else if (isLastStep) {
       greetLine = pickRandom(t.finalGreetings)(prevNpc?.name || "NPC");
     } else {
       greetLine = pickRandom(t.midGreetings)(prevNpc?.name || "NPC");
@@ -607,7 +608,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       }
     }
 
-    // Add gather node if this NPC has the gather quest
+    // Add gather node if this step has the gather quest
     if (hasGather) {
       const correctItem = gatherData.correct[0] || { name: t.defaultTopic, hint: "", isCorrect: true };
       const gatherId = nodeId(nodeCounter);
@@ -635,8 +636,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       });
       nodeCounter++;
 
-      // Gather success + handoff/terminal
-      if (isLastVisit) {
+      if (isLastStep) {
         nodes.push({
           id: gatherSuccessId,
           playerLine: t.gatherPlayerReport(correctItem.name),
@@ -675,7 +675,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         }
       }
 
-      if (isLastVisit) {
+      if (isLastStep) {
         nodes.push({
           id: terminalId,
           npcLine: sanitizeDialogueLine(t.questComplete, npc.name),
@@ -694,9 +694,9 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     }
 
     return {
+      stepIdx,
       npcIdx,
-      nextNpcIdx: nextNpcIdx >= 0 ? nextNpcIdx : undefined,
-      title: t.actLabel(npc.name, visitPos + 1),
+      title: t.actLabel(npc.name, stepIdx + 1),
       intro: nextNpc
         ? t.connectClue(npc.name, nextNpc.name)
         : t.connectClue(npc.name, npc.name),
@@ -708,7 +708,7 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
     intro,
     storySeed,
     startNpcIdx: plan.visitOrder[0],
-    treeByNpc,
+    steps,
     gatherData,
   };
 }

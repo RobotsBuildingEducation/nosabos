@@ -779,7 +779,7 @@ export default function RPGGame() {
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
-  const [answeredNPCs, setAnsweredNPCs] = useState(new Set());
+  const [completedSteps, setCompletedSteps] = useState(0);
   const [feedback, setFeedback] = useState(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
@@ -913,9 +913,8 @@ export default function RPGGame() {
   const npcDialogueCharactersRef = useRef(new Map());
 
   const [questProgress, setQuestProgress] = useState({
-    unlockedNPCs: new Set([0]),
-    completedNPCs: new Set(),
-    nodeByNPC: {},
+    currentStepIdx: 0,
+    currentNodeId: null,
   });
 
   const chooseRandomNPCVariants = useCallback((npcCount) => {
@@ -1210,11 +1209,10 @@ export default function RPGGame() {
     return scenario.questions[targetLang] || scenario.questions.es || [];
   }, [scenario, targetLang]);
 
-  const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
-  const questTreeByNpc = useMemo(() => {
-    const tree = quest?.treeByNpc || [];
-    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return tree;
+  const questSteps = useMemo(() => {
+    const steps = quest?.steps || [];
+    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return steps;
 
     // Replace scenario NPC names with character names in all dialogue text
     const sub = (text) => {
@@ -1226,11 +1224,11 @@ export default function RPGGame() {
       return result;
     };
 
-    return tree.map((arc) => ({
-      ...arc,
-      title: sub(arc.title),
-      intro: sub(arc.intro),
-      nodes: arc.nodes.map((node) => ({
+    return steps.map((step) => ({
+      ...step,
+      title: sub(step.title),
+      intro: sub(step.intro),
+      nodes: step.nodes.map((node) => ({
         ...node,
         npcLine: sub(node.npcLine),
         playerLine: sub(node.playerLine),
@@ -1245,6 +1243,7 @@ export default function RPGGame() {
       })),
     }));
   }, [quest, npcNameMap]);
+  const totalSteps = questSteps.length;
 
   const playGameSound = useCallback(
     (name) => {
@@ -1428,12 +1427,8 @@ export default function RPGGame() {
       setDialogue(null);
       setFeedback(null);
       setGameComplete(false);
-      setAnsweredNPCs(new Set());
-      setQuestProgress({
-        unlockedNPCs: new Set([0]),
-        completedNPCs: new Set(),
-        nodeByNPC: {},
-      });
+      setCompletedSteps(0);
+      setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
 
       const generated = await generateScenarioWithAI(
         mapId,
@@ -1441,11 +1436,7 @@ export default function RPGGame() {
         supportLang,
       );
       setScenario(generated);
-      setQuestProgress({
-        unlockedNPCs: new Set([generated?.quest?.startNpcIdx ?? 0]),
-        completedNPCs: new Set(),
-        nodeByNPC: {},
-      });
+      setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
@@ -2191,24 +2182,26 @@ export default function RPGGame() {
           (n) => n.tx === checkX && n.ty === checkY,
         );
 
-        if (npcIdx !== -1 && !answeredNPCs.has(npcIdx)) {
-          if (!questProgress.unlockedNPCs.has(npcIdx)) {
-            const startNpc =
-              scenario.npcs[scenario.quest?.startNpcIdx ?? 0]?.name ||
-              scenario.npcs[0]?.name ||
+        if (npcIdx !== -1) {
+          const currentStep = questSteps[questProgress.currentStepIdx];
+          if (!currentStep || npcIdx !== currentStep.npcIdx) {
+            const targetNpc =
+              scenario.npcs[currentStep?.npcIdx ?? 0]?.name ||
               "NPC";
-            setFeedback(`${ui.lockedNpc} ${startNpc}`);
+            const targetCharName = npcCharacterNamesRef.current[currentStep?.npcIdx ?? 0] || targetNpc;
+            setFeedback(`${ui.lockedNpc} ${targetCharName}`);
             setTimeout(() => setFeedback(null), 1200);
             return;
           }
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
-          const npcArc = questTreeByNpc[npcIdx];
+          const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
-            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
-          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
+            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          const node = stepArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
+            stepIdx: questProgress.currentStepIdx,
             npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
@@ -2325,8 +2318,9 @@ export default function RPGGame() {
         (n) => Math.abs(n.tx - tileX) <= 1 && Math.abs(n.ty - tileY) <= 1,
       );
 
-      if (npcIdx !== -1 && !answeredNPCs.has(npcIdx) && !dialogue) {
-        if (!questProgress.unlockedNPCs.has(npcIdx)) return;
+      if (npcIdx !== -1 && !dialogue) {
+        const currentStep = questSteps[questProgress.currentStepIdx];
+        if (!currentStep || npcIdx !== currentStep.npcIdx) return;
         const npc = scenario.npcs[npcIdx];
         const npcDistance =
           Math.abs(npc.tx - gs.playerX) + Math.abs(npc.ty - gs.playerY);
@@ -2338,12 +2332,13 @@ export default function RPGGame() {
 
         const question = getQuestionForNPC(npcIdx);
         if (question) {
-          const npcArc = questTreeByNpc[npcIdx];
+          const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
-            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
-          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
+            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          const node = stepArc?.nodes?.find((n) => n.id === nodeId);
           setDialogue({
             npcIdx,
+            stepIdx: questProgress.currentStepIdx,
             npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
@@ -2375,13 +2370,12 @@ export default function RPGGame() {
   }, [
     scenario,
     dialogue,
-    answeredNPCs,
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
     playGameSound,
     questProgress,
-    questTreeByNpc,
+    questSteps,
     speakNPCText,
     ui.lockedNpc,
   ]);
@@ -2409,14 +2403,13 @@ export default function RPGGame() {
       return;
     }
 
-    const nextTargetIdx = [...questProgress.unlockedNPCs].find(
-      (idx) => !questProgress.completedNPCs.has(idx),
-    );
+    const currentStep = questSteps[questProgress.currentStepIdx];
+    const nextTargetIdx = currentStep?.npcIdx;
 
     npcIndicatorsRef.current.forEach((ind, i) => {
       ind.visible = nextTargetIdx !== undefined && i === nextTargetIdx;
     });
-  }, [gameComplete, questProgress]);
+  }, [gameComplete, questProgress, questSteps]);
 
   // ─── Show/hide gather items based on quest unlock ──────────────────
   useEffect(() => {
@@ -2429,41 +2422,21 @@ export default function RPGGame() {
 
   const completeNPCChapter = useCallback(
     (npcIdx) => {
-      const newAnswered = new Set(answeredNPCs);
-      newAnswered.add(npcIdx);
-      setAnsweredNPCs(newAnswered);
+      const newCompleted = completedSteps + 1;
+      setCompletedSteps(newCompleted);
 
-      setQuestProgress((prev) => {
-        const completedNPCs = new Set(prev.completedNPCs);
-        completedNPCs.add(npcIdx);
-        const unlockedNPCs = new Set(prev.unlockedNPCs);
-        // Use explicit nextNpcIdx from quest tree if available (supports non-linear visit orders)
-        const npcArc = questTreeByNpc[npcIdx];
-        const explicitNext = npcArc?.nextNpcIdx;
-        let nextIdx;
-        if (explicitNext !== undefined && !completedNPCs.has(explicitNext)) {
-          nextIdx = explicitNext;
-        } else {
-          nextIdx = scenario.npcs.findIndex(
-            (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
-          );
-        }
-        if (nextIdx !== -1 && nextIdx !== undefined) unlockedNPCs.add(nextIdx);
-        return {
-          ...prev,
-          completedNPCs,
-          unlockedNPCs,
-          nodeByNPC: { ...prev.nodeByNPC, [npcIdx]: null },
-        };
-      });
+      setQuestProgress((prev) => ({
+        currentStepIdx: prev.currentStepIdx + 1,
+        currentNodeId: null,
+      }));
 
       setTimeout(() => {
         setDialogue(null);
         setFeedback(null);
-        if (newAnswered.size >= totalQuestions) setGameComplete(true);
+        if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [answeredNPCs, scenario, totalQuestions, questTreeByNpc],
+    [completedSteps, totalSteps],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -2491,12 +2464,12 @@ export default function RPGGame() {
       return;
     }
 
-    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+    const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
       (n) => n.id === nextNodeId,
     );
     setQuestProgress((prev) => ({
       ...prev,
-      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNodeId },
+      currentNodeId: nextNodeId,
     }));
 
     if (!nextNode) {
@@ -2604,7 +2577,7 @@ export default function RPGGame() {
     // Correct item — advance quest
     setGatherUnlocked(false);
     const nextNodeId = dialogue.node.nextNodeId;
-    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+    const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
       (n) => n.id === nextNodeId,
     );
 
@@ -2615,7 +2588,7 @@ export default function RPGGame() {
 
     setQuestProgress((prev) => ({
       ...prev,
-      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+      currentNodeId: nextNode.id,
     }));
 
     setTimeout(() => {
@@ -2661,7 +2634,7 @@ export default function RPGGame() {
       conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
 
       const nextNodeId = dialogue.node.nextNodeId || null;
-      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
         (n) => n.id === nextNodeId,
       );
 
@@ -2672,7 +2645,7 @@ export default function RPGGame() {
         }
         setQuestProgress((prev) => ({
           ...prev,
-          nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+          currentNodeId: nextNode.id,
         }));
       }
 
@@ -2745,7 +2718,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   const resetGame = () => {
     playGameSound("submitAction");
     stopNPCSpeech();
-    setAnsweredNPCs(new Set());
+    setCompletedSteps(0);
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
@@ -2757,11 +2730,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       item.collected = false;
       if (item.mesh) item.mesh.visible = false;
     });
-    setQuestProgress({
-      unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
-      completedNPCs: new Set(),
-      nodeByNPC: {},
-    });
+    setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
     if (scenario && gameStateRef.current) {
       gameStateRef.current.playerX = scenario.playerStart.x;
       gameStateRef.current.playerY = scenario.playerStart.y;
@@ -2786,7 +2755,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     setScenario(null);
     setNpcNameMap(null);
     setLoadingScenarioId(null);
-    setAnsweredNPCs(new Set());
+    setCompletedSteps(0);
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
@@ -2955,10 +2924,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
-            {answeredNPCs.size}/{totalQuestions}
+            {completedSteps}/{totalSteps}
           </Text>
           <Progress
-            value={(answeredNPCs.size / totalQuestions) * 100}
+            value={totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}
             size="sm"
             colorScheme="green"
             w="60px"
