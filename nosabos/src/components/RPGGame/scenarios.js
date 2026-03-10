@@ -312,11 +312,20 @@ function generateQuestPlan(npcCount) {
     extras.push(pickRandom(npcIndices));
   }
 
-  // Interleave extras at random positions (but never at the very end)
+  // Interleave extras at random positions, avoiding consecutive duplicates
   const visitOrder = [...base];
   for (const extra of extras) {
-    const pos = Math.floor(Math.random() * visitOrder.length);
-    visitOrder.splice(pos, 0, extra);
+    // Find positions where inserting this NPC wouldn't create consecutive duplicates
+    const validPositions = [];
+    for (let p = 0; p <= visitOrder.length; p++) {
+      const before = p > 0 ? visitOrder[p - 1] : -1;
+      const after = p < visitOrder.length ? visitOrder[p] : -1;
+      if (extra !== before && extra !== after) validPositions.push(p);
+    }
+    if (validPositions.length > 0) {
+      const pos = pickRandom(validPositions);
+      visitOrder.splice(pos, 0, extra);
+    }
   }
 
   // For each step, pick 1-3 random interaction types
