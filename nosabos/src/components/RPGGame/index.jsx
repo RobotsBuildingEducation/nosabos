@@ -2989,8 +2989,13 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
             size="md"
             variant="ghost"
             bg="transparent"
-            _hover={{ bg: "transparent" }}
-            _active={{ bg: "transparent" }}
+            border="none"
+            outline="none"
+            boxShadow="none"
+            _hover={{ bg: "transparent", border: "none", boxShadow: "none" }}
+            _active={{ bg: "transparent", border: "none", boxShadow: "none" }}
+            _focus={{ boxShadow: "none", outline: "none" }}
+            _focusVisible={{ boxShadow: "none", outline: "none" }}
             onClick={inventoryModal.onOpen}
           />
           <IconButton
