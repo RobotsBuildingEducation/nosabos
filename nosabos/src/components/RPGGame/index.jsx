@@ -54,6 +54,8 @@ import HelpChatFab from "../HelpChatFab";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -3189,7 +3191,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     px={3}
                     py={2}
                     mx={3}
-                    mt={3}
+                    mt={8}
                     mb={2}
                   >
                     <Text color="blue.800" fontSize="sm" fontStyle="italic">
@@ -3260,14 +3262,22 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       const isReply = !!dialogue.npcReply;
                       return splitIntoSentences(npcText).map((line, i) => (
                           <Box key={i}>
-                            <Text
-                              color={isReply ? "orange.700" : "gray.800"}
-                              fontSize={isReply ? "sm" : "md"}
-                              fontWeight={isReply ? undefined : "bold"}
-                              m={0}
-                            >
-                              {line}
-                            </Text>
+                            {isReply ? (
+                              <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {line}
+                                </ReactMarkdown>
+                              </Box>
+                            ) : (
+                              <Text
+                                color="gray.800"
+                                fontSize="md"
+                                fontWeight="bold"
+                                m={0}
+                              >
+                                {line}
+                              </Text>
+                            )}
                             {lineTranslations[i] && (
                               <Text
                                 color="blue.700"
@@ -3298,12 +3308,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       />
                     )}
                     {!!dialogue.npcReply && (
-                      <AnimatedText
-                        text={dialogue.npcReply}
-                        color="orange.700"
-                        fontSize="sm"
-                        m={0}
-                      />
+                      <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {dialogue.npcReply}
+                        </ReactMarkdown>
+                      </Box>
                     )}
                   </>
                 )}
@@ -3415,7 +3424,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                                 onClick={() => handleGatherSubmit(idx)}
                                 bg="rgba(255,255,255,0.92)"
                                 border="2px solid"
-                                borderColor={item.isCorrect ? "orange.300" : "blackAlpha.200"}
+                                borderColor="blackAlpha.200"
                                 borderRadius="lg"
                                 boxShadow="0px 4px 0px #a9a18c"
                                 _hover={{ bg: "orange.50", borderColor: "orange.400" }}
