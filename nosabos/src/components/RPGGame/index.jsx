@@ -2987,8 +2987,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
               </Box>
             }
             size="md"
-            variant="solid"
-            colorScheme="blackAlpha"
+            variant="ghost"
+            bg="transparent"
+            _hover={{ bg: "transparent" }}
+            _active={{ bg: "transparent" }}
             onClick={inventoryModal.onOpen}
           />
           <IconButton
