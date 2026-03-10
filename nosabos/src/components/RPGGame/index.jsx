@@ -3423,28 +3423,37 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                             ? "Elige un objeto para entregar:"
                             : "Choose an item to hand over:"}
                         </Text>
-                        {inventory.map((item, idx) => (
-                          <Button
-                            key={`${item.name}-${idx}`}
-                            w="100%"
-                            size="sm"
-                            variant="solid"
-                            bg="rgba(255,255,255,0.92)"
-                            color="gray.900"
-                            border="1px solid"
-                            borderColor="blackAlpha.200"
-                            boxShadow="0px 4px 0px #a9a18c"
-                            _active={{ bg: "gray.100" }}
-                            onClick={() => handleGatherSubmit(idx)}
-                            justifyContent="flex-start"
-                            textAlign="left"
-                            whiteSpace="normal"
-                            h="auto"
-                            py={2}
-                          >
-                            {item.isCorrect ? "◆" : "◇"} {item.name}
-                          </Button>
-                        ))}
+                        <Wrap spacing={2} justify="center">
+                          {inventory.map((item, idx) => (
+                            <WrapItem key={`${item.name}-${idx}`}>
+                              <Box
+                                as="button"
+                                onClick={() => handleGatherSubmit(idx)}
+                                bg="rgba(255,255,255,0.92)"
+                                border="2px solid"
+                                borderColor={item.isCorrect ? "orange.300" : "blackAlpha.200"}
+                                borderRadius="lg"
+                                boxShadow="0px 4px 0px #a9a18c"
+                                _hover={{ bg: "orange.50", borderColor: "orange.400" }}
+                                _active={{ transform: "translateY(2px)", boxShadow: "0px 2px 0px #a9a18c" }}
+                                p={2}
+                                transition="all 0.12s"
+                                cursor="pointer"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                <Image
+                                  src={getItemSpriteDataURL(item.sprite)}
+                                  alt={item.name}
+                                  w="40px"
+                                  h="40px"
+                                  imageRendering="pixelated"
+                                />
+                              </Box>
+                            </WrapItem>
+                          ))}
+                        </Wrap>
                       </>
                     ) : null}
                     <Button
