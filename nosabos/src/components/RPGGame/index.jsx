@@ -794,6 +794,7 @@ export default function RPGGame() {
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
   const pendingBridgeRef = useRef(null);
+  const pendingNpcGreetingRef = useRef(null);
   const inventoryModal = useDisclosure();
   const helpChat = useDisclosure();
   const helpChatRef = useRef(null);
@@ -2202,10 +2203,14 @@ export default function RPGGame() {
           const nodeId =
             questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
-          // Inject contextual bridge if available
+          // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
             node = { ...node, playerLine: pendingBridgeRef.current };
             pendingBridgeRef.current = null;
+          }
+          if (pendingNpcGreetingRef.current) {
+            node = { ...node, npcLine: pendingNpcGreetingRef.current };
+            pendingNpcGreetingRef.current = null;
           }
           setDialogue({
             npcIdx,
@@ -2344,10 +2349,14 @@ export default function RPGGame() {
           const nodeId =
             questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
-          // Inject contextual bridge if available
+          // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
             node = { ...node, playerLine: pendingBridgeRef.current };
             pendingBridgeRef.current = null;
+          }
+          if (pendingNpcGreetingRef.current) {
+            node = { ...node, npcLine: pendingNpcGreetingRef.current };
+            pendingNpcGreetingRef.current = null;
           }
           setDialogue({
             npcIdx,
@@ -2441,8 +2450,9 @@ export default function RPGGame() {
       const nextStepIdx = questProgress.currentStepIdx + 1;
       setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
 
-      // Pre-generate a contextual player bridge for the next step via LLM
+      // Pre-generate contextual player bridge + NPC greeting for the next step
       pendingBridgeRef.current = null;
+      pendingNpcGreetingRef.current = null;
       const nextStep = questSteps[nextStepIdx];
       if (nextStep && newCompleted < totalSteps) {
         const history = conversationLogRef.current
@@ -2457,10 +2467,23 @@ export default function RPGGame() {
 ${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar, resumiendo lo que aprendiste o lo que necesitas. No repitas frases genéricas como "me enviaron" o "sabes algo importante". Sé específico basándote en la conversación. Solo la oración, sin comillas.`
           : `You are the player in an adventure. The story: ${seed}
 ${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence in English that the player would say upon arriving, summarizing what you learned or what you need. Don't use generic phrases like "sent me" or "you know something important". Be specific based on the conversation. Just the sentence, no quotes.`;
-        callResponses({ input: bridgePrompt }).then((result) => {
-          const text = (result || "").trim();
+        callResponses({ input: bridgePrompt }).then((playerBridge) => {
+          const text = (playerBridge || "").trim();
           if (text.length > 0 && text.length < 200) {
             pendingBridgeRef.current = text;
+          }
+          // Now generate a contextual NPC greeting that responds to the player's bridge
+          const npcPersonality = scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
+          const npcGreetPrompt = targetLang === "es"
+            ? `Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones en español como ${nextNpcName}. Reacciona específicamente a lo que el jugador dijo y avanza la narrativa. No digas simplemente "te enviaron" o "qué bueno que llegaste". Sé específico y lleva la conversación hacia adelante. Solo las oraciones, sin comillas.`
+            : `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 sentences in English as ${nextNpcName}. React specifically to what the player said and advance the narrative. Don't just say "so they sent you" or "glad you're here". Be specific and drive the conversation forward. Just the sentences, no quotes.`;
+          return callResponses({ input: npcGreetPrompt });
+        }).then((result) => {
+          const text = (result || "").trim();
+          if (text.length > 0 && text.length < 300) {
+            pendingNpcGreetingRef.current = text;
           }
         }).catch(() => {});
       }
