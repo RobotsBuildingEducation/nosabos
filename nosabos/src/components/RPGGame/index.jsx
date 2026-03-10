@@ -793,6 +793,7 @@ export default function RPGGame() {
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
+  const pendingBridgeRef = useRef(null);
   const inventoryModal = useDisclosure();
   const helpChat = useDisclosure();
   const helpChatRef = useRef(null);
@@ -2200,7 +2201,12 @@ export default function RPGGame() {
           const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
             questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
-          const node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          let node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          // Inject contextual bridge if available
+          if (node?.playerLine && pendingBridgeRef.current) {
+            node = { ...node, playerLine: pendingBridgeRef.current };
+            pendingBridgeRef.current = null;
+          }
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2337,7 +2343,12 @@ export default function RPGGame() {
           const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
             questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
-          const node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          let node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          // Inject contextual bridge if available
+          if (node?.playerLine && pendingBridgeRef.current) {
+            node = { ...node, playerLine: pendingBridgeRef.current };
+            pendingBridgeRef.current = null;
+          }
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2427,10 +2438,32 @@ export default function RPGGame() {
       const newCompleted = completedSteps + 1;
       setCompletedSteps(newCompleted);
 
-      setQuestProgress((prev) => ({
-        currentStepIdx: prev.currentStepIdx + 1,
-        currentNodeId: null,
-      }));
+      const nextStepIdx = questProgress.currentStepIdx + 1;
+      setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
+
+      // Pre-generate a contextual player bridge for the next step via LLM
+      pendingBridgeRef.current = null;
+      const nextStep = questSteps[nextStepIdx];
+      if (nextStep && newCompleted < totalSteps) {
+        const history = conversationLogRef.current
+          .slice(-10)
+          .map((e) => `${e.speaker}: ${e.text}`)
+          .join("\n");
+        const seed = quest?.storySeed || "";
+        const nextNpcName = npcCharacterNamesRef.current[nextStep.npcIdx]
+          || scenario?.npcs?.[nextStep.npcIdx]?.name || "NPC";
+        const bridgePrompt = targetLang === "es"
+          ? `Eres el jugador en una aventura. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar, resumiendo lo que aprendiste o lo que necesitas. No repitas frases genéricas como "me enviaron" o "sabes algo importante". Sé específico basándote en la conversación. Solo la oración, sin comillas.`
+          : `You are the player in an adventure. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence in English that the player would say upon arriving, summarizing what you learned or what you need. Don't use generic phrases like "sent me" or "you know something important". Be specific based on the conversation. Just the sentence, no quotes.`;
+        callResponses({ input: bridgePrompt }).then((result) => {
+          const text = (result || "").trim();
+          if (text.length > 0 && text.length < 200) {
+            pendingBridgeRef.current = text;
+          }
+        }).catch(() => {});
+      }
 
       setTimeout(() => {
         setDialogue(null);
@@ -2438,7 +2471,7 @@ export default function RPGGame() {
         if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [completedSteps, totalSteps],
+    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
