@@ -2437,10 +2437,18 @@ export default function RPGGame() {
         const completedNPCs = new Set(prev.completedNPCs);
         completedNPCs.add(npcIdx);
         const unlockedNPCs = new Set(prev.unlockedNPCs);
-        const nextNpcIdx = scenario.npcs.findIndex(
-          (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
-        );
-        if (nextNpcIdx !== -1) unlockedNPCs.add(nextNpcIdx);
+        // Use explicit nextNpcIdx from quest tree if available (supports non-linear visit orders)
+        const npcArc = questTreeByNpc[npcIdx];
+        const explicitNext = npcArc?.nextNpcIdx;
+        let nextIdx;
+        if (explicitNext !== undefined && !completedNPCs.has(explicitNext)) {
+          nextIdx = explicitNext;
+        } else {
+          nextIdx = scenario.npcs.findIndex(
+            (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
+          );
+        }
+        if (nextIdx !== -1 && nextIdx !== undefined) unlockedNPCs.add(nextIdx);
         return {
           ...prev,
           completedNPCs,
@@ -2455,7 +2463,7 @@ export default function RPGGame() {
         if (newAnswered.size >= totalQuestions) setGameComplete(true);
       }, 800);
     },
-    [answeredNPCs, scenario, totalQuestions],
+    [answeredNPCs, scenario, totalQuestions, questTreeByNpc],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
