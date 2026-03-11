@@ -1749,7 +1749,8 @@ export default function App() {
     return "skillTree";
   });
   const [activeLesson, setActiveLesson] = useState(null);
-  const [preGeneratedGameScenario, setPreGeneratedGameScenario] = useState(null);
+  const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
+    useState(null);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -4749,59 +4750,60 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  const isGameFullScreen =
-    viewMode === "lesson" && activeLesson?.isGame;
+  const isGameFullScreen = viewMode === "lesson" && activeLesson?.isGame;
 
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
-      {!isGameFullScreen && <TopBar
-        appLanguage={appLanguage}
-        user={user}
-        activeNpub={activeNpub}
-        activeNsec={activeNsec}
-        auth={auth}
-        cefrResult={cefrResult}
-        cefrLoading={cefrLoading}
-        cefrError={cefrError}
-        onSwitchedAccount={async (id, sec) => {
-          /* ... */
-        }}
-        onPatchSettings={saveGlobalSettings}
-        settingsOpen={settingsOpen}
-        openSettings={() => setSettingsOpen(true)}
-        closeSettings={() => setSettingsOpen(false)}
-        accountOpen={accountOpen}
-        closeAccount={() => setAccountOpen(false)}
-        onRunCefrAnalysis={runCefrAnalysis}
-        onSelectIdentity={handleIdentitySelection}
-        isIdentitySaving={isIdentitySaving}
-        tabOrder={activeTabs}
-        tabLabels={TAB_LABELS}
-        tabIcons={TAB_ICONS}
-        currentTab={currentTab}
-        onSelectTab={handleSelectTab}
-        viewMode={viewMode}
-        // 🆕 timer props
-        timerRemainingSeconds={timerRemainingSeconds}
-        isTimerRunning={isTimerRunning}
-        timerPaused={timerPaused}
-        formatTimer={formatTimer}
-        onOpenTimerModal={() => setTimerModalOpen(true)}
-        onTogglePauseTimer={handleTogglePauseTimer}
-        onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
-        allowPosts={allowPosts}
-        onAllowPostsChange={handleAllowPostsChange}
-        soundEnabled={soundEnabled}
-        onSoundEnabledChange={handleSoundEnabledChange}
-        soundVolume={soundVolume}
-        onVolumeChange={handleVolumeChange}
-        onVolumeSave={handleVolumeSave}
-        playSound={playSound}
-        testSound={submitActionSound}
-        isMobile={isMobile}
-        postNostrContent={postNostrContent}
-      />}
+      {!isGameFullScreen && (
+        <TopBar
+          appLanguage={appLanguage}
+          user={user}
+          activeNpub={activeNpub}
+          activeNsec={activeNsec}
+          auth={auth}
+          cefrResult={cefrResult}
+          cefrLoading={cefrLoading}
+          cefrError={cefrError}
+          onSwitchedAccount={async (id, sec) => {
+            /* ... */
+          }}
+          onPatchSettings={saveGlobalSettings}
+          settingsOpen={settingsOpen}
+          openSettings={() => setSettingsOpen(true)}
+          closeSettings={() => setSettingsOpen(false)}
+          accountOpen={accountOpen}
+          closeAccount={() => setAccountOpen(false)}
+          onRunCefrAnalysis={runCefrAnalysis}
+          onSelectIdentity={handleIdentitySelection}
+          isIdentitySaving={isIdentitySaving}
+          tabOrder={activeTabs}
+          tabLabels={TAB_LABELS}
+          tabIcons={TAB_ICONS}
+          currentTab={currentTab}
+          onSelectTab={handleSelectTab}
+          viewMode={viewMode}
+          // 🆕 timer props
+          timerRemainingSeconds={timerRemainingSeconds}
+          isTimerRunning={isTimerRunning}
+          timerPaused={timerPaused}
+          formatTimer={formatTimer}
+          onOpenTimerModal={() => setTimerModalOpen(true)}
+          onTogglePauseTimer={handleTogglePauseTimer}
+          onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
+          allowPosts={allowPosts}
+          onAllowPostsChange={handleAllowPostsChange}
+          soundEnabled={soundEnabled}
+          onSoundEnabledChange={handleSoundEnabledChange}
+          soundVolume={soundVolume}
+          onVolumeChange={handleVolumeChange}
+          onVolumeSave={handleVolumeSave}
+          playSound={playSound}
+          testSound={submitActionSound}
+          isMobile={isMobile}
+          postNostrContent={postNostrContent}
+        />
+      )}
 
       <TeamsDrawer
         isOpen={teamsOpen}
@@ -4820,42 +4822,44 @@ export default function App() {
         targetLang={resolvedTargetLang}
       />
 
-      {!isGameFullScreen && <BottomActionBar
-        t={t}
-        onOpenIdentity={() => setAccountOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenTeams={() => setTeamsOpen(true)}
-        onOpenNotes={() => setNotesOpen(true)}
-        isIdentitySaving={isIdentitySaving}
-        showTranslations={showTranslationsEnabled}
-        onToggleTranslations={handleToggleTranslations}
-        translationLabel={translationToggleLabel}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        viewMode={viewMode}
-        onNavigateToSkillTree={handleReturnToSkillTree}
-        onOpenHelpChat={helpChatDisclosure.onOpen}
-        playSound={playSound}
-        hasPendingTeamInvite={pendingTeamInviteCount > 0}
-        notesIsLoading={notesIsLoading}
-        notesIsDone={notesIsDone}
-        pathMode={pathMode}
-        onPathModeChange={(newMode) => {
-          // If in a lesson or other view, return to skill tree first
-          if (viewMode !== "skillTree") {
-            handleReturnToSkillTree();
-          }
-          setPathMode(newMode);
-          // Always scroll to top when switching modes
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }}
-        onScrollToLatest={() => {
-          // Trigger scroll when already in path mode
-          if (viewMode === "skillTree") {
-            setScrollToLatestTrigger((prev) => prev + 1);
-          }
-        }}
-      />}
+      {!isGameFullScreen && (
+        <BottomActionBar
+          t={t}
+          onOpenIdentity={() => setAccountOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenTeams={() => setTeamsOpen(true)}
+          onOpenNotes={() => setNotesOpen(true)}
+          isIdentitySaving={isIdentitySaving}
+          showTranslations={showTranslationsEnabled}
+          onToggleTranslations={handleToggleTranslations}
+          translationLabel={translationToggleLabel}
+          appLanguage={appLanguage}
+          targetLang={resolvedTargetLang}
+          viewMode={viewMode}
+          onNavigateToSkillTree={handleReturnToSkillTree}
+          onOpenHelpChat={helpChatDisclosure.onOpen}
+          playSound={playSound}
+          hasPendingTeamInvite={pendingTeamInviteCount > 0}
+          notesIsLoading={notesIsLoading}
+          notesIsDone={notesIsDone}
+          pathMode={pathMode}
+          onPathModeChange={(newMode) => {
+            // If in a lesson or other view, return to skill tree first
+            if (viewMode !== "skillTree") {
+              handleReturnToSkillTree();
+            }
+            setPathMode(newMode);
+            // Always scroll to top when switching modes
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }}
+          onScrollToLatest={() => {
+            // Trigger scroll when already in path mode
+            if (viewMode === "skillTree") {
+              setScrollToLatestTrigger((prev) => prev + 1);
+            }
+          }}
+        />
+      )}
 
       {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
       <TutorialActionBarPopovers
@@ -4928,7 +4932,15 @@ export default function App() {
 
       {/* Learning Modules Scene */}
       {viewMode === "lesson" && isGameFullScreen && (
-        <Box w="100%" h="100dvh" position="fixed" top={0} left={0} zIndex={1000} bg="gray.900">
+        <Box
+          w="100%"
+          h="100dvh"
+          position="fixed"
+          top={0}
+          left={0}
+          zIndex={1000}
+          bg="gray.900"
+        >
           <RPGGame
             lessonContext={activeLesson}
             initialScenario={preGeneratedGameScenario}
