@@ -2212,6 +2212,7 @@ export default function RPGGame() {
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
+          setLastHeardSpeech("");
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2358,6 +2359,7 @@ export default function RPGGame() {
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
+          setLastHeardSpeech("");
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2443,9 +2445,10 @@ export default function RPGGame() {
   }, [gatherUnlocked]);
 
   const completeNPCChapter = useCallback(
-    (npcIdx) => {
+    () => {
       const newCompleted = completedSteps + 1;
       setCompletedSteps(newCompleted);
+      setLastHeardSpeech("");
 
       const nextStepIdx = questProgress.currentStepIdx + 1;
       setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
@@ -2516,6 +2519,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
     const nextNodeId = selected.nextNodeId || null;
 
     if (!nextNodeId) {
+      setLastHeardSpeech("");
       setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
       if (selected.npcReply) speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
       completeNPCChapter(dialogue.npcIdx);
@@ -2541,6 +2545,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
     }
 
     setTimeout(() => {
+      setLastHeardSpeech("");
       let reply = selected.npcReply || "";
       // When transitioning into a gather or non-speech node with a reply,
       // append the node's instructions so the player knows what to do
@@ -2650,6 +2655,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
     }));
 
     setTimeout(() => {
+      setLastHeardSpeech("");
       setDialogue((prev) => ({ ...prev, node: nextNode, npcReply: "" }));
       speakNPCText(nextNode.npcLine || "", { npcIdx: dialogue.npcIdx });
     }, 300);
@@ -2676,6 +2682,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       if (!heard) {
         const fallbackReply =
           dialogue.node.speechFallbackReply || ui.noSpeechMatch;
+        setLastHeardSpeech("");
         setDialogue((prev) => ({ ...prev, npcReply: fallbackReply }));
         speakNPCText(fallbackReply, { warmAudio, npcIdx: dialogue.npcIdx });
         return;
@@ -2739,6 +2746,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
           fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
         }
 
+        setLastHeardSpeech("");
         setDialogue((prev) => ({
           ...prev,
           ...(nextNode ? { node: nextNode } : {}),
@@ -2755,6 +2763,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
           fullReply = `${fallback}\n\n${nextNode.npcLine}`;
         }
 
+        setLastHeardSpeech("");
         setDialogue((prev) => ({
           ...prev,
           ...(nextNode ? { node: nextNode } : {}),

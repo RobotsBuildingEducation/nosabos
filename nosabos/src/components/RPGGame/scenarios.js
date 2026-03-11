@@ -220,6 +220,127 @@ function sanitizeDialogueLine(line, npcName) {
   return noPrefix.replace(/^"|"$/g, "").trim();
 }
 
+function summarizeStoryFocus(storySeed, targetLang) {
+  const raw = String(storySeed || "")
+    .replace(/[.!?]/g, ",")
+    .split(",")[0]
+    .trim();
+  if (!raw) return targetLang === "es" ? "el problema" : "the problem";
+  const words = raw.split(/\s+/).slice(0, 9).join(" ");
+  return words || raw;
+}
+
+function buildContextualSpeechPrompt({ targetLang, focus, npcName, prevNpcName }) {
+  if (targetLang === "es") {
+    const options = [
+      `Antes de seguir con ${focus}, dime cómo lo entiendes tú.`,
+      `Quiero tu opinión sobre ${focus}.`,
+      `Con lo que te contó ${prevNpcName || "la persona anterior"}, ¿qué harías ahora?`,
+      `Desde tu punto de vista, ¿cuál es la parte más importante de ${focus}?`,
+      `Si tú fueras ${npcName}, ¿qué paso tomarías ahora?`,
+    ];
+    return pickRandom(options);
+  }
+
+  const options = [
+    `Before we continue with ${focus}, tell me how you see it.`,
+    `I want your take on ${focus}.`,
+    `Given what ${prevNpcName || "the previous person"} told you, what would you do next?`,
+    `From your point of view, what's the most important part of ${focus}?`,
+    `If you were ${npcName}, what step would you take now?`,
+  ];
+  return pickRandom(options);
+}
+
+function buildContextualChoiceSet({
+  targetLang,
+  focus,
+  prevNpcName,
+  nextNpcName,
+  stepIdx,
+  totalSteps,
+}) {
+  const isFinalStretch = stepIdx >= Math.max(0, totalSteps - 2);
+  const hasPrev = Boolean(prevNpcName);
+  const hasNext = Boolean(nextNpcName);
+
+  if (targetLang === "es") {
+    const pool = [
+      [
+        `Quiero entender mejor ${focus}. ¿Qué detalle te parece clave?`,
+        `Lo clave es no perder de vista ${focus}. Si entendemos eso, avanzamos rápido.`,
+      ],
+      [
+        hasPrev
+          ? `${prevNpcName} me dijo que tú podías aclarar ${focus}.`
+          : `Estoy siguiendo las pistas de ${focus}.`,
+        `Tiene sentido. Te cuento lo que sé y cómo encaja con todo lo anterior.`,
+      ],
+      [
+        hasNext
+          ? `¿Esto conecta con lo que puede saber ${nextNpcName}?`
+          : `¿Qué hacemos justo después de esto?`,
+        hasNext
+          ? `Sí, totalmente. Si llevas esta pista a ${nextNpcName}, todo va a cuadrar mejor.`
+          : `Después de esto solo queda ejecutar el plan con cuidado.`,
+      ],
+      [
+        isFinalStretch
+          ? `Estamos cerca del final. ¿Qué decisión define todo?`
+          : `No quiero asumir nada. ¿Qué evidencia tenemos de verdad?`,
+        isFinalStretch
+          ? `La decisión final es actuar sobre esta pista sin distraernos.`
+          : `Buena pregunta. Lo que tenemos es suficiente si lo usamos bien.`,
+      ],
+      [
+        `Si me equivoco con ${focus}, corrígeme ahora.`,
+        `Vas por buen camino. Ajustemos un detalle y podrás continuar sin problemas.`,
+      ],
+    ];
+    return pool
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 4)
+      .map(([text, npcReply]) => ({ text, npcReply }));
+  }
+
+  const pool = [
+    [
+      `I want to understand ${focus} better. What detail matters most?`,
+      `The key is to stay focused on ${focus}. If we do that, we move quickly.`,
+    ],
+    [
+      hasPrev
+        ? `${prevNpcName} said you could clarify ${focus}.`
+        : `I'm tracking leads about ${focus}.`,
+      `That fits. I'll tell you what I know and how it connects to everything so far.`,
+    ],
+    [
+      hasNext
+        ? `Does this connect to what ${nextNpcName} might know?`
+        : `What do we do right after this?`,
+      hasNext
+        ? `Yes, absolutely. Bring this clue to ${nextNpcName} and it will click.`
+        : `After this, we execute the plan carefully.`,
+    ],
+    [
+      isFinalStretch
+        ? `We're near the end. Which decision changes everything?`
+        : `I don't want to assume things. What evidence do we really have?`,
+      isFinalStretch
+        ? `The final decision is to act on this clue without getting distracted.`
+        : `Good question. What we have is enough if we use it well.`,
+    ],
+    [
+      `If I'm wrong about ${focus}, correct me now.`,
+      `You're on the right track. We only need one adjustment before you continue.`,
+    ],
+  ];
+  return pool
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 4)
+    .map(([text, npcReply]) => ({ text, npcReply }));
+}
+
 // ─── Gather-quest item definitions per map theme ──────────────────────────
 const GATHER_ITEMS_BY_MAP = {
   livingRoom: {
@@ -864,6 +985,7 @@ function normalizeQuest(
   const t = L[tl] || L.es;
 
   const storySeed = rawStorySeed || t.defaultSeed;
+  const storyFocus = summarizeStoryFocus(storySeed, targetLang);
   const intro =
     String(rawQuest?.intro || "").trim() ||
     t.defaultIntro(npcs[0]?.name || "NPC");
@@ -924,17 +1046,38 @@ function normalizeQuest(
       nodeCounter++;
 
       if (type === "choice") {
-        const choiceSet = pickChoiceSet();
+        const contextualChoices = buildContextualChoiceSet({
+          targetLang,
+          focus: storyFocus,
+          prevNpcName: prevNpc?.name || "",
+          nextNpcName: nextNpc?.name || "",
+          stepIdx,
+          totalSteps: plan.visitOrder.length,
+        });
+        const fallbackChoiceSet = pickChoiceSet().map(([text, replyFn]) => ({
+          text,
+          npcReply: replyFn(),
+        }));
+        const choiceSet = contextualChoices.length
+          ? contextualChoices
+          : fallbackChoiceSet;
         const node = {
           id: currentId,
           npcLine: sanitizeDialogueLine(
-            isFirstNode ? greetLine : pickRandom(t.speechPrompts)(),
+            isFirstNode
+              ? greetLine
+              : buildContextualSpeechPrompt({
+                  targetLang,
+                  focus: storyFocus,
+                  npcName: npc.name,
+                  prevNpcName: prevNpc?.name || "",
+                }),
             npc.name,
           ),
           responseMode: "choice",
-          choices: choiceSet.map(([text, replyFn]) => ({
-            text,
-            npcReply: replyFn(),
+          choices: choiceSet.map((choice) => ({
+            text: choice.text,
+            npcReply: choice.npcReply,
             nextNodeId: nextInteractionId,
           })),
         };
@@ -946,7 +1089,14 @@ function normalizeQuest(
         const node = {
           id: currentId,
           npcLine: sanitizeDialogueLine(
-            isFirstNode ? greetLine : pickRandom(t.speechPrompts)(),
+            isFirstNode
+              ? greetLine
+              : buildContextualSpeechPrompt({
+                  targetLang,
+                  focus: storyFocus,
+                  npcName: npc.name,
+                  prevNpcName: prevNpc?.name || "",
+                }),
             npc.name,
           ),
           responseMode: "speech",
