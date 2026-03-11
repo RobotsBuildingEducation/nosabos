@@ -28,6 +28,7 @@ import {
   Tooltip,
   Image,
   SimpleGrid,
+  Spinner,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -786,6 +787,7 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [generatingChoices, setGeneratingChoices] = useState(false);
   const [lineTranslations, setLineTranslations] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
@@ -2520,6 +2522,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
   const generateDynamicChoices = useCallback(
     async (node, npcIdx, stepIdx) => {
       if (!node || node.responseMode !== "choice") return;
+      setGeneratingChoices(true);
       const npcName = npcCharacterNamesRef.current[npcIdx] || scenario?.npcs?.[npcIdx]?.name || "NPC";
       const seed = quest?.storySeed || "";
       const historyContext = conversationLogRef.current
@@ -2568,11 +2571,12 @@ Respond ONLY in this exact JSON format, no additional text:
                 node: { ...prev.node, choices: dynamicChoices },
               };
             });
-            return;
           }
         }
       } catch {
         // Keep fallback hardcoded choices
+      } finally {
+        setGeneratingChoices(false);
       }
     },
     [quest, scenario, targetLang],
@@ -3481,36 +3485,45 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   )}
 
                 {dialogue.node?.responseMode === "choice" && (
-                  <VStack spacing={2}>
-                    {(dialogue.node?.choices || []).map((optRaw, idx) => {
-                      const opt =
-                        typeof optRaw === "string" ? optRaw : optRaw.text;
+                  generatingChoices ? (
+                    <HStack justify="center" py={4}>
+                      <Spinner size="sm" color="gray.500" />
+                      <Text fontSize="sm" color="gray.500">
+                        {targetLang === "es" ? "Pensando..." : "Thinking..."}
+                      </Text>
+                    </HStack>
+                  ) : (
+                    <VStack spacing={2}>
+                      {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                        const opt =
+                          typeof optRaw === "string" ? optRaw : optRaw.text;
 
-                      return (
-                        <Button
-                          key={idx}
-                          w="100%"
-                          size="sm"
-                          variant="solid"
-                          bg="rgba(255,255,255,0.92)"
-                          color="gray.900"
-                          border="1px solid"
-                          borderColor="blackAlpha.200"
-                          boxShadow="0px 4px 0px #a9a18c"
-                          _active={{ bg: "gray.100" }}
-                          onClick={() => handleAnswer(idx)}
-                          isDisabled={isRecording || isConnecting}
-                          justifyContent="flex-start"
-                          textAlign="left"
-                          whiteSpace="normal"
-                          h="auto"
-                          py={2}
-                        >
-                          {String.fromCharCode(65 + idx)}. {opt}
-                        </Button>
-                      );
-                    })}
-                  </VStack>
+                        return (
+                          <Button
+                            key={idx}
+                            w="100%"
+                            size="sm"
+                            variant="solid"
+                            bg="rgba(255,255,255,0.92)"
+                            color="gray.900"
+                            border="1px solid"
+                            borderColor="blackAlpha.200"
+                            boxShadow="0px 4px 0px #a9a18c"
+                            _active={{ bg: "gray.100" }}
+                            onClick={() => handleAnswer(idx)}
+                            isDisabled={isRecording || isConnecting}
+                            justifyContent="flex-start"
+                            textAlign="left"
+                            whiteSpace="normal"
+                            h="auto"
+                            py={2}
+                          >
+                            {String.fromCharCode(65 + idx)}. {opt}
+                          </Button>
+                        );
+                      })}
+                    </VStack>
+                  )
                 )}
 
                 {dialogue.node?.responseMode === "speech" && (
