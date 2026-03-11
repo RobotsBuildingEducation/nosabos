@@ -11591,6 +11591,39 @@ function applyCEFRScaffolding(path) {
         ensureUnitModuleCoverage(unit, enhancedLessons),
       );
 
+      const scheduledLessons = applyLessonXPSchedule(balancedLessons);
+
+      // Append a Game Review lesson at the end of every non-tutorial unit
+      if (!unit.isTutorial) {
+        const unitTitle = unit.title?.en || "Unit";
+        const maxXp = Math.max(
+          ...scheduledLessons.map((l) => l.xpRequired || 0),
+          0,
+        );
+        scheduledLessons.push({
+          id: `${unit.id}-game`,
+          title: {
+            en: "Game Review",
+            es: "Repaso de Juego",
+          },
+          description: {
+            en: `Review ${unitTitle} by playing an interactive game`,
+            es: `Repasa ${unit.title?.es || unitTitle} jugando un juego interactivo`,
+          },
+          xpRequired: maxXp + 30,
+          xpReward: 30,
+          isGame: true,
+          modes: ["game"],
+          content: {
+            game: {
+              topic: `${unitTitle} game review`,
+              unitTitle,
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        });
+      }
+
       return {
         ...unit,
         communicativeFunctions: [
@@ -11601,7 +11634,7 @@ function applyCEFRScaffolding(path) {
             CEFR_LEVEL_PROFILES[level]?.discourseSkills || []
           ).join(", ")}.`,
         ],
-        lessons: applyLessonXPSchedule(balancedLessons),
+        lessons: scheduledLessons,
       };
     });
   });
