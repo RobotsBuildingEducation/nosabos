@@ -1749,6 +1749,7 @@ export default function App() {
     return "skillTree";
   });
   const [activeLesson, setActiveLesson] = useState(null);
+  const [preGeneratedGameScenario, setPreGeneratedGameScenario] = useState(null);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -2881,8 +2882,11 @@ export default function App() {
   };
 
   // Handle starting a lesson from the skill tree
-  const handleStartLesson = async (lesson) => {
+  const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return;
+
+    // Store pre-generated scenario for game lessons
+    setPreGeneratedGameScenario(preGeneratedScenario || null);
 
     try {
       // Mark lesson as in progress in Firestore
@@ -3134,6 +3138,7 @@ export default function App() {
   const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
     setActiveLesson(null);
+    setPreGeneratedGameScenario(null);
     setLessonStartXp(null);
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
@@ -5061,6 +5066,7 @@ export default function App() {
                       <TabPanel key="game" px={0}>
                         <RPGGame
                           lessonContext={activeLesson}
+                          initialScenario={preGeneratedGameScenario}
                         />
                       </TabPanel>
                     );

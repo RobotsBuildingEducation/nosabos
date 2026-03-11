@@ -750,7 +750,7 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function RPGGame({ lessonContext = null, onComplete = null }) {
+export default function RPGGame({ lessonContext = null, onComplete = null, initialScenario = null }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
@@ -774,9 +774,9 @@ export default function RPGGame({ lessonContext = null, onComplete = null }) {
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 
-  // Scenario selection
-  const [scenarioId, setScenarioId] = useState(null);
-  const [scenario, setScenario] = useState(null);
+  // Scenario selection - initialize from pre-generated scenario if provided
+  const [scenarioId, setScenarioId] = useState(initialScenario ? initialScenario.id || "generated" : null);
+  const [scenario, setScenario] = useState(initialScenario || null);
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
   const [npcNameMap, setNpcNameMap] = useState(null);
 
