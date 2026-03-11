@@ -27,7 +27,8 @@ import {
   useDisclosure,
   Tooltip,
   Image,
-  SimpleGrid
+  SimpleGrid,
+  Spinner,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
