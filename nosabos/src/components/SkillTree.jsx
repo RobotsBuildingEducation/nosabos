@@ -1502,19 +1502,20 @@ function LessonDetailModal({
       const randomMap =
         MAP_CHOICES[Math.floor(Math.random() * MAP_CHOICES.length)];
 
-      const overrideTerms = lesson.content?.game?.focusPoints?.length
-        ? [
-            ...lesson.content.game.focusPoints,
-            lesson.content.game.topic,
-            lesson.content.game.unitTitle,
-          ].filter(Boolean)
-        : null;
+      const gameContent = lesson.content?.game;
+      const overrideTerms = [
+        ...(gameContent?.focusPoints || []),
+        ...(gameContent?.unitTopics || []),
+        gameContent?.topic,
+        gameContent?.unitTitle,
+      ].filter(Boolean);
 
       const scenario = await generateScenarioWithAI(
         randomMap.id,
         targetLang || "es",
         supportLang || "en",
-        overrideTerms,
+        overrideTerms.length ? overrideTerms : null,
+        gameContent?.cefrLevel || null,
       );
 
       // Pass both lesson and pre-generated scenario to parent
@@ -1562,48 +1563,80 @@ function LessonDetailModal({
         />
 
         {gameLoading ? (
-          /* ── Game loading state ── */
-          <ModalBody py={16} position="relative">
-            <VStack spacing={8} align="center">
-              <Box
-                animation="pulse 2s ease-in-out infinite"
-                sx={{
-                  "@keyframes pulse": {
-                    "0%, 100%": { transform: "scale(1)" },
-                    "50%": { transform: "scale(1.05)" },
-                  },
-                }}
-              >
-                <RobotBuddyPro state="thinking" maxW={140} />
-              </Box>
-              <VStack spacing={3}>
-                <Text
-                  fontSize="lg"
-                  fontWeight="bold"
-                  color="white"
-                  textAlign="center"
-                >
-                  Generating your game...
-                </Text>
-                <Text
-                  fontSize="sm"
-                  color="gray.400"
-                  textAlign="center"
-                  minH="20px"
-                  key={loadingMsgIdx}
+          /* ── Game loading state with animated purple gradient ── */
+          <>
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
+              overflow="hidden"
+              borderRadius="2xl"
+              pointerEvents="none"
+              sx={{
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: "-50%",
+                  left: "-50%",
+                  width: "200%",
+                  height: "200%",
+                  background:
+                    "radial-gradient(circle at 30% 40%, rgba(139,92,246,0.25) 0%, transparent 50%), " +
+                    "radial-gradient(circle at 70% 60%, rgba(168,85,247,0.2) 0%, transparent 50%), " +
+                    "radial-gradient(circle at 50% 80%, rgba(109,40,217,0.15) 0%, transparent 50%)",
+                  animation: "purpleDrift 6s ease-in-out infinite",
+                },
+                "@keyframes purpleDrift": {
+                  "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
+                  "33%": { transform: "translate(2%, -3%) rotate(1deg)" },
+                  "66%": { transform: "translate(-2%, 2%) rotate(-1deg)" },
+                },
+              }}
+            />
+            <ModalBody py={16} position="relative" zIndex={1}>
+              <VStack spacing={8} align="center">
+                <Box
+                  animation="gentleBob 3s ease-in-out infinite"
                   sx={{
-                    animation: "fadeIn 0.4s ease-in-out",
-                    "@keyframes fadeIn": {
-                      "0%": { opacity: 0, transform: "translateY(4px)" },
-                      "100%": { opacity: 1, transform: "translateY(0)" },
+                    "@keyframes gentleBob": {
+                      "0%, 100%": { transform: "translateY(0)" },
+                      "50%": { transform: "translateY(-6px)" },
                     },
                   }}
                 >
-                  {GAME_LOADING_MESSAGES[loadingMsgIdx]}
-                </Text>
+                  <RobotBuddyPro state="thinking" maxW={140} />
+                </Box>
+                <VStack spacing={3}>
+                  <Text
+                    fontSize="lg"
+                    fontWeight="bold"
+                    color="white"
+                    textAlign="center"
+                  >
+                    Generating your game...
+                  </Text>
+                  <Text
+                    fontSize="sm"
+                    color="purple.200"
+                    textAlign="center"
+                    minH="20px"
+                    key={loadingMsgIdx}
+                    sx={{
+                      animation: "fadeIn 0.4s ease-in-out",
+                      "@keyframes fadeIn": {
+                        "0%": { opacity: 0, transform: "translateY(4px)" },
+                        "100%": { opacity: 1, transform: "translateY(0)" },
+                      },
+                    }}
+                  >
+                    {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                  </Text>
+                </VStack>
               </VStack>
-            </VStack>
-          </ModalBody>
+            </ModalBody>
+          </>
         ) : (
           /* ── Normal modal content ── */
           <>

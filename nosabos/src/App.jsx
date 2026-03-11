@@ -4749,10 +4749,13 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
+  const isGameFullScreen =
+    viewMode === "lesson" && activeLesson?.isGame;
+
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
-      <TopBar
+      {!isGameFullScreen && <TopBar
         appLanguage={appLanguage}
         user={user}
         activeNpub={activeNpub}
@@ -4798,7 +4801,7 @@ export default function App() {
         testSound={submitActionSound}
         isMobile={isMobile}
         postNostrContent={postNostrContent}
-      />
+      />}
 
       <TeamsDrawer
         isOpen={teamsOpen}
@@ -4817,7 +4820,7 @@ export default function App() {
         targetLang={resolvedTargetLang}
       />
 
-      <BottomActionBar
+      {!isGameFullScreen && <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
@@ -4852,7 +4855,7 @@ export default function App() {
             setScrollToLatestTrigger((prev) => prev + 1);
           }
         }}
-      />
+      />}
 
       {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
       <TutorialActionBarPopovers
@@ -4924,7 +4927,17 @@ export default function App() {
       )}
 
       {/* Learning Modules Scene */}
-      {viewMode === "lesson" && (
+      {viewMode === "lesson" && isGameFullScreen && (
+        <Box w="100%" h="100dvh" position="fixed" top={0} left={0} zIndex={1000} bg="gray.900">
+          <RPGGame
+            lessonContext={activeLesson}
+            initialScenario={preGeneratedGameScenario}
+            onComplete={() => handleReturnToSkillTree()}
+          />
+        </Box>
+      )}
+
+      {viewMode === "lesson" && !isGameFullScreen && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (

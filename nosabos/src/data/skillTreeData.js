@@ -11600,6 +11600,21 @@ function applyCEFRScaffolding(path) {
           ...scheduledLessons.map((l) => l.xpRequired || 0),
           0,
         );
+
+        // Collect topics from the unit's lessons for richer game context
+        const unitTopics = scheduledLessons
+          .filter((l) => !l.isGame)
+          .map(
+            (l) =>
+              l.content?.vocabulary?.topic ||
+              l.content?.grammar?.topic ||
+              l.content?.realtime?.scenario ||
+              l.content?.reading?.topic ||
+              l.title?.en ||
+              "",
+          )
+          .filter(Boolean);
+
         scheduledLessons.push({
           id: `${unit.id}-game`,
           title: {
@@ -11618,6 +11633,8 @@ function applyCEFRScaffolding(path) {
             game: {
               topic: `${unitTitle} game review`,
               unitTitle,
+              cefrLevel: level,
+              unitTopics,
               focusPoints: ["comprehensive review"],
             },
           },

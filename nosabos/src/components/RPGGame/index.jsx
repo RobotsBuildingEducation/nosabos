@@ -1443,16 +1443,18 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
 
-      // When lessonContext is provided, pass focused terms for the game review
-      const overrideTerms = lessonContext?.content?.game?.focusPoints?.length
-        ? [...lessonContext.content.game.focusPoints, lessonContext.content.game.topic, lessonContext.content.game.unitTitle].filter(Boolean)
+      // When lessonContext is provided, pass focused terms and CEFR level
+      const gameContent = lessonContext?.content?.game;
+      const overrideTerms = gameContent
+        ? [...(gameContent.focusPoints || []), ...(gameContent.unitTopics || []), gameContent.topic, gameContent.unitTitle].filter(Boolean)
         : null;
 
       const generated = await generateScenarioWithAI(
         mapId,
         targetLang,
         supportLang,
-        overrideTerms,
+        overrideTerms.length ? overrideTerms : null,
+        gameContent?.cefrLevel || null,
       );
       setScenario(generated);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
@@ -2912,6 +2914,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   const goToScenarioSelect = () => {
     playGameSound("submitAction");
     stopNPCSpeech();
+
+    // If launched with a pre-generated scenario, exit back to skill tree
+    if (initialScenario && onComplete) {
+      onComplete();
+      return;
+    }
     // Clean up Three.js
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (rendererRef.current) {
@@ -2934,7 +2942,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     setLastHeardSpeech("");
   };
 
-  const isEmbedded = !!lessonContext;
+  const isEmbedded = !!lessonContext && !initialScenario;
 
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {

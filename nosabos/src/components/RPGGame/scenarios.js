@@ -1144,14 +1144,27 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   };
 }
 
+const CEFR_DIALOGUE_GUIDANCE = {
+  "Pre-A1": "Use only the most basic words (1-3 word phrases). Very simple greetings and labels. No grammar complexity.",
+  A1: "Use short, simple sentences (5-8 words max). Present tense only. Basic everyday vocabulary. NPC dialogue should be easy to understand for absolute beginners.",
+  A2: "Use simple sentences and common expressions. Present and simple past tense. Everyday situations and familiar topics. Short dialogue turns.",
+  B1: "Use moderately complex sentences. Mix of tenses allowed. Can include opinions and explanations. Connected discourse but still clear.",
+  B2: "Use varied sentence structures. All tenses appropriate. Can include abstract topics, idioms, and nuanced language.",
+  C1: "Use sophisticated language with complex structures. Idiomatic expressions, subtle humor, and advanced vocabulary expected.",
+  C2: "Use native-level language with full range of expression. Literary references, wordplay, and highly nuanced dialogue welcome.",
+};
+
 function buildPrompt({
   mapId,
   targetLang,
   supportLang,
   lessonTerms,
   npcCount,
+  cefrLevel,
 }) {
   const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
+  const levelKey = cefrLevel || "A1";
+  const dialogueGuidance = CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
 
   return `You generate JSON for a 2D JRPG language-learning scenario.
 Return ONLY valid JSON (no markdown).
@@ -1159,8 +1172,12 @@ Return ONLY valid JSON (no markdown).
 Map theme requested: ${mapLabel} (${mapId}).
 Target language: ${targetLang}
 Support language: ${supportLang}
+CEFR proficiency level: ${levelKey}
 
-Use some of these curriculum terms for question content:
+CRITICAL - Language difficulty: ${dialogueGuidance}
+ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
+
+Use these curriculum terms for question content (focus the game around these topics):
 ${lessonTerms.slice(0, 120).join(", ")}
 
 Required JSON shape:
@@ -1178,8 +1195,8 @@ Required JSON shape:
     {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
   ],
   "quest": {
-    "intro": "one sentence in TARGET language",
-    "storySeed": "one dramatic sentence in TARGET language describing the main mystery",
+    "intro": "one sentence in TARGET language at ${levelKey} level",
+    "storySeed": "one dramatic sentence in TARGET language at ${levelKey} level describing the main mystery",
     "startNpcIdx": 0
   },
   "greetings": {
@@ -1199,7 +1216,8 @@ Tile semantics for mapData:
 
 Constraints:
 - Exactly ${npcCount} NPCs in the npcs array.
-- At least 8 questions.
+- At least 8 questions, all at ${levelKey} difficulty.
+- Questions should test the curriculum terms listed above.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable (not all solid).
 - No extra keys.`;
@@ -1300,6 +1318,7 @@ export async function generateScenarioWithAI(
   targetLang = "es",
   supportLang = "en",
   overrideTerms = null,
+  cefrLevel = null,
 ) {
   const lessonTerms = overrideTerms || getLessonTerms(targetLang);
   const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
@@ -1309,6 +1328,7 @@ export async function generateScenarioWithAI(
     supportLang,
     lessonTerms,
     npcCount,
+    cefrLevel,
   });
 
   let text = "";
