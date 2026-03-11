@@ -1299,8 +1299,9 @@ export async function generateScenarioWithAI(
   mapId,
   targetLang = "es",
   supportLang = "en",
+  overrideTerms = null,
 ) {
-  const lessonTerms = getLessonTerms(targetLang);
+  const lessonTerms = overrideTerms || getLessonTerms(targetLang);
   const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
   const prompt = buildPrompt({
     mapId,

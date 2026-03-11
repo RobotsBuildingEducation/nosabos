@@ -116,8 +116,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-1-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Native Idioms by playing an interactive game",
+          es: "Repasa Modismos Nativos jugando un juego interactivo",
+        },
+        xpRequired: 8745,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Native Idioms game review",
+            unitTitle: "Native Idioms",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-2",
@@ -230,8 +251,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-2-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Regional Variations by playing an interactive game",
+          es: "Repasa Variaciones Regionales jugando un juego interactivo",
+        },
+        xpRequired: 8935,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Regional Variations game review",
+            unitTitle: "Regional Variations",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-3",
@@ -344,8 +386,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-3-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Stylistic Mastery by playing an interactive game",
+          es: "Repasa Dominio Estilístico jugando un juego interactivo",
+        },
+        xpRequired: 9135,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Stylistic Mastery game review",
+            unitTitle: "Stylistic Mastery",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-4",
@@ -458,8 +521,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-4-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Rhetorical Devices by playing an interactive game",
+          es: "Repasa Dispositivos Retóricos jugando un juego interactivo",
+        },
+        xpRequired: 9335,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Rhetorical Devices game review",
+            unitTitle: "Rhetorical Devices",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-5",
@@ -572,8 +656,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-5-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Specialized Vocabulary by playing an interactive game",
+          es: "Repasa Vocabulario Especializado jugando un juego interactivo",
+        },
+        xpRequired: 9555,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Specialized Vocabulary game review",
+            unitTitle: "Specialized Vocabulary",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-6",
@@ -691,8 +796,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-6-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Subtle Nuances by playing an interactive game",
+          es: "Repasa Matices Sutiles jugando un juego interactivo",
+        },
+        xpRequired: 9735,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Subtle Nuances game review",
+            unitTitle: "Subtle Nuances",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-7",
@@ -805,8 +931,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-7-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Cultural Expertise by playing an interactive game",
+          es: "Repasa Experiencia Cultural jugando un juego interactivo",
+        },
+        xpRequired: 9945,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Cultural Expertise game review",
+            unitTitle: "Cultural Expertise",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   },
   {
     id: "unit-c2-8",
@@ -919,8 +1066,29 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      }
-    ],
+      },
+      {
+        id: "lesson-c2-8-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Near-Native Fluency by playing an interactive game",
+          es: "Repasa Fluidez Casi Nativa jugando un juego interactivo",
+        },
+        xpRequired: 10145,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Near-Native Fluency game review",
+            unitTitle: "Near-Native Fluency",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
   }
 ];
 

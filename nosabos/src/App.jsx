@@ -77,6 +77,7 @@ import {
   RiRoadMapLine,
   RiFileList3Line,
   RiChat3Line,
+  RiGamepadLine,
 } from "react-icons/ri";
 import {
   LuBadgeCheck,
@@ -124,6 +125,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
+import RPGGame from "./components/RPGGame/index.jsx";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
@@ -1913,6 +1915,7 @@ export default function App() {
     "reading",
     "grammar",
     "vocabulary",
+    "game",
     "random",
   ];
 
@@ -1991,6 +1994,7 @@ export default function App() {
     reading: t?.tabs_reading ?? "Reading",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    game: t?.tabs_game ?? "Game",
     random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
@@ -1999,6 +2003,7 @@ export default function App() {
     reading: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <RiBook2Line />,
+    game: <RiGamepadLine />,
     random: <LuShuffle />,
   };
 
@@ -5048,6 +5053,14 @@ export default function App() {
                           onExitQuiz={handleReturnToSkillTree}
                           onSendHelpRequest={handleSendToHelpChat}
                           lessonStartXp={lessonStartXp}
+                        />
+                      </TabPanel>
+                    );
+                  case "game":
+                    return (
+                      <TabPanel key="game" px={0}>
+                        <RPGGame
+                          lessonContext={activeLesson}
                         />
                       </TabPanel>
                     );

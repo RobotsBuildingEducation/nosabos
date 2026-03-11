@@ -297,6 +297,7 @@ const MODE_ICONS = {
   realtime: FaMicrophone,
   stories: MdOutlineDescription,
   reading: RiBookOpenLine,
+  game: RiGamepadLine,
 };
 
 // Map vocabulary library topics to contextual icons
@@ -744,6 +745,9 @@ const LESSON_TITLE_ICONS = {
   "Professional Fields": RiBriefcase5Line,
   "Domain Expertise": RiTrophyLine,
 
+  // Game Review (all levels)
+  "Game Review": RiGamepadLine,
+
   // C2 - Precision & Cultural Intelligence
   "Fine Distinctions": RiContrastLine,
   "Precise Meaning": FiTarget,
@@ -768,6 +772,9 @@ const getTitleBasedIcon = (title) => {
 
 // Get unique icon for each individual lesson based on lesson content
 const getLessonIcon = (lesson, unitId) => {
+  // Game lessons always get the gamepad icon
+  if (lesson.isGame) return RiGamepadLine;
+
   // Quiz lessons always get the question mark icon
   if (lesson.id.includes("-quiz")) return RiQuestionLine;
 
@@ -1563,7 +1570,7 @@ function LessonDetailModal({
               </Flex>
             </Box>
 
-            {/* XP Goal / Passing Score / Tutorial */}
+            {/* XP Goal / Passing Score / Tutorial / Game */}
             <Box
               p={5}
               borderRadius="xl"
@@ -1573,16 +1580,20 @@ function LessonDetailModal({
               borderColor={
                 lesson.isTutorial
                   ? "blue.600"
-                  : lesson.isFinalQuiz
-                    ? "purple.600"
-                    : "yellow.600"
+                  : lesson.isGame
+                    ? "teal.600"
+                    : lesson.isFinalQuiz
+                      ? "purple.600"
+                      : "yellow.600"
               }
               boxShadow={
                 lesson.isTutorial
                   ? "0 4px 12px rgba(99, 102, 241, 0.2)"
-                  : lesson.isFinalQuiz
-                    ? "0 4px 12px rgba(159, 122, 234, 0.2)"
-                    : "0 4px 12px rgba(251, 191, 36, 0.2)"
+                  : lesson.isGame
+                    ? "0 4px 12px rgba(45, 212, 191, 0.2)"
+                    : lesson.isFinalQuiz
+                      ? "0 4px 12px rgba(159, 122, 234, 0.2)"
+                      : "0 4px 12px rgba(251, 191, 36, 0.2)"
               }
             >
               <Box
@@ -1602,20 +1613,26 @@ function LessonDetailModal({
                     bgGradient={
                       lesson.isTutorial
                         ? "linear(135deg, blue.400, indigo.600)"
-                        : lesson.isFinalQuiz
-                          ? "linear(135deg, purple.400, purple.600)"
-                          : "linear(135deg, yellow.400, orange.400)"
+                        : lesson.isGame
+                          ? "linear(135deg, teal.400, teal.600)"
+                          : lesson.isFinalQuiz
+                            ? "linear(135deg, purple.400, purple.600)"
+                            : "linear(135deg, yellow.400, orange.400)"
                     }
                     boxShadow={
                       lesson.isTutorial
                         ? "0 2px 10px rgba(99, 102, 241, 0.4)"
-                        : lesson.isFinalQuiz
-                          ? "0 2px 10px rgba(159, 122, 234, 0.4)"
-                          : "0 2px 10px rgba(251, 191, 36, 0.4)"
+                        : lesson.isGame
+                          ? "0 2px 10px rgba(45, 212, 191, 0.4)"
+                          : lesson.isFinalQuiz
+                            ? "0 2px 10px rgba(159, 122, 234, 0.4)"
+                            : "0 2px 10px rgba(251, 191, 36, 0.4)"
                     }
                   >
                     {lesson.isTutorial ? (
                       <RiTrophyLine color="white" size={24} />
+                    ) : lesson.isGame ? (
+                      <RiGamepadLine color="white" size={24} />
                     ) : lesson.isFinalQuiz ? (
                       <RiTrophyLine color="white" size={24} />
                     ) : (
@@ -1625,9 +1642,11 @@ function LessonDetailModal({
                   <Text fontWeight="bold" color="white" fontSize="md">
                     {lesson.isTutorial
                       ? getTranslation("skill_tree_tutorial_goal")
-                      : lesson.isFinalQuiz
-                        ? getTranslation("skill_tree_passing_score")
-                        : getTranslation("skill_tree_xp_reward")}
+                      : lesson.isGame
+                        ? getTranslation("skill_tree_game_reward") || "Game Reward"
+                        : lesson.isFinalQuiz
+                          ? getTranslation("skill_tree_passing_score")
+                          : getTranslation("skill_tree_xp_reward")}
                   </Text>
                 </HStack>
                 <Text
@@ -1646,13 +1665,15 @@ function LessonDetailModal({
                 >
                   {lesson.isTutorial
                     ? getTranslation("skill_tree_tutorial_activities")
-                    : lesson.isFinalQuiz
-                      ? `${Math.round(
-                          (lesson.quizConfig?.passingScore /
-                            lesson.quizConfig?.questionsRequired) *
-                            100,
-                        )}%`
-                      : `+${lesson.xpReward} XP`}
+                    : lesson.isGame
+                      ? `+${lesson.xpReward} XP`
+                      : lesson.isFinalQuiz
+                        ? `${Math.round(
+                            (lesson.quizConfig?.passingScore /
+                              lesson.quizConfig?.questionsRequired) *
+                              100,
+                          )}%`
+                        : `+${lesson.xpReward} XP`}
                 </Text>
               </HStack>
             </Box>

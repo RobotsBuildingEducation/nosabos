@@ -750,7 +750,7 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function RPGGame() {
+export default function RPGGame({ lessonContext = null, onComplete = null }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
@@ -1443,17 +1443,23 @@ export default function RPGGame() {
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
 
+      // When lessonContext is provided, pass focused terms for the game review
+      const overrideTerms = lessonContext?.content?.game?.focusPoints?.length
+        ? [...lessonContext.content.game.focusPoints, lessonContext.content.game.topic, lessonContext.content.game.unitTitle].filter(Boolean)
+        : null;
+
       const generated = await generateScenarioWithAI(
         mapId,
         targetLang,
         supportLang,
+        overrideTerms,
       );
       setScenario(generated);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
-    [targetLang, supportLang],
+    [targetLang, supportLang, lessonContext],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
@@ -2928,16 +2934,21 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     setLastHeardSpeech("");
   };
 
+  const isEmbedded = !!lessonContext;
+
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {
     return (
       <Box
-        w="100vw"
-        h="100vh"
+        w={isEmbedded ? "100%" : "100vw"}
+        h={isEmbedded ? "auto" : "100vh"}
+        minH={isEmbedded ? "400px" : undefined}
         bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
         display="flex"
         alignItems="center"
         justifyContent="center"
+        borderRadius={isEmbedded ? "xl" : undefined}
+        py={isEmbedded ? 8 : undefined}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -2948,6 +2959,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         }}
       >
         <VStack spacing={6} maxW="500px" mx={4}>
+          {!isEmbedded && (
           <IconButton
             icon={<ArrowBackIcon />}
             aria-label={ui.back}
@@ -2959,6 +2971,13 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
             left={4}
             onClick={() => navigate("/")}
           />
+          )}
+
+          {isEmbedded && lessonContext?.content?.game?.unitTitle && (
+            <Text color="gray.400" fontSize="sm" textAlign="center">
+              {lessonContext.content.game.unitTitle}
+            </Text>
+          )}
 
           <Text
             color="yellow.300"
@@ -3016,8 +3035,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   if (!scenario) {
     return (
       <Box
-        w="100vw"
-        h="100vh"
+        w={isEmbedded ? "100%" : "100vw"}
+        h={isEmbedded ? "auto" : "100vh"}
+        minH={isEmbedded ? "400px" : undefined}
+        borderRadius={isEmbedded ? "xl" : undefined}
         bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
         display="flex"
         alignItems="center"
@@ -3045,8 +3066,8 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   return (
     <Box
       position="relative"
-      w="100vw"
-      h="100vh"
+      w={isEmbedded ? "100%" : "100vw"}
+      h={isEmbedded ? "80vh" : "100vh"}
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"

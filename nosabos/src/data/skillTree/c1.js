@@ -114,8 +114,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-1-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Subjunctive Present by playing an interactive game",
+          es: "Repasa Subjuntivo Presente jugando un juego interactivo",
+        },
+        xpRequired: 6980,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Subjunctive Present game review",
+            unitTitle: "Subjunctive Present",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-2",
@@ -228,8 +249,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-2-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Subjunctive Past by playing an interactive game",
+          es: "Repasa Subjuntivo Pasado jugando un juego interactivo",
+        },
+        xpRequired: 7155,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Subjunctive Past game review",
+            unitTitle: "Subjunctive Past",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-3",
@@ -342,8 +384,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-3-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Complex Conditionals by playing an interactive game",
+          es: "Repasa Condicionales Complejos jugando un juego interactivo",
+        },
+        xpRequired: 7340,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Complex Conditionals game review",
+            unitTitle: "Complex Conditionals",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-4",
@@ -456,8 +519,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-4-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Idiomatic Expressions by playing an interactive game",
+          es: "Repasa Expresiones Idiomáticas jugando un juego interactivo",
+        },
+        xpRequired: 7505,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Idiomatic Expressions game review",
+            unitTitle: "Idiomatic Expressions",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-5",
@@ -570,8 +654,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-5-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Academic Writing by playing an interactive game",
+          es: "Repasa Escritura Académica jugando un juego interactivo",
+        },
+        xpRequired: 7690,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Academic Writing game review",
+            unitTitle: "Academic Writing",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-6",
@@ -684,8 +789,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-6-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Professional Communication by playing an interactive game",
+          es: "Repasa Comunicación Profesional jugando un juego interactivo",
+        },
+        xpRequired: 7845,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Professional Communication game review",
+            unitTitle: "Professional Communication",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-7",
@@ -798,8 +924,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-7-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Debate & Argumentation by playing an interactive game",
+          es: "Repasa Debate y Argumentación jugando un juego interactivo",
+        },
+        xpRequired: 8040,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Debate & Argumentation game review",
+            unitTitle: "Debate & Argumentation",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-8",
@@ -912,8 +1059,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-8-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Cultural Analysis by playing an interactive game",
+          es: "Repasa Análisis Cultural jugando un juego interactivo",
+        },
+        xpRequired: 8215,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Cultural Analysis game review",
+            unitTitle: "Cultural Analysis",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-9",
@@ -1026,8 +1194,29 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-9-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Literary Techniques by playing an interactive game",
+          es: "Repasa Técnicas Literarias jugando un juego interactivo",
+        },
+        xpRequired: 8390,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Literary Techniques game review",
+            unitTitle: "Literary Techniques",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     },
     {
       id: "unit-c1-10",
@@ -1140,7 +1329,28 @@ export const SKILL_TREE_C1 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        }
-      ],
+        },
+      {
+        id: "lesson-c1-10-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Advanced Discourse by playing an interactive game",
+          es: "Repasa Discurso Avanzado jugando un juego interactivo",
+        },
+        xpRequired: 8555,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Advanced Discourse game review",
+            unitTitle: "Advanced Discourse",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },],
     }
 ];
