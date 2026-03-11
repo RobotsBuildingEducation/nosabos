@@ -15,6 +15,7 @@ import {
   FaBookOpen,
   FaTheaterMasks,
   FaMicrophone,
+  FaGamepad,
 } from "react-icons/fa";
 import { RiBook2Line, RiPencilLine } from "react-icons/ri";
 import { MdOutlineDescription } from "react-icons/md";
@@ -72,10 +73,20 @@ const MODULE_CONFIG = {
       es: "Practica la expresión oral con conversaciones en tiempo real.",
     },
   },
+  game: {
+    icon: FaGamepad,
+    color: "#F97316",
+    label: { en: "Game", es: "Juego" },
+    shortLabel: { en: "Game", es: "Juego" },
+    description: {
+      en: "Review what you learned by playing an interactive game.",
+      es: "Repasa lo aprendido jugando un juego interactivo.",
+    },
+  },
 };
 
 export default function TutorialStepper({
-  modules = ["vocabulary", "grammar", "reading", "stories", "realtime"],
+  modules = ["vocabulary", "grammar", "reading", "stories", "realtime", "game"],
   currentModule,
   completedModules = [],
   lang = "en",
