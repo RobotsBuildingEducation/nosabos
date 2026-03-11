@@ -1308,13 +1308,14 @@ export default function RPGGame() {
 
   const closeDialogue = useCallback(() => {
     if (!dialogue) return;
-    stopNPCSpeech();
+    try { ttsPlayerRef.current?.stop?.(); } catch { /* ignore */ }
+    ttsPlayerRef.current = null;
     playGameSound("click");
     setDialogue(null);
     setFeedback(null);
     setLineTranslations(null);
     setLastHeardSpeech("");
-  }, [dialogue, playGameSound, stopNPCSpeech]);
+  }, [dialogue, playGameSound]);
 
   // Clear translation when dialogue node changes
   const dialogueNodeId = dialogue?.node?.id;
