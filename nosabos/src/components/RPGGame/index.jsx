@@ -772,6 +772,7 @@ export default function RPGGame({
   onComplete = null,
   initialScenario = null,
   onSkip = null,
+  onScenarioReady = null,
 }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
@@ -1506,12 +1507,15 @@ export default function RPGGame({
         gameContent?.cefrLevel || null,
       );
       setScenario(generated);
+      if (typeof onScenarioReady === "function" && generated) {
+        onScenarioReady(generated);
+      }
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
       xpAwardedRef.current = false;
     },
-    [targetLang, supportLang, lessonContext],
+    [targetLang, supportLang, lessonContext, onScenarioReady],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
