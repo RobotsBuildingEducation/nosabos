@@ -27,8 +27,7 @@ import {
   useDisclosure,
   Tooltip,
   Image,
-  SimpleGrid,
-  Spinner,
+  SimpleGrid
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -53,6 +52,7 @@ import { awardXp } from "../../utils/utils";
 import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
+import RobotBuddyPro from "../RobotBuddyPro";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -688,6 +688,17 @@ const SCENARIO_EMOJIS = {
   [TUTORIAL_MAP_ID]: "👋",
 };
 
+const GAME_LOADING_MESSAGES = [
+  "Building your world...",
+  "Placing NPCs...",
+  "Writing quest dialogue...",
+  "Generating vocabulary challenges...",
+  "Designing the map layout...",
+  "Preparing language puzzles...",
+  "Setting the scene...",
+  "Crafting your adventure...",
+];
+
 const DIALOGUE_CHARACTER_POOLS = {
   hamster: ["33", "26", "25", "22"],
   frog: ["29", "32", "36"],
@@ -830,6 +841,7 @@ export default function RPGGame({
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const conversationLogRef = useRef([]);
   const pendingBridgeRef = useRef(null);
   const pendingNpcGreetingRef = useRef(null);
@@ -1478,6 +1490,7 @@ export default function RPGGame({
       setGameComplete(false);
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
+      setLoadingMsgIdx(0);
 
       // When lessonContext is provided, pass focused terms and CEFR level
       const gameContent = lessonContext?.content?.game;
@@ -1507,6 +1520,14 @@ export default function RPGGame({
       stopNPCSpeech();
     };
   }, [stopNPCSpeech]);
+
+  useEffect(() => {
+    if (!loadingScenarioId) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % GAME_LOADING_MESSAGES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [loadingScenarioId]);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -3042,9 +3063,9 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
     return (
       <Box
         w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "auto" : "100vh"}
+        h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
-        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        bg="#1a1a2e"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -3059,19 +3080,19 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           void warmupAudio();
         }}
       >
-        <VStack spacing={6} maxW="500px" mx={4}>
+        <VStack spacing={6} maxW="560px" mx={4}>
           {!isEmbedded && (
-          <IconButton
-            icon={<ArrowBackIcon />}
-            aria-label={ui.back}
-            size="sm"
-            variant="ghost"
-            color="white"
-            position="absolute"
-            top={4}
-            left={4}
-            onClick={() => navigate("/")}
-          />
+            <IconButton
+              icon={<ArrowBackIcon />}
+              aria-label={ui.back}
+              size="sm"
+              variant="ghost"
+              color="white"
+              position="absolute"
+              top={4}
+              left={4}
+              onClick={() => navigate("/")}
+            />
           )}
 
           {isEmbedded && lessonContext?.content?.game?.unitTitle && (
@@ -3080,57 +3101,68 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             </Text>
           )}
 
-          <Text
-            color="yellow.300"
-            fontSize="2xl"
-            fontWeight="bold"
-            textAlign="center"
-          >
-            {isTutorialGame ? ui.loadingTutorialScene : ui.chooseScenario}
-          </Text>
-
           {isTutorialGame ? (
-            <Spinner size="lg" color="yellow.300" thickness="4px" />
+            <>
+              <RobotBuddyPro state="thinking" maxW={140} />
+              <VStack spacing={2}>
+                <Text color="white" fontSize="lg" fontWeight="bold" textAlign="center">
+                  {ui.loadingTutorialScene}
+                </Text>
+                <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
+                  {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                </Text>
+              </VStack>
+            </>
           ) : (
-            <Wrap spacing={4} justify="center">
-              {MAP_CHOICES.map((choice, idx) => {
-                return (
-                  <WrapItem key={choice.id}>
-                    <Button
-                      size="lg"
-                      h="auto"
-                      py={4}
-                      px={6}
-                      bg="whiteAlpha.100"
-                      color="white"
-                      border="2px solid"
-                      borderColor="whiteAlpha.200"
-                      borderRadius="xl"
-                      _hover={{
-                        bg: "whiteAlpha.200",
-                        borderColor: "yellow.400",
-                        transform: "scale(1.05)",
-                      }}
-                      transition="all 0.2s"
-                      onClick={() => handleSelectScenario(choice.id)}
-                      flexDir="column"
-                      minW="140px"
-                      isLoading={loadingScenarioId === choice.id}
-                      loadingText="Loading"
-                    >
-                      <Text fontSize="3xl" mb={1}>
-                        {SCENARIO_EMOJIS[choice.id] ||
-                          Object.values(SCENARIO_EMOJIS)[idx % 3] ||
-                          "🎮"}
-                      </Text>
-                      <Text fontSize="md" fontWeight="bold">
-                        {choice.name[supportLang] || choice.name.en}
-                      </Text>
-                    </Button>
-                  </WrapItem>
-                );
-              })}
-            </Wrap>
+            <>
+              <Text
+                color="yellow.300"
+                fontSize="2xl"
+                fontWeight="bold"
+                textAlign="center"
+              >
+                {ui.chooseScenario}
+              </Text>
+              <Wrap spacing={4} justify="center">
+                {MAP_CHOICES.map((choice, idx) => {
+                  return (
+                    <WrapItem key={choice.id}>
+                      <Button
+                        size="lg"
+                        h="auto"
+                        py={4}
+                        px={6}
+                        bg="whiteAlpha.100"
+                        color="white"
+                        border="2px solid"
+                        borderColor="whiteAlpha.200"
+                        borderRadius="xl"
+                        _hover={{
+                          bg: "whiteAlpha.200",
+                          borderColor: "yellow.400",
+                          transform: "scale(1.05)",
+                        }}
+                        transition="all 0.2s"
+                        onClick={() => handleSelectScenario(choice.id)}
+                        flexDir="column"
+                        minW="140px"
+                        isLoading={loadingScenarioId === choice.id}
+                        loadingText="Loading"
+                      >
+                        <Text fontSize="3xl" mb={1}>
+                          {SCENARIO_EMOJIS[choice.id] ||
+                            Object.values(SCENARIO_EMOJIS)[idx % 3] ||
+                            "🎮"}
+                        </Text>
+                        <Text fontSize="md" fontWeight="bold">
+                          {choice.name[supportLang] || choice.name.en}
+                        </Text>
+                      </Button>
+                    </WrapItem>
+                  );
+                })}
+              </Wrap>
+            </>
           )}
         </VStack>
       </Box>
@@ -3141,10 +3173,10 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
     return (
       <Box
         w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "auto" : "100vh"}
+        h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
-        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        bg="#1a1a2e"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -3158,8 +3190,12 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
         }}
       >
         <VStack spacing={4}>
-          <Text color="white" fontSize="xl" fontWeight="bold">
-            Generating scenario with AI...
+          <RobotBuddyPro state="thinking" maxW={140} />
+          <Text color="white" fontSize="xl" fontWeight="bold" textAlign="center">
+            {isTutorialGame ? ui.loadingTutorialScene : "Generating your game..."}
+          </Text>
+          <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
+            {GAME_LOADING_MESSAGES[loadingMsgIdx]}
           </Text>
           <Button onClick={goToScenarioSelect}>{ui.back}</Button>
         </VStack>

@@ -4750,7 +4750,10 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  const isGameFullScreen = viewMode === "lesson" && activeLesson?.isGame;
+  const isGameFullScreen =
+    viewMode === "lesson" &&
+    (activeLesson?.isGame ||
+      (activeLesson?.isTutorial && currentTab === "game"));
 
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
@@ -4945,6 +4948,7 @@ export default function App() {
             lessonContext={activeLesson}
             initialScenario={preGeneratedGameScenario}
             onComplete={() => handleReturnToSkillTree()}
+            onSkip={switchToRandomLessonMode}
           />
         </Box>
       )}
