@@ -5092,6 +5092,7 @@ export default function App() {
                         <RPGGame
                           lessonContext={activeLesson}
                           initialScenario={preGeneratedGameScenario}
+                          onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
                     );

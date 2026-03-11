@@ -113,6 +113,9 @@ const baseLearningPath = {
             game: {
               topic: "tutorial",
               unitTitle: "Getting Started",
+              sceneId: "tutorialPlaza",
+              xpReward: 30,
+              focusPoints: ["hello", "hi", "good morning", "greetings", "my name is"],
               tutorialDescription: {
                 en: "Finish the tutorial by playing a short game review.",
                 es: "Termina el tutorial jugando un breve repaso en modo juego.",

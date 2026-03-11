@@ -36,7 +36,7 @@ import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import * as Tone from "tone";
 import * as THREE from "three";
-import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
+import { MAP_CHOICES, TUTORIAL_MAP_ID, generateScenarioWithAI } from "./scenarios";
 import {
   createTileTexture,
   createCharacterTexture,
@@ -49,6 +49,7 @@ import {
 import useSoundSettings from "../../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG, getCharacterVoice, getCharacterPersonality } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
+import { awardXp } from "../../utils/utils";
 import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
@@ -650,6 +651,8 @@ const UI_TEXT = {
     speechUnavailable: "Speech unavailable in this browser",
     noSpeechMatch: "I didn't catch that. Try again.",
     continue: "Continue",
+    skip: "Skip",
+    loadingTutorialScene: "Loading tutorial scene...",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -673,6 +676,8 @@ const UI_TEXT = {
     speechUnavailable: "Voz no disponible en este navegador",
     noSpeechMatch: "No entendí eso. Inténtalo otra vez.",
     continue: "Continuar",
+    skip: "Saltar",
+    loadingTutorialScene: "Cargando escena tutorial...",
   },
 };
 
@@ -680,6 +685,7 @@ const SCENARIO_EMOJIS = {
   livingRoom: "🛋️",
   park: "🌳",
   airport: "✈️",
+  [TUTORIAL_MAP_ID]: "👋",
 };
 
 const DIALOGUE_CHARACTER_POOLS = {
@@ -750,7 +756,12 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function RPGGame({ lessonContext = null, onComplete = null, initialScenario = null }) {
+export default function RPGGame({
+  lessonContext = null,
+  onComplete = null,
+  initialScenario = null,
+  onSkip = null,
+}) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
@@ -1478,13 +1489,14 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
         mapId,
         targetLang,
         supportLang,
-        overrideTerms.length ? overrideTerms : null,
+        overrideTerms?.length ? overrideTerms : null,
         gameContent?.cefrLevel || null,
       );
       setScenario(generated);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
+      xpAwardedRef.current = false;
     },
     [targetLang, supportLang, lessonContext],
   );
@@ -2966,6 +2978,64 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
+  const isTutorialGame =
+    !!lessonContext?.isTutorial && lessonContext?.content?.game?.topic === "tutorial";
+  const tutorialSceneId = lessonContext?.content?.game?.sceneId || TUTORIAL_MAP_ID;
+  const xpAwardedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isTutorialGame || scenarioId || loadingScenarioId) return;
+    void handleSelectScenario(tutorialSceneId);
+  }, [
+    handleSelectScenario,
+    isTutorialGame,
+    loadingScenarioId,
+    scenarioId,
+    tutorialSceneId,
+  ]);
+
+  useEffect(() => {
+    if (!isTutorialGame || !gameComplete || xpAwardedRef.current) return;
+
+    const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
+    const npub = localStorage.getItem("local_npub") || "";
+    const lang =
+      localStorage.getItem("userTargetLang") ||
+      lessonContext?.targetLang ||
+      targetLang ||
+      "es";
+
+    if (!npub || !bonusXp) {
+      xpAwardedRef.current = true;
+      return;
+    }
+
+    awardXp(npub, bonusXp, lang)
+      .then(() => {
+        xpAwardedRef.current = true;
+        toast({
+          title: supportLang === "es" ? "XP del juego otorgado" : "Game XP awarded",
+          description:
+            supportLang === "es"
+              ? `Ganaste +${Math.round(bonusXp)} XP por completar el juego tutorial.`
+              : `You earned +${Math.round(bonusXp)} XP for completing the tutorial game.`,
+          status: "success",
+          duration: 2800,
+          isClosable: true,
+        });
+      })
+      .catch(() => {
+        xpAwardedRef.current = true;
+      });
+  }, [gameComplete, isTutorialGame, lessonContext, supportLang, targetLang, toast]);
+
+  const handleSkipStep = useCallback(() => {
+    if (typeof onSkip === "function") {
+      onSkip();
+      return;
+    }
+    goToScenarioSelect();
+  }, [goToScenarioSelect, onSkip]);
 
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {
@@ -3016,48 +3086,52 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             fontWeight="bold"
             textAlign="center"
           >
-            {ui.chooseScenario}
+            {isTutorialGame ? ui.loadingTutorialScene : ui.chooseScenario}
           </Text>
 
-          <Wrap spacing={4} justify="center">
-            {MAP_CHOICES.map((choice, idx) => {
-              return (
-                <WrapItem key={choice.id}>
-                  <Button
-                    size="lg"
-                    h="auto"
-                    py={4}
-                    px={6}
-                    bg="whiteAlpha.100"
-                    color="white"
-                    border="2px solid"
-                    borderColor="whiteAlpha.200"
-                    borderRadius="xl"
-                    _hover={{
-                      bg: "whiteAlpha.200",
-                      borderColor: "yellow.400",
-                      transform: "scale(1.05)",
-                    }}
-                    transition="all 0.2s"
-                    onClick={() => handleSelectScenario(choice.id)}
-                    flexDir="column"
-                    minW="140px"
-                    isLoading={loadingScenarioId === choice.id}
-                    loadingText="Loading"
-                  >
-                    <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[choice.id] ||
-                        Object.values(SCENARIO_EMOJIS)[idx % 3] ||
-                        "🎮"}
-                    </Text>
-                    <Text fontSize="md" fontWeight="bold">
-                      {choice.name[supportLang] || choice.name.en}
-                    </Text>
-                  </Button>
-                </WrapItem>
-              );
-            })}
-          </Wrap>
+          {isTutorialGame ? (
+            <Spinner size="lg" color="yellow.300" thickness="4px" />
+          ) : (
+            <Wrap spacing={4} justify="center">
+              {MAP_CHOICES.map((choice, idx) => {
+                return (
+                  <WrapItem key={choice.id}>
+                    <Button
+                      size="lg"
+                      h="auto"
+                      py={4}
+                      px={6}
+                      bg="whiteAlpha.100"
+                      color="white"
+                      border="2px solid"
+                      borderColor="whiteAlpha.200"
+                      borderRadius="xl"
+                      _hover={{
+                        bg: "whiteAlpha.200",
+                        borderColor: "yellow.400",
+                        transform: "scale(1.05)",
+                      }}
+                      transition="all 0.2s"
+                      onClick={() => handleSelectScenario(choice.id)}
+                      flexDir="column"
+                      minW="140px"
+                      isLoading={loadingScenarioId === choice.id}
+                      loadingText="Loading"
+                    >
+                      <Text fontSize="3xl" mb={1}>
+                        {SCENARIO_EMOJIS[choice.id] ||
+                          Object.values(SCENARIO_EMOJIS)[idx % 3] ||
+                          "🎮"}
+                      </Text>
+                      <Text fontSize="md" fontWeight="bold">
+                        {choice.name[supportLang] || choice.name.en}
+                      </Text>
+                    </Button>
+                  </WrapItem>
+                );
+              })}
+            </Wrap>
+          )}
         </VStack>
       </Box>
     );
@@ -3139,6 +3213,16 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             colorScheme="blackAlpha"
             onClick={goToScenarioSelect}
           />
+          {isTutorialGame && (
+            <Button
+              size="sm"
+              variant="solid"
+              colorScheme="blackAlpha"
+              onClick={handleSkipStep}
+            >
+              {ui.skip}
+            </Button>
+          )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
