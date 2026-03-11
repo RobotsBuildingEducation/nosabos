@@ -1310,7 +1310,11 @@ export default function RPGGame() {
 
   const closeDialogue = useCallback(() => {
     if (!dialogue) return;
-    try { ttsPlayerRef.current?.stop?.(); } catch { /* ignore */ }
+    const player = ttsPlayerRef.current;
+    if (player) {
+      try { player.audio?.pause(); } catch { /* ignore */ }
+      try { player.cleanup?.(); } catch { /* ignore */ }
+    }
     ttsPlayerRef.current = null;
     playGameSound("click");
     setDialogue(null);
@@ -1394,10 +1398,10 @@ export default function RPGGame() {
   }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
-    try {
-      ttsPlayerRef.current?.stop?.();
-    } catch {
-      // ignore
+    const player = ttsPlayerRef.current;
+    if (player) {
+      try { player.audio?.pause(); } catch { /* ignore */ }
+      try { player.cleanup?.(); } catch { /* ignore */ }
     }
     ttsPlayerRef.current = null;
   }, []);
