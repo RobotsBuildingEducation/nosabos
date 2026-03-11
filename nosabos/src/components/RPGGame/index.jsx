@@ -28,6 +28,7 @@ import {
   Tooltip,
   Image,
   SimpleGrid,
+  Spinner,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
@@ -786,6 +787,7 @@ export default function RPGGame() {
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
+  const [generatingChoices, setGeneratingChoices] = useState(false);
   const [lineTranslations, setLineTranslations] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
@@ -1308,10 +1310,17 @@ export default function RPGGame() {
 
   const closeDialogue = useCallback(() => {
     if (!dialogue) return;
+    const player = ttsPlayerRef.current;
+    if (player) {
+      try { player.audio?.pause(); } catch { /* ignore */ }
+      try { player.cleanup?.(); } catch { /* ignore */ }
+    }
+    ttsPlayerRef.current = null;
     playGameSound("click");
     setDialogue(null);
     setFeedback(null);
     setLineTranslations(null);
+    setLastHeardSpeech("");
   }, [dialogue, playGameSound]);
 
   // Clear translation when dialogue node changes
@@ -1389,10 +1398,10 @@ export default function RPGGame() {
   }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
-    try {
-      ttsPlayerRef.current?.stop?.();
-    } catch {
-      // ignore
+    const player = ttsPlayerRef.current;
+    if (player) {
+      try { player.audio?.pause(); } catch { /* ignore */ }
+      try { player.cleanup?.(); } catch { /* ignore */ }
     }
     ttsPlayerRef.current = null;
   }, []);
@@ -2212,6 +2221,8 @@ export default function RPGGame() {
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
+          // Clear heard speech from previous interactions
+          setLastHeardSpeech("");
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2225,6 +2236,10 @@ export default function RPGGame() {
           conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
+          // Generate dynamic choices if the first node is a choice node
+          if (node?.responseMode === "choice") {
+            generateDynamicChoices(node, npcIdx, questProgress.currentStepIdx);
+          }
           return;
         }
       }
@@ -2358,6 +2373,8 @@ export default function RPGGame() {
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
+          // Clear heard speech from previous interactions
+          setLastHeardSpeech("");
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
@@ -2371,6 +2388,10 @@ export default function RPGGame() {
           conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
+          // Generate dynamic choices if the first node is a choice node
+          if (node?.responseMode === "choice") {
+            generateDynamicChoices(node, npcIdx, questProgress.currentStepIdx);
+          }
         }
         return;
       }
@@ -2444,6 +2465,10 @@ export default function RPGGame() {
 
   const completeNPCChapter = useCallback(
     (npcIdx) => {
+      // Stop any playing TTS and clear heard speech when completing a chapter
+      stopNPCSpeech();
+      setLastHeardSpeech("");
+
       const newCompleted = completedSteps + 1;
       setCompletedSteps(newCompleted);
 
@@ -2494,13 +2519,79 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
         if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang],
+    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang, stopNPCSpeech],
+  );
+
+  // ─── Generate dynamic choices for choice nodes via LLM ────────────────
+  const generateDynamicChoices = useCallback(
+    async (node, npcIdx, stepIdx) => {
+      if (!node || node.responseMode !== "choice") return;
+      setGeneratingChoices(true);
+      const npcName = npcCharacterNamesRef.current[npcIdx] || scenario?.npcs?.[npcIdx]?.name || "NPC";
+      const seed = quest?.storySeed || "";
+      const historyContext = conversationLogRef.current
+        .slice(-10)
+        .map((e) => `${e.speaker}: ${e.text}`)
+        .join("\n");
+      const characterId = npcVariantAssignmentsRef.current[npcIdx];
+      const personality = characterId ? getCharacterPersonality(characterId) : null;
+      const personalityHint = personality
+        ? (targetLang === "es" ? ` Personalidad del NPC: ${personality}.` : ` NPC personality: ${personality}.`)
+        : "";
+      const npcLine = node.npcLine || "";
+
+      const prompt = targetLang === "es"
+        ? `Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
+${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El NPC "${npcName}" acaba de decir: "${npcLine}"
+Genera exactamente 3 opciones de respuesta que el jugador podría decir, y para cada una la reacción del NPC (1-2 oraciones).
+Las opciones deben ser variadas en tono (curiosa, directa, graciosa) y relevantes a lo que el NPC dijo y a la historia.
+Responde SOLO en este formato JSON exacto, sin texto adicional:
+[{"text":"opción del jugador","reply":"respuesta del NPC"},{"text":"opción 2","reply":"respuesta 2"},{"text":"opción 3","reply":"respuesta 3"}]`
+        : `You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
+${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The NPC "${npcName}" just said: "${npcLine}"
+Generate exactly 3 response options the player could say, and for each one the NPC's reaction (1-2 sentences).
+The options should vary in tone (curious, direct, humorous) and be relevant to what the NPC said and the story.
+Respond ONLY in this exact JSON format, no additional text:
+[{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]`;
+
+      try {
+        const result = await callResponses({ input: prompt });
+        const cleaned = (result || "").trim();
+        // Extract JSON array from response
+        const match = cleaned.match(/\[[\s\S]*\]/);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (Array.isArray(parsed) && parsed.length >= 2) {
+            const dynamicChoices = parsed.slice(0, 3).map((c) => ({
+              text: String(c.text || ""),
+              npcReply: String(c.reply || c.npcReply || ""),
+              nextNodeId: node.choices?.[0]?.nextNodeId || null,
+            }));
+            // Update dialogue with dynamic choices
+            setDialogue((prev) => {
+              if (!prev || prev.node?.id !== node.id) return prev;
+              return {
+                ...prev,
+                node: { ...prev.node, choices: dynamicChoices },
+              };
+            });
+          }
+        }
+      } catch {
+        // Keep fallback hardcoded choices
+      } finally {
+        setGeneratingChoices(false);
+      }
+    },
+    [quest, scenario, targetLang],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
   const handleAnswer = (optionIdx) => {
     if (!dialogue) return;
 
+    // Stop any currently playing TTS before advancing
+    stopNPCSpeech();
     playGameSound("rpgDialogueSelect");
 
     const selected = dialogue.node?.choices?.[optionIdx];
@@ -2540,6 +2631,9 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       setGatherUnlocked(true);
     }
 
+    // Clear heard speech when transitioning nodes
+    setLastHeardSpeech("");
+
     setTimeout(() => {
       let reply = selected.npcReply || "";
       // When transitioning into a gather or non-speech node with a reply,
@@ -2555,6 +2649,11 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       const transitionLine =
         reply || nextNode.npcLine || nextNode.prompt || "";
       speakNPCText(transitionLine, { npcIdx: dialogue.npcIdx });
+
+      // Generate dynamic choices if the next node is a choice node
+      if (nextNode.responseMode === "choice") {
+        generateDynamicChoices(nextNode, dialogue.npcIdx, dialogue.stepIdx);
+      }
     }, 300);
   };
 
@@ -2724,8 +2823,12 @@ Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. R
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
 Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
 
+      // Stop any currently playing TTS before the new speech reply
+      stopNPCSpeech();
+
       // Fire LLM call without blocking dialogue progression
       const npcIdx = dialogue.npcIdx;
+      const stepIdx = dialogue.stepIdx;
       callResponses({ input: llmPrompt }).then((llmResult) => {
         const dynamicReply = (llmResult && llmResult.trim().length > 0)
           ? llmResult.trim()
@@ -2745,6 +2848,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
           npcReply: fullReply,
         }));
         speakNPCText(fullReply, { warmAudio, npcIdx });
+
+        // Generate dynamic choices if the next node is a choice node
+        if (nextNode?.responseMode === "choice") {
+          generateDynamicChoices(nextNode, npcIdx, stepIdx);
+        }
       }).catch(() => {
         const fallback = dialogue.node.speechContinueReply ||
           (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
@@ -3381,36 +3489,45 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                   )}
 
                 {dialogue.node?.responseMode === "choice" && (
-                  <VStack spacing={2}>
-                    {(dialogue.node?.choices || []).map((optRaw, idx) => {
-                      const opt =
-                        typeof optRaw === "string" ? optRaw : optRaw.text;
+                  generatingChoices ? (
+                    <HStack justify="center" py={4}>
+                      <Spinner size="sm" color="gray.500" />
+                      <Text fontSize="sm" color="gray.500">
+                        {targetLang === "es" ? "Pensando..." : "Thinking..."}
+                      </Text>
+                    </HStack>
+                  ) : (
+                    <VStack spacing={2}>
+                      {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                        const opt =
+                          typeof optRaw === "string" ? optRaw : optRaw.text;
 
-                      return (
-                        <Button
-                          key={idx}
-                          w="100%"
-                          size="sm"
-                          variant="solid"
-                          bg="rgba(255,255,255,0.92)"
-                          color="gray.900"
-                          border="1px solid"
-                          borderColor="blackAlpha.200"
-                          boxShadow="0px 4px 0px #a9a18c"
-                          _active={{ bg: "gray.100" }}
-                          onClick={() => handleAnswer(idx)}
-                          isDisabled={isRecording || isConnecting}
-                          justifyContent="flex-start"
-                          textAlign="left"
-                          whiteSpace="normal"
-                          h="auto"
-                          py={2}
-                        >
-                          {String.fromCharCode(65 + idx)}. {opt}
-                        </Button>
-                      );
-                    })}
-                  </VStack>
+                        return (
+                          <Button
+                            key={idx}
+                            w="100%"
+                            size="sm"
+                            variant="solid"
+                            bg="rgba(255,255,255,0.92)"
+                            color="gray.900"
+                            border="1px solid"
+                            borderColor="blackAlpha.200"
+                            boxShadow="0px 4px 0px #a9a18c"
+                            _active={{ bg: "gray.100" }}
+                            onClick={() => handleAnswer(idx)}
+                            isDisabled={isRecording || isConnecting}
+                            justifyContent="flex-start"
+                            textAlign="left"
+                            whiteSpace="normal"
+                            h="auto"
+                            py={2}
+                          >
+                            {String.fromCharCode(65 + idx)}. {opt}
+                          </Button>
+                        );
+                      })}
+                    </VStack>
+                  )
                 )}
 
                 {dialogue.node?.responseMode === "speech" && (
