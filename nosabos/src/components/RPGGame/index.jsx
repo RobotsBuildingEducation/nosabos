@@ -801,6 +801,7 @@ export default function RPGGame() {
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
+  const ttsRequestIdRef = useRef(0);
   const preWarmedAudioRef = useRef(null);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
@@ -1389,6 +1390,7 @@ export default function RPGGame() {
   }, [dialogue, isMobileDialogueLayout, updateDialogueBubblePosition]);
 
   const stopNPCSpeech = useCallback(() => {
+    ttsRequestIdRef.current += 1;
     try {
       ttsPlayerRef.current?.stop?.();
     } catch {
@@ -1401,6 +1403,7 @@ export default function RPGGame() {
     async (text, { warmAudio, npcIdx } = {}) => {
       if (!text) return;
       stopNPCSpeech();
+      const requestId = ttsRequestIdRef.current;
       try {
         const characterId =
           npcIdx != null
@@ -1413,8 +1416,28 @@ export default function RPGGame() {
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           warmAudio,
         });
+
+        if (requestId !== ttsRequestIdRef.current) {
+          try {
+            player?.stop?.();
+          } catch {
+            // ignore stale player
+          }
+          return;
+        }
+
         ttsPlayerRef.current = player;
         await player.ready;
+
+        if (requestId !== ttsRequestIdRef.current) {
+          try {
+            player?.stop?.();
+          } catch {
+            // ignore stale player
+          }
+          return;
+        }
+
         await player.audio.play();
       } catch {
         // non-blocking
@@ -2504,6 +2527,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
   const handleAnswer = (optionIdx) => {
     if (!dialogue) return;
 
+    stopNPCSpeech();
     playGameSound("rpgDialogueSelect");
 
     const selected = dialogue.node?.choices?.[optionIdx];
@@ -2616,6 +2640,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
     const submittedItem = inventory[itemIndex];
     if (!submittedItem) return;
 
+    stopNPCSpeech();
     playGameSound("rpgDialogueSelect");
     const requiredItem = dialogue.node.gatherItem?.name;
 
@@ -2674,6 +2699,8 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);
       if (!dialogue?.node || dialogue.node.responseMode !== "speech") return;
+
+      stopNPCSpeech();
 
       // Grab the pre-warmed audio element (unlocked during user gesture)
       const warmAudio = preWarmedAudioRef.current;
