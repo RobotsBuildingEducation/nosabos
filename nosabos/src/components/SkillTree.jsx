@@ -233,6 +233,8 @@ import { TbLanguage } from "react-icons/tb";
 import useSoundSettings from "../hooks/useSoundSettings";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
+import RobotBuddyPro from "./RobotBuddyPro";
+import { MAP_CHOICES, generateScenarioWithAI } from "./RPGGame/scenarios";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -297,6 +299,7 @@ const MODE_ICONS = {
   realtime: FaMicrophone,
   stories: MdOutlineDescription,
   reading: RiBookOpenLine,
+  game: RiGamepadLine,
 };
 
 // Map vocabulary library topics to contextual icons
@@ -744,6 +747,9 @@ const LESSON_TITLE_ICONS = {
   "Professional Fields": RiBriefcase5Line,
   "Domain Expertise": RiTrophyLine,
 
+  // Game Review (all levels)
+  "Game Review": RiGamepadLine,
+
   // C2 - Precision & Cultural Intelligence
   "Fine Distinctions": RiContrastLine,
   "Precise Meaning": FiTarget,
@@ -768,6 +774,9 @@ const getTitleBasedIcon = (title) => {
 
 // Get unique icon for each individual lesson based on lesson content
 const getLessonIcon = (lesson, unitId) => {
+  // Game lessons always get the gamepad icon
+  if (lesson.isGame) return RiGamepadLine;
+
   // Quiz lessons always get the question mark icon
   if (lesson.id.includes("-quiz")) return RiQuestionLine;
 
@@ -1438,6 +1447,17 @@ const UnitSection = React.memo(function UnitSection({
  * Lesson Detail Modal
  * Shows detailed information about a lesson
  */
+const GAME_LOADING_MESSAGES = [
+  "Building your world...",
+  "Placing NPCs...",
+  "Writing quest dialogue...",
+  "Generating vocabulary challenges...",
+  "Designing the map layout...",
+  "Preparing language puzzles...",
+  "Setting the scene...",
+  "Crafting your adventure...",
+];
+
 function LessonDetailModal({
   isOpen,
   onClose,
@@ -1445,15 +1465,81 @@ function LessonDetailModal({
   unit,
   onStartLesson,
   supportLang,
+  targetLang,
 }) {
+  const [gameLoading, setGameLoading] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+
+  // Rotate loading messages every 1.5 seconds
+  useEffect(() => {
+    if (!gameLoading) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % GAME_LOADING_MESSAGES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [gameLoading]);
+
+  // Reset loading state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setGameLoading(false);
+      setLoadingMsgIdx(0);
+    }
+  }, [isOpen]);
+
   if (!lesson) return null;
 
   const lessonTitle = getUIDisplayText(lesson.title);
   const unitTitle = getUIDisplayText(unit.title);
   const lessonDescription = getUIDisplayText(lesson.description);
 
+  const handleStartGame = async () => {
+    setGameLoading(true);
+    setLoadingMsgIdx(0);
+
+    try {
+      // Pick a random map
+      const randomMap =
+        MAP_CHOICES[Math.floor(Math.random() * MAP_CHOICES.length)];
+
+      const gameContent = lesson.content?.game;
+      const overrideTerms = [
+        ...(gameContent?.focusPoints || []),
+        ...(gameContent?.unitTopics || []),
+        gameContent?.topic,
+        gameContent?.unitTitle,
+      ].filter(Boolean);
+
+      const scenario = await generateScenarioWithAI(
+        randomMap.id,
+        targetLang || "es",
+        supportLang || "en",
+        overrideTerms.length ? overrideTerms : null,
+        gameContent?.cefrLevel || null,
+      );
+
+      // Pass both lesson and pre-generated scenario to parent
+      onStartLesson(lesson, scenario);
+      onClose();
+    } catch (e) {
+      console.error("Failed to generate game scenario:", e);
+      // Fall back to normal lesson start
+      onStartLesson(lesson);
+      onClose();
+    } finally {
+      setGameLoading(false);
+    }
+  };
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+    <Modal
+      isOpen={isOpen}
+      onClose={gameLoading ? undefined : onClose}
+      size="xl"
+      isCentered
+      closeOnOverlayClick={!gameLoading}
+      closeOnEsc={!gameLoading}
+    >
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
       <ModalContent
         bg="gray.900"
@@ -1476,215 +1562,324 @@ function LessonDetailModal({
           pointerEvents="none"
         />
 
-        <ModalHeader
-          borderBottomWidth="1px"
-          borderColor="whiteAlpha.200"
-          position="relative"
-          pt={6}
-          pb={4}
-        >
-          <VStack align="start" spacing={2}>
-            <HStack spacing={3}>
-              <Box
-                w={4}
-                h={4}
-                borderRadius="full"
-                bg={unit.color}
-                boxShadow={`0 0 15px ${unit.color}80`}
-              />
-              <Text
-                fontSize="2xl"
-                fontWeight="bold"
-                bgGradient={`linear(to-r, white, gray.200)`}
-                bgClip="text"
-              >
-                {lessonTitle}
-              </Text>
-            </HStack>
-            <Text fontSize="sm" fontWeight="normal" color="gray.400" ml={7}>
-              {unitTitle}
-            </Text>
-          </VStack>
-        </ModalHeader>
-        <ModalCloseButton
-          color="gray.400"
-          _hover={{ color: "white", bg: "whiteAlpha.200" }}
-          borderRadius="lg"
-          top={4}
-          right={4}
-        />
-        <ModalBody pb={6} pt={6} position="relative">
-          <VStack align="stretch" spacing={6}>
-            <Text color="gray.300" fontSize="md" lineHeight="tall">
-              {lessonDescription}
-            </Text>
-
-            {/* Lesson modes */}
+        {gameLoading ? (
+          /* ── Game loading state with animated purple gradient ── */
+          <>
             <Box
-              bg="whiteAlpha.50"
-              p={5}
-              borderRadius="xl"
-              border="1px solid"
-              borderColor="whiteAlpha.100"
-            >
-              <Text fontWeight="bold" mb={3} color="white" fontSize="sm">
-                {getTranslation("skill_tree_learning_activities")}
-              </Text>
-              <Flex gap={2} flexWrap="wrap">
-                {lesson.modes.map((mode) => {
-                  const Icon = MODE_ICONS[mode] || RiStarLine;
-                  const modeKey = `mode_${mode}`;
-                  const modeName =
-                    getTranslation(modeKey) !== modeKey
-                      ? getTranslation(modeKey)
-                      : mode;
-                  return (
-                    <Badge
-                      key={mode}
-                      px={4}
-                      py={2}
-                      borderRadius="full"
-                      display="flex"
-                      alignItems="center"
-                      gap={2}
-                      bg={unit.color}
-                      color="white"
-                      fontWeight="bold"
-                      fontSize="sm"
-                      border="2px solid"
-                      borderColor="whiteAlpha.300"
-                      boxShadow="0 2px 8px rgba(0, 0, 0, 0.3)"
-                    >
-                      <Icon size={16} />
-                      <Text textTransform="capitalize">{modeName}</Text>
-                    </Badge>
-                  );
-                })}
-              </Flex>
-            </Box>
-
-            {/* XP Goal / Passing Score / Tutorial */}
-            <Box
-              p={5}
-              borderRadius="xl"
-              position="relative"
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              bottom={0}
               overflow="hidden"
-              border="1px solid"
-              borderColor={
-                lesson.isTutorial
-                  ? "blue.600"
-                  : lesson.isFinalQuiz
-                    ? "purple.600"
-                    : "yellow.600"
-              }
-              boxShadow={
-                lesson.isTutorial
-                  ? "0 4px 12px rgba(99, 102, 241, 0.2)"
-                  : lesson.isFinalQuiz
-                    ? "0 4px 12px rgba(159, 122, 234, 0.2)"
-                    : "0 4px 12px rgba(251, 191, 36, 0.2)"
-              }
+              borderRadius="2xl"
+              pointerEvents="none"
+              sx={{
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  top: "-50%",
+                  left: "-50%",
+                  width: "200%",
+                  height: "200%",
+                  background:
+                    "radial-gradient(circle at 30% 40%, rgba(139,92,246,0.25) 0%, transparent 50%), " +
+                    "radial-gradient(circle at 70% 60%, rgba(168,85,247,0.2) 0%, transparent 50%), " +
+                    "radial-gradient(circle at 50% 80%, rgba(109,40,217,0.15) 0%, transparent 50%)",
+                  animation: "purpleDrift 6s ease-in-out infinite",
+                },
+                "@keyframes purpleDrift": {
+                  "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
+                  "33%": { transform: "translate(2%, -3%) rotate(1deg)" },
+                  "66%": { transform: "translate(-2%, 2%) rotate(-1deg)" },
+                },
+              }}
+            />
+            <ModalBody py={16} position="relative" zIndex={1}>
+              <VStack spacing={8} align="center">
+                <Box
+                  animation="gentleBob 3s ease-in-out infinite"
+                  sx={{
+                    "@keyframes gentleBob": {
+                      "0%, 100%": { transform: "translateY(0)" },
+                      "50%": { transform: "translateY(-6px)" },
+                    },
+                  }}
+                >
+                  <RobotBuddyPro state="thinking" maxW={140} />
+                </Box>
+                <VStack spacing={3}>
+                  <Text
+                    fontSize="lg"
+                    fontWeight="bold"
+                    color="white"
+                    textAlign="center"
+                  >
+                    Generating your game...
+                  </Text>
+                  <Text
+                    fontSize="sm"
+                    color="purple.200"
+                    textAlign="center"
+                    minH="20px"
+                    key={loadingMsgIdx}
+                    sx={{
+                      animation: "fadeIn 0.4s ease-in-out",
+                      "@keyframes fadeIn": {
+                        "0%": { opacity: 0, transform: "translateY(4px)" },
+                        "100%": { opacity: 1, transform: "translateY(0)" },
+                      },
+                    }}
+                  >
+                    {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                  </Text>
+                </VStack>
+              </VStack>
+            </ModalBody>
+          </>
+        ) : (
+          /* ── Normal modal content ── */
+          <>
+            <ModalHeader
+              borderBottomWidth="1px"
+              borderColor="whiteAlpha.200"
+              position="relative"
+              pt={6}
+              pb={4}
             >
-              <Box
-                position="absolute"
-                top="-50%"
-                right="-20%"
-                w="150px"
-                h="150px"
-                filter="blur(40px)"
-                opacity={0.3}
-              />
-              <HStack justify="space-between" position="relative">
+              <VStack align="start" spacing={2}>
                 <HStack spacing={3}>
                   <Box
-                    p={2}
-                    borderRadius="lg"
-                    bgGradient={
-                      lesson.isTutorial
-                        ? "linear(135deg, blue.400, indigo.600)"
-                        : lesson.isFinalQuiz
-                          ? "linear(135deg, purple.400, purple.600)"
-                          : "linear(135deg, yellow.400, orange.400)"
-                    }
-                    boxShadow={
-                      lesson.isTutorial
-                        ? "0 2px 10px rgba(99, 102, 241, 0.4)"
-                        : lesson.isFinalQuiz
-                          ? "0 2px 10px rgba(159, 122, 234, 0.4)"
-                          : "0 2px 10px rgba(251, 191, 36, 0.4)"
-                    }
+                    w={4}
+                    h={4}
+                    borderRadius="full"
+                    bg={unit.color}
+                    boxShadow={`0 0 15px ${unit.color}80`}
+                  />
+                  <Text
+                    fontSize="2xl"
+                    fontWeight="bold"
+                    bgGradient={`linear(to-r, white, gray.200)`}
+                    bgClip="text"
                   >
-                    {lesson.isTutorial ? (
-                      <RiTrophyLine color="white" size={24} />
-                    ) : lesson.isFinalQuiz ? (
-                      <RiTrophyLine color="white" size={24} />
-                    ) : (
-                      <RiStarFill color="white" size={24} />
-                    )}
-                  </Box>
-                  <Text fontWeight="bold" color="white" fontSize="md">
-                    {lesson.isTutorial
-                      ? getTranslation("skill_tree_tutorial_goal")
-                      : lesson.isFinalQuiz
-                        ? getTranslation("skill_tree_passing_score")
-                        : getTranslation("skill_tree_xp_reward")}
+                    {lessonTitle}
                   </Text>
                 </HStack>
                 <Text
-                  color="white"
-                  fontSize={{
-                    base: "xs",
-                    sm: "sm",
-                    md: lesson.isTutorial ? "md" : "xl",
-                  }}
-                  px={{ base: 2, md: 5 }}
-                  py={2}
-                  fontWeight="bold"
-                  whiteSpace={{ base: "normal", md: "nowrap" }}
-                  textAlign="right"
-                  maxW={{ base: "140px", sm: "200px", md: "none" }}
+                  fontSize="sm"
+                  fontWeight="normal"
+                  color="gray.400"
+                  ml={7}
                 >
-                  {lesson.isTutorial
-                    ? getTranslation("skill_tree_tutorial_activities")
-                    : lesson.isFinalQuiz
-                      ? `${Math.round(
-                          (lesson.quizConfig?.passingScore /
-                            lesson.quizConfig?.questionsRequired) *
-                            100,
-                        )}%`
-                      : `+${lesson.xpReward} XP`}
+                  {unitTitle}
                 </Text>
-              </HStack>
-            </Box>
+              </VStack>
+            </ModalHeader>
+            <ModalCloseButton
+              color="gray.400"
+              _hover={{ color: "white", bg: "whiteAlpha.200" }}
+              borderRadius="lg"
+              top={4}
+              right={4}
+            />
+            <ModalBody pb={6} pt={6} position="relative">
+              <VStack align="stretch" spacing={6}>
+                <Text color="gray.300" fontSize="md" lineHeight="tall">
+                  {lessonDescription}
+                </Text>
 
-            {/* Start button */}
-            <Button
-              size="lg"
-              h="60px"
-              onClick={() => {
-                onStartLesson(lesson);
-                onClose();
-              }}
-              bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
-              color="white"
-              fontSize="lg"
-              fontWeight="bold"
-              borderRadius="xl"
-              boxShadow={`0 8px 25px ${unit.color}40`}
-              _hover={{
-                bgGradient: `linear(135deg, ${unit.color}dd, ${unit.color})`,
-                boxShadow: `0 12px 35px ${unit.color}60`,
-                transform: "translateY(-2px)",
-              }}
-              _active={{
-                transform: "translateY(0)",
-              }}
-              transition="all 0.2s"
-            >
-              {getTranslation("skill_tree_start_lesson")}
-            </Button>
-          </VStack>
-        </ModalBody>
+                {/* Lesson modes */}
+                <Box
+                  bg="whiteAlpha.50"
+                  p={5}
+                  borderRadius="xl"
+                  border="1px solid"
+                  borderColor="whiteAlpha.100"
+                >
+                  <Text
+                    fontWeight="bold"
+                    mb={3}
+                    color="white"
+                    fontSize="sm"
+                  >
+                    {getTranslation("skill_tree_learning_activities")}
+                  </Text>
+                  <Flex gap={2} flexWrap="wrap">
+                    {lesson.modes.map((mode) => {
+                      const Icon = MODE_ICONS[mode] || RiStarLine;
+                      const modeKey = `mode_${mode}`;
+                      const modeName =
+                        getTranslation(modeKey) !== modeKey
+                          ? getTranslation(modeKey)
+                          : mode;
+                      return (
+                        <Badge
+                          key={mode}
+                          px={4}
+                          py={2}
+                          borderRadius="full"
+                          display="flex"
+                          alignItems="center"
+                          gap={2}
+                          bg={unit.color}
+                          color="white"
+                          fontWeight="bold"
+                          fontSize="sm"
+                          border="2px solid"
+                          borderColor="whiteAlpha.300"
+                          boxShadow="0 2px 8px rgba(0, 0, 0, 0.3)"
+                        >
+                          <Icon size={16} />
+                          <Text textTransform="capitalize">{modeName}</Text>
+                        </Badge>
+                      );
+                    })}
+                  </Flex>
+                </Box>
+
+                {/* XP Goal / Passing Score / Tutorial / Game */}
+                <Box
+                  p={5}
+                  borderRadius="xl"
+                  position="relative"
+                  overflow="hidden"
+                  border="1px solid"
+                  borderColor={
+                    lesson.isTutorial
+                      ? "blue.600"
+                      : lesson.isGame
+                        ? "teal.600"
+                        : lesson.isFinalQuiz
+                          ? "purple.600"
+                          : "yellow.600"
+                  }
+                  boxShadow={
+                    lesson.isTutorial
+                      ? "0 4px 12px rgba(99, 102, 241, 0.2)"
+                      : lesson.isGame
+                        ? "0 4px 12px rgba(45, 212, 191, 0.2)"
+                        : lesson.isFinalQuiz
+                          ? "0 4px 12px rgba(159, 122, 234, 0.2)"
+                          : "0 4px 12px rgba(251, 191, 36, 0.2)"
+                  }
+                >
+                  <Box
+                    position="absolute"
+                    top="-50%"
+                    right="-20%"
+                    w="150px"
+                    h="150px"
+                    filter="blur(40px)"
+                    opacity={0.3}
+                  />
+                  <HStack justify="space-between" position="relative">
+                    <HStack spacing={3}>
+                      <Box
+                        p={2}
+                        borderRadius="lg"
+                        bgGradient={
+                          lesson.isTutorial
+                            ? "linear(135deg, blue.400, indigo.600)"
+                            : lesson.isGame
+                              ? "linear(135deg, teal.400, teal.600)"
+                              : lesson.isFinalQuiz
+                                ? "linear(135deg, purple.400, purple.600)"
+                                : "linear(135deg, yellow.400, orange.400)"
+                        }
+                        boxShadow={
+                          lesson.isTutorial
+                            ? "0 2px 10px rgba(99, 102, 241, 0.4)"
+                            : lesson.isGame
+                              ? "0 2px 10px rgba(45, 212, 191, 0.4)"
+                              : lesson.isFinalQuiz
+                                ? "0 2px 10px rgba(159, 122, 234, 0.4)"
+                                : "0 2px 10px rgba(251, 191, 36, 0.4)"
+                        }
+                      >
+                        {lesson.isTutorial ? (
+                          <RiTrophyLine color="white" size={24} />
+                        ) : lesson.isGame ? (
+                          <RiGamepadLine color="white" size={24} />
+                        ) : lesson.isFinalQuiz ? (
+                          <RiTrophyLine color="white" size={24} />
+                        ) : (
+                          <RiStarFill color="white" size={24} />
+                        )}
+                      </Box>
+                      <Text fontWeight="bold" color="white" fontSize="md">
+                        {lesson.isTutorial
+                          ? getTranslation("skill_tree_tutorial_goal")
+                          : lesson.isGame
+                            ? getTranslation("skill_tree_game_reward") ||
+                              "Game Reward"
+                            : lesson.isFinalQuiz
+                              ? getTranslation("skill_tree_passing_score")
+                              : getTranslation("skill_tree_xp_reward")}
+                      </Text>
+                    </HStack>
+                    <Text
+                      color="white"
+                      fontSize={{
+                        base: "xs",
+                        sm: "sm",
+                        md: lesson.isTutorial ? "md" : "xl",
+                      }}
+                      px={{ base: 2, md: 5 }}
+                      py={2}
+                      fontWeight="bold"
+                      whiteSpace={{ base: "normal", md: "nowrap" }}
+                      textAlign="right"
+                      maxW={{ base: "140px", sm: "200px", md: "none" }}
+                    >
+                      {lesson.isTutorial
+                        ? getTranslation("skill_tree_tutorial_activities")
+                        : lesson.isGame
+                          ? `+${lesson.xpReward} XP`
+                          : lesson.isFinalQuiz
+                            ? `${Math.round(
+                                (lesson.quizConfig?.passingScore /
+                                  lesson.quizConfig?.questionsRequired) *
+                                  100,
+                              )}%`
+                            : `+${lesson.xpReward} XP`}
+                    </Text>
+                  </HStack>
+                </Box>
+
+                {/* Start button */}
+                <Button
+                  size="lg"
+                  h="60px"
+                  onClick={() => {
+                    if (lesson.isGame) {
+                      handleStartGame();
+                    } else {
+                      onStartLesson(lesson);
+                      onClose();
+                    }
+                  }}
+                  bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
+                  color="white"
+                  fontSize="lg"
+                  fontWeight="bold"
+                  borderRadius="xl"
+                  boxShadow={`0 8px 25px ${unit.color}40`}
+                  _hover={{
+                    bgGradient: `linear(135deg, ${unit.color}dd, ${unit.color})`,
+                    boxShadow: `0 12px 35px ${unit.color}60`,
+                    transform: "translateY(-2px)",
+                  }}
+                  _active={{
+                    transform: "translateY(0)",
+                  }}
+                  transition="all 0.2s"
+                >
+                  {getTranslation("skill_tree_start_lesson")}
+                </Button>
+              </VStack>
+            </ModalBody>
+          </>
+        )}
       </ModalContent>
     </Modal>
   );
@@ -1816,10 +2011,10 @@ export default function SkillTree({
     }
   };
 
-  const handleStartLesson = (lesson) => {
+  const handleStartLesson = (lesson, preGeneratedScenario) => {
     playSound(modeSwitcherSound);
     if (onStartLesson) {
-      onStartLesson(lesson);
+      onStartLesson(lesson, preGeneratedScenario);
     }
   };
 
@@ -2170,6 +2365,7 @@ export default function SkillTree({
             unit={selectedUnit}
             onStartLesson={handleStartLesson}
             supportLang={supportLang}
+            targetLang={targetLang}
           />
         )}
       </Container>

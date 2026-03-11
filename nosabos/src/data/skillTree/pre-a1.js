@@ -199,6 +199,28 @@ export const SKILL_TREE_PRE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-pre-a1-1-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review People & Family by playing an interactive game",
+          es: "Repasa Personas y Familia jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "People & Family game review",
+            unitTitle: "People & Family",
+            focusPoints: ["family members", "friends", "people", "gender", "articles", "possessives"],
+          },
+        },
+      },
     ],
   },
 
@@ -312,6 +334,28 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number usage",
             focusPoints: ["quantities", "counting objects"],
+          },
+        },
+      },
+      {
+        id: "lesson-pre-a1-2-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Numbers 0-10 by playing an interactive game",
+          es: "Repasa Números 0-10 jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Numbers 0-10 game review",
+            unitTitle: "Numbers 0-10",
+            focusPoints: ["0-10", "counting", "quantities", "counting objects"],
           },
         },
       },
@@ -436,6 +480,28 @@ export const SKILL_TREE_PRE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-pre-a1-3-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Hello & Goodbye by playing an interactive game",
+          es: "Repasa Hola y Adiós jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Hello & Goodbye game review",
+            unitTitle: "Hello & Goodbye",
+            focusPoints: ["all greetings", "all farewells", "appropriate usage", "context"],
+          },
+        },
+      },
     ],
   },
 
@@ -549,6 +615,28 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "response usage",
             focusPoints: ["appropriate responses"],
+          },
+        },
+      },
+      {
+        id: "lesson-pre-a1-4-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Yes, No & Basic Responses by playing an interactive game",
+          es: "Repasa Sí, No y Respuestas Básicas jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Yes, No & Basic Responses game review",
+            unitTitle: "Yes, No & Basic Responses",
+            focusPoints: ["yes/no", "uncertainty", "reactions", "appropriate responses"],
           },
         },
       },
@@ -667,6 +755,28 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "courtesy usage",
             focusPoints: ["appropriate situations"],
+          },
+        },
+      },
+      {
+        id: "lesson-pre-a1-5-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Please & Thank You by playing an interactive game",
+          es: "Repasa Por Favor y Gracias jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Please & Thank You game review",
+            unitTitle: "Please & Thank You",
+            focusPoints: ["please/thank you", "apologies", "polite phrases", "appropriate situations"],
           },
         },
       },
@@ -793,6 +903,28 @@ export const SKILL_TREE_PRE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-pre-a1-6-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Common Objects by playing an interactive game",
+          es: "Repasa Objetos Comunes jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Common Objects game review",
+            unitTitle: "Common Objects",
+            focusPoints: ["household", "personal", "food/drink", "articles", "gender"],
+          },
+        },
+      },
     ],
   },
 
@@ -911,6 +1043,28 @@ export const SKILL_TREE_PRE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-pre-a1-7-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Colors by playing an interactive game",
+          es: "Repasa Colores jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Colors game review",
+            unitTitle: "Colors",
+            focusPoints: ["all colors", "shades", "agreement", "placement"],
+          },
+        },
+      },
     ],
   },
 
@@ -1024,6 +1178,28 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "introduction patterns",
             focusPoints: ["formal/informal", "gender agreement"],
+          },
+        },
+      },
+      {
+        id: "lesson-pre-a1-8-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review What's Your Name? by playing an interactive game",
+          es: "Repasa ¿Cómo Te Llamas? jugando un juego interactivo",
+        },
+        xpRequired: 55,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "What's Your Name? game review",
+            unitTitle: "What's Your Name?",
+            focusPoints: ["giving name", "asking name", "polite responses", "formal/informal", "gender agreement"],
           },
         },
       },

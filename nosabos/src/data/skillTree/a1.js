@@ -343,6 +343,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-1-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review First Words by playing an interactive game",
+          es: "Repasa Primeras Palabras jugando un juego interactivo",
+        },
+        xpRequired: 195,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "First Words game review",
+            unitTitle: "First Words",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -453,6 +475,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["introductions structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-2-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Introducing Yourself by playing an interactive game",
+          es: "Repasa Presentándote jugando un juego interactivo",
+        },
+        xpRequired: 290,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Introducing Yourself game review",
+            unitTitle: "Introducing Yourself",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -571,6 +615,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-3-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Numbers 0-20 by playing an interactive game",
+          es: "Repasa Números 0-20 jugando un juego interactivo",
+        },
+        xpRequired: 355,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Numbers 0-20 game review",
+            unitTitle: "Numbers 0-20",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -681,6 +747,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["numbers structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-4-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Numbers 21-100 by playing an interactive game",
+          es: "Repasa Números 21-100 jugando un juego interactivo",
+        },
+        xpRequired: 430,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Numbers 21-100 game review",
+            unitTitle: "Numbers 21-100",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -799,6 +887,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-5-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Days of Week by playing an interactive game",
+          es: "Repasa Días de la Semana jugando un juego interactivo",
+        },
+        xpRequired: 495,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Days of Week game review",
+            unitTitle: "Days of Week",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -909,6 +1019,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["time expressions structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-6-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Months & Dates by playing an interactive game",
+          es: "Repasa Meses y Fechas jugando un juego interactivo",
+        },
+        xpRequired: 590,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Months & Dates game review",
+            unitTitle: "Months & Dates",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -1027,6 +1159,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-7-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Telling Time by playing an interactive game",
+          es: "Repasa Decir la Hora jugando un juego interactivo",
+        },
+        xpRequired: 665,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Telling Time game review",
+            unitTitle: "Telling Time",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -1137,6 +1291,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["family structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-8-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Family Members by playing an interactive game",
+          es: "Repasa Familia jugando un juego interactivo",
+        },
+        xpRequired: 730,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Family Members game review",
+            unitTitle: "Family Members",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -1255,6 +1431,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-9-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Colors & Shapes by playing an interactive game",
+          es: "Repasa Colores y Formas jugando un juego interactivo",
+        },
+        xpRequired: 795,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Colors & Shapes game review",
+            unitTitle: "Colors & Shapes",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -1365,6 +1563,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["food and drinks structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-10-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Food & Drinks by playing an interactive game",
+          es: "Repasa Comida y Bebidas jugando un juego interactivo",
+        },
+        xpRequired: 870,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Food & Drinks game review",
+            unitTitle: "Food & Drinks",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -1483,6 +1703,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-11-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review At the Restaurant by playing an interactive game",
+          es: "Repasa En el Restaurante jugando un juego interactivo",
+        },
+        xpRequired: 955,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "At the Restaurant game review",
+            unitTitle: "At the Restaurant",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -1593,6 +1835,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["common objects structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-12-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Common Objects by playing an interactive game",
+          es: "Repasa Objetos Comunes jugando un juego interactivo",
+        },
+        xpRequired: 1040,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Common Objects game review",
+            unitTitle: "Common Objects",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -1711,6 +1975,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-13-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review In the House by playing an interactive game",
+          es: "Repasa En la Casa jugando un juego interactivo",
+        },
+        xpRequired: 1095,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "In the House game review",
+            unitTitle: "In the House",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -1821,6 +2107,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["clothing structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-14-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Clothing by playing an interactive game",
+          es: "Repasa Ropa jugando un juego interactivo",
+        },
+        xpRequired: 1170,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Clothing game review",
+            unitTitle: "Clothing",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -1939,6 +2247,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-15-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Daily Routine by playing an interactive game",
+          es: "Repasa Rutina Diaria jugando un juego interactivo",
+        },
+        xpRequired: 1245,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Daily Routine game review",
+            unitTitle: "Daily Routine",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -2049,6 +2379,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["weather structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-16-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Weather by playing an interactive game",
+          es: "Repasa Clima jugando un juego interactivo",
+        },
+        xpRequired: 1320,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Weather game review",
+            unitTitle: "Weather",
             focusPoints: ["comprehensive review"],
           },
         },
@@ -2167,6 +2519,28 @@ export const SKILL_TREE_A1 = [
           },
         },
       },
+      {
+        id: "lesson-a1-17-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Likes & Dislikes by playing an interactive game",
+          es: "Repasa Gustos jugando un juego interactivo",
+        },
+        xpRequired: 1405,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Likes & Dislikes game review",
+            unitTitle: "Likes & Dislikes",
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
     ],
   },
   {
@@ -2277,6 +2651,28 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topics: ["question words structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+      {
+        id: "lesson-a1-18-game",
+        title: {
+          en: "Game Review",
+          es: "Repaso de Juego",
+        },
+        description: {
+          en: "Review Basic Questions by playing an interactive game",
+          es: "Repasa Preguntas jugando un juego interactivo",
+        },
+        xpRequired: 1480,
+        xpReward: 30,
+        isGame: true,
+        modes: ["game"],
+        content: {
+          game: {
+            topic: "Basic Questions game review",
+            unitTitle: "Basic Questions",
             focusPoints: ["comprehensive review"],
           },
         },

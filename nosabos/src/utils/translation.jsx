@@ -526,6 +526,7 @@ export const translations = {
       "Mastery level demonstrating near-native control, nuance, and stylistic range.",
     skill_tree_cefr_default_desc: "CEFR proficiency level",
     skill_tree_passing_score: "Passing Score",
+    skill_tree_game_reward: "Game Reward",
     skill_tree_tutorial_goal: "Goal",
     skill_tree_tutorial_activities: "Complete the 5 learning activities",
     // Flashcard Practice translations
@@ -1181,6 +1182,7 @@ export const translations = {
       "Nivel de dominio con control casi nativo, matiz y amplitud estilística.",
     skill_tree_cefr_default_desc: "Nivel de competencia CEFR",
     skill_tree_passing_score: "Puntuación Requerida",
+    skill_tree_game_reward: "Recompensa del Juego",
     skill_tree_tutorial_goal: "Meta",
     skill_tree_tutorial_activities: "Completa las 5 actividades de aprendizaje",
     // Flashcard Practice translations

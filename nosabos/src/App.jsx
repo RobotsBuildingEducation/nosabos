@@ -77,6 +77,7 @@ import {
   RiRoadMapLine,
   RiFileList3Line,
   RiChat3Line,
+  RiGamepadLine,
 } from "react-icons/ri";
 import {
   LuBadgeCheck,
@@ -124,6 +125,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
+import RPGGame from "./components/RPGGame/index.jsx";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
@@ -1747,6 +1749,8 @@ export default function App() {
     return "skillTree";
   });
   const [activeLesson, setActiveLesson] = useState(null);
+  const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
+    useState(null);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -1913,6 +1917,7 @@ export default function App() {
     "reading",
     "grammar",
     "vocabulary",
+    "game",
     "random",
   ];
 
@@ -1991,6 +1996,7 @@ export default function App() {
     reading: t?.tabs_reading ?? "Reading",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    game: t?.tabs_game ?? "Game",
     random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
@@ -1999,6 +2005,7 @@ export default function App() {
     reading: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <RiBook2Line />,
+    game: <RiGamepadLine />,
     random: <LuShuffle />,
   };
 
@@ -2876,8 +2883,11 @@ export default function App() {
   };
 
   // Handle starting a lesson from the skill tree
-  const handleStartLesson = async (lesson) => {
+  const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return;
+
+    // Store pre-generated scenario for game lessons
+    setPreGeneratedGameScenario(preGeneratedScenario || null);
 
     try {
       // Mark lesson as in progress in Firestore
@@ -3129,6 +3139,7 @@ export default function App() {
   const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
     setActiveLesson(null);
+    setPreGeneratedGameScenario(null);
     setLessonStartXp(null);
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
@@ -4739,56 +4750,60 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
+  const isGameFullScreen = viewMode === "lesson" && activeLesson?.isGame;
+
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
-      <TopBar
-        appLanguage={appLanguage}
-        user={user}
-        activeNpub={activeNpub}
-        activeNsec={activeNsec}
-        auth={auth}
-        cefrResult={cefrResult}
-        cefrLoading={cefrLoading}
-        cefrError={cefrError}
-        onSwitchedAccount={async (id, sec) => {
-          /* ... */
-        }}
-        onPatchSettings={saveGlobalSettings}
-        settingsOpen={settingsOpen}
-        openSettings={() => setSettingsOpen(true)}
-        closeSettings={() => setSettingsOpen(false)}
-        accountOpen={accountOpen}
-        closeAccount={() => setAccountOpen(false)}
-        onRunCefrAnalysis={runCefrAnalysis}
-        onSelectIdentity={handleIdentitySelection}
-        isIdentitySaving={isIdentitySaving}
-        tabOrder={activeTabs}
-        tabLabels={TAB_LABELS}
-        tabIcons={TAB_ICONS}
-        currentTab={currentTab}
-        onSelectTab={handleSelectTab}
-        viewMode={viewMode}
-        // 🆕 timer props
-        timerRemainingSeconds={timerRemainingSeconds}
-        isTimerRunning={isTimerRunning}
-        timerPaused={timerPaused}
-        formatTimer={formatTimer}
-        onOpenTimerModal={() => setTimerModalOpen(true)}
-        onTogglePauseTimer={handleTogglePauseTimer}
-        onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
-        allowPosts={allowPosts}
-        onAllowPostsChange={handleAllowPostsChange}
-        soundEnabled={soundEnabled}
-        onSoundEnabledChange={handleSoundEnabledChange}
-        soundVolume={soundVolume}
-        onVolumeChange={handleVolumeChange}
-        onVolumeSave={handleVolumeSave}
-        playSound={playSound}
-        testSound={submitActionSound}
-        isMobile={isMobile}
-        postNostrContent={postNostrContent}
-      />
+      {!isGameFullScreen && (
+        <TopBar
+          appLanguage={appLanguage}
+          user={user}
+          activeNpub={activeNpub}
+          activeNsec={activeNsec}
+          auth={auth}
+          cefrResult={cefrResult}
+          cefrLoading={cefrLoading}
+          cefrError={cefrError}
+          onSwitchedAccount={async (id, sec) => {
+            /* ... */
+          }}
+          onPatchSettings={saveGlobalSettings}
+          settingsOpen={settingsOpen}
+          openSettings={() => setSettingsOpen(true)}
+          closeSettings={() => setSettingsOpen(false)}
+          accountOpen={accountOpen}
+          closeAccount={() => setAccountOpen(false)}
+          onRunCefrAnalysis={runCefrAnalysis}
+          onSelectIdentity={handleIdentitySelection}
+          isIdentitySaving={isIdentitySaving}
+          tabOrder={activeTabs}
+          tabLabels={TAB_LABELS}
+          tabIcons={TAB_ICONS}
+          currentTab={currentTab}
+          onSelectTab={handleSelectTab}
+          viewMode={viewMode}
+          // 🆕 timer props
+          timerRemainingSeconds={timerRemainingSeconds}
+          isTimerRunning={isTimerRunning}
+          timerPaused={timerPaused}
+          formatTimer={formatTimer}
+          onOpenTimerModal={() => setTimerModalOpen(true)}
+          onTogglePauseTimer={handleTogglePauseTimer}
+          onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
+          allowPosts={allowPosts}
+          onAllowPostsChange={handleAllowPostsChange}
+          soundEnabled={soundEnabled}
+          onSoundEnabledChange={handleSoundEnabledChange}
+          soundVolume={soundVolume}
+          onVolumeChange={handleVolumeChange}
+          onVolumeSave={handleVolumeSave}
+          playSound={playSound}
+          testSound={submitActionSound}
+          isMobile={isMobile}
+          postNostrContent={postNostrContent}
+        />
+      )}
 
       <TeamsDrawer
         isOpen={teamsOpen}
@@ -4807,42 +4822,44 @@ export default function App() {
         targetLang={resolvedTargetLang}
       />
 
-      <BottomActionBar
-        t={t}
-        onOpenIdentity={() => setAccountOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenTeams={() => setTeamsOpen(true)}
-        onOpenNotes={() => setNotesOpen(true)}
-        isIdentitySaving={isIdentitySaving}
-        showTranslations={showTranslationsEnabled}
-        onToggleTranslations={handleToggleTranslations}
-        translationLabel={translationToggleLabel}
-        appLanguage={appLanguage}
-        targetLang={resolvedTargetLang}
-        viewMode={viewMode}
-        onNavigateToSkillTree={handleReturnToSkillTree}
-        onOpenHelpChat={helpChatDisclosure.onOpen}
-        playSound={playSound}
-        hasPendingTeamInvite={pendingTeamInviteCount > 0}
-        notesIsLoading={notesIsLoading}
-        notesIsDone={notesIsDone}
-        pathMode={pathMode}
-        onPathModeChange={(newMode) => {
-          // If in a lesson or other view, return to skill tree first
-          if (viewMode !== "skillTree") {
-            handleReturnToSkillTree();
-          }
-          setPathMode(newMode);
-          // Always scroll to top when switching modes
-          window.scrollTo({ top: 0, behavior: "instant" });
-        }}
-        onScrollToLatest={() => {
-          // Trigger scroll when already in path mode
-          if (viewMode === "skillTree") {
-            setScrollToLatestTrigger((prev) => prev + 1);
-          }
-        }}
-      />
+      {!isGameFullScreen && (
+        <BottomActionBar
+          t={t}
+          onOpenIdentity={() => setAccountOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenTeams={() => setTeamsOpen(true)}
+          onOpenNotes={() => setNotesOpen(true)}
+          isIdentitySaving={isIdentitySaving}
+          showTranslations={showTranslationsEnabled}
+          onToggleTranslations={handleToggleTranslations}
+          translationLabel={translationToggleLabel}
+          appLanguage={appLanguage}
+          targetLang={resolvedTargetLang}
+          viewMode={viewMode}
+          onNavigateToSkillTree={handleReturnToSkillTree}
+          onOpenHelpChat={helpChatDisclosure.onOpen}
+          playSound={playSound}
+          hasPendingTeamInvite={pendingTeamInviteCount > 0}
+          notesIsLoading={notesIsLoading}
+          notesIsDone={notesIsDone}
+          pathMode={pathMode}
+          onPathModeChange={(newMode) => {
+            // If in a lesson or other view, return to skill tree first
+            if (viewMode !== "skillTree") {
+              handleReturnToSkillTree();
+            }
+            setPathMode(newMode);
+            // Always scroll to top when switching modes
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }}
+          onScrollToLatest={() => {
+            // Trigger scroll when already in path mode
+            if (viewMode === "skillTree") {
+              setScrollToLatestTrigger((prev) => prev + 1);
+            }
+          }}
+        />
+      )}
 
       {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
       <TutorialActionBarPopovers
@@ -4914,7 +4931,25 @@ export default function App() {
       )}
 
       {/* Learning Modules Scene */}
-      {viewMode === "lesson" && (
+      {viewMode === "lesson" && isGameFullScreen && (
+        <Box
+          w="100%"
+          h="100dvh"
+          position="fixed"
+          top={0}
+          left={0}
+          zIndex={1000}
+          bg="gray.900"
+        >
+          <RPGGame
+            lessonContext={activeLesson}
+            initialScenario={preGeneratedGameScenario}
+            onComplete={() => handleReturnToSkillTree()}
+          />
+        </Box>
+      )}
+
+      {viewMode === "lesson" && !isGameFullScreen && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
           {/* Tutorial Stepper - shows progress through tutorial modules */}
           {isTutorialMode && activeLesson?.isTutorial && (
@@ -5048,6 +5083,15 @@ export default function App() {
                           onExitQuiz={handleReturnToSkillTree}
                           onSendHelpRequest={handleSendToHelpChat}
                           lessonStartXp={lessonStartXp}
+                        />
+                      </TabPanel>
+                    );
+                  case "game":
+                    return (
+                      <TabPanel key="game" px={0}>
+                        <RPGGame
+                          lessonContext={activeLesson}
+                          initialScenario={preGeneratedGameScenario}
                         />
                       </TabPanel>
                     );

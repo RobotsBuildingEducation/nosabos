@@ -750,9 +750,34 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function RPGGame() {
+export default function RPGGame({ lessonContext = null, onComplete = null, initialScenario = null }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
+
+  // CEFR proficiency level from lesson context - controls dialogue complexity
+  const cefrLevel = lessonContext?.content?.game?.cefrLevel || null;
+  const cefrDialogueRule = useMemo(() => {
+    const rules = {
+      "Pre-A1": {
+        es: "IMPORTANTE: Nivel Pre-A1. Usa SOLO palabras sueltas o frases de 1-3 palabras. Sin conjugaciones complejas. Vocabulario muy básico (hola, sí, no, gracias, por favor, números 1-10, colores básicos). NO uses subjuntivo, condicional ni frases largas.",
+        en: "IMPORTANT: Pre-A1 level. Use ONLY single words or 1-3 word phrases. No complex conjugations. Very basic vocabulary (hello, yes, no, thank you, please, numbers 1-10, basic colors). Do NOT use complex sentences.",
+      },
+      A1: {
+        es: "IMPORTANTE: Nivel A1. Usa oraciones muy cortas y simples (máximo 5-8 palabras). Solo presente de indicativo. Vocabulario cotidiano básico. Frases como 'Me llamo...', '¿Dónde está...?', 'Quiero...'. NO uses subjuntivo, condicional, pasado complejo ni vocabulario avanzado.",
+        en: "IMPORTANT: A1 level. Use very short, simple sentences (max 5-8 words). Present tense only. Basic everyday vocabulary. Phrases like 'My name is...', 'Where is...?', 'I want...'. Do NOT use subjunctive, conditional, complex past, or advanced vocabulary.",
+      },
+      A2: {
+        es: "IMPORTANTE: Nivel A2. Oraciones simples y claras. Presente y pasado simple. Vocabulario cotidiano. Máximo 10-12 palabras por oración. Sin vocabulario rebuscado.",
+        en: "IMPORTANT: A2 level. Simple, clear sentences. Present and simple past tense. Everyday vocabulary. Max 10-12 words per sentence. No fancy vocabulary.",
+      },
+      B1: {
+        es: "Nivel B1. Puedes usar oraciones de complejidad moderada. Mezcla de tiempos permitida. Temas cotidianos y familiares.",
+        en: "B1 level. You can use moderately complex sentences. Mix of tenses allowed. Everyday and familiar topics.",
+      },
+    };
+    if (!cefrLevel) return { es: "", en: "" };
+    return rules[cefrLevel] || { es: "", en: "" };
+  }, [cefrLevel]);
 
   // Read user settings
   const getUserSettings = () => {
@@ -774,9 +799,9 @@ export default function RPGGame() {
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 
-  // Scenario selection
-  const [scenarioId, setScenarioId] = useState(null);
-  const [scenario, setScenario] = useState(null);
+  // Scenario selection - initialize from pre-generated scenario if provided
+  const [scenarioId, setScenarioId] = useState(initialScenario ? initialScenario.id || "generated" : null);
+  const [scenario, setScenario] = useState(initialScenario || null);
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
   const [npcNameMap, setNpcNameMap] = useState(null);
 
@@ -1443,17 +1468,25 @@ export default function RPGGame() {
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
 
+      // When lessonContext is provided, pass focused terms and CEFR level
+      const gameContent = lessonContext?.content?.game;
+      const overrideTerms = gameContent
+        ? [...(gameContent.focusPoints || []), ...(gameContent.unitTopics || []), gameContent.topic, gameContent.unitTitle].filter(Boolean)
+        : null;
+
       const generated = await generateScenarioWithAI(
         mapId,
         targetLang,
         supportLang,
+        overrideTerms.length ? overrideTerms : null,
+        gameContent?.cefrLevel || null,
       );
       setScenario(generated);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
-    [targetLang, supportLang],
+    [targetLang, supportLang, lessonContext],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
@@ -2488,10 +2521,10 @@ export default function RPGGame() {
         const nextNpcName = npcCharacterNamesRef.current[nextStep.npcIdx]
           || scenario?.npcs?.[nextStep.npcIdx]?.name || "NPC";
         const bridgePrompt = targetLang === "es"
-          ? `Eres el jugador en una aventura. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar, resumiendo lo que aprendiste o lo que necesitas. No repitas frases genéricas como "me enviaron" o "sabes algo importante". Sé específico basándote en la conversación. Solo la oración, sin comillas.`
-          : `You are the player in an adventure. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence in English that the player would say upon arriving, summarizing what you learned or what you need. Don't use generic phrases like "sent me" or "you know something important". Be specific based on the conversation. Just the sentence, no quotes.`;
+          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres el jugador en una aventura. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar. Solo la oración, sin comillas.`
+          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are the player in an adventure. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence that the player would say upon arriving. Just the sentence, no quotes.`;
         callResponses({ input: bridgePrompt }).then((playerBridge) => {
           const text = (playerBridge || "").trim();
           if (text.length > 0 && text.length < 200) {
@@ -2500,10 +2533,10 @@ ${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to 
           // Now generate a contextual NPC greeting that responds to the player's bridge
           const npcPersonality = scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
           const npcGreetPrompt = targetLang === "es"
-            ? `Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones en español como ${nextNpcName}. Reacciona específicamente a lo que el jugador dijo y avanza la narrativa. No digas simplemente "te enviaron" o "qué bueno que llegaste". Sé específico y lleva la conversación hacia adelante. Solo las oraciones, sin comillas.`
-            : `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 sentences in English as ${nextNpcName}. React specifically to what the player said and advance the narrative. Don't just say "so they sent you" or "glad you're here". Be specific and drive the conversation forward. Just the sentences, no quotes.`;
+            ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones cortas en español como ${nextNpcName}. Solo las oraciones, sin comillas.`
+            : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 short sentences in English as ${nextNpcName}. Just the sentences, no quotes.`;
           return callResponses({ input: npcGreetPrompt });
         }).then((result) => {
           const text = (result || "").trim();
@@ -2519,7 +2552,7 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
         if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang, stopNPCSpeech],
+    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang, stopNPCSpeech, cefrDialogueRule],
   );
 
   // ─── Generate dynamic choices for choice nodes via LLM ────────────────
@@ -2541,16 +2574,14 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       const npcLine = node.npcLine || "";
 
       const prompt = targetLang === "es"
-        ? `Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
+        ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El NPC "${npcName}" acaba de decir: "${npcLine}"
-Genera exactamente 3 opciones de respuesta que el jugador podría decir, y para cada una la reacción del NPC (1-2 oraciones).
-Las opciones deben ser variadas en tono (curiosa, directa, graciosa) y relevantes a lo que el NPC dijo y a la historia.
+Genera exactamente 3 opciones de respuesta cortas que el jugador podría decir, y para cada una la reacción del NPC (1 oración corta).
 Responde SOLO en este formato JSON exacto, sin texto adicional:
 [{"text":"opción del jugador","reply":"respuesta del NPC"},{"text":"opción 2","reply":"respuesta 2"},{"text":"opción 3","reply":"respuesta 3"}]`
-        : `You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
+        : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The NPC "${npcName}" just said: "${npcLine}"
-Generate exactly 3 response options the player could say, and for each one the NPC's reaction (1-2 sentences).
-The options should vary in tone (curious, direct, humorous) and be relevant to what the NPC said and the story.
+Generate exactly 3 short response options the player could say, and for each one the NPC's short reaction (1 sentence).
 Respond ONLY in this exact JSON format, no additional text:
 [{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]`;
 
@@ -2583,7 +2614,7 @@ Respond ONLY in this exact JSON format, no additional text:
         setGeneratingChoices(false);
       }
     },
-    [quest, scenario, targetLang],
+    [quest, scenario, targetLang, cefrDialogueRule],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -2816,12 +2847,12 @@ Respond ONLY in this exact JSON format, no additional text:
         : "";
 
       const llmPrompt = targetLang === "es"
-        ? `Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
+        ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
-Responde en español, en 1-2 oraciones breves. Mantén el tono de la historia. Reacciona directamente a lo que dijo el jugador. No hagas preguntas de vocabulario. Solo responde como el personaje.`
-        : `You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
+Responde en español, en 1-2 oraciones breves. Solo responde como el personaje.`
+        : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
-Respond in English, in 1-2 brief sentences. Stay in character and react directly to what the player said. Do not ask vocabulary questions. Just respond as the character.`;
+Respond in 1-2 brief sentences. Just respond as the character.`;
 
       // Stop any currently playing TTS before the new speech reply
       stopNPCSpeech();
@@ -2906,6 +2937,12 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   const goToScenarioSelect = () => {
     playGameSound("submitAction");
     stopNPCSpeech();
+
+    // If launched with a pre-generated scenario, exit back to skill tree
+    if (initialScenario && onComplete) {
+      onComplete();
+      return;
+    }
     // Clean up Three.js
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (rendererRef.current) {
@@ -2928,16 +2965,21 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     setLastHeardSpeech("");
   };
 
+  const isEmbedded = !!lessonContext && !initialScenario;
+
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {
     return (
       <Box
-        w="100vw"
-        h="100vh"
+        w={isEmbedded ? "100%" : "100vw"}
+        h={isEmbedded ? "auto" : "100vh"}
+        minH={isEmbedded ? "400px" : undefined}
         bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
         display="flex"
         alignItems="center"
         justifyContent="center"
+        borderRadius={isEmbedded ? "xl" : undefined}
+        py={isEmbedded ? 8 : undefined}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -2948,6 +2990,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         }}
       >
         <VStack spacing={6} maxW="500px" mx={4}>
+          {!isEmbedded && (
           <IconButton
             icon={<ArrowBackIcon />}
             aria-label={ui.back}
@@ -2959,6 +3002,13 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
             left={4}
             onClick={() => navigate("/")}
           />
+          )}
+
+          {isEmbedded && lessonContext?.content?.game?.unitTitle && (
+            <Text color="gray.400" fontSize="sm" textAlign="center">
+              {lessonContext.content.game.unitTitle}
+            </Text>
+          )}
 
           <Text
             color="yellow.300"
@@ -3016,8 +3066,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   if (!scenario) {
     return (
       <Box
-        w="100vw"
-        h="100vh"
+        w={isEmbedded ? "100%" : "100vw"}
+        h={isEmbedded ? "auto" : "100vh"}
+        minH={isEmbedded ? "400px" : undefined}
+        borderRadius={isEmbedded ? "xl" : undefined}
         bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
         display="flex"
         alignItems="center"
@@ -3045,8 +3097,8 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   return (
     <Box
       position="relative"
-      w="100vw"
-      h="100vh"
+      w={isEmbedded ? "100%" : "100vw"}
+      h={isEmbedded ? "80vh" : "100vh"}
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
