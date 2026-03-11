@@ -13,31 +13,91 @@ export const MAP_CHOICES = [
 
 const TILE_LIBRARY_BY_MAP = {
   livingRoom: {
-    0: { name: "ground", solid: false, colors: [[0xc89b6d, 0xb78456, 0xd4aa7b]], detail: "wood_floor" },
-    1: { name: "path", solid: false, colors: [[0xa86f43, 0x9b643b]], detail: "rug" },
-    2: { name: "wall", solid: true, colors: [[0xcab9a5, 0xb7a38d]], detail: "wall" },
+    0: {
+      name: "ground",
+      solid: false,
+      colors: [[0xc89b6d, 0xb78456, 0xd4aa7b]],
+      detail: "wood_floor",
+    },
+    1: {
+      name: "path",
+      solid: false,
+      colors: [[0xa86f43, 0x9b643b]],
+      detail: "rug",
+    },
+    2: {
+      name: "wall",
+      solid: true,
+      colors: [[0xcab9a5, 0xb7a38d]],
+      detail: "wall",
+    },
     3: { name: "tree", solid: true, colors: [[0x5a9e3e]], sprite: "shelf" },
     4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
     5: { name: "flower", solid: false, colors: [[0xb66aa1]], detail: "rug" },
-    6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "counter" },
+    6: {
+      name: "counter",
+      solid: true,
+      colors: [[0x8b7355]],
+      sprite: "counter",
+    },
   },
   park: {
-    0: { name: "ground", solid: false, colors: [[0x6da84d, 0x5e9a42, 0x7bb55a]], detail: "grass" },
-    1: { name: "path", solid: false, colors: [[0xc8a96e, 0xbf9d63]], detail: "dirt" },
-    2: { name: "wall", solid: true, colors: [[0x7e6a53, 0x6b5946]], detail: "wall" },
+    0: {
+      name: "ground",
+      solid: false,
+      colors: [[0x6da84d, 0x5e9a42, 0x7bb55a]],
+      detail: "grass",
+    },
+    1: {
+      name: "path",
+      solid: false,
+      colors: [[0xc8a96e, 0xbf9d63]],
+      detail: "dirt",
+    },
+    2: {
+      name: "wall",
+      solid: true,
+      colors: [[0x7e6a53, 0x6b5946]],
+      detail: "wall",
+    },
     3: { name: "tree", solid: true, colors: [[0x4b8f38]], sprite: "tree" },
     4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
     5: { name: "flower", solid: false, colors: [[0x6da84d]], detail: "flower" },
     6: { name: "counter", solid: true, colors: [[0x8b7355]], sprite: "fence" },
   },
   airport: {
-    0: { name: "ground", solid: false, colors: [[0xd5dde5, 0xc9d3dd]], detail: "tile_floor" },
-    1: { name: "path", solid: false, colors: [[0x7c8b99, 0x6f7d8a]], detail: "runway" },
-    2: { name: "wall", solid: true, colors: [[0xaeb9c4, 0x9caab7]], detail: "wall" },
+    0: {
+      name: "ground",
+      solid: false,
+      colors: [[0xd5dde5, 0xc9d3dd]],
+      detail: "tile_floor",
+    },
+    1: {
+      name: "path",
+      solid: false,
+      colors: [[0x7c8b99, 0x6f7d8a]],
+      detail: "runway",
+    },
+    2: {
+      name: "wall",
+      solid: true,
+      colors: [[0xaeb9c4, 0x9caab7]],
+      detail: "wall",
+    },
     3: { name: "tree", solid: true, colors: [[0x9fb3c7]], sprite: "freezer" },
     4: { name: "bench", solid: true, colors: [[0x5e6e7c]], sprite: "bench" },
-    5: { name: "flower", solid: false, colors: [[0xd5dde5]], detail: "linoleum" },
-    6: { name: "counter", solid: true, colors: [[0x8da0b1]], sprite: "register" },
+    5: {
+      name: "flower",
+      solid: false,
+      colors: [[0xd5dde5]],
+      detail: "linoleum",
+    },
+    6: {
+      name: "counter",
+      solid: true,
+      colors: [[0x8da0b1]],
+      sprite: "register",
+    },
   },
 };
 
@@ -61,7 +121,9 @@ function safeHex(value, fallback = 0x1a1a2e) {
 }
 
 function uniqueWords(items = []) {
-  return Array.from(new Set(items.filter(Boolean).map((item) => String(item).trim())));
+  return Array.from(
+    new Set(items.filter(Boolean).map((item) => String(item).trim())),
+  );
 }
 
 function getLessonTerms(targetLang) {
@@ -73,7 +135,8 @@ function getLessonTerms(targetLang) {
         return Object.values(content).flatMap((modeData) => {
           if (!modeData || typeof modeData !== "object") return [];
           const terms = [];
-          if (Array.isArray(modeData.focusPoints)) terms.push(...modeData.focusPoints);
+          if (Array.isArray(modeData.focusPoints))
+            terms.push(...modeData.focusPoints);
           if (modeData.topic) terms.push(modeData.topic);
           if (modeData.scenario) terms.push(modeData.scenario);
           return terms;
@@ -85,32 +148,41 @@ function getLessonTerms(targetLang) {
 
 function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
   const raw = Array.isArray(npcs) ? npcs : [];
-  const count = targetCount || (2 + Math.floor(Math.random() * 3)); // 2-4
-  const normalized = raw
-    .slice(0, count)
-    .map((npc, idx) => ({
-      tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
-      ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
-      name: String(npc?.name || `Guide ${idx + 1}`),
-      presetIdx: clampInt(npc?.presetIdx, 0, 3, idx % 4),
-    }));
+  const count = targetCount || 2 + Math.floor(Math.random() * 3); // 2-4
+  const normalized = raw.slice(0, count).map((npc, idx) => ({
+    tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
+    ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
+    name: String(npc?.name || `Guide ${idx + 1}`),
+    presetIdx: clampInt(npc?.presetIdx, 0, 3, idx % 4),
+  }));
 
   while (normalized.length < count) {
     const idx = normalized.length;
-    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx % 4 });
+    normalized.push({
+      tx: 2 + idx * 3,
+      ty: 2 + idx * 2,
+      name: `Guide ${idx + 1}`,
+      presetIdx: idx % 4,
+    });
   }
 
   return normalized;
 }
 
 function normalizeQuestions(questions, supportLang) {
-  const basePrompt = supportLang === "es" ? "Elige la opción correcta." : "Choose the correct option.";
+  const basePrompt =
+    supportLang === "es"
+      ? "Elige la opción correcta."
+      : "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
     .slice(0, 20)
     .map((q) => {
       const options = Array.isArray(q?.options)
-        ? q.options.map((opt) => String(opt)).filter(Boolean).slice(0, 4)
+        ? q.options
+            .map((opt) => String(opt))
+            .filter(Boolean)
+            .slice(0, 4)
         : [];
       if (options.length < 2) return null;
       const correct = clampInt(q?.correct, 0, options.length - 1, 0);
@@ -153,9 +225,21 @@ const GATHER_ITEMS_BY_MAP = {
   livingRoom: {
     es: {
       correct: [
-        { name: "la llave dorada", hint: "Busca cerca de los estantes.", sprite: "key" },
-        { name: "el libro antiguo", hint: "Mira debajo de los muebles.", sprite: "book" },
-        { name: "la carta sellada", hint: "Revisa junto a la puerta.", sprite: "letter" },
+        {
+          name: "la llave dorada",
+          hint: "Busca cerca de los estantes.",
+          sprite: "key",
+        },
+        {
+          name: "el libro antiguo",
+          hint: "Mira debajo de los muebles.",
+          sprite: "book",
+        },
+        {
+          name: "la carta sellada",
+          hint: "Revisa junto a la puerta.",
+          sprite: "letter",
+        },
       ],
       decoys: [
         { name: "el jarrón roto", sprite: "vase" },
@@ -172,9 +256,21 @@ const GATHER_ITEMS_BY_MAP = {
     },
     en: {
       correct: [
-        { name: "the golden key", hint: "Look near the shelves.", sprite: "key" },
-        { name: "the old book", hint: "Check under the furniture.", sprite: "book" },
-        { name: "the sealed letter", hint: "Search by the door.", sprite: "letter" },
+        {
+          name: "the golden key",
+          hint: "Look near the shelves.",
+          sprite: "key",
+        },
+        {
+          name: "the old book",
+          hint: "Check under the furniture.",
+          sprite: "book",
+        },
+        {
+          name: "the sealed letter",
+          hint: "Search by the door.",
+          sprite: "letter",
+        },
       ],
       decoys: [
         { name: "the broken vase", sprite: "vase" },
@@ -193,9 +289,21 @@ const GATHER_ITEMS_BY_MAP = {
   park: {
     es: {
       correct: [
-        { name: "la flor rara", hint: "Crece entre los árboles.", sprite: "flower" },
-        { name: "la piedra brillante", hint: "Está escondida en el camino.", sprite: "stone" },
-        { name: "la pluma azul", hint: "Cerca de la fuente.", sprite: "feather" },
+        {
+          name: "la flor rara",
+          hint: "Crece entre los árboles.",
+          sprite: "flower",
+        },
+        {
+          name: "la piedra brillante",
+          hint: "Está escondida en el camino.",
+          sprite: "stone",
+        },
+        {
+          name: "la pluma azul",
+          hint: "Cerca de la fuente.",
+          sprite: "feather",
+        },
       ],
       decoys: [
         { name: "la hoja seca", sprite: "leaf" },
@@ -212,9 +320,21 @@ const GATHER_ITEMS_BY_MAP = {
     },
     en: {
       correct: [
-        { name: "the rare flower", hint: "It grows among the trees.", sprite: "flower" },
-        { name: "the shiny stone", hint: "Hidden on the path.", sprite: "stone" },
-        { name: "the blue feather", hint: "Near the fountain.", sprite: "feather" },
+        {
+          name: "the rare flower",
+          hint: "It grows among the trees.",
+          sprite: "flower",
+        },
+        {
+          name: "the shiny stone",
+          hint: "Hidden on the path.",
+          sprite: "stone",
+        },
+        {
+          name: "the blue feather",
+          hint: "Near the fountain.",
+          sprite: "feather",
+        },
       ],
       decoys: [
         { name: "the dry leaf", sprite: "leaf" },
@@ -233,9 +353,21 @@ const GATHER_ITEMS_BY_MAP = {
   airport: {
     es: {
       correct: [
-        { name: "el pasaporte perdido", hint: "Alguien lo dejó en una banca.", sprite: "passport" },
-        { name: "la etiqueta de equipaje", hint: "Revisa los mostradores.", sprite: "tag" },
-        { name: "el boleto dorado", hint: "Mira cerca de la entrada.", sprite: "ticket" },
+        {
+          name: "el pasaporte perdido",
+          hint: "Alguien lo dejó en una banca.",
+          sprite: "passport",
+        },
+        {
+          name: "la etiqueta de equipaje",
+          hint: "Revisa los mostradores.",
+          sprite: "tag",
+        },
+        {
+          name: "el boleto dorado",
+          hint: "Mira cerca de la entrada.",
+          sprite: "ticket",
+        },
       ],
       decoys: [
         { name: "el recibo arrugado", sprite: "receipt" },
@@ -252,9 +384,17 @@ const GATHER_ITEMS_BY_MAP = {
     },
     en: {
       correct: [
-        { name: "the lost passport", hint: "Someone left it on a bench.", sprite: "passport" },
+        {
+          name: "the lost passport",
+          hint: "Someone left it on a bench.",
+          sprite: "passport",
+        },
         { name: "the luggage tag", hint: "Check the counters.", sprite: "tag" },
-        { name: "the golden ticket", hint: "Look near the entrance.", sprite: "ticket" },
+        {
+          name: "the golden ticket",
+          hint: "Look near the entrance.",
+          sprite: "ticket",
+        },
       ],
       decoys: [
         { name: "the crumpled receipt", sprite: "receipt" },
@@ -273,15 +413,24 @@ const GATHER_ITEMS_BY_MAP = {
 };
 
 function pickGatherItems(mapId, targetLang) {
-  const data = GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
+  const data =
+    GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
     GATHER_ITEMS_BY_MAP[mapId]?.es ||
     GATHER_ITEMS_BY_MAP.park.es;
   const correctPool = [...data.correct].sort(() => Math.random() - 0.5);
   const decoyPool = [...data.decoys].sort(() => Math.random() - 0.5);
   // 2 correct + 8 decoys = 10 items
-  const correct = correctPool.slice(0, 2).map((item) => ({ ...item, isCorrect: true }));
-  const decoys = decoyPool.slice(0, 8).map((item) => ({ ...item, isCorrect: false }));
-  return { correct, decoys, all: [...correct, ...decoys].sort(() => Math.random() - 0.5) };
+  const correct = correctPool
+    .slice(0, 2)
+    .map((item) => ({ ...item, isCorrect: true }));
+  const decoys = decoyPool
+    .slice(0, 8)
+    .map((item) => ({ ...item, isCorrect: false }));
+  return {
+    correct,
+    decoys,
+    all: [...correct, ...decoys].sort(() => Math.random() - 0.5),
+  };
 }
 
 function pickRandom(arr) {
@@ -341,41 +490,57 @@ function generateQuestPlan(npcCount) {
 
   // Pick which step gets the gather quest (60% chance, never the last step)
   const hasGather = Math.random() < 0.6;
-  const gatherStepIdx = hasGather && visitOrder.length > 1
-    ? Math.floor(Math.random() * (visitOrder.length - 1))
-    : -1;
+  const gatherStepIdx =
+    hasGather && visitOrder.length > 1
+      ? Math.floor(Math.random() * (visitOrder.length - 1))
+      : -1;
 
   return { visitOrder, stepsInteractions, gatherStepIdx };
 }
 
-function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
+function normalizeQuest(
+  rawQuest,
+  npcs,
+  questionsByLang,
+  supportLang,
+  targetLang,
+  mapId = "park",
+) {
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
   const tl = targetLang;
 
   const L = {
     es: {
-      defaultSeed: "La campana del pueblo desapareció y nadie sabe quién la tomó.",
-      defaultIntro: (name) => `Comienza con ${name} y sigue las pistas para resolver el misterio.`,
+      defaultSeed:
+        "La campana del pueblo desapareció y nadie sabe quién la tomó.",
+      defaultIntro: (name) =>
+        `Comienza con ${name} y sigue las pistas para resolver el misterio.`,
       actLabel: (name, n) => `${name} · acto ${n}`,
-      connectClue: (name, next) => `${name} conecta la pista anterior con ${next}.`,
+      connectClue: (name, next) =>
+        `${name} conecta la pista anterior con ${next}.`,
       defaultTopic: "las pistas del caso",
       fallbackSpeech: "No alcancé a oírte bien. Inténtalo otra vez.",
       heardPrefix: "Perfecto, escuché",
       // Greeting pools — picked randomly per game instance
       firstGreetings: [
         (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
-        (seed) => `¡Por fin alguien viene! Escucha, tenemos un problema serio. ${seed}`,
+        (seed) =>
+          `¡Por fin alguien viene! Escucha, tenemos un problema serio. ${seed}`,
         (seed) => `No vas a creer lo que pasó. ${seed}`,
         (seed) => `¡Ven, rápido! Algo terrible acaba de ocurrir. ${seed}`,
       ],
       midGreetings: [
         (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
-        (fromNpc) => `Ah, vienes de parte de ${fromNpc}. Ya me imaginaba que esto iba a pasar.`,
-        (fromNpc) => `${fromNpc} hizo bien en mandarte aquí. Tengo información importante.`,
-        (fromNpc) => `¡Menos mal que llegaste! ${fromNpc} me dijo que eres de confianza.`,
+        (fromNpc) =>
+          `Ah, vienes de parte de ${fromNpc}. Ya me imaginaba que esto iba a pasar.`,
+        (fromNpc) =>
+          `${fromNpc} hizo bien en mandarte aquí. Tengo información importante.`,
+        (fromNpc) =>
+          `¡Menos mal que llegaste! ${fromNpc} me dijo que eres de confianza.`,
       ],
       finalGreetings: [
-        (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
+        (fromNpc) =>
+          `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
         (fromNpc) => `Te estaba esperando. ${fromNpc} me contó todo.`,
         (fromNpc) => `¡Al fin! ${fromNpc} dijo que tú podrías resolver esto.`,
         (fromNpc) => `Sabía que vendrías. ${fromNpc} confía mucho en ti.`,
@@ -383,39 +548,119 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       // Choice pools — each is [text, replyFn] pairs
       choiceSets: [
         [
-          ["¿Qué pasó exactamente? Cuéntame todo.", () => "Todo empezó esta mañana. Necesitamos actuar rápido antes de que sea tarde."],
-          ["Estoy listo para ayudar. ¿Por dónde empiezo?", () => "Gracias por ofrecerte. No puedo hacer esto solo."],
-          ["Mmm... esto suena a que alguien metió la pata.", () => "¡Ja! Tienes razón. Pero ahora tú puedes arreglarlo."],
-          ["¿Y por qué debería importarme?", () => "Oye, sé que suena raro... pero en serio, si no ayudas, esto se pone feo."],
-          ["¡Ja! ¿Otra vez problemas? Nunca falla.", () => "Así es la vida aquí. Pero esta vez es diferente, créeme."],
+          [
+            "¿Qué pasó exactamente? Cuéntame todo.",
+            () =>
+              "Todo empezó esta mañana. Necesitamos actuar rápido antes de que sea tarde.",
+          ],
+          [
+            "Estoy listo para ayudar. ¿Por dónde empiezo?",
+            () => "Gracias por ofrecerte. No puedo hacer esto solo.",
+          ],
+          [
+            "Mmm... esto suena a que alguien metió la pata.",
+            () => "¡Ja! Tienes razón. Pero ahora tú puedes arreglarlo.",
+          ],
+          [
+            "¿Y por qué debería importarme?",
+            () =>
+              "Oye, sé que suena raro... pero en serio, si no ayudas, esto se pone feo.",
+          ],
+          [
+            "¡Ja! ¿Otra vez problemas? Nunca falla.",
+            () => "Así es la vida aquí. Pero esta vez es diferente, créeme.",
+          ],
         ],
         [
-          ["Exacto. ¿Qué sabes tú sobre esto?", () => "Escuché rumores sobre eso. Hay que investigar más a fondo."],
-          ["Necesito más información para continuar.", () => "Claro, esto es lo que sé. La situación es más compleja de lo que parece."],
-          ["¿Tú también estás metido en este lío?", () => "¡Oye! Yo soy inocente. Pero sí, sé más de lo que parece."],
-          ["No tengo todo el día. Habla rápido.", () => "Tranquilo, tranquilo. Las prisas no ayudan, pero te lo resumo rápido."],
-          ["A ver, ¿tú eres el experto o qué?", () => "Digamos que sé un par de cosas. Escucha con atención."],
+          [
+            "Exacto. ¿Qué sabes tú sobre esto?",
+            () => "Escuché rumores sobre eso. Hay que investigar más a fondo.",
+          ],
+          [
+            "Necesito más información para continuar.",
+            () =>
+              "Claro, esto es lo que sé. La situación es más compleja de lo que parece.",
+          ],
+          [
+            "¿Tú también estás metido en este lío?",
+            () => "¡Oye! Yo soy inocente. Pero sí, sé más de lo que parece.",
+          ],
+          [
+            "No tengo todo el día. Habla rápido.",
+            () =>
+              "Tranquilo, tranquilo. Las prisas no ayudan, pero te lo resumo rápido.",
+          ],
+          [
+            "A ver, ¿tú eres el experto o qué?",
+            () => "Digamos que sé un par de cosas. Escucha con atención.",
+          ],
         ],
         [
-          ["Terminemos con esto. ¿Qué falta?", () => "Solo queda una cosa. Estamos a punto de resolverlo."],
-          ["¿Cuál es el último paso?", () => "Casi terminamos. Todo depende de este último paso."],
-          ["Espero que valga la pena tanto esfuerzo.", () => "Te prometo que sí. Has llegado muy lejos para rendirte ahora."],
-          ["Ya era hora. Casi me duermo esperando.", () => "Jaja, no te culpo. Pero el final vale la pena, te lo aseguro."],
-          ["¡Por fin! Esto se va a poner bueno.", () => "¡Así me gusta! Con esa energía lo resolvemos en un segundo."],
+          [
+            "Terminemos con esto. ¿Qué falta?",
+            () => "Solo queda una cosa. Estamos a punto de resolverlo.",
+          ],
+          [
+            "¿Cuál es el último paso?",
+            () => "Casi terminamos. Todo depende de este último paso.",
+          ],
+          [
+            "Espero que valga la pena tanto esfuerzo.",
+            () =>
+              "Te prometo que sí. Has llegado muy lejos para rendirte ahora.",
+          ],
+          [
+            "Ya era hora. Casi me duermo esperando.",
+            () =>
+              "Jaja, no te culpo. Pero el final vale la pena, te lo aseguro.",
+          ],
+          [
+            "¡Por fin! Esto se va a poner bueno.",
+            () => "¡Así me gusta! Con esa energía lo resolvemos en un segundo.",
+          ],
         ],
         [
-          ["¿Hay algo que pueda hacer ahora mismo?", () => "Sí, de hecho hay algo urgente. Déjame explicarte."],
-          ["¿Quién más sabe sobre esto?", () => "Pocos lo saben. Pero hay alguien que puede ayudarnos."],
+          [
+            "¿Hay algo que pueda hacer ahora mismo?",
+            () => "Sí, de hecho hay algo urgente. Déjame explicarte.",
+          ],
+          [
+            "¿Quién más sabe sobre esto?",
+            () => "Pocos lo saben. Pero hay alguien que puede ayudarnos.",
+          ],
           ["¿Cuánto tiempo tenemos?", () => "No mucho. Cada minuto cuenta."],
-          ["Dame los detalles, no te guardes nada.", () => "Está bien, te cuento todo. Presta atención."],
-          ["¿Es peligroso?", () => "Un poco, pero nada que no podamos manejar juntos."],
+          [
+            "Dame los detalles, no te guardes nada.",
+            () => "Está bien, te cuento todo. Presta atención.",
+          ],
+          [
+            "¿Es peligroso?",
+            () => "Un poco, pero nada que no podamos manejar juntos.",
+          ],
         ],
         [
-          ["¿Cómo descubriste todo esto?", () => "Fue por accidente. Estaba caminando y noté algo extraño."],
-          ["¿Alguien más ha intentado resolver esto?", () => "Sí, pero nadie lo ha logrado. Por eso necesitamos ayuda."],
-          ["¿Qué pasa si no hacemos nada?", () => "Las cosas se pondrían muy mal. No podemos quedarnos de brazos cruzados."],
-          ["Cuéntame más sobre el lugar.", () => "Este lugar tiene muchos secretos. Algunos mejor dejarlos en paz."],
-          ["¿Confías en las personas de aquí?", () => "En algunas sí, en otras no tanto. Hay que tener cuidado."],
+          [
+            "¿Cómo descubriste todo esto?",
+            () => "Fue por accidente. Estaba caminando y noté algo extraño.",
+          ],
+          [
+            "¿Alguien más ha intentado resolver esto?",
+            () => "Sí, pero nadie lo ha logrado. Por eso necesitamos ayuda.",
+          ],
+          [
+            "¿Qué pasa si no hacemos nada?",
+            () =>
+              "Las cosas se pondrían muy mal. No podemos quedarnos de brazos cruzados.",
+          ],
+          [
+            "Cuéntame más sobre el lugar.",
+            () =>
+              "Este lugar tiene muchos secretos. Algunos mejor dejarlos en paz.",
+          ],
+          [
+            "¿Confías en las personas de aquí?",
+            () => "En algunas sí, en otras no tanto. Hay que tener cuidado.",
+          ],
         ],
       ],
       // Speech prompt pools
@@ -426,77 +671,170 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         () => "Quiero escuchar tu punto de vista. ¿Qué dirías?",
         () => "Eso me hace pensar... ¿y tú qué crees que pasó?",
       ],
-      playerBridge: (fromNpc, toNpc) => `${fromNpc} me envió. Dice que tú sabes algo importante.`,
-      npcHandoff: (nextNpc) => `Ve con ${nextNpc}. Creo que sabe algo más que puede ayudarnos.`,
+      playerBridge: (fromNpc, toNpc) =>
+        `${fromNpc} me envió. Dice que tú sabes algo importante.`,
+      npcHandoff: (nextNpc) =>
+        `Ve con ${nextNpc}. Creo que sabe algo más que puede ayudarnos.`,
       questComplete: "¡Misión cumplida! Has resuelto el misterio.",
-      gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
+      gatherIntro: (itemName) =>
+        `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
       gatherHint: (hint) => `Una pista: ${hint}`,
-      gatherWrongItem: (wrongName, correctName) => `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
-      gatherSuccess: (itemName) => `¡Excelente! Tienes ${itemName}. Eso me ayuda mucho.`,
+      gatherWrongItem: (wrongName, correctName) =>
+        `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
+      gatherSuccess: (itemName) =>
+        `¡Excelente! Tienes ${itemName}. Eso me ayuda mucho.`,
       gatherPlayerReport: (itemName) => `Encontré ${itemName}. Aquí está.`,
       speechContinue: "Entiendo lo que dices. Sigamos adelante.",
     },
     en: {
       defaultSeed: "The town bell disappeared and nobody knows who took it.",
-      defaultIntro: (name) => `Start with ${name} and follow the clues to solve the mystery.`,
+      defaultIntro: (name) =>
+        `Start with ${name} and follow the clues to solve the mystery.`,
       actLabel: (name, n) => `${name} · act ${n}`,
-      connectClue: (name, next) => `${name} connects the previous clue to ${next}.`,
+      connectClue: (name, next) =>
+        `${name} connects the previous clue to ${next}.`,
       defaultTopic: "the case clues",
       fallbackSpeech: "I couldn't hear you clearly. Try again.",
       heardPrefix: "Perfect, I heard",
       firstGreetings: [
         (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
-        (seed) => `Finally, someone showed up! Listen, we have a serious problem. ${seed}`,
+        (seed) =>
+          `Finally, someone showed up! Listen, we have a serious problem. ${seed}`,
         (seed) => `You won't believe what happened. ${seed}`,
         (seed) => `Come, quick! Something terrible just happened. ${seed}`,
       ],
       midGreetings: [
         (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
-        (fromNpc) => `Ah, you come from ${fromNpc}. I figured this would happen.`,
-        (fromNpc) => `${fromNpc} did well sending you here. I have important information.`,
-        (fromNpc) => `Thank goodness you're here! ${fromNpc} said you could be trusted.`,
+        (fromNpc) =>
+          `Ah, you come from ${fromNpc}. I figured this would happen.`,
+        (fromNpc) =>
+          `${fromNpc} did well sending you here. I have important information.`,
+        (fromNpc) =>
+          `Thank goodness you're here! ${fromNpc} said you could be trusted.`,
       ],
       finalGreetings: [
-        (fromNpc) => `You arrived just in time! ${fromNpc} told me you were coming.`,
+        (fromNpc) =>
+          `You arrived just in time! ${fromNpc} told me you were coming.`,
         (fromNpc) => `I was waiting for you. ${fromNpc} told me everything.`,
         (fromNpc) => `At last! ${fromNpc} said you could solve this.`,
         (fromNpc) => `I knew you'd come. ${fromNpc} trusts you a lot.`,
       ],
       choiceSets: [
         [
-          ["What exactly happened? Tell me everything.", () => "It all started this morning. We need to act fast before it's too late."],
-          ["I'm ready to help. Where do I start?", () => "Thanks for volunteering. I can't do this alone."],
-          ["Hmm... sounds like someone really messed up.", () => "Ha! You're right. But now you can fix it."],
-          ["Why should I care about this?", () => "Hey, I know it sounds weird... but seriously, if you don't help, things get ugly."],
-          ["Ha! Problems again? Never a dull moment here.", () => "That's life around here. But this time it's different, trust me."],
+          [
+            "What exactly happened? Tell me everything.",
+            () =>
+              "It all started this morning. We need to act fast before it's too late.",
+          ],
+          [
+            "I'm ready to help. Where do I start?",
+            () => "Thanks for volunteering. I can't do this alone.",
+          ],
+          [
+            "Hmm... sounds like someone really messed up.",
+            () => "Ha! You're right. But now you can fix it.",
+          ],
+          [
+            "Why should I care about this?",
+            () =>
+              "Hey, I know it sounds weird... but seriously, if you don't help, things get ugly.",
+          ],
+          [
+            "Ha! Problems again? Never a dull moment here.",
+            () =>
+              "That's life around here. But this time it's different, trust me.",
+          ],
         ],
         [
-          ["Exactly. What do you know about this?", () => "I've heard rumors about that. We need to dig deeper."],
-          ["I need more information to continue.", () => "Sure, here's what I know. The situation is more complex than it seems."],
-          ["Are you mixed up in this mess too?", () => "Hey! I'm innocent. But yeah, I know more than it looks."],
-          ["I don't have all day. Talk fast.", () => "Easy, easy. Rushing won't help, but I'll give you the short version."],
-          ["So, are you the expert or what?", () => "Let's just say I know a thing or two. Listen carefully."],
+          [
+            "Exactly. What do you know about this?",
+            () => "I've heard rumors about that. We need to dig deeper.",
+          ],
+          [
+            "I need more information to continue.",
+            () =>
+              "Sure, here's what I know. The situation is more complex than it seems.",
+          ],
+          [
+            "Are you mixed up in this mess too?",
+            () => "Hey! I'm innocent. But yeah, I know more than it looks.",
+          ],
+          [
+            "I don't have all day. Talk fast.",
+            () =>
+              "Easy, easy. Rushing won't help, but I'll give you the short version.",
+          ],
+          [
+            "So, are you the expert or what?",
+            () => "Let's just say I know a thing or two. Listen carefully.",
+          ],
         ],
         [
-          ["Let's finish this. What's left?", () => "Just one thing left. We're about to solve this."],
-          ["What's the last step?", () => "We're almost done. It all comes down to this last step."],
-          ["I hope all this effort was worth it.", () => "I promise it is. You've come too far to give up now."],
-          ["Finally. I almost fell asleep waiting.", () => "Haha, can't blame you. But the ending is worth it, trust me."],
-          ["Let's go! This is about to get good.", () => "That's the spirit! With that energy we'll solve this in no time."],
+          [
+            "Let's finish this. What's left?",
+            () => "Just one thing left. We're about to solve this.",
+          ],
+          [
+            "What's the last step?",
+            () => "We're almost done. It all comes down to this last step.",
+          ],
+          [
+            "I hope all this effort was worth it.",
+            () => "I promise it is. You've come too far to give up now.",
+          ],
+          [
+            "Finally. I almost fell asleep waiting.",
+            () =>
+              "Haha, can't blame you. But the ending is worth it, trust me.",
+          ],
+          [
+            "Let's go! This is about to get good.",
+            () =>
+              "That's the spirit! With that energy we'll solve this in no time.",
+          ],
         ],
         [
-          ["Is there something I can do right now?", () => "Yes, actually there's something urgent. Let me explain."],
-          ["Who else knows about this?", () => "Few people know. But there's someone who can help us."],
+          [
+            "Is there something I can do right now?",
+            () => "Yes, actually there's something urgent. Let me explain.",
+          ],
+          [
+            "Who else knows about this?",
+            () => "Few people know. But there's someone who can help us.",
+          ],
           ["How much time do we have?", () => "Not much. Every minute counts."],
-          ["Give me the details, don't hold back.", () => "Alright, I'll tell you everything. Pay attention."],
-          ["Is it dangerous?", () => "A little, but nothing we can't handle together."],
+          [
+            "Give me the details, don't hold back.",
+            () => "Alright, I'll tell you everything. Pay attention.",
+          ],
+          [
+            "Is it dangerous?",
+            () => "A little, but nothing we can't handle together.",
+          ],
         ],
         [
-          ["How did you find out about all this?", () => "It was by accident. I was walking and noticed something strange."],
-          ["Has anyone else tried to solve this?", () => "Yes, but nobody succeeded. That's why we need help."],
-          ["What happens if we do nothing?", () => "Things would get really bad. We can't just sit around."],
-          ["Tell me more about this place.", () => "This place has many secrets. Some are better left alone."],
-          ["Do you trust the people here?", () => "Some of them, yes. Others, not so much. We need to be careful."],
+          [
+            "How did you find out about all this?",
+            () =>
+              "It was by accident. I was walking and noticed something strange.",
+          ],
+          [
+            "Has anyone else tried to solve this?",
+            () => "Yes, but nobody succeeded. That's why we need help.",
+          ],
+          [
+            "What happens if we do nothing?",
+            () => "Things would get really bad. We can't just sit around.",
+          ],
+          [
+            "Tell me more about this place.",
+            () => "This place has many secrets. Some are better left alone.",
+          ],
+          [
+            "Do you trust the people here?",
+            () =>
+              "Some of them, yes. Others, not so much. We need to be careful.",
+          ],
         ],
       ],
       speechPrompts: [
@@ -506,13 +844,18 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
         () => "I want to hear your perspective. What would you say?",
         () => "That makes me think... what do you believe happened?",
       ],
-      playerBridge: (fromNpc, toNpc) => `${fromNpc} sent me. They say you know something important.`,
-      npcHandoff: (nextNpc) => `Go find ${nextNpc}. I think they know something more that can help us.`,
+      playerBridge: (fromNpc, toNpc) =>
+        `${fromNpc} sent me. They say you know something important.`,
+      npcHandoff: (nextNpc) =>
+        `Go find ${nextNpc}. I think they know something more that can help us.`,
       questComplete: "Quest complete! You solved the mystery.",
-      gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
+      gatherIntro: (itemName) =>
+        `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
       gatherHint: (hint) => `A clue: ${hint}`,
-      gatherWrongItem: (wrongName, correctName) => `That's ${wrongName}. Not what I need. Look for ${correctName}.`,
-      gatherSuccess: (itemName) => `Excellent! You have ${itemName}. That helps a lot.`,
+      gatherWrongItem: (wrongName, correctName) =>
+        `That's ${wrongName}. Not what I need. Look for ${correctName}.`,
+      gatherSuccess: (itemName) =>
+        `Excellent! You have ${itemName}. That helps a lot.`,
       gatherPlayerReport: (itemName) => `I found ${itemName}. Here it is.`,
       speechContinue: "I understand what you're saying. Let's keep going.",
     },
@@ -620,7 +963,11 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
 
     // Add gather node if this step has the gather quest
     if (hasGather) {
-      const correctItem = gatherData.correct[0] || { name: t.defaultTopic, hint: "", isCorrect: true };
+      const correctItem = gatherData.correct[0] || {
+        name: t.defaultTopic,
+        hint: "",
+        isCorrect: true,
+      };
       const gatherId = nodeId(nodeCounter);
       const gatherSuccessId = nodeId(nodeCounter + 1);
 
@@ -628,7 +975,9 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       const lastNode = nodes[nodes.length - 1];
       if (lastNode) {
         if (lastNode.responseMode === "choice") {
-          lastNode.choices.forEach((c) => { c.nextNodeId = gatherId; });
+          lastNode.choices.forEach((c) => {
+            c.nextNodeId = gatherId;
+          });
         } else {
           lastNode.nextNodeId = gatherId;
         }
@@ -679,7 +1028,9 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       const lastNode = nodes[nodes.length - 1];
       if (lastNode) {
         if (lastNode.responseMode === "choice") {
-          lastNode.choices.forEach((c) => { c.nextNodeId = terminalId; });
+          lastNode.choices.forEach((c) => {
+            c.nextNodeId = terminalId;
+          });
         } else {
           lastNode.nextNodeId = terminalId;
         }
@@ -733,7 +1084,10 @@ function normalizeMapData(mapData, mapWidth, mapHeight) {
 }
 
 function fallbackScenario(mapId, targetLang, supportLang) {
-  const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || { en: mapId, es: mapId };
+  const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || {
+    en: mapId,
+    es: mapId,
+  };
   const mapWidth = 18;
   const mapHeight = 14;
 
@@ -775,7 +1129,14 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     },
     npcs,
     questions: questionsByLang,
-    quest: normalizeQuest(null, npcs, questionsByLang, supportLang, targetLang, mapId),
+    quest: normalizeQuest(
+      null,
+      npcs,
+      questionsByLang,
+      supportLang,
+      targetLang,
+      mapId,
+    ),
     greetings: {
       en: ["Generating scenario unavailable; using safe fallback."],
       es: ["Generación no disponible; usando respaldo."],
@@ -783,7 +1144,13 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   };
 }
 
-function buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount }) {
+function buildPrompt({
+  mapId,
+  targetLang,
+  supportLang,
+  lessonTerms,
+  npcCount,
+}) {
   const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
 
   return `You generate JSON for a 2D JRPG language-learning scenario.
@@ -875,8 +1242,16 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
   return {
     id: mapId,
     name: {
-      en: String(raw?.name?.en || MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId),
-      es: String(raw?.name?.es || MAP_CHOICES.find((m) => m.id === mapId)?.name?.es || mapId),
+      en: String(
+        raw?.name?.en ||
+          MAP_CHOICES.find((m) => m.id === mapId)?.name?.en ||
+          mapId,
+      ),
+      es: String(
+        raw?.name?.es ||
+          MAP_CHOICES.find((m) => m.id === mapId)?.name?.es ||
+          mapId,
+      ),
     },
     tileSize: 32,
     mapWidth,
@@ -895,8 +1270,12 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
     },
     quest: null,
     greetings: {
-      en: Array.isArray(raw?.greetings?.en) ? raw.greetings.en.slice(0, 6).map(String) : ["Let's practice!"],
-      es: Array.isArray(raw?.greetings?.es) ? raw.greetings.es.slice(0, 6).map(String) : ["¡Vamos a practicar!"],
+      en: Array.isArray(raw?.greetings?.en)
+        ? raw.greetings.en.slice(0, 6).map(String)
+        : ["Let's practice!"],
+      es: Array.isArray(raw?.greetings?.es)
+        ? raw.greetings.es.slice(0, 6).map(String)
+        : ["¡Vamos a practicar!"],
     },
   };
 }
@@ -905,14 +1284,31 @@ function withQuest(scenario, raw, supportLang, targetLang) {
   const questionsByLang = scenario.questions;
   return {
     ...scenario,
-    quest: normalizeQuest(raw?.quest, scenario.npcs, questionsByLang, supportLang, targetLang, scenario.id),
+    quest: normalizeQuest(
+      raw?.quest,
+      scenario.npcs,
+      questionsByLang,
+      supportLang,
+      targetLang,
+      scenario.id,
+    ),
   };
 }
 
-export async function generateScenarioWithAI(mapId, targetLang = "es", supportLang = "en") {
+export async function generateScenarioWithAI(
+  mapId,
+  targetLang = "es",
+  supportLang = "en",
+) {
   const lessonTerms = getLessonTerms(targetLang);
   const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
-  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount });
+  const prompt = buildPrompt({
+    mapId,
+    targetLang,
+    supportLang,
+    lessonTerms,
+    npcCount,
+  });
 
   let text = "";
   try {
@@ -944,14 +1340,21 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
           .join(" ")
           .trim()) ||
       (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) && payload.choices[0]?.message?.content) ||
+      (Array.isArray(payload?.choices) &&
+        payload.choices[0]?.message?.content) ||
       (typeof payload === "string" ? payload : "");
   } catch {
     text = "";
   }
 
   const parsed = parseJSON(text);
-  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang, npcCount });
+  const normalized = normalizeScenario({
+    raw: parsed,
+    mapId,
+    targetLang,
+    supportLang,
+    npcCount,
+  });
   if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
   return withQuest(normalized, parsed, supportLang, targetLang);
 }
