@@ -83,20 +83,21 @@ function getLessonTerms(targetLang) {
   );
 }
 
-function normalizeNPCs(npcs, mapWidth, mapHeight) {
+function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
   const raw = Array.isArray(npcs) ? npcs : [];
+  const count = targetCount || (2 + Math.floor(Math.random() * 3)); // 2-4
   const normalized = raw
-    .slice(0, 3)
+    .slice(0, count)
     .map((npc, idx) => ({
       tx: clampInt(npc?.tx, 1, mapWidth - 2, 2 + idx * 3),
       ty: clampInt(npc?.ty, 1, mapHeight - 2, 2 + idx * 2),
       name: String(npc?.name || `Guide ${idx + 1}`),
-      presetIdx: clampInt(npc?.presetIdx, 0, 2, idx),
+      presetIdx: clampInt(npc?.presetIdx, 0, 3, idx % 4),
     }));
 
-  while (normalized.length < 3) {
+  while (normalized.length < count) {
     const idx = normalized.length;
-    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx });
+    normalized.push({ tx: 2 + idx * 3, ty: 2 + idx * 2, name: `Guide ${idx + 1}`, presetIdx: idx % 4 });
   }
 
   return normalized;
@@ -283,6 +284,70 @@ function pickGatherItems(mapId, targetLang) {
   return { correct, decoys, all: [...correct, ...decoys].sort(() => Math.random() - 0.5) };
 }
 
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function generateQuestPlan(npcCount) {
+  // Build a variable-length visit sequence (2-6 steps)
+  // Each step targets an NPC and has random interactions
+  const npcIndices = Array.from({ length: npcCount }, (_, i) => i);
+
+  // Start with a shuffled base visit of all NPCs
+  const base = shuffle(npcIndices);
+
+  // Randomly add 0-3 extra revisit steps
+  const extraCount = Math.floor(Math.random() * 4); // 0-3
+  const extras = [];
+  for (let i = 0; i < extraCount; i++) {
+    extras.push(pickRandom(npcIndices));
+  }
+
+  // Interleave extras at random positions, avoiding consecutive duplicates
+  const visitOrder = [...base];
+  for (const extra of extras) {
+    // Find positions where inserting this NPC wouldn't create consecutive duplicates
+    const validPositions = [];
+    for (let p = 0; p <= visitOrder.length; p++) {
+      const before = p > 0 ? visitOrder[p - 1] : -1;
+      const after = p < visitOrder.length ? visitOrder[p] : -1;
+      if (extra !== before && extra !== after) validPositions.push(p);
+    }
+    if (validPositions.length > 0) {
+      const pos = pickRandom(validPositions);
+      visitOrder.splice(pos, 0, extra);
+    }
+  }
+
+  // For each step, pick 1-3 random interaction types
+  const interactionTypes = ["choice", "speech"];
+  const stepsInteractions = visitOrder.map(() => {
+    const count = 1 + Math.floor(Math.random() * 3); // 1-3
+    const types = [];
+    for (let s = 0; s < count; s++) {
+      types.push(pickRandom(interactionTypes));
+    }
+    return types;
+  });
+
+  // Pick which step gets the gather quest (60% chance, never the last step)
+  const hasGather = Math.random() < 0.6;
+  const gatherStepIdx = hasGather && visitOrder.length > 1
+    ? Math.floor(Math.random() * (visitOrder.length - 1))
+    : -1;
+
+  return { visitOrder, stepsInteractions, gatherStepIdx };
+}
+
 function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang, mapId = "park") {
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
   const tl = targetLang;
@@ -296,46 +361,74 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       defaultTopic: "las pistas del caso",
       fallbackSpeech: "No alcancé a oírte bien. Inténtalo otra vez.",
       heardPrefix: "Perfecto, escuché",
-      // NPC dialogue — all in target language now
-      npc0Greet: (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
-      npc0Choice1: "¿Qué pasó exactamente? Cuéntame todo.",
-      npc0Choice2: "Estoy listo para ayudar. ¿Por dónde empiezo?",
-      npc0Choice3: "Mmm... esto suena a que alguien metió la pata.",
-      npc0Choice4: "¿Y por qué debería importarme?",
-      npc0Choice5: "¡Ja! ¿Otra vez problemas? Nunca falla.",
-      npc0Reply1: () => `Todo empezó esta mañana. Necesitamos actuar rápido antes de que sea tarde.`,
-      npc0Reply2: () => `Gracias por ofrecerte. Por eso necesito tu ayuda, no puedo hacer esto solo.`,
-      npc0Reply3: () => `¡Ja! Tienes razón, alguien la regó. Pero ahora tú puedes arreglarlo.`,
-      npc0Reply4: () => `Oye, sé que suena raro... pero en serio, si no ayudas, esto se pone feo.`,
-      npc0Reply5: () => `Así es la vida aquí. Siempre pasa algo. Pero esta vez es diferente, créeme.`,
-      npcSpeechPrompt: () => `Interesante... ¿Y tú qué opinas sobre todo esto?`,
-      // Player dialogue bridging NPCs
+      // Greeting pools — picked randomly per game instance
+      firstGreetings: [
+        (seed) => `¡Qué bueno que llegaste! Necesito tu ayuda urgente. ${seed}`,
+        (seed) => `¡Por fin alguien viene! Escucha, tenemos un problema serio. ${seed}`,
+        (seed) => `No vas a creer lo que pasó. ${seed}`,
+        (seed) => `¡Ven, rápido! Algo terrible acaba de ocurrir. ${seed}`,
+      ],
+      midGreetings: [
+        (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
+        (fromNpc) => `Ah, vienes de parte de ${fromNpc}. Ya me imaginaba que esto iba a pasar.`,
+        (fromNpc) => `${fromNpc} hizo bien en mandarte aquí. Tengo información importante.`,
+        (fromNpc) => `¡Menos mal que llegaste! ${fromNpc} me dijo que eres de confianza.`,
+      ],
+      finalGreetings: [
+        (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
+        (fromNpc) => `Te estaba esperando. ${fromNpc} me contó todo.`,
+        (fromNpc) => `¡Al fin! ${fromNpc} dijo que tú podrías resolver esto.`,
+        (fromNpc) => `Sabía que vendrías. ${fromNpc} confía mucho en ti.`,
+      ],
+      // Choice pools — each is [text, replyFn] pairs
+      choiceSets: [
+        [
+          ["¿Qué pasó exactamente? Cuéntame todo.", () => "Todo empezó esta mañana. Necesitamos actuar rápido antes de que sea tarde."],
+          ["Estoy listo para ayudar. ¿Por dónde empiezo?", () => "Gracias por ofrecerte. No puedo hacer esto solo."],
+          ["Mmm... esto suena a que alguien metió la pata.", () => "¡Ja! Tienes razón. Pero ahora tú puedes arreglarlo."],
+          ["¿Y por qué debería importarme?", () => "Oye, sé que suena raro... pero en serio, si no ayudas, esto se pone feo."],
+          ["¡Ja! ¿Otra vez problemas? Nunca falla.", () => "Así es la vida aquí. Pero esta vez es diferente, créeme."],
+        ],
+        [
+          ["Exacto. ¿Qué sabes tú sobre esto?", () => "Escuché rumores sobre eso. Hay que investigar más a fondo."],
+          ["Necesito más información para continuar.", () => "Claro, esto es lo que sé. La situación es más compleja de lo que parece."],
+          ["¿Tú también estás metido en este lío?", () => "¡Oye! Yo soy inocente. Pero sí, sé más de lo que parece."],
+          ["No tengo todo el día. Habla rápido.", () => "Tranquilo, tranquilo. Las prisas no ayudan, pero te lo resumo rápido."],
+          ["A ver, ¿tú eres el experto o qué?", () => "Digamos que sé un par de cosas. Escucha con atención."],
+        ],
+        [
+          ["Terminemos con esto. ¿Qué falta?", () => "Solo queda una cosa. Estamos a punto de resolverlo."],
+          ["¿Cuál es el último paso?", () => "Casi terminamos. Todo depende de este último paso."],
+          ["Espero que valga la pena tanto esfuerzo.", () => "Te prometo que sí. Has llegado muy lejos para rendirte ahora."],
+          ["Ya era hora. Casi me duermo esperando.", () => "Jaja, no te culpo. Pero el final vale la pena, te lo aseguro."],
+          ["¡Por fin! Esto se va a poner bueno.", () => "¡Así me gusta! Con esa energía lo resolvemos en un segundo."],
+        ],
+        [
+          ["¿Hay algo que pueda hacer ahora mismo?", () => "Sí, de hecho hay algo urgente. Déjame explicarte."],
+          ["¿Quién más sabe sobre esto?", () => "Pocos lo saben. Pero hay alguien que puede ayudarnos."],
+          ["¿Cuánto tiempo tenemos?", () => "No mucho. Cada minuto cuenta."],
+          ["Dame los detalles, no te guardes nada.", () => "Está bien, te cuento todo. Presta atención."],
+          ["¿Es peligroso?", () => "Un poco, pero nada que no podamos manejar juntos."],
+        ],
+        [
+          ["¿Cómo descubriste todo esto?", () => "Fue por accidente. Estaba caminando y noté algo extraño."],
+          ["¿Alguien más ha intentado resolver esto?", () => "Sí, pero nadie lo ha logrado. Por eso necesitamos ayuda."],
+          ["¿Qué pasa si no hacemos nada?", () => "Las cosas se pondrían muy mal. No podemos quedarnos de brazos cruzados."],
+          ["Cuéntame más sobre el lugar.", () => "Este lugar tiene muchos secretos. Algunos mejor dejarlos en paz."],
+          ["¿Confías en las personas de aquí?", () => "En algunas sí, en otras no tanto. Hay que tener cuidado."],
+        ],
+      ],
+      // Speech prompt pools
+      speechPrompts: [
+        () => "Interesante... ¿Y tú qué opinas sobre todo esto?",
+        () => "Mmm, cuéntame más. ¿Qué piensas tú?",
+        () => "Antes de seguir... ¿cómo ves la situación?",
+        () => "Quiero escuchar tu punto de vista. ¿Qué dirías?",
+        () => "Eso me hace pensar... ¿y tú qué crees que pasó?",
+      ],
       playerBridge: (fromNpc, toNpc) => `${fromNpc} me envió. Dice que tú sabes algo importante.`,
-      npcMidGreet: (fromNpc) => `¿${fromNpc} te envió? Entonces la situación es seria.`,
-      npcMidChoice1: "Exacto. ¿Qué sabes tú sobre esto?",
-      npcMidChoice2: "Necesito más información para continuar.",
-      npcMidChoice3: "¿Tú también estás metido en este lío?",
-      npcMidChoice4: "No tengo todo el día. Habla rápido.",
-      npcMidChoice5: "A ver, ¿tú eres el experto o qué?",
-      npcMidReply1: () => `Escuché rumores sobre eso. Hay que investigar más a fondo.`,
-      npcMidReply2: () => `Claro, esto es lo que sé. La situación es más compleja de lo que parece.`,
-      npcMidReply3: () => `¡Oye! Yo soy inocente. Pero sí, sé más de lo que parece.`,
-      npcMidReply4: () => `Tranquilo, tranquilo. Las prisas no ayudan, pero te lo resumo rápido.`,
-      npcMidReply5: () => `Digamos que sé un par de cosas. Escucha con atención.`,
       npcHandoff: (nextNpc) => `Ve con ${nextNpc}. Creo que sabe algo más que puede ayudarnos.`,
-      npcFinalGreet: (fromNpc) => `¡Llegas justo a tiempo! ${fromNpc} me avisó que vendrías.`,
-      npcFinalChoice1: "Terminemos con esto. ¿Qué falta?",
-      npcFinalChoice2: "¿Cuál es el último paso?",
-      npcFinalChoice3: "Espero que valga la pena tanto esfuerzo.",
-      npcFinalChoice4: "Ya era hora. Casi me duermo esperando.",
-      npcFinalChoice5: "¡Por fin! Esto se va a poner bueno.",
-      npcFinalReply1: () => `Solo queda una cosa. Estamos a punto de resolverlo.`,
-      npcFinalReply2: () => `Casi terminamos. Todo depende de este último paso.`,
-      npcFinalReply3: () => `Te prometo que sí. Has llegado muy lejos para rendirte ahora.`,
-      npcFinalReply4: () => `Jaja, no te culpo. Pero el final vale la pena, te lo aseguro.`,
-      npcFinalReply5: () => `¡Así me gusta! Con esa energía lo resolvemos en un segundo.`,
       questComplete: "¡Misión cumplida! Has resuelto el misterio.",
-      // Gather quest
       gatherIntro: (itemName) => `Necesito que encuentres ${itemName} en este lugar. Ten cuidado, hay muchas cosas por ahí que no sirven.`,
       gatherHint: (hint) => `Una pista: ${hint}`,
       gatherWrongItem: (wrongName, correctName) => `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
@@ -351,42 +444,70 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
       defaultTopic: "the case clues",
       fallbackSpeech: "I couldn't hear you clearly. Try again.",
       heardPrefix: "Perfect, I heard",
-      npc0Greet: (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
-      npc0Choice1: "What exactly happened? Tell me everything.",
-      npc0Choice2: "I'm ready to help. Where do I start?",
-      npc0Choice3: "Hmm... sounds like someone really messed up.",
-      npc0Choice4: "Why should I care about this?",
-      npc0Choice5: "Ha! Problems again? Never a dull moment here.",
-      npc0Reply1: () => `It all started this morning. We need to act fast before it's too late.`,
-      npc0Reply2: () => `Thanks for volunteering. That's why I need your help, I can't do this alone.`,
-      npc0Reply3: () => `Ha! You're right, someone dropped the ball. But now you can fix it.`,
-      npc0Reply4: () => `Hey, I know it sounds weird... but seriously, if you don't help, things get ugly.`,
-      npc0Reply5: () => `That's life around here. Something always happens. But this time it's different, trust me.`,
-      npcSpeechPrompt: () => `Interesting... What do you think about all of this?`,
+      firstGreetings: [
+        (seed) => `I'm glad you're here! I need your help urgently. ${seed}`,
+        (seed) => `Finally, someone showed up! Listen, we have a serious problem. ${seed}`,
+        (seed) => `You won't believe what happened. ${seed}`,
+        (seed) => `Come, quick! Something terrible just happened. ${seed}`,
+      ],
+      midGreetings: [
+        (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
+        (fromNpc) => `Ah, you come from ${fromNpc}. I figured this would happen.`,
+        (fromNpc) => `${fromNpc} did well sending you here. I have important information.`,
+        (fromNpc) => `Thank goodness you're here! ${fromNpc} said you could be trusted.`,
+      ],
+      finalGreetings: [
+        (fromNpc) => `You arrived just in time! ${fromNpc} told me you were coming.`,
+        (fromNpc) => `I was waiting for you. ${fromNpc} told me everything.`,
+        (fromNpc) => `At last! ${fromNpc} said you could solve this.`,
+        (fromNpc) => `I knew you'd come. ${fromNpc} trusts you a lot.`,
+      ],
+      choiceSets: [
+        [
+          ["What exactly happened? Tell me everything.", () => "It all started this morning. We need to act fast before it's too late."],
+          ["I'm ready to help. Where do I start?", () => "Thanks for volunteering. I can't do this alone."],
+          ["Hmm... sounds like someone really messed up.", () => "Ha! You're right. But now you can fix it."],
+          ["Why should I care about this?", () => "Hey, I know it sounds weird... but seriously, if you don't help, things get ugly."],
+          ["Ha! Problems again? Never a dull moment here.", () => "That's life around here. But this time it's different, trust me."],
+        ],
+        [
+          ["Exactly. What do you know about this?", () => "I've heard rumors about that. We need to dig deeper."],
+          ["I need more information to continue.", () => "Sure, here's what I know. The situation is more complex than it seems."],
+          ["Are you mixed up in this mess too?", () => "Hey! I'm innocent. But yeah, I know more than it looks."],
+          ["I don't have all day. Talk fast.", () => "Easy, easy. Rushing won't help, but I'll give you the short version."],
+          ["So, are you the expert or what?", () => "Let's just say I know a thing or two. Listen carefully."],
+        ],
+        [
+          ["Let's finish this. What's left?", () => "Just one thing left. We're about to solve this."],
+          ["What's the last step?", () => "We're almost done. It all comes down to this last step."],
+          ["I hope all this effort was worth it.", () => "I promise it is. You've come too far to give up now."],
+          ["Finally. I almost fell asleep waiting.", () => "Haha, can't blame you. But the ending is worth it, trust me."],
+          ["Let's go! This is about to get good.", () => "That's the spirit! With that energy we'll solve this in no time."],
+        ],
+        [
+          ["Is there something I can do right now?", () => "Yes, actually there's something urgent. Let me explain."],
+          ["Who else knows about this?", () => "Few people know. But there's someone who can help us."],
+          ["How much time do we have?", () => "Not much. Every minute counts."],
+          ["Give me the details, don't hold back.", () => "Alright, I'll tell you everything. Pay attention."],
+          ["Is it dangerous?", () => "A little, but nothing we can't handle together."],
+        ],
+        [
+          ["How did you find out about all this?", () => "It was by accident. I was walking and noticed something strange."],
+          ["Has anyone else tried to solve this?", () => "Yes, but nobody succeeded. That's why we need help."],
+          ["What happens if we do nothing?", () => "Things would get really bad. We can't just sit around."],
+          ["Tell me more about this place.", () => "This place has many secrets. Some are better left alone."],
+          ["Do you trust the people here?", () => "Some of them, yes. Others, not so much. We need to be careful."],
+        ],
+      ],
+      speechPrompts: [
+        () => "Interesting... What do you think about all of this?",
+        () => "Hmm, tell me more. What's your take?",
+        () => "Before we continue... how do you see the situation?",
+        () => "I want to hear your perspective. What would you say?",
+        () => "That makes me think... what do you believe happened?",
+      ],
       playerBridge: (fromNpc, toNpc) => `${fromNpc} sent me. They say you know something important.`,
-      npcMidGreet: (fromNpc) => `${fromNpc} sent you? Then the situation is serious.`,
-      npcMidChoice1: "Exactly. What do you know about this?",
-      npcMidChoice2: "I need more information to continue.",
-      npcMidChoice3: "Are you mixed up in this mess too?",
-      npcMidChoice4: "I don't have all day. Talk fast.",
-      npcMidChoice5: "So, are you the expert or what?",
-      npcMidReply1: () => `I've heard rumors about that. We need to dig deeper.`,
-      npcMidReply2: () => `Sure, here's what I know. The situation is more complex than it seems.`,
-      npcMidReply3: () => `Hey! I'm innocent. But yeah, I know more than it looks.`,
-      npcMidReply4: () => `Easy, easy. Rushing won't help, but I'll give you the short version.`,
-      npcMidReply5: () => `Let's just say I know a thing or two. Listen carefully.`,
       npcHandoff: (nextNpc) => `Go find ${nextNpc}. I think they know something more that can help us.`,
-      npcFinalGreet: (fromNpc) => `You arrived just in time! ${fromNpc} told me you were coming.`,
-      npcFinalChoice1: "Let's finish this. What's left?",
-      npcFinalChoice2: "What's the last step?",
-      npcFinalChoice3: "I hope all this effort was worth it.",
-      npcFinalChoice4: "Finally. I almost fell asleep waiting.",
-      npcFinalChoice5: "Let's go! This is about to get good.",
-      npcFinalReply1: () => `Just one thing left. We're about to solve this.`,
-      npcFinalReply2: () => `We're almost done. It all comes down to this last step.`,
-      npcFinalReply3: () => `I promise it is. You've come too far to give up now.`,
-      npcFinalReply4: () => `Haha, can't blame you. But the ending is worth it, trust me.`,
-      npcFinalReply5: () => `That's the spirit! With that energy we'll solve this in no time.`,
       questComplete: "Quest complete! You solved the mystery.",
       gatherIntro: (itemName) => `I need you to find ${itemName} somewhere around here. Be careful, there are lots of things out there that won't help.`,
       gatherHint: (hint) => `A clue: ${hint}`,
@@ -400,134 +521,145 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
   const t = L[tl] || L.es;
 
   const storySeed = rawStorySeed || t.defaultSeed;
-  const startNpcIdx = clampInt(rawQuest?.startNpcIdx, 0, npcs.length - 1, 0);
   const intro =
     String(rawQuest?.intro || "").trim() ||
-    t.defaultIntro(npcs[startNpcIdx]?.name || "NPC");
+    t.defaultIntro(npcs[0]?.name || "NPC");
 
-  // Pick gather items for the middle NPC's gather quest
+  // Generate a random quest plan for this game instance
+  const plan = generateQuestPlan(npcs.length);
+
+  // Prepare gather items
   const gatherData = pickGatherItems(mapId, tl);
 
-  const treeByNpc = npcs.map((npc, npcIdx) => {
-    const previousNpc = npcs[(npcIdx - 1 + npcs.length) % npcs.length];
-    const nextNpc = npcs[(npcIdx + 1) % npcs.length];
-    const isFirst = npcIdx === 0;
-    const isLast = npcIdx === npcs.length - 1;
-    const isMid = !isFirst && !isLast;
+  // Track which choice sets have been used to avoid repeats
+  const usedChoiceSets = new Set();
+  function pickChoiceSet() {
+    const available = t.choiceSets
+      .map((set, idx) => ({ set, idx }))
+      .filter(({ idx }) => !usedChoiceSets.has(idx));
+    if (available.length === 0) {
+      usedChoiceSets.clear();
+      return pickRandom(t.choiceSets);
+    }
+    const pick = pickRandom(available);
+    usedChoiceSets.add(pick.idx);
+    return pick.set;
+  }
 
-    const nodeId = (n) => `npc-${npcIdx}-node-${n}`;
+  // Build steps array — each step targets one NPC with its own dialogue nodes
+  const steps = plan.visitOrder.map((npcIdx, stepIdx) => {
+    const npc = npcs[npcIdx];
+    const isFirstStep = stepIdx === 0;
+    const isLastStep = stepIdx === plan.visitOrder.length - 1;
+    const prevNpcIdx = stepIdx > 0 ? plan.visitOrder[stepIdx - 1] : -1;
+    const nextNpcIdx = !isLastStep ? plan.visitOrder[stepIdx + 1] : -1;
+    const prevNpc = prevNpcIdx >= 0 ? npcs[prevNpcIdx] : null;
+    const nextNpc = nextNpcIdx >= 0 ? npcs[nextNpcIdx] : null;
+    const interactions = plan.stepsInteractions[stepIdx];
+    const hasGather = stepIdx === plan.gatherStepIdx;
 
-    // Build nodes depending on NPC position in the quest
-    let nodes;
+    const nodeId = (n) => `step-${stepIdx}-npc-${npcIdx}-node-${n}`;
+    const nodes = [];
+    let nodeCounter = 1;
 
-    if (isFirst) {
-      // NPC 0: story introduction, free conversation, handoff to NPC 1
-      nodes = [
-        {
-          id: nodeId(1),
-          npcLine: sanitizeDialogueLine(t.npc0Greet(storySeed), npc.name),
-          responseMode: "choice",
-          choices: [
-            {
-              text: t.npc0Choice1,
-              npcReply: t.npc0Reply1(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npc0Choice2,
-              npcReply: t.npc0Reply2(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npc0Choice3,
-              npcReply: t.npc0Reply3(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npc0Choice4,
-              npcReply: t.npc0Reply4(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npc0Choice5,
-              npcReply: t.npc0Reply5(),
-              nextNodeId: nodeId(2),
-            },
-          ],
-        },
-        {
-          id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(), npc.name),
-          responseMode: "speech",
-          speechFallbackReply: t.fallbackSpeech,
-          speechContinueReply: t.speechContinue,
-          nextNodeId: nodeId(3),
-        },
-        {
-          id: nodeId(3),
-          npcLine: sanitizeDialogueLine(t.npcHandoff(nextNpc.name), npc.name),
-          responseMode: "none",
-          terminal: true,
-          playerBridge: t.playerBridge(npc.name, nextNpc.name),
-        },
-      ];
-    } else if (isMid) {
-      // Middle NPC: conversation then gather quest — player must find correct item
-      const correctItem = gatherData.correct[0] || { name: t.defaultTopic, hint: "", isCorrect: true };
-      nodes = [
-        {
-          id: nodeId(1),
-          playerLine: t.playerBridge(previousNpc.name, npc.name),
-          npcLine: sanitizeDialogueLine(t.npcMidGreet(previousNpc.name), npc.name),
-          responseMode: "choice",
-          choices: [
-            {
-              text: t.npcMidChoice1,
-              npcReply: t.npcMidReply1(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcMidChoice2,
-              npcReply: t.npcMidReply2(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcMidChoice3,
-              npcReply: t.npcMidReply3(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcMidChoice4,
-              npcReply: t.npcMidReply4(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcMidChoice5,
-              npcReply: t.npcMidReply5(),
-              nextNodeId: nodeId(2),
-            },
-          ],
-        },
-        {
-          id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(), npc.name),
-          responseMode: "speech",
-          speechFallbackReply: t.fallbackSpeech,
-          speechContinueReply: t.speechContinue,
-          nextNodeId: nodeId(3),
-        },
-        {
-          id: nodeId(3),
+    // Pick greeting based on step position
+    let greetLine;
+    if (isFirstStep) {
+      greetLine = pickRandom(t.firstGreetings)(storySeed);
+    } else if (isLastStep) {
+      greetLine = pickRandom(t.finalGreetings)(prevNpc?.name || "NPC");
+    } else {
+      greetLine = pickRandom(t.midGreetings)(prevNpc?.name || "NPC");
+    }
+
+    // Build interaction nodes from the random plan
+    for (let i = 0; i < interactions.length; i++) {
+      const type = interactions[i];
+      const isFirstNode = i === 0;
+      const currentId = nodeId(nodeCounter);
+      const nextInteractionId = nodeId(nodeCounter + 1);
+      nodeCounter++;
+
+      if (type === "choice") {
+        const choiceSet = pickChoiceSet();
+        const node = {
+          id: currentId,
           npcLine: sanitizeDialogueLine(
-            `${t.gatherIntro(correctItem.name)} ${t.gatherHint(correctItem.hint)}`,
+            isFirstNode ? greetLine : pickRandom(t.speechPrompts)(),
             npc.name,
           ),
-          responseMode: "gather",
-          gatherItem: correctItem,
-          nextNodeId: nodeId(4),
-        },
-        {
-          id: nodeId(4),
+          responseMode: "choice",
+          choices: choiceSet.map(([text, replyFn]) => ({
+            text,
+            npcReply: replyFn(),
+            nextNodeId: nextInteractionId,
+          })),
+        };
+        if (isFirstNode && prevNpc) {
+          node.playerLine = t.playerBridge(prevNpc.name, npc.name);
+        }
+        nodes.push(node);
+      } else if (type === "speech") {
+        const node = {
+          id: currentId,
+          npcLine: sanitizeDialogueLine(
+            isFirstNode ? greetLine : pickRandom(t.speechPrompts)(),
+            npc.name,
+          ),
+          responseMode: "speech",
+          speechFallbackReply: t.fallbackSpeech,
+          speechContinueReply: t.speechContinue,
+          nextNodeId: nextInteractionId,
+        };
+        if (isFirstNode && prevNpc) {
+          node.playerLine = t.playerBridge(prevNpc.name, npc.name);
+        }
+        nodes.push(node);
+      }
+    }
+
+    // Add gather node if this step has the gather quest
+    if (hasGather) {
+      const correctItem = gatherData.correct[0] || { name: t.defaultTopic, hint: "", isCorrect: true };
+      const gatherId = nodeId(nodeCounter);
+      const gatherSuccessId = nodeId(nodeCounter + 1);
+
+      // Point the last interaction node to the gather node
+      const lastNode = nodes[nodes.length - 1];
+      if (lastNode) {
+        if (lastNode.responseMode === "choice") {
+          lastNode.choices.forEach((c) => { c.nextNodeId = gatherId; });
+        } else {
+          lastNode.nextNodeId = gatherId;
+        }
+      }
+
+      nodes.push({
+        id: gatherId,
+        npcLine: sanitizeDialogueLine(
+          `${t.gatherIntro(correctItem.name)} ${t.gatherHint(correctItem.hint)}`,
+          npc.name,
+        ),
+        responseMode: "gather",
+        gatherItem: correctItem,
+        nextNodeId: gatherSuccessId,
+      });
+      nodeCounter++;
+
+      if (isLastStep) {
+        nodes.push({
+          id: gatherSuccessId,
+          playerLine: t.gatherPlayerReport(correctItem.name),
+          npcLine: sanitizeDialogueLine(
+            `${t.gatherSuccess(correctItem.name)} ${t.questComplete}`,
+            npc.name,
+          ),
+          responseMode: "none",
+          terminal: true,
+        });
+      } else {
+        nodes.push({
+          id: gatherSuccessId,
           playerLine: t.gatherPlayerReport(correctItem.name),
           npcLine: sanitizeDialogueLine(
             `${t.gatherSuccess(correctItem.name)} ${t.npcHandoff(nextNpc.name)}`,
@@ -536,65 +668,48 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
           responseMode: "none",
           terminal: true,
           playerBridge: t.playerBridge(npc.name, nextNpc.name),
-        },
-      ];
+        });
+      }
+      nodeCounter++;
     } else {
-      // Last NPC: conclusion
-      nodes = [
-        {
-          id: nodeId(1),
-          playerLine: t.playerBridge(previousNpc.name, npc.name),
-          npcLine: sanitizeDialogueLine(t.npcFinalGreet(previousNpc.name), npc.name),
-          responseMode: "choice",
-          choices: [
-            {
-              text: t.npcFinalChoice1,
-              npcReply: t.npcFinalReply1(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcFinalChoice2,
-              npcReply: t.npcFinalReply2(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcFinalChoice3,
-              npcReply: t.npcFinalReply3(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcFinalChoice4,
-              npcReply: t.npcFinalReply4(),
-              nextNodeId: nodeId(2),
-            },
-            {
-              text: t.npcFinalChoice5,
-              npcReply: t.npcFinalReply5(),
-              nextNodeId: nodeId(2),
-            },
-          ],
-        },
-        {
-          id: nodeId(2),
-          npcLine: sanitizeDialogueLine(t.npcSpeechPrompt(), npc.name),
-          responseMode: "speech",
-          speechFallbackReply: t.fallbackSpeech,
-          speechContinueReply: t.speechContinue,
-          nextNodeId: nodeId(3),
-        },
-        {
-          id: nodeId(3),
+      // Add terminal/handoff node
+      const terminalId = nodeId(nodeCounter);
+
+      // Point the last interaction node to the terminal
+      const lastNode = nodes[nodes.length - 1];
+      if (lastNode) {
+        if (lastNode.responseMode === "choice") {
+          lastNode.choices.forEach((c) => { c.nextNodeId = terminalId; });
+        } else {
+          lastNode.nextNodeId = terminalId;
+        }
+      }
+
+      if (isLastStep) {
+        nodes.push({
+          id: terminalId,
           npcLine: sanitizeDialogueLine(t.questComplete, npc.name),
           responseMode: "none",
           terminal: true,
-        },
-      ];
+        });
+      } else {
+        nodes.push({
+          id: terminalId,
+          npcLine: sanitizeDialogueLine(t.npcHandoff(nextNpc.name), npc.name),
+          responseMode: "none",
+          terminal: true,
+          playerBridge: t.playerBridge(npc.name, nextNpc.name),
+        });
+      }
     }
 
     return {
+      stepIdx,
       npcIdx,
-      title: t.actLabel(npc.name, npcIdx + 1),
-      intro: t.connectClue(npc.name, nextNpc.name),
+      title: t.actLabel(npc.name, stepIdx + 1),
+      intro: nextNpc
+        ? t.connectClue(npc.name, nextNpc.name)
+        : t.connectClue(npc.name, npc.name),
       nodes,
     };
   });
@@ -602,8 +717,8 @@ function normalizeQuest(rawQuest, npcs, questionsByLang, supportLang, targetLang
   return {
     intro,
     storySeed,
-    startNpcIdx,
-    treeByNpc,
+    startNpcIdx: plan.visitOrder[0],
+    steps,
     gatherData,
   };
 }
@@ -628,11 +743,14 @@ function fallbackScenario(mapId, targetLang, supportLang) {
     es: normalizeQuestions([], supportLang),
   };
 
-  const npcs = [
+  const allFallbackNpcs = [
     { tx: 4, ty: 4, name: "Ada", presetIdx: 0 },
     { tx: 8, ty: 6, name: "Bruno", presetIdx: 1 },
     { tx: 12, ty: 8, name: "Cleo", presetIdx: 2 },
+    { tx: 14, ty: 4, name: "Dana", presetIdx: 3 },
   ];
+  const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
+  const npcs = allFallbackNpcs.slice(0, npcCount);
 
   return {
     id: mapId,
@@ -665,7 +783,7 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   };
 }
 
-function buildPrompt({ mapId, targetLang, supportLang, lessonTerms }) {
+function buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount }) {
   const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
 
   return `You generate JSON for a 2D JRPG language-learning scenario.
@@ -686,9 +804,7 @@ Required JSON shape:
   "mapHeight": 12-18,
   "playerStart": {"x": int, "y": int},
   "npcs": [
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2},
-    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-2}
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-3}
   ],
   "mapData": [flat array length mapWidth*mapHeight, values only 0..6],
   "questions": [
@@ -697,7 +813,7 @@ Required JSON shape:
   "quest": {
     "intro": "one sentence in TARGET language",
     "storySeed": "one dramatic sentence in TARGET language describing the main mystery",
-    "startNpcIdx": 0-2
+    "startNpcIdx": 0
   },
   "greetings": {
     "en": ["...", "...", "..."],
@@ -715,7 +831,7 @@ Tile semantics for mapData:
 6 solid indoor object
 
 Constraints:
-- Exactly 3 NPCs.
+- Exactly ${npcCount} NPCs in the npcs array.
 - At least 8 questions.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable (not all solid).
@@ -745,7 +861,7 @@ function parseJSON(text) {
   return null;
 }
 
-function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
+function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
   const mapWidth = clampInt(raw?.mapWidth, 16, 28, 20);
   const mapHeight = clampInt(raw?.mapHeight, 12, 20, 14);
   const mapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
@@ -771,7 +887,7 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang }) {
     generate() {
       return mapData;
     },
-    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight),
+    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount),
     questions: {
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
@@ -795,7 +911,8 @@ function withQuest(scenario, raw, supportLang, targetLang) {
 
 export async function generateScenarioWithAI(mapId, targetLang = "es", supportLang = "en") {
   const lessonTerms = getLessonTerms(targetLang);
-  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms });
+  const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
+  const prompt = buildPrompt({ mapId, targetLang, supportLang, lessonTerms, npcCount });
 
   let text = "";
   try {
@@ -834,7 +951,7 @@ export async function generateScenarioWithAI(mapId, targetLang = "es", supportLa
   }
 
   const parsed = parseJSON(text);
-  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang });
+  const normalized = normalizeScenario({ raw: parsed, mapId, targetLang, supportLang, npcCount });
   if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
   return withQuest(normalized, parsed, supportLang, targetLang);
 }

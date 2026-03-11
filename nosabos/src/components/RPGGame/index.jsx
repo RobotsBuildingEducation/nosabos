@@ -54,6 +54,8 @@ import HelpChatFab from "../HelpChatFab";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -779,7 +781,7 @@ export default function RPGGame() {
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
-  const [answeredNPCs, setAnsweredNPCs] = useState(new Set());
+  const [completedSteps, setCompletedSteps] = useState(0);
   const [feedback, setFeedback] = useState(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [questionMapping, setQuestionMapping] = useState({});
@@ -791,6 +793,8 @@ export default function RPGGame() {
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const conversationLogRef = useRef([]);
+  const pendingBridgeRef = useRef(null);
+  const pendingNpcGreetingRef = useRef(null);
   const inventoryModal = useDisclosure();
   const helpChat = useDisclosure();
   const helpChatRef = useRef(null);
@@ -913,9 +917,8 @@ export default function RPGGame() {
   const npcDialogueCharactersRef = useRef(new Map());
 
   const [questProgress, setQuestProgress] = useState({
-    unlockedNPCs: new Set([0]),
-    completedNPCs: new Set(),
-    nodeByNPC: {},
+    currentStepIdx: 0,
+    currentNodeId: null,
   });
 
   const chooseRandomNPCVariants = useCallback((npcCount) => {
@@ -1210,11 +1213,10 @@ export default function RPGGame() {
     return scenario.questions[targetLang] || scenario.questions.es || [];
   }, [scenario, targetLang]);
 
-  const totalQuestions = scenario ? scenario.npcs.length : 0;
   const quest = scenario?.quest;
-  const questTreeByNpc = useMemo(() => {
-    const tree = quest?.treeByNpc || [];
-    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return tree;
+  const questSteps = useMemo(() => {
+    const steps = quest?.steps || [];
+    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return steps;
 
     // Replace scenario NPC names with character names in all dialogue text
     const sub = (text) => {
@@ -1226,11 +1228,11 @@ export default function RPGGame() {
       return result;
     };
 
-    return tree.map((arc) => ({
-      ...arc,
-      title: sub(arc.title),
-      intro: sub(arc.intro),
-      nodes: arc.nodes.map((node) => ({
+    return steps.map((step) => ({
+      ...step,
+      title: sub(step.title),
+      intro: sub(step.intro),
+      nodes: step.nodes.map((node) => ({
         ...node,
         npcLine: sub(node.npcLine),
         playerLine: sub(node.playerLine),
@@ -1245,6 +1247,7 @@ export default function RPGGame() {
       })),
     }));
   }, [quest, npcNameMap]);
+  const totalSteps = questSteps.length;
 
   const playGameSound = useCallback(
     (name) => {
@@ -1428,12 +1431,8 @@ export default function RPGGame() {
       setDialogue(null);
       setFeedback(null);
       setGameComplete(false);
-      setAnsweredNPCs(new Set());
-      setQuestProgress({
-        unlockedNPCs: new Set([0]),
-        completedNPCs: new Set(),
-        nodeByNPC: {},
-      });
+      setCompletedSteps(0);
+      setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
 
       const generated = await generateScenarioWithAI(
         mapId,
@@ -1441,11 +1440,7 @@ export default function RPGGame() {
         supportLang,
       );
       setScenario(generated);
-      setQuestProgress({
-        unlockedNPCs: new Set([generated?.quest?.startNpcIdx ?? 0]),
-        completedNPCs: new Set(),
-        nodeByNPC: {},
-      });
+      setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
     },
@@ -2191,24 +2186,35 @@ export default function RPGGame() {
           (n) => n.tx === checkX && n.ty === checkY,
         );
 
-        if (npcIdx !== -1 && !answeredNPCs.has(npcIdx)) {
-          if (!questProgress.unlockedNPCs.has(npcIdx)) {
-            const startNpc =
-              scenario.npcs[scenario.quest?.startNpcIdx ?? 0]?.name ||
-              scenario.npcs[0]?.name ||
+        if (npcIdx !== -1) {
+          const currentStep = questSteps[questProgress.currentStepIdx];
+          if (!currentStep || npcIdx !== currentStep.npcIdx) {
+            const targetNpc =
+              scenario.npcs[currentStep?.npcIdx ?? 0]?.name ||
               "NPC";
-            setFeedback(`${ui.lockedNpc} ${startNpc}`);
+            const targetCharName = npcCharacterNamesRef.current[currentStep?.npcIdx ?? 0] || targetNpc;
+            setFeedback(`${ui.lockedNpc} ${targetCharName}`);
             setTimeout(() => setFeedback(null), 1200);
             return;
           }
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
-          const npcArc = questTreeByNpc[npcIdx];
+          const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
-            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
-          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
+            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          let node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          // Inject contextual bridge and NPC greeting if available
+          if (node?.playerLine && pendingBridgeRef.current) {
+            node = { ...node, playerLine: pendingBridgeRef.current };
+            pendingBridgeRef.current = null;
+          }
+          if (pendingNpcGreetingRef.current) {
+            node = { ...node, npcLine: pendingNpcGreetingRef.current };
+            pendingNpcGreetingRef.current = null;
+          }
           setDialogue({
             npcIdx,
+            stepIdx: questProgress.currentStepIdx,
             npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
@@ -2325,8 +2331,9 @@ export default function RPGGame() {
         (n) => Math.abs(n.tx - tileX) <= 1 && Math.abs(n.ty - tileY) <= 1,
       );
 
-      if (npcIdx !== -1 && !answeredNPCs.has(npcIdx) && !dialogue) {
-        if (!questProgress.unlockedNPCs.has(npcIdx)) return;
+      if (npcIdx !== -1 && !dialogue) {
+        const currentStep = questSteps[questProgress.currentStepIdx];
+        if (!currentStep || npcIdx !== currentStep.npcIdx) return;
         const npc = scenario.npcs[npcIdx];
         const npcDistance =
           Math.abs(npc.tx - gs.playerX) + Math.abs(npc.ty - gs.playerY);
@@ -2338,12 +2345,22 @@ export default function RPGGame() {
 
         const question = getQuestionForNPC(npcIdx);
         if (question) {
-          const npcArc = questTreeByNpc[npcIdx];
+          const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId =
-            questProgress.nodeByNPC[npcIdx] || npcArc?.nodes?.[0]?.id;
-          const node = npcArc?.nodes?.find((n) => n.id === nodeId);
+            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          let node = stepArc?.nodes?.find((n) => n.id === nodeId);
+          // Inject contextual bridge and NPC greeting if available
+          if (node?.playerLine && pendingBridgeRef.current) {
+            node = { ...node, playerLine: pendingBridgeRef.current };
+            pendingBridgeRef.current = null;
+          }
+          if (pendingNpcGreetingRef.current) {
+            node = { ...node, npcLine: pendingNpcGreetingRef.current };
+            pendingNpcGreetingRef.current = null;
+          }
           setDialogue({
             npcIdx,
+            stepIdx: questProgress.currentStepIdx,
             npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
@@ -2375,13 +2392,12 @@ export default function RPGGame() {
   }, [
     scenario,
     dialogue,
-    answeredNPCs,
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
     playGameSound,
     questProgress,
-    questTreeByNpc,
+    questSteps,
     speakNPCText,
     ui.lockedNpc,
   ]);
@@ -2409,14 +2425,13 @@ export default function RPGGame() {
       return;
     }
 
-    const nextTargetIdx = [...questProgress.unlockedNPCs].find(
-      (idx) => !questProgress.completedNPCs.has(idx),
-    );
+    const currentStep = questSteps[questProgress.currentStepIdx];
+    const nextTargetIdx = currentStep?.npcIdx;
 
     npcIndicatorsRef.current.forEach((ind, i) => {
       ind.visible = nextTargetIdx !== undefined && i === nextTargetIdx;
     });
-  }, [gameComplete, questProgress]);
+  }, [gameComplete, questProgress, questSteps]);
 
   // ─── Show/hide gather items based on quest unlock ──────────────────
   useEffect(() => {
@@ -2429,33 +2444,57 @@ export default function RPGGame() {
 
   const completeNPCChapter = useCallback(
     (npcIdx) => {
-      const newAnswered = new Set(answeredNPCs);
-      newAnswered.add(npcIdx);
-      setAnsweredNPCs(newAnswered);
+      const newCompleted = completedSteps + 1;
+      setCompletedSteps(newCompleted);
 
-      setQuestProgress((prev) => {
-        const completedNPCs = new Set(prev.completedNPCs);
-        completedNPCs.add(npcIdx);
-        const unlockedNPCs = new Set(prev.unlockedNPCs);
-        const nextNpcIdx = scenario.npcs.findIndex(
-          (_, idx) => idx !== npcIdx && !completedNPCs.has(idx),
-        );
-        if (nextNpcIdx !== -1) unlockedNPCs.add(nextNpcIdx);
-        return {
-          ...prev,
-          completedNPCs,
-          unlockedNPCs,
-          nodeByNPC: { ...prev.nodeByNPC, [npcIdx]: null },
-        };
-      });
+      const nextStepIdx = questProgress.currentStepIdx + 1;
+      setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
+
+      // Pre-generate contextual player bridge + NPC greeting for the next step
+      pendingBridgeRef.current = null;
+      pendingNpcGreetingRef.current = null;
+      const nextStep = questSteps[nextStepIdx];
+      if (nextStep && newCompleted < totalSteps) {
+        const history = conversationLogRef.current
+          .slice(-10)
+          .map((e) => `${e.speaker}: ${e.text}`)
+          .join("\n");
+        const seed = quest?.storySeed || "";
+        const nextNpcName = npcCharacterNamesRef.current[nextStep.npcIdx]
+          || scenario?.npcs?.[nextStep.npcIdx]?.name || "NPC";
+        const bridgePrompt = targetLang === "es"
+          ? `Eres el jugador en una aventura. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar, resumiendo lo que aprendiste o lo que necesitas. No repitas frases genéricas como "me enviaron" o "sabes algo importante". Sé específico basándote en la conversación. Solo la oración, sin comillas.`
+          : `You are the player in an adventure. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence in English that the player would say upon arriving, summarizing what you learned or what you need. Don't use generic phrases like "sent me" or "you know something important". Be specific based on the conversation. Just the sentence, no quotes.`;
+        callResponses({ input: bridgePrompt }).then((playerBridge) => {
+          const text = (playerBridge || "").trim();
+          if (text.length > 0 && text.length < 200) {
+            pendingBridgeRef.current = text;
+          }
+          // Now generate a contextual NPC greeting that responds to the player's bridge
+          const npcPersonality = scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
+          const npcGreetPrompt = targetLang === "es"
+            ? `Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
+${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones en español como ${nextNpcName}. Reacciona específicamente a lo que el jugador dijo y avanza la narrativa. No digas simplemente "te enviaron" o "qué bueno que llegaste". Sé específico y lleva la conversación hacia adelante. Solo las oraciones, sin comillas.`
+            : `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 sentences in English as ${nextNpcName}. React specifically to what the player said and advance the narrative. Don't just say "so they sent you" or "glad you're here". Be specific and drive the conversation forward. Just the sentences, no quotes.`;
+          return callResponses({ input: npcGreetPrompt });
+        }).then((result) => {
+          const text = (result || "").trim();
+          if (text.length > 0 && text.length < 300) {
+            pendingNpcGreetingRef.current = text;
+          }
+        }).catch(() => {});
+      }
 
       setTimeout(() => {
         setDialogue(null);
         setFeedback(null);
-        if (newAnswered.size >= totalQuestions) setGameComplete(true);
+        if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [answeredNPCs, scenario, totalQuestions],
+    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -2483,12 +2522,12 @@ export default function RPGGame() {
       return;
     }
 
-    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+    const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
       (n) => n.id === nextNodeId,
     );
     setQuestProgress((prev) => ({
       ...prev,
-      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNodeId },
+      currentNodeId: nextNodeId,
     }));
 
     if (!nextNode) {
@@ -2596,7 +2635,7 @@ export default function RPGGame() {
     // Correct item — advance quest
     setGatherUnlocked(false);
     const nextNodeId = dialogue.node.nextNodeId;
-    const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+    const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
       (n) => n.id === nextNodeId,
     );
 
@@ -2607,7 +2646,7 @@ export default function RPGGame() {
 
     setQuestProgress((prev) => ({
       ...prev,
-      nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+      currentNodeId: nextNode.id,
     }));
 
     setTimeout(() => {
@@ -2653,7 +2692,7 @@ export default function RPGGame() {
       conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
 
       const nextNodeId = dialogue.node.nextNodeId || null;
-      const nextNode = questTreeByNpc[dialogue.npcIdx]?.nodes?.find(
+      const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
         (n) => n.id === nextNodeId,
       );
 
@@ -2664,7 +2703,7 @@ export default function RPGGame() {
         }
         setQuestProgress((prev) => ({
           ...prev,
-          nodeByNPC: { ...prev.nodeByNPC, [dialogue.npcIdx]: nextNode.id },
+          currentNodeId: nextNode.id,
         }));
       }
 
@@ -2737,7 +2776,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
   const resetGame = () => {
     playGameSound("submitAction");
     stopNPCSpeech();
-    setAnsweredNPCs(new Set());
+    setCompletedSteps(0);
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
@@ -2749,11 +2788,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
       item.collected = false;
       if (item.mesh) item.mesh.visible = false;
     });
-    setQuestProgress({
-      unlockedNPCs: new Set([scenario?.quest?.startNpcIdx ?? 0]),
-      completedNPCs: new Set(),
-      nodeByNPC: {},
-    });
+    setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
     if (scenario && gameStateRef.current) {
       gameStateRef.current.playerX = scenario.playerStart.x;
       gameStateRef.current.playerY = scenario.playerStart.y;
@@ -2778,7 +2813,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
     setScenario(null);
     setNpcNameMap(null);
     setLoadingScenarioId(null);
-    setAnsweredNPCs(new Set());
+    setCompletedSteps(0);
     setDialogue(null);
     setFeedback(null);
     setGameComplete(false);
@@ -2947,10 +2982,10 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
-            {answeredNPCs.size}/{totalQuestions}
+            {completedSteps}/{totalSteps}
           </Text>
           <Progress
-            value={(answeredNPCs.size / totalQuestions) * 100}
+            value={totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}
             size="sm"
             colorScheme="green"
             w="60px"
@@ -3212,7 +3247,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                     px={3}
                     py={2}
                     mx={3}
-                    mt={3}
+                    mt={8}
                     mb={2}
                   >
                     <Text color="blue.800" fontSize="sm" fontStyle="italic">
@@ -3283,14 +3318,22 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       const isReply = !!dialogue.npcReply;
                       return splitIntoSentences(npcText).map((line, i) => (
                           <Box key={i}>
-                            <Text
-                              color={isReply ? "orange.700" : "gray.800"}
-                              fontSize={isReply ? "sm" : "md"}
-                              fontWeight={isReply ? undefined : "bold"}
-                              m={0}
-                            >
-                              {line}
-                            </Text>
+                            {isReply ? (
+                              <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {line}
+                                </ReactMarkdown>
+                              </Box>
+                            ) : (
+                              <Text
+                                color="gray.800"
+                                fontSize="md"
+                                fontWeight="bold"
+                                m={0}
+                              >
+                                {line}
+                              </Text>
+                            )}
                             {lineTranslations[i] && (
                               <Text
                                 color="blue.700"
@@ -3321,12 +3364,11 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                       />
                     )}
                     {!!dialogue.npcReply && (
-                      <AnimatedText
-                        text={dialogue.npcReply}
-                        color="orange.700"
-                        fontSize="sm"
-                        m={0}
-                      />
+                      <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {dialogue.npcReply}
+                        </ReactMarkdown>
+                      </Box>
                     )}
                   </>
                 )}
@@ -3438,7 +3480,7 @@ Respond in English, in 1-2 brief sentences. Stay in character and react directly
                                 onClick={() => handleGatherSubmit(idx)}
                                 bg="rgba(255,255,255,0.92)"
                                 border="2px solid"
-                                borderColor={item.isCorrect ? "orange.300" : "blackAlpha.200"}
+                                borderColor="blackAlpha.200"
                                 borderRadius="lg"
                                 boxShadow="0px 4px 0px #a9a18c"
                                 _hover={{ bg: "orange.50", borderColor: "orange.400" }}
