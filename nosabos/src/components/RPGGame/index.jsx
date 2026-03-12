@@ -3518,7 +3518,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
             {GAME_LOADING_MESSAGES[loadingMsgIdx]}
           </Text>
-          <Button onClick={goToScenarioSelect}>{ui.back}</Button>
+          {!isTutorialGame && <Button onClick={goToScenarioSelect}>{ui.back}</Button>}
         </VStack>
       </Box>
     );
