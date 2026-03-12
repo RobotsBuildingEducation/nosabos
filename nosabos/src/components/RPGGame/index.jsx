@@ -36,6 +36,7 @@ import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import * as Tone from "tone";
 import * as THREE from "three";
+import { LANGUAGE_PROMPT_LABELS } from "../../constants/languages";
 import {
   MAP_CHOICES,
   REVIEW_WORLD_ID,
@@ -1058,6 +1059,14 @@ export default function RPGGame({
         pl: "Polish",
       })[supportLang] || supportLang,
     [supportLang],
+  );
+  const targetLangPromptLabel = useMemo(
+    () => LANGUAGE_PROMPT_LABELS[targetLang] || targetLang,
+    [targetLang],
+  );
+  const cefrPromptRule = useMemo(
+    () => (supportLang === "es" ? cefrDialogueRule.es : cefrDialogueRule.en),
+    [cefrDialogueRule.en, cefrDialogueRule.es, supportLang],
   );
 
   const toggleTranslation = useCallback(async () => {
@@ -2801,7 +2810,7 @@ export default function RPGGame({
   }, [gatherUnlocked]);
 
   const completeNPCChapter = useCallback(
-    (npcIdx) => {
+    () => {
       // Stop any playing TTS and clear heard speech when completing a chapter
       stopNPCSpeech();
       setLastHeardSpeech("");
@@ -2826,12 +2835,11 @@ export default function RPGGame({
           npcCharacterNamesRef.current[nextStep.npcIdx] ||
           scenario?.npcs?.[nextStep.npcIdx]?.name ||
           "NPC";
-        const bridgePrompt =
-          targetLang === "es"
-            ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres el jugador en una aventura. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar. Solo la oración, sin comillas.`
-            : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are the player in an adventure. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence that the player would say upon arriving. Just the sentence, no quotes.`;
+        const bridgePrompt = `${cefrPromptRule ? cefrPromptRule + "\n" : ""}You are the player in an adventure game.
+Target output language: ${targetLangPromptLabel} (code: ${targetLang}).
+CRITICAL: Write the final sentence strictly in ${targetLangPromptLabel} only. Do not use Spanish or English unless they are the target language.
+Story seed: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write exactly 1 short sentence that the player would say upon arriving. Return only the sentence without quotes.`;
         callResponses({ input: bridgePrompt })
           .then((playerBridge) => {
             const text = (playerBridge || "").trim();
@@ -2841,12 +2849,11 @@ ${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to 
             // Now generate a contextual NPC greeting that responds to the player's bridge
             const npcPersonality =
               scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
-            const npcGreetPrompt =
-              targetLang === "es"
-                ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones cortas en español como ${nextNpcName}. Solo las oraciones, sin comillas.`
-                : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 short sentences in English as ${nextNpcName}. Just the sentences, no quotes.`;
+            const npcGreetPrompt = `${cefrPromptRule ? cefrPromptRule + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}.
+Target output language: ${targetLangPromptLabel} (code: ${targetLang}).
+CRITICAL: Write the final response strictly in ${targetLangPromptLabel} only. Do not use Spanish or English unless they are the target language.
+Story seed: ${seed}
+${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with exactly 1-2 short sentences as ${nextNpcName}. Return only the sentences without quotes.`;
             return callResponses({ input: npcGreetPrompt });
           })
           .then((result) => {
@@ -2873,13 +2880,14 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       scenario,
       targetLang,
       stopNPCSpeech,
-      cefrDialogueRule,
+      cefrPromptRule,
+      targetLangPromptLabel,
     ],
   );
 
   // ─── Generate dynamic choices for choice nodes via LLM ────────────────
   const generateDynamicChoices = useCallback(
-    async (node, npcIdx, stepIdx) => {
+    async (node, npcIdx) => {
       if (!node || node.responseMode !== "choice") return;
       setGeneratingChoices(true);
       const npcName =
@@ -2896,20 +2904,14 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
         ? getCharacterPersonality(characterId)
         : null;
       const personalityHint = personality
-        ? targetLang === "es"
-          ? ` Personalidad del NPC: ${personality}.`
-          : ` NPC personality: ${personality}.`
+        ? ` NPC personality: ${personality}.`
         : "";
       const npcLine = node.npcLine || "";
 
-      const prompt =
-        targetLang === "es"
-          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
-${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El NPC "${npcName}" acaba de decir: "${npcLine}"
-Genera exactamente 3 opciones de respuesta cortas que el jugador podría decir, y para cada una la reacción del NPC (1 oración corta).
-Responde SOLO en este formato JSON exacto, sin texto adicional:
-[{"text":"opción del jugador","reply":"respuesta del NPC"},{"text":"opción 2","reply":"respuesta 2"},{"text":"opción 3","reply":"respuesta 3"}]`
-          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
+      const prompt = `${cefrPromptRule ? cefrPromptRule + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint}
+Target output language: ${targetLangPromptLabel} (code: ${targetLang}).
+CRITICAL: Every value in the JSON (all "text" and "reply" fields) must be strictly in ${targetLangPromptLabel}. Do not include Spanish or English unless they are the target language.
+Story seed: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The NPC "${npcName}" just said: "${npcLine}"
 Generate exactly 3 short response options the player could say, and for each one the NPC's short reaction (1 sentence).
 Respond ONLY in this exact JSON format, no additional text:
@@ -2944,7 +2946,7 @@ Respond ONLY in this exact JSON format, no additional text:
         setGeneratingChoices(false);
       }
     },
-    [quest, scenario, targetLang, cefrDialogueRule],
+    [quest, scenario, targetLang, cefrPromptRule, targetLangPromptLabel],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -3198,19 +3200,15 @@ Respond ONLY in this exact JSON format, no additional text:
         ? getCharacterPersonality(characterId)
         : null;
       const personalityHint = personality
-        ? targetLang === "es"
-          ? ` Tu personalidad: ${personality}.`
-          : ` Your personality: ${personality}.`
+        ? ` Your personality: ${personality}.`
         : "";
 
-      const llmPrompt =
-        targetLang === "es"
-          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
-${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
-Responde en español, en 1-2 oraciones breves. Solo responde como el personaje.`
-          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
+      const llmPrompt = `${cefrPromptRule ? cefrPromptRule + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint}
+Target output language: ${targetLangPromptLabel} (code: ${targetLang}).
+CRITICAL: Respond strictly in ${targetLangPromptLabel} only. Do not use Spanish or English unless they are the target language.
+Story seed: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
-Respond in 1-2 brief sentences. Just respond as the character.`;
+Respond in 1-2 brief sentences. Return only the in-character response.`;
 
       // Stop any currently playing TTS before the new speech reply
       stopNPCSpeech();
