@@ -1897,8 +1897,8 @@ Return ONLY valid JSON:
           {onSkip && (
             <Button
               onClick={handleSkip}
-              bg="#2d2e38"
-              boxShadow={"0px 4px 0px #3f4546"}
+              // boxShadow={"0px 4px 0px #3f4546"}
+              variant="ghost"
             >
               {t("reading_skip")}
             </Button>

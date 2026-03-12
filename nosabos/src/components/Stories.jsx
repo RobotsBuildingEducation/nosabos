@@ -1765,8 +1765,7 @@ export default function StoryMode({
                 <Button
                   onClick={handleSkipModule}
                   // size="md"
-                  variant="outline"
-                  border="1px solid cyan"
+                  variant="ghost"
                   color="white"
                   // padding={6}
                   width="fit-content"

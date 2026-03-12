@@ -4956,7 +4956,9 @@ export default function App() {
         >
           <RPGGame
             lessonContext={activeLesson}
-            initialScenario={preGeneratedGameScenario || tutorialGameInitialScenario}
+            initialScenario={
+              preGeneratedGameScenario || tutorialGameInitialScenario
+            }
             onComplete={() => handleReturnToSkillTree()}
             onSkip={switchToRandomLessonMode}
           />
@@ -5105,7 +5107,10 @@ export default function App() {
                       <TabPanel key="game" px={0}>
                         <RPGGame
                           lessonContext={activeLesson}
-                          initialScenario={preGeneratedGameScenario || tutorialGameInitialScenario}
+                          initialScenario={
+                            preGeneratedGameScenario ||
+                            tutorialGameInitialScenario
+                          }
                           onSkip={switchToRandomLessonMode}
                           onScenarioReady={(scenario) => {
                             if (activeLesson?.isTutorial && scenario) {
