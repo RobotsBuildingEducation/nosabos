@@ -26,6 +26,7 @@ import {
   useDisclosure,
   Flex,
   useBreakpointValue,
+  usePrefersReducedMotion,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
@@ -238,6 +239,7 @@ import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
+const MotionPath = motion.path;
 
 const getDisplayText = (textObj, supportLang = "en") => {
   if (!textObj) return "";
@@ -822,7 +824,9 @@ function LessonNode({
   onClick,
   supportLang,
   inProgressPercent = 0,
+  entryDelay = 0,
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const lockedColor = "gray.600";
 
   const lessonTitle = getUIDisplayText(lesson.title);
@@ -853,9 +857,12 @@ function LessonNode({
 
   return (
     <MotionBox
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.96 }}
+      whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+      animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+      viewport={{ once: true, amount: 0.35 }}
+      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1], delay: entryDelay }}
+      style={{ willChange: "transform, opacity" }}
     >
       <Box position="relative">
         <VStack
@@ -1122,6 +1129,7 @@ const UnitSection = React.memo(function UnitSection({
   latestUnlockedRef,
   isTutorialComplete = true,
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const bgColor = "gray.800";
   const borderColor = "gray.700";
 
@@ -1154,11 +1162,14 @@ const UnitSection = React.memo(function UnitSection({
 
   return (
     <MotionBox
-      initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1, type: "spring" }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 26, scale: 0.98 }}
+      whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+      animate={prefersReducedMotion ? { opacity: 1 } : undefined}
+      viewport={{ once: true, amount: 0.16 }}
+      transition={{ duration: 0.5, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
       mb={-8}
       position="relative"
+      style={{ willChange: "transform, opacity" }}
     >
       {/* Decorative gradient orb behind unit */}
       <Box
@@ -1265,15 +1276,16 @@ const UnitSection = React.memo(function UnitSection({
               <stop offset="100%" stopColor={unit.color} stopOpacity={0.7} />
             </linearGradient>
           </defs>
-          <path
+          <MotionPath
             d="M 100 0 Q 100 40, 100 60"
             stroke={`url(#unit-start-${unit.id})`}
             strokeWidth="5"
             fill="none"
             strokeLinecap="round"
-            style={{
-              transition: "all 0.3s ease",
-            }}
+            initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.4 }}
+            whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
+            viewport={{ once: true, amount: 0.4 }}
+            transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
           />
         </Box>
 
@@ -1415,7 +1427,7 @@ const UnitSection = React.memo(function UnitSection({
                         </filter>
                       )}
                     </defs>
-                    <path
+                    <MotionPath
                       d={`M ${svgWidth / 2 + offset} 0 Q ${
                         svgWidth / 2 + (offset + nextOffset) / 2
                       } 70, ${svgWidth / 2 + nextOffset} 95`}
@@ -1428,9 +1440,10 @@ const UnitSection = React.memo(function UnitSection({
                           ? `url(#glow-${lesson.id})`
                           : "none"
                       }
-                      style={{
-                        transition: "all 0.3s ease",
-                      }}
+                      initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.25 }}
+                      whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
+                      viewport={{ once: true, amount: 0.35 }}
+                      transition={{ duration: 0.42, ease: "easeOut", delay: lessonIndex * 0.03 }}
                     />
                   </Box>
                 )}
@@ -1453,6 +1466,7 @@ const UnitSection = React.memo(function UnitSection({
                     unit={unit}
                     status={status}
                     inProgressPercent={inProgressPercent}
+                    entryDelay={lessonIndex * 0.03}
                     onClick={() => onLessonClick(lesson, unit, status)}
                     supportLang={supportLang}
                   />
@@ -1494,15 +1508,16 @@ const UnitSection = React.memo(function UnitSection({
                     />
                   </linearGradient>
                 </defs>
-                <path
+                <MotionPath
                   d={`M ${svgWidth / 2 + lastOffset} 0 Q ${svgWidth / 2 + lastOffset / 2} 70, ${svgWidth / 2} 95`}
                   stroke={`url(#unit-end-${unit.id})`}
                   strokeWidth="5"
                   fill="none"
                   strokeLinecap="round"
-                  style={{
-                    transition: "all 0.3s ease",
-                  }}
+                  initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.4 }}
+                  whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
+                  viewport={{ once: true, amount: 0.4 }}
+                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.1 }}
                 />
               </Box>
             );
