@@ -1,4 +1,17 @@
 import { getMultiLevelLearningPath } from "../../data/skillTreeData";
+import {
+  REVIEW_WORLD_ID,
+  applyObjectCollisions,
+  buildDynamicTileLibrary,
+  buildFallbackMapData,
+  buildLessonWorldSeed,
+  buildScenarioEnvironment,
+  getGatherPoolForEnvironment,
+  getSupportedDecorKinds,
+  getSupportedObjectTypes,
+  normalizeScenarioObjects,
+  readEnvironmentAmbientColor,
+} from "./worldGen";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const SCENARIO_MODEL = "gpt-5-nano";
@@ -6,14 +19,18 @@ const SCENARIO_MODEL = "gpt-5-nano";
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 export const TUTORIAL_MAP_ID = "tutorialPlaza";
+export { REVIEW_WORLD_ID };
 
 export const MAP_CHOICES = [
-  { id: "livingRoom", name: { en: "Living Room", es: "Sala" } },
-  { id: "park", name: { en: "Park", es: "Parque" } },
-  { id: "airport", name: { en: "Airport", es: "Aeropuerto" } },
+  {
+    id: REVIEW_WORLD_ID,
+    name: { en: "Generated World", es: "Mundo generado" },
+    emoji: "✨",
+  },
 ];
 
 const MAP_NAME_BY_ID = {
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado" },
   livingRoom: { en: "Living Room", es: "Sala" },
   park: { en: "Park", es: "Parque" },
   airport: { en: "Airport", es: "Aeropuerto" },
@@ -136,11 +153,19 @@ const TILE_LIBRARY_BY_MAP = {
     3: { name: "tree", solid: true, colors: [[0x4f9b4a]], sprite: "tree" },
     4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
     5: { name: "flower", solid: false, colors: [[0xff8fb1]], detail: "flower" },
-    6: { name: "counter", solid: true, colors: [[0xb88650]], sprite: "counter" },
+    6: {
+      name: "counter",
+      solid: true,
+      colors: [[0xb88650]],
+      sprite: "counter",
+    },
   },
 };
 
-function getTileLibrary(mapId) {
+function getTileLibrary(mapId, environment = null) {
+  if (mapId === REVIEW_WORLD_ID && environment) {
+    return buildDynamicTileLibrary(environment);
+  }
   return TILE_LIBRARY_BY_MAP[mapId] || TILE_LIBRARY_BY_MAP.park;
 }
 
@@ -451,10 +476,17 @@ const GATHER_ITEMS_BY_MAP = {
   },
 };
 
-function pickGatherItems(mapId, targetLang) {
+function pickGatherItems(gatherSource, targetLang) {
+  const dynamicPool =
+    gatherSource && typeof gatherSource === "object"
+      ? getGatherPoolForEnvironment(gatherSource)
+      : null;
   const data =
-    GATHER_ITEMS_BY_MAP[mapId]?.[targetLang] ||
-    GATHER_ITEMS_BY_MAP[mapId]?.es ||
+    dynamicPool?.[targetLang] ||
+    dynamicPool?.en ||
+    dynamicPool?.es ||
+    GATHER_ITEMS_BY_MAP[gatherSource]?.[targetLang] ||
+    GATHER_ITEMS_BY_MAP[gatherSource]?.es ||
     GATHER_ITEMS_BY_MAP.park.es;
   const correctPool = [...data.correct].sort(() => Math.random() - 0.5);
   const decoyPool = [...data.decoys].sort(() => Math.random() - 0.5);
@@ -543,7 +575,7 @@ function normalizeQuest(
   questionsByLang,
   supportLang,
   targetLang,
-  mapId = "park",
+  gatherSource = "park",
 ) {
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
   const tl = targetLang;
@@ -911,7 +943,7 @@ function normalizeQuest(
   const plan = generateQuestPlan(npcs.length);
 
   // Prepare gather items
-  const gatherData = pickGatherItems(mapId, tl);
+  const gatherData = pickGatherItems(gatherSource, tl);
 
   // Track which choice sets have been used to avoid repeats
   const usedChoiceSets = new Set();
@@ -1122,10 +1154,82 @@ function normalizeMapData(mapData, mapWidth, mapHeight) {
   return mapData.map((value) => clampInt(value, 0, 6, 0));
 }
 
-function fallbackScenario(mapId, targetLang, supportLang) {
-  const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
+function ensureWalkableTiles(mapData, mapWidth, entities = []) {
+  const next = [...mapData];
+  entities.forEach((entity) => {
+    const x = clampInt(entity?.x ?? entity?.tx, 1, mapWidth - 2, 1);
+    const y = clampInt(entity?.y ?? entity?.ty, 1, Math.floor(next.length / mapWidth) - 2, 1);
+    next[y * mapWidth + x] = 1;
+  });
+  return next;
+}
+
+function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
+  if (mapId !== REVIEW_WORLD_ID) {
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
+    const mapWidth = 18;
+    const mapHeight = 14;
+
+    const questionsByLang = {
+      [targetLang]: normalizeQuestions([], supportLang),
+      en: normalizeQuestions([], supportLang),
+      es: normalizeQuestions([], supportLang),
+    };
+
+    const allFallbackNpcs = [
+      { tx: 4, ty: 4, name: "Ada", presetIdx: 0 },
+      { tx: 8, ty: 6, name: "Bruno", presetIdx: 1 },
+      { tx: 12, ty: 8, name: "Cleo", presetIdx: 2 },
+      { tx: 14, ty: 4, name: "Dana", presetIdx: 3 },
+    ];
+    const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
+    const npcs = allFallbackNpcs.slice(0, npcCount);
+
+    return {
+      id: mapId,
+      name,
+      tileSize: 32,
+      mapWidth,
+      mapHeight,
+      playerStart: { x: 3, y: 3 },
+      ambientColor: 0x1f2937,
+      tiles: getTileLibrary(mapId),
+      objects: [],
+      environment: null,
+      emoji: null,
+      generate() {
+        const map = new Array(mapWidth * mapHeight).fill(0);
+        for (let x = 0; x < mapWidth; x++) {
+          map[x] = 2;
+          map[(mapHeight - 1) * mapWidth + x] = 2;
+        }
+        for (let y = 0; y < mapHeight; y++) {
+          map[y * mapWidth] = 2;
+          map[y * mapWidth + (mapWidth - 1)] = 2;
+        }
+        return map;
+      },
+      npcs,
+      questions: questionsByLang,
+      quest: normalizeQuest(
+        null,
+        npcs,
+        questionsByLang,
+        supportLang,
+        targetLang,
+        mapId,
+      ),
+      greetings: {
+        en: ["Generating scenario unavailable; using safe fallback."],
+        es: ["Generacion no disponible; usando respaldo."],
+      },
+    };
+  }
+
+  const environment = buildScenarioEnvironment(null, lessonTerms, mapId);
   const mapWidth = 18;
   const mapHeight = 14;
+  const playerStart = { x: 3, y: 3 };
 
   const questionsByLang = {
     [targetLang]: normalizeQuestions([], supportLang),
@@ -1141,27 +1245,39 @@ function fallbackScenario(mapId, targetLang, supportLang) {
   ];
   const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
   const npcs = allFallbackNpcs.slice(0, npcCount);
+  const objects = normalizeScenarioObjects(
+    [],
+    environment,
+    mapWidth,
+    mapHeight,
+    [{ tx: playerStart.x, ty: playerStart.y }, ...npcs],
+  );
+  const mapData = buildFallbackMapData({
+    mapWidth,
+    mapHeight,
+    environment,
+    playerStart,
+    npcs,
+    objects,
+  });
 
   return {
     id: mapId,
-    name,
+    name: environment?.names || {
+      en: getMapName(mapId, "en"),
+      es: getMapName(mapId, "es"),
+    },
     tileSize: 32,
     mapWidth,
     mapHeight,
-    playerStart: { x: 3, y: 3 },
+    playerStart,
     ambientColor: 0x1f2937,
-    tiles: getTileLibrary(mapId),
+    tiles: getTileLibrary(mapId, environment),
+    environment,
+    objects,
+    emoji: environment?.emoji || "✨",
     generate() {
-      const map = new Array(mapWidth * mapHeight).fill(0);
-      for (let x = 0; x < mapWidth; x++) {
-        map[x] = 2;
-        map[(mapHeight - 1) * mapWidth + x] = 2;
-      }
-      for (let y = 0; y < mapHeight; y++) {
-        map[y * mapWidth] = 2;
-        map[y * mapWidth + (mapWidth - 1)] = 2;
-      }
-      return map;
+      return mapData;
     },
     npcs,
     questions: questionsByLang,
@@ -1171,17 +1287,22 @@ function fallbackScenario(mapId, targetLang, supportLang) {
       questionsByLang,
       supportLang,
       targetLang,
-      mapId,
+      environment,
     ),
     greetings: {
-      en: ["Generating scenario unavailable; using safe fallback."],
-      es: ["Generación no disponible; usando respaldo."],
+      en: [
+        "Scenario generation was incomplete, so we built a lesson-themed world locally.",
+      ],
+      es: [
+        "La generacion fue incompleta, asi que creamos un mundo del tema de la leccion.",
+      ],
     },
   };
 }
 
 const CEFR_DIALOGUE_GUIDANCE = {
-  "Pre-A1": "Use only the most basic words (1-3 word phrases). Very simple greetings and labels. No grammar complexity.",
+  "Pre-A1":
+    "Use only the most basic words (1-3 word phrases). Very simple greetings and labels. No grammar complexity.",
   A1: "Use short, simple sentences (5-8 words max). Present tense only. Basic everyday vocabulary. NPC dialogue should be easy to understand for absolute beginners.",
   A2: "Use simple sentences and common expressions. Present and simple past tense. Everyday situations and familiar topics. Short dialogue turns.",
   B1: "Use moderately complex sentences. Mix of tenses allowed. Can include opinions and explanations. Connected discourse but still clear.",
@@ -1198,23 +1319,117 @@ function buildPrompt({
   npcCount,
   cefrLevel,
 }) {
-  const mapLabel = getMapName(mapId, "en");
+  const worldSeed =
+    mapId === REVIEW_WORLD_ID
+      ? buildLessonWorldSeed(lessonTerms, { mapId })
+      : null;
   const levelKey = cefrLevel || "A1";
-  const dialogueGuidance = CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
+  const dialogueGuidance =
+    CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
+  const supportedObjects = getSupportedObjectTypes().join(", ");
+  const supportedDecor = getSupportedDecorKinds().join(", ");
 
-  return `You generate JSON for a 2D JRPG language-learning scenario.
+  if (mapId === REVIEW_WORLD_ID) {
+    return `You generate JSON for a 2D JRPG language-learning review world.
 Return ONLY valid JSON (no markdown).
 
-Map theme requested: ${mapLabel} (${mapId}).
 Target language: ${targetLang}
 Support language: ${supportLang}
 CEFR proficiency level: ${levelKey}
 
 CRITICAL - Language difficulty: ${dialogueGuidance}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
-${mapId === TUTORIAL_MAP_ID
-  ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly and simple."
-  : ""}
+
+This is NOT a preset map picker. Invent one unique environment that fits the lesson topics naturally.
+If the lesson feels domestic, include home details like a TV or sofa.
+If it feels literary or academic, include bookshelves, desks, lamps, and reading spaces.
+If it feels travel-related, make it feel international with gates, signs, counters, waiting areas, and luggage.
+If it feels scientific, include equipment and workstations.
+If it feels social or celebratory, add speakers, tables, decorations, and event details.
+
+Suggested world direction:
+- ${worldSeed?.promptHint || "Create a detailed lesson-based environment."}
+- Example tone/setting inspiration: ${worldSeed?.summary?.en || "rich, specific, and grounded"}
+
+Use these curriculum terms for the world and question content:
+${lessonTerms.slice(0, 120).join(", ")}
+
+Supported decor kinds: ${supportedDecor}
+Supported object types: ${supportedObjects}
+
+Required JSON shape:
+{
+  "name": {"en": "...", "es": "..."},
+  "ambientColor": "hex like #87ceeb",
+  "mapWidth": 18-26,
+  "mapHeight": 12-18,
+  "playerStart": {"x": int, "y": int},
+  "npcs": [
+    {"tx": int, "ty": int, "name": "...", "presetIdx": 0-3}
+  ],
+  "mapData": [flat array length mapWidth*mapHeight, values only 0..6],
+  "environment": {
+    "themeLabel": {"en": "...", "es": "..."},
+    "summary": {"en": "...", "es": "..."},
+    "emoji": "one emoji",
+    "details": ["...", "..."],
+    "decorKinds": ["one of supported decor kinds"],
+    "keyObjects": [
+      {"type": "one supported object type", "zone": "edge|interior|center|corner|entrance"}
+    ]
+  },
+  "objects": [
+    {"type": "one supported object type", "tx": int, "ty": int}
+  ],
+  "questions": [
+    {"prompt": "...", "options": ["...","...","...","..."], "correct": 0-3}
+  ],
+  "quest": {
+    "intro": "one sentence in TARGET language at ${levelKey} level",
+    "storySeed": "one dramatic sentence in TARGET language at ${levelKey} level describing the main mystery",
+    "startNpcIdx": 0
+  },
+  "greetings": {
+    "en": ["...", "...", "..."],
+    "es": ["...", "...", "..."]
+  }
+}
+
+Tile semantics for mapData:
+0 walkable ground
+1 walkable path
+2 solid wall/boundary
+3 solid natural barrier
+4 solid obstacle
+5 walkable scenic decoration
+6 solid furniture/object footprint
+
+Constraints:
+- Exactly ${npcCount} NPCs in the npcs array.
+- At least 8 questions, all at ${levelKey} difficulty.
+- Questions should directly test the curriculum terms listed above.
+- Make the world feel specific and lived-in, not generic.
+- Ensure playerStart and NPCs are in-bounds.
+- Keep mapData playable and navigable.
+- Use only the supported decor kinds and object types.
+- No extra keys.`;
+  }
+
+  return `You generate JSON for a 2D JRPG language-learning scenario.
+Return ONLY valid JSON (no markdown).
+
+Map theme requested: ${getMapName(mapId, "en")} (${mapId}).
+Target language: ${targetLang}
+Support language: ${supportLang}
+CEFR proficiency level: ${levelKey}
+
+CRITICAL - Language difficulty: ${dialogueGuidance}
+ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
+${
+  mapId === TUTORIAL_MAP_ID
+    ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly and simple."
+    : ""
+}
 
 Use these curriculum terms for question content (focus the game around these topics):
 ${lessonTerms.slice(0, 120).join(", ")}
@@ -1285,39 +1500,121 @@ function parseJSON(text) {
   return null;
 }
 
-function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
+function normalizeScenario({
+  raw,
+  mapId,
+  targetLang,
+  supportLang,
+  npcCount,
+  lessonTerms,
+}) {
+  if (mapId !== REVIEW_WORLD_ID) {
+    const mapWidth = clampInt(raw?.mapWidth, 16, 28, 20);
+    const mapHeight = clampInt(raw?.mapHeight, 12, 20, 14);
+    const mapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
+    if (!mapData) return null;
+
+    const playerStart = {
+      x: clampInt(raw?.playerStart?.x, 1, mapWidth - 2, 2),
+      y: clampInt(raw?.playerStart?.y, 1, mapHeight - 2, 2),
+    };
+
+    return {
+      id: mapId,
+      name: {
+        en: String(raw?.name?.en || getMapName(mapId, "en")),
+        es: String(raw?.name?.es || getMapName(mapId, "es")),
+      },
+      tileSize: 32,
+      mapWidth,
+      mapHeight,
+      playerStart,
+      ambientColor: safeHex(raw?.ambientColor, 0x1a1a2e),
+      tiles: getTileLibrary(mapId),
+      environment: null,
+      objects: [],
+      emoji: null,
+      generate() {
+        return mapData;
+      },
+      npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount),
+      questions: {
+        [targetLang]: normalizeQuestions(raw?.questions, supportLang),
+        en: normalizeQuestions(raw?.questions, supportLang),
+        es: normalizeQuestions(raw?.questions, supportLang),
+      },
+      quest: null,
+      greetings: {
+        en: Array.isArray(raw?.greetings?.en)
+          ? raw.greetings.en.slice(0, 6).map(String)
+          : ["Let's practice!"],
+        es: Array.isArray(raw?.greetings?.es)
+          ? raw.greetings.es.slice(0, 6).map(String)
+          : ["¡Vamos a practicar!"],
+      },
+    };
+  }
+
   const mapWidth = clampInt(raw?.mapWidth, 16, 28, 20);
   const mapHeight = clampInt(raw?.mapHeight, 12, 20, 14);
-  const mapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
-  if (!mapData) return null;
 
   const playerStart = {
     x: clampInt(raw?.playerStart?.x, 1, mapWidth - 2, 2),
     y: clampInt(raw?.playerStart?.y, 1, mapHeight - 2, 2),
   };
 
+  const environment = buildScenarioEnvironment(raw?.environment, lessonTerms, mapId);
+  const npcs = normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount);
+  const objects = normalizeScenarioObjects(
+    raw?.objects,
+    environment,
+    mapWidth,
+    mapHeight,
+    [{ tx: playerStart.x, ty: playerStart.y }, ...npcs],
+  );
+
+  const fallbackMapData = buildFallbackMapData({
+    mapWidth,
+    mapHeight,
+    environment,
+    playerStart,
+    npcs,
+    objects,
+  });
+  const modelMapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
+  const combinedMapData = ensureWalkableTiles(
+    applyObjectCollisions(
+      modelMapData || fallbackMapData,
+      objects,
+      mapWidth,
+      mapHeight,
+    ),
+    mapWidth,
+    [{ x: playerStart.x, y: playerStart.y }, ...npcs],
+  );
+
   return {
     id: mapId,
     name: {
-      en: String(
-        raw?.name?.en ||
-          getMapName(mapId, "en"),
-      ),
-      es: String(
-        raw?.name?.es ||
-          getMapName(mapId, "es"),
-      ),
+      en: String(raw?.name?.en || environment?.names?.en || getMapName(mapId, "en")),
+      es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
     },
     tileSize: 32,
     mapWidth,
     mapHeight,
     playerStart,
-    ambientColor: safeHex(raw?.ambientColor, 0x1a1a2e),
-    tiles: getTileLibrary(mapId),
+    ambientColor: safeHex(
+      raw?.ambientColor,
+      readEnvironmentAmbientColor(raw?.environment, 0x1a1a2e),
+    ),
+    tiles: getTileLibrary(mapId, environment),
+    environment,
+    objects,
+    emoji: environment?.emoji || "✨",
     generate() {
-      return mapData;
+      return combinedMapData;
     },
-    npcs: normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount),
+    npcs,
     questions: {
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
@@ -1345,7 +1642,7 @@ function withQuest(scenario, raw, supportLang, targetLang) {
       questionsByLang,
       supportLang,
       targetLang,
-      scenario.id,
+      scenario.environment || scenario.id,
     ),
   };
 }
@@ -1412,8 +1709,10 @@ export async function generateScenarioWithAI(
     targetLang,
     supportLang,
     npcCount,
+    lessonTerms,
   });
-  if (!normalized) return fallbackScenario(mapId, targetLang, supportLang);
+  if (!normalized)
+    return fallbackScenario(mapId, targetLang, supportLang, lessonTerms);
   return withQuest(normalized, parsed, supportLang, targetLang);
 }
 

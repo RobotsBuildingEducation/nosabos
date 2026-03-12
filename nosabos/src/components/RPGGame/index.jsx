@@ -38,6 +38,7 @@ import * as Tone from "tone";
 import * as THREE from "three";
 import {
   MAP_CHOICES,
+  REVIEW_WORLD_ID,
   TUTORIAL_MAP_ID,
   generateScenarioWithAI,
 } from "./scenarios";
@@ -807,6 +808,7 @@ const UI_TEXT = {
     touchMove: "Tap to move, tap NPC to talk",
     chooseScenario: "Choose a scenario",
     scenario: "Scenario",
+    newWorld: "New World",
     quest: "Quest",
     lockedNpc: "You should start with",
     response: "Response",
@@ -832,6 +834,7 @@ const UI_TEXT = {
     touchMove: "Toca para mover, toca NPC para hablar",
     chooseScenario: "Elige un escenario",
     scenario: "Escenario",
+    newWorld: "Nuevo mundo",
     quest: "Misión",
     lockedNpc: "Debes comenzar con",
     response: "Respuesta",
@@ -847,9 +850,7 @@ const UI_TEXT = {
 };
 
 const SCENARIO_EMOJIS = {
-  livingRoom: "🛋️",
-  park: "🌳",
-  airport: "✈️",
+  [REVIEW_WORLD_ID]: "✨",
   [TUTORIAL_MAP_ID]: "👋",
 };
 
@@ -863,6 +864,24 @@ const GAME_LOADING_MESSAGES = [
   "Setting the scene...",
   "Crafting your adventure...",
 ];
+
+const SCENARIO_OBJECT_VISUALS = {
+  tree: { width: 1.3, height: 1.6, yOffset: 0.6, z: 2 },
+  bookshelf: { width: 1.0, height: 1.3, yOffset: 0.55, z: 1.9 },
+  shelf: { width: 1.0, height: 1.15, yOffset: 0.52, z: 1.8 },
+  tv: { width: 1.0, height: 0.95, yOffset: 0.45, z: 1.7 },
+  sofa: { width: 1.2, height: 0.95, yOffset: 0.45, z: 1.7 },
+  plant: { width: 0.9, height: 1.1, yOffset: 0.5, z: 1.8 },
+  table: { width: 1.1, height: 0.95, yOffset: 0.45, z: 1.7 },
+  lamp: { width: 0.75, height: 1.15, yOffset: 0.55, z: 1.8 },
+  sign: { width: 0.95, height: 1.15, yOffset: 0.55, z: 1.8 },
+  gate: { width: 1.0, height: 1.15, yOffset: 0.55, z: 1.8 },
+  speaker: { width: 0.95, height: 1.0, yOffset: 0.5, z: 1.8 },
+  balloons: { width: 0.95, height: 1.15, yOffset: 0.6, z: 1.9 },
+  desk: { width: 1.1, height: 0.95, yOffset: 0.45, z: 1.7 },
+  suitcaseStack: { width: 0.95, height: 1.0, yOffset: 0.48, z: 1.8 },
+  default: { width: 1.0, height: 1.0, yOffset: 0.5, z: 1.7 },
+};
 
 const DIALOGUE_CHARACTER_POOLS = {
   hamster: ["33", "26", "25", "22"],
@@ -1893,14 +1912,17 @@ export default function RPGGame({
     const tileGroup = new THREE.Group();
     const spriteGroup = new THREE.Group();
     const decalGroup = new THREE.Group();
+    const objectGroup = new THREE.Group();
     const TILE_OVERDRAW = 0.35;
 
     const mapDecorTheme =
-      scenario.id === "park"
-        ? ["grass_tuft", "flower_patch", "stones"]
-        : scenario.id === "livingRoom"
-          ? ["wood_scraps", "paper_bits"]
-          : ["paper_bits", "stones"];
+      scenario.environment?.decorKinds?.length
+        ? scenario.environment.decorKinds
+        : scenario.id === "park"
+          ? ["grass_tuft", "flower_patch", "stones"]
+          : scenario.id === "livingRoom"
+            ? ["wood_scraps", "paper_bits"]
+            : ["paper_bits", "stones"];
 
     // Track house clusters to avoid duplicate sprites
     const visitedClusters = new Set();
@@ -2056,9 +2078,35 @@ export default function RPGGame({
       }
     }
 
+    (scenario.objects || []).forEach((object, idx) => {
+      const spriteTex = createSpriteTexture(
+        object.type,
+        seed + idx * 211 + object.tx * 17 + object.ty * 29,
+      );
+      if (!spriteTex) return;
+
+      const visual = SCENARIO_OBJECT_VISUALS[object.type] || SCENARIO_OBJECT_VISUALS.default;
+      const sGeo = new THREE.PlaneGeometry(
+        TILE * visual.width,
+        TILE * visual.height,
+      );
+      const sMat = new THREE.MeshBasicMaterial({
+        map: spriteTex,
+        transparent: true,
+      });
+      const sMesh = new THREE.Mesh(sGeo, sMat);
+      sMesh.position.set(
+        object.tx * TILE + TILE / 2,
+        (MAP_H - 1 - object.ty) * TILE + TILE * visual.yOffset,
+        visual.z,
+      );
+      objectGroup.add(sMesh);
+    });
+
     scene.add(tileGroup);
     scene.add(decalGroup);
     scene.add(spriteGroup);
+    scene.add(objectGroup);
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
@@ -3311,6 +3359,17 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
   ]);
 
   useEffect(() => {
+    if (!isEmbedded || isTutorialGame || scenarioId || loadingScenarioId) return;
+    void handleSelectScenario(REVIEW_WORLD_ID);
+  }, [
+    handleSelectScenario,
+    isEmbedded,
+    isTutorialGame,
+    loadingScenarioId,
+    scenarioId,
+  ]);
+
+  useEffect(() => {
     if (!isTutorialGame || !gameComplete || xpAwardedRef.current) return;
 
     const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
@@ -3434,7 +3493,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                 fontWeight="bold"
                 textAlign="center"
               >
-                {ui.chooseScenario}
+                {MAP_CHOICES.length === 1 ? ui.newWorld : ui.chooseScenario}
               </Text>
               <Wrap spacing={4} justify="center">
                 {MAP_CHOICES.map((choice, idx) => {
@@ -3463,8 +3522,9 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                         loadingText="Loading"
                       >
                         <Text fontSize="3xl" mb={1}>
-                          {SCENARIO_EMOJIS[choice.id] ||
-                            Object.values(SCENARIO_EMOJIS)[idx % 3] ||
+                          {choice.emoji ||
+                            SCENARIO_EMOJIS[choice.id] ||
+                            Object.values(SCENARIO_EMOJIS)[idx % 2] ||
                             "🎮"}
                         </Text>
                         <Text fontSize="md" fontWeight="bold">
@@ -4215,7 +4275,9 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             textAlign="center"
             boxShadow="0 0 40px rgba(255,215,0,0.3)"
           >
-            <Text fontSize="4xl">{SCENARIO_EMOJIS[scenarioId] || "🏆"}</Text>
+            <Text fontSize="4xl">
+              {scenario?.emoji || SCENARIO_EMOJIS[scenarioId] || "🏆"}
+            </Text>
             <Text color="yellow.300" fontSize="xl" fontWeight="bold">
               {ui.completed}
             </Text>
@@ -4229,7 +4291,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                 color="white"
                 onClick={goToScenarioSelect}
               >
-                {ui.scenario}
+                {isTutorialGame ? ui.scenario : ui.newWorld}
               </Button>
             </HStack>
           </VStack>

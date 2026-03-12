@@ -321,6 +321,49 @@ export function createGroundDecalTexture(kind, seed) {
     }
   }
 
+  if (kind === "confetti") {
+    const palette = [0xff6b6b, 0xffd166, 0x4ecdc4, 0x8ecae6, 0xc77dff];
+    for (let i = 0; i < 10; i++) {
+      const x = 2 + Math.floor(rng() * 12);
+      const y = 3 + Math.floor(rng() * 10);
+      const c = palette[Math.floor(rng() * palette.length)];
+      px(ctx, x, y, c);
+      if (rng() > 0.5) px(ctx, x + 1, y, darken(c, 0.12));
+    }
+  }
+
+  if (kind === "leaf_litter") {
+    const leaves = [0x8f6d32, 0x6b8f3a, 0xa05a2c, 0x5a7d2f];
+    for (let i = 0; i < 6; i++) {
+      const x = 2 + Math.floor(rng() * 11);
+      const y = 5 + Math.floor(rng() * 8);
+      const c = leaves[Math.floor(rng() * leaves.length)];
+      px(ctx, x, y, c);
+      px(ctx, x + 1, y, lighten(c, 0.08));
+      if (rng() > 0.5) px(ctx, x, y + 1, darken(c, 0.12));
+    }
+  }
+
+  if (kind === "floor_marks") {
+    const mark = rng() > 0.5 ? 0xf8fafc : 0xfcd34d;
+    for (let y = 4; y <= 11; y += 3) {
+      for (let x = 3; x <= 12; x++) {
+        if ((x + y) % 2 === 0) pxA(ctx, x, y, mark, 0.45);
+      }
+    }
+  }
+
+  if (kind === "book_pages") {
+    const papers = [0xf8f1dc, 0xf5efe6, 0xfaf7ef];
+    for (let i = 0; i < 4; i++) {
+      const x = 3 + Math.floor(rng() * 9);
+      const y = 5 + Math.floor(rng() * 7);
+      const c = papers[Math.floor(rng() * papers.length)];
+      rect(ctx, x, y, 3, 2, c);
+      pxA(ctx, x + 1, y + 1, 0x8b7355, 0.28);
+    }
+  }
+
   return makeTexture(canvas);
 }
 
@@ -514,9 +557,21 @@ export function createSpriteTexture(type, seed) {
   if (type === "stove") return createStoveSprite();
   if (type === "fridge") return createFridgeSprite();
   if (type === "shelf") return createShelfSprite(rng);
+  if (type === "bookshelf") return createBookshelfSprite(rng);
   if (type === "register") return createRegisterSprite();
   if (type === "freezer") return createFreezerSprite();
   if (type === "bench") return createBenchSprite();
+  if (type === "tv") return createTVSprite();
+  if (type === "sofa") return createSofaSprite();
+  if (type === "plant") return createPlantSprite();
+  if (type === "table") return createTableSprite();
+  if (type === "lamp") return createLampSprite();
+  if (type === "sign") return createSignSprite();
+  if (type === "gate") return createGateSprite();
+  if (type === "speaker") return createSpeakerSprite();
+  if (type === "balloons") return createBalloonsSprite(rng);
+  if (type === "desk") return createDeskSprite();
+  if (type === "suitcaseStack") return createSuitcaseStackSprite();
   if (type === "fountain") return createFountainSprite();
   return null;
 }
@@ -871,6 +926,38 @@ function createShelfSprite(rng) {
   return makeTexture(canvas);
 }
 
+function createBookshelfSprite(rng) {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const wood = 0x6b4d2f;
+  const woodL = lighten(wood, 0.15);
+  const woodD = darken(wood, 0.2);
+
+  rect(ctx, 0, 0, 16, 16, wood);
+  rect(ctx, 0, 0, 16, 1, woodL);
+  rect(ctx, 0, 15, 16, 1, woodD);
+  rect(ctx, 0, 5, 16, 1, woodD);
+  rect(ctx, 0, 10, 16, 1, woodD);
+
+  const bookColors = [0xb91c1c, 0x2563eb, 0x16a34a, 0xca8a04, 0x7c3aed];
+  for (let row = 0; row < 3; row++) {
+    const shelfY = row * 5 + 1;
+    for (let x = 1; x < 15; x += 3) {
+      const c = bookColors[Math.floor(rng() * bookColors.length)];
+      rect(ctx, x, shelfY, 2, 4, c);
+      px(ctx, x, shelfY, lighten(c, 0.18));
+      if (rng() > 0.5) rect(ctx, x + 2, shelfY + 1, 1, 3, 0xf8f1dc);
+    }
+  }
+
+  return makeTexture(canvas);
+}
+
 function createRegisterSprite() {
   const SIZE = 16;
   const canvas = document.createElement("canvas");
@@ -947,6 +1034,224 @@ function createBenchSprite() {
   // Arm rests
   rect(ctx, 1, 4, 2, 5, wood);
   rect(ctx, 13, 4, 2, 5, wood);
+
+  return makeTexture(canvas);
+}
+
+function createTVSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  rect(ctx, 2, 2, 12, 8, 0x1f2937);
+  rect(ctx, 3, 3, 10, 6, 0x0ea5e9);
+  rect(ctx, 4, 4, 8, 4, 0x38bdf8);
+  rect(ctx, 6, 10, 4, 1, 0x6b7280);
+  rect(ctx, 5, 11, 6, 2, 0x4b5563);
+  rect(ctx, 4, 13, 8, 1, 0x8b6e50);
+
+  return makeTexture(canvas);
+}
+
+function createSofaSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const fabric = 0xb45309;
+  const fabricL = lighten(fabric, 0.14);
+  const fabricD = darken(fabric, 0.18);
+
+  rect(ctx, 2, 6, 12, 6, fabric);
+  rect(ctx, 3, 4, 10, 3, fabricL);
+  rect(ctx, 1, 6, 2, 5, fabricD);
+  rect(ctx, 13, 6, 2, 5, fabricD);
+  rect(ctx, 3, 11, 10, 2, fabricD);
+  rect(ctx, 4, 8, 3, 2, fabricL);
+  rect(ctx, 9, 8, 3, 2, fabricL);
+  px(ctx, 3, 13, 0x4b2e16);
+  px(ctx, 12, 13, 0x4b2e16);
+
+  return makeTexture(canvas);
+}
+
+function createPlantSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 5, 10, 6, 4, 0xa16207);
+  rect(ctx, 6, 11, 4, 2, 0xc2410c);
+  rect(ctx, 7, 6, 2, 5, 0x4d7c0f);
+  rect(ctx, 5, 4, 2, 4, 0x65a30d);
+  rect(ctx, 9, 4, 2, 4, 0x65a30d);
+  rect(ctx, 3, 5, 2, 3, 0x16a34a);
+  rect(ctx, 11, 5, 2, 3, 0x16a34a);
+  px(ctx, 8, 3, 0x84cc16);
+
+  return makeTexture(canvas);
+}
+
+function createTableSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const wood = 0x8b6e50;
+  rect(ctx, 2, 4, 12, 4, wood);
+  rect(ctx, 2, 4, 12, 1, lighten(wood, 0.14));
+  rect(ctx, 3, 8, 2, 6, darken(wood, 0.18));
+  rect(ctx, 11, 8, 2, 6, darken(wood, 0.18));
+  rect(ctx, 6, 5, 4, 2, 0xf8f1dc);
+
+  return makeTexture(canvas);
+}
+
+function createLampSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 4, 2, 8, 4, 0xfbbf24);
+  rect(ctx, 5, 3, 6, 2, 0xfde68a);
+  rect(ctx, 7, 6, 2, 5, 0x737373);
+  rect(ctx, 5, 11, 6, 2, 0xa3a3a3);
+  rect(ctx, 6, 13, 4, 1, 0x525252);
+
+  return makeTexture(canvas);
+}
+
+function createSignSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 2, 2, 12, 6, 0x2563eb);
+  rect(ctx, 3, 3, 10, 4, 0xeff6ff);
+  rect(ctx, 5, 4, 6, 1, 0x1d4ed8);
+  rect(ctx, 5, 6, 4, 1, 0x60a5fa);
+  rect(ctx, 7, 8, 2, 6, 0x8b6e50);
+
+  return makeTexture(canvas);
+}
+
+function createGateSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 2, 2, 2, 12, 0x64748b);
+  rect(ctx, 12, 2, 2, 12, 0x64748b);
+  rect(ctx, 4, 2, 8, 2, 0x94a3b8);
+  rect(ctx, 4, 6, 8, 1, 0xe2e8f0);
+  rect(ctx, 5, 8, 6, 1, 0xf8fafc);
+  rect(ctx, 6, 10, 4, 2, 0xcbd5e1);
+
+  return makeTexture(canvas);
+}
+
+function createSpeakerSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 3, 1, 10, 14, 0x27272a);
+  rect(ctx, 5, 3, 6, 4, 0x52525b);
+  rect(ctx, 5, 9, 6, 4, 0x3f3f46);
+  rect(ctx, 6, 4, 4, 2, 0x18181b);
+  rect(ctx, 6, 10, 4, 2, 0x18181b);
+  px(ctx, 12, 4, 0xf59e0b);
+  px(ctx, 13, 5, 0xf59e0b);
+  px(ctx, 12, 11, 0xf59e0b);
+  px(ctx, 13, 10, 0xf59e0b);
+
+  return makeTexture(canvas);
+}
+
+function createBalloonsSprite(rng) {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const colors = [0xff6b6b, 0xffd166, 0x4ecdc4, 0xc77dff];
+  const positions = [
+    [5, 3],
+    [9, 2],
+    [7, 5],
+  ];
+
+  positions.forEach(([x, y], idx) => {
+    const c = colors[(idx + Math.floor(rng() * colors.length)) % colors.length];
+    rect(ctx, x, y, 3, 4, c);
+    px(ctx, x + 1, y - 1, lighten(c, 0.18));
+    rect(ctx, x + 1, y + 4, 1, 5, 0x8b5e3c);
+  });
+  rect(ctx, 6, 12, 4, 1, 0x8b5e3c);
+
+  return makeTexture(canvas);
+}
+
+function createDeskSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  const wood = 0x7c5a3c;
+  rect(ctx, 2, 4, 12, 4, wood);
+  rect(ctx, 2, 8, 4, 5, darken(wood, 0.16));
+  rect(ctx, 10, 8, 4, 5, darken(wood, 0.16));
+  rect(ctx, 7, 5, 4, 2, 0x94a3b8);
+  rect(ctx, 4, 5, 2, 2, 0xf8fafc);
+  rect(ctx, 11, 5, 1, 3, 0x1f2937);
+
+  return makeTexture(canvas);
+}
+
+function createSuitcaseStackSprite() {
+  const SIZE = 16;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+
+  rect(ctx, 3, 8, 10, 5, 0x9a3412);
+  rect(ctx, 4, 9, 8, 3, 0xc2410c);
+  rect(ctx, 6, 7, 5, 2, 0x1d4ed8);
+  rect(ctx, 7, 6, 3, 1, 0x60a5fa);
+  rect(ctx, 6, 10, 2, 1, 0xf8fafc);
+  rect(ctx, 9, 9, 1, 2, 0xf8fafc);
 
   return makeTexture(canvas);
 }

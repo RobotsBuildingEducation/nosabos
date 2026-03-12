@@ -234,7 +234,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
 import RobotBuddyPro from "./RobotBuddyPro";
-import { MAP_CHOICES, generateScenarioWithAI } from "./RPGGame/scenarios";
+import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -1498,10 +1498,6 @@ function LessonDetailModal({
     setLoadingMsgIdx(0);
 
     try {
-      // Pick a random map
-      const randomMap =
-        MAP_CHOICES[Math.floor(Math.random() * MAP_CHOICES.length)];
-
       const gameContent = lesson.content?.game;
       const overrideTerms = [
         ...(gameContent?.focusPoints || []),
@@ -1511,7 +1507,7 @@ function LessonDetailModal({
       ].filter(Boolean);
 
       const scenario = await generateScenarioWithAI(
-        randomMap.id,
+        REVIEW_WORLD_ID,
         targetLang || "es",
         supportLang || "en",
         overrideTerms.length ? overrideTerms : null,
