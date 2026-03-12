@@ -12,7 +12,6 @@ import {
   Text,
   Button,
   Progress,
-  CircularProgress,
   Badge,
   useColorModeValue,
   Container,
@@ -847,7 +846,10 @@ function LessonNode({
   };
 
   const ringPercent = Math.max(0, Math.min(100, inProgressPercent));
-  const inProgressRingColor = "#F6C453";
+  const ringRadius = 47;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference * (1 - ringPercent / 100);
+  const ringGradientId = `lesson-progress-gradient-${lesson.id}`;
 
   return (
     <MotionBox
@@ -929,20 +931,62 @@ function LessonNode({
               }}
             >
               {status === SKILL_STATUS.IN_PROGRESS && (
-                <CircularProgress
+                <Box
+                  as="svg"
                   pointerEvents="none"
-                  value={ringPercent}
-                  size="102px"
-                  thickness="6px"
-                  color={inProgressRingColor}
-                  trackColor="rgba(246,196,83,0.24)"
-                  capIsRound
                   position="absolute"
                   top="50%"
                   left="50%"
                   transform="translate(-50%, -50%)"
+                  width="102px"
+                  height="102px"
+                  viewBox="0 0 102 102"
                   filter="drop-shadow(0 0 6px rgba(246,196,83,0.45))"
-                />
+                >
+                  <defs>
+                    <linearGradient
+                      id={ringGradientId}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#FFD56A" />
+                      <stop offset="50%" stopColor="#F6C453" />
+                      <stop offset="100%" stopColor="#D89F2D" />
+                      <animateTransform
+                        attributeName="gradientTransform"
+                        type="rotate"
+                        from="0 0.5 0.5"
+                        to="360 0.5 0.5"
+                        dur="3s"
+                        repeatCount="indefinite"
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  <circle
+                    cx="51"
+                    cy="51"
+                    r={ringRadius}
+                    fill="none"
+                    stroke="rgba(246,196,83,0.24)"
+                    strokeWidth="6"
+                  />
+                  <circle
+                    cx="51"
+                    cy="51"
+                    r={ringRadius}
+                    fill="none"
+                    stroke={`url(#${ringGradientId})`}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringOffset}
+                    transform="rotate(-90 51 51)"
+                    style={{ transition: "stroke-dashoffset 0.4s ease" }}
+                  />
+                </Box>
               )}
 
               <Icon
