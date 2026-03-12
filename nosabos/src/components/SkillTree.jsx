@@ -1551,19 +1551,21 @@ function LessonDetailModal({
         borderColor={`${unit.color}30`}
       >
         {/* Decorative gradient background */}
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          h="200px"
-          bgGradient={`linear(135deg, ${unit.color}20, transparent)`}
-          opacity={0.5}
-          pointerEvents="none"
-        />
+        {!gameLoading && (
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            h="200px"
+            bgGradient={`linear(135deg, ${unit.color}20, transparent)`}
+            opacity={0.5}
+            pointerEvents="none"
+          />
+        )}
 
         {gameLoading ? (
-          /* ── Game loading state with animated purple gradient ── */
+          /* ── Game loading state with dark blue matrix styling ── */
           <>
             <Box
               position="absolute"
@@ -1574,24 +1576,32 @@ function LessonDetailModal({
               overflow="hidden"
               borderRadius="2xl"
               pointerEvents="none"
+              bg="#08142b"
               sx={{
                 "&::before": {
                   content: '""',
                   position: "absolute",
-                  top: "-50%",
-                  left: "-50%",
-                  width: "200%",
-                  height: "200%",
+                  inset: 0,
                   background:
-                    "radial-gradient(circle at 30% 40%, rgba(139,92,246,0.25) 0%, transparent 50%), " +
-                    "radial-gradient(circle at 70% 60%, rgba(168,85,247,0.2) 0%, transparent 50%), " +
-                    "radial-gradient(circle at 50% 80%, rgba(109,40,217,0.15) 0%, transparent 50%)",
-                  animation: "purpleDrift 6s ease-in-out infinite",
+                    "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+                    "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+                    "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+                    "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+                  animation: "matrixGlowShift 10s ease-in-out infinite",
                 },
-                "@keyframes purpleDrift": {
-                  "0%, 100%": { transform: "translate(0, 0) rotate(0deg)" },
-                  "33%": { transform: "translate(2%, -3%) rotate(1deg)" },
-                  "66%": { transform: "translate(-2%, 2%) rotate(-1deg)" },
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                    "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+                  opacity: 0.45,
+                  mixBlendMode: "screen",
+                },
+                "@keyframes matrixGlowShift": {
+                  "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                  "50%": { transform: "translate(0, -2%) scale(1.02)" },
                 },
               }}
             />
@@ -1619,7 +1629,7 @@ function LessonDetailModal({
                   </Text>
                   <Text
                     fontSize="sm"
-                    color="purple.200"
+                    color="blue.100"
                     textAlign="center"
                     minH="20px"
                     key={loadingMsgIdx}

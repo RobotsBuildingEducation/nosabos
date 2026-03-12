@@ -3368,12 +3368,12 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
         w={isEmbedded ? "100%" : "100vw"}
         h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
-        // bg="#1a1a2e"
+        bg={isEmbedded ? "transparent" : "#1a1a2e"}
         display="flex"
-        alignItems="center"
+        alignItems={isEmbedded ? "flex-start" : "center"}
         justifyContent="center"
         borderRadius={isEmbedded ? "xl" : undefined}
-        py={isEmbedded ? 8 : undefined}
+        pt={isEmbedded ? 6 : undefined}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -3489,10 +3489,11 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
         h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
-        bg="#1a1a2e"
+        bg={isEmbedded ? "transparent" : "#1a1a2e"}
         display="flex"
-        alignItems="center"
+        alignItems={isEmbedded ? "flex-start" : "center"}
         justifyContent="center"
+        pt={isEmbedded ? 6 : undefined}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -3517,7 +3518,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
             {GAME_LOADING_MESSAGES[loadingMsgIdx]}
           </Text>
-          <Button onClick={goToScenarioSelect}>{ui.back}</Button>
+          {!isTutorialGame && <Button onClick={goToScenarioSelect}>{ui.back}</Button>}
         </VStack>
       </Box>
     );
