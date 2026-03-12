@@ -857,11 +857,13 @@ function LessonNode({
 
   return (
     <MotionBox
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 14, scale: 0.96 }}
-      whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : undefined}
-      viewport={{ once: true, amount: 0.35 }}
-      transition={{ duration: 0.34, ease: [0.22, 1, 0.36, 1], delay: entryDelay }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.42,
+        ease: [0.16, 1, 0.3, 1],
+        delay: prefersReducedMotion ? 0 : entryDelay,
+      }}
       style={{ willChange: "transform, opacity" }}
     >
       <Box position="relative">
@@ -1162,11 +1164,13 @@ const UnitSection = React.memo(function UnitSection({
 
   return (
     <MotionBox
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 26, scale: 0.98 }}
-      whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-      animate={prefersReducedMotion ? { opacity: 1 } : undefined}
-      viewport={{ once: true, amount: 0.16 }}
-      transition={{ duration: 0.5, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.55,
+        ease: [0.16, 1, 0.3, 1],
+        delay: prefersReducedMotion ? 0 : index * 0.1,
+      }}
       mb={-8}
       position="relative"
       style={{ willChange: "transform, opacity" }}
@@ -1282,10 +1286,13 @@ const UnitSection = React.memo(function UnitSection({
             strokeWidth="5"
             fill="none"
             strokeLinecap="round"
-            initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.4 }}
-            whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.55, ease: "easeOut", delay: 0.05 }}
+            initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.2 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{
+              duration: 0.6,
+              ease: "easeOut",
+              delay: prefersReducedMotion ? 0 : 0.12 + index * 0.1,
+            }}
           />
         </Box>
 
@@ -1440,10 +1447,15 @@ const UnitSection = React.memo(function UnitSection({
                           ? `url(#glow-${lesson.id})`
                           : "none"
                       }
-                      initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.25 }}
-                      whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
-                      viewport={{ once: true, amount: 0.35 }}
-                      transition={{ duration: 0.42, ease: "easeOut", delay: lessonIndex * 0.03 }}
+                      initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.15 }}
+                      animate={{ pathLength: 1, opacity: 1 }}
+                      transition={{
+                        duration: 0.5,
+                        ease: "easeOut",
+                        delay: prefersReducedMotion
+                          ? 0
+                          : 0.2 + index * 0.1 + lessonIndex * 0.05,
+                      }}
                     />
                   </Box>
                 )}
@@ -1466,7 +1478,7 @@ const UnitSection = React.memo(function UnitSection({
                     unit={unit}
                     status={status}
                     inProgressPercent={inProgressPercent}
-                    entryDelay={lessonIndex * 0.03}
+                    entryDelay={0.25 + index * 0.1 + lessonIndex * 0.06}
                     onClick={() => onLessonClick(lesson, unit, status)}
                     supportLang={supportLang}
                   />
@@ -1514,10 +1526,15 @@ const UnitSection = React.memo(function UnitSection({
                   strokeWidth="5"
                   fill="none"
                   strokeLinecap="round"
-                  initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.4 }}
-                  whileInView={prefersReducedMotion ? undefined : { pathLength: 1, opacity: 1 }}
-                  viewport={{ once: true, amount: 0.4 }}
-                  transition={{ duration: 0.45, ease: "easeOut", delay: 0.1 }}
+                  initial={prefersReducedMotion ? false : { pathLength: 0, opacity: 0.2 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  transition={{
+                    duration: 0.52,
+                    ease: "easeOut",
+                    delay: prefersReducedMotion
+                      ? 0
+                      : 0.2 + index * 0.1 + unit.lessons.length * 0.05,
+                  }}
                 />
               </Box>
             );
