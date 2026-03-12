@@ -815,7 +815,14 @@ const getLessonIcon = (lesson, unitId) => {
  * - No Framer whileTap / whileHover
  * - touchAction: "manipulation" to avoid scroll interference
  */
-function LessonNode({ lesson, unit, status, onClick, supportLang }) {
+function LessonNode({
+  lesson,
+  unit,
+  status,
+  onClick,
+  supportLang,
+  inProgressPercent = 0,
+}) {
   const lockedColor = "gray.600";
 
   const lessonTitle = getUIDisplayText(lesson.title);
@@ -837,6 +844,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
     if (!isClickable) return;
     onClick?.();
   };
+
+  const ringPercent = Math.max(0, Math.min(100, inProgressPercent));
+  const ringRadius = 47;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference * (1 - ringPercent / 100);
+  const ringGradientId = `lesson-progress-gradient-${lesson.id}`;
 
   return (
     <MotionBox
@@ -917,6 +930,65 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 },
               }}
             >
+              {status === SKILL_STATUS.IN_PROGRESS && (
+                <Box
+                  as="svg"
+                  pointerEvents="none"
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  width="102px"
+                  height="102px"
+                  viewBox="0 0 102 102"
+                  filter="drop-shadow(0 0 6px rgba(246,196,83,0.45))"
+                >
+                  <defs>
+                    <linearGradient
+                      id={ringGradientId}
+                      x1="0%"
+                      y1="0%"
+                      x2="100%"
+                      y2="0%"
+                    >
+                      <stop offset="0%" stopColor="#FFD56A" />
+                      <stop offset="50%" stopColor="#F6C453" />
+                      <stop offset="100%" stopColor="#D89F2D" />
+                      <animateTransform
+                        attributeName="gradientTransform"
+                        type="rotate"
+                        from="0 0.5 0.5"
+                        to="360 0.5 0.5"
+                        dur="3s"
+                        repeatCount="indefinite"
+                      />
+                    </linearGradient>
+                  </defs>
+
+                  <circle
+                    cx="51"
+                    cy="51"
+                    r={ringRadius}
+                    fill="none"
+                    stroke="rgba(246,196,83,0.24)"
+                    strokeWidth="6"
+                  />
+                  <circle
+                    cx="51"
+                    cy="51"
+                    r={ringRadius}
+                    fill="none"
+                    stroke={`url(#${ringGradientId})`}
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringOffset}
+                    transform="rotate(-90 51 51)"
+                    style={{ transition: "stroke-dashoffset 0.4s ease" }}
+                  />
+                </Box>
+              )}
+
               <Icon
                 size={36}
                 color={status === SKILL_STATUS.LOCKED ? "gray" : "white"}
@@ -927,28 +999,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                       : "none",
                 }}
               />
-
-              {/* Progress ring for in-progress lessons */}
-              {status === SKILL_STATUS.IN_PROGRESS && (
-                <Box
-                  pointerEvents="none"
-                  position="absolute"
-                  top="-6px"
-                  left="-6px"
-                  right="-6px"
-                  bottom="-6px"
-                  borderRadius="full"
-                  border="3px dashed"
-                  borderColor={unit.color}
-                  animation="spin 4s linear infinite"
-                  sx={{
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-              )}
 
               {/* Sparkle effect for completed lessons */}
               {status === SKILL_STATUS.COMPLETED && (
@@ -1049,6 +1099,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
           >
             {lessonTitle}
           </Text>
+
         </VStack>
       </Box>
     </MotionBox>
@@ -1284,6 +1335,26 @@ const UnitSection = React.memo(function UnitSection({
             const nextIsEven = (lessonIndex + 1) % 2 === 0;
             const nextOffset = nextIsEven ? 0 : zigzagOffset;
 
+            const inProgressPercent = (() => {
+              if (status !== SKILL_STATUS.IN_PROGRESS) return 0;
+
+              const lessonStartXp = lessonProgress?.lessonStartXp;
+              if (
+                typeof lessonStartXp !== "number" ||
+                typeof userProgress.totalXp !== "number" ||
+                typeof lesson.xpReward !== "number" ||
+                lesson.xpReward <= 0
+              ) {
+                return 0;
+              }
+
+              const earnedDuringLesson = Math.max(
+                0,
+                userProgress.totalXp - lessonStartXp,
+              );
+              return Math.round((earnedDuringLesson / lesson.xpReward) * 100);
+            })();
+
             return (
               <Box key={lesson.id}>
                 {/* SVG Path connecting to next lesson */}
@@ -1381,6 +1452,7 @@ const UnitSection = React.memo(function UnitSection({
                     lesson={lesson}
                     unit={unit}
                     status={status}
+                    inProgressPercent={inProgressPercent}
                     onClick={() => onLessonClick(lesson, unit, status)}
                     supportLang={supportLang}
                   />
