@@ -815,7 +815,14 @@ const getLessonIcon = (lesson, unitId) => {
  * - No Framer whileTap / whileHover
  * - touchAction: "manipulation" to avoid scroll interference
  */
-function LessonNode({ lesson, unit, status, onClick, supportLang }) {
+function LessonNode({
+  lesson,
+  unit,
+  status,
+  onClick,
+  supportLang,
+  inProgressPercent = 0,
+}) {
   const lockedColor = "gray.600";
 
   const lessonTitle = getUIDisplayText(lesson.title);
@@ -837,6 +844,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
     if (!isClickable) return;
     onClick?.();
   };
+
+  const ringPercent = Math.max(0, Math.min(100, inProgressPercent));
+  const ringRadius = 48;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference * (1 - ringPercent / 100);
 
   return (
     <MotionBox
@@ -931,23 +943,37 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               {/* Progress ring for in-progress lessons */}
               {status === SKILL_STATUS.IN_PROGRESS && (
                 <Box
+                  as="svg"
                   pointerEvents="none"
                   position="absolute"
-                  top="-6px"
-                  left="-6px"
-                  right="-6px"
-                  bottom="-6px"
-                  borderRadius="full"
-                  border="3px dashed"
-                  borderColor={unit.color}
-                  animation="spin 4s linear infinite"
-                  sx={{
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
+                  top="-7px"
+                  left="-7px"
+                  width="104px"
+                  height="104px"
+                  viewBox="0 0 104 104"
+                  transform="rotate(-90deg)"
+                >
+                  <circle
+                    cx="52"
+                    cy="52"
+                    r={ringRadius}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth="5"
+                  />
+                  <circle
+                    cx="52"
+                    cy="52"
+                    r={ringRadius}
+                    fill="none"
+                    stroke={unit.color}
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringOffset}
+                    style={{ transition: "stroke-dashoffset 0.35s ease" }}
+                  />
+                </Box>
               )}
 
               {/* Sparkle effect for completed lessons */}
@@ -1284,6 +1310,26 @@ const UnitSection = React.memo(function UnitSection({
             const nextIsEven = (lessonIndex + 1) % 2 === 0;
             const nextOffset = nextIsEven ? 0 : zigzagOffset;
 
+            const inProgressPercent = (() => {
+              if (status !== SKILL_STATUS.IN_PROGRESS) return 0;
+
+              const lessonStartXp = lessonProgress?.lessonStartXp;
+              if (
+                typeof lessonStartXp !== "number" ||
+                typeof userProgress.totalXp !== "number" ||
+                typeof lesson.xpReward !== "number" ||
+                lesson.xpReward <= 0
+              ) {
+                return 0;
+              }
+
+              const earnedDuringLesson = Math.max(
+                0,
+                userProgress.totalXp - lessonStartXp,
+              );
+              return Math.round((earnedDuringLesson / lesson.xpReward) * 100);
+            })();
+
             return (
               <Box key={lesson.id}>
                 {/* SVG Path connecting to next lesson */}
@@ -1381,6 +1427,7 @@ const UnitSection = React.memo(function UnitSection({
                     lesson={lesson}
                     unit={unit}
                     status={status}
+                    inProgressPercent={inProgressPercent}
                     onClick={() => onLessonClick(lesson, unit, status)}
                     supportLang={supportLang}
                   />
