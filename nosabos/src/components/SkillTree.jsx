@@ -27,7 +27,6 @@ import {
   Flex,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import Conversations from "./Conversations";
@@ -235,9 +234,6 @@ import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
-
-const MotionBox = motion(Box);
-const MotionFlex = motion(Flex);
 
 const getDisplayText = (textObj, supportLang = "en") => {
   if (!textObj) return "";
@@ -852,11 +848,7 @@ function LessonNode({
   const ringGradientId = `lesson-progress-gradient-${lesson.id}`;
 
   return (
-    <MotionBox
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-    >
+    <Box>
       <Box position="relative">
         <VStack
           as="button"
@@ -1102,7 +1094,7 @@ function LessonNode({
 
         </VStack>
       </Box>
-    </MotionBox>
+    </Box>
   );
 }
 
@@ -1127,21 +1119,27 @@ const UnitSection = React.memo(function UnitSection({
 
   // Responsive horizontal offset for zigzag pattern
   const zigzagOffset =
-    useBreakpointValue({
-      base: 90, // Mobile devices
-      sm: 110, // Small tablets
-      md: 140, // Medium tablets
-      lg: 180, // Desktop
-    }) || 90; // Fallback to mobile size
+    useBreakpointValue(
+      {
+        base: 90, // Mobile devices
+        sm: 110, // Small tablets
+        md: 140, // Medium tablets
+        lg: 180, // Desktop
+      },
+      { ssr: false },
+    ) || 90; // Fallback to mobile size
 
   // Responsive SVG container width
   const svgWidth =
-    useBreakpointValue({
-      base: 240,
-      sm: 260,
-      md: 300,
-      lg: 320,
-    }) || 240;
+    useBreakpointValue(
+      {
+        base: 240,
+        sm: 260,
+        md: 300,
+        lg: 320,
+      },
+      { ssr: false },
+    ) || 240;
 
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
@@ -1153,13 +1151,7 @@ const UnitSection = React.memo(function UnitSection({
   const unitDescription = getUIDisplayText(unit.description);
 
   return (
-    <MotionBox
-      initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1, type: "spring" }}
-      mb={-8}
-      position="relative"
-    >
+    <Box mb={-8} position="relative">
       {/* Decorative gradient orb behind unit */}
       <Box
         position="absolute"
@@ -1271,9 +1263,6 @@ const UnitSection = React.memo(function UnitSection({
             strokeWidth="5"
             fill="none"
             strokeLinecap="round"
-            style={{
-              transition: "all 0.3s ease",
-            }}
           />
         </Box>
 
@@ -1428,9 +1417,6 @@ const UnitSection = React.memo(function UnitSection({
                           ? `url(#glow-${lesson.id})`
                           : "none"
                       }
-                      style={{
-                        transition: "all 0.3s ease",
-                      }}
                     />
                   </Box>
                 )}
@@ -1500,9 +1486,6 @@ const UnitSection = React.memo(function UnitSection({
                   strokeWidth="5"
                   fill="none"
                   strokeLinecap="round"
-                  style={{
-                    transition: "all 0.3s ease",
-                  }}
                 />
               </Box>
             );
@@ -1511,7 +1494,7 @@ const UnitSection = React.memo(function UnitSection({
           <Box h={`${unit.lessons.length * 140}px`} />
         </Box>
       </VStack>
-    </MotionBox>
+    </Box>
   );
 });
 
@@ -2284,14 +2267,8 @@ export default function SkillTree({
 
         {/* Minimal Progress Header - hidden in conversations mode */}
         {pathMode !== "conversations" && (
-          <MotionBox
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            mb={4}
-            display="flex"
-            justifyContent={"center"}
-          >
+          <Box mb={4} display="flex" justifyContent={"center"}>
+
             <HStack
               justify="space-between"
               bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
@@ -2355,84 +2332,64 @@ export default function SkillTree({
                 );
               })()}
             </HStack>
-          </MotionBox>
+          </Box>
         )}
 
         {/* Skill Tree Units, Flashcards, or Conversations */}
-        <AnimatePresence mode="wait" initial={false}>
-          {pathMode === "path" ? (
-            <MotionBox
-              key="path-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-            >
-              <VStack spacing={8} align="stretch">
-                {visibleUnits.length > 0 ? (
-                  visibleUnits.map((unit, index) => (
-                    <UnitSection
-                      key={unit.id}
-                      unit={unit}
-                      userProgress={userProgress}
-                      onLessonClick={handleLessonClick}
-                      index={index}
-                      supportLang={supportLang}
-                      hasNextUnit={index < visibleUnits.length - 1}
-                      previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-                      latestUnlockedLessonId={latestUnlockedLessonId}
-                      latestUnlockedRef={latestUnlockedRef}
-                      isTutorialComplete={isTutorialComplete}
-                    />
-                  ))
-                ) : (
-                  <Box textAlign="center" py={12}>
-                    <Text fontSize="lg" color="gray.400">
-                      {getTranslation("skill_tree_no_path")}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      {getTranslation("skill_tree_check_back")}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </MotionBox>
-          ) : pathMode === "flashcards" ? (
-            <MotionBox
-              key="flashcard-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-            >
-              <FlashcardSkillTree
-                userProgress={userProgress}
-                onStartFlashcard={handleFlashcardComplete}
-                onRandomPractice={handleRandomPractice}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                activeCEFRLevel={effectiveActiveLevel}
-                pauseMs={pauseMs}
-              />
-            </MotionBox>
-          ) : (
-            <MotionBox
-              key="conversations-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-            >
-              <Conversations
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-              />
-            </MotionBox>
-          )}
-        </AnimatePresence>
+        {pathMode === "path" ? (
+          <Box>
+            <VStack spacing={8} align="stretch">
+              {visibleUnits.length > 0 ? (
+                visibleUnits.map((unit, index) => (
+                  <UnitSection
+                    key={unit.id}
+                    unit={unit}
+                    userProgress={userProgress}
+                    onLessonClick={handleLessonClick}
+                    index={index}
+                    supportLang={supportLang}
+                    hasNextUnit={index < visibleUnits.length - 1}
+                    previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+                    latestUnlockedLessonId={latestUnlockedLessonId}
+                    latestUnlockedRef={latestUnlockedRef}
+                    isTutorialComplete={isTutorialComplete}
+                  />
+                ))
+              ) : (
+                <Box textAlign="center" py={12}>
+                  <Text fontSize="lg" color="gray.400">
+                    {getTranslation("skill_tree_no_path")}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500" mt={2}>
+                    {getTranslation("skill_tree_check_back")}
+                  </Text>
+                </Box>
+              )}
+            </VStack>
+          </Box>
+        ) : pathMode === "flashcards" ? (
+          <Box>
+            <FlashcardSkillTree
+              userProgress={userProgress}
+              onStartFlashcard={handleFlashcardComplete}
+              onRandomPractice={handleRandomPractice}
+              targetLang={targetLang}
+              supportLang={supportLang}
+              activeCEFRLevel={effectiveActiveLevel}
+              pauseMs={pauseMs}
+            />
+          </Box>
+        ) : (
+          <Box>
+            <Conversations
+              activeNpub={activeNpub}
+              targetLang={targetLang}
+              supportLang={supportLang}
+              pauseMs={pauseMs}
+              maxProficiencyLevel={maxProficiencyLevel}
+            />
+          </Box>
+        )}
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (
