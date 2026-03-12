@@ -12,6 +12,7 @@ import {
   Text,
   Button,
   Progress,
+  CircularProgress,
   Badge,
   useColorModeValue,
   Container,
@@ -940,39 +941,19 @@ function LessonNode({
 
               {/* Progress ring for in-progress lessons */}
               {status === SKILL_STATUS.IN_PROGRESS && (
-                <Box
-                  as="svg"
+                <CircularProgress
                   pointerEvents="none"
+                  value={ringPercent}
+                  size="98px"
+                  thickness="6px"
+                  color={inProgressRingColor}
+                  trackColor="rgba(246,196,83,0.25)"
+                  capIsRound
                   position="absolute"
                   top="-4px"
                   left="-4px"
-                  width="98px"
-                  height="98px"
-                  viewBox="0 0 98 98"
-                  transform="rotate(-90deg)"
                   filter="drop-shadow(0 0 6px rgba(246,196,83,0.45))"
-                >
-                  <circle
-                    cx="49"
-                    cy="49"
-                    r="45"
-                    fill="none"
-                    stroke="rgba(246,196,83,0.25)"
-                    strokeWidth="6"
-                  />
-                  <circle
-                    cx="49"
-                    cy="49"
-                    r="45"
-                    fill="none"
-                    stroke={inProgressRingColor}
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    pathLength="100"
-                    strokeDasharray={`${ringPercent} 100`}
-                    style={{ transition: "stroke-dasharray 0.35s ease" }}
-                  />
-                </Box>
+                />
               )}
 
               {/* Sparkle effect for completed lessons */}
