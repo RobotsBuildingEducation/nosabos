@@ -1751,6 +1751,7 @@ export default function App() {
   const [activeLesson, setActiveLesson] = useState(null);
   const [preGeneratedGameScenario, setPreGeneratedGameScenario] =
     useState(null);
+  const [tutorialGameScenario, setTutorialGameScenario] = useState(null);
 
   const ALPHABET_LANGS = [
     "ru",
@@ -2888,6 +2889,7 @@ export default function App() {
 
     // Store pre-generated scenario for game lessons
     setPreGeneratedGameScenario(preGeneratedScenario || null);
+    setTutorialGameScenario(null);
 
     try {
       // Mark lesson as in progress in Firestore
@@ -3140,6 +3142,7 @@ export default function App() {
     setViewMode("skillTree");
     setActiveLesson(null);
     setPreGeneratedGameScenario(null);
+    setTutorialGameScenario(null);
     setLessonStartXp(null);
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
@@ -4750,7 +4753,17 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  const isGameFullScreen = viewMode === "lesson" && activeLesson?.isGame;
+  const tutorialGameInitialScenario =
+    activeLesson?.isTutorial && currentTab === "game"
+      ? tutorialGameScenario
+      : null;
+
+  const isGameFullScreen =
+    viewMode === "lesson" &&
+    (activeLesson?.isGame ||
+      (activeLesson?.isTutorial &&
+        currentTab === "game" &&
+        !!tutorialGameInitialScenario));
 
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
@@ -4943,8 +4956,11 @@ export default function App() {
         >
           <RPGGame
             lessonContext={activeLesson}
-            initialScenario={preGeneratedGameScenario}
+            initialScenario={
+              preGeneratedGameScenario || tutorialGameInitialScenario
+            }
             onComplete={() => handleReturnToSkillTree()}
+            onSkip={switchToRandomLessonMode}
           />
         </Box>
       )}
@@ -5091,7 +5107,16 @@ export default function App() {
                       <TabPanel key="game" px={0}>
                         <RPGGame
                           lessonContext={activeLesson}
-                          initialScenario={preGeneratedGameScenario}
+                          initialScenario={
+                            preGeneratedGameScenario ||
+                            tutorialGameInitialScenario
+                          }
+                          onSkip={switchToRandomLessonMode}
+                          onScenarioReady={(scenario) => {
+                            if (activeLesson?.isTutorial && scenario) {
+                              setTutorialGameScenario(scenario);
+                            }
+                          }}
                         />
                       </TabPanel>
                     );

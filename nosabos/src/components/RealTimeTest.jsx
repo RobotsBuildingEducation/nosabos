@@ -53,7 +53,7 @@ const REALTIME_MODEL =
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
+  REALTIME_MODEL,
 )}`;
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
@@ -116,7 +116,7 @@ async function ensureUserDoc(npub, defaults = {}) {
           },
           ...defaults,
         },
-        { merge: true }
+        { merge: true },
       );
     }
     return true;
@@ -232,7 +232,7 @@ function wrapFirst(text, phrase, tokenId) {
 function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
   if (!pairs?.length || !text) return [text];
   const sorted = [...pairs].sort(
-    (a, b) => (b?.[side]?.length || 0) - (a?.[side]?.length || 0)
+    (a, b) => (b?.[side]?.length || 0) - (a?.[side]?.length || 0),
   );
   let nodes = [text];
   sorted.forEach((pair, i) => {
@@ -285,7 +285,7 @@ function AlignedBubble({
   }
   const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
   const secondaryNodes = decorate(
-    buildAlignedNodes(secondaryText, pairs, "rhs")
+    buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
 
   return (
@@ -545,12 +545,12 @@ export default function RealTimeTest({
   const [supportLang, setSupportLang] = useState("en");
   const [voice, setVoice] = useState("alloy");
   const [voicePersona, setVoicePersona] = useState(
-    translations.en.onboarding_persona_default_example
+    translations.en.onboarding_persona_default_example,
   );
   const [targetLang, setTargetLang] = useState("es");
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
-    !!user?.progress?.practicePronunciation
+    !!user?.progress?.practicePronunciation,
   );
 
   // live refs
@@ -665,7 +665,7 @@ export default function RealTimeTest({
   const toggleLabel =
     translations[uiLang].onboarding_translations_toggle?.replace(
       "{language}",
-      translations[uiLang][`language_${secondaryPref}`]
+      translations[uiLang][`language_${secondaryPref}`],
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
   /* ---------------------------
@@ -728,12 +728,12 @@ export default function RealTimeTest({
     level === "beginner"
       ? "green"
       : level === "intermediate"
-      ? "orange"
-      : "purple";
+        ? "orange"
+        : "purple";
   const progressPct = Math.min(100, xp % 100);
   const appTitle = ui.ra_title.replace(
     "{language}",
-    languageNameFor(targetLang)
+    languageNameFor(targetLang),
   );
   // Goal-UI language routing
   const goalUiLang = (() => {
@@ -765,7 +765,7 @@ export default function RealTimeTest({
     () => () => {
       stopReplayAudio();
     },
-    []
+    [],
   );
 
   // Backfill localized goal text for Spanish support when older goals lack it
@@ -1068,7 +1068,7 @@ export default function RealTimeTest({
           } catch (e) {
             console.warn(
               "AudioContext init (ontrack) failed:",
-              e?.message || e
+              e?.message || e,
             );
           }
         }
@@ -1131,7 +1131,7 @@ export default function RealTimeTest({
                 : { model: "whisper-1" },
               output_audio_format: "pcm16",
             },
-          })
+          }),
         );
 
         pendingGuardrailTextRef.current = instructions;
@@ -1143,7 +1143,7 @@ export default function RealTimeTest({
               role: "system",
               content: [{ type: "input_text", text: instructions }],
             },
-          })
+          }),
         );
 
         setTimeout(() => applyLanguagePolicyNow(), 60);
@@ -1178,13 +1178,13 @@ export default function RealTimeTest({
       if (dcRef.current?.readyState === "open") {
         safeCancelActiveResponse();
         dcRef.current.send(
-          JSON.stringify({ type: "input_audio_buffer.clear" })
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
         );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
             session: { turn_detection: null },
-          })
+          }),
         );
       }
     } catch {}
@@ -1270,8 +1270,7 @@ export default function RealTimeTest({
   function buildTutorialGoal() {
     const goalLang =
       supportLangRef.current || supportLang || (uiLang === "es" ? "es" : "en");
-    const scenario =
-      goalLang === "es" ? "Di hola" : "Say hello";
+    const scenario = goalLang === "es" ? "Di hola" : "Say hello";
     const successCriteria =
       goalLang === "es"
         ? "El estudiante dice hola."
@@ -1315,22 +1314,23 @@ export default function RealTimeTest({
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName = {
-      es: "Spanish",
-      en: "English",
-      pt: "Portuguese",
-      fr: "French",
-      it: "Italian",
-      nl: "Dutch",
-      nah: "Eastern Huasteca Nahuatl",
-      ja: "Japanese",
-      ru: "Russian",
-      de: "German",
-      el: "Greek",
-      pl: "Polish",
-      ga: "Irish",
-      yua: "Yucatec Maya",
-    }[goalLangCode] || "English";
+    const goalLangName =
+      {
+        es: "Spanish",
+        en: "English",
+        pt: "Portuguese",
+        fr: "French",
+        it: "Italian",
+        nl: "Dutch",
+        nah: "Eastern Huasteca Nahuatl",
+        ja: "Japanese",
+        ru: "Russian",
+        de: "German",
+        el: "Greek",
+        pl: "Polish",
+        ga: "Irish",
+        yua: "Yucatec Maya",
+      }[goalLangCode] || "English";
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -1348,7 +1348,7 @@ export default function RealTimeTest({
     let integratedContext = "";
     if (isIntegratedPractice && lessonContentData?.focusPoints?.length > 0) {
       integratedContext = `\nThis is an INTEGRATED PRACTICE lesson. The learner has studied: ${lessonContentData.focusPoints.join(
-        ", "
+        ", ",
       )}. Create a goal that combines multiple skills from the unit.`;
     }
 
@@ -1399,7 +1399,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         (Array.isArray(payload?.output) &&
           payload.output
             .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
             )
             .join(" ")
             .trim()) ||
@@ -1479,7 +1479,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
     const topicLower = topic.toLowerCase();
     const matchedFallback = Object.entries(topicFallbacks).find(
-      ([key]) => topicLower.includes(key) || key.includes(topicLower)
+      ([key]) => topicLower.includes(key) || key.includes(topicLower),
     );
 
     if (matchedFallback) {
@@ -1536,22 +1536,23 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const cefrLvl = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName = {
-      es: "Spanish",
-      en: "English",
-      pt: "Portuguese",
-      fr: "French",
-      it: "Italian",
-      nl: "Dutch",
-      nah: "Eastern Huasteca Nahuatl",
-      ja: "Japanese",
-      ru: "Russian",
-      de: "German",
-      el: "Greek",
-      pl: "Polish",
-      ga: "Irish",
-      yua: "Yucatec Maya",
-    }[goalLangCode] || "English";
+    const goalLangName =
+      {
+        es: "Spanish",
+        en: "English",
+        pt: "Portuguese",
+        fr: "French",
+        it: "Italian",
+        nl: "Dutch",
+        nah: "Eastern Huasteca Nahuatl",
+        ja: "Japanese",
+        ru: "Russian",
+        de: "German",
+        el: "Greek",
+        pl: "Polish",
+        ga: "Irish",
+        yua: "Yucatec Maya",
+      }[goalLangCode] || "English";
 
     // Get current goal for context
     const currentScenario =
@@ -1776,7 +1777,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
         (Array.isArray(payload?.output) &&
           payload.output
             .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
             )
             .join(" ")
             .trim()) ||
@@ -1799,7 +1800,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     await setDoc(
       doc(database, "users", npub),
       { currentGoal: { ...next, updatedAt: isoNow() } },
-      { merge: true }
+      { merge: true },
     );
   }
   async function recordGoalCompletion(prevGoal, confidence = 0) {
@@ -1944,7 +1945,7 @@ Return ONLY JSON:
         (Array.isArray(payload?.output) &&
           payload.output
             .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
             )
             .join(" ")
             .trim()) ||
@@ -1985,10 +1986,10 @@ Return ONLY JSON:
   --------------------------- */
   function buildLanguageInstructions(prefs) {
     const persona = String(
-      (prefs?.voicePersona ?? voicePersonaRef.current ?? "").slice(0, 240)
+      (prefs?.voicePersona ?? voicePersonaRef.current ?? "").slice(0, 240),
     );
     const focus = String(
-      (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240)
+      (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240),
     );
     const tLang = prefs?.targetLang ?? targetLangRef.current;
     const currentCefrLevel = cefrLevelRef.current;
@@ -2091,7 +2092,7 @@ Return ONLY JSON:
     clearTimeout(sessionUpdateTimer.current);
     sessionUpdateTimer.current = setTimeout(
       () => sendSessionUpdate(),
-      DEBOUNCE_MS
+      DEBOUNCE_MS,
     );
   }
   function scheduleProfileSave() {
@@ -2116,7 +2117,7 @@ Return ONLY JSON:
     for (const id of uniqIds) {
       try {
         dcRef.current.send(
-          JSON.stringify({ type: "conversation.item.delete", item_id: id })
+          JSON.stringify({ type: "conversation.item.delete", item_id: id }),
         );
       } catch {}
     }
@@ -2143,7 +2144,7 @@ Return ONLY JSON:
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
-        })
+        }),
       );
     } catch {}
 
@@ -2157,7 +2158,7 @@ Return ONLY JSON:
             role: "system",
             content: [{ type: "input_text", text: instructions }],
           },
-        })
+        }),
       );
     } catch {}
   }
@@ -2183,7 +2184,7 @@ Return ONLY JSON:
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
-        })
+        }),
       );
     } catch {}
     await new Promise((r) => setTimeout(r, 40));
@@ -2192,28 +2193,28 @@ Return ONLY JSON:
         targetLangRef.current === "es"
           ? "Voz actualizada."
           : targetLangRef.current === "pt"
-          ? "Voz atualizada."
-          : targetLangRef.current === "fr"
-          ? "Voix mise à jour."
-          : targetLangRef.current === "it"
-          ? "Voce aggiornata."
-          : targetLangRef.current === "nl"
-          ? "Stem bijgewerkt."
-          : targetLangRef.current === "ja"
-          ? "音声を更新しました。"
-          : targetLangRef.current === "ru"
-          ? "Голос обновлён."
-          : targetLangRef.current === "de"
-          ? "Stimme aktualisiert."
-          : targetLangRef.current === "el"
-          ? "Η φωνή ενημερώθηκε."
-          : targetLangRef.current === "pl"
-          ? "Głos zaktualizowany."
-          : targetLangRef.current === "ga"
-          ? "Guth nuashonraithe."
-          : targetLangRef.current === "yua"
-          ? "T'aan ts'áaj."
-          : "Voice updated.";
+            ? "Voz atualizada."
+            : targetLangRef.current === "fr"
+              ? "Voix mise à jour."
+              : targetLangRef.current === "it"
+                ? "Voce aggiornata."
+                : targetLangRef.current === "nl"
+                  ? "Stem bijgewerkt."
+                  : targetLangRef.current === "ja"
+                    ? "音声を更新しました。"
+                    : targetLangRef.current === "ru"
+                      ? "Голос обновлён."
+                      : targetLangRef.current === "de"
+                        ? "Stimme aktualisiert."
+                        : targetLangRef.current === "el"
+                          ? "Η φωνή ενημερώθηκε."
+                          : targetLangRef.current === "pl"
+                            ? "Głos zaktualizowany."
+                            : targetLangRef.current === "ga"
+                              ? "Guth nuashonraithe."
+                              : targetLangRef.current === "yua"
+                                ? "T'aan ts'áaj."
+                                : "Voice updated.";
       try {
         dcRef.current.send(
           JSON.stringify({
@@ -2224,7 +2225,7 @@ Return ONLY JSON:
               instructions: `Say exactly: "${probeText}"`,
               metadata: { kind: "voice_probe" },
             },
-          })
+          }),
         );
       } catch {}
     }
@@ -2251,7 +2252,7 @@ Return ONLY JSON:
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
-        })
+        }),
       );
     } catch {}
   }
@@ -2322,7 +2323,7 @@ Return ONLY JSON:
   }
   function stopRecorderAfterTail(
     rid,
-    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 }
+    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 },
   ) {
     if (recTailRef.current.has(rid)) return;
     const { quietMs, maxMs, armThresh, minActiveMs } = opts;
@@ -2653,7 +2654,7 @@ Do not return the whole sentence as a single chunk.`;
       (Array.isArray(payload?.output) &&
         payload.output
           .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
+            (it?.content || []).map((seg) => seg?.text || "").join(""),
           )
           .join(" ")
           .trim()) ||
@@ -2702,7 +2703,7 @@ Do not return the whole sentence as a single chunk.`;
             pauseMs: pauseMsRef.current,
           },
         },
-        { merge: true }
+        { merge: true },
       );
     } catch (e) {
       console.warn("Streak persist failed:", e?.message || e);
@@ -2749,7 +2750,7 @@ Do not return the whole sentence as a single chunk.`;
         helpRequest: nextProgress.helpRequest || "",
         progress: nextProgress,
       },
-      { merge: true }
+      { merge: true },
     );
 
     try {
@@ -2785,7 +2786,7 @@ Do not return the whole sentence as a single chunk.`;
       (h) =>
         h.role === "user" &&
         (h.textFinal || "").trim() === txt &&
-        Math.abs((h.ts || 0) - (ephem.ts || 0)) < threshold
+        Math.abs((h.ts || 0) - (ephem.ts || 0)) < threshold,
     );
   }
 
@@ -3005,7 +3006,7 @@ Do not return the whole sentence as a single chunk.`;
               px={{ base: 6, md: 8 }}
               rounded="full"
               colorScheme="orange"
-              variant="outline"
+              variant="ghost"
               color="white"
               textShadow="0px 0px 20px black"
               mb={20}

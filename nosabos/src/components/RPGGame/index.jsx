@@ -36,7 +36,11 @@ import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import * as Tone from "tone";
 import * as THREE from "three";
-import { MAP_CHOICES, generateScenarioWithAI } from "./scenarios";
+import {
+  MAP_CHOICES,
+  TUTORIAL_MAP_ID,
+  generateScenarioWithAI,
+} from "./scenarios";
 import {
   createTileTexture,
   createCharacterTexture,
@@ -47,11 +51,18 @@ import {
   PLAYER_COLORS,
 } from "./pixelArt";
 import useSoundSettings from "../../hooks/useSoundSettings";
-import { getTTSPlayer, TTS_LANG_TAG, getCharacterVoice, getCharacterPersonality } from "../../utils/tts";
+import {
+  getTTSPlayer,
+  TTS_LANG_TAG,
+  getCharacterVoice,
+  getCharacterPersonality,
+} from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
+import { awardXp } from "../../utils/utils";
 import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
+import RobotBuddyPro from "../RobotBuddyPro";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -62,8 +73,14 @@ import remarkGfm from "remark-gfm";
 const GATHER_SPRITE_SIZE = 32;
 function drawGatherItemSprite(ctx, spriteId) {
   const S = 2; // scale factor
-  const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, S, S); };
-  const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x * S, y * S, w * S, h * S); };
+  const px = (x, y, c) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x * S, y * S, S, S);
+  };
+  const rect = (x, y, w, h, c) => {
+    ctx.fillStyle = c;
+    ctx.fillRect(x * S, y * S, w * S, h * S);
+  };
 
   switch (spriteId) {
     // ── Living Room items ───────────────────────────
@@ -72,30 +89,37 @@ function drawGatherItemSprite(ctx, spriteId) {
       rect(3, 3, 4, 4, "#ffd700"); // head ring
       rect(4, 4, 2, 2, "#1a1a2e"); // ring hole
       rect(7, 5, 5, 2, "#ffd700"); // shaft
-      px(12, 5, "#daa520"); px(12, 6, "#daa520"); // tip
-      px(10, 7, "#ffd700"); px(11, 7, "#ffd700"); // teeth
-      px(10, 8, "#daa520"); px(11, 8, "#daa520");
+      px(12, 5, "#daa520");
+      px(12, 6, "#daa520"); // tip
+      px(10, 7, "#ffd700");
+      px(11, 7, "#ffd700"); // teeth
+      px(10, 8, "#daa520");
+      px(11, 8, "#daa520");
       rect(3, 3, 4, 1, "#fff8dc"); // highlight
       break;
     }
     case "book": {
       // Old brown book
       rect(3, 2, 10, 12, "#8b4513"); // cover
-      rect(4, 3, 8, 10, "#f5deb3");  // pages
-      rect(3, 2, 1, 12, "#654321");  // spine
-      rect(4, 4, 6, 1, "#8b7355");   // text line
-      rect(4, 6, 5, 1, "#8b7355");   // text line
-      rect(4, 8, 7, 1, "#8b7355");   // text line
-      rect(4, 10, 4, 1, "#8b7355");  // text line
+      rect(4, 3, 8, 10, "#f5deb3"); // pages
+      rect(3, 2, 1, 12, "#654321"); // spine
+      rect(4, 4, 6, 1, "#8b7355"); // text line
+      rect(4, 6, 5, 1, "#8b7355"); // text line
+      rect(4, 8, 7, 1, "#8b7355"); // text line
+      rect(4, 10, 4, 1, "#8b7355"); // text line
       break;
     }
     case "letter": {
       // Sealed envelope
-      rect(2, 4, 12, 8, "#f5f0e0");  // envelope body
-      rect(2, 4, 12, 1, "#e0d8c8");  // top edge
+      rect(2, 4, 12, 8, "#f5f0e0"); // envelope body
+      rect(2, 4, 12, 1, "#e0d8c8"); // top edge
       // Flap triangle
-      px(2, 4, "#d4c8a8"); px(3, 5, "#d4c8a8"); px(4, 6, "#d4c8a8");
-      px(13, 4, "#d4c8a8"); px(12, 5, "#d4c8a8"); px(11, 6, "#d4c8a8");
+      px(2, 4, "#d4c8a8");
+      px(3, 5, "#d4c8a8");
+      px(4, 6, "#d4c8a8");
+      px(13, 4, "#d4c8a8");
+      px(12, 5, "#d4c8a8");
+      px(11, 6, "#d4c8a8");
       // Red wax seal
       rect(6, 6, 4, 4, "#cc3333");
       rect(7, 7, 2, 2, "#ee5555");
@@ -103,28 +127,35 @@ function drawGatherItemSprite(ctx, spriteId) {
     }
     case "vase": {
       // Cracked vase
-      rect(6, 2, 4, 2, "#b87333");  // rim
-      rect(5, 4, 6, 6, "#cd853f");  // body
+      rect(6, 2, 4, 2, "#b87333"); // rim
+      rect(5, 4, 6, 6, "#cd853f"); // body
       rect(6, 10, 4, 2, "#b87333"); // base
-      px(7, 5, "#8b6914"); px(8, 6, "#8b6914"); px(7, 7, "#8b6914"); // crack
-      rect(5, 4, 6, 1, "#daa520");  // highlight
+      px(7, 5, "#8b6914");
+      px(8, 6, "#8b6914");
+      px(7, 7, "#8b6914"); // crack
+      rect(5, 4, 6, 1, "#daa520"); // highlight
       break;
     }
     case "spoon": {
       // Old spoon
-      rect(6, 2, 4, 3, "#a8a8a8");  // bowl
-      rect(7, 3, 2, 1, "#c8c8c8");  // bowl highlight
-      rect(7, 5, 2, 8, "#909090");  // handle
-      px(7, 12, "#787878"); px(8, 12, "#787878"); // handle end
+      rect(6, 2, 4, 3, "#a8a8a8"); // bowl
+      rect(7, 3, 2, 1, "#c8c8c8"); // bowl highlight
+      rect(7, 5, 2, 8, "#909090"); // handle
+      px(7, 12, "#787878");
+      px(8, 12, "#787878"); // handle end
       break;
     }
     case "button": {
       // Round button
-      rect(5, 4, 6, 6, "#8b7355");  // body
-      px(5, 4, "transparent"); px(10, 4, "transparent"); // round corners
-      px(5, 9, "transparent"); px(10, 9, "transparent");
-      px(6, 6, "#1a1a2e"); px(9, 6, "#1a1a2e"); // holes
-      px(6, 8, "#1a1a2e"); px(9, 8, "#1a1a2e");
+      rect(5, 4, 6, 6, "#8b7355"); // body
+      px(5, 4, "transparent");
+      px(10, 4, "transparent"); // round corners
+      px(5, 9, "transparent");
+      px(10, 9, "transparent");
+      px(6, 6, "#1a1a2e");
+      px(9, 6, "#1a1a2e"); // holes
+      px(6, 8, "#1a1a2e");
+      px(9, 8, "#1a1a2e");
       rect(6, 4, 4, 1, "#a0906e"); // highlight
       break;
     }
@@ -132,72 +163,94 @@ function drawGatherItemSprite(ctx, spriteId) {
     // ── Park items ──────────────────────────────────
     case "flower": {
       // Colorful flower
-      rect(7, 9, 2, 5, "#2d8b2d");  // stem
-      px(5, 8, "#2d8b2d"); px(6, 9, "#2d8b2d"); // leaf
-      px(10, 10, "#2d8b2d"); px(11, 9, "#2d8b2d"); // leaf
-      rect(7, 4, 2, 2, "#ffdd00");  // center
-      px(6, 3, "#ff6699"); px(9, 3, "#ff6699"); // petals top
-      px(5, 4, "#ff6699"); px(10, 4, "#ff6699"); // petals side
-      px(5, 5, "#ff6699"); px(10, 5, "#ff6699");
-      px(6, 6, "#ff6699"); px(9, 6, "#ff6699"); // petals bottom
-      px(7, 3, "#ff88aa"); px(8, 3, "#ff88aa"); // top petals
-      px(7, 6, "#ff88aa"); px(8, 6, "#ff88aa"); // bottom petals
+      rect(7, 9, 2, 5, "#2d8b2d"); // stem
+      px(5, 8, "#2d8b2d");
+      px(6, 9, "#2d8b2d"); // leaf
+      px(10, 10, "#2d8b2d");
+      px(11, 9, "#2d8b2d"); // leaf
+      rect(7, 4, 2, 2, "#ffdd00"); // center
+      px(6, 3, "#ff6699");
+      px(9, 3, "#ff6699"); // petals top
+      px(5, 4, "#ff6699");
+      px(10, 4, "#ff6699"); // petals side
+      px(5, 5, "#ff6699");
+      px(10, 5, "#ff6699");
+      px(6, 6, "#ff6699");
+      px(9, 6, "#ff6699"); // petals bottom
+      px(7, 3, "#ff88aa");
+      px(8, 3, "#ff88aa"); // top petals
+      px(7, 6, "#ff88aa");
+      px(8, 6, "#ff88aa"); // bottom petals
       break;
     }
     case "stone": {
       // Shiny gem stone
-      rect(5, 5, 6, 5, "#6699cc");  // body
-      rect(6, 4, 4, 1, "#7ab3e0");  // top facet
+      rect(5, 5, 6, 5, "#6699cc"); // body
+      rect(6, 4, 4, 1, "#7ab3e0"); // top facet
       rect(6, 10, 4, 1, "#4477aa"); // bottom
-      px(5, 5, "#5588bb"); px(10, 5, "#5588bb"); // side facets
-      rect(6, 6, 2, 2, "#aaddff");  // shine
-      px(7, 5, "#cceeFF");          // highlight
+      px(5, 5, "#5588bb");
+      px(10, 5, "#5588bb"); // side facets
+      rect(6, 6, 2, 2, "#aaddff"); // shine
+      px(7, 5, "#cceeFF"); // highlight
       break;
     }
     case "feather": {
       // Blue feather
       px(10, 2, "#3366cc");
-      px(9, 3, "#3366cc"); px(10, 3, "#4488dd");
-      px(8, 4, "#3366cc"); px(9, 4, "#4488dd"); px(10, 4, "#5599ee");
-      px(7, 5, "#3366cc"); px(8, 5, "#4488dd");
-      px(6, 6, "#2255bb"); px(7, 6, "#3366cc");
-      px(5, 7, "#2255bb"); px(6, 7, "#3366cc");
-      px(4, 8, "#1a44aa"); px(5, 8, "#2255bb");
-      px(3, 9, "#1a44aa"); px(4, 9, "#e8e0d0"); // quill start
+      px(9, 3, "#3366cc");
+      px(10, 3, "#4488dd");
+      px(8, 4, "#3366cc");
+      px(9, 4, "#4488dd");
+      px(10, 4, "#5599ee");
+      px(7, 5, "#3366cc");
+      px(8, 5, "#4488dd");
+      px(6, 6, "#2255bb");
+      px(7, 6, "#3366cc");
+      px(5, 7, "#2255bb");
+      px(6, 7, "#3366cc");
+      px(4, 8, "#1a44aa");
+      px(5, 8, "#2255bb");
+      px(3, 9, "#1a44aa");
+      px(4, 9, "#e8e0d0"); // quill start
       px(3, 10, "#e8e0d0"); // quill
       px(2, 11, "#d8d0c0"); // quill tip
       break;
     }
     case "leaf": {
       // Dry brown leaf
-      rect(6, 3, 4, 3, "#a0782c");  // top
-      rect(5, 5, 6, 4, "#8b6914");  // body
-      rect(6, 9, 4, 2, "#7a5c10");  // bottom
-      rect(7, 4, 2, 6, "#9b7924");  // vein
-      px(6, 6, "#9b7924"); px(9, 7, "#9b7924"); // side veins
+      rect(6, 3, 4, 3, "#a0782c"); // top
+      rect(5, 5, 6, 4, "#8b6914"); // body
+      rect(6, 9, 4, 2, "#7a5c10"); // bottom
+      rect(7, 4, 2, 6, "#9b7924"); // vein
+      px(6, 6, "#9b7924");
+      px(9, 7, "#9b7924"); // side veins
       rect(7, 11, 2, 3, "#654321"); // stem
       break;
     }
     case "branch": {
       // Crooked branch
-      rect(2, 7, 3, 2, "#8b6914");  // left segment
-      rect(5, 6, 4, 2, "#7a5c10");  // middle
-      rect(9, 5, 3, 2, "#8b6914");  // right upper
-      rect(9, 7, 3, 2, "#7a5c10");  // right lower fork
-      px(12, 5, "#654321"); px(12, 8, "#654321"); // tips
+      rect(2, 7, 3, 2, "#8b6914"); // left segment
+      rect(5, 6, 4, 2, "#7a5c10"); // middle
+      rect(9, 5, 3, 2, "#8b6914"); // right upper
+      rect(9, 7, 3, 2, "#7a5c10"); // right lower fork
+      px(12, 5, "#654321");
+      px(12, 8, "#654321"); // tips
       px(1, 7, "#654321"); // left tip
       px(6, 5, "#9b7924"); // highlight
       break;
     }
     case "shell": {
       // Spiral shell
-      rect(5, 5, 6, 5, "#e8d8b8");  // body
-      rect(6, 4, 4, 1, "#f0e8d0");  // top
+      rect(5, 5, 6, 5, "#e8d8b8"); // body
+      rect(6, 4, 4, 1, "#f0e8d0"); // top
       rect(6, 10, 4, 1, "#d0c098"); // bottom
       // Spiral pattern
-      px(7, 6, "#c8a878"); px(8, 6, "#c8a878");
-      px(9, 7, "#c8a878"); px(9, 8, "#c8a878");
-      px(8, 8, "#c8a878"); px(7, 8, "#c8a878");
+      px(7, 6, "#c8a878");
+      px(8, 6, "#c8a878");
+      px(9, 7, "#c8a878");
+      px(9, 8, "#c8a878");
+      px(8, 8, "#c8a878");
+      px(7, 8, "#c8a878");
       px(6, 7, "#c8a878");
       px(7, 7, "#b89858"); // spiral center
       rect(6, 4, 2, 1, "#f8f0e0"); // highlight
@@ -207,223 +260,289 @@ function drawGatherItemSprite(ctx, spriteId) {
     // ── Airport items ───────────────────────────────
     case "passport": {
       // Blue passport booklet
-      rect(3, 2, 10, 12, "#1a3a6a");  // cover
-      rect(4, 3, 8, 10, "#f5f0e0");   // pages
-      rect(3, 2, 1, 12, "#102850");    // spine
-      rect(5, 4, 6, 6, "#e8e0d0");    // photo area
-      rect(6, 5, 4, 3, "#d4c8b0");    // face placeholder
-      rect(5, 10, 6, 1, "#aaa");      // text line
-      rect(5, 12, 4, 1, "#aaa");      // text line
+      rect(3, 2, 10, 12, "#1a3a6a"); // cover
+      rect(4, 3, 8, 10, "#f5f0e0"); // pages
+      rect(3, 2, 1, 12, "#102850"); // spine
+      rect(5, 4, 6, 6, "#e8e0d0"); // photo area
+      rect(6, 5, 4, 3, "#d4c8b0"); // face placeholder
+      rect(5, 10, 6, 1, "#aaa"); // text line
+      rect(5, 12, 4, 1, "#aaa"); // text line
       break;
     }
     case "tag": {
       // Luggage tag
-      rect(4, 3, 8, 10, "#f5e6c8");  // body
-      rect(6, 1, 4, 3, "#f5e6c8");   // top tab
-      rect(7, 2, 2, 1, "#1a1a2e");   // hole
+      rect(4, 3, 8, 10, "#f5e6c8"); // body
+      rect(6, 1, 4, 3, "#f5e6c8"); // top tab
+      rect(7, 2, 2, 1, "#1a1a2e"); // hole
       // String
-      px(8, 1, "#888"); px(8, 0, "#888");
-      rect(5, 5, 6, 1, "#999");      // text line
-      rect(5, 7, 5, 1, "#999");      // text line
-      rect(5, 9, 6, 1, "#999");      // text line
-      rect(4, 3, 8, 1, "#e0d0a8");   // highlight
+      px(8, 1, "#888");
+      px(8, 0, "#888");
+      rect(5, 5, 6, 1, "#999"); // text line
+      rect(5, 7, 5, 1, "#999"); // text line
+      rect(5, 9, 6, 1, "#999"); // text line
+      rect(4, 3, 8, 1, "#e0d0a8"); // highlight
       break;
     }
     case "ticket": {
       // Golden ticket
-      rect(2, 5, 12, 6, "#ffd700");  // body
-      rect(2, 5, 12, 1, "#fff8dc");  // top edge highlight
+      rect(2, 5, 12, 6, "#ffd700"); // body
+      rect(2, 5, 12, 1, "#fff8dc"); // top edge highlight
       rect(2, 10, 12, 1, "#daa520"); // bottom edge
       // Perforated line
-      px(9, 5, "#daa520"); px(9, 7, "#daa520"); px(9, 9, "#daa520");
+      px(9, 5, "#daa520");
+      px(9, 7, "#daa520");
+      px(9, 9, "#daa520");
       // Text
       rect(3, 7, 5, 1, "#b8860b");
       rect(3, 9, 3, 1, "#b8860b");
       // Star
-      px(11, 7, "#fff8dc"); px(12, 7, "#fff8dc");
+      px(11, 7, "#fff8dc");
+      px(12, 7, "#fff8dc");
       px(11, 8, "#fff8dc");
       break;
     }
     case "receipt": {
       // Crumpled receipt
-      rect(4, 2, 8, 12, "#f0ece0");  // body
-      px(4, 2, "#e0d8c8"); px(11, 2, "#e0d8c8"); // crumpled corners
-      px(4, 13, "#e0d8c8"); px(11, 13, "#d8d0c0");
-      rect(5, 4, 6, 1, "#bbb");     // text
+      rect(4, 2, 8, 12, "#f0ece0"); // body
+      px(4, 2, "#e0d8c8");
+      px(11, 2, "#e0d8c8"); // crumpled corners
+      px(4, 13, "#e0d8c8");
+      px(11, 13, "#d8d0c0");
+      rect(5, 4, 6, 1, "#bbb"); // text
       rect(5, 6, 4, 1, "#bbb");
       rect(5, 8, 5, 1, "#bbb");
-      rect(5, 10, 6, 1, "#999");    // total line (bold)
-      px(6, 3, "#d8d0c0"); px(9, 7, "#d8d0c0"); // crumple marks
+      rect(5, 10, 6, 1, "#999"); // total line (bold)
+      px(6, 3, "#d8d0c0");
+      px(9, 7, "#d8d0c0"); // crumple marks
       break;
     }
     case "card": {
       // Expired card
-      rect(2, 4, 12, 8, "#d8d0c8");  // body
-      rect(2, 4, 12, 3, "#998877");  // stripe
-      rect(3, 8, 4, 2, "#c0b8a0");  // chip area
-      rect(3, 8, 4, 1, "#b0a890");  // chip line
-      rect(8, 9, 5, 1, "#999");     // number line
+      rect(2, 4, 12, 8, "#d8d0c8"); // body
+      rect(2, 4, 12, 3, "#998877"); // stripe
+      rect(3, 8, 4, 2, "#c0b8a0"); // chip area
+      rect(3, 8, 4, 1, "#b0a890"); // chip line
+      rect(8, 9, 5, 1, "#999"); // number line
       // Red X for expired
-      px(10, 5, "#cc3333"); px(12, 5, "#cc3333");
+      px(10, 5, "#cc3333");
+      px(12, 5, "#cc3333");
       px(11, 6, "#cc3333");
-      px(10, 7, "#cc3333"); px(12, 7, "#cc3333");
+      px(10, 7, "#cc3333");
+      px(12, 7, "#cc3333");
       break;
     }
     case "brochure": {
       // Folded brochure
-      rect(2, 3, 5, 10, "#e8e0d0");  // left panel
-      rect(7, 3, 1, 10, "#d0c8b0");  // fold line
-      rect(8, 3, 5, 10, "#f0ece0");  // right panel
-      rect(3, 4, 3, 3, "#7ab87a");  // image placeholder
-      rect(9, 4, 3, 3, "#7a9ebb");  // image placeholder
-      rect(3, 8, 3, 1, "#aaa");    // text
+      rect(2, 3, 5, 10, "#e8e0d0"); // left panel
+      rect(7, 3, 1, 10, "#d0c8b0"); // fold line
+      rect(8, 3, 5, 10, "#f0ece0"); // right panel
+      rect(3, 4, 3, 3, "#7ab87a"); // image placeholder
+      rect(9, 4, 3, 3, "#7a9ebb"); // image placeholder
+      rect(3, 8, 3, 1, "#aaa"); // text
       rect(3, 10, 3, 1, "#aaa");
-      rect(9, 8, 3, 1, "#aaa");    // text
+      rect(9, 8, 3, 1, "#aaa"); // text
       rect(9, 10, 3, 1, "#aaa");
       break;
     }
     // ── Additional Living Room items ──────────────────
     case "candle": {
-      rect(7, 8, 2, 6, "#f5e6c8");  // wax body
+      rect(7, 8, 2, 6, "#f5e6c8"); // wax body
       rect(6, 13, 4, 1, "#d4c8a8"); // base
-      rect(7, 7, 2, 1, "#e8d8b0");  // top
-      px(7, 6, "#ff8800"); px(8, 6, "#ffaa00"); // flame
-      px(7, 5, "#ffcc44"); px(8, 5, "#ffdd66"); // flame tip
+      rect(7, 7, 2, 1, "#e8d8b0"); // top
+      px(7, 6, "#ff8800");
+      px(8, 6, "#ffaa00"); // flame
+      px(7, 5, "#ffcc44");
+      px(8, 5, "#ffdd66"); // flame tip
       px(8, 4, "#ffee88"); // flame top
       break;
     }
     case "clock": {
-      rect(5, 3, 6, 6, "#c0a870");  // body
-      rect(6, 2, 4, 1, "#d0b880");  // top
-      rect(6, 9, 4, 2, "#b09860");  // base
-      rect(6, 4, 4, 4, "#f5f0e0");  // face
-      px(8, 4, "#333"); px(8, 7, "#333"); // 12, 6
-      px(6, 6, "#333"); px(9, 6, "#333"); // 9, 3
-      px(8, 5, "#cc3333"); px(7, 6, "#333"); // hands
+      rect(5, 3, 6, 6, "#c0a870"); // body
+      rect(6, 2, 4, 1, "#d0b880"); // top
+      rect(6, 9, 4, 2, "#b09860"); // base
+      rect(6, 4, 4, 4, "#f5f0e0"); // face
+      px(8, 4, "#333");
+      px(8, 7, "#333"); // 12, 6
+      px(6, 6, "#333");
+      px(9, 6, "#333"); // 9, 3
+      px(8, 5, "#cc3333");
+      px(7, 6, "#333"); // hands
       break;
     }
     case "cup": {
-      rect(5, 4, 6, 7, "#e8e0d0");  // body
-      rect(5, 4, 6, 1, "#d8d0c0");  // rim
+      rect(5, 4, 6, 7, "#e8e0d0"); // body
+      rect(5, 4, 6, 1, "#d8d0c0"); // rim
       rect(5, 10, 6, 1, "#d0c8b0"); // base
       rect(11, 6, 2, 3, "#d8d0c0"); // handle
-      px(12, 6, "#c8c0a8"); px(12, 8, "#c8c0a8");
+      px(12, 6, "#c8c0a8");
+      px(12, 8, "#c8c0a8");
       px(7, 5, "#8b6914"); // crack line
-      px(8, 6, "#8b6914"); px(7, 7, "#8b6914");
+      px(8, 6, "#8b6914");
+      px(7, 7, "#8b6914");
       break;
     }
     case "cushion": {
-      rect(3, 5, 10, 6, "#9966aa");  // body
-      rect(4, 4, 8, 1, "#aa77bb");   // top puff
-      rect(4, 11, 8, 1, "#885599");  // bottom
-      rect(5, 6, 6, 4, "#aa77bb");   // center highlight
-      px(6, 7, "#cc99dd"); px(9, 7, "#cc99dd"); // tufts
-      px(6, 9, "#cc99dd"); px(9, 9, "#cc99dd");
+      rect(3, 5, 10, 6, "#9966aa"); // body
+      rect(4, 4, 8, 1, "#aa77bb"); // top puff
+      rect(4, 11, 8, 1, "#885599"); // bottom
+      rect(5, 6, 6, 4, "#aa77bb"); // center highlight
+      px(6, 7, "#cc99dd");
+      px(9, 7, "#cc99dd"); // tufts
+      px(6, 9, "#cc99dd");
+      px(9, 9, "#cc99dd");
       break;
     }
     case "frame": {
       rect(3, 2, 10, 12, "#b8860b"); // outer frame
-      rect(4, 3, 8, 10, "#8b6914");  // inner frame
-      rect(5, 4, 6, 8, "#f5f0e0");   // empty inside
+      rect(4, 3, 8, 10, "#8b6914"); // inner frame
+      rect(5, 4, 6, 8, "#f5f0e0"); // empty inside
       rect(5, 4, 6, 1, "#e8e0d0");
       rect(5, 11, 6, 1, "#e8e0d0");
-      px(7, 7, "#ddd"); px(8, 8, "#ddd"); // empty marks
+      px(7, 7, "#ddd");
+      px(8, 8, "#ddd"); // empty marks
       break;
     }
     case "scissors": {
       // Open scissors
-      px(4, 3, "#888"); px(5, 4, "#888"); px(6, 5, "#888"); px(7, 6, "#888"); // blade 1
-      px(10, 3, "#888"); px(9, 4, "#888"); px(8, 5, "#888"); // blade 2
+      px(4, 3, "#888");
+      px(5, 4, "#888");
+      px(6, 5, "#888");
+      px(7, 6, "#888"); // blade 1
+      px(10, 3, "#888");
+      px(9, 4, "#888");
+      px(8, 5, "#888"); // blade 2
       rect(6, 7, 4, 1, "#666"); // pivot
-      px(5, 8, "#cc3333"); px(6, 9, "#cc3333"); px(5, 10, "#cc3333"); // handle 1
-      px(9, 8, "#cc3333"); px(8, 9, "#cc3333"); px(9, 10, "#cc3333"); // handle 2
-      px(5, 11, "#cc3333"); px(9, 11, "#cc3333");
+      px(5, 8, "#cc3333");
+      px(6, 9, "#cc3333");
+      px(5, 10, "#cc3333"); // handle 1
+      px(9, 8, "#cc3333");
+      px(8, 9, "#cc3333");
+      px(9, 10, "#cc3333"); // handle 2
+      px(5, 11, "#cc3333");
+      px(9, 11, "#cc3333");
       break;
     }
     case "coin": {
-      rect(5, 4, 6, 6, "#daa520");  // body
-      rect(6, 3, 4, 1, "#e8b830");  // top
+      rect(5, 4, 6, 6, "#daa520"); // body
+      rect(6, 3, 4, 1, "#e8b830"); // top
       rect(6, 10, 4, 1, "#c89418"); // bottom
-      px(5, 4, "#c89418"); px(10, 4, "#c89418"); // rounded
-      px(5, 9, "#c89418"); px(10, 9, "#c89418");
-      px(7, 6, "#f0d060"); px(8, 6, "#f0d060"); // symbol
-      px(7, 7, "#f0d060"); px(8, 7, "#f0d060");
+      px(5, 4, "#c89418");
+      px(10, 4, "#c89418"); // rounded
+      px(5, 9, "#c89418");
+      px(10, 9, "#c89418");
+      px(7, 6, "#f0d060");
+      px(8, 6, "#f0d060"); // symbol
+      px(7, 7, "#f0d060");
+      px(8, 7, "#f0d060");
       break;
     }
 
     // ── Additional Park items ───────────────────────
     case "acorn": {
-      rect(6, 3, 4, 3, "#8b6914");  // cap
-      rect(7, 2, 2, 1, "#7a5c10");  // cap top
+      rect(6, 3, 4, 3, "#8b6914"); // cap
+      rect(7, 2, 2, 1, "#7a5c10"); // cap top
       px(8, 1, "#654321"); // stem
-      rect(6, 6, 4, 5, "#daa520");  // nut body
+      rect(6, 6, 4, 5, "#daa520"); // nut body
       rect(7, 11, 2, 1, "#c89418"); // tip
-      px(7, 4, "#9b7924"); px(8, 4, "#9b7924"); // cap texture
+      px(7, 4, "#9b7924");
+      px(8, 4, "#9b7924"); // cap texture
       px(7, 7, "#e8c840"); // highlight
       break;
     }
     case "mushroom": {
-      rect(5, 3, 6, 4, "#cc3333");  // cap
-      rect(6, 2, 4, 1, "#dd4444");  // cap top
-      px(6, 4, "#fff"); px(9, 3, "#fff"); px(7, 5, "#fff"); // spots
-      rect(7, 7, 2, 5, "#f0e8d0");  // stem
+      rect(5, 3, 6, 4, "#cc3333"); // cap
+      rect(6, 2, 4, 1, "#dd4444"); // cap top
+      px(6, 4, "#fff");
+      px(9, 3, "#fff");
+      px(7, 5, "#fff"); // spots
+      rect(7, 7, 2, 5, "#f0e8d0"); // stem
       rect(6, 11, 4, 1, "#e0d8c0"); // base
       px(7, 8, "#f8f0e0"); // stem highlight
       break;
     }
     case "pinecone": {
-      rect(6, 2, 4, 2, "#8b6914");  // top
-      rect(5, 4, 6, 4, "#7a5c10");  // body upper
-      rect(5, 8, 6, 3, "#654321");  // body lower
+      rect(6, 2, 4, 2, "#8b6914"); // top
+      rect(5, 4, 6, 4, "#7a5c10"); // body upper
+      rect(5, 8, 6, 3, "#654321"); // body lower
       rect(6, 11, 4, 1, "#5a4a1a"); // base
       // Scale pattern
-      px(6, 4, "#9b7924"); px(8, 4, "#9b7924"); px(10, 4, "#9b7924");
-      px(5, 6, "#9b7924"); px(7, 6, "#9b7924"); px(9, 6, "#9b7924");
-      px(6, 8, "#8b6914"); px(8, 8, "#8b6914"); px(10, 8, "#8b6914");
+      px(6, 4, "#9b7924");
+      px(8, 4, "#9b7924");
+      px(10, 4, "#9b7924");
+      px(5, 6, "#9b7924");
+      px(7, 6, "#9b7924");
+      px(9, 6, "#9b7924");
+      px(6, 8, "#8b6914");
+      px(8, 8, "#8b6914");
+      px(10, 8, "#8b6914");
       break;
     }
     case "butterfly": {
       // Butterfly with spread wings
-      px(7, 5, "#333"); px(8, 5, "#333"); // body
-      px(7, 6, "#333"); px(8, 6, "#333");
-      px(7, 7, "#333"); px(8, 7, "#333");
+      px(7, 5, "#333");
+      px(8, 5, "#333"); // body
+      px(7, 6, "#333");
+      px(8, 6, "#333");
+      px(7, 7, "#333");
+      px(8, 7, "#333");
       // Left wing
-      px(4, 4, "#ff88aa"); px(5, 4, "#ff88aa"); px(6, 4, "#ff88aa");
-      px(4, 5, "#ff6699"); px(5, 5, "#ff6699"); px(6, 5, "#ff6699");
-      px(5, 6, "#ff88aa"); px(6, 6, "#ff88aa");
+      px(4, 4, "#ff88aa");
+      px(5, 4, "#ff88aa");
+      px(6, 4, "#ff88aa");
+      px(4, 5, "#ff6699");
+      px(5, 5, "#ff6699");
+      px(6, 5, "#ff6699");
+      px(5, 6, "#ff88aa");
+      px(6, 6, "#ff88aa");
       // Right wing
-      px(9, 4, "#ff88aa"); px(10, 4, "#ff88aa"); px(11, 4, "#ff88aa");
-      px(9, 5, "#ff6699"); px(10, 5, "#ff6699"); px(11, 5, "#ff6699");
-      px(9, 6, "#ff88aa"); px(10, 6, "#ff88aa");
+      px(9, 4, "#ff88aa");
+      px(10, 4, "#ff88aa");
+      px(11, 4, "#ff88aa");
+      px(9, 5, "#ff6699");
+      px(10, 5, "#ff6699");
+      px(11, 5, "#ff6699");
+      px(9, 6, "#ff88aa");
+      px(10, 6, "#ff88aa");
       // Antennae
-      px(6, 3, "#333"); px(9, 3, "#333");
+      px(6, 3, "#333");
+      px(9, 3, "#333");
       break;
     }
     case "nest": {
-      rect(4, 8, 8, 3, "#8b6914");  // nest bowl
-      rect(5, 7, 6, 1, "#9b7924");  // rim
+      rect(4, 8, 8, 3, "#8b6914"); // nest bowl
+      rect(5, 7, 6, 1, "#9b7924"); // rim
       rect(5, 11, 6, 1, "#7a5c10"); // base
       // Twigs texture
-      px(4, 9, "#a08030"); px(6, 8, "#a08030"); px(9, 9, "#a08030"); px(11, 8, "#a08030");
+      px(4, 9, "#a08030");
+      px(6, 8, "#a08030");
+      px(9, 9, "#a08030");
+      px(11, 8, "#a08030");
       // Eggs
-      px(6, 8, "#e8e0d0"); px(8, 8, "#e8e0d0"); px(7, 9, "#f0e8e0");
+      px(6, 8, "#e8e0d0");
+      px(8, 8, "#e8e0d0");
+      px(7, 9, "#f0e8e0");
       break;
     }
     case "frog_statue": {
-      rect(5, 6, 6, 5, "#808080");  // body
-      rect(6, 5, 4, 1, "#909090");  // head top
+      rect(5, 6, 6, 5, "#808080"); // body
+      rect(6, 5, 4, 1, "#909090"); // head top
       rect(6, 11, 4, 1, "#707070"); // base
-      px(6, 6, "#a0a0a0"); px(9, 6, "#a0a0a0"); // eyes
-      px(6, 7, "#333"); px(9, 7, "#333"); // pupils
-      px(7, 9, "#909090"); px(8, 9, "#909090"); // mouth line
-      rect(4, 9, 2, 2, "#808080"); rect(10, 9, 2, 2, "#808080"); // legs
+      px(6, 6, "#a0a0a0");
+      px(9, 6, "#a0a0a0"); // eyes
+      px(6, 7, "#333");
+      px(9, 7, "#333"); // pupils
+      px(7, 9, "#909090");
+      px(8, 9, "#909090"); // mouth line
+      rect(4, 9, 2, 2, "#808080");
+      rect(10, 9, 2, 2, "#808080"); // legs
       break;
     }
     case "seed": {
-      rect(6, 5, 4, 6, "#8b6914");  // body
-      rect(7, 4, 2, 1, "#9b7924");  // top
+      rect(6, 5, 4, 6, "#8b6914"); // body
+      rect(7, 4, 2, 1, "#9b7924"); // top
       rect(7, 11, 2, 1, "#7a5c10"); // bottom
-      px(7, 6, "#a08030"); px(8, 6, "#a08030"); // stripe
+      px(7, 6, "#a08030");
+      px(8, 6, "#a08030"); // stripe
       px(7, 8, "#654321"); // dark line
       px(8, 7, "#b09040"); // highlight
       break;
@@ -431,74 +550,96 @@ function drawGatherItemSprite(ctx, spriteId) {
 
     // ── Additional Airport items ────────────────────
     case "headphones": {
-      rect(5, 2, 6, 2, "#333");     // headband
-      px(4, 3, "#333"); px(11, 3, "#333"); // sides
-      px(4, 4, "#333"); px(11, 4, "#333");
-      rect(3, 5, 3, 4, "#444");     // left cup
-      rect(10, 5, 3, 4, "#444");    // right cup
-      px(4, 6, "#666"); px(11, 6, "#666"); // cup highlight
-      rect(4, 9, 1, 1, "#555"); rect(11, 9, 1, 1, "#555"); // cup base
+      rect(5, 2, 6, 2, "#333"); // headband
+      px(4, 3, "#333");
+      px(11, 3, "#333"); // sides
+      px(4, 4, "#333");
+      px(11, 4, "#333");
+      rect(3, 5, 3, 4, "#444"); // left cup
+      rect(10, 5, 3, 4, "#444"); // right cup
+      px(4, 6, "#666");
+      px(11, 6, "#666"); // cup highlight
+      rect(4, 9, 1, 1, "#555");
+      rect(11, 9, 1, 1, "#555"); // cup base
       break;
     }
     case "bottle": {
-      rect(7, 1, 2, 2, "#a0d0a0");  // cap
-      rect(7, 3, 2, 2, "#c8e8f0");  // neck
-      rect(5, 5, 6, 8, "#d0eef8");  // body
+      rect(7, 1, 2, 2, "#a0d0a0"); // cap
+      rect(7, 3, 2, 2, "#c8e8f0"); // neck
+      rect(5, 5, 6, 8, "#d0eef8"); // body
       rect(5, 13, 6, 1, "#b0d0e0"); // base
-      px(6, 7, "#e8f4ff"); px(7, 8, "#e8f4ff"); // reflection
+      px(6, 7, "#e8f4ff");
+      px(7, 8, "#e8f4ff"); // reflection
       rect(6, 9, 4, 1, "#b0d8e8"); // label
       rect(6, 10, 4, 1, "#a0c8d8");
       break;
     }
     case "map": {
       rect(3, 3, 10, 10, "#f5e6c8"); // paper
-      rect(3, 3, 10, 1, "#e0d0a8");  // top edge
+      rect(3, 3, 10, 1, "#e0d0a8"); // top edge
       // Fold lines
-      px(8, 3, "#d0c098"); px(8, 4, "#d0c098"); px(8, 5, "#d0c098");
-      px(8, 6, "#d0c098"); px(8, 7, "#d0c098"); px(8, 8, "#d0c098");
+      px(8, 3, "#d0c098");
+      px(8, 4, "#d0c098");
+      px(8, 5, "#d0c098");
+      px(8, 6, "#d0c098");
+      px(8, 7, "#d0c098");
+      px(8, 8, "#d0c098");
       // Map markings
-      px(5, 5, "#cc3333"); px(5, 6, "#cc3333"); px(6, 5, "#cc3333"); // X mark
-      px(9, 8, "#4477aa"); px(10, 9, "#4477aa"); px(10, 7, "#4477aa"); // route
+      px(5, 5, "#cc3333");
+      px(5, 6, "#cc3333");
+      px(6, 5, "#cc3333"); // X mark
+      px(9, 8, "#4477aa");
+      px(10, 9, "#4477aa");
+      px(10, 7, "#4477aa"); // route
       rect(4, 10, 3, 1, "#8b6914"); // text line
       break;
     }
     case "suitcase": {
       rect(3, 5, 10, 7, "#6699cc"); // body
-      rect(6, 3, 4, 2, "#5588bb");  // handle
-      rect(7, 4, 2, 1, "#888");     // handle grip
+      rect(6, 3, 4, 2, "#5588bb"); // handle
+      rect(7, 4, 2, 1, "#888"); // handle grip
       rect(3, 8, 10, 1, "#5588bb"); // strap
-      px(7, 8, "#daa520"); px(8, 8, "#daa520"); // buckle
+      px(7, 8, "#daa520");
+      px(8, 8, "#daa520"); // buckle
       rect(3, 11, 10, 1, "#5080aa"); // base
-      px(5, 12, "#444"); px(10, 12, "#444"); // wheels
+      px(5, 12, "#444");
+      px(10, 12, "#444"); // wheels
       break;
     }
     case "keychain": {
-      rect(6, 2, 4, 4, "#c0c0c0");  // ring
-      rect(7, 3, 2, 2, "#1a1a2e");  // ring hole
-      rect(7, 6, 2, 1, "#aaa");     // chain link
-      rect(6, 7, 4, 5, "#cc3333");  // fob body
-      rect(7, 8, 2, 3, "#dd5555");  // fob highlight
+      rect(6, 2, 4, 4, "#c0c0c0"); // ring
+      rect(7, 3, 2, 2, "#1a1a2e"); // ring hole
+      rect(7, 6, 2, 1, "#aaa"); // chain link
+      rect(6, 7, 4, 5, "#cc3333"); // fob body
+      rect(7, 8, 2, 3, "#dd5555"); // fob highlight
       rect(6, 12, 4, 1, "#aa2222"); // fob base
       break;
     }
     case "sunglasses": {
       // Aviator-style sunglasses
-      rect(2, 5, 5, 4, "#333");     // left lens
-      rect(9, 5, 5, 4, "#333");     // right lens
-      rect(7, 5, 2, 1, "#888");     // bridge
-      px(1, 6, "#888"); px(14, 6, "#888"); // arms
-      px(3, 6, "#555"); px(10, 6, "#555"); // lens shine
-      rect(2, 5, 5, 1, "#444"); rect(9, 5, 5, 1, "#444"); // top rims
+      rect(2, 5, 5, 4, "#333"); // left lens
+      rect(9, 5, 5, 4, "#333"); // right lens
+      rect(7, 5, 2, 1, "#888"); // bridge
+      px(1, 6, "#888");
+      px(14, 6, "#888"); // arms
+      px(3, 6, "#555");
+      px(10, 6, "#555"); // lens shine
+      rect(2, 5, 5, 1, "#444");
+      rect(9, 5, 5, 1, "#444"); // top rims
       break;
     }
     case "charger": {
-      rect(4, 2, 4, 5, "#333");     // plug head
-      rect(5, 3, 2, 2, "#888");     // prongs area
-      px(5, 3, "#ccc"); px(6, 3, "#ccc"); // prongs
-      rect(5, 7, 2, 1, "#444");     // cable start
-      px(6, 8, "#444"); px(5, 9, "#444"); px(6, 10, "#444"); // cable curl
-      px(5, 11, "#444"); px(6, 12, "#444"); // cable end
-      rect(5, 12, 3, 2, "#555");    // USB connector
+      rect(4, 2, 4, 5, "#333"); // plug head
+      rect(5, 3, 2, 2, "#888"); // prongs area
+      px(5, 3, "#ccc");
+      px(6, 3, "#ccc"); // prongs
+      rect(5, 7, 2, 1, "#444"); // cable start
+      px(6, 8, "#444");
+      px(5, 9, "#444");
+      px(6, 10, "#444"); // cable curl
+      px(5, 11, "#444");
+      px(6, 12, "#444"); // cable end
+      rect(5, 12, 3, 2, "#555"); // USB connector
       break;
     }
 
@@ -524,13 +665,24 @@ function BackpackIcon({ size = 28 }) {
     canvas.width = RES;
     canvas.height = RES;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true });
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+    });
     renderer.setSize(RES, RES);
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
     const half = RES / 2;
-    const camera = new THREE.OrthographicCamera(-half, half, half, -half, 0.1, 100);
+    const camera = new THREE.OrthographicCamera(
+      -half,
+      half,
+      half,
+      -half,
+      0.1,
+      100,
+    );
     camera.position.z = 10;
 
     // 32×32 pixel-art canvas for a clear, chunky JRPG backpack
@@ -538,72 +690,86 @@ function BackpackIcon({ size = 28 }) {
     texCanvas.width = 32;
     texCanvas.height = 32;
     const ctx = texCanvas.getContext("2d");
-    const px = (x, y, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, 1, 1); };
-    const rect = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const px = (x, y, c) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, 1, 1);
+    };
+    const rect = (x, y, w, h, c) => {
+      ctx.fillStyle = c;
+      ctx.fillRect(x, y, w, h);
+    };
 
     // ── Straps ──
-    rect(10, 1, 2, 4, "#6b3f1f");   // left strap
-    rect(20, 1, 2, 4, "#6b3f1f");   // right strap
-    px(10, 1, "#8b6040");            // strap highlights
+    rect(10, 1, 2, 4, "#6b3f1f"); // left strap
+    rect(20, 1, 2, 4, "#6b3f1f"); // right strap
+    px(10, 1, "#8b6040"); // strap highlights
     px(20, 1, "#8b6040");
 
     // ── Main body (rounded shape) ──
-    rect(9, 5, 14, 20, "#c07840");   // main fill
-    rect(8, 7, 1, 16, "#c07840");    // left round
-    rect(23, 7, 1, 16, "#c07840");   // right round
-    rect(10, 25, 12, 1, "#c07840");  // bottom round
+    rect(9, 5, 14, 20, "#c07840"); // main fill
+    rect(8, 7, 1, 16, "#c07840"); // left round
+    rect(23, 7, 1, 16, "#c07840"); // right round
+    rect(10, 25, 12, 1, "#c07840"); // bottom round
 
     // ── Dark outline / border ──
-    rect(9, 5, 14, 1, "#5a3018");    // top edge
-    rect(8, 6, 1, 1, "#5a3018");     // top-left corner
-    rect(23, 6, 1, 1, "#5a3018");    // top-right corner
-    rect(7, 7, 1, 16, "#5a3018");    // left edge
-    rect(24, 7, 1, 16, "#5a3018");   // right edge
-    rect(8, 23, 1, 1, "#5a3018");    // bottom-left corner
-    rect(23, 23, 1, 1, "#5a3018");   // bottom-right corner
+    rect(9, 5, 14, 1, "#5a3018"); // top edge
+    rect(8, 6, 1, 1, "#5a3018"); // top-left corner
+    rect(23, 6, 1, 1, "#5a3018"); // top-right corner
+    rect(7, 7, 1, 16, "#5a3018"); // left edge
+    rect(24, 7, 1, 16, "#5a3018"); // right edge
+    rect(8, 23, 1, 1, "#5a3018"); // bottom-left corner
+    rect(23, 23, 1, 1, "#5a3018"); // bottom-right corner
     rect(9, 24, 1, 1, "#5a3018");
     rect(22, 24, 1, 1, "#5a3018");
-    rect(10, 25, 12, 1, "#5a3018");  // bottom edge
+    rect(10, 25, 12, 1, "#5a3018"); // bottom edge
 
     // ── Top flap ──
     rect(9, 5, 14, 4, "#d89050");
-    rect(10, 4, 12, 1, "#d89050");   // flap peak
-    rect(10, 4, 12, 1, "#e0a060");   // flap highlight
-    rect(9, 5, 14, 1, "#e0a060");    // top highlight
+    rect(10, 4, 12, 1, "#d89050"); // flap peak
+    rect(10, 4, 12, 1, "#e0a060"); // flap highlight
+    rect(9, 5, 14, 1, "#e0a060"); // top highlight
 
     // ── Gold buckle / clasp ──
     rect(13, 8, 6, 3, "#ffd700");
-    rect(14, 9, 4, 1, "#5a3018");    // buckle hole
-    px(13, 8, "#ffec80");            // buckle shine
+    rect(14, 9, 4, 1, "#5a3018"); // buckle hole
+    px(13, 8, "#ffec80"); // buckle shine
     px(14, 8, "#ffec80");
 
     // ── Front pocket ──
-    rect(10, 13, 12, 8, "#a86030");  // pocket body
-    rect(10, 13, 12, 1, "#b87040");  // pocket top highlight
-    rect(10, 13, 1, 8, "#904820");   // pocket left shadow
-    rect(21, 13, 1, 8, "#904820");   // pocket right shadow
-    rect(10, 20, 12, 1, "#904820");  // pocket bottom shadow
+    rect(10, 13, 12, 8, "#a86030"); // pocket body
+    rect(10, 13, 12, 1, "#b87040"); // pocket top highlight
+    rect(10, 13, 1, 8, "#904820"); // pocket left shadow
+    rect(21, 13, 1, 8, "#904820"); // pocket right shadow
+    rect(10, 20, 12, 1, "#904820"); // pocket bottom shadow
 
     // ── Pocket buckle (small) ──
     rect(14, 12, 4, 2, "#ffd700");
     px(14, 12, "#ffec80");
 
     // ── Body shading ──
-    rect(9, 6, 2, 4, "#d09858");     // left highlight
-    rect(21, 6, 2, 12, "#a06030");   // right shadow
-    rect(9, 22, 14, 2, "#a06030");   // bottom shadow
+    rect(9, 6, 2, 4, "#d09858"); // left highlight
+    rect(21, 6, 2, 12, "#a06030"); // right shadow
+    rect(9, 22, 14, 2, "#a06030"); // bottom shadow
 
     const texture = new THREE.CanvasTexture(texCanvas);
     texture.magFilter = THREE.NearestFilter;
     texture.minFilter = THREE.NearestFilter;
 
     const geo = new THREE.PlaneGeometry(RES, RES);
-    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+    const mat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+    });
     const mesh = new THREE.Mesh(geo, mat);
     scene.add(mesh);
     renderer.render(scene, camera);
 
-    return () => { geo.dispose(); mat.dispose(); texture.dispose(); renderer.dispose(); };
+    return () => {
+      geo.dispose();
+      mat.dispose();
+      texture.dispose();
+      renderer.dispose();
+    };
   }, []);
 
   return (
@@ -650,6 +816,8 @@ const UI_TEXT = {
     speechUnavailable: "Speech unavailable in this browser",
     noSpeechMatch: "I didn't catch that. Try again.",
     continue: "Continue",
+    skip: "Skip",
+    loadingTutorialScene: "Loading tutorial scene...",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -673,6 +841,8 @@ const UI_TEXT = {
     speechUnavailable: "Voz no disponible en este navegador",
     noSpeechMatch: "No entendí eso. Inténtalo otra vez.",
     continue: "Continuar",
+    skip: "Saltar",
+    loadingTutorialScene: "Cargando escena tutorial...",
   },
 };
 
@@ -680,7 +850,19 @@ const SCENARIO_EMOJIS = {
   livingRoom: "🛋️",
   park: "🌳",
   airport: "✈️",
+  [TUTORIAL_MAP_ID]: "👋",
 };
+
+const GAME_LOADING_MESSAGES = [
+  "Building your world...",
+  "Placing NPCs...",
+  "Writing quest dialogue...",
+  "Generating vocabulary challenges...",
+  "Designing the map layout...",
+  "Preparing language puzzles...",
+  "Setting the scene...",
+  "Crafting your adventure...",
+];
 
 const DIALOGUE_CHARACTER_POOLS = {
   hamster: ["33", "26", "25", "22"],
@@ -723,10 +905,7 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
     }
     if (!text) return;
     if (visibleCount >= text.length) return;
-    const timer = setTimeout(
-      () => setVisibleCount((c) => c + 1),
-      charDelayMs,
-    );
+    const timer = setTimeout(() => setVisibleCount((c) => c + 1), charDelayMs);
     return () => clearTimeout(timer);
   }, [text, visibleCount, charDelayMs]);
 
@@ -750,7 +929,13 @@ function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
-export default function RPGGame({ lessonContext = null, onComplete = null, initialScenario = null }) {
+export default function RPGGame({
+  lessonContext = null,
+  onComplete = null,
+  initialScenario = null,
+  onSkip = null,
+  onScenarioReady = null,
+}) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
 
@@ -800,7 +985,9 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
     useBreakpointValue({ base: true, md: false }) ?? false;
 
   // Scenario selection - initialize from pre-generated scenario if provided
-  const [scenarioId, setScenarioId] = useState(initialScenario ? initialScenario.id || "generated" : null);
+  const [scenarioId, setScenarioId] = useState(
+    initialScenario ? initialScenario.id || "generated" : null,
+  );
   const [scenario, setScenario] = useState(initialScenario || null);
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
   const [npcNameMap, setNpcNameMap] = useState(null);
@@ -819,6 +1006,7 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const conversationLogRef = useRef([]);
   const pendingBridgeRef = useRef(null);
   const pendingNpcGreetingRef = useRef(null);
@@ -915,7 +1103,9 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
         if (lineBuffer.trim()) applyLine(lineBuffer);
       } else {
         const result = await callResponses({ input: prompt });
-        const resultLines = (result || "").split(/\r?\n/).filter((l) => l.trim());
+        const resultLines = (result || "")
+          .split(/\r?\n/)
+          .filter((l) => l.trim());
         for (const rl of resultLines) applyLine(rl);
       }
     } catch {
@@ -1297,29 +1487,36 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
   }, []);
 
   // Show a quick toast when picking up an item
-  const showPickupToast = useCallback((itemName) => {
-    toast({
-      duration: 1500,
-      isClosable: false,
-      position: "bottom",
-      render: () => (
-        <HStack
-          bg="gray.800"
-          border="1px solid"
-          borderColor="yellow.400"
-          borderRadius="lg"
-          px={3}
-          py={2}
-          spacing={2}
-          justify="center"
-          boxShadow="0 0 12px rgba(236,201,75,0.3)"
-        >
-          <Text color="yellow.300" fontSize="sm" fontWeight="bold">+</Text>
-          <Text color="white" fontSize="sm">{itemName}</Text>
-        </HStack>
-      ),
-    });
-  }, [toast]);
+  const showPickupToast = useCallback(
+    (itemName) => {
+      toast({
+        duration: 1500,
+        isClosable: false,
+        position: "bottom",
+        render: () => (
+          <HStack
+            bg="gray.800"
+            border="1px solid"
+            borderColor="yellow.400"
+            borderRadius="lg"
+            px={3}
+            py={2}
+            spacing={2}
+            justify="center"
+            boxShadow="0 0 12px rgba(236,201,75,0.3)"
+          >
+            <Text color="yellow.300" fontSize="sm" fontWeight="bold">
+              +
+            </Text>
+            <Text color="white" fontSize="sm">
+              {itemName}
+            </Text>
+          </HStack>
+        ),
+      });
+    },
+    [toast],
+  );
 
   const getDialogueCharacterForNPC = useCallback((npcIdx) => {
     const existingCharacter = npcDialogueCharactersRef.current.get(npcIdx);
@@ -1337,8 +1534,16 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
     if (!dialogue) return;
     const player = ttsPlayerRef.current;
     if (player) {
-      try { player.audio?.pause(); } catch { /* ignore */ }
-      try { player.cleanup?.(); } catch { /* ignore */ }
+      try {
+        player.audio?.pause();
+      } catch {
+        /* ignore */
+      }
+      try {
+        player.cleanup?.();
+      } catch {
+        /* ignore */
+      }
     }
     ttsPlayerRef.current = null;
     playGameSound("click");
@@ -1425,8 +1630,16 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
   const stopNPCSpeech = useCallback(() => {
     const player = ttsPlayerRef.current;
     if (player) {
-      try { player.audio?.pause(); } catch { /* ignore */ }
-      try { player.cleanup?.(); } catch { /* ignore */ }
+      try {
+        player.audio?.pause();
+      } catch {
+        /* ignore */
+      }
+      try {
+        player.cleanup?.();
+      } catch {
+        /* ignore */
+      }
     }
     ttsPlayerRef.current = null;
   }, []);
@@ -1437,13 +1650,13 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
       stopNPCSpeech();
       try {
         const characterId =
-          npcIdx != null
-            ? npcVariantAssignmentsRef.current[npcIdx]
-            : undefined;
+          npcIdx != null ? npcVariantAssignmentsRef.current[npcIdx] : undefined;
         const player = await getTTSPlayer({
           text,
           voice: characterId ? getCharacterVoice(characterId) : undefined,
-          personality: characterId ? getCharacterPersonality(characterId) : undefined,
+          personality: characterId
+            ? getCharacterPersonality(characterId)
+            : undefined,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           warmAudio,
         });
@@ -1467,26 +1680,36 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
       setGameComplete(false);
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
+      setLoadingMsgIdx(0);
 
       // When lessonContext is provided, pass focused terms and CEFR level
       const gameContent = lessonContext?.content?.game;
       const overrideTerms = gameContent
-        ? [...(gameContent.focusPoints || []), ...(gameContent.unitTopics || []), gameContent.topic, gameContent.unitTitle].filter(Boolean)
+        ? [
+            ...(gameContent.focusPoints || []),
+            ...(gameContent.unitTopics || []),
+            gameContent.topic,
+            gameContent.unitTitle,
+          ].filter(Boolean)
         : null;
 
       const generated = await generateScenarioWithAI(
         mapId,
         targetLang,
         supportLang,
-        overrideTerms.length ? overrideTerms : null,
+        overrideTerms?.length ? overrideTerms : null,
         gameContent?.cefrLevel || null,
       );
       setScenario(generated);
+      if (typeof onScenarioReady === "function" && generated) {
+        onScenarioReady(generated);
+      }
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
+      xpAwardedRef.current = false;
     },
-    [targetLang, supportLang, lessonContext],
+    [targetLang, supportLang, lessonContext, onScenarioReady],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
@@ -1495,6 +1718,14 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
       stopNPCSpeech();
     };
   }, [stopNPCSpeech]);
+
+  useEffect(() => {
+    if (!loadingScenarioId) return;
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % GAME_LOADING_MESSAGES.length);
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [loadingScenarioId]);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -1979,7 +2210,10 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
           ty = 2 + Math.floor(Math.random() * (MAP_H - 4));
           attempts++;
-        } while ((isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) && attempts < 80);
+        } while (
+          (isSolid(tx, ty) || occupied.has(`${tx},${ty}`)) &&
+          attempts < 80
+        );
         occupied.add(`${tx},${ty}`);
 
         // Create illustrated pixel-art sprite for each item
@@ -2115,7 +2349,14 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
         if (gs.playerX === item.tx && gs.playerY === item.ty) {
           item.collected = true;
           item.mesh.visible = false;
-          setInventory((prev) => [...prev, { name: item.name, isCorrect: item.isCorrect, sprite: item.sprite || "default" }]);
+          setInventory((prev) => [
+            ...prev,
+            {
+              name: item.name,
+              isCorrect: item.isCorrect,
+              sprite: item.sprite || "default",
+            },
+          ]);
           playGameSound("rpgDialogueSelect");
           showPickupToast(item.name);
         }
@@ -2232,9 +2473,10 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           const currentStep = questSteps[questProgress.currentStepIdx];
           if (!currentStep || npcIdx !== currentStep.npcIdx) {
             const targetNpc =
-              scenario.npcs[currentStep?.npcIdx ?? 0]?.name ||
-              "NPC";
-            const targetCharName = npcCharacterNamesRef.current[currentStep?.npcIdx ?? 0] || targetNpc;
+              scenario.npcs[currentStep?.npcIdx ?? 0]?.name || "NPC";
+            const targetCharName =
+              npcCharacterNamesRef.current[currentStep?.npcIdx ?? 0] ||
+              targetNpc;
             setFeedback(`${ui.lockedNpc} ${targetCharName}`);
             setTimeout(() => setFeedback(null), 1200);
             return;
@@ -2242,8 +2484,7 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
           const stepArc = questSteps[questProgress.currentStepIdx];
-          const nodeId =
-            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          const nodeId = questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
           // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
@@ -2259,14 +2500,22 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
-            npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
+            npcName:
+              npcCharacterNamesRef.current[npcIdx] ||
+              scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
             node,
             npcReply: "",
           });
           const greetLine = node?.npcLine || node?.prompt || question.prompt;
-          conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          conversationLogRef.current.push({
+            speaker:
+              npcCharacterNamesRef.current[npcIdx] ||
+              scenario.npcs[npcIdx].name,
+            text: greetLine,
+            npcIdx,
+          });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
           // Generate dynamic choices if the first node is a choice node
@@ -2394,8 +2643,7 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
         const question = getQuestionForNPC(npcIdx);
         if (question) {
           const stepArc = questSteps[questProgress.currentStepIdx];
-          const nodeId =
-            questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
+          const nodeId = questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
           // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
@@ -2411,14 +2659,22 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           setDialogue({
             npcIdx,
             stepIdx: questProgress.currentStepIdx,
-            npcName: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name,
+            npcName:
+              npcCharacterNamesRef.current[npcIdx] ||
+              scenario.npcs[npcIdx].name,
             npcCharacter: getDialogueCharacterForNPC(npcIdx),
             question,
             node,
             npcReply: "",
           });
           const greetLine = node?.npcLine || node?.prompt || question.prompt;
-          conversationLogRef.current.push({ speaker: npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx].name, text: greetLine, npcIdx });
+          conversationLogRef.current.push({
+            speaker:
+              npcCharacterNamesRef.current[npcIdx] ||
+              scenario.npcs[npcIdx].name,
+            text: greetLine,
+            npcIdx,
+          });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
           // Generate dynamic choices if the first node is a choice node
@@ -2518,32 +2774,40 @@ export default function RPGGame({ lessonContext = null, onComplete = null, initi
           .map((e) => `${e.speaker}: ${e.text}`)
           .join("\n");
         const seed = quest?.storySeed || "";
-        const nextNpcName = npcCharacterNamesRef.current[nextStep.npcIdx]
-          || scenario?.npcs?.[nextStep.npcIdx]?.name || "NPC";
-        const bridgePrompt = targetLang === "es"
-          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres el jugador en una aventura. La historia: ${seed}
+        const nextNpcName =
+          npcCharacterNamesRef.current[nextStep.npcIdx] ||
+          scenario?.npcs?.[nextStep.npcIdx]?.name ||
+          "NPC";
+        const bridgePrompt =
+          targetLang === "es"
+            ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres el jugador en una aventura. La historia: ${seed}
 ${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar. Solo la oración, sin comillas.`
-          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are the player in an adventure. The story: ${seed}
+            : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are the player in an adventure. The story: ${seed}
 ${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence that the player would say upon arriving. Just the sentence, no quotes.`;
-        callResponses({ input: bridgePrompt }).then((playerBridge) => {
-          const text = (playerBridge || "").trim();
-          if (text.length > 0 && text.length < 200) {
-            pendingBridgeRef.current = text;
-          }
-          // Now generate a contextual NPC greeting that responds to the player's bridge
-          const npcPersonality = scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
-          const npcGreetPrompt = targetLang === "es"
-            ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
+        callResponses({ input: bridgePrompt })
+          .then((playerBridge) => {
+            const text = (playerBridge || "").trim();
+            if (text.length > 0 && text.length < 200) {
+              pendingBridgeRef.current = text;
+            }
+            // Now generate a contextual NPC greeting that responds to the player's bridge
+            const npcPersonality =
+              scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
+            const npcGreetPrompt =
+              targetLang === "es"
+                ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
 ${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones cortas en español como ${nextNpcName}. Solo las oraciones, sin comillas.`
-            : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
+                : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
 ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 short sentences in English as ${nextNpcName}. Just the sentences, no quotes.`;
-          return callResponses({ input: npcGreetPrompt });
-        }).then((result) => {
-          const text = (result || "").trim();
-          if (text.length > 0 && text.length < 300) {
-            pendingNpcGreetingRef.current = text;
-          }
-        }).catch(() => {});
+            return callResponses({ input: npcGreetPrompt });
+          })
+          .then((result) => {
+            const text = (result || "").trim();
+            if (text.length > 0 && text.length < 300) {
+              pendingNpcGreetingRef.current = text;
+            }
+          })
+          .catch(() => {});
       }
 
       setTimeout(() => {
@@ -2552,7 +2816,17 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
         if (newCompleted >= totalSteps) setGameComplete(true);
       }, 800);
     },
-    [completedSteps, totalSteps, questProgress, questSteps, quest, scenario, targetLang, stopNPCSpeech, cefrDialogueRule],
+    [
+      completedSteps,
+      totalSteps,
+      questProgress,
+      questSteps,
+      quest,
+      scenario,
+      targetLang,
+      stopNPCSpeech,
+      cefrDialogueRule,
+    ],
   );
 
   // ─── Generate dynamic choices for choice nodes via LLM ────────────────
@@ -2560,26 +2834,34 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
     async (node, npcIdx, stepIdx) => {
       if (!node || node.responseMode !== "choice") return;
       setGeneratingChoices(true);
-      const npcName = npcCharacterNamesRef.current[npcIdx] || scenario?.npcs?.[npcIdx]?.name || "NPC";
+      const npcName =
+        npcCharacterNamesRef.current[npcIdx] ||
+        scenario?.npcs?.[npcIdx]?.name ||
+        "NPC";
       const seed = quest?.storySeed || "";
       const historyContext = conversationLogRef.current
         .slice(-10)
         .map((e) => `${e.speaker}: ${e.text}`)
         .join("\n");
       const characterId = npcVariantAssignmentsRef.current[npcIdx];
-      const personality = characterId ? getCharacterPersonality(characterId) : null;
+      const personality = characterId
+        ? getCharacterPersonality(characterId)
+        : null;
       const personalityHint = personality
-        ? (targetLang === "es" ? ` Personalidad del NPC: ${personality}.` : ` NPC personality: ${personality}.`)
+        ? targetLang === "es"
+          ? ` Personalidad del NPC: ${personality}.`
+          : ` NPC personality: ${personality}.`
         : "";
       const npcLine = node.npcLine || "";
 
-      const prompt = targetLang === "es"
-        ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
+      const prompt =
+        targetLang === "es"
+          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El NPC "${npcName}" acaba de decir: "${npcLine}"
 Genera exactamente 3 opciones de respuesta cortas que el jugador podría decir, y para cada una la reacción del NPC (1 oración corta).
 Responde SOLO en este formato JSON exacto, sin texto adicional:
 [{"text":"opción del jugador","reply":"respuesta del NPC"},{"text":"opción 2","reply":"respuesta 2"},{"text":"opción 3","reply":"respuesta 3"}]`
-        : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
+          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The NPC "${npcName}" just said: "${npcLine}"
 Generate exactly 3 short response options the player could say, and for each one the NPC's short reaction (1 sentence).
 Respond ONLY in this exact JSON format, no additional text:
@@ -2629,17 +2911,29 @@ Respond ONLY in this exact JSON format, no additional text:
     if (!selected) return;
 
     // Log choice exchange to conversation history
-    const npcName = npcCharacterNamesRef.current[dialogue.npcIdx] || scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
-    conversationLogRef.current.push({ speaker: "Player", text: selected.text, npcIdx: dialogue.npcIdx });
+    const npcName =
+      npcCharacterNamesRef.current[dialogue.npcIdx] ||
+      scenario?.npcs?.[dialogue.npcIdx]?.name ||
+      "NPC";
+    conversationLogRef.current.push({
+      speaker: "Player",
+      text: selected.text,
+      npcIdx: dialogue.npcIdx,
+    });
     if (selected.npcReply) {
-      conversationLogRef.current.push({ speaker: npcName, text: selected.npcReply, npcIdx: dialogue.npcIdx });
+      conversationLogRef.current.push({
+        speaker: npcName,
+        text: selected.npcReply,
+        npcIdx: dialogue.npcIdx,
+      });
     }
 
     const nextNodeId = selected.nextNodeId || null;
 
     if (!nextNodeId) {
       setDialogue((prev) => ({ ...prev, npcReply: selected.npcReply || "" }));
-      if (selected.npcReply) speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
+      if (selected.npcReply)
+        speakNPCText(selected.npcReply, { npcIdx: dialogue.npcIdx });
       completeNPCChapter(dialogue.npcIdx);
       return;
     }
@@ -2677,8 +2971,7 @@ Respond ONLY in this exact JSON format, no additional text:
         node: nextNode,
         npcReply: reply,
       }));
-      const transitionLine =
-        reply || nextNode.npcLine || nextNode.prompt || "";
+      const transitionLine = reply || nextNode.npcLine || nextNode.prompt || "";
       speakNPCText(transitionLine, { npcIdx: dialogue.npcIdx });
 
       // Generate dynamic choices if the next node is a choice node
@@ -2700,8 +2993,14 @@ Respond ONLY in this exact JSON format, no additional text:
     const MAP_H = scenario.mapHeight;
     const TILE = scenario.tileSize;
     const offsets = [
-      [1, 0], [-1, 0], [0, 1], [0, -1],
-      [1, 1], [-1, -1], [1, -1], [-1, 1],
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+      [1, 1],
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
     ];
     let dropX = gs.playerX;
     let dropY = gs.playerY;
@@ -2753,9 +3052,10 @@ Respond ONLY in this exact JSON format, no additional text:
 
     if (!submittedItem.isCorrect) {
       // Wrong item — NPC tells you it's wrong, drop item back near the player
-      const wrongText = targetLang === "es"
-        ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
-        : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
+      const wrongText =
+        targetLang === "es"
+          ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
+          : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
       speakNPCText(wrongText, { npcIdx: dialogue.npcIdx });
       returnItemToMap(submittedItem.name);
@@ -2811,7 +3111,10 @@ Respond ONLY in this exact JSON format, no additional text:
         return;
       }
 
-      const npcName = npcCharacterNamesRef.current[dialogue.npcIdx] || scenario?.npcs?.[dialogue.npcIdx]?.name || "NPC";
+      const npcName =
+        npcCharacterNamesRef.current[dialogue.npcIdx] ||
+        scenario?.npcs?.[dialogue.npcIdx]?.name ||
+        "NPC";
       const seed = quest?.storySeed || "";
       const historyContext = conversationLogRef.current
         .slice(-10)
@@ -2819,7 +3122,11 @@ Respond ONLY in this exact JSON format, no additional text:
         .join("\n");
 
       // Log the user's speech
-      conversationLogRef.current.push({ speaker: "Player", text: heard, npcIdx: dialogue.npcIdx });
+      conversationLogRef.current.push({
+        speaker: "Player",
+        text: heard,
+        npcIdx: dialogue.npcIdx,
+      });
 
       const nextNodeId = dialogue.node.nextNodeId || null;
       const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
@@ -2839,18 +3146,21 @@ Respond ONLY in this exact JSON format, no additional text:
 
       // Build LLM prompt for a dynamic, personalized NPC reply
       const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
-      const personality = characterId ? getCharacterPersonality(characterId) : null;
+      const personality = characterId
+        ? getCharacterPersonality(characterId)
+        : null;
       const personalityHint = personality
-        ? (targetLang === "es"
+        ? targetLang === "es"
           ? ` Tu personalidad: ${personality}.`
-          : ` Your personality: ${personality}.`)
+          : ` Your personality: ${personality}.`
         : "";
 
-      const llmPrompt = targetLang === "es"
-        ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
+      const llmPrompt =
+        targetLang === "es"
+          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
 ${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
 Responde en español, en 1-2 oraciones breves. Solo responde como el personaje.`
-        : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
+          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
 ${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
 Respond in 1-2 brief sentences. Just respond as the character.`;
 
@@ -2860,47 +3170,63 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
       // Fire LLM call without blocking dialogue progression
       const npcIdx = dialogue.npcIdx;
       const stepIdx = dialogue.stepIdx;
-      callResponses({ input: llmPrompt }).then((llmResult) => {
-        const dynamicReply = (llmResult && llmResult.trim().length > 0)
-          ? llmResult.trim()
-          : (dialogue.node.speechContinueReply ||
-            (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue."));
+      callResponses({ input: llmPrompt })
+        .then((llmResult) => {
+          const dynamicReply =
+            llmResult && llmResult.trim().length > 0
+              ? llmResult.trim()
+              : dialogue.node.speechContinueReply ||
+                (targetLang === "es"
+                  ? "Entiendo. Sigamos."
+                  : "I understand. Let's continue.");
 
-        conversationLogRef.current.push({ speaker: npcName, text: dynamicReply, npcIdx });
+          conversationLogRef.current.push({
+            speaker: npcName,
+            text: dynamicReply,
+            npcIdx,
+          });
 
-        let fullReply = dynamicReply;
-        if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
-          fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
-        }
+          let fullReply = dynamicReply;
+          if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
+            fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
+          }
 
-        setDialogue((prev) => ({
-          ...prev,
-          ...(nextNode ? { node: nextNode } : {}),
-          npcReply: fullReply,
-        }));
-        speakNPCText(fullReply, { warmAudio, npcIdx });
+          setDialogue((prev) => ({
+            ...prev,
+            ...(nextNode ? { node: nextNode } : {}),
+            npcReply: fullReply,
+          }));
+          speakNPCText(fullReply, { warmAudio, npcIdx });
 
-        // Generate dynamic choices if the next node is a choice node
-        if (nextNode?.responseMode === "choice") {
-          generateDynamicChoices(nextNode, npcIdx, stepIdx);
-        }
-      }).catch(() => {
-        const fallback = dialogue.node.speechContinueReply ||
-          (targetLang === "es" ? "Entiendo. Sigamos." : "I understand. Let's continue.");
-        conversationLogRef.current.push({ speaker: npcName, text: fallback, npcIdx });
+          // Generate dynamic choices if the next node is a choice node
+          if (nextNode?.responseMode === "choice") {
+            generateDynamicChoices(nextNode, npcIdx, stepIdx);
+          }
+        })
+        .catch(() => {
+          const fallback =
+            dialogue.node.speechContinueReply ||
+            (targetLang === "es"
+              ? "Entiendo. Sigamos."
+              : "I understand. Let's continue.");
+          conversationLogRef.current.push({
+            speaker: npcName,
+            text: fallback,
+            npcIdx,
+          });
 
-        let fullReply = fallback;
-        if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
-          fullReply = `${fallback}\n\n${nextNode.npcLine}`;
-        }
+          let fullReply = fallback;
+          if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
+            fullReply = `${fallback}\n\n${nextNode.npcLine}`;
+          }
 
-        setDialogue((prev) => ({
-          ...prev,
-          ...(nextNode ? { node: nextNode } : {}),
-          npcReply: fullReply,
-        }));
-        speakNPCText(fullReply, { warmAudio, npcIdx });
-      });
+          setDialogue((prev) => ({
+            ...prev,
+            ...(nextNode ? { node: nextNode } : {}),
+            npcReply: fullReply,
+          }));
+          speakNPCText(fullReply, { warmAudio, npcIdx });
+        });
     },
   });
 
@@ -2966,15 +3292,83 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
+  const isTutorialGame =
+    !!lessonContext?.isTutorial &&
+    lessonContext?.content?.game?.topic === "tutorial";
+  const tutorialSceneId =
+    lessonContext?.content?.game?.sceneId || TUTORIAL_MAP_ID;
+  const xpAwardedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isTutorialGame || scenarioId || loadingScenarioId) return;
+    void handleSelectScenario(tutorialSceneId);
+  }, [
+    handleSelectScenario,
+    isTutorialGame,
+    loadingScenarioId,
+    scenarioId,
+    tutorialSceneId,
+  ]);
+
+  useEffect(() => {
+    if (!isTutorialGame || !gameComplete || xpAwardedRef.current) return;
+
+    const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
+    const npub = localStorage.getItem("local_npub") || "";
+    const lang =
+      localStorage.getItem("userTargetLang") ||
+      lessonContext?.targetLang ||
+      targetLang ||
+      "es";
+
+    if (!npub || !bonusXp) {
+      xpAwardedRef.current = true;
+      return;
+    }
+
+    awardXp(npub, bonusXp, lang)
+      .then(() => {
+        xpAwardedRef.current = true;
+        toast({
+          title:
+            supportLang === "es" ? "XP del juego otorgado" : "Game XP awarded",
+          description:
+            supportLang === "es"
+              ? `Ganaste +${Math.round(bonusXp)} XP por completar el juego tutorial.`
+              : `You earned +${Math.round(bonusXp)} XP for completing the tutorial game.`,
+          status: "success",
+          duration: 2800,
+          isClosable: true,
+        });
+      })
+      .catch(() => {
+        xpAwardedRef.current = true;
+      });
+  }, [
+    gameComplete,
+    isTutorialGame,
+    lessonContext,
+    supportLang,
+    targetLang,
+    toast,
+  ]);
+
+  const handleSkipStep = useCallback(() => {
+    if (typeof onSkip === "function") {
+      onSkip();
+      return;
+    }
+    goToScenarioSelect();
+  }, [goToScenarioSelect, onSkip]);
 
   // ─── Scenario selection screen ─────────────────────────────────────────
   if (!scenarioId) {
     return (
       <Box
         w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "auto" : "100vh"}
+        h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
-        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        // bg="#1a1a2e"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -2989,19 +3383,19 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           void warmupAudio();
         }}
       >
-        <VStack spacing={6} maxW="500px" mx={4}>
+        <VStack spacing={6} maxW="560px" mx={4}>
           {!isEmbedded && (
-          <IconButton
-            icon={<ArrowBackIcon />}
-            aria-label={ui.back}
-            size="sm"
-            variant="ghost"
-            color="white"
-            position="absolute"
-            top={4}
-            left={4}
-            onClick={() => navigate("/")}
-          />
+            <IconButton
+              icon={<ArrowBackIcon />}
+              aria-label={ui.back}
+              size="sm"
+              variant="ghost"
+              color="white"
+              position="absolute"
+              top={4}
+              left={4}
+              onClick={() => navigate("/")}
+            />
           )}
 
           {isEmbedded && lessonContext?.content?.game?.unitTitle && (
@@ -3010,54 +3404,79 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             </Text>
           )}
 
-          <Text
-            color="yellow.300"
-            fontSize="2xl"
-            fontWeight="bold"
-            textAlign="center"
-          >
-            {ui.chooseScenario}
-          </Text>
-
-          <Wrap spacing={4} justify="center">
-            {MAP_CHOICES.map((choice, idx) => {
-              return (
-                <WrapItem key={choice.id}>
-                  <Button
-                    size="lg"
-                    h="auto"
-                    py={4}
-                    px={6}
-                    bg="whiteAlpha.100"
-                    color="white"
-                    border="2px solid"
-                    borderColor="whiteAlpha.200"
-                    borderRadius="xl"
-                    _hover={{
-                      bg: "whiteAlpha.200",
-                      borderColor: "yellow.400",
-                      transform: "scale(1.05)",
-                    }}
-                    transition="all 0.2s"
-                    onClick={() => handleSelectScenario(choice.id)}
-                    flexDir="column"
-                    minW="140px"
-                    isLoading={loadingScenarioId === choice.id}
-                    loadingText="Loading"
-                  >
-                    <Text fontSize="3xl" mb={1}>
-                      {SCENARIO_EMOJIS[choice.id] ||
-                        Object.values(SCENARIO_EMOJIS)[idx % 3] ||
-                        "🎮"}
-                    </Text>
-                    <Text fontSize="md" fontWeight="bold">
-                      {choice.name[supportLang] || choice.name.en}
-                    </Text>
-                  </Button>
-                </WrapItem>
-              );
-            })}
-          </Wrap>
+          {isTutorialGame ? (
+            <>
+              <RobotBuddyPro state="thinking" maxW={140} />
+              <VStack spacing={2}>
+                <Text
+                  color="white"
+                  fontSize="lg"
+                  fontWeight="bold"
+                  textAlign="center"
+                >
+                  {ui.loadingTutorialScene}
+                </Text>
+                <Text
+                  fontSize="sm"
+                  color="purple.200"
+                  textAlign="center"
+                  minH="20px"
+                >
+                  {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                </Text>
+              </VStack>
+            </>
+          ) : (
+            <>
+              <Text
+                color="yellow.300"
+                fontSize="2xl"
+                fontWeight="bold"
+                textAlign="center"
+              >
+                {ui.chooseScenario}
+              </Text>
+              <Wrap spacing={4} justify="center">
+                {MAP_CHOICES.map((choice, idx) => {
+                  return (
+                    <WrapItem key={choice.id}>
+                      <Button
+                        size="lg"
+                        h="auto"
+                        py={4}
+                        px={6}
+                        bg="whiteAlpha.100"
+                        color="white"
+                        border="2px solid"
+                        borderColor="whiteAlpha.200"
+                        borderRadius="xl"
+                        _hover={{
+                          bg: "whiteAlpha.200",
+                          borderColor: "yellow.400",
+                          transform: "scale(1.05)",
+                        }}
+                        transition="all 0.2s"
+                        onClick={() => handleSelectScenario(choice.id)}
+                        flexDir="column"
+                        minW="140px"
+                        isLoading={loadingScenarioId === choice.id}
+                        loadingText="Loading"
+                      >
+                        <Text fontSize="3xl" mb={1}>
+                          {SCENARIO_EMOJIS[choice.id] ||
+                            Object.values(SCENARIO_EMOJIS)[idx % 3] ||
+                            "🎮"}
+                        </Text>
+                        <Text fontSize="md" fontWeight="bold">
+                          {choice.name[supportLang] || choice.name.en}
+                        </Text>
+                      </Button>
+                    </WrapItem>
+                  );
+                })}
+              </Wrap>
+            </>
+          )}
         </VStack>
       </Box>
     );
@@ -3067,10 +3486,10 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
     return (
       <Box
         w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "auto" : "100vh"}
+        h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
-        bg="linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
+        bg="#1a1a2e"
         display="flex"
         alignItems="center"
         justifyContent="center"
@@ -3084,8 +3503,19 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
         }}
       >
         <VStack spacing={4}>
-          <Text color="white" fontSize="xl" fontWeight="bold">
-            Generating scenario with AI...
+          <RobotBuddyPro state="thinking" maxW={140} />
+          <Text
+            color="white"
+            fontSize="xl"
+            fontWeight="bold"
+            textAlign="center"
+          >
+            {isTutorialGame
+              ? ui.loadingTutorialScene
+              : "Generating your game..."}
+          </Text>
+          <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
+            {GAME_LOADING_MESSAGES[loadingMsgIdx]}
           </Text>
           <Button onClick={goToScenarioSelect}>{ui.back}</Button>
         </VStack>
@@ -3139,6 +3569,16 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
             colorScheme="blackAlpha"
             onClick={goToScenarioSelect}
           />
+          {isTutorialGame && (
+            <Button
+              size="sm"
+              variant="solid"
+              colorScheme="blackAlpha"
+              onClick={handleSkipStep}
+            >
+              {ui.skip}
+            </Button>
+          )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
           <Text color="white" fontSize="sm" fontWeight="bold">
@@ -3220,7 +3660,10 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
       {/* Inventory modal */}
       <Modal
         isOpen={inventoryModal.isOpen}
-        onClose={() => { inventoryModal.onClose(); setSelectedInvItem(null); }}
+        onClose={() => {
+          inventoryModal.onClose();
+          setSelectedInvItem(null);
+        }}
         isCentered
         size="sm"
       >
@@ -3235,7 +3678,10 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           <ModalHeader color="orange.800" fontSize="md" pb={1}>
             {targetLang === "es" ? "Inventario" : "Inventory"}
           </ModalHeader>
-          <ModalCloseButton color="gray.600" _hover={{ bg: "whiteAlpha.200" }} />
+          <ModalCloseButton
+            color="gray.600"
+            _hover={{ bg: "whiteAlpha.200" }}
+          />
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
               <Text color="gray.500" fontSize="sm" textAlign="center" py={4}>
@@ -3249,11 +3695,15 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                       key={`${item.name}-${idx}`}
                       spacing={0}
                       cursor="pointer"
-                      onClick={() => setSelectedInvItem(selectedInvItem === idx ? null : idx)}
+                      onClick={() =>
+                        setSelectedInvItem(selectedInvItem === idx ? null : idx)
+                      }
                       bg={selectedInvItem === idx ? "orange.100" : "orange.50"}
                       borderRadius="lg"
                       border="2px solid"
-                      borderColor={selectedInvItem === idx ? "orange.400" : "transparent"}
+                      borderColor={
+                        selectedInvItem === idx ? "orange.400" : "transparent"
+                      }
                       p={2}
                       transition="all 0.15s"
                       _hover={{ bg: "orange.100" }}
@@ -3452,34 +3902,53 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                     <IconButton
                       aria-label={
                         lineTranslations
-                          ? (supportLang === "es" ? "Deshacer traducción" : "Undo translation")
-                          : (supportLang === "es" ? "Traducir texto" : "Translate text")
+                          ? supportLang === "es"
+                            ? "Deshacer traducción"
+                            : "Undo translation"
+                          : supportLang === "es"
+                            ? "Traducir texto"
+                            : "Translate text"
                       }
-                      icon={lineTranslations ? <MdUndo size={14} /> : <MdOutlineSupportAgent size={14} />}
+                      icon={
+                        lineTranslations ? (
+                          <MdUndo size={14} />
+                        ) : (
+                          <MdOutlineSupportAgent size={14} />
+                        )
+                      }
                       size="xs"
                       rounded="md"
                       bg="white"
                       color={lineTranslations ? "orange.500" : "blue.600"}
-                      boxShadow={lineTranslations ? "0 1px 0 #c05621" : "0 1px 0 #2b6cb0"}
+                      boxShadow={
+                        lineTranslations ? "0 1px 0 #c05621" : "0 1px 0 #2b6cb0"
+                      }
                       _hover={{ bg: "gray.50" }}
                       onClick={toggleTranslation}
                       isLoading={isTranslating}
                     />
                   </HStack>
 
-                {lineTranslations ? (
-                  <VStack align="stretch" spacing={1}>
-                    {(() => {
-                      const npcText =
-                        dialogue.npcReply ||
-                        dialogue.node?.npcLine ||
-                        dialogue.node?.prompt ||
-                        dialogue.question.prompt;
-                      const isReply = !!dialogue.npcReply;
-                      return splitIntoSentences(npcText).map((line, i) => (
+                  {lineTranslations ? (
+                    <VStack align="stretch" spacing={1}>
+                      {(() => {
+                        const npcText =
+                          dialogue.npcReply ||
+                          dialogue.node?.npcLine ||
+                          dialogue.node?.prompt ||
+                          dialogue.question.prompt;
+                        const isReply = !!dialogue.npcReply;
+                        return splitIntoSentences(npcText).map((line, i) => (
                           <Box key={i}>
                             {isReply ? (
-                              <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
+                              <Box
+                                color="orange.700"
+                                fontSize="sm"
+                                sx={{
+                                  "& p": { m: 0 },
+                                  "& strong": { fontWeight: "bold" },
+                                }}
+                              >
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                   {line}
                                 </ReactMarkdown>
@@ -3506,197 +3975,213 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
                             )}
                           </Box>
                         ));
-                    })()}
-                  </VStack>
-                ) : (
-                  <>
-                    {!dialogue.npcReply && (
-                      <AnimatedText
-                        text={
-                          dialogue.node?.npcLine ||
-                          dialogue.node?.prompt ||
-                          dialogue.question.prompt
-                        }
-                        color="gray.800"
-                        fontSize="md"
-                        fontWeight="bold"
-                        m={0}
-                      />
-                    )}
-                    {!!dialogue.npcReply && (
-                      <Box color="orange.700" fontSize="sm" sx={{ "& p": { m: 0 }, "& strong": { fontWeight: "bold" } }}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {dialogue.npcReply}
-                        </ReactMarkdown>
-                      </Box>
-                    )}
-                  </>
-                )}
-
-                {lastHeardSpeech &&
-                  dialogue.node?.responseMode === "speech" && (
-                    <Text color="teal.700" fontSize="xs" m={0}>
-                      {ui.heardYou}: {lastHeardSpeech}
-                    </Text>
+                      })()}
+                    </VStack>
+                  ) : (
+                    <>
+                      {!dialogue.npcReply && (
+                        <AnimatedText
+                          text={
+                            dialogue.node?.npcLine ||
+                            dialogue.node?.prompt ||
+                            dialogue.question.prompt
+                          }
+                          color="gray.800"
+                          fontSize="md"
+                          fontWeight="bold"
+                          m={0}
+                        />
+                      )}
+                      {!!dialogue.npcReply && (
+                        <Box
+                          color="orange.700"
+                          fontSize="sm"
+                          sx={{
+                            "& p": { m: 0 },
+                            "& strong": { fontWeight: "bold" },
+                          }}
+                        >
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {dialogue.npcReply}
+                          </ReactMarkdown>
+                        </Box>
+                      )}
+                    </>
                   )}
 
-                {dialogue.node?.responseMode === "choice" && (
-                  generatingChoices ? (
-                    <HStack justify="center" py={4}>
-                      <Spinner size="sm" color="gray.500" />
-                      <Text fontSize="sm" color="gray.500">
-                        {targetLang === "es" ? "Pensando..." : "Thinking..."}
+                  {lastHeardSpeech &&
+                    dialogue.node?.responseMode === "speech" && (
+                      <Text color="teal.700" fontSize="xs" m={0}>
+                        {ui.heardYou}: {lastHeardSpeech}
                       </Text>
-                    </HStack>
-                  ) : (
-                    <VStack spacing={2}>
-                      {(dialogue.node?.choices || []).map((optRaw, idx) => {
-                        const opt =
-                          typeof optRaw === "string" ? optRaw : optRaw.text;
+                    )}
 
-                        return (
-                          <Button
-                            key={idx}
-                            w="100%"
-                            size="sm"
-                            variant="solid"
-                            bg="rgba(255,255,255,0.92)"
-                            color="gray.900"
-                            border="1px solid"
-                            borderColor="blackAlpha.200"
-                            boxShadow="0px 4px 0px #a9a18c"
-                            _active={{ bg: "gray.100" }}
-                            onClick={() => handleAnswer(idx)}
-                            isDisabled={isRecording || isConnecting}
-                            justifyContent="flex-start"
-                            textAlign="left"
-                            whiteSpace="normal"
-                            h="auto"
-                            py={2}
-                          >
-                            {String.fromCharCode(65 + idx)}. {opt}
-                          </Button>
-                        );
-                      })}
-                    </VStack>
-                  )
-                )}
-
-                {dialogue.node?.responseMode === "speech" && (
-                  <HStack justify="flex-end">
-                    <IconButton
-                      aria-label={isRecording ? ui.micStop : ui.micStart}
-                      size="sm"
-                      colorScheme={isRecording ? "red" : "teal"}
-                      icon={<FaMicrophone />}
-                      isLoading={isConnecting}
-                      onClick={async () => {
-                        if (!supportsSpeech) {
-                          toast({
-                            title: ui.speechUnavailable,
-                            status: "warning",
-                            duration: 2500,
-                            isClosable: true,
-                          });
-                          return;
-                        }
-                        if (isRecording) {
-                          stopRecording();
-                          return;
-                        }
-                        // Pre-warm an Audio element during this user gesture
-                        // so TTS can play after the async speech recognition
-                        // callback (mobile browsers block audio.play() without
-                        // a gesture context). Fire-and-forget – don't await.
-                        try {
-                          const warm = new Audio();
-                          warm.playsInline = true;
-                          warm.src = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-                          warm.play().then(() => warm.pause()).catch(() => {});
-                          preWarmedAudioRef.current = warm;
-                        } catch {
-                          // ignore – desktop doesn't need this
-                        }
-                        try {
-                          await startRecording();
-                        } catch {
-                          toast({
-                            title: ui.speechUnavailable,
-                            status: "warning",
-                            duration: 2500,
-                            isClosable: true,
-                          });
-                        }
-                      }}
-                    />
-                  </HStack>
-                )}
-
-                {dialogue.node?.responseMode === "gather" && (
-                  <VStack spacing={2}>
-                    {inventory.length > 0 ? (
-                      <>
-                        <Text color="gray.600" fontSize="xs">
-                          {targetLang === "es"
-                            ? "Elige un objeto para entregar:"
-                            : "Choose an item to hand over:"}
+                  {dialogue.node?.responseMode === "choice" &&
+                    (generatingChoices ? (
+                      <HStack justify="center" py={4}>
+                        <Spinner size="sm" color="gray.500" />
+                        <Text fontSize="sm" color="gray.500">
+                          {targetLang === "es" ? "Pensando..." : "Thinking..."}
                         </Text>
-                        <Wrap spacing={2} justify="center">
-                          {inventory.map((item, idx) => (
-                            <WrapItem key={`${item.name}-${idx}`}>
-                              <Box
-                                as="button"
-                                onClick={() => handleGatherSubmit(idx)}
-                                bg="rgba(255,255,255,0.92)"
-                                border="2px solid"
-                                borderColor="blackAlpha.200"
-                                borderRadius="lg"
-                                boxShadow="0px 4px 0px #a9a18c"
-                                _hover={{ bg: "orange.50", borderColor: "orange.400" }}
-                                _active={{ transform: "translateY(2px)", boxShadow: "0px 2px 0px #a9a18c" }}
-                                p={2}
-                                transition="all 0.12s"
-                                cursor="pointer"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                              >
-                                <Image
-                                  src={getItemSpriteDataURL(item.sprite)}
-                                  alt={item.name}
-                                  w="40px"
-                                  h="40px"
-                                  imageRendering="pixelated"
-                                />
-                              </Box>
-                            </WrapItem>
-                          ))}
-                        </Wrap>
-                      </>
-                    ) : null}
+                      </HStack>
+                    ) : (
+                      <VStack spacing={2}>
+                        {(dialogue.node?.choices || []).map((optRaw, idx) => {
+                          const opt =
+                            typeof optRaw === "string" ? optRaw : optRaw.text;
+
+                          return (
+                            <Button
+                              key={idx}
+                              w="100%"
+                              size="sm"
+                              variant="solid"
+                              bg="rgba(255,255,255,0.92)"
+                              color="gray.900"
+                              border="1px solid"
+                              borderColor="blackAlpha.200"
+                              boxShadow="0px 4px 0px #a9a18c"
+                              _active={{ bg: "gray.100" }}
+                              onClick={() => handleAnswer(idx)}
+                              isDisabled={isRecording || isConnecting}
+                              justifyContent="flex-start"
+                              textAlign="left"
+                              whiteSpace="normal"
+                              h="auto"
+                              py={2}
+                            >
+                              {String.fromCharCode(65 + idx)}. {opt}
+                            </Button>
+                          );
+                        })}
+                      </VStack>
+                    ))}
+
+                  {dialogue.node?.responseMode === "speech" && (
+                    <HStack justify="flex-end">
+                      <IconButton
+                        aria-label={isRecording ? ui.micStop : ui.micStart}
+                        size="sm"
+                        colorScheme={isRecording ? "red" : "teal"}
+                        icon={<FaMicrophone />}
+                        isLoading={isConnecting}
+                        onClick={async () => {
+                          if (!supportsSpeech) {
+                            toast({
+                              title: ui.speechUnavailable,
+                              status: "warning",
+                              duration: 2500,
+                              isClosable: true,
+                            });
+                            return;
+                          }
+                          if (isRecording) {
+                            stopRecording();
+                            return;
+                          }
+                          // Pre-warm an Audio element during this user gesture
+                          // so TTS can play after the async speech recognition
+                          // callback (mobile browsers block audio.play() without
+                          // a gesture context). Fire-and-forget – don't await.
+                          try {
+                            const warm = new Audio();
+                            warm.playsInline = true;
+                            warm.src =
+                              "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+                            warm
+                              .play()
+                              .then(() => warm.pause())
+                              .catch(() => {});
+                            preWarmedAudioRef.current = warm;
+                          } catch {
+                            // ignore – desktop doesn't need this
+                          }
+                          try {
+                            await startRecording();
+                          } catch {
+                            toast({
+                              title: ui.speechUnavailable,
+                              status: "warning",
+                              duration: 2500,
+                              isClosable: true,
+                            });
+                          }
+                        }}
+                      />
+                    </HStack>
+                  )}
+
+                  {dialogue.node?.responseMode === "gather" && (
+                    <VStack spacing={2}>
+                      {inventory.length > 0 ? (
+                        <>
+                          <Text color="gray.600" fontSize="xs">
+                            {targetLang === "es"
+                              ? "Elige un objeto para entregar:"
+                              : "Choose an item to hand over:"}
+                          </Text>
+                          <Wrap spacing={2} justify="center">
+                            {inventory.map((item, idx) => (
+                              <WrapItem key={`${item.name}-${idx}`}>
+                                <Box
+                                  as="button"
+                                  onClick={() => handleGatherSubmit(idx)}
+                                  bg="rgba(255,255,255,0.92)"
+                                  border="2px solid"
+                                  borderColor="blackAlpha.200"
+                                  borderRadius="lg"
+                                  boxShadow="0px 4px 0px #a9a18c"
+                                  _hover={{
+                                    bg: "orange.50",
+                                    borderColor: "orange.400",
+                                  }}
+                                  _active={{
+                                    transform: "translateY(2px)",
+                                    boxShadow: "0px 2px 0px #a9a18c",
+                                  }}
+                                  p={2}
+                                  transition="all 0.12s"
+                                  cursor="pointer"
+                                  display="flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                >
+                                  <Image
+                                    src={getItemSpriteDataURL(item.sprite)}
+                                    alt={item.name}
+                                    w="40px"
+                                    h="40px"
+                                    imageRendering="pixelated"
+                                  />
+                                </Box>
+                              </WrapItem>
+                            ))}
+                          </Wrap>
+                        </>
+                      ) : null}
+                      <Button
+                        size="sm"
+                        colorScheme="orange"
+                        variant="outline"
+                        onClick={closeDialogue}
+                        w="100%"
+                      >
+                        {targetLang === "es"
+                          ? "Seguir buscando"
+                          : "Keep searching"}
+                      </Button>
+                    </VStack>
+                  )}
+
+                  {dialogue.node?.responseMode === "none" && (
                     <Button
                       size="sm"
-                      colorScheme="orange"
-                      variant="outline"
-                      onClick={closeDialogue}
-                      w="100%"
+                      colorScheme="yellow"
+                      onClick={() => completeNPCChapter(dialogue.npcIdx)}
                     >
-                      {targetLang === "es"
-                        ? "Seguir buscando"
-                        : "Keep searching"}
+                      {ui.continue}
                     </Button>
-                  </VStack>
-                )}
-
-                {dialogue.node?.responseMode === "none" && (
-                  <Button
-                    size="sm"
-                    colorScheme="yellow"
-                    onClick={() => completeNPCChapter(dialogue.npcIdx)}
-                  >
-                    {ui.continue}
-                  </Button>
-                )}
+                  )}
                 </VStack>
               </VStack>
             </Box>

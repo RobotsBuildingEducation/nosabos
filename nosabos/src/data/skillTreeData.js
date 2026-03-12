@@ -58,7 +58,7 @@ const baseLearningPath = {
           xpRequired: 0,
           xpReward: 50,
           isTutorial: true,
-          modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+          modes: ["vocabulary", "grammar", "reading", "stories", "realtime", "game"],
           content: {
             vocabulary: {
               topic: "tutorial",
@@ -108,6 +108,17 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
                 es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
+              },
+            },
+            game: {
+              topic: "tutorial",
+              unitTitle: "Getting Started",
+              sceneId: "tutorialPlaza",
+              xpReward: 30,
+              focusPoints: ["hello", "hi", "good morning", "greetings", "my name is"],
+              tutorialDescription: {
+                en: "Finish the tutorial by playing a short game review.",
+                es: "Termina el tutorial jugando un breve repaso en modo juego.",
               },
             },
           },

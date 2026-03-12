@@ -5,11 +5,26 @@ const SCENARIO_MODEL = "gpt-5-nano";
 
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
+export const TUTORIAL_MAP_ID = "tutorialPlaza";
+
 export const MAP_CHOICES = [
   { id: "livingRoom", name: { en: "Living Room", es: "Sala" } },
   { id: "park", name: { en: "Park", es: "Parque" } },
   { id: "airport", name: { en: "Airport", es: "Aeropuerto" } },
 ];
+
+const MAP_NAME_BY_ID = {
+  livingRoom: { en: "Living Room", es: "Sala" },
+  park: { en: "Park", es: "Parque" },
+  airport: { en: "Airport", es: "Aeropuerto" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos" },
+};
+
+function getMapName(mapId, lang = "en") {
+  const mapName = MAP_NAME_BY_ID[mapId];
+  if (!mapName) return mapId;
+  return mapName[lang] || mapName.en || mapId;
+}
 
 const TILE_LIBRARY_BY_MAP = {
   livingRoom: {
@@ -98,6 +113,30 @@ const TILE_LIBRARY_BY_MAP = {
       colors: [[0x8da0b1]],
       sprite: "register",
     },
+  },
+  [TUTORIAL_MAP_ID]: {
+    0: {
+      name: "ground",
+      solid: false,
+      colors: [[0xffe8a3, 0xf8dc8c, 0xfbe7aa]],
+      detail: "sunny_plaza",
+    },
+    1: {
+      name: "path",
+      solid: false,
+      colors: [[0xffc978, 0xf0b867]],
+      detail: "stone_path",
+    },
+    2: {
+      name: "wall",
+      solid: true,
+      colors: [[0xa06b3b, 0x8b5a2b]],
+      detail: "wall",
+    },
+    3: { name: "tree", solid: true, colors: [[0x4f9b4a]], sprite: "tree" },
+    4: { name: "bench", solid: true, colors: [[0x8b7355]], sprite: "bench" },
+    5: { name: "flower", solid: false, colors: [[0xff8fb1]], detail: "flower" },
+    6: { name: "counter", solid: true, colors: [[0xb88650]], sprite: "counter" },
   },
 };
 
@@ -1084,10 +1123,7 @@ function normalizeMapData(mapData, mapWidth, mapHeight) {
 }
 
 function fallbackScenario(mapId, targetLang, supportLang) {
-  const name = MAP_CHOICES.find((m) => m.id === mapId)?.name || {
-    en: mapId,
-    es: mapId,
-  };
+  const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
   const mapWidth = 18;
   const mapHeight = 14;
 
@@ -1162,7 +1198,7 @@ function buildPrompt({
   npcCount,
   cefrLevel,
 }) {
-  const mapLabel = MAP_CHOICES.find((m) => m.id === mapId)?.name?.en || mapId;
+  const mapLabel = getMapName(mapId, "en");
   const levelKey = cefrLevel || "A1";
   const dialogueGuidance = CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
 
@@ -1176,6 +1212,9 @@ CEFR proficiency level: ${levelKey}
 
 CRITICAL - Language difficulty: ${dialogueGuidance}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
+${mapId === TUTORIAL_MAP_ID
+  ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly and simple."
+  : ""}
 
 Use these curriculum terms for question content (focus the game around these topics):
 ${lessonTerms.slice(0, 120).join(", ")}
@@ -1262,13 +1301,11 @@ function normalizeScenario({ raw, mapId, targetLang, supportLang, npcCount }) {
     name: {
       en: String(
         raw?.name?.en ||
-          MAP_CHOICES.find((m) => m.id === mapId)?.name?.en ||
-          mapId,
+          getMapName(mapId, "en"),
       ),
       es: String(
         raw?.name?.es ||
-          MAP_CHOICES.find((m) => m.id === mapId)?.name?.es ||
-          mapId,
+          getMapName(mapId, "es"),
       ),
     },
     tileSize: 32,
