@@ -12,7 +12,6 @@ import {
   Text,
   Button,
   Progress,
-  CircularProgress,
   Badge,
   useColorModeValue,
   Container,
@@ -847,7 +846,6 @@ function LessonNode({
   };
 
   const ringPercent = Math.max(0, Math.min(100, inProgressPercent));
-  const inProgressRingColor = "#F6C453";
 
   return (
     <MotionBox
@@ -938,23 +936,6 @@ function LessonNode({
                       : "none",
                 }}
               />
-
-              {/* Progress ring for in-progress lessons */}
-              {status === SKILL_STATUS.IN_PROGRESS && (
-                <CircularProgress
-                  pointerEvents="none"
-                  value={ringPercent}
-                  size="98px"
-                  thickness="6px"
-                  color={inProgressRingColor}
-                  trackColor="rgba(246,196,83,0.25)"
-                  capIsRound
-                  position="absolute"
-                  top="-4px"
-                  left="-4px"
-                  filter="drop-shadow(0 0 6px rgba(246,196,83,0.45))"
-                />
-              )}
 
               {/* Sparkle effect for completed lessons */}
               {status === SKILL_STATUS.COMPLETED && (
@@ -1055,6 +1036,21 @@ function LessonNode({
           >
             {lessonTitle}
           </Text>
+
+          {status === SKILL_STATUS.IN_PROGRESS && (
+            <Progress
+              value={ringPercent}
+              size="sm"
+              w="110px"
+              borderRadius="full"
+              bg="rgba(246,196,83,0.22)"
+              sx={{
+                "> div": {
+                  background: "linear-gradient(90deg, #F6C453, #D89F2D)",
+                },
+              }}
+            />
+          )}
         </VStack>
       </Box>
     </MotionBox>
