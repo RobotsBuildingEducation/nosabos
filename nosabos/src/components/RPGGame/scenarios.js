@@ -563,6 +563,222 @@ function pickGatherItems(gatherSource, targetLang) {
   };
 }
 
+function clampVisualInt(value, min, max, fallback) {
+  const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
+  return Math.max(min, Math.min(max, Math.round(num)));
+}
+
+function normalizeVisualHex(value) {
+  if (typeof value !== "string") return null;
+  const cleaned = value.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return null;
+  return `#${cleaned.toUpperCase()}`;
+}
+
+function sanitizeGatherVisualLayer(layer) {
+  if (!layer || typeof layer !== "object") return null;
+  const type = String(layer.type || "").trim();
+
+  if (type === "rect") {
+    const fill = normalizeVisualHex(layer.fill);
+    const stroke = normalizeVisualHex(layer.stroke);
+    if (!fill && !stroke) return null;
+    return {
+      type,
+      x: clampVisualInt(layer.x, 0, 15, 0),
+      y: clampVisualInt(layer.y, 0, 15, 0),
+      w: clampVisualInt(layer.w, 1, 16, 4),
+      h: clampVisualInt(layer.h, 1, 16, 4),
+      fill,
+      stroke,
+    };
+  }
+
+  if (type === "roundRect") {
+    const fill = normalizeVisualHex(layer.fill);
+    const stroke = normalizeVisualHex(layer.stroke);
+    if (!fill && !stroke) return null;
+    const w = clampVisualInt(layer.w, 1, 16, 6);
+    const h = clampVisualInt(layer.h, 1, 16, 6);
+    return {
+      type,
+      x: clampVisualInt(layer.x, 0, 15, 0),
+      y: clampVisualInt(layer.y, 0, 15, 0),
+      w,
+      h,
+      r: clampVisualInt(layer.r, 0, Math.floor(Math.min(w, h) / 2), 1),
+      fill,
+      stroke,
+    };
+  }
+
+  if (type === "circle") {
+    const fill = normalizeVisualHex(layer.fill);
+    const stroke = normalizeVisualHex(layer.stroke);
+    if (!fill && !stroke) return null;
+    return {
+      type,
+      cx: clampVisualInt(layer.cx, 0, 15, 8),
+      cy: clampVisualInt(layer.cy, 0, 15, 8),
+      r: clampVisualInt(layer.r, 1, 8, 3),
+      fill,
+      stroke,
+    };
+  }
+
+  if (type === "line") {
+    const stroke = normalizeVisualHex(layer.stroke);
+    if (!stroke) return null;
+    return {
+      type,
+      x1: clampVisualInt(layer.x1, 0, 15, 0),
+      y1: clampVisualInt(layer.y1, 0, 15, 0),
+      x2: clampVisualInt(layer.x2, 0, 15, 15),
+      y2: clampVisualInt(layer.y2, 0, 15, 15),
+      stroke,
+      width: clampVisualInt(layer.width, 1, 3, 1),
+    };
+  }
+
+  if (type === "poly") {
+    const points = Array.isArray(layer.points)
+      ? layer.points
+          .map((point) =>
+            Array.isArray(point) && point.length >= 2
+              ? [
+                  clampVisualInt(point[0], 0, 15, 0),
+                  clampVisualInt(point[1], 0, 15, 0),
+                ]
+              : null,
+          )
+          .filter(Boolean)
+          .slice(0, 8)
+      : [];
+    const fill = normalizeVisualHex(layer.fill);
+    const stroke = normalizeVisualHex(layer.stroke);
+    if (points.length < 2 || (!fill && !stroke)) return null;
+    return {
+      type,
+      points,
+      fill,
+      stroke,
+      closed: layer.closed !== false,
+    };
+  }
+
+  return null;
+}
+
+function sanitizeGatherVisualSpec(spec) {
+  const layers = Array.isArray(spec?.layers)
+    ? spec.layers.map(sanitizeGatherVisualLayer).filter(Boolean).slice(0, 8)
+    : [];
+  if (!layers.length) return null;
+  return { layers };
+}
+
+function getGatherItemKey(item) {
+  return `${String(item?.name || "").trim()}::${String(item?.hint || "").trim()}`;
+}
+
+function applyGatherVisualsToQuest(quest, rawVisuals) {
+  const items = Array.isArray(quest?.gatherData?.all) ? quest.gatherData.all : [];
+  if (!items.length || !Array.isArray(rawVisuals) || !rawVisuals.length) {
+    return quest;
+  }
+
+  const visualsByKey = new Map();
+  rawVisuals.forEach((entry, idx) => {
+    const sourceItem = items[idx];
+    const visual = sanitizeGatherVisualSpec(entry?.visual);
+    if (!visual || !sourceItem) return;
+    visualsByKey.set(getGatherItemKey(sourceItem), visual);
+  });
+
+  if (!visualsByKey.size) return quest;
+
+  const applyVisual = (item) => {
+    if (!item) return item;
+    const key = getGatherItemKey(item);
+    const visual = visualsByKey.get(key) || item.visual || null;
+    return {
+      ...item,
+      visual,
+    };
+  };
+
+  return {
+    ...quest,
+    gatherData: {
+      ...quest.gatherData,
+      correct: (quest.gatherData.correct || []).map(applyVisual),
+      decoys: (quest.gatherData.decoys || []).map(applyVisual),
+      all: items.map(applyVisual),
+    },
+    steps: (quest.steps || []).map((step) => ({
+      ...step,
+      nodes: (step.nodes || []).map((node) => ({
+        ...node,
+        gatherItem: node.gatherItem ? applyVisual(node.gatherItem) : node.gatherItem,
+      })),
+    })),
+  };
+}
+
+async function enrichQuestGatherVisuals(
+  quest,
+  targetLang,
+  reviewContext = null,
+  environment = null,
+) {
+  const items = Array.isArray(quest?.gatherData?.all) ? quest.gatherData.all : [];
+  if (!items.length) return quest;
+
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
+  const prompt = [
+    "You create compact 16x16 pixel-art blueprints for RPG inventory items.",
+    "Return ONLY valid JSON.",
+    "Output a JSON array with the SAME length and SAME order as the input array.",
+    `Interpret every item name as ${targetLangName} (code: ${normalizedTargetLang}).`,
+    environment?.summary?.en
+      ? `World context: ${environment.summary.en}`
+      : "",
+    reviewContext?.curriculumSummary
+      ? `Lesson review context: ${reviewContext.curriculumSummary}`
+      : "",
+    "Each output item must have this shape:",
+    '{"name":"exact original item name","visual":{"layers":[...]}}',
+    "Allowed layer types only: rect, roundRect, circle, line, poly.",
+    "All coordinates are integers on a 16x16 transparent canvas.",
+    "Use 3-6 layers per item, strong silhouettes, and make each object visually specific.",
+    "Important: do not make a map look like a key, a candle look like a book, or any item look like a generic treasure icon.",
+    "Maps should look like folded papers with route marks or markers.",
+    "Books, dictionaries, and glossaries should look like thick bound books with visible page edges.",
+    "Candles must show wax and a visible flame.",
+    "Keys must show a ring and teeth.",
+    "Return only the JSON array and nothing else.",
+    "",
+    JSON.stringify(
+      items.map((item) => ({
+        name: item.name,
+        hint: item.hint || "",
+        isCorrect: !!item.isCorrect,
+      })),
+    ),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const raw = await callResponses({
+    model: SCENARIO_MODEL,
+    input: prompt,
+  });
+  const parsed = parseJSON(raw);
+  if (!Array.isArray(parsed)) return quest;
+  return applyGatherVisualsToQuest(quest, parsed);
+}
+
 function pickRandom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -1367,6 +1583,12 @@ async function fallbackScenario(
       cefrLevel,
       reviewContext,
     );
+    const visualizedQuest = await enrichQuestGatherVisuals(
+      quest,
+      targetLang,
+      reviewContext,
+      null,
+    );
 
     return {
       id: mapId,
@@ -1394,7 +1616,7 @@ async function fallbackScenario(
       },
       npcs,
       questions: questionsByLang,
-      quest,
+      quest: visualizedQuest,
       greetings: {
         en: ["Generating scenario unavailable; using safe fallback."],
         es: ["Generacion no disponible; usando respaldo."],
@@ -1452,6 +1674,12 @@ async function fallbackScenario(
     cefrLevel,
     reviewContext,
   );
+  const visualizedQuest = await enrichQuestGatherVisuals(
+    quest,
+    targetLang,
+    reviewContext,
+    environment,
+  );
 
   return {
     id: mapId,
@@ -1473,7 +1701,7 @@ async function fallbackScenario(
     },
     npcs,
     questions: questionsByLang,
-    quest,
+    quest: visualizedQuest,
     greetings: {
       en: [
         "Scenario generation was incomplete, so we built a lesson-themed world locally.",
@@ -1690,13 +1918,24 @@ function parseJSON(text) {
     // fall through to relaxed extraction below
   }
 
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start !== -1 && end !== -1 && end > start) {
+  const candidates = [
+    {
+      start: trimmed.indexOf("{"),
+      end: trimmed.lastIndexOf("}"),
+    },
+    {
+      start: trimmed.indexOf("["),
+      end: trimmed.lastIndexOf("]"),
+    },
+  ]
+    .filter(({ start, end }) => start !== -1 && end !== -1 && end > start)
+    .sort((a, b) => a.start - b.start);
+
+  for (const candidate of candidates) {
     try {
-      return JSON.parse(trimmed.slice(start, end + 1));
+      return JSON.parse(trimmed.slice(candidate.start, candidate.end + 1));
     } catch {
-      return null;
+      // Try the next candidate shape.
     }
   }
 
@@ -1860,10 +2099,16 @@ async function withQuest(
     cefrLevel,
     reviewContext,
   );
+  const visualizedQuest = await enrichQuestGatherVisuals(
+    localizedQuest,
+    targetLang,
+    reviewContext,
+    scenario.environment || null,
+  );
 
   return {
     ...scenario,
-    quest: localizedQuest,
+    quest: visualizedQuest,
   };
 }
 

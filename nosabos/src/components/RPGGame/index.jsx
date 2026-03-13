@@ -78,7 +78,244 @@ import { buildGameReviewContext } from "../../utils/gameReviewContext";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
-function drawGatherItemSprite(ctx, spriteId) {
+const GATHER_SPRITE_GRID = 16;
+
+function clampGatherVisualInt(value, min, max, fallback) {
+  const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
+  return Math.max(min, Math.min(max, Math.round(num)));
+}
+
+function drawGatherPixelRect(ctx, x, y, w, h, color) {
+  if (!color || w <= 0 || h <= 0) return;
+  ctx.fillStyle = color;
+  ctx.fillRect(x, y, w, h);
+}
+
+function drawGatherPixelCircle(ctx, cx, cy, r, fill, stroke) {
+  if (!fill && !stroke) return;
+  const outerRadius = Math.max(1, r);
+  const innerRadius = Math.max(0, outerRadius - 1);
+
+  for (let py = cy - outerRadius; py <= cy + outerRadius; py++) {
+    for (let px = cx - outerRadius; px <= cx + outerRadius; px++) {
+      const distSq = (px - cx) * (px - cx) + (py - cy) * (py - cy);
+      if (stroke && distSq <= outerRadius * outerRadius) {
+        drawGatherPixelRect(ctx, px, py, 1, 1, stroke);
+      }
+      if (fill && distSq <= innerRadius * innerRadius) {
+        drawGatherPixelRect(ctx, px, py, 1, 1, fill);
+      }
+    }
+  }
+}
+
+function isPixelInRoundedRect(px, py, x, y, w, h, r) {
+  const right = x + w - 1;
+  const bottom = y + h - 1;
+  if (r <= 0) {
+    return px >= x && px <= right && py >= y && py <= bottom;
+  }
+
+  const innerLeft = x + r;
+  const innerRight = right - r;
+  const innerTop = y + r;
+  const innerBottom = bottom - r;
+
+  if (
+    (px >= innerLeft && px <= innerRight && py >= y && py <= bottom) ||
+    (py >= innerTop && py <= innerBottom && px >= x && px <= right)
+  ) {
+    return true;
+  }
+
+  const corners = [
+    [innerLeft, innerTop],
+    [innerRight, innerTop],
+    [innerLeft, innerBottom],
+    [innerRight, innerBottom],
+  ];
+
+  return corners.some(
+    ([cx, cy]) => (px - cx) * (px - cx) + (py - cy) * (py - cy) <= r * r,
+  );
+}
+
+function drawGatherPixelRoundedRect(ctx, x, y, w, h, r, fill, stroke) {
+  if (!fill && !stroke) return;
+
+  for (let py = y; py < y + h; py++) {
+    for (let px = x; px < x + w; px++) {
+      if (!isPixelInRoundedRect(px, py, x, y, w, h, r)) continue;
+      if (stroke) drawGatherPixelRect(ctx, px, py, 1, 1, stroke);
+      if (
+        fill &&
+        isPixelInRoundedRect(px, py, x + 1, y + 1, Math.max(0, w - 2), Math.max(0, h - 2), Math.max(0, r - 1))
+      ) {
+        drawGatherPixelRect(ctx, px, py, 1, 1, fill);
+      }
+    }
+  }
+}
+
+function drawGatherPixelLine(ctx, x1, y1, x2, y2, color, width = 1) {
+  if (!color) return;
+  let currentX = x1;
+  let currentY = y1;
+  const dx = Math.abs(x2 - x1);
+  const dy = Math.abs(y2 - y1);
+  const sx = x1 < x2 ? 1 : -1;
+  const sy = y1 < y2 ? 1 : -1;
+  let err = dx - dy;
+  const radius = Math.max(0, Math.floor(width / 2));
+
+  while (true) {
+    for (let offY = -radius; offY <= radius; offY++) {
+      for (let offX = -radius; offX <= radius; offX++) {
+        drawGatherPixelRect(ctx, currentX + offX, currentY + offY, 1, 1, color);
+      }
+    }
+    if (currentX === x2 && currentY === y2) break;
+    const err2 = err * 2;
+    if (err2 > -dy) {
+      err -= dy;
+      currentX += sx;
+    }
+    if (err2 < dx) {
+      err += dx;
+      currentY += sy;
+    }
+  }
+}
+
+function drawGatherPixelPolygon(ctx, points, fill, stroke, closed = true) {
+  if (!Array.isArray(points) || points.length < 2 || (!fill && !stroke)) return;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(points[0][0] + 0.5, points[0][1] + 0.5);
+  for (let i = 1; i < points.length; i++) {
+    ctx.lineTo(points[i][0] + 0.5, points[i][1] + 0.5);
+  }
+  if (closed) ctx.closePath();
+  if (fill && closed) {
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawDynamicGatherVisual(ctx, visual) {
+  const layers = Array.isArray(visual?.layers) ? visual.layers : [];
+  if (!layers.length) return false;
+
+  const pixelCanvas = document.createElement("canvas");
+  pixelCanvas.width = GATHER_SPRITE_GRID;
+  pixelCanvas.height = GATHER_SPRITE_GRID;
+  const pixelCtx = pixelCanvas.getContext("2d");
+  pixelCtx.imageSmoothingEnabled = false;
+  pixelCtx.clearRect(0, 0, GATHER_SPRITE_GRID, GATHER_SPRITE_GRID);
+
+  layers.forEach((layer) => {
+    if (!layer?.type) return;
+    if (layer.type === "rect") {
+      drawGatherPixelRect(
+        pixelCtx,
+        clampGatherVisualInt(layer.x, 0, 15, 0),
+        clampGatherVisualInt(layer.y, 0, 15, 0),
+        clampGatherVisualInt(layer.w, 1, 16, 4),
+        clampGatherVisualInt(layer.h, 1, 16, 4),
+        layer.fill,
+      );
+      if (layer.stroke) {
+        drawGatherPixelRect(pixelCtx, layer.x, layer.y, layer.w, 1, layer.stroke);
+        drawGatherPixelRect(
+          pixelCtx,
+          layer.x,
+          layer.y + layer.h - 1,
+          layer.w,
+          1,
+          layer.stroke,
+        );
+        drawGatherPixelRect(pixelCtx, layer.x, layer.y, 1, layer.h, layer.stroke);
+        drawGatherPixelRect(
+          pixelCtx,
+          layer.x + layer.w - 1,
+          layer.y,
+          1,
+          layer.h,
+          layer.stroke,
+        );
+      }
+      return;
+    }
+
+    if (layer.type === "roundRect") {
+      drawGatherPixelRoundedRect(
+        pixelCtx,
+        clampGatherVisualInt(layer.x, 0, 15, 0),
+        clampGatherVisualInt(layer.y, 0, 15, 0),
+        clampGatherVisualInt(layer.w, 1, 16, 6),
+        clampGatherVisualInt(layer.h, 1, 16, 6),
+        clampGatherVisualInt(layer.r, 0, 6, 1),
+        layer.fill,
+        layer.stroke,
+      );
+      return;
+    }
+
+    if (layer.type === "circle") {
+      drawGatherPixelCircle(
+        pixelCtx,
+        clampGatherVisualInt(layer.cx, 0, 15, 8),
+        clampGatherVisualInt(layer.cy, 0, 15, 8),
+        clampGatherVisualInt(layer.r, 1, 8, 3),
+        layer.fill,
+        layer.stroke,
+      );
+      return;
+    }
+
+    if (layer.type === "line") {
+      drawGatherPixelLine(
+        pixelCtx,
+        clampGatherVisualInt(layer.x1, 0, 15, 0),
+        clampGatherVisualInt(layer.y1, 0, 15, 0),
+        clampGatherVisualInt(layer.x2, 0, 15, 15),
+        clampGatherVisualInt(layer.y2, 0, 15, 15),
+        layer.stroke,
+        clampGatherVisualInt(layer.width, 1, 3, 1),
+      );
+      return;
+    }
+
+    if (layer.type === "poly") {
+      drawGatherPixelPolygon(pixelCtx, layer.points, layer.fill, layer.stroke, layer.closed !== false);
+    }
+  });
+
+  ctx.clearRect(0, 0, GATHER_SPRITE_SIZE, GATHER_SPRITE_SIZE);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(pixelCanvas, 0, 0, GATHER_SPRITE_SIZE, GATHER_SPRITE_SIZE);
+  return true;
+}
+
+function drawGatherItemSprite(ctx, itemOrSprite) {
+  if (
+    itemOrSprite &&
+    typeof itemOrSprite === "object" &&
+    drawDynamicGatherVisual(ctx, itemOrSprite.visual)
+  ) {
+    return;
+  }
+
+  const spriteId =
+    typeof itemOrSprite === "string" ? itemOrSprite : itemOrSprite?.sprite;
   const S = 2; // scale factor
   const px = (x, y, c) => {
     ctx.fillStyle = c;
@@ -661,6 +898,39 @@ function drawGatherItemSprite(ctx, spriteId) {
   }
 }
 
+function createBlockedTileHintTexture() {
+  const SIZE = 24;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  ctx.strokeStyle = "#C2410C";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(7, 7);
+  ctx.lineTo(17, 17);
+  ctx.moveTo(17, 7);
+  ctx.lineTo(7, 17);
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 245, 230, 0.9)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(8, 7);
+  ctx.lineTo(17, 16);
+  ctx.moveTo(16, 7);
+  ctx.lineTo(7, 16);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  return texture;
+}
+
 // ─── Pixel-art backpack icon (Three.js canvas sprite, JRPG style) ───────────
 function BackpackIcon({ size = 28 }) {
   const canvasRef = useRef(null);
@@ -1224,6 +1494,8 @@ export default function RPGGame({
   const npcVariantAssignmentsRef = useRef([]);
   const npcCharacterNamesRef = useRef([]);
   const npcDialogueCharactersRef = useRef(new Map());
+  const blockedTileHintRef = useRef(null);
+  const blockedTileHintUntilRef = useRef(0);
 
   const [questProgress, setQuestProgress] = useState({
     currentStepIdx: 0,
@@ -1582,12 +1854,12 @@ export default function RPGGame({
   );
 
   // Generate a data URL for a gather item sprite (for UI display)
-  const getItemSpriteDataURL = useCallback((spriteId) => {
+  const getItemSpriteDataURL = useCallback((itemOrSprite) => {
     const canvas = document.createElement("canvas");
     canvas.width = GATHER_SPRITE_SIZE;
     canvas.height = GATHER_SPRITE_SIZE;
     const ctx = canvas.getContext("2d");
-    drawGatherItemSprite(ctx, spriteId || "default");
+    drawGatherItemSprite(ctx, itemOrSprite || "default");
     return canvas.toDataURL();
   }, []);
 
@@ -2194,6 +2466,32 @@ export default function RPGGame({
     scene.add(spriteGroup);
     scene.add(objectGroup);
 
+    const blockedHintTex = createBlockedTileHintTexture();
+    const blockedHintGeo = new THREE.PlaneGeometry(TILE * 0.7, TILE * 0.7);
+    const blockedHintMat = new THREE.MeshBasicMaterial({
+      map: blockedHintTex,
+      transparent: true,
+      depthWrite: false,
+      opacity: 0.95,
+    });
+    const blockedHintMesh = new THREE.Mesh(blockedHintGeo, blockedHintMat);
+    blockedHintMesh.visible = false;
+    blockedHintMesh.position.set(0, 0, 4.4);
+    scene.add(blockedHintMesh);
+    blockedTileHintRef.current = blockedHintMesh;
+
+    const showBlockedTileHint = (tx, ty) => {
+      blockedHintMesh.position.set(
+        tx * TILE + TILE / 2,
+        (MAP_H - 1 - ty) * TILE + TILE / 2,
+        4.4,
+      );
+      blockedHintMesh.scale.set(1, 1, 1);
+      blockedHintMesh.material.opacity = 0.95;
+      blockedHintMesh.visible = true;
+      blockedTileHintUntilRef.current = performance.now() + 260;
+    };
+
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
     const PLAYER_WIDTH_TILES = 0.9;
@@ -2355,7 +2653,7 @@ export default function RPGGame({
         canvas.width = GATHER_SPRITE_SIZE;
         canvas.height = GATHER_SPRITE_SIZE;
         const ctx = canvas.getContext("2d");
-        drawGatherItemSprite(ctx, item.sprite || "default");
+        drawGatherItemSprite(ctx, item);
 
         const itemTex = new THREE.CanvasTexture(canvas);
         itemTex.magFilter = THREE.NearestFilter;
@@ -2393,6 +2691,20 @@ export default function RPGGame({
 
       const gs = gameStateRef.current;
       if (!gs) return;
+
+      const blockedHint = blockedTileHintRef.current;
+      if (blockedHint) {
+        const remainingMs = blockedTileHintUntilRef.current - time;
+        if (remainingMs > 0) {
+          const progress = 1 - remainingMs / 260;
+          const pulse = 1 + progress * 0.18;
+          blockedHint.visible = true;
+          blockedHint.scale.set(pulse, pulse, 1);
+          blockedHint.material.opacity = Math.max(0.2, 0.95 - progress * 0.55);
+        } else {
+          blockedHint.visible = false;
+        }
+      }
 
       // Keep NPCs anchored in place (no floating bob).
       gs.npcBobPhase += delta * 0.003;
@@ -2455,6 +2767,8 @@ export default function RPGGame({
             playerSprite.material.needsUpdate = true;
 
             playGameSound("rpgStep");
+          } else {
+            showBlockedTileHint(nx, ny);
           }
         } else {
           gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
@@ -2489,6 +2803,7 @@ export default function RPGGame({
               name: item.name,
               isCorrect: item.isCorrect,
               sprite: item.sprite || "default",
+              visual: item.visual || null,
             },
           ]);
           playGameSound("rpgDialogueSelect");
@@ -2565,6 +2880,11 @@ export default function RPGGame({
         item.mesh?.material?.dispose();
       });
       gatherSpritesRef.current = [];
+      blockedTileHintRef.current?.geometry?.dispose?.();
+      blockedTileHintRef.current?.material?.map?.dispose?.();
+      blockedTileHintRef.current?.material?.dispose?.();
+      blockedTileHintRef.current = null;
+      blockedTileHintUntilRef.current = 0;
       if (
         canvasRef.current &&
         renderer.domElement.parentNode === canvasRef.current
@@ -2715,6 +3035,7 @@ export default function RPGGame({
 
         const playerSprite = playerSpriteRef.current;
         const sheetFrames = playerSheetFramesRef.current;
+        let blockedCandidate = null;
 
         for (const candidate of moveCandidates) {
           const stepX = gs.playerX + candidate.dx;
@@ -2724,7 +3045,12 @@ export default function RPGGame({
           const npcBlocking = scenario.npcs.some(
             (n) => n.tx === stepX && n.ty === stepY,
           );
-          if (gs.isSolid(stepX, stepY) || npcBlocking) continue;
+          if (gs.isSolid(stepX, stepY) || npcBlocking) {
+            if (!blockedCandidate) {
+              blockedCandidate = { tx: stepX, ty: stepY };
+            }
+            continue;
+          }
 
           gs.playerX = stepX;
           gs.playerY = stepY;
@@ -2754,6 +3080,9 @@ export default function RPGGame({
           return true;
         }
 
+        if (blockedCandidate) {
+          showBlockedTileHint(blockedCandidate.tx, blockedCandidate.ty);
+        }
         return false;
       };
 
@@ -3847,7 +4176,7 @@ export default function RPGGame({
                       _hover={{ bg: "orange.100" }}
                     >
                       <Image
-                        src={getItemSpriteDataURL(item.sprite)}
+                        src={getItemSpriteDataURL(item)}
                         alt={item.name}
                         w="48px"
                         h="48px"
@@ -4285,7 +4614,7 @@ export default function RPGGame({
                                   justifyContent="center"
                                 >
                                   <Image
-                                    src={getItemSpriteDataURL(item.sprite)}
+                                    src={getItemSpriteDataURL(item)}
                                     alt={item.name}
                                     w="40px"
                                     h="40px"
