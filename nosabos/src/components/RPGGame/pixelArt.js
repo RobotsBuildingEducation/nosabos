@@ -241,6 +241,45 @@ export function createTileTexture(tileDef, tileX, tileY, seed) {
     }
   }
 
+  if (tileDef.solid && !tileDef.sprite) {
+    const rimDark = darken(base, 0.28);
+    const rimLight = lighten(base, 0.18);
+    const cornerMark = tileDef.name === "furniture" ? lighten(base, 0.26) : darken(base, 0.18);
+
+    for (let i = 0; i < SIZE; i++) {
+      pxA(ctx, i, 0, rimDark, 0.42);
+      pxA(ctx, i, 1, rimDark, 0.18);
+      pxA(ctx, i, SIZE - 1, 0x000000, 0.2);
+      pxA(ctx, 0, i, rimDark, 0.22);
+      pxA(ctx, SIZE - 1, i, 0x000000, 0.18);
+    }
+
+    for (let x = 2; x <= 13; x += 4) {
+      pxA(ctx, x, 3, rimLight, 0.38);
+      pxA(ctx, x + 1, 4, rimLight, 0.26);
+      pxA(ctx, x, 11, 0x000000, 0.14);
+      pxA(ctx, x + 1, 10, 0x000000, 0.1);
+    }
+
+    const cornerPixels = [
+      [2, 2],
+      [3, 2],
+      [2, 3],
+      [12, 2],
+      [13, 2],
+      [13, 3],
+      [2, 12],
+      [2, 13],
+      [3, 13],
+      [13, 12],
+      [12, 13],
+      [13, 13],
+    ];
+    cornerPixels.forEach(([x, y]) => {
+      pxA(ctx, x, y, cornerMark, 0.48);
+    });
+  }
+
   return makeTexture(canvas);
 }
 
