@@ -11,6 +11,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import { LiquidGlass } from "@liquidglass/react";
 import {
   FaComments,
   FaBookOpen,
@@ -166,7 +167,7 @@ const translations = {
     cta_final_accent: "Language Journey?",
     cta_final_subtitle:
       "Create your secure profile in seconds, save your key, and unlock a world of language learning.",
-    placeholder_name: "Your display name",
+    placeholder_name: "Create account name",
     footer_brand: "No Sabos",
     footer_tagline: "Making language learning accessible to everyone.",
     signin_title: "Welcome Back",
@@ -542,6 +543,67 @@ const Button = ({
         />
       )}
     </motion.button>
+  );
+};
+
+const LiquidGlassButton = ({
+  tone = "primary",
+  wrapperStyle = {},
+  style = {},
+  ...props
+}) => {
+  const toneStyles = {
+    primary: {
+      background:
+        "linear-gradient(135deg, rgba(20, 184, 166, 0.4) 0%, rgba(14, 165, 233, 0.35) 100%)",
+      border: "1px solid rgba(94, 234, 212, 0.45)",
+      color: "#ffffff",
+      boxShadow: "0 16px 40px rgba(15, 23, 42, 0.35)",
+      textShadow: "0 1px 2px rgba(15, 23, 42, 0.6)",
+    },
+    secondary: {
+      background: "rgba(15, 23, 42, 0.35)",
+      border: "1px solid rgba(148, 163, 184, 0.4)",
+      color: theme.colors.text.primary,
+      boxShadow: "0 12px 32px rgba(15, 23, 42, 0.35)",
+    },
+  };
+
+  return (
+    <div
+      style={{
+        borderRadius: "16px",
+        overflow: "hidden",
+        width: "100%",
+        ...wrapperStyle,
+      }}
+    >
+      <LiquidGlass
+        borderRadius={16}
+        blur={0.8}
+        contrast={1.15}
+        brightness={1.05}
+        saturation={1.15}
+        displacementScale={0.25}
+        elasticity={0.85}
+      >
+        <Button
+          variant="ghost"
+          {...props}
+          style={{
+            borderRadius: "16px",
+            background: toneStyles[tone]?.background,
+            border: toneStyles[tone]?.border,
+            color: toneStyles[tone]?.color,
+            boxShadow: toneStyles[tone]?.boxShadow,
+            textShadow: toneStyles[tone]?.textShadow,
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            ...style,
+          }}
+        />
+      </LiquidGlass>
+    </div>
   );
 };
 
@@ -1245,19 +1307,18 @@ const LandingPage = ({ onAuthenticated }) => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={copy.placeholder_name}
             />
-            <Button
+            <LiquidGlassButton
+              tone="primary"
               onClick={handleCreate}
               loading={isCreating}
               disabled={displayName.trim().length < 2}
               fullWidth
               size="lg"
-              variant="primary"
-              color="white"
             >
               {copy.cta_start} →
-            </Button>
-            <Button
-              variant="secondary"
+            </LiquidGlassButton>
+            <LiquidGlassButton
+              tone="secondary"
               onClick={() => {
                 playSound(selectSound);
                 setView("signIn");
@@ -1265,7 +1326,7 @@ const LandingPage = ({ onAuthenticated }) => {
               fullWidth
             >
               {copy.cta_signin}
-            </Button>
+            </LiquidGlassButton>
 
             {/* Language Toggle */}
             <div
@@ -1649,7 +1710,8 @@ const LandingPage = ({ onAuthenticated }) => {
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder={copy.placeholder_name}
             />
-            <Button
+            <LiquidGlassButton
+              tone="primary"
               onClick={handleCreate}
               loading={isCreating}
               disabled={displayName.trim().length < 2}
@@ -1657,9 +1719,9 @@ const LandingPage = ({ onAuthenticated }) => {
               size="lg"
             >
               {copy.cta_start} →
-            </Button>
-            <Button
-              variant="secondary"
+            </LiquidGlassButton>
+            <LiquidGlassButton
+              tone="secondary"
               onClick={() => {
                 playSound(selectSound);
                 setView("signIn");
@@ -1667,7 +1729,7 @@ const LandingPage = ({ onAuthenticated }) => {
               fullWidth
             >
               {copy.cta_signin}
-            </Button>
+            </LiquidGlassButton>
           </div>
         </motion.div>
       </section>
