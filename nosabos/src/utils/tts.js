@@ -328,6 +328,10 @@ async function getRealtimePlayer({
   // Track when audio playback has actually started (play() resolved)
   let audioStarted = false;
   let audioEnded = false;
+  let responseDone = false;
+  let finalizeResolved = false;
+  let playbackMonitorTimer = null;
+  let hardFallbackTimer = null;
   audio.addEventListener(
     "playing",
     () => {
@@ -335,10 +339,98 @@ async function getRealtimePlayer({
     },
     { once: true },
   );
+  audio.addEventListener(
+    "ended",
+    () => {
+      audioEnded = true;
+    },
+    { once: true },
+  );
+
+  let resolveFinalize;
+  const clearFinalizeTimers = () => {
+    if (playbackMonitorTimer) {
+      clearTimeout(playbackMonitorTimer);
+      playbackMonitorTimer = null;
+    }
+    if (hardFallbackTimer) {
+      clearTimeout(hardFallbackTimer);
+      hardFallbackTimer = null;
+    }
+  };
+  const finishFinalize = () => {
+    if (finalizeResolved) return;
+    finalizeResolved = true;
+    clearFinalizeTimers();
+    resolveFinalize?.();
+  };
+  const startPlaybackCompletionWatch = () => {
+    if (playbackMonitorTimer || finalizeResolved) return;
+
+    const pollMs = 150;
+    const stagnantThreshold = 10;
+    const maxMonitorMs = Math.max(12000, text.length * 140 + 4000);
+    const startedAt = Date.now();
+    let lastTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+    let sawPlaybackProgress = lastTime > 0.01 || audioStarted;
+    let stagnantPolls = 0;
+
+    const poll = () => {
+      playbackMonitorTimer = null;
+      if (finalizeResolved) return;
+
+      const currentTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
+      const hasAdvanced = currentTime > lastTime + 0.01;
+
+      if (hasAdvanced) {
+        sawPlaybackProgress = true;
+        audioStarted = true;
+        stagnantPolls = 0;
+        lastTime = currentTime;
+      } else if (sawPlaybackProgress || currentTime > 0.01 || audioEnded) {
+        sawPlaybackProgress = true;
+        stagnantPolls += 1;
+      }
+
+      if (
+        sawPlaybackProgress &&
+        (audioEnded ||
+          (audio.paused && currentTime > 0.01) ||
+          stagnantPolls >= stagnantThreshold)
+      ) {
+        finishFinalize();
+        return;
+      }
+
+      if (
+        Date.now() - startedAt >= maxMonitorMs ||
+        (!sawPlaybackProgress && audio.paused && Date.now() - startedAt >= 5000)
+      ) {
+        finishFinalize();
+        return;
+      }
+
+      playbackMonitorTimer = setTimeout(poll, pollMs);
+    };
+
+    playbackMonitorTimer = setTimeout(poll, pollMs);
+  };
 
   const ready = new Promise((resolve, reject) => {
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
+      event.streams[0].getTracks().forEach((t) => {
+        remoteStream.addTrack(t);
+        t.addEventListener(
+          "ended",
+          () => {
+            if (responseDone) startPlaybackCompletionWatch();
+          },
+          { once: true },
+        );
+        t.addEventListener("mute", () => {
+          if (responseDone) startPlaybackCompletionWatch();
+        });
+      });
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
@@ -354,28 +446,32 @@ async function getRealtimePlayer({
   let intentionalEnd = false;
 
   // Track when response is done via data channel messages
-  let resolveFinalize;
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
-      if (
-        ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
-      ) {
-        resolve();
+      if (["closed", "failed"].includes(pc.connectionState || "")) {
+        finishFinalize();
       }
     };
-    audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout based on text length (minimum 15s, ~70ms per char + buffer)
-    // This is only a safety net - normal cleanup happens via response.done
-    const fallbackTimeoutMs = Math.max(15000, text.length * 70 + 5000);
-    setTimeout(resolve, fallbackTimeoutMs);
+    audio.addEventListener(
+      "ended",
+      () => {
+        finishFinalize();
+      },
+      { once: true },
+    );
+    // Long safety net for cases where the stream never settles cleanly.
+    const fallbackTimeoutMs = Math.max(45000, text.length * 180 + 10000);
+    hardFallbackTimer = setTimeout(finishFinalize, fallbackTimeoutMs);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
     audioEnded = true;
-    // Dispatch 'ended' event as fallback to ensure cleanup handlers fire
+    clearFinalizeTimers();
+    // Dispatch 'ended' as a final notification for components that only watch
+    // the media element and do not await the finalize promise.
     try {
-      if (audio.onended) {
+      if (audio.onended && !audio.ended) {
         audio.dispatchEvent(new Event("ended"));
       }
     } catch {}
@@ -400,31 +496,10 @@ async function getRealtimePlayer({
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      // Close connection when response is done (speech finished)
+      // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
-        intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        let pollCount = 0;
-        const maxPolls = 40; // Max 2 seconds of polling (40 * 50ms)
-        const checkAndFinalize = () => {
-          pollCount++;
-          if (audioStarted || pollCount >= maxPolls) {
-            // Audio has started or we've waited long enough, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Estimate audio duration based on text length
-        // Average TTS speaking rate is ~12-15 characters per second
-        // Use ~70ms per character as a safe estimate, minimum 1 second
-        const estimatedDurationMs = Math.max(1000, text.length * 70);
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, estimatedDurationMs);
+        responseDone = true;
+        startPlaybackCompletionWatch();
       }
     } catch {}
   };
@@ -491,7 +566,7 @@ async function getRealtimePlayer({
 
   const cleanupFn = () => {
     intentionalEnd = true;
-    resolveFinalize?.();
+    finishFinalize();
   };
   audio._ttsCleanup = cleanupFn;
 
