@@ -1,5 +1,11 @@
 import { getMultiLevelLearningPath } from "../../data/skillTreeData";
 import {
+  getLanguagePromptName,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../../constants/languages";
+import { callResponses } from "../../utils/llm";
+import {
   REVIEW_WORLD_ID,
   applyObjectCollisions,
   buildDynamicTileLibrary,
@@ -13,7 +19,6 @@ import {
   readEnvironmentAmbientColor,
 } from "./worldGen";
 
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const SCENARIO_MODEL = "gpt-5-nano";
 
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
@@ -188,6 +193,60 @@ function uniqueWords(items = []) {
   return Array.from(
     new Set(items.filter(Boolean).map((item) => String(item).trim())),
   );
+}
+
+function resolveTargetLanguageName(code) {
+  return getLanguagePromptName(code) || String(code || "").toUpperCase();
+}
+
+function buildTargetLanguageGuard(targetLang, supportLang) {
+  const targetName = resolveTargetLanguageName(targetLang);
+  const supportName = resolveTargetLanguageName(supportLang);
+
+  return [
+    `CRITICAL LANGUAGE RULES: Every learner-facing string must be written strictly in ${targetName} (code: ${targetLang}).`,
+    `The support language is ${supportName} (code: ${supportLang}) and is metadata only; it must NOT appear in dialogue, quest text, choices, hints, or questions.`,
+    `Never use Spanish unless the target language itself is Spanish. Never mix ${targetName} with ${supportName}.`,
+  ].join("\n");
+}
+
+function isBeginnerReviewLevel(level = "") {
+  return ["Pre-A1", "A1"].includes(String(level || "").trim());
+}
+
+function buildReviewContextBlock(reviewContext = null, lessonTerms = [], levelKey = "A1") {
+  const effectiveTerms = uniqueWords([
+    ...(reviewContext?.reviewTerms || []),
+    ...lessonTerms,
+  ]).slice(0, 120);
+
+  const contextLines = [
+    reviewContext?.curriculumSummary
+      ? `Review brief: ${reviewContext.curriculumSummary}`
+      : "",
+    reviewContext?.unitTitle
+      ? `Current chapter/unit: ${reviewContext.unitTitle}.`
+      : "",
+    reviewContext?.lessonTitles?.length
+      ? `Lessons to review: ${reviewContext.lessonTitles.slice(0, 8).join(", ")}.`
+      : "",
+    reviewContext?.reviewObjectives?.length
+      ? `Keep the game aligned to these objectives: ${reviewContext.reviewObjectives
+          .slice(0, 8)
+          .join(" | ")}.`
+      : "",
+    reviewContext?.isTutorial
+      ? "TUTORIAL REVIEW: Greetings, saying your name, and simple polite responses only. No errands, mysteries, or abstract storylines."
+      : "",
+    isBeginnerReviewLevel(levelKey)
+      ? "BEGINNER REVIEW: Keep the mission concrete and classroom-friendly. Use short, high-frequency language tied directly to the review topics."
+      : "",
+  ].filter(Boolean);
+
+  return {
+    lessonTerms: effectiveTerms,
+    promptBlock: contextLines.join("\n"),
+  };
 }
 
 function getLessonTerms(targetLang) {
@@ -517,7 +576,9 @@ function shuffle(arr) {
   return a;
 }
 
-function generateQuestPlan(npcCount) {
+function generateQuestPlan(npcCount, options = {}) {
+  const levelKey = options?.cefrLevel || "A1";
+  const isTutorial = !!options?.isTutorial;
   // Build a variable-length visit sequence (2-6 steps)
   // Each step targets an NPC and has random interactions
   const npcIndices = Array.from({ length: npcCount }, (_, i) => i);
@@ -526,7 +587,7 @@ function generateQuestPlan(npcCount) {
   const base = shuffle(npcIndices);
 
   // Randomly add 0-3 extra revisit steps
-  const extraCount = Math.floor(Math.random() * 4); // 0-3
+  const extraCount = isTutorial ? 0 : Math.floor(Math.random() * 4); // 0-3
   const extras = [];
   for (let i = 0; i < extraCount; i++) {
     extras.push(pickRandom(npcIndices));
@@ -550,8 +611,15 @@ function generateQuestPlan(npcCount) {
 
   // For each step, pick 1-3 random interaction types
   const interactionTypes = ["choice", "speech"];
+  const maxInteractions = isTutorial
+    ? 1
+    : levelKey === "Pre-A1"
+      ? 1
+      : levelKey === "A1"
+        ? 2
+        : 3;
   const stepsInteractions = visitOrder.map(() => {
-    const count = 1 + Math.floor(Math.random() * 3); // 1-3
+    const count = 1 + Math.floor(Math.random() * maxInteractions);
     const types = [];
     for (let s = 0; s < count; s++) {
       types.push(pickRandom(interactionTypes));
@@ -560,7 +628,14 @@ function generateQuestPlan(npcCount) {
   });
 
   // Pick which step gets the gather quest (60% chance, never the last step)
-  const hasGather = Math.random() < 0.6;
+  const gatherChance = isTutorial
+    ? 0
+    : levelKey === "Pre-A1"
+      ? 0.1
+      : levelKey === "A1"
+        ? 0.25
+        : 0.6;
+  const hasGather = Math.random() < gatherChance;
   const gatherStepIdx =
     hasGather && visitOrder.length > 1
       ? Math.floor(Math.random() * (visitOrder.length - 1))
@@ -576,9 +651,12 @@ function normalizeQuest(
   supportLang,
   targetLang,
   gatherSource = "park",
+  cefrLevel = null,
+  reviewContext = null,
 ) {
   const rawStorySeed = String(rawQuest?.storySeed || "").trim();
   const tl = targetLang;
+  const levelKey = cefrLevel || reviewContext?.cefrLevel || "A1";
 
   const L = {
     es: {
@@ -742,7 +820,7 @@ function normalizeQuest(
         () => "Quiero escuchar tu punto de vista. ¿Qué dirías?",
         () => "Eso me hace pensar... ¿y tú qué crees que pasó?",
       ],
-      playerBridge: (fromNpc, toNpc) =>
+      playerBridge: (fromNpc) =>
         `${fromNpc} me envió. Dice que tú sabes algo importante.`,
       npcHandoff: (nextNpc) =>
         `Ve con ${nextNpc}. Creo que sabe algo más que puede ayudarnos.`,
@@ -915,7 +993,7 @@ function normalizeQuest(
         () => "I want to hear your perspective. What would you say?",
         () => "That makes me think... what do you believe happened?",
       ],
-      playerBridge: (fromNpc, toNpc) =>
+      playerBridge: (fromNpc) =>
         `${fromNpc} sent me. They say you know something important.`,
       npcHandoff: (nextNpc) =>
         `Go find ${nextNpc}. I think they know something more that can help us.`,
@@ -932,7 +1010,7 @@ function normalizeQuest(
     },
   };
 
-  const t = L[tl] || L.es;
+  const t = L[tl] || L.en;
 
   const storySeed = rawStorySeed || t.defaultSeed;
   const intro =
@@ -940,7 +1018,10 @@ function normalizeQuest(
     t.defaultIntro(npcs[0]?.name || "NPC");
 
   // Generate a random quest plan for this game instance
-  const plan = generateQuestPlan(npcs.length);
+  const plan = generateQuestPlan(npcs.length, {
+    cefrLevel: levelKey,
+    isTutorial: !!reviewContext?.isTutorial,
+  });
 
   // Prepare gather items
   const gatherData = pickGatherItems(gatherSource, tl);
@@ -1062,6 +1143,10 @@ function normalizeQuest(
         ),
         responseMode: "gather",
         gatherItem: correctItem,
+        gatherWrongItemTemplate: t.gatherWrongItem(
+          "{{wrongItem}}",
+          "{{correctItem}}",
+        ),
         nextNodeId: gatherSuccessId,
       });
       nodeCounter++;
@@ -1145,6 +1230,81 @@ function normalizeQuest(
   };
 }
 
+function isQuestLocalizationValid(candidate, baseQuest) {
+  if (!candidate || typeof candidate !== "object") return false;
+  if (!Array.isArray(candidate.steps) || !Array.isArray(baseQuest?.steps)) {
+    return false;
+  }
+  if (candidate.steps.length !== baseQuest.steps.length) return false;
+  if (!candidate.gatherData || !baseQuest?.gatherData) return false;
+  return true;
+}
+
+async function adaptQuestForReviewContext(
+  quest,
+  targetLang,
+  cefrLevel,
+  reviewContext = null,
+) {
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  if (!quest) {
+    return quest;
+  }
+
+  const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
+  const levelKey = cefrLevel || reviewContext?.cefrLevel || "A1";
+  const prompt = [
+    "You are rewriting a structured RPG quest so it becomes a chapter review for a language-learning game.",
+    `Target language: ${targetLangName} (code: ${normalizedTargetLang}).`,
+    `CEFR level: ${levelKey}.`,
+    reviewContext?.curriculumSummary
+      ? `Review brief: ${reviewContext.curriculumSummary}`
+      : "",
+    reviewContext?.unitTitle
+      ? `Current chapter/unit: ${reviewContext.unitTitle}.`
+      : "",
+    reviewContext?.lessonTitles?.length
+      ? `Lessons being reviewed: ${reviewContext.lessonTitles
+          .slice(0, 8)
+          .join(", ")}.`
+      : "",
+    reviewContext?.reviewTerms?.length
+      ? `Required review topics and vocabulary: ${reviewContext.reviewTerms
+          .slice(0, 24)
+          .join(", ")}.`
+      : "",
+    reviewContext?.reviewObjectives?.length
+      ? `Keep the dialogue tied to these lesson objectives: ${reviewContext.reviewObjectives
+          .slice(0, 8)
+          .join(" | ")}.`
+      : "",
+    reviewContext?.isTutorial
+      ? "Tutorial rule: greetings, saying your name, and simple polite expressions only. No mysteries, errands, memory loss, urgency, or dramatic twists."
+      : "",
+    isBeginnerReviewLevel(levelKey)
+      ? "Beginner rule: rewrite everything into very short, concrete, high-frequency review language. No abstract, literary, or poetic lines."
+      : "",
+    `Rewrite every learner-facing string into ${targetLangName} and align it to the review brief.`,
+    "This includes intro, storySeed, step titles/intros, node dialogue, player lines, choice text, choice replies, gather item names, hints, and gather-data item names/hints.",
+    "Keep the JSON structure exactly the same.",
+    "Do NOT change keys, ids, stepIdx, npcIdx, startNpcIdx, nextNodeId, responseMode, terminal, isCorrect, sprite, or any numbers/booleans.",
+    "Keep character names as written.",
+    "Preserve the placeholders {{wrongItem}} and {{correctItem}} exactly.",
+    `Use only ${targetLangName}. Do not use Spanish, English, or any other language unless ${targetLangName} is that language.`,
+    "Return ONLY valid JSON.",
+    "",
+    JSON.stringify(quest),
+  ].join("\n");
+
+  const localizedRaw = await callResponses({
+    model: SCENARIO_MODEL,
+    input: prompt,
+  });
+  const localized = parseJSON(localizedRaw);
+
+  return isQuestLocalizationValid(localized, quest) ? localized : quest;
+}
+
 function normalizeMapData(mapData, mapWidth, mapHeight) {
   const expectedLength = mapWidth * mapHeight;
   if (!Array.isArray(mapData) || mapData.length !== expectedLength) {
@@ -1164,7 +1324,14 @@ function ensureWalkableTiles(mapData, mapWidth, entities = []) {
   return next;
 }
 
-function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
+async function fallbackScenario(
+  mapId,
+  targetLang,
+  supportLang,
+  lessonTerms = [],
+  cefrLevel = null,
+  reviewContext = null,
+) {
   if (mapId !== REVIEW_WORLD_ID) {
     const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
     const mapWidth = 18;
@@ -1184,6 +1351,22 @@ function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
     ];
     const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
     const npcs = allFallbackNpcs.slice(0, npcCount);
+
+    const quest = await adaptQuestForReviewContext(
+      normalizeQuest(
+        null,
+        npcs,
+        questionsByLang,
+        supportLang,
+        targetLang,
+        mapId,
+        cefrLevel,
+        reviewContext,
+      ),
+      targetLang,
+      cefrLevel,
+      reviewContext,
+    );
 
     return {
       id: mapId,
@@ -1211,14 +1394,7 @@ function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
       },
       npcs,
       questions: questionsByLang,
-      quest: normalizeQuest(
-        null,
-        npcs,
-        questionsByLang,
-        supportLang,
-        targetLang,
-        mapId,
-      ),
+      quest,
       greetings: {
         en: ["Generating scenario unavailable; using safe fallback."],
         es: ["Generacion no disponible; usando respaldo."],
@@ -1261,6 +1437,22 @@ function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
     objects,
   });
 
+  const quest = await adaptQuestForReviewContext(
+    normalizeQuest(
+      null,
+      npcs,
+      questionsByLang,
+      supportLang,
+      targetLang,
+      environment,
+      cefrLevel,
+      reviewContext,
+    ),
+    targetLang,
+    cefrLevel,
+    reviewContext,
+  );
+
   return {
     id: mapId,
     name: environment?.names || {
@@ -1281,14 +1473,7 @@ function fallbackScenario(mapId, targetLang, supportLang, lessonTerms = []) {
     },
     npcs,
     questions: questionsByLang,
-    quest: normalizeQuest(
-      null,
-      npcs,
-      questionsByLang,
-      supportLang,
-      targetLang,
-      environment,
-    ),
+    quest,
     greetings: {
       en: [
         "Scenario generation was incomplete, so we built a lesson-themed world locally.",
@@ -1318,12 +1503,26 @@ function buildPrompt({
   lessonTerms,
   npcCount,
   cefrLevel,
+  reviewContext,
 }) {
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
+  const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
+  const supportLangName = resolveTargetLanguageName(normalizedSupportLang);
+  const languageGuard = buildTargetLanguageGuard(
+    normalizedTargetLang,
+    normalizedSupportLang,
+  );
+  const levelKey = cefrLevel || "A1";
+  const reviewContextBlock = buildReviewContextBlock(
+    reviewContext,
+    lessonTerms,
+    levelKey,
+  );
   const worldSeed =
     mapId === REVIEW_WORLD_ID
-      ? buildLessonWorldSeed(lessonTerms, { mapId })
+      ? buildLessonWorldSeed(reviewContextBlock.lessonTerms, { mapId })
       : null;
-  const levelKey = cefrLevel || "A1";
   const dialogueGuidance =
     CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
   const supportedObjects = getSupportedObjectTypes().join(", ");
@@ -1333,12 +1532,14 @@ function buildPrompt({
     return `You generate JSON for a 2D JRPG language-learning review world.
 Return ONLY valid JSON (no markdown).
 
-Target language: ${targetLang}
-Support language: ${supportLang}
+Target language: ${targetLangName} (code: ${normalizedTargetLang})
+Support language: ${supportLangName} (code: ${normalizedSupportLang})
 CEFR proficiency level: ${levelKey}
 
+${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
+${reviewContextBlock.promptBlock ? `\n${reviewContextBlock.promptBlock}\n` : ""}
 
 This is NOT a preset map picker. Invent one unique environment that fits the lesson topics naturally.
 If the lesson feels domestic, include home details like a TV or sofa.
@@ -1352,7 +1553,7 @@ Suggested world direction:
 - Example tone/setting inspiration: ${worldSeed?.summary?.en || "rich, specific, and grounded"}
 
 Use these curriculum terms for the world and question content:
-${lessonTerms.slice(0, 120).join(", ")}
+${reviewContextBlock.lessonTerms.join(", ")}
 
 Supported decor kinds: ${supportedDecor}
 Supported object types: ${supportedObjects}
@@ -1419,12 +1620,14 @@ Constraints:
 Return ONLY valid JSON (no markdown).
 
 Map theme requested: ${getMapName(mapId, "en")} (${mapId}).
-Target language: ${targetLang}
-Support language: ${supportLang}
+Target language: ${targetLangName} (code: ${normalizedTargetLang})
+Support language: ${supportLangName} (code: ${normalizedSupportLang})
 CEFR proficiency level: ${levelKey}
 
+${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
+${reviewContextBlock.promptBlock ? `\n${reviewContextBlock.promptBlock}\n` : ""}
 ${
   mapId === TUTORIAL_MAP_ID
     ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly and simple."
@@ -1432,7 +1635,7 @@ ${
 }
 
 Use these curriculum terms for question content (focus the game around these topics):
-${lessonTerms.slice(0, 120).join(", ")}
+${reviewContextBlock.lessonTerms.join(", ")}
 
 Required JSON shape:
 {
@@ -1632,18 +1835,35 @@ function normalizeScenario({
   };
 }
 
-function withQuest(scenario, raw, supportLang, targetLang) {
+async function withQuest(
+  scenario,
+  raw,
+  supportLang,
+  targetLang,
+  cefrLevel,
+  reviewContext = null,
+) {
   const questionsByLang = scenario.questions;
+  const baseQuest = normalizeQuest(
+    raw?.quest,
+    scenario.npcs,
+    questionsByLang,
+    supportLang,
+    targetLang,
+    scenario.environment || scenario.id,
+    cefrLevel,
+    reviewContext,
+  );
+  const localizedQuest = await adaptQuestForReviewContext(
+    baseQuest,
+    targetLang,
+    cefrLevel,
+    reviewContext,
+  );
+
   return {
     ...scenario,
-    quest: normalizeQuest(
-      raw?.quest,
-      scenario.npcs,
-      questionsByLang,
-      supportLang,
-      targetLang,
-      scenario.environment || scenario.id,
-    ),
+    quest: localizedQuest,
   };
 }
 
@@ -1653,67 +1873,63 @@ export async function generateScenarioWithAI(
   supportLang = "en",
   overrideTerms = null,
   cefrLevel = null,
+  reviewContext = null,
 ) {
-  const lessonTerms = overrideTerms || getLessonTerms(targetLang);
-  const npcCount = 2 + Math.floor(Math.random() * 3); // 2, 3, or 4
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
+  const effectiveReviewContext = reviewContext || null;
+  const lessonTerms =
+    overrideTerms ||
+    effectiveReviewContext?.reviewTerms ||
+    getLessonTerms(normalizedTargetLang);
+  const isTutorial = !!effectiveReviewContext?.isTutorial;
+  const levelKey = cefrLevel || effectiveReviewContext?.cefrLevel || "A1";
+  const npcCount = isTutorial
+    ? 2
+    : levelKey === "Pre-A1"
+      ? 2 + Math.floor(Math.random() * 2)
+      : 2 + Math.floor(Math.random() * 3);
   const prompt = buildPrompt({
     mapId,
-    targetLang,
-    supportLang,
+    targetLang: normalizedTargetLang,
+    supportLang: normalizedSupportLang,
     lessonTerms,
     npcCount,
-    cefrLevel,
+    cefrLevel: levelKey,
+    reviewContext: effectiveReviewContext,
   });
 
-  let text = "";
-  try {
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model: SCENARIO_MODEL,
-        text: { format: { type: "text" } },
-        input: prompt,
-      }),
-    });
-
-    const contentType = r.headers.get("content-type") || "";
-    const payload = contentType.includes("application/json")
-      ? await r.json()
-      : await r.text();
-
-    text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join(""),
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        payload.choices[0]?.message?.content) ||
-      (typeof payload === "string" ? payload : "");
-  } catch {
-    text = "";
-  }
+  const text = await callResponses({
+    model: SCENARIO_MODEL,
+    input: prompt,
+  });
 
   const parsed = parseJSON(text);
   const normalized = normalizeScenario({
     raw: parsed,
     mapId,
-    targetLang,
-    supportLang,
+    targetLang: normalizedTargetLang,
+    supportLang: normalizedSupportLang,
     npcCount,
     lessonTerms,
   });
   if (!normalized)
-    return fallbackScenario(mapId, targetLang, supportLang, lessonTerms);
-  return withQuest(normalized, parsed, supportLang, targetLang);
+    return await fallbackScenario(
+      mapId,
+      normalizedTargetLang,
+      normalizedSupportLang,
+      lessonTerms,
+      levelKey,
+      effectiveReviewContext,
+    );
+  return withQuest(
+    normalized,
+    parsed,
+    normalizedSupportLang,
+    normalizedTargetLang,
+    levelKey,
+    effectiveReviewContext,
+  );
 }
 
 export function mulberry32(a) {
