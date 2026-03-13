@@ -932,7 +932,80 @@ function normalizeQuest(
     },
   };
 
-  const t = L[tl] || L.es;
+  function buildTargetLanguagePackFromQuestions(langCode) {
+    const sourceQuestions = Array.isArray(questionsByLang?.[langCode])
+      ? questionsByLang[langCode]
+      : [];
+    const fallbackQuestions = Array.isArray(questionsByLang?.en)
+      ? questionsByLang.en
+      : [];
+    const candidateQuestions = sourceQuestions.length
+      ? sourceQuestions
+      : fallbackQuestions;
+
+    const prompts = candidateQuestions
+      .map((q) => String(q?.prompt || "").trim())
+      .filter(Boolean);
+    const optionSets = candidateQuestions
+      .map((q) =>
+        (Array.isArray(q?.options) ? q.options : [])
+          .map((opt) => String(opt || "").trim())
+          .filter(Boolean),
+      )
+      .filter((opts) => opts.length >= 2);
+
+    const genericPrompt = prompts[0] || String(rawQuest?.intro || "").trim();
+    const genericSeed =
+      String(rawQuest?.storySeed || "").trim() ||
+      genericPrompt ||
+      "...";
+
+    const seededChoiceSets = optionSets.slice(0, 5).map((opts) =>
+      opts.slice(0, 4).map((text) => [
+        text,
+        () => (prompts.length ? pickRandom(prompts) : genericSeed),
+      ]),
+    );
+
+    return {
+      defaultSeed: genericSeed,
+      defaultIntro: (name) =>
+        String(rawQuest?.intro || "").trim() || `${name} · ${genericSeed}`,
+      actLabel: (name, n) => `${name} · ${n}`,
+      connectClue: (name, next) => `${name} → ${next}`,
+      defaultTopic: prompts[0] || genericSeed,
+      fallbackSpeech: prompts[0] || genericSeed,
+      heardPrefix: "",
+      firstGreetings: [() => genericSeed],
+      midGreetings: [() => genericSeed],
+      finalGreetings: [() => genericSeed],
+      choiceSets:
+        seededChoiceSets.length > 0
+          ? seededChoiceSets
+          : [
+              [
+                [genericSeed, () => genericSeed],
+                [genericPrompt || genericSeed, () => genericSeed],
+              ],
+            ],
+      speechPrompts:
+        prompts.length > 0
+          ? prompts.map((line) => () => line)
+          : [() => genericSeed],
+      playerBridge: () => genericPrompt || genericSeed,
+      npcHandoff: () => genericSeed,
+      questComplete: genericSeed,
+      gatherIntro: () => genericSeed,
+      gatherHint: (hint) => (hint ? `${genericSeed} ${hint}` : genericSeed),
+      gatherWrongItem: () => genericSeed,
+      gatherSuccess: () => genericSeed,
+      gatherPlayerReport: () => genericSeed,
+      speechContinue: prompts[0] || genericSeed,
+      disableGather: true,
+    };
+  }
+
+  const t = L[tl] || buildTargetLanguagePackFromQuestions(tl);
 
   const storySeed = rawStorySeed || t.defaultSeed;
   const intro =
@@ -941,6 +1014,7 @@ function normalizeQuest(
 
   // Generate a random quest plan for this game instance
   const plan = generateQuestPlan(npcs.length);
+  if (t.disableGather) plan.gatherStepIdx = -1;
 
   // Prepare gather items
   const gatherData = pickGatherItems(gatherSource, tl);
