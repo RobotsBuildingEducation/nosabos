@@ -59,7 +59,6 @@ import {
   getCharacterPersonality,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
-import { awardXp } from "../../utils/utils";
 import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
@@ -2084,7 +2083,7 @@ export default function RPGGame({
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingScenarioId(null);
       levelCompleteSoundPlayedRef.current = false;
-      xpAwardedRef.current = false;
+      tutorialCompletionHandledRef.current = false;
     },
     [targetLang, supportLang, lessonContext, onScenarioReady, reviewContext],
   );
@@ -3753,7 +3752,7 @@ export default function RPGGame({
     lessonContext?.content?.game?.topic === "tutorial";
   const tutorialSceneId =
     lessonContext?.content?.game?.sceneId || TUTORIAL_MAP_ID;
-  const xpAwardedRef = useRef(false);
+  const tutorialCompletionHandledRef = useRef(false);
 
   useEffect(() => {
     if (!isTutorialGame || scenarioId || loadingScenarioId) return;
@@ -3778,45 +3777,16 @@ export default function RPGGame({
   ]);
 
   useEffect(() => {
-    if (!isTutorialGame || !gameComplete || xpAwardedRef.current) return;
-
-    const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
-    const npub = localStorage.getItem("local_npub") || "";
-    const lang =
-      lessonContext?.targetLang || targetLang || localStorageSettings.targetLang || "es";
-
-    if (!npub || !bonusXp) {
-      xpAwardedRef.current = true;
+    if (!isTutorialGame || !gameComplete || tutorialCompletionHandledRef.current) {
       return;
     }
 
-    awardXp(npub, bonusXp, lang)
-      .then(() => {
-        xpAwardedRef.current = true;
-        toast({
-          title:
-            supportLang === "es" ? "XP del juego otorgado" : "Game XP awarded",
-          description:
-            supportLang === "es"
-              ? `Ganaste +${Math.round(bonusXp)} XP por completar el juego tutorial.`
-              : `You earned +${Math.round(bonusXp)} XP for completing the tutorial game.`,
-          status: "success",
-          duration: 2800,
-          isClosable: true,
-        });
-      })
-      .catch(() => {
-        xpAwardedRef.current = true;
-      });
-  }, [
-    gameComplete,
-    isTutorialGame,
-    lessonContext,
-    localStorageSettings.targetLang,
-    supportLang,
-    targetLang,
-    toast,
-  ]);
+    tutorialCompletionHandledRef.current = true;
+
+    if (typeof onSkip === "function") {
+      onSkip();
+    }
+  }, [gameComplete, isTutorialGame, onSkip]);
 
   const handleSkipStep = useCallback(() => {
     if (typeof onSkip === "function") {
