@@ -3,7 +3,7 @@ const REALTIME_MODEL =
 const REALTIME_URL =
   import.meta.env?.VITE_REALTIME_URL || ""
     ? `${import.meta.env?.VITE_REALTIME_URL}?model=${encodeURIComponent(
-        REALTIME_MODEL
+        REALTIME_MODEL,
       )}`
     : "";
 
@@ -83,8 +83,7 @@ export const CHARACTER_VOICES = {
   },
   "purple-girl": {
     voice: "marin",
-    personality:
-      "a joyful woman with a Japanese accent, warm and enthusiastic",
+    personality: "a joyful woman with a Japanese accent, warm and enthusiastic",
   },
 };
 
@@ -293,11 +292,23 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice, personality, langTag, warmAudio } = {}) {
+export async function getTTSPlayer({
+  text,
+  voice,
+  personality,
+  langTag,
+  warmAudio,
+} = {}) {
   return getRealtimePlayer({ text, voice, personality, langTag, warmAudio });
 }
 
-async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio }) {
+async function getRealtimePlayer({
+  text,
+  voice,
+  personality,
+  langTag,
+  warmAudio,
+}) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
@@ -322,7 +333,7 @@ async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio 
     () => {
       audioStarted = true;
     },
-    { once: true }
+    { once: true },
   );
 
   const ready = new Promise((resolve, reject) => {
@@ -436,7 +447,7 @@ async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio 
               : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
             turn_detection: null,
           },
-        })
+        }),
       );
       // Send text as content to narrate
       dc.send(
@@ -452,7 +463,7 @@ async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio 
               },
             ],
           },
-        })
+        }),
       );
       dc.send(
         JSON.stringify({
@@ -460,7 +471,7 @@ async function getRealtimePlayer({ text, voice, personality, langTag, warmAudio 
           response: {
             modalities: ["audio", "text"],
           },
-        })
+        }),
       );
     } catch (err) {
       console.warn("Realtime prompt send failed", err);
@@ -576,14 +587,14 @@ function appendToSourceBuffer(sourceBuffer, chunk) {
         sourceBuffer.removeEventListener("error", onError);
         resolve();
       },
-      { once: true }
+      { once: true },
     );
     const buffer =
       chunk instanceof ArrayBuffer
         ? chunk
         : chunk.buffer.slice(
             chunk.byteOffset,
-            chunk.byteOffset + chunk.byteLength
+            chunk.byteOffset + chunk.byteLength,
           );
     sourceBuffer.appendBuffer(buffer);
   });
@@ -639,7 +650,7 @@ function streamResponseToAudio({ response, mimeType, cacheKey }) {
               if (value && value.length) {
                 const buffer = value.buffer.slice(
                   value.byteOffset,
-                  value.byteOffset + value.byteLength
+                  value.byteOffset + value.byteLength,
                 );
                 chunks.push(buffer);
                 await appendToSourceBuffer(sourceBuffer, buffer);
@@ -660,7 +671,7 @@ function streamResponseToAudio({ response, mimeType, cacheKey }) {
           }
         })();
       },
-      { once: true }
+      { once: true },
     );
   });
 
