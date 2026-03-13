@@ -69,6 +69,12 @@ import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  getLanguagePromptName,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../../constants/languages";
+import { buildGameReviewContext } from "../../utils/gameReviewContext";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -913,6 +919,14 @@ function textFromChunk(chunk) {
   return "";
 }
 
+function fillNamedTemplate(template, replacements = {}) {
+  let output = String(template || "");
+  Object.entries(replacements).forEach(([key, value]) => {
+    output = output.replaceAll(`{{${key}}}`, String(value ?? ""));
+  });
+  return output;
+}
+
 function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
   const [visibleCount, setVisibleCount] = useState(0);
   const prevTextRef = useRef("");
@@ -954,12 +968,21 @@ export default function RPGGame({
   initialScenario = null,
   onSkip = null,
   onScenarioReady = null,
+  targetLang: targetLangProp = null,
+  supportLang: supportLangProp = null,
 }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
+  const reviewContext = useMemo(
+    () =>
+      lessonContext?.gameReviewContext ||
+      buildGameReviewContext({ lesson: lessonContext }),
+    [lessonContext],
+  );
 
   // CEFR proficiency level from lesson context - controls dialogue complexity
-  const cefrLevel = lessonContext?.content?.game?.cefrLevel || null;
+  const cefrLevel =
+    reviewContext?.cefrLevel || lessonContext?.content?.game?.cefrLevel || null;
   const cefrDialogueRule = useMemo(() => {
     const rules = {
       "Pre-A1": {
@@ -983,22 +1006,25 @@ export default function RPGGame({
     return rules[cefrLevel] || { es: "", en: "" };
   }, [cefrLevel]);
 
-  // Read user settings
-  const getUserSettings = () => {
+  const localStorageSettings = useMemo(() => {
     try {
-      const stored = localStorage.getItem("appLanguage");
       return {
         targetLang: localStorage.getItem("userTargetLang") || "es",
-        supportLang: stored || "en",
+        supportLang: localStorage.getItem("appLanguage") || "en",
       };
     } catch {
       return { targetLang: "es", supportLang: "en" };
     }
-  };
+  }, []);
 
-  const settings = getUserSettings();
-  const targetLang = settings.targetLang;
-  const supportLang = settings.supportLang;
+  const targetLang = normalizePracticeLanguage(
+    targetLangProp || lessonContext?.targetLang || localStorageSettings.targetLang,
+    "es",
+  );
+  const supportLang = normalizeSupportLanguage(
+    supportLangProp || localStorageSettings.supportLang,
+    "en",
+  );
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
@@ -1043,21 +1069,68 @@ export default function RPGGame({
   const warmupAudio = useSoundSettings((state) => state.warmupAudio);
 
   const supportLangName = useMemo(
-    () =>
-      ({
-        en: "English",
-        es: "Spanish",
-        pt: "Portuguese",
-        fr: "French",
-        it: "Italian",
-        nl: "Dutch",
-        nah: "Nahuatl",
-        ru: "Russian",
-        de: "German",
-        el: "Greek",
-        pl: "Polish",
-      })[supportLang] || supportLang,
+    () => getLanguagePromptName(supportLang) || supportLang,
     [supportLang],
+  );
+  const targetLangName = useMemo(
+    () => getLanguagePromptName(targetLang) || targetLang,
+    [targetLang],
+  );
+  const cefrPromptRule = useMemo(
+    () => cefrDialogueRule.en || cefrDialogueRule.es || "",
+    [cefrDialogueRule],
+  );
+  const strictTargetLanguageGuard = useMemo(
+    () =>
+      [
+        `Target language: ${targetLangName} (code: ${targetLang}).`,
+        `Support/UI language: ${supportLangName} (code: ${supportLang}). This is metadata only.`,
+        `Write all learner-facing dialogue strictly in ${targetLangName}.`,
+        `Do not use ${supportLangName}, Spanish, English, or any mixed-language output unless the target language is one of those languages.`,
+      ].join("\n"),
+    [supportLang, supportLangName, targetLang, targetLangName],
+  );
+  const reviewPromptContext = useMemo(
+    () =>
+      [
+        reviewContext?.curriculumSummary
+          ? `Review brief: ${reviewContext.curriculumSummary}`
+          : "",
+        reviewContext?.unitTitle
+          ? `Current chapter/unit: ${reviewContext.unitTitle}.`
+          : "",
+        reviewContext?.lessonTitles?.length
+          ? `Lessons being reviewed: ${reviewContext.lessonTitles
+              .slice(0, 8)
+              .join(", ")}.`
+          : "",
+        reviewContext?.reviewTerms?.length
+          ? `Required review topics and vocabulary: ${reviewContext.reviewTerms
+              .slice(0, 24)
+              .join(", ")}.`
+          : "",
+        reviewContext?.reviewObjectives?.length
+          ? `Keep the interactions tied to these objectives: ${reviewContext.reviewObjectives
+              .slice(0, 8)
+              .join(" | ")}.`
+          : "",
+        reviewContext?.isTutorial
+          ? "Tutorial rule: greetings, saying your name, and other ultra-basic polite expressions only."
+          : "",
+        ["Pre-A1", "A1"].includes(cefrLevel || "")
+          ? "Beginner rule: no dramatic missions, metaphors, abstract narration, or advanced sentence structures."
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    [cefrLevel, reviewContext],
+  );
+  const buildStrictDialoguePrompt = useCallback(
+    (...sections) =>
+      [cefrPromptRule, strictTargetLanguageGuard, reviewPromptContext, ...sections]
+        .filter(Boolean)
+        .join("\n"),
+    [cefrPromptRule, reviewPromptContext, strictTargetLanguageGuard],
   );
 
   const toggleTranslation = useCallback(async () => {
@@ -1446,7 +1519,12 @@ export default function RPGGame({
 
   const questions = useMemo(() => {
     if (!scenario) return [];
-    return scenario.questions[targetLang] || scenario.questions.es || [];
+    return (
+      scenario.questions[targetLang] ||
+      scenario.questions.en ||
+      scenario.questions.es ||
+      []
+    );
   }, [scenario, targetLang]);
 
   const quest = scenario?.quest;
@@ -1475,6 +1553,14 @@ export default function RPGGame({
         playerBridge: sub(node.playerBridge),
         speechFallbackReply: sub(node.speechFallbackReply),
         speechContinueReply: sub(node.speechContinueReply),
+        gatherWrongItemTemplate: sub(node.gatherWrongItemTemplate),
+        gatherItem: node.gatherItem
+          ? {
+              ...node.gatherItem,
+              name: sub(node.gatherItem.name),
+              hint: sub(node.gatherItem.hint),
+            }
+          : node.gatherItem,
         choices: node.choices?.map((c) => ({
           ...c,
           text: sub(c.text),
@@ -1703,21 +1789,21 @@ export default function RPGGame({
 
       // When lessonContext is provided, pass focused terms and CEFR level
       const gameContent = lessonContext?.content?.game;
-      const overrideTerms = gameContent
-        ? [
-            ...(gameContent.focusPoints || []),
-            ...(gameContent.unitTopics || []),
-            gameContent.topic,
-            gameContent.unitTitle,
-          ].filter(Boolean)
-        : null;
+      const overrideTerms = [
+        ...(reviewContext?.reviewTerms || []),
+        ...(gameContent?.focusPoints || []),
+        ...(gameContent?.unitTopics || []),
+        gameContent?.topic,
+        gameContent?.unitTitle,
+      ].filter(Boolean);
 
       const generated = await generateScenarioWithAI(
         mapId,
         targetLang,
         supportLang,
-        overrideTerms?.length ? overrideTerms : null,
-        gameContent?.cefrLevel || null,
+        overrideTerms.length ? overrideTerms : null,
+        reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
+        reviewContext,
       );
       setScenario(generated);
       if (typeof onScenarioReady === "function" && generated) {
@@ -1728,7 +1814,7 @@ export default function RPGGame({
       levelCompleteSoundPlayedRef.current = false;
       xpAwardedRef.current = false;
     },
-    [targetLang, supportLang, lessonContext, onScenarioReady],
+    [targetLang, supportLang, lessonContext, onScenarioReady, reviewContext],
   );
 
   // ─── Shuffle questions on scenario select ──────────────────────────────
@@ -2801,7 +2887,7 @@ export default function RPGGame({
   }, [gatherUnlocked]);
 
   const completeNPCChapter = useCallback(
-    (npcIdx) => {
+    () => {
       // Stop any playing TTS and clear heard speech when completing a chapter
       stopNPCSpeech();
       setLastHeardSpeech("");
@@ -2826,12 +2912,14 @@ export default function RPGGame({
           npcCharacterNamesRef.current[nextStep.npcIdx] ||
           scenario?.npcs?.[nextStep.npcIdx]?.name ||
           "NPC";
-        const bridgePrompt =
-          targetLang === "es"
-            ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres el jugador en una aventura. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}Ahora te diriges a hablar con ${nextNpcName}. Escribe 1 oración corta en español que el jugador diría al llegar. Solo la oración, sin comillas.`
-            : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are the player in an adventure. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to ${nextNpcName}. Write 1 short sentence that the player would say upon arriving. Just the sentence, no quotes.`;
+        const bridgePrompt = buildStrictDialoguePrompt(
+          "You are writing a line for the player in a language-learning RPG.",
+          `Story seed: ${seed}`,
+          history ? `Recent history:\n${history}` : "",
+          `The player is walking up to ${nextNpcName}.`,
+          `Write exactly 1 short sentence the player says on arrival in ${targetLangName}.`,
+          "Return only the sentence, with no quotes or labels.",
+        );
         callResponses({ input: bridgePrompt })
           .then((playerBridge) => {
             const text = (playerBridge || "").trim();
@@ -2841,12 +2929,14 @@ ${history ? `Recent history:\n${history}\n` : ""}You are now heading to talk to 
             // Now generate a contextual NPC greeting that responds to the player's bridge
             const npcPersonality =
               scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
-            const npcGreetPrompt =
-              targetLang === "es"
-                ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${nextNpcName}, un personaje en una aventura${npcPersonality ? ` (personalidad: ${npcPersonality})` : ""}. La historia: ${seed}
-${history ? `Historial reciente:\n${history}\n` : ""}${text ? `El jugador llega y te dice: "${text}"\n` : ""}Responde con 1-2 oraciones cortas en español como ${nextNpcName}. Solo las oraciones, sin comillas.`
-                : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` (personality: ${npcPersonality})` : ""}. The story: ${seed}
-${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives and says: "${text}"\n` : ""}Respond with 1-2 short sentences in English as ${nextNpcName}. Just the sentences, no quotes.`;
+            const npcGreetPrompt = buildStrictDialoguePrompt(
+              `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` with personality "${npcPersonality}"` : ""}.`,
+              `Story seed: ${seed}`,
+              history ? `Recent history:\n${history}` : "",
+              text ? `The player arrives and says: "${text}"` : "",
+              `Reply as ${nextNpcName} in 1-2 short sentences in ${targetLangName}.`,
+              "Return only the sentences, with no quotes or labels.",
+            );
             return callResponses({ input: npcGreetPrompt });
           })
           .then((result) => {
@@ -2865,21 +2955,21 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       }, 800);
     },
     [
+      buildStrictDialoguePrompt,
       completedSteps,
-      totalSteps,
+      quest,
       questProgress,
       questSteps,
-      quest,
       scenario,
-      targetLang,
       stopNPCSpeech,
-      cefrDialogueRule,
+      targetLangName,
+      totalSteps,
     ],
   );
 
   // ─── Generate dynamic choices for choice nodes via LLM ────────────────
   const generateDynamicChoices = useCallback(
-    async (node, npcIdx, stepIdx) => {
+    async (node, npcIdx) => {
       if (!node || node.responseMode !== "choice") return;
       setGeneratingChoices(true);
       const npcName =
@@ -2895,25 +2985,19 @@ ${history ? `Recent history:\n${history}\n` : ""}${text ? `The player arrives an
       const personality = characterId
         ? getCharacterPersonality(characterId)
         : null;
-      const personalityHint = personality
-        ? targetLang === "es"
-          ? ` Personalidad del NPC: ${personality}.`
-          : ` NPC personality: ${personality}.`
-        : "";
       const npcLine = node.npcLine || "";
 
-      const prompt =
-        targetLang === "es"
-          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres un escritor de diálogos para un juego RPG de aventuras.${personalityHint} La historia: ${seed}
-${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El NPC "${npcName}" acaba de decir: "${npcLine}"
-Genera exactamente 3 opciones de respuesta cortas que el jugador podría decir, y para cada una la reacción del NPC (1 oración corta).
-Responde SOLO en este formato JSON exacto, sin texto adicional:
-[{"text":"opción del jugador","reply":"respuesta del NPC"},{"text":"opción 2","reply":"respuesta 2"},{"text":"opción 3","reply":"respuesta 3"}]`
-          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are a dialogue writer for an RPG adventure game.${personalityHint} The story: ${seed}
-${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The NPC "${npcName}" just said: "${npcLine}"
-Generate exactly 3 short response options the player could say, and for each one the NPC's short reaction (1 sentence).
-Respond ONLY in this exact JSON format, no additional text:
-[{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]`;
+      const prompt = buildStrictDialoguePrompt(
+        "You are writing branching dialogue for a language-learning RPG.",
+        personality ? `NPC personality: ${personality}.` : "",
+        `Story seed: ${seed}`,
+        historyContext ? `Conversation history:\n${historyContext}` : "",
+        `The NPC "${npcName}" just said: "${npcLine}"`,
+        `Generate exactly 3 short player response options in ${targetLangName}.`,
+        `For each option, include the NPC's short reply in ${targetLangName}.`,
+        "Return ONLY valid JSON in this exact shape with no extra text:",
+        '[{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]',
+      );
 
       try {
         const result = await callResponses({ input: prompt });
@@ -2944,7 +3028,7 @@ Respond ONLY in this exact JSON format, no additional text:
         setGeneratingChoices(false);
       }
     },
-    [quest, scenario, targetLang, cefrDialogueRule],
+    [buildStrictDialoguePrompt, quest, scenario, targetLangName],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -3100,10 +3184,14 @@ Respond ONLY in this exact JSON format, no additional text:
 
     if (!submittedItem.isCorrect) {
       // Wrong item — NPC tells you it's wrong, drop item back near the player
-      const wrongText =
-        targetLang === "es"
-          ? `Eso es ${submittedItem.name}. No es lo que necesito. Busca ${requiredItem}.`
-          : `That's ${submittedItem.name}. Not what I need. Look for ${requiredItem}.`;
+      const wrongText = fillNamedTemplate(
+        dialogue.node.gatherWrongItemTemplate ||
+          "That is {{wrongItem}}. Not what I need. Look for {{correctItem}}.",
+        {
+          wrongItem: submittedItem.name,
+          correctItem: requiredItem,
+        },
+      );
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
       speakNPCText(wrongText, { npcIdx: dialogue.npcIdx });
       returnItemToMap(submittedItem.name);
@@ -3197,20 +3285,15 @@ Respond ONLY in this exact JSON format, no additional text:
       const personality = characterId
         ? getCharacterPersonality(characterId)
         : null;
-      const personalityHint = personality
-        ? targetLang === "es"
-          ? ` Tu personalidad: ${personality}.`
-          : ` Your personality: ${personality}.`
-        : "";
-
-      const llmPrompt =
-        targetLang === "es"
-          ? `${cefrDialogueRule.es ? cefrDialogueRule.es + "\n" : ""}Eres ${npcName}, un personaje en una aventura.${personalityHint} La historia: ${seed}
-${historyContext ? `Historial de conversación:\n${historyContext}\n` : ""}El jugador acaba de decir: "${heard}"
-Responde en español, en 1-2 oraciones breves. Solo responde como el personaje.`
-          : `${cefrDialogueRule.en ? cefrDialogueRule.en + "\n" : ""}You are ${npcName}, a character in an adventure.${personalityHint} The story: ${seed}
-${historyContext ? `Conversation history:\n${historyContext}\n` : ""}The player just said: "${heard}"
-Respond in 1-2 brief sentences. Just respond as the character.`;
+      const llmPrompt = buildStrictDialoguePrompt(
+        `You are ${npcName}, a character in an adventure.`,
+        personality ? `Your personality: ${personality}.` : "",
+        `Story seed: ${seed}`,
+        historyContext ? `Conversation history:\n${historyContext}` : "",
+        `The player just said: "${heard}"`,
+        `Reply in 1-2 brief sentences in ${targetLangName}.`,
+        "Respond only as the character with no narration or labels.",
+      );
 
       // Stop any currently playing TTS before the new speech reply
       stopNPCSpeech();
@@ -3223,10 +3306,8 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
           const dynamicReply =
             llmResult && llmResult.trim().length > 0
               ? llmResult.trim()
-              : dialogue.node.speechContinueReply ||
-                (targetLang === "es"
-                  ? "Entiendo. Sigamos."
-                  : "I understand. Let's continue.");
+              : (dialogue.node.speechContinueReply ||
+                "I understand. Let's continue.");
 
           conversationLogRef.current.push({
             speaker: npcName,
@@ -3254,9 +3335,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
         .catch(() => {
           const fallback =
             dialogue.node.speechContinueReply ||
-            (targetLang === "es"
-              ? "Entiendo. Sigamos."
-              : "I understand. Let's continue.");
+            "I understand. Let's continue.";
           conversationLogRef.current.push({
             speaker: npcName,
             text: fallback,
@@ -3375,10 +3454,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
     const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
     const npub = localStorage.getItem("local_npub") || "";
     const lang =
-      localStorage.getItem("userTargetLang") ||
-      lessonContext?.targetLang ||
-      targetLang ||
-      "es";
+      lessonContext?.targetLang || targetLang || localStorageSettings.targetLang || "es";
 
     if (!npub || !bonusXp) {
       xpAwardedRef.current = true;
@@ -3407,6 +3483,7 @@ Respond in 1-2 brief sentences. Just respond as the character.`;
     gameComplete,
     isTutorialGame,
     lessonContext,
+    localStorageSettings.targetLang,
     supportLang,
     targetLang,
     toast,

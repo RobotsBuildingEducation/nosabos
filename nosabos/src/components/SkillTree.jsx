@@ -234,6 +234,7 @@ import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
+import { buildGameReviewContext } from "../utils/gameReviewContext";
 
 const getDisplayText = (textObj, supportLang = "en") => {
   if (!textObj) return "";
@@ -1547,6 +1548,10 @@ function LessonDetailModal({
   const lessonTitle = getUIDisplayText(lesson.title);
   const unitTitle = getUIDisplayText(unit.title);
   const lessonDescription = getUIDisplayText(lesson.description);
+  const reviewContext = buildGameReviewContext({ lesson, unit });
+  const lessonWithReviewContext = reviewContext
+    ? { ...lesson, gameReviewContext: reviewContext }
+    : lesson;
 
   const handleStartGame = async () => {
     setGameLoading(true);
@@ -1565,17 +1570,20 @@ function LessonDetailModal({
         REVIEW_WORLD_ID,
         targetLang || "es",
         supportLang || "en",
-        overrideTerms.length ? overrideTerms : null,
-        gameContent?.cefrLevel || null,
+        overrideTerms.length
+          ? [...(reviewContext?.reviewTerms || []), ...overrideTerms]
+          : reviewContext?.reviewTerms || null,
+        reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
+        reviewContext,
       );
 
       // Pass both lesson and pre-generated scenario to parent
-      onStartLesson(lesson, scenario);
+      onStartLesson(lessonWithReviewContext, scenario);
       onClose();
     } catch (e) {
       console.error("Failed to generate game scenario:", e);
       // Fall back to normal lesson start
-      onStartLesson(lesson);
+      onStartLesson(lessonWithReviewContext);
       onClose();
     } finally {
       setGameLoading(false);
@@ -1915,7 +1923,7 @@ function LessonDetailModal({
                     if (lesson.isGame) {
                       handleStartGame();
                     } else {
-                      onStartLesson(lesson);
+                      onStartLesson(lessonWithReviewContext);
                       onClose();
                     }
                   }}

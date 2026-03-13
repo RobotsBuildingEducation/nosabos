@@ -158,6 +158,10 @@ import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
 import GlassContainer from "./components/GlassContainer";
 import {
+  buildGameReviewContext,
+  inferCefrLevelFromLessonId,
+} from "./utils/gameReviewContext";
+import {
   FaBitcoin,
   FaCalendarAlt,
   FaCalendarCheck,
@@ -2883,9 +2887,38 @@ export default function App() {
     }
   };
 
+  const enrichLessonForGameReview = useCallback(
+    (lesson) => {
+      if (!lesson) return lesson;
+      if (lesson.gameReviewContext) return lesson;
+
+      const inferredLevel =
+        lesson?.content?.game?.cefrLevel ||
+        inferCefrLevelFromLessonId(lesson.id) ||
+        resolvedLevel ||
+        "Pre-A1";
+      const units = getLearningPath(resolvedTargetLang, inferredLevel);
+      const unit =
+        units.find((entry) =>
+          entry?.lessons?.some((candidate) => candidate?.id === lesson.id),
+        ) || null;
+      const reviewContext = buildGameReviewContext({
+        lesson,
+        unit,
+        fallbackLevel: inferredLevel,
+      });
+
+      return reviewContext
+        ? { ...lesson, gameReviewContext: reviewContext }
+        : lesson;
+    },
+    [resolvedLevel, resolvedTargetLang],
+  );
+
   // Handle starting a lesson from the skill tree
   const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return;
+    const enrichedLesson = enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons
     setPreGeneratedGameScenario(preGeneratedScenario || null);
@@ -2907,7 +2940,7 @@ export default function App() {
         // Pass current user progress so startLesson can preserve COMPLETED/IN_PROGRESS status
         await startLesson(
           npub,
-          lesson.id,
+          enrichedLesson.id,
           resolvedTargetLang,
           user?.progress,
           currentXp,
@@ -2919,9 +2952,9 @@ export default function App() {
       }
 
       // Set active lesson and persist it
-      setActiveLesson(lesson);
+      setActiveLesson(enrichedLesson);
       if (typeof window !== "undefined") {
-        localStorage.setItem("activeLesson", JSON.stringify(lesson));
+        localStorage.setItem("activeLesson", JSON.stringify(enrichedLesson));
       }
 
       // Determine the correct starting XP:
@@ -2931,7 +2964,7 @@ export default function App() {
       const freshProgressSource = fresh?.progress || preProgressSource;
       const freshCurrentXp = getLanguageXp(freshProgressSource, lessonLang);
       const savedLessonData =
-        freshProgressSource?.languageLessons?.[langKey]?.[lesson.id];
+        freshProgressSource?.languageLessons?.[langKey]?.[enrichedLesson.id];
       const savedStartXp = savedLessonData?.lessonStartXp;
 
       // Use saved XP baseline if it exists and is a valid number less than or equal to current XP
@@ -2943,23 +2976,23 @@ export default function App() {
       setLessonStartXp(effectiveStartXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
       console.log("[Lesson Start] Recording starting XP:", {
-        lessonId: lesson.id,
-        lessonTitle: lesson.title.en,
+        lessonId: enrichedLesson.id,
+        lessonTitle: enrichedLesson.title.en,
         lessonLang,
         startXp: effectiveStartXp,
         currentXp: freshCurrentXp,
         savedStartXp,
         resumed: effectiveStartXp !== freshCurrentXp,
-        xpRequired: lesson.xpReward,
+        xpRequired: enrichedLesson.xpReward,
         freshXp: fresh?.xp,
         userXp: user?.xp,
       });
 
       // Switch to the first mode in the lesson BEFORE switching view mode
-      const firstMode = lesson.modes?.[0];
+      const firstMode = enrichedLesson.modes?.[0];
       console.log(
         "[Lesson Start] Lesson modes:",
-        lesson.modes,
+        enrichedLesson.modes,
         "First mode:",
         firstMode,
       );
@@ -4959,6 +4992,8 @@ export default function App() {
             initialScenario={
               preGeneratedGameScenario || tutorialGameInitialScenario
             }
+            targetLang={resolvedTargetLang}
+            supportLang={resolvedSupportLang}
             onComplete={() => handleReturnToSkillTree()}
             onSkip={switchToRandomLessonMode}
           />
@@ -5111,6 +5146,8 @@ export default function App() {
                             preGeneratedGameScenario ||
                             tutorialGameInitialScenario
                           }
+                          targetLang={resolvedTargetLang}
+                          supportLang={resolvedSupportLang}
                           onSkip={switchToRandomLessonMode}
                           onScenarioReady={(scenario) => {
                             if (activeLesson?.isTutorial && scenario) {
