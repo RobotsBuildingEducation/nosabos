@@ -1540,6 +1540,1172 @@ function ensureWalkableTiles(mapData, mapWidth, entities = []) {
   return next;
 }
 
+const REVIEW_HUB_MAP_ID = "review-hub";
+
+const REVIEW_ROOM_BLUEPRINTS = {
+  home: [
+    {
+      slug: "kitchen",
+      name: { en: "Kitchen", es: "Cocina" },
+      markerType: "doorway",
+      shape: "annex",
+      objects: ["counter", "stove", "shelf"],
+    },
+    {
+      slug: "study",
+      name: { en: "Study", es: "Estudio" },
+      markerType: "doorway",
+      shape: "alcove",
+      objects: ["bookshelf", "desk", "lamp"],
+    },
+    {
+      slug: "garden-patio",
+      name: { en: "Garden Patio", es: "Patio del Jardin" },
+      markerType: "pavilion",
+      shape: "courtyard",
+      objects: ["bench", "plant", "table"],
+    },
+  ],
+  market: [
+    {
+      slug: "prep-room",
+      name: { en: "Prep Room", es: "Sala de Preparacion" },
+      markerType: "doorway",
+      shape: "annex",
+      objects: ["counter", "stove", "fridge"],
+    },
+    {
+      slug: "pantry",
+      name: { en: "Pantry", es: "Despensa" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["shelf", "shelf", "counter"],
+    },
+    {
+      slug: "cafe-patio",
+      name: { en: "Cafe Patio", es: "Patio del Cafe" },
+      markerType: "pavilion",
+      shape: "courtyard",
+      objects: ["table", "bench", "plant"],
+    },
+  ],
+  library: [
+    {
+      slug: "archive-wing",
+      name: { en: "Archive Wing", es: "Ala de Archivo" },
+      markerType: "doorway",
+      shape: "annex",
+      objects: ["bookshelf", "bookshelf", "lamp"],
+    },
+    {
+      slug: "reading-nook",
+      name: { en: "Reading Nook", es: "Rincon de Lectura" },
+      markerType: "doorway",
+      shape: "alcove",
+      objects: ["table", "bench", "lamp"],
+    },
+    {
+      slug: "front-office",
+      name: { en: "Front Office", es: "Oficina Principal" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["desk", "bookshelf", "plant"],
+    },
+  ],
+  transit: [
+    {
+      slug: "ticket-office",
+      name: { en: "Ticket Office", es: "Oficina de Boletos" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["counter", "register", "sign"],
+    },
+    {
+      slug: "gate-lounge",
+      name: { en: "Gate Lounge", es: "Sala de Embarque" },
+      markerType: "gate",
+      shape: "courtyard",
+      objects: ["bench", "sign", "suitcaseStack"],
+    },
+    {
+      slug: "travel-desk",
+      name: { en: "Travel Desk", es: "Mesa de Viaje" },
+      markerType: "building",
+      shape: "annex",
+      objects: ["desk", "plant", "sign"],
+    },
+  ],
+  nature: [
+    {
+      slug: "garden-pavilion",
+      name: { en: "Garden Pavilion", es: "Pabellon del Jardin" },
+      markerType: "pavilion",
+      shape: "courtyard",
+      objects: ["bench", "plant", "sign"],
+    },
+    {
+      slug: "glasshouse",
+      name: { en: "Glasshouse", es: "Invernadero" },
+      markerType: "greenhouse",
+      shape: "offset",
+      objects: ["plant", "plant", "table"],
+    },
+    {
+      slug: "ranger-station",
+      name: { en: "Ranger Station", es: "Estacion del Guardabosques" },
+      markerType: "building",
+      shape: "annex",
+      objects: ["desk", "shelf", "bench"],
+    },
+  ],
+  civic: [
+    {
+      slug: "council-room",
+      name: { en: "Council Room", es: "Sala del Consejo" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["desk", "table", "lamp"],
+    },
+    {
+      slug: "records-room",
+      name: { en: "Records Room", es: "Sala de Registros" },
+      markerType: "building",
+      shape: "annex",
+      objects: ["bookshelf", "bookshelf", "desk"],
+    },
+    {
+      slug: "courtyard-pavilion",
+      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio" },
+      markerType: "pavilion",
+      shape: "courtyard",
+      objects: ["bench", "plant", "sign"],
+    },
+  ],
+  lab: [
+    {
+      slug: "prep-lab",
+      name: { en: "Prep Lab", es: "Laboratorio de Preparacion" },
+      markerType: "doorway",
+      shape: "annex",
+      objects: ["freezer", "table", "lamp"],
+    },
+    {
+      slug: "analysis-booth",
+      name: { en: "Analysis Booth", es: "Cabina de Analisis" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["desk", "shelf", "lamp"],
+    },
+    {
+      slug: "equipment-store",
+      name: { en: "Equipment Store", es: "Deposito de Equipo" },
+      markerType: "building",
+      shape: "alcove",
+      objects: ["shelf", "freezer", "desk"],
+    },
+  ],
+  festival: [
+    {
+      slug: "performance-stage",
+      name: { en: "Performance Stage", es: "Escenario" },
+      markerType: "pavilion",
+      shape: "courtyard",
+      objects: ["speaker", "speaker", "balloons"],
+    },
+    {
+      slug: "food-stall",
+      name: { en: "Food Stall", es: "Puesto de Comida" },
+      markerType: "building",
+      shape: "offset",
+      objects: ["counter", "table", "sign"],
+    },
+    {
+      slug: "craft-tent",
+      name: { en: "Craft Tent", es: "Taller Creativo" },
+      markerType: "pavilion",
+      shape: "annex",
+      objects: ["table", "bench", "balloons"],
+    },
+  ],
+};
+
+function createSolidMapData(mapWidth, mapHeight, fillValue = 2) {
+  return new Array(mapWidth * mapHeight).fill(fillValue);
+}
+
+function setScenarioMapTile(mapData, mapWidth, mapHeight, x, y, value) {
+  if (x < 0 || y < 0 || x >= mapWidth || y >= mapHeight) return;
+  mapData[y * mapWidth + x] = value;
+}
+
+function fillScenarioMapRect(mapData, mapWidth, mapHeight, x, y, width, height, value) {
+  for (let yy = y; yy < y + height; yy++) {
+    for (let xx = x; xx < x + width; xx++) {
+      setScenarioMapTile(mapData, mapWidth, mapHeight, xx, yy, value);
+    }
+  }
+}
+
+function listScenarioRectTiles(x, y, width, height) {
+  const tiles = [];
+  for (let yy = y; yy < y + height; yy++) {
+    for (let xx = x; xx < x + width; xx++) {
+      tiles.push({ tx: xx, ty: yy });
+    }
+  }
+  return tiles;
+}
+
+function buildReviewBodyRect(mapWidth, mapHeight, insetX = 1, insetY = 1) {
+  const insets =
+    typeof insetX === "object" && insetX !== null
+      ? insetX
+      : {
+          west: insetX,
+          east: insetX,
+          north: insetY,
+          south: insetY,
+        };
+  const x = clampInt(insets.west, 1, Math.max(1, mapWidth - 4), 1);
+  const y = clampInt(insets.north, 1, Math.max(1, mapHeight - 4), 1);
+  const width = Math.max(3, mapWidth - x - clampInt(insets.east, 1, mapWidth - 3, 1));
+  const height = Math.max(
+    3,
+    mapHeight - y - clampInt(insets.south, 1, mapHeight - 3, 1),
+  );
+  return { x, y, width, height };
+}
+
+function buildReviewPortalInsets(portalFacings = [], seedKey = "review-body") {
+  const baseInsets = {
+    west: 1,
+    east: 1,
+    north: 1,
+    south: 1,
+  };
+
+  Array.from(new Set(portalFacings))
+    .filter((facing) => Object.prototype.hasOwnProperty.call(baseInsets, facing))
+    .forEach((facing) => {
+      baseInsets[facing] = 1 + (hashString(`${seedKey}:${facing}`) % 3);
+    });
+
+  return baseInsets;
+}
+
+function pickRangePosition(min, max, seedValue, fallback) {
+  const clampedMin = Math.min(min, max);
+  const clampedMax = Math.max(min, max);
+  const span = clampedMax - clampedMin + 1;
+  if (span <= 0) return fallback;
+  return clampedMin + (Math.abs(seedValue) % span);
+}
+
+function carvePortalVestibule(
+  mapData,
+  mapWidth,
+  mapHeight,
+  portal,
+  bodyRect,
+  tileValue = 1,
+) {
+  const footprint = [];
+
+  if (portal?.facing === "west") {
+    for (let x = portal.tx; x < bodyRect.x; x++) {
+      setScenarioMapTile(mapData, mapWidth, mapHeight, x, portal.ty, tileValue);
+      footprint.push({ tx: x, ty: portal.ty });
+    }
+  } else if (portal?.facing === "east") {
+    for (let x = bodyRect.x + bodyRect.width; x <= portal.tx; x++) {
+      setScenarioMapTile(mapData, mapWidth, mapHeight, x, portal.ty, tileValue);
+      footprint.push({ tx: x, ty: portal.ty });
+    }
+  } else if (portal?.facing === "north") {
+    for (let y = portal.ty; y < bodyRect.y; y++) {
+      setScenarioMapTile(mapData, mapWidth, mapHeight, portal.tx, y, tileValue);
+      footprint.push({ tx: portal.tx, ty: y });
+    }
+  } else {
+    for (let y = bodyRect.y + bodyRect.height; y <= portal.ty; y++) {
+      setScenarioMapTile(mapData, mapWidth, mapHeight, portal.tx, y, tileValue);
+      footprint.push({ tx: portal.tx, ty: y });
+    }
+  }
+
+  if (portal?.facing === "west") {
+    footprint.push({ tx: bodyRect.x, ty: portal.ty });
+  } else if (portal?.facing === "east") {
+    footprint.push({
+      tx: bodyRect.x + bodyRect.width - 1,
+      ty: portal.ty,
+    });
+  } else if (portal?.facing === "north") {
+    footprint.push({ tx: portal.tx, ty: bodyRect.y });
+  } else {
+    footprint.push({
+      tx: portal.tx,
+      ty: bodyRect.y + bodyRect.height - 1,
+    });
+  }
+
+  setScenarioMapTile(mapData, mapWidth, mapHeight, portal.tx, portal.ty, tileValue);
+  footprint.push({ tx: portal.tx, ty: portal.ty });
+  return Array.from(
+    new Map(footprint.map((tile) => [`${tile.tx},${tile.ty}`, tile])).values(),
+  );
+}
+
+function paintScenarioCorridor(mapData, mapWidth, mapHeight, from, to, value = 1) {
+  const startX = clampInt(from?.x, 0, mapWidth - 1, 0);
+  const startY = clampInt(from?.y, 0, mapHeight - 1, 0);
+  const endX = clampInt(to?.x, 0, mapWidth - 1, startX);
+  const endY = clampInt(to?.y, 0, mapHeight - 1, startY);
+
+  const stepX = startX <= endX ? 1 : -1;
+  for (let x = startX; x !== endX; x += stepX) {
+    setScenarioMapTile(mapData, mapWidth, mapHeight, x, startY, value);
+  }
+  setScenarioMapTile(mapData, mapWidth, mapHeight, endX, startY, value);
+
+  const stepY = startY <= endY ? 1 : -1;
+  for (let y = startY; y !== endY; y += stepY) {
+    setScenarioMapTile(mapData, mapWidth, mapHeight, endX, y, value);
+  }
+  setScenarioMapTile(mapData, mapWidth, mapHeight, endX, endY, value);
+}
+
+function scatterScenarioDecor(mapData, mapWidth, mapHeight, seed, chance = 0.08) {
+  const rng = mulberry32(seed);
+  for (let y = 1; y < mapHeight - 1; y++) {
+    for (let x = 1; x < mapWidth - 1; x++) {
+      const idx = y * mapWidth + x;
+      if (mapData[idx] !== 0 || rng() > chance) continue;
+      mapData[idx] = 5;
+    }
+  }
+}
+
+function getInteriorSpawnForPortal(portal, mapWidth, mapHeight) {
+  const x = Number(portal?.tx) || 0;
+  const y = Number(portal?.ty) || 0;
+  if (portal?.facing === "west") return { x: clampInt(x + 1, 1, mapWidth - 2, x), y };
+  if (portal?.facing === "east") return { x: clampInt(x - 1, 1, mapWidth - 2, x), y };
+  if (portal?.facing === "north") return { x, y: clampInt(y + 1, 1, mapHeight - 2, y) };
+  return { x, y: clampInt(y - 1, 1, mapHeight - 2, y) };
+}
+
+function getPortalMarkerTile(portal, mapWidth, mapHeight) {
+  const x = Number(portal?.tx) || 0;
+  const y = Number(portal?.ty) || 0;
+  if (portal?.facing === "west") {
+    return { tx: clampInt(x + 1, 0, mapWidth - 1, x), ty: y };
+  }
+  if (portal?.facing === "east") {
+    return { tx: clampInt(x - 1, 0, mapWidth - 1, x), ty: y };
+  }
+  if (portal?.facing === "north") {
+    return { tx: x, ty: clampInt(y + 1, 0, mapHeight - 1, y) };
+  }
+  return { tx: x, ty: clampInt(y - 1, 0, mapHeight - 1, y) };
+}
+
+function isGeneratedTileWalkable(tileType) {
+  return tileType === 0 || tileType === 1 || tileType === 5;
+}
+
+function getReachableGeneratedTiles(mapData, mapWidth, mapHeight, start) {
+  const startX = clampInt(start?.x, 0, mapWidth - 1, 0);
+  const startY = clampInt(start?.y, 0, mapHeight - 1, 0);
+  const queue = [{ x: startX, y: startY }];
+  const visited = new Set([`${startX},${startY}`]);
+
+  while (queue.length) {
+    const current = queue.shift();
+    const neighbors = [
+      { x: current.x + 1, y: current.y },
+      { x: current.x - 1, y: current.y },
+      { x: current.x, y: current.y + 1 },
+      { x: current.x, y: current.y - 1 },
+    ];
+
+    neighbors.forEach((neighbor) => {
+      if (
+        neighbor.x < 0 ||
+        neighbor.y < 0 ||
+        neighbor.x >= mapWidth ||
+        neighbor.y >= mapHeight
+      ) {
+        return;
+      }
+      const key = `${neighbor.x},${neighbor.y}`;
+      if (visited.has(key)) return;
+      const tileType = mapData[neighbor.y * mapWidth + neighbor.x];
+      if (!isGeneratedTileWalkable(tileType)) return;
+      visited.add(key);
+      queue.push(neighbor);
+    });
+  }
+
+  return visited;
+}
+
+function ensurePortalsReachable(mapData, mapWidth, mapHeight, playerStart, portals = []) {
+  const next = [...mapData];
+  (portals || []).forEach((portal) => {
+    const reachable = getReachableGeneratedTiles(
+      next,
+      mapWidth,
+      mapHeight,
+      playerStart,
+    );
+    const key = `${portal.tx},${portal.ty}`;
+    if (!reachable.has(key)) {
+      paintScenarioCorridor(
+        next,
+        mapWidth,
+        mapHeight,
+        playerStart,
+        { x: portal.tx, y: portal.ty },
+        1,
+      );
+    }
+    setScenarioMapTile(next, mapWidth, mapHeight, portal.tx, portal.ty, 1);
+  });
+  return next;
+}
+
+function pickReviewReturnFacing(shape, seedKey = "room") {
+  const facingChoicesByShape = {
+    annex: ["east", "south", "west"],
+    alcove: ["west", "south", "east"],
+    courtyard: ["east", "west", "north", "south"],
+    offset: ["east", "south", "north", "west"],
+  };
+  const facingChoices =
+    facingChoicesByShape[shape] || ["south", "east", "west", "north"];
+  const facingSeed = hashString(`${seedKey}:facing`);
+  return facingChoices[facingSeed % facingChoices.length];
+}
+
+function buildReviewReturnPortal(facing, mapWidth, mapHeight, seedKey = "room", bodyRect) {
+  const offsetSeed = hashString(`${seedKey}:offset`);
+
+  if (facing === "west" || facing === "east") {
+    const ty = pickRangePosition(
+      bodyRect.y + 1,
+      bodyRect.y + bodyRect.height - 2,
+      offsetSeed,
+      Math.floor(mapHeight / 2),
+    );
+    return {
+      tx: facing === "west" ? 0 : mapWidth - 1,
+      ty,
+      facing,
+    };
+  }
+
+  const tx = pickRangePosition(
+    bodyRect.x + 1,
+    bodyRect.x + bodyRect.width - 2,
+    offsetSeed,
+    Math.floor(mapWidth / 2),
+  );
+  return {
+    tx,
+    ty: facing === "north" ? 0 : mapHeight - 1,
+    facing,
+  };
+}
+
+function getReviewRoomSpecs(environment) {
+  const blueprintId = environment?.blueprintId || "home";
+  const baseSpecs = REVIEW_ROOM_BLUEPRINTS[blueprintId] || REVIEW_ROOM_BLUEPRINTS.home;
+  return baseSpecs.map((spec, idx) => ({
+    ...spec,
+    mapId: `review-room-${idx + 1}-${spec.slug}`,
+  }));
+}
+
+function buildReviewHubLayout(area, mapWidth, mapHeight) {
+  const mapData = createSolidMapData(mapWidth, mapHeight, 2);
+  const portalFacings =
+    area === "urban" || area === "outdoor"
+      ? ["west", "north", "east"]
+      : ["west", "east", "east"];
+  const bodyRect = buildReviewBodyRect(
+    mapWidth,
+    mapHeight,
+    buildReviewPortalInsets(
+      portalFacings,
+      `${area || "review"}:${mapWidth}:${mapHeight}:hub`,
+    ),
+  );
+  const bodyCenterX = bodyRect.x + Math.floor(bodyRect.width / 2);
+  const bodyCenterY = bodyRect.y + Math.floor(bodyRect.height / 2);
+  let portalSlots = [];
+  let portalReservedTiles = [];
+  let defaultPlayerStart = { x: bodyCenterX, y: bodyCenterY };
+
+  fillScenarioMapRect(
+    mapData,
+    mapWidth,
+    mapHeight,
+    bodyRect.x,
+    bodyRect.y,
+    bodyRect.width,
+    bodyRect.height,
+    0,
+  );
+
+  if (area === "urban") {
+    portalSlots = [
+      { tx: 0, ty: bodyCenterY, facing: "west" },
+      { tx: bodyCenterX, ty: 0, facing: "north" },
+      {
+        tx: mapWidth - 1,
+        ty: pickRangePosition(
+          bodyRect.y + 1,
+          bodyRect.y + bodyRect.height - 2,
+          bodyCenterY - 3,
+          bodyCenterY,
+        ),
+        facing: "east",
+      },
+    ];
+    defaultPlayerStart = {
+      x: bodyCenterX,
+      y: clampInt(bodyCenterY + 1, bodyRect.y + 1, bodyRect.y + bodyRect.height - 2, bodyCenterY),
+    };
+  } else if (area === "outdoor") {
+    portalSlots = [
+      { tx: 0, ty: bodyCenterY, facing: "west" },
+      { tx: bodyCenterX, ty: 0, facing: "north" },
+      {
+        tx: mapWidth - 1,
+        ty: pickRangePosition(
+          bodyRect.y + 1,
+          bodyRect.y + bodyRect.height - 2,
+          bodyCenterY + 2,
+          bodyCenterY,
+        ),
+        facing: "east",
+      },
+    ];
+  } else {
+    const upperRangeMax = Math.max(bodyRect.y + 1, bodyCenterY - 1);
+    const lowerRangeMin = Math.min(bodyRect.y + bodyRect.height - 2, bodyCenterY + 1);
+    portalSlots = [
+      { tx: 0, ty: bodyCenterY, facing: "west" },
+      {
+        tx: mapWidth - 1,
+        ty: pickRangePosition(
+          bodyRect.y + 1,
+          upperRangeMax,
+          hashString(`${area || "review"}:upper`),
+          bodyRect.y + 1,
+        ),
+        facing: "east",
+      },
+      {
+        tx: mapWidth - 1,
+        ty: pickRangePosition(
+          lowerRangeMin,
+          bodyRect.y + bodyRect.height - 2,
+          hashString(`${area || "review"}:lower`),
+          bodyRect.y + bodyRect.height - 2,
+        ),
+        facing: "east",
+      },
+    ];
+  }
+
+  portalReservedTiles = portalSlots.flatMap((portal) =>
+    carvePortalVestibule(
+      mapData,
+      mapWidth,
+      mapHeight,
+      portal,
+      bodyRect,
+      1,
+    ),
+  );
+  portalSlots.forEach((portal) => {
+    setScenarioMapTile(mapData, mapWidth, mapHeight, portal.tx, portal.ty, 1);
+  });
+  scatterScenarioDecor(mapData, mapWidth, mapHeight, hashString(`${area}-${mapWidth}-${mapHeight}`), area === "outdoor" ? 0.12 : 0.06);
+
+  return {
+    mapData,
+    portalSlots,
+    portalReservedTiles,
+    defaultPlayerStart,
+  };
+}
+
+function buildReviewRoomLayout(shape, mapWidth, mapHeight, seedKey = "room") {
+  const mapData = createSolidMapData(mapWidth, mapHeight, 2);
+  const returnFacing = pickReviewReturnFacing(shape, seedKey);
+  const bodyRect = buildReviewBodyRect(
+    mapWidth,
+    mapHeight,
+    buildReviewPortalInsets([returnFacing], `${seedKey}:room`),
+  );
+  const bodyCenterX = bodyRect.x + Math.floor(bodyRect.width / 2);
+  const bodyCenterY = bodyRect.y + Math.floor(bodyRect.height / 2);
+  fillScenarioMapRect(
+    mapData,
+    mapWidth,
+    mapHeight,
+    bodyRect.x,
+    bodyRect.y,
+    bodyRect.width,
+    bodyRect.height,
+    0,
+  );
+
+  if (shape === "courtyard") {
+    fillScenarioMapRect(
+      mapData,
+      mapWidth,
+      mapHeight,
+      bodyCenterX - 1,
+      bodyCenterY - 1,
+      3,
+      3,
+      5,
+    );
+  }
+
+  const returnPortal = buildReviewReturnPortal(
+    returnFacing,
+    mapWidth,
+    mapHeight,
+    seedKey,
+    bodyRect,
+  );
+  const defaultPlayerStart = {
+    x: bodyCenterX,
+    y: clampInt(
+      bodyCenterY + 1,
+      bodyRect.y + 1,
+      bodyRect.y + bodyRect.height - 2,
+      bodyCenterY,
+    ),
+  };
+  const portalBufferTiles = carvePortalVestibule(
+    mapData,
+    mapWidth,
+    mapHeight,
+    returnPortal,
+    bodyRect,
+    1,
+  );
+
+  paintScenarioCorridor(
+    mapData,
+    mapWidth,
+    mapHeight,
+    {
+      x: bodyCenterX,
+      y: clampInt(
+        bodyRect.y + bodyRect.height - 2,
+        bodyRect.y + 1,
+        bodyRect.y + bodyRect.height - 2,
+        bodyCenterY,
+      ),
+    },
+    { x: bodyCenterX, y: bodyCenterY },
+    1,
+  );
+  setScenarioMapTile(mapData, mapWidth, mapHeight, returnPortal.tx, returnPortal.ty, 1);
+  scatterScenarioDecor(mapData, mapWidth, mapHeight, hashString(seedKey), 0.05);
+
+  return {
+    mapData,
+    returnPortal,
+    portalBufferTiles,
+    defaultPlayerStart,
+  };
+}
+
+function buildReviewWorldMaps({
+  environment,
+  tiles,
+  ambientColor,
+  requestedPlayerStart,
+  npcs,
+}) {
+  const roomSpecs = getReviewRoomSpecs(environment);
+  const hubWidth = environment?.area === "outdoor" ? 26 : 24;
+  const hubHeight = 18;
+  const hubLayout = buildReviewHubLayout(environment?.area, hubWidth, hubHeight);
+  const hubPlayerStart = {
+    x: clampInt(requestedPlayerStart?.x, 1, hubWidth - 2, hubLayout.defaultPlayerStart.x),
+    y: clampInt(requestedPlayerStart?.y, 1, hubHeight - 2, hubLayout.defaultPlayerStart.y),
+  };
+
+  const npcEntries = (npcs || []).map((npc) => ({
+    ...npc,
+    mapId: REVIEW_HUB_MAP_ID,
+  }));
+  const hubOccupied = [
+    { tx: hubPlayerStart.x, ty: hubPlayerStart.y },
+    ...npcEntries,
+    ...(hubLayout.portalReservedTiles || []),
+    ...hubLayout.portalSlots,
+  ];
+
+  const hubObjectsBase = normalizeScenarioObjects(
+    environment?.suggestedObjects || [],
+    environment,
+    hubWidth,
+    hubHeight,
+    hubOccupied,
+  ).filter(
+    (object) =>
+      !hubLayout.portalSlots.some((portal) => portal.tx === object.tx && portal.ty === object.ty),
+  );
+
+  const subMaps = roomSpecs.map((spec, idx) => {
+    const roomWidth = environment?.area === "outdoor" ? 18 : 16;
+    const roomHeight = environment?.area === "outdoor" ? 14 : 13;
+    const roomEnvironment = {
+      ...environment,
+      suggestedObjects: spec.objects,
+    };
+    const layout = buildReviewRoomLayout(
+      spec.shape,
+      roomWidth,
+      roomHeight,
+      `${environment?.blueprintId || "home"}-${spec.slug}`,
+    );
+    const roomObjects = normalizeScenarioObjects(
+      spec.objects,
+      roomEnvironment,
+      roomWidth,
+      roomHeight,
+      [
+        layout.defaultPlayerStart,
+        layout.returnPortal,
+        ...(layout.portalBufferTiles || []),
+      ],
+    ).filter(
+      (object) =>
+        !(object.tx === layout.returnPortal.tx && object.ty === layout.returnPortal.ty),
+    );
+
+    const combinedMapData = ensureWalkableTiles(
+      ensurePortalsReachable(
+        applyObjectCollisions(
+          layout.mapData,
+          roomObjects,
+          roomWidth,
+          roomHeight,
+        ),
+        roomWidth,
+        roomHeight,
+        layout.defaultPlayerStart,
+        [layout.returnPortal],
+      ),
+      roomWidth,
+      [layout.defaultPlayerStart, layout.returnPortal],
+    );
+
+    return {
+      id: spec.mapId,
+      name: spec.name,
+      tileSize: 32,
+      mapWidth: roomWidth,
+      mapHeight: roomHeight,
+      playerStart: layout.defaultPlayerStart,
+      ambientColor,
+      tiles,
+      environment: roomEnvironment,
+      reservedTiles: layout.portalBufferTiles || [],
+      objects: roomObjects,
+      portals: [
+        {
+          ...layout.returnPortal,
+          toMapId: REVIEW_HUB_MAP_ID,
+          spawn: getInteriorSpawnForPortal(
+            hubLayout.portalSlots[idx],
+            hubWidth,
+            hubHeight,
+          ),
+          label: environment?.names?.en || "Main Area",
+        },
+      ],
+      generate() {
+        return combinedMapData;
+      },
+    };
+  });
+
+  const hubPortals = roomSpecs.map((spec, idx) => ({
+    ...hubLayout.portalSlots[idx],
+    toMapId: spec.mapId,
+    spawn: subMaps[idx]?.playerStart || { x: 2, y: 2 },
+    label: spec.name,
+  }));
+
+  const hubCombinedMapData = ensureWalkableTiles(
+    ensurePortalsReachable(
+      applyObjectCollisions(
+        hubLayout.mapData,
+        hubObjectsBase,
+        hubWidth,
+        hubHeight,
+      ),
+      hubWidth,
+      hubHeight,
+      hubPlayerStart,
+      hubPortals,
+    ),
+    hubWidth,
+    [
+      { x: hubPlayerStart.x, y: hubPlayerStart.y },
+      ...npcEntries,
+      ...hubPortals,
+    ],
+  );
+
+  const hubMap = {
+    id: REVIEW_HUB_MAP_ID,
+    name: environment?.names || {
+      en: "Lesson World",
+      es: "Mundo de Leccion",
+    },
+    tileSize: 32,
+    mapWidth: hubWidth,
+    mapHeight: hubHeight,
+    playerStart: hubPlayerStart,
+    ambientColor,
+    tiles,
+    environment,
+    reservedTiles: hubLayout.portalReservedTiles || [],
+    objects: hubObjectsBase,
+    portals: hubPortals,
+    generate() {
+      return hubCombinedMapData;
+    },
+  };
+
+  return {
+    startMapId: REVIEW_HUB_MAP_ID,
+    maps: [hubMap, ...subMaps],
+    npcs: npcEntries,
+  };
+}
+
+function getScenarioMapById(scenario, mapId) {
+  if (!scenario) return null;
+  if (!Array.isArray(scenario.maps) || !scenario.maps.length) return scenario;
+  return (
+    scenario.maps.find((entry) => entry.id === mapId) ||
+    scenario.maps.find((entry) => entry.id === scenario.startMapId) ||
+    scenario.maps[0]
+  );
+}
+
+function hashString(text = "") {
+  let hash = 0;
+  const source = String(text);
+  for (let i = 0; i < source.length; i++) {
+    hash = (hash << 5) - hash + source.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash >>> 0;
+}
+
+function getScenarioMapData(map) {
+  return typeof map?.generate === "function" ? map.generate() : [];
+}
+
+function isScenarioMapWalkable(map, mapData, x, y) {
+  if (!map || x < 0 || y < 0 || x >= map.mapWidth || y >= map.mapHeight) return false;
+  const tileType = mapData[y * map.mapWidth + x];
+  const tileDef = map.tiles?.[tileType];
+  return !!tileDef && !tileDef.solid;
+}
+
+function buildMapOccupiedSet(map) {
+  const occupied = new Set();
+  (map?.objects || []).forEach((object) => occupied.add(`${object.tx},${object.ty}`));
+  (map?.portals || []).forEach((portal) => occupied.add(`${portal.tx},${portal.ty}`));
+  (map?.reservedTiles || []).forEach((tile) => occupied.add(`${tile.tx},${tile.ty}`));
+  if (map?.playerStart) occupied.add(`${map.playerStart.x},${map.playerStart.y}`);
+  return occupied;
+}
+
+function getReachablePlacementCandidates(map, occupied = new Set(), minDistance = 2) {
+  const mapData = getScenarioMapData(map);
+  const start = map?.playerStart || { x: 1, y: 1 };
+  const startKey = `${start.x},${start.y}`;
+  const queue = [{ x: start.x, y: start.y, dist: 0 }];
+  const visited = new Set([`${start.x},${start.y}`]);
+  const candidates = [];
+
+  while (queue.length) {
+    const current = queue.shift();
+    const neighbors = [
+      { x: current.x + 1, y: current.y },
+      { x: current.x - 1, y: current.y },
+      { x: current.x, y: current.y + 1 },
+      { x: current.x, y: current.y - 1 },
+    ];
+
+    let approachableNeighbors = 0;
+    neighbors.forEach((neighbor) => {
+      const neighborKey = `${neighbor.x},${neighbor.y}`;
+      if (isScenarioMapWalkable(map, mapData, neighbor.x, neighbor.y)) {
+        const isUsableApproachTile =
+          !occupied.has(neighborKey) || neighborKey === startKey;
+        if (isUsableApproachTile) {
+          approachableNeighbors += 1;
+        }
+      }
+      if (visited.has(neighborKey)) return;
+      if (!isScenarioMapWalkable(map, mapData, neighbor.x, neighbor.y)) return;
+      visited.add(neighborKey);
+      queue.push({ x: neighbor.x, y: neighbor.y, dist: current.dist + 1 });
+    });
+
+    const key = `${current.x},${current.y}`;
+    if (
+      current.dist >= minDistance &&
+      !occupied.has(key) &&
+      !(current.x === start.x && current.y === start.y) &&
+      approachableNeighbors >= 1
+    ) {
+      candidates.push({
+        tx: current.x,
+        ty: current.y,
+        dist: current.dist,
+        openNeighbors: approachableNeighbors,
+      });
+    }
+  }
+
+  return candidates;
+}
+
+function choosePlacementTilesForMap(
+  map,
+  count,
+  occupied = new Set(),
+  seedKey = "placements",
+  options = {},
+) {
+  const preferFar = options.preferFar !== false;
+  const minDistances = [options.minDistance ?? 2, 1, 0];
+  let candidates = [];
+  for (const minDistance of minDistances) {
+    candidates = getReachablePlacementCandidates(map, occupied, minDistance);
+    if (candidates.length >= count || minDistance === 0) break;
+  }
+
+  const rng = mulberry32(hashString(seedKey));
+  const placements = [];
+  let available = [...candidates];
+
+  while (placements.length < count && available.length) {
+    available.sort((a, b) => {
+      const farDelta = preferFar ? b.dist - a.dist : a.dist - b.dist;
+      return farDelta || b.openNeighbors - a.openNeighbors;
+    });
+    const pool = available.slice(0, Math.min(6, available.length));
+    const pick = pool[Math.floor(rng() * pool.length)] || available[0];
+    placements.push(pick);
+    occupied.add(`${pick.tx},${pick.ty}`);
+    available = available.filter((candidate) => {
+      const sameTile = candidate.tx === pick.tx && candidate.ty === pick.ty;
+      const tooClose =
+        Math.abs(candidate.tx - pick.tx) + Math.abs(candidate.ty - pick.ty) <= 1;
+      return !sameTile && !tooClose;
+    });
+  }
+
+  return placements;
+}
+
+function distributeReviewWorldNPCs(scenario, quest) {
+  if (
+    scenario?.id !== REVIEW_WORLD_ID ||
+    !Array.isArray(scenario?.maps) ||
+    scenario.maps.length < 2 ||
+    !Array.isArray(scenario?.npcs)
+  ) {
+    return scenario;
+  }
+
+  const hubId = scenario.startMapId || REVIEW_HUB_MAP_ID;
+  const roomMaps = scenario.maps.filter((map) => map.id !== hubId);
+  const stepOrder = Array.from(
+    new Set(
+      (quest?.steps || [])
+        .map((step) => step?.npcIdx)
+        .filter((value) => Number.isInteger(value)),
+    ),
+  );
+  const startNpcIdx = Number.isInteger(quest?.startNpcIdx)
+    ? quest.startNpcIdx
+    : stepOrder[0] || 0;
+  const roomNpcIndices = stepOrder
+    .filter((idx) => idx !== startNpcIdx)
+    .slice(0, roomMaps.length);
+
+  if (!roomNpcIndices.length && scenario.npcs.length > 1 && roomMaps.length > 0) {
+    const fallbackNpcIdx = scenario.npcs.findIndex((_, idx) => idx !== startNpcIdx);
+    if (fallbackNpcIdx >= 0) roomNpcIndices.push(fallbackNpcIdx);
+  }
+
+  const assignedMapByNpc = new Map();
+  roomNpcIndices.forEach((npcIdx, roomIdx) => {
+    assignedMapByNpc.set(npcIdx, roomMaps[roomIdx]?.id);
+  });
+
+  const mapsById = new Map(scenario.maps.map((map) => [map.id, map]));
+  const nextNpcs = scenario.npcs.map((npc, idx) => ({
+    ...npc,
+    mapId: assignedMapByNpc.get(idx) || hubId,
+  }));
+
+  const npcIndicesByMap = new Map();
+  nextNpcs.forEach((npc, idx) => {
+    const mapId = npc.mapId || hubId;
+    if (!npcIndicesByMap.has(mapId)) npcIndicesByMap.set(mapId, []);
+    npcIndicesByMap.get(mapId).push(idx);
+  });
+
+  npcIndicesByMap.forEach((npcIndices, mapId) => {
+    const map = mapsById.get(mapId);
+    if (!map) return;
+    const occupied = buildMapOccupiedSet(map);
+    const placements = choosePlacementTilesForMap(
+      map,
+      npcIndices.length,
+      occupied,
+      `${scenario.id || "review"}:${mapId}:${quest?.storySeed || ""}:npcs`,
+      {
+        preferFar: mapId !== hubId,
+        minDistance: mapId !== hubId ? 3 : 2,
+      },
+    );
+
+    npcIndices.forEach((npcIdx, order) => {
+      const placement =
+        placements[order] ||
+        placements[placements.length - 1] ||
+        map.playerStart || { x: 2, y: 2 };
+      nextNpcs[npcIdx] = {
+        ...nextNpcs[npcIdx],
+        tx: placement.tx ?? placement.x,
+        ty: placement.ty ?? placement.y,
+      };
+    });
+  });
+
+  return {
+    ...scenario,
+    npcs: nextNpcs,
+  };
+}
+
+function buildGatherPlacementsForScenario(scenario, quest) {
+  const items = Array.isArray(quest?.gatherData?.all) ? quest.gatherData.all : [];
+  if (!items.length) return [];
+
+  const maps = Array.isArray(scenario?.maps) && scenario.maps.length
+    ? scenario.maps
+    : [scenario].filter(Boolean);
+  if (!maps.length) return [];
+
+  const defaultMapId = scenario?.startMapId || maps[0]?.id || REVIEW_HUB_MAP_ID;
+  const mapsById = new Map(maps.map((map) => [map.id, map]));
+  const placementStateByMapId = new Map();
+  maps.forEach((map) => {
+    const occupied = buildMapOccupiedSet(map);
+    (scenario?.npcs || [])
+      .filter((npc) => (npc.mapId || defaultMapId) === map.id)
+      .forEach((npc) => occupied.add(`${npc.tx},${npc.ty}`));
+    placementStateByMapId.set(map.id, {
+      map,
+      occupied,
+    });
+  });
+
+  const reviewHubId = scenario?.startMapId || REVIEW_HUB_MAP_ID;
+  const roomMapIds = maps
+    .map((map) => map.id)
+    .filter((mapId) => mapId && mapId !== reviewHubId);
+  const roomMapIdsWithNpcs = Array.from(
+    new Set(
+      (scenario?.npcs || [])
+        .map((npc) => npc.mapId || reviewHubId)
+        .filter((mapId) => mapId && mapId !== reviewHubId),
+    ),
+  ).filter((mapId) => mapsById.has(mapId));
+  const preferredRoomMapIds = roomMapIdsWithNpcs.length
+    ? roomMapIdsWithNpcs
+    : roomMapIds;
+
+  const targetedMapByItemIndex = new Map();
+  if (scenario?.id === REVIEW_WORLD_ID && preferredRoomMapIds.length) {
+    const firstCorrectIdx = items.findIndex((item) => item?.isCorrect);
+    const roomFocusIndices = [];
+    if (firstCorrectIdx >= 0) roomFocusIndices.push(firstCorrectIdx);
+    const firstDecoyIdx = items.findIndex((item, idx) => idx !== firstCorrectIdx);
+    if (firstDecoyIdx >= 0) roomFocusIndices.push(firstDecoyIdx);
+    roomFocusIndices.forEach((itemIdx, roomIdx) => {
+      targetedMapByItemIndex.set(
+        itemIdx,
+        preferredRoomMapIds[Math.min(roomIdx, preferredRoomMapIds.length - 1)],
+      );
+    });
+  }
+
+  const reviewPlacementRotation =
+    scenario?.id === REVIEW_WORLD_ID
+      ? [reviewHubId, ...preferredRoomMapIds].filter((value, idx, array) => value && array.indexOf(value) === idx)
+      : maps.map((map) => map.id);
+  let rotationCursor = 0;
+
+  return items.map((item, idx) => {
+    const preferredMapId =
+      targetedMapByItemIndex.get(idx) ||
+      reviewPlacementRotation[rotationCursor % reviewPlacementRotation.length] ||
+      defaultMapId;
+    rotationCursor += 1;
+
+    const placementState =
+      placementStateByMapId.get(preferredMapId) ||
+      placementStateByMapId.get(defaultMapId) ||
+      placementStateByMapId.values().next().value;
+    const placementMap = placementState?.map;
+    const occupied = placementState?.occupied || new Set();
+    const placement = choosePlacementTilesForMap(
+      placementMap,
+      1,
+      occupied,
+      `${scenario?.id || "scenario"}:${preferredMapId}:${quest?.intro || ""}:gather:${idx}`,
+      {
+        preferFar: preferredMapId !== reviewHubId,
+        minDistance: preferredMapId !== reviewHubId ? 3 : 2,
+      },
+    )[0];
+    const fallbackPlacement = placementMap?.playerStart || { x: 2, y: 2 };
+
+    return {
+      ...item,
+      mapId: placementMap?.id || defaultMapId,
+      tx: placement?.tx ?? fallbackPlacement.x,
+      ty: placement?.ty ?? fallbackPlacement.y,
+      collected: false,
+    };
+  });
+}
+
 async function fallbackScenario(
   mapId,
   targetLang,
@@ -1625,9 +2791,8 @@ async function fallbackScenario(
   }
 
   const environment = buildScenarioEnvironment(null, lessonTerms, mapId);
-  const mapWidth = 18;
-  const mapHeight = 14;
   const playerStart = { x: 3, y: 3 };
+  const ambientColor = 0x1f2937;
 
   const questionsByLang = {
     [targetLang]: normalizeQuestions([], supportLang),
@@ -1643,26 +2808,19 @@ async function fallbackScenario(
   ];
   const npcCount = 2 + Math.floor(Math.random() * 3); // 2-4
   const npcs = allFallbackNpcs.slice(0, npcCount);
-  const objects = normalizeScenarioObjects(
-    [],
+  const reviewMaps = buildReviewWorldMaps({
     environment,
-    mapWidth,
-    mapHeight,
-    [{ tx: playerStart.x, ty: playerStart.y }, ...npcs],
-  );
-  const mapData = buildFallbackMapData({
-    mapWidth,
-    mapHeight,
-    environment,
-    playerStart,
+    tiles: getTileLibrary(mapId, environment),
+    ambientColor,
+    requestedPlayerStart: playerStart,
     npcs,
-    objects,
   });
+  const hubMap = reviewMaps.maps[0];
 
   const quest = await adaptQuestForReviewContext(
     normalizeQuest(
       null,
-      npcs,
+      reviewMaps.npcs,
       questionsByLang,
       supportLang,
       targetLang,
@@ -1680,26 +2838,27 @@ async function fallbackScenario(
     reviewContext,
     environment,
   );
-
-  return {
+  const baseScenario = {
     id: mapId,
     name: environment?.names || {
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
     },
     tileSize: 32,
-    mapWidth,
-    mapHeight,
-    playerStart,
-    ambientColor: 0x1f2937,
-    tiles: getTileLibrary(mapId, environment),
+    mapWidth: hubMap.mapWidth,
+    mapHeight: hubMap.mapHeight,
+    playerStart: hubMap.playerStart,
+    ambientColor,
+    tiles: hubMap.tiles,
     environment,
-    objects,
+    objects: hubMap.objects,
     emoji: environment?.emoji || "✨",
+    startMapId: reviewMaps.startMapId,
+    maps: reviewMaps.maps,
     generate() {
-      return mapData;
+      return hubMap.generate();
     },
-    npcs,
+    npcs: reviewMaps.npcs,
     questions: questionsByLang,
     quest: visualizedQuest,
     greetings: {
@@ -1710,6 +2869,19 @@ async function fallbackScenario(
         "La generacion fue incompleta, asi que creamos un mundo del tema de la leccion.",
       ],
     },
+  };
+  const populatedFallbackScenario = distributeReviewWorldNPCs(
+    baseScenario,
+    visualizedQuest,
+  );
+
+  return {
+    ...populatedFallbackScenario,
+    quest: visualizedQuest,
+    gatherPlacements: buildGatherPlacementsForScenario(
+      populatedFallbackScenario,
+      visualizedQuest,
+    ),
   };
 }
 
@@ -1775,6 +2947,7 @@ If it feels literary or academic, include bookshelves, desks, lamps, and reading
 If it feels travel-related, make it feel international with gates, signs, counters, waiting areas, and luggage.
 If it feels scientific, include equipment and workstations.
 If it feels social or celebratory, add speakers, tables, decorations, and event details.
+Design the setting so it can plausibly include connected side areas such as rooms, wings, buildings, pavilions, gardens, or stations.
 
 Suggested world direction:
 - ${worldSeed?.promptHint || "Create a detailed lesson-based environment."}
@@ -2007,33 +3180,18 @@ function normalizeScenario({
 
   const environment = buildScenarioEnvironment(raw?.environment, lessonTerms, mapId);
   const npcs = normalizeNPCs(raw?.npcs, mapWidth, mapHeight, npcCount);
-  const objects = normalizeScenarioObjects(
-    raw?.objects,
-    environment,
-    mapWidth,
-    mapHeight,
-    [{ tx: playerStart.x, ty: playerStart.y }, ...npcs],
+  const ambientColor = safeHex(
+    raw?.ambientColor,
+    readEnvironmentAmbientColor(raw?.environment, 0x1a1a2e),
   );
-
-  const fallbackMapData = buildFallbackMapData({
-    mapWidth,
-    mapHeight,
+  const reviewMaps = buildReviewWorldMaps({
     environment,
-    playerStart,
+    tiles: getTileLibrary(mapId, environment),
+    ambientColor,
+    requestedPlayerStart: playerStart,
     npcs,
-    objects,
   });
-  const modelMapData = normalizeMapData(raw?.mapData, mapWidth, mapHeight);
-  const combinedMapData = ensureWalkableTiles(
-    applyObjectCollisions(
-      modelMapData || fallbackMapData,
-      objects,
-      mapWidth,
-      mapHeight,
-    ),
-    mapWidth,
-    [{ x: playerStart.x, y: playerStart.y }, ...npcs],
-  );
+  const hubMap = reviewMaps.maps[0];
 
   return {
     id: mapId,
@@ -2042,21 +3200,20 @@ function normalizeScenario({
       es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
     },
     tileSize: 32,
-    mapWidth,
-    mapHeight,
-    playerStart,
-    ambientColor: safeHex(
-      raw?.ambientColor,
-      readEnvironmentAmbientColor(raw?.environment, 0x1a1a2e),
-    ),
-    tiles: getTileLibrary(mapId, environment),
+    mapWidth: hubMap.mapWidth,
+    mapHeight: hubMap.mapHeight,
+    playerStart: hubMap.playerStart,
+    ambientColor,
+    tiles: hubMap.tiles,
     environment,
-    objects,
+    objects: hubMap.objects,
     emoji: environment?.emoji || "✨",
+    startMapId: reviewMaps.startMapId,
+    maps: reviewMaps.maps,
     generate() {
-      return combinedMapData;
+      return hubMap.generate();
     },
-    npcs,
+    npcs: reviewMaps.npcs,
     questions: {
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
@@ -2105,10 +3262,15 @@ async function withQuest(
     reviewContext,
     scenario.environment || null,
   );
+  const populatedScenario = distributeReviewWorldNPCs(scenario, visualizedQuest);
 
   return {
-    ...scenario,
+    ...populatedScenario,
     quest: visualizedQuest,
+    gatherPlacements: buildGatherPlacementsForScenario(
+      populatedScenario,
+      visualizedQuest,
+    ),
   };
 }
 

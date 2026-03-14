@@ -591,6 +591,10 @@ export function createSpriteTexture(type, seed) {
 
   if (type === "tree") return createTreeSprite(rng);
   if (type === "house") return createHouseSprite();
+  if (type === "building") return createBuildingSprite();
+  if (type === "pavilion") return createPavilionSprite();
+  if (type === "greenhouse") return createGreenhouseSprite();
+  if (type === "doorway") return createDoorwaySprite();
   if (type === "fence") return createFenceSprite();
   if (type === "counter") return createCounterSprite();
   if (type === "stove") return createStoveSprite();
@@ -810,6 +814,170 @@ function createHouseSprite() {
     pxA(ctx, x, 44, 0x000000, 0.15, S);
     pxA(ctx, x, 45, 0x000000, 0.08, S);
   }
+
+  return makeTexture(canvas);
+}
+
+function createBuildingSprite() {
+  const SIZE = 48;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  const wall = 0xb8c4d4;
+  const wallD = darken(wall, 0.18);
+  const wallL = lighten(wall, 0.12);
+  const trim = 0x415a77;
+  const glass = 0x87c8f2;
+  const awning = 0xc75b39;
+
+  rect(ctx, 7, 10, 34, 32, wall);
+  rect(ctx, 7, 10, 34, 2, wallL);
+  rect(ctx, 7, 40, 34, 2, wallD);
+  rect(ctx, 5, 8, 38, 3, trim);
+  rect(ctx, 8, 17, 32, 4, awning);
+  rect(ctx, 9, 20, 30, 2, darken(awning, 0.18));
+
+  for (let row = 0; row < 2; row++) {
+    for (let col = 0; col < 3; col++) {
+      const x = 11 + col * 10;
+      const y = 13 + row * 10;
+      rect(ctx, x, y, 7, 5, glass);
+      rect(ctx, x, y, 7, 1, lighten(glass, 0.15));
+      rect(ctx, x, y + 4, 7, 1, darken(glass, 0.15));
+      rect(ctx, x + 3, y, 1, 5, 0xf1f5f9);
+    }
+  }
+
+  rect(ctx, 19, 26, 10, 14, 0x4b5563);
+  rect(ctx, 20, 27, 8, 12, 0x111827);
+  rect(ctx, 21, 28, 6, 10, 0x1f2937);
+  rect(ctx, 25, 31, 1, 2, 0xfbbf24);
+
+  rect(ctx, 11, 26, 5, 10, wallD);
+  rect(ctx, 32, 26, 5, 10, wallD);
+  rect(ctx, 13, 28, 1, 6, wallL);
+  rect(ctx, 34, 28, 1, 6, wallL);
+
+  rect(ctx, 10, 43, 28, 2, 0x000000);
+  return makeTexture(canvas);
+}
+
+function createPavilionSprite() {
+  const SIZE = 40;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  const roof = 0x8b3a3a;
+  const roofL = lighten(roof, 0.14);
+  const roofD = darken(roof, 0.18);
+  const wood = 0x8b6e50;
+  const woodD = darken(wood, 0.2);
+  const floor = 0xd4b483;
+
+  for (let y = 4; y < 15; y++) {
+    const half = Math.floor((y - 4) * 1.3) + 5;
+    rect(ctx, 20 - half, y, half * 2, 1, roof);
+    rect(ctx, 20 - half, y, 2, 1, roofD);
+    rect(ctx, 20 + half - 2, y, 2, 1, roofL);
+  }
+
+  rect(ctx, 7, 15, 26, 3, roofD);
+  rect(ctx, 10, 18, 2, 14, woodD);
+  rect(ctx, 28, 18, 2, 14, woodD);
+  rect(ctx, 14, 20, 2, 12, wood);
+  rect(ctx, 24, 20, 2, 12, wood);
+  rect(ctx, 11, 31, 18, 4, floor);
+  rect(ctx, 11, 34, 18, 1, darken(floor, 0.16));
+  rect(ctx, 8, 35, 24, 2, 0x000000);
+
+  return makeTexture(canvas);
+}
+
+function createGreenhouseSprite() {
+  const SIZE = 44;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  const glass = 0xa7f3d0;
+  const glassL = lighten(glass, 0.16);
+  const frame = 0x4b6b5a;
+  const frameL = lighten(frame, 0.1);
+  const soil = 0x755532;
+
+  for (let y = 4; y < 14; y++) {
+    const half = Math.floor((y - 4) * 1.1) + 4;
+    rect(ctx, 22 - half, y, half * 2, 1, frame);
+    rect(ctx, 22 - half + 1, y + 1, half * 2 - 2, 1, glassL);
+  }
+
+  rect(ctx, 9, 14, 26, 20, glass);
+  rect(ctx, 9, 14, 26, 1, frameL);
+  rect(ctx, 9, 33, 26, 1, frame);
+  for (let x = 9; x <= 35; x += 6) rect(ctx, x, 14, 1, 20, frame);
+  for (let y = 18; y <= 30; y += 6) rect(ctx, 9, y, 26, 1, frame);
+  rect(ctx, 18, 22, 8, 12, frame);
+  rect(ctx, 19, 23, 6, 10, 0xe6fffa);
+  rect(ctx, 12, 34, 20, 3, soil);
+  rect(ctx, 13, 31, 4, 3, 0x16a34a);
+  rect(ctx, 26, 30, 4, 4, 0x22c55e);
+  rect(ctx, 8, 37, 28, 2, 0x000000);
+
+  return makeTexture(canvas);
+}
+
+function createDoorwaySprite() {
+  const SIZE = 40;
+  const canvas = document.createElement("canvas");
+  canvas.width = SIZE;
+  canvas.height = SIZE;
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, SIZE, SIZE);
+
+  const trim = 0x71829a;
+  const trimL = lighten(trim, 0.18);
+  const trimD = darken(trim, 0.2);
+  const plaque = 0xf5efe4;
+  const plaqueD = darken(plaque, 0.12);
+  const opening = 0x1e293b;
+  const openingL = lighten(opening, 0.12);
+  const step = 0xaa7b4f;
+  const stepL = lighten(step, 0.12);
+  const shadow = 0x000000;
+
+  rect(ctx, 13, 3, 14, 4, plaque);
+  rect(ctx, 14, 4, 12, 2, plaqueD);
+  rect(ctx, 11, 7, 18, 3, trimL);
+  rect(ctx, 8, 10, 4, 22, trim);
+  rect(ctx, 28, 10, 4, 22, trim);
+  rect(ctx, 12, 10, 16, 3, trimL);
+  rect(ctx, 12, 13, 16, 18, opening);
+  rect(ctx, 14, 15, 12, 2, openingL);
+  rect(ctx, 14, 19, 12, 1, lighten(opening, 0.22));
+  rect(ctx, 10, 31, 20, 3, stepL);
+  rect(ctx, 10, 33, 20, 2, step);
+  rect(ctx, 9, 35, 22, 1, trimD);
+  rect(ctx, 10, 36, 20, 2, shadow);
+
+  rect(ctx, 6, 12, 2, 18, trimD);
+  rect(ctx, 32, 12, 2, 18, trimD);
+  rect(ctx, 12, 8, 16, 1, trimD);
+
+  rect(ctx, 17, 23, 6, 5, 0xe2e8f0);
+  rect(ctx, 18, 24, 4, 3, 0x94a3b8);
+  rect(ctx, 16, 29, 8, 1, 0xf8fafc);
 
   return makeTexture(canvas);
 }

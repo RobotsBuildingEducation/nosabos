@@ -149,7 +149,15 @@ function drawGatherPixelRoundedRect(ctx, x, y, w, h, r, fill, stroke) {
       if (stroke) drawGatherPixelRect(ctx, px, py, 1, 1, stroke);
       if (
         fill &&
-        isPixelInRoundedRect(px, py, x + 1, y + 1, Math.max(0, w - 2), Math.max(0, h - 2), Math.max(0, r - 1))
+        isPixelInRoundedRect(
+          px,
+          py,
+          x + 1,
+          y + 1,
+          Math.max(0, w - 2),
+          Math.max(0, h - 2),
+          Math.max(0, r - 1),
+        )
       ) {
         drawGatherPixelRect(ctx, px, py, 1, 1, fill);
       }
@@ -233,7 +241,14 @@ function drawDynamicGatherVisual(ctx, visual) {
         layer.fill,
       );
       if (layer.stroke) {
-        drawGatherPixelRect(pixelCtx, layer.x, layer.y, layer.w, 1, layer.stroke);
+        drawGatherPixelRect(
+          pixelCtx,
+          layer.x,
+          layer.y,
+          layer.w,
+          1,
+          layer.stroke,
+        );
         drawGatherPixelRect(
           pixelCtx,
           layer.x,
@@ -242,7 +257,14 @@ function drawDynamicGatherVisual(ctx, visual) {
           1,
           layer.stroke,
         );
-        drawGatherPixelRect(pixelCtx, layer.x, layer.y, 1, layer.h, layer.stroke);
+        drawGatherPixelRect(
+          pixelCtx,
+          layer.x,
+          layer.y,
+          1,
+          layer.h,
+          layer.stroke,
+        );
         drawGatherPixelRect(
           pixelCtx,
           layer.x + layer.w - 1,
@@ -295,7 +317,13 @@ function drawDynamicGatherVisual(ctx, visual) {
     }
 
     if (layer.type === "poly") {
-      drawGatherPixelPolygon(pixelCtx, layer.points, layer.fill, layer.stroke, layer.closed !== false);
+      drawGatherPixelPolygon(
+        pixelCtx,
+        layer.points,
+        layer.fill,
+        layer.stroke,
+        layer.closed !== false,
+      );
     }
   });
 
@@ -1143,6 +1171,11 @@ const GAME_LOADING_MESSAGES = [
 
 const SCENARIO_OBJECT_VISUALS = {
   tree: { width: 1.3, height: 1.6, yOffset: 0.6, z: 2 },
+  house: { width: 1.9, height: 2.6, yOffset: 0.68, z: 2.2 },
+  building: { width: 1.95, height: 2.7, yOffset: 0.68, z: 2.2 },
+  pavilion: { width: 1.75, height: 2.0, yOffset: 0.62, z: 2.05 },
+  greenhouse: { width: 1.8, height: 2.2, yOffset: 0.64, z: 2.1 },
+  doorway: { width: 1.35, height: 1.95, yOffset: 0.66, z: 2.08 },
   bookshelf: { width: 1.0, height: 1.3, yOffset: 0.55, z: 1.9 },
   shelf: { width: 1.0, height: 1.15, yOffset: 0.52, z: 1.8 },
   tv: { width: 1.0, height: 0.95, yOffset: 0.45, z: 1.7 },
@@ -1158,6 +1191,88 @@ const SCENARIO_OBJECT_VISUALS = {
   suitcaseStack: { width: 0.95, height: 1.0, yOffset: 0.48, z: 1.8 },
   default: { width: 1.0, height: 1.0, yOffset: 0.5, z: 1.7 },
 };
+
+function parseLooseJSON(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // fall through to relaxed extraction
+  }
+
+  const firstBrace = trimmed.indexOf("{");
+  const lastBrace = trimmed.lastIndexOf("}");
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
+    } catch {
+      // try array shape next
+    }
+  }
+
+  const firstBracket = trimmed.indexOf("[");
+  const lastBracket = trimmed.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket > firstBracket) {
+    try {
+      return JSON.parse(trimmed.slice(firstBracket, lastBracket + 1));
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}
+
+function humanizeObjectType(type = "") {
+  return String(type || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function buildFallbackObjectExamineText(object) {
+  const label = humanizeObjectType(object?.type) || "object";
+  return {
+    name: label,
+    supportName: label,
+    text: `It looks like a ${label}.`,
+    supportText: `It looks like a ${label}.`,
+  };
+}
+
+function findScenarioObjectAtTile(objects = [], tileX, tileY) {
+  const candidates = objects
+    .map((object) => {
+      const visual =
+        SCENARIO_OBJECT_VISUALS[object.type] || SCENARIO_OBJECT_VISUALS.default;
+      const halfWidth = Math.max(0, Math.ceil((visual.width - 1) / 2));
+      const verticalReach = Math.max(0, Math.ceil(visual.height - 1));
+      const hitbox = {
+        left: object.tx - halfWidth,
+        right: object.tx + halfWidth,
+        top: object.ty - verticalReach,
+        bottom: object.ty,
+      };
+      const withinHitbox =
+        tileX >= hitbox.left &&
+        tileX <= hitbox.right &&
+        tileY >= hitbox.top &&
+        tileY <= hitbox.bottom;
+      if (!withinHitbox) return null;
+
+      return {
+        object,
+        score: Math.abs(object.tx - tileX) + Math.abs(object.ty - tileY),
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.score - b.score);
+
+  return candidates[0]?.object || null;
+}
 
 const DIALOGUE_CHARACTER_POOLS = {
   hamster: ["33", "26", "25", "22"],
@@ -1288,7 +1403,9 @@ export default function RPGGame({
   }, []);
 
   const targetLang = normalizePracticeLanguage(
-    targetLangProp || lessonContext?.targetLang || localStorageSettings.targetLang,
+    targetLangProp ||
+      lessonContext?.targetLang ||
+      localStorageSettings.targetLang,
     "es",
   );
   const supportLang = normalizeSupportLanguage(
@@ -1304,6 +1421,9 @@ export default function RPGGame({
     initialScenario ? initialScenario.id || "generated" : null,
   );
   const [scenario, setScenario] = useState(initialScenario || null);
+  const [activeMapId, setActiveMapId] = useState(
+    initialScenario?.startMapId || initialScenario?.id || null,
+  );
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
   const [npcNameMap, setNpcNameMap] = useState(null);
 
@@ -1318,6 +1438,7 @@ export default function RPGGame({
   const [lineTranslations, setLineTranslations] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
+  const [objectExamine, setObjectExamine] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
@@ -1334,6 +1455,12 @@ export default function RPGGame({
   const preWarmedAudioRef = useRef(null);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
+  const transitionCooldownUntilRef = useRef(0);
+  const mapEntrySpawnRef = useRef(null);
+  const npcAssignmentsCacheRef = useRef(null);
+  const gatherPlacementCacheKeyRef = useRef(null);
+  const objectExamineCacheRef = useRef(new Map());
+  const objectExaminePendingMapsRef = useRef(new Set());
 
   const playSound = useSoundSettings((state) => state.playSound);
   const warmupAudio = useSoundSettings((state) => state.warmupAudio);
@@ -1397,11 +1524,270 @@ export default function RPGGame({
   );
   const buildStrictDialoguePrompt = useCallback(
     (...sections) =>
-      [cefrPromptRule, strictTargetLanguageGuard, reviewPromptContext, ...sections]
+      [
+        cefrPromptRule,
+        strictTargetLanguageGuard,
+        reviewPromptContext,
+        ...sections,
+      ]
         .filter(Boolean)
         .join("\n"),
     [cefrPromptRule, reviewPromptContext, strictTargetLanguageGuard],
   );
+
+  const getObjectExamineKey = useCallback(
+    (map, object) =>
+      `${map?.id || scenario?.id || "map"}:${object?.tx ?? 0},${object?.ty ?? 0}:${
+        object?.type || "object"
+      }`,
+    [scenario?.id],
+  );
+
+  const requestObjectExamineTexts = useCallback(
+    async (map, rawObjects = []) => {
+      const objects = Array.isArray(rawObjects)
+        ? rawObjects.filter(Boolean)
+        : [];
+      if (!map || !objects.length) return;
+
+      const mapId = map.id || scenario?.id || "map";
+      const uncachedObjects = objects.filter(
+        (object) =>
+          !objectExamineCacheRef.current.has(getObjectExamineKey(map, object)),
+      );
+      if (!uncachedObjects.length) return;
+      if (objectExaminePendingMapsRef.current.has(mapId)) return;
+
+      objectExaminePendingMapsRef.current.add(mapId);
+
+      const mapName =
+        typeof map.name === "string"
+          ? map.name
+          : map.name?.[targetLang] || map.name?.en || map.name?.es || "Area";
+      const prompt = [
+        cefrPromptRule,
+        reviewPromptContext,
+        `Target language: ${targetLangName} (code: ${targetLang}).`,
+        `Support language: ${supportLangName} (code: ${supportLang}). Use it ONLY for the supportName and supportText fields.`,
+        "You write short 'examine' descriptions for environmental objects in a language-learning RPG.",
+        `For each object, write "name" and "text" in ${targetLangName}.`,
+        `For each object, write "supportName" as the direct translation of the object name in ${supportLangName}.`,
+        `For each object, write "supportText" as the direct translation of the context sentence in ${supportLangName}.`,
+        "The text sentence should sound like the player quietly examining the object.",
+        "Keep the object name short and clear.",
+        "A little dry or playful humor is welcome, but keep it brief and readable.",
+        "Do not mention quests, tasks, controls, objectives, or NPCs.",
+        ["Pre-A1", "A1"].includes(cefrLevel || "")
+          ? "For beginner levels, use very short, high-frequency sentences only."
+          : "",
+        `Current area: ${mapName}.`,
+        map?.environment?.summary?.en
+          ? `Area context: ${map.environment.summary.en}.`
+          : "",
+        'Return ONLY valid JSON in this exact shape: [{"key":"...","name":"...","supportName":"...","text":"...","supportText":"..."}].',
+        `Objects:\n${JSON.stringify(
+          uncachedObjects.map((object) => ({
+            key: getObjectExamineKey(map, object),
+            type: object.type,
+            x: object.tx,
+            y: object.ty,
+          })),
+        )}`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      try {
+        const response = await callResponses({ input: prompt });
+        const parsed = parseLooseJSON(response);
+        const entries = Array.isArray(parsed)
+          ? parsed
+          : Array.isArray(parsed?.items)
+            ? parsed.items
+            : [];
+        const resolvedTexts = new Map();
+
+        entries.forEach((entry) => {
+          const key = String(entry?.key || "").trim();
+          const name = String(entry?.name || entry?.label || "").trim();
+          const supportName = String(
+            entry?.supportName ||
+              entry?.translation ||
+              entry?.supportLabel ||
+              "",
+          ).trim();
+          const supportText = String(
+            entry?.supportText ||
+              entry?.translatedText ||
+              entry?.supportLine ||
+              "",
+          ).trim();
+          const text = String(entry?.text || entry?.line || "").trim();
+          if (!key || !text) return;
+          resolvedTexts.set(key, {
+            name: name.replace(/^["']|["']$/g, "").trim(),
+            supportName: supportName.replace(/^["']|["']$/g, "").trim(),
+            text: text.replace(/^["']|["']$/g, "").trim(),
+            supportText: supportText.replace(/^["']|["']$/g, "").trim(),
+          });
+        });
+
+        uncachedObjects.forEach((object) => {
+          const key = getObjectExamineKey(map, object);
+          const text =
+            resolvedTexts.get(key) || buildFallbackObjectExamineText(object);
+          objectExamineCacheRef.current.set(key, text);
+        });
+
+        setObjectExamine((current) => {
+          if (!current) return current;
+          const nextEntry = objectExamineCacheRef.current.get(current.key);
+          return nextEntry
+            ? {
+                ...current,
+                ...nextEntry,
+                pending: false,
+              }
+            : current;
+        });
+      } catch {
+        uncachedObjects.forEach((object) => {
+          const key = getObjectExamineKey(map, object);
+          objectExamineCacheRef.current.set(
+            key,
+            buildFallbackObjectExamineText(object),
+          );
+        });
+        setObjectExamine((current) => {
+          if (!current) return current;
+          const nextEntry = objectExamineCacheRef.current.get(current.key);
+          return nextEntry
+            ? {
+                ...current,
+                ...nextEntry,
+                pending: false,
+              }
+            : current;
+        });
+      } finally {
+        objectExaminePendingMapsRef.current.delete(mapId);
+      }
+    },
+    [
+      cefrLevel,
+      getObjectExamineKey,
+      reviewPromptContext,
+      scenario?.id,
+      supportLang,
+      supportLangName,
+      targetLang,
+      targetLangName,
+      cefrPromptRule,
+    ],
+  );
+
+  useEffect(() => {
+    if (!scenario) {
+      setActiveMapId(null);
+      return;
+    }
+
+    setActiveMapId((prev) => {
+      if (!Array.isArray(scenario.maps) || !scenario.maps.length) {
+        return scenario.id || null;
+      }
+      if (prev && scenario.maps.some((entry) => entry.id === prev)) {
+        return prev;
+      }
+      return scenario.startMapId || scenario.maps[0]?.id || scenario.id || null;
+    });
+  }, [scenario]);
+
+  const activeMap = useMemo(() => {
+    if (!scenario) return null;
+    if (!Array.isArray(scenario.maps) || !scenario.maps.length) return scenario;
+    return (
+      scenario.maps.find((entry) => entry.id === activeMapId) ||
+      scenario.maps.find((entry) => entry.id === scenario.startMapId) ||
+      scenario.maps[0]
+    );
+  }, [activeMapId, scenario]);
+
+  const activeMapNpcIndices = useMemo(() => {
+    if (!scenario?.npcs?.length || !activeMap) return [];
+    return scenario.npcs.reduce((list, npc, idx) => {
+      const npcMapId = npc.mapId || scenario.startMapId || scenario.id;
+      if (npcMapId === activeMap.id) list.push(idx);
+      return list;
+    }, []);
+  }, [activeMap, scenario]);
+
+  const activeMapNpcs = useMemo(
+    () =>
+      activeMapNpcIndices.map((idx) => scenario?.npcs?.[idx]).filter(Boolean),
+    [activeMapNpcIndices, scenario],
+  );
+
+  const activeAreaLabel = useMemo(() => {
+    if (!activeMap) return "";
+    if (typeof activeMap.name === "string") return activeMap.name;
+    return (
+      activeMap.name?.[supportLang] ||
+      activeMap.name?.en ||
+      activeMap.name?.es ||
+      ""
+    );
+  }, [activeMap, supportLang]);
+
+  const flashBlockedTileHint = useCallback(
+    (tx, ty) => {
+      const hint = blockedTileHintRef.current;
+      const mapHeight = gameStateRef.current?.mapH;
+      const tileSize = activeMap?.tileSize || scenario?.tileSize || 32;
+      if (!hint || !Number.isFinite(mapHeight)) return;
+      hint.position.set(
+        tx * tileSize + tileSize / 2,
+        (mapHeight - 1 - ty) * tileSize + tileSize / 2,
+        4.4,
+      );
+      hint.scale.set(1, 1, 1);
+      hint.material.opacity = 0.95;
+      hint.visible = true;
+      blockedTileHintUntilRef.current = performance.now() + 260;
+    },
+    [activeMap?.tileSize, scenario?.tileSize],
+  );
+
+  useEffect(() => {
+    objectExamineCacheRef.current = new Map();
+    objectExaminePendingMapsRef.current = new Set();
+    setObjectExamine(null);
+  }, [scenario?.id]);
+
+  useEffect(() => {
+    if (!activeMap?.objects?.length) return;
+    requestObjectExamineTexts(activeMap, activeMap.objects);
+  }, [activeMap, requestObjectExamineTexts]);
+
+  useEffect(() => {
+    if (!objectExamine || objectExamine.pending) return undefined;
+    const timer = setTimeout(() => {
+      setObjectExamine((current) =>
+        current?.openedAt === objectExamine.openedAt ? null : current,
+      );
+    }, 3600);
+    return () => clearTimeout(timer);
+  }, [objectExamine]);
+
+  useEffect(() => {
+    setObjectExamine(null);
+  }, [activeMapId]);
+
+  useEffect(() => {
+    if (dialogue || gameComplete) {
+      setObjectExamine(null);
+    }
+  }, [dialogue, gameComplete]);
 
   const toggleTranslation = useCallback(async () => {
     if (lineTranslations) {
@@ -1853,6 +2239,26 @@ export default function RPGGame({
     [playSound, warmupAudio],
   );
 
+  const examineScenarioObject = useCallback(
+    (object) => {
+      if (!activeMap || !object) return;
+      const key = getObjectExamineKey(activeMap, object);
+      const cachedEntry = objectExamineCacheRef.current.get(key);
+      setObjectExamine({
+        key,
+        name: cachedEntry?.name || "",
+        supportName: cachedEntry?.supportName || "",
+        text: cachedEntry?.text || "",
+        supportText: cachedEntry?.supportText || "",
+        pending: !cachedEntry,
+        openedAt: Date.now(),
+      });
+      requestObjectExamineTexts(activeMap, [object]);
+      playGameSound("rpgDialogueOpen");
+    },
+    [activeMap, getObjectExamineKey, playGameSound, requestObjectExamineTexts],
+  );
+
   // Generate a data URL for a gather item sprite (for UI display)
   const getItemSpriteDataURL = useCallback((itemOrSprite) => {
     const canvas = document.createElement("canvas");
@@ -1954,7 +2360,8 @@ export default function RPGGame({
 
     const anchorPoint = new THREE.Vector3(
       npcMesh.position.x,
-      npcMesh.position.y + (scenario?.tileSize || 32) * 0.55,
+      npcMesh.position.y +
+        (activeMap?.tileSize || scenario?.tileSize || 32) * 0.55,
       npcMesh.position.z,
     ).project(cameraRef.current);
 
@@ -1984,7 +2391,12 @@ export default function RPGGame({
       }
       return { left: nextLeft, top: nextTop, preferredRight };
     });
-  }, [dialogue, isMobileDialogueLayout, scenario?.tileSize]);
+  }, [
+    activeMap?.tileSize,
+    dialogue,
+    isMobileDialogueLayout,
+    scenario?.tileSize,
+  ]);
 
   useEffect(() => {
     if (!dialogue || isMobileDialogueLayout) {
@@ -2054,10 +2466,15 @@ export default function RPGGame({
       setScenarioId(mapId);
       setDialogue(null);
       setFeedback(null);
+      setActiveMapId(null);
       setGameComplete(false);
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
       setLoadingMsgIdx(0);
+      mapEntrySpawnRef.current = null;
+      transitionCooldownUntilRef.current = 0;
+      npcAssignmentsCacheRef.current = null;
+      gatherPlacementCacheKeyRef.current = null;
 
       // When lessonContext is provided, pass focused terms and CEFR level
       const gameContent = lessonContext?.content?.game;
@@ -2078,6 +2495,7 @@ export default function RPGGame({
         reviewContext,
       );
       setScenario(generated);
+      setActiveMapId(generated?.startMapId || generated?.id || null);
       if (typeof onScenarioReady === "function" && generated) {
         onScenarioReady(generated);
       }
@@ -2154,15 +2572,27 @@ export default function RPGGame({
 
   // ─── Three.js setup (runs when scenario changes) ──────────────────────
   useEffect(() => {
-    if (!canvasRef.current || !scenario) return;
+    if (!canvasRef.current || !scenario || !activeMap) return;
 
     const seed = Date.now();
-    const TILE = scenario.tileSize;
-    const MAP_W = scenario.mapWidth;
-    const MAP_H = scenario.mapHeight;
+    const TILE = activeMap.tileSize || scenario.tileSize;
+    const MAP_W = activeMap.mapWidth;
+    const MAP_H = activeMap.mapHeight;
+    const currentMapNpcs = activeMapNpcs;
+    const currentMapTiles = activeMap.tiles || scenario.tiles;
+    const currentMapPortals = activeMap.portals || [];
+    const entrySpawn =
+      mapEntrySpawnRef.current?.mapId === activeMap.id
+        ? {
+            x: mapEntrySpawnRef.current.x,
+            y: mapEntrySpawnRef.current.y,
+          }
+        : activeMap.playerStart || scenario.playerStart;
+    mapEntrySpawnRef.current = null;
 
     // Generate map
-    const mapData = scenario.generate(seed);
+    const mapData =
+      typeof activeMap.generate === "function" ? activeMap.generate(seed) : [];
     mapDataRef.current = mapData;
 
     const getTile = (x, y) => {
@@ -2171,16 +2601,16 @@ export default function RPGGame({
     };
     const isSolid = (x, y) => {
       const t = getTile(x, y);
-      const tileDef = scenario.tiles[t];
+      const tileDef = currentMapTiles[t];
       return tileDef ? tileDef.solid : true;
     };
 
     // Init game state
     gameStateRef.current = {
-      playerX: scenario.playerStart.x,
-      playerY: scenario.playerStart.y,
-      renderX: scenario.playerStart.x,
-      renderY: scenario.playerStart.y,
+      playerX: entrySpawn.x,
+      playerY: entrySpawn.y,
+      renderX: entrySpawn.x,
+      renderY: entrySpawn.y,
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
@@ -2198,12 +2628,12 @@ export default function RPGGame({
     // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
-      alpha: false,
+      alpha: true,
     });
     renderer.setSize(width, height);
     renderer.setPixelRatio(1);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setClearColor(scenario.ambientColor);
+    renderer.setClearColor(activeMap.ambientColor || scenario.ambientColor, 0);
     canvasRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -2260,8 +2690,8 @@ export default function RPGGame({
       1000,
     );
     camera.position.set(
-      scenario.playerStart.x * TILE + TILE / 2,
-      (MAP_H - 1 - scenario.playerStart.y) * TILE + TILE / 2,
+      entrySpawn.x * TILE + TILE / 2,
+      (MAP_H - 1 - entrySpawn.y) * TILE + TILE / 2,
       100,
     );
     cameraRef.current = camera;
@@ -2273,14 +2703,13 @@ export default function RPGGame({
     const objectGroup = new THREE.Group();
     const TILE_OVERDRAW = 0.35;
 
-    const mapDecorTheme =
-      scenario.environment?.decorKinds?.length
-        ? scenario.environment.decorKinds
-        : scenario.id === "park"
-          ? ["grass_tuft", "flower_patch", "stones"]
-          : scenario.id === "livingRoom"
-            ? ["wood_scraps", "paper_bits"]
-            : ["paper_bits", "stones"];
+    const mapDecorTheme = activeMap.environment?.decorKinds?.length
+      ? activeMap.environment.decorKinds
+      : activeMap.id === "park"
+        ? ["grass_tuft", "flower_patch", "stones"]
+        : activeMap.id === "livingRoom"
+          ? ["wood_scraps", "paper_bits"]
+          : ["paper_bits", "stones"];
 
     // Track house clusters to avoid duplicate sprites
     const visitedClusters = new Set();
@@ -2288,12 +2717,13 @@ export default function RPGGame({
     for (let y = 0; y < MAP_H; y++) {
       for (let x = 0; x < MAP_W; x++) {
         const tileType = getTile(x, y);
-        const tileDef = scenario.tiles[tileType];
+        const tileDef = currentMapTiles[tileType];
         if (!tileDef) continue;
+        if (tileDef.void) continue;
 
         // Base tile (always draw ground underneath solid objects)
-        const groundDef = scenario.tiles[0];
-        if (tileDef.solid && groundDef) {
+        const groundDef = currentMapTiles[0];
+        if (tileDef.solid && groundDef && !groundDef.void) {
           const groundTex = createTileTexture(groundDef, x, y, seed);
           const groundGeo = new THREE.PlaneGeometry(
             TILE + TILE_OVERDRAW,
@@ -2404,7 +2834,7 @@ export default function RPGGame({
       }
     }
     const addGroundDecor = (x, y, tileType) => {
-      const tileDef = scenario.tiles[tileType];
+      const tileDef = currentMapTiles[tileType];
       if (!tileDef || tileDef.solid || tileDef.sprite) return;
       if (Math.random() > 0.3) return;
 
@@ -2436,14 +2866,15 @@ export default function RPGGame({
       }
     }
 
-    (scenario.objects || []).forEach((object, idx) => {
+    (activeMap.objects || []).forEach((object, idx) => {
       const spriteTex = createSpriteTexture(
         object.type,
         seed + idx * 211 + object.tx * 17 + object.ty * 29,
       );
       if (!spriteTex) return;
 
-      const visual = SCENARIO_OBJECT_VISUALS[object.type] || SCENARIO_OBJECT_VISUALS.default;
+      const visual =
+        SCENARIO_OBJECT_VISUALS[object.type] || SCENARIO_OBJECT_VISUALS.default;
       const sGeo = new THREE.PlaneGeometry(
         TILE * visual.width,
         TILE * visual.height,
@@ -2480,18 +2911,6 @@ export default function RPGGame({
     scene.add(blockedHintMesh);
     blockedTileHintRef.current = blockedHintMesh;
 
-    const showBlockedTileHint = (tx, ty) => {
-      blockedHintMesh.position.set(
-        tx * TILE + TILE / 2,
-        (MAP_H - 1 - ty) * TILE + TILE / 2,
-        4.4,
-      );
-      blockedHintMesh.scale.set(1, 1, 1);
-      blockedHintMesh.material.opacity = 0.95;
-      blockedHintMesh.visible = true;
-      blockedTileHintUntilRef.current = performance.now() + 260;
-    };
-
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
     const PLAYER_WIDTH_TILES = 0.9;
@@ -2509,16 +2928,39 @@ export default function RPGGame({
     });
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
-      scenario.playerStart.x * TILE + TILE / 2,
-      (MAP_H - 1 - scenario.playerStart.y) * TILE +
-        TILE / 2 +
-        playerVerticalOffset,
+      entrySpawn.x * TILE + TILE / 2,
+      (MAP_H - 1 - entrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
     playerSpriteRef.current = playerSprite;
 
-    const selectedNPCVariants = chooseRandomNPCVariants(scenario.npcs.length);
+    const scenarioNpcCount = scenario.npcs.length;
+    const assignmentKey = [
+      scenario.id || "scenario",
+      scenarioNpcCount,
+      scenario.quest?.storySeed || "",
+      scenario.name?.en || scenario.name?.es || "",
+    ].join(":");
+    let npcAssignments =
+      npcAssignmentsCacheRef.current?.key === assignmentKey
+        ? npcAssignmentsCacheRef.current.items
+        : null;
+    if (!npcAssignments) {
+      const selectedNPCVariants = chooseRandomNPCVariants(scenarioNpcCount);
+      npcAssignments = scenario.npcs.map(
+        (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
+      );
+      npcAssignmentsCacheRef.current = {
+        key: assignmentKey,
+        items: npcAssignments,
+      };
+    }
+    const selectedNPCVariants = Array.from(
+      new Map(
+        npcAssignments.map((assignment) => [assignment.id, assignment]),
+      ).values(),
+    );
     const NPC_WIDTH_TILES = 0.9;
     const NPC_HEIGHT_TILES = 1.2;
     const NPC_BASE_SCALE = 0.92;
@@ -2527,11 +2969,8 @@ export default function RPGGame({
       TILE * ((NPC_HEIGHT_TILES - 1) / 2 + NPC_FOOT_MARGIN_TILES);
 
     // ── NPC sprites ───────────────────────────────────────────────────────
-    const npcSprites = [];
-    const npcIndicators = [];
-    const npcAssignments = scenario.npcs.map(
-      (_, index) => selectedNPCVariants[index % selectedNPCVariants.length],
-    );
+    const npcSprites = Array(scenario.npcs.length).fill(null);
+    const npcIndicators = Array(scenario.npcs.length).fill(null);
     npcVariantAssignmentsRef.current = npcAssignments.map(
       (assignment) => assignment.id,
     );
@@ -2548,7 +2987,8 @@ export default function RPGGame({
     });
     setNpcNameMap(nameMapping);
     npcDialogueCharactersRef.current.clear();
-    scenario.npcs.forEach((npc) => {
+    activeMapNpcIndices.forEach((npcIdx) => {
+      const npc = scenario.npcs[npcIdx];
       const preset =
         NPC_PRESETS[Math.floor(Math.random() * NPC_PRESETS.length)];
       const npcTex = createCharacterTexture(preset, "down", 0);
@@ -2567,7 +3007,7 @@ export default function RPGGame({
         4,
       );
       scene.add(npcMesh);
-      npcSprites.push(npcMesh);
+      npcSprites[npcIdx] = npcMesh;
 
       // Indicator
       const indTex = createNPCIndicatorTexture();
@@ -2583,7 +3023,7 @@ export default function RPGGame({
         6,
       );
       scene.add(indicator);
-      npcIndicators.push(indicator);
+      npcIndicators[npcIdx] = indicator;
     });
 
     textureLoader.load(
@@ -2628,15 +3068,65 @@ export default function RPGGame({
     // ── Gather item sprites (correct + decoy, start hidden) ─────────────
     const gatherData = scenario.quest?.gatherData;
     const allGatherItems = gatherData?.all || [];
-    if (allGatherItems.length > 0) {
-      const playerStart = scenario.playerStart;
+    if (
+      Array.isArray(scenario.gatherPlacements) &&
+      scenario.gatherPlacements.length > 0
+    ) {
+      const gatherPlacementKey = [
+        scenario.id || "scenario",
+        scenario.quest?.storySeed || "",
+        scenario.gatherPlacements.length,
+        scenario.gatherPlacements.map((item) => item.name).join("|"),
+      ].join(":");
+      if (
+        gatherPlacementCacheKeyRef.current !== gatherPlacementKey ||
+        !Array.isArray(gatherSpritesRef.current) ||
+        gatherSpritesRef.current.length !== scenario.gatherPlacements.length
+      ) {
+        gatherPlacementCacheKeyRef.current = gatherPlacementKey;
+        gatherSpritesRef.current = scenario.gatherPlacements.map((item) => ({
+          ...item,
+          collected: !!item.collected,
+          mesh: null,
+        }));
+      }
+
+      gatherSpritesRef.current.forEach((item) => {
+        if ((item.mapId || activeMap.id) !== activeMap.id) return;
+        const canvas = document.createElement("canvas");
+        canvas.width = GATHER_SPRITE_SIZE;
+        canvas.height = GATHER_SPRITE_SIZE;
+        const ctx = canvas.getContext("2d");
+        drawGatherItemSprite(ctx, item);
+
+        const itemTex = new THREE.CanvasTexture(canvas);
+        itemTex.magFilter = THREE.NearestFilter;
+        itemTex.minFilter = THREE.NearestFilter;
+        const itemGeo = new THREE.PlaneGeometry(TILE * 0.85, TILE * 0.85);
+        const itemMat = new THREE.MeshBasicMaterial({
+          map: itemTex,
+          transparent: true,
+        });
+        const itemMesh = new THREE.Mesh(itemGeo, itemMat);
+        itemMesh.position.set(
+          item.tx * TILE + TILE / 2,
+          (MAP_H - 1 - item.ty) * TILE + TILE / 2,
+          3,
+        );
+        itemMesh.visible = gatherUnlocked && !item.collected;
+        scene.add(itemMesh);
+        item.mesh = itemMesh;
+      });
+    } else if (allGatherItems.length > 0) {
+      const playerStart = activeMap.playerStart || scenario.playerStart;
       const placed = [];
       const occupied = new Set();
-      scenario.npcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
+      currentMapNpcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
       occupied.add(`${playerStart.x},${playerStart.y}`);
 
       allGatherItems.forEach((item) => {
-        let tx, ty;
+        let tx;
+        let ty;
         let attempts = 0;
         do {
           tx = 2 + Math.floor(Math.random() * (MAP_W - 4));
@@ -2648,7 +3138,6 @@ export default function RPGGame({
         );
         occupied.add(`${tx},${ty}`);
 
-        // Create illustrated pixel-art sprite for each item
         const canvas = document.createElement("canvas");
         canvas.width = GATHER_SPRITE_SIZE;
         canvas.height = GATHER_SPRITE_SIZE;
@@ -2669,11 +3158,17 @@ export default function RPGGame({
           (MAP_H - 1 - ty) * TILE + TILE / 2,
           3,
         );
-        // Start hidden — only show after gather quest is unlocked
         itemMesh.visible = false;
         scene.add(itemMesh);
 
-        placed.push({ ...item, tx, ty, mesh: itemMesh, collected: false });
+        placed.push({
+          ...item,
+          mapId: activeMap.id,
+          tx,
+          ty,
+          mesh: itemMesh,
+          collected: false,
+        });
       });
 
       gatherSpritesRef.current = placed;
@@ -2709,11 +3204,13 @@ export default function RPGGame({
       // Keep NPCs anchored in place (no floating bob).
       gs.npcBobPhase += delta * 0.003;
       npcSprites.forEach((sprite, i) => {
+        if (!sprite) return;
         const npc = scenario.npcs[i];
         sprite.position.y =
           (MAP_H - 1 - npc.ty) * TILE + TILE / 2 + npcVerticalOffset;
       });
       npcIndicators.forEach((ind, i) => {
+        if (!ind) return;
         const npc = scenario.npcs[i];
         ind.position.y = (MAP_H - 1 - npc.ty) * TILE + TILE * 1.15;
         // Pulse scale
@@ -2743,7 +3240,7 @@ export default function RPGGame({
         if (dx !== 0 || dy !== 0) {
           const nx = gs.playerX + dx;
           const ny = gs.playerY + dy;
-          const npcBlocking = scenario.npcs.some(
+          const npcBlocking = currentMapNpcs.some(
             (n) => n.tx === nx && n.ty === ny,
           );
           if (!isSolid(nx, ny) && !npcBlocking) {
@@ -2767,8 +3264,21 @@ export default function RPGGame({
             playerSprite.material.needsUpdate = true;
 
             playGameSound("rpgStep");
+            const currentPortal = currentMapPortals.find(
+              (portal) => portal.tx === gs.playerX && portal.ty === gs.playerY,
+            );
+            if (currentPortal?.toMapId) {
+              transitionCooldownUntilRef.current = performance.now() + 320;
+              mapEntrySpawnRef.current = {
+                mapId: currentPortal.toMapId,
+                x: currentPortal.spawn?.x ?? 2,
+                y: currentPortal.spawn?.y ?? 2,
+              };
+              setActiveMapId(currentPortal.toMapId);
+              return;
+            }
           } else {
-            showBlockedTileHint(nx, ny);
+            flashBlockedTileHint(nx, ny);
           }
         } else {
           gs.idleHoldMs = Math.max(0, (gs.idleHoldMs || 0) - delta);
@@ -2793,6 +3303,7 @@ export default function RPGGame({
 
       // Check gather item pickup (only when gather quest is active)
       gatherSpritesRef.current.forEach((item) => {
+        if ((item.mapId || activeMap.id) !== activeMap.id) return;
         if (item.collected || !item.mesh?.visible) return;
         if (gs.playerX === item.tx && gs.playerY === item.ty) {
           item.collected = true;
@@ -2813,6 +3324,7 @@ export default function RPGGame({
 
       // Pulse visible gather items
       gatherSpritesRef.current.forEach((item) => {
+        if ((item.mapId || activeMap.id) !== activeMap.id) return;
         if (item.collected || !item.mesh?.visible) return;
         const pulse = 1 + Math.sin(time * 0.004) * 0.15;
         item.mesh.scale.set(pulse, pulse, 1);
@@ -2878,8 +3390,14 @@ export default function RPGGame({
         item.mesh?.geometry?.dispose();
         item.mesh?.material?.map?.dispose();
         item.mesh?.material?.dispose();
+        item.mesh = null;
       });
-      gatherSpritesRef.current = [];
+      if (
+        !Array.isArray(scenario?.gatherPlacements) ||
+        !scenario.gatherPlacements.length
+      ) {
+        gatherSpritesRef.current = [];
+      }
       blockedTileHintRef.current?.geometry?.dispose?.();
       blockedTileHintRef.current?.material?.map?.dispose?.();
       blockedTileHintRef.current?.material?.dispose?.();
@@ -2896,13 +3414,18 @@ export default function RPGGame({
     buildPlayerSheetFrames,
     chooseRandomNPCVariants,
     createNPCTextureFromSheet,
+    flashBlockedTileHint,
     playGameSound,
+    activeMap,
+    activeMapNpcs,
+    activeMapNpcIndices,
+    gatherUnlocked,
     scenario,
   ]);
 
   // ─── Interact with NPCs ───────────────────────────────────────────────
   useEffect(() => {
-    if (!scenario) return;
+    if (!scenario || !activeMap) return;
 
     const handleInteract = () => {
       if (dialogue || gameComplete) return;
@@ -2919,9 +3442,12 @@ export default function RPGGame({
       for (const dir of dirs) {
         const checkX = gs.playerX + dir.dx;
         const checkY = gs.playerY + dir.dy;
-        const npcIdx = scenario.npcs.findIndex(
-          (n) => n.tx === checkX && n.ty === checkY,
-        );
+        const npcIdx =
+          activeMapNpcIndices.find(
+            (index) =>
+              scenario.npcs[index]?.tx === checkX &&
+              scenario.npcs[index]?.ty === checkY,
+          ) ?? -1;
 
         if (npcIdx !== -1) {
           const currentStep = questSteps[questProgress.currentStepIdx];
@@ -2979,6 +3505,33 @@ export default function RPGGame({
           return;
         }
       }
+
+      const facingDir =
+        gs.playerDir === "up"
+          ? { dx: 0, dy: -1 }
+          : gs.playerDir === "down"
+            ? { dx: 0, dy: 1 }
+            : gs.playerDir === "left"
+              ? { dx: -1, dy: 0 }
+              : { dx: 1, dy: 0 };
+      const examineDirs = [
+        facingDir,
+        ...dirs.filter(
+          (dir) => dir.dx !== facingDir.dx || dir.dy !== facingDir.dy,
+        ),
+      ];
+
+      for (const dir of examineDirs) {
+        const object = (activeMap.objects || []).find(
+          (entry) =>
+            entry.tx === gs.playerX + dir.dx &&
+            entry.ty === gs.playerY + dir.dy,
+        );
+        if (object) {
+          examineScenarioObject(object);
+          return;
+        }
+      }
     };
 
     const handleKeyDown = (e) => {
@@ -2989,9 +3542,9 @@ export default function RPGGame({
     };
 
     const handleClick = (e) => {
-      if (!canvasRef.current || !scenario) return;
+      if (!canvasRef.current || !scenario || !activeMap) return;
       const rect = canvasRef.current.getBoundingClientRect();
-      const TILE = scenario.tileSize;
+      const TILE = activeMap.tileSize || scenario.tileSize;
       const gs = gameStateRef.current;
       if (!gs) return;
 
@@ -3042,7 +3595,7 @@ export default function RPGGame({
           const stepY = gs.playerY + candidate.dy;
           if (candidate.dx === 0 && candidate.dy === 0) continue;
 
-          const npcBlocking = scenario.npcs.some(
+          const npcBlocking = activeMapNpcs.some(
             (n) => n.tx === stepX && n.ty === stepY,
           );
           if (gs.isSolid(stepX, stepY) || npcBlocking) {
@@ -3077,19 +3630,42 @@ export default function RPGGame({
           }
 
           playGameSound("rpgStep");
+          const currentPortal = (activeMap.portals || []).find(
+            (portal) => portal.tx === gs.playerX && portal.ty === gs.playerY,
+          );
+          if (currentPortal?.toMapId) {
+            transitionCooldownUntilRef.current = performance.now() + 320;
+            mapEntrySpawnRef.current = {
+              mapId: currentPortal.toMapId,
+              x: currentPortal.spawn?.x ?? 2,
+              y: currentPortal.spawn?.y ?? 2,
+            };
+            setActiveMapId(currentPortal.toMapId);
+          }
           return true;
         }
 
         if (blockedCandidate) {
-          showBlockedTileHint(blockedCandidate.tx, blockedCandidate.ty);
+          flashBlockedTileHint(blockedCandidate.tx, blockedCandidate.ty);
         }
         return false;
       };
 
+      const clickedObject =
+        !dialogue &&
+        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY);
+      if (clickedObject) {
+        examineScenarioObject(clickedObject);
+        return;
+      }
+
       // Check NPC click
-      const npcIdx = scenario.npcs.findIndex(
-        (n) => Math.abs(n.tx - tileX) <= 1 && Math.abs(n.ty - tileY) <= 1,
-      );
+      const npcIdx =
+        activeMapNpcIndices.find(
+          (index) =>
+            Math.abs(scenario.npcs[index]?.tx - tileX) <= 1 &&
+            Math.abs(scenario.npcs[index]?.ty - tileY) <= 1,
+        ) ?? -1;
 
       if (npcIdx !== -1 && !dialogue) {
         const currentStep = questSteps[questProgress.currentStepIdx];
@@ -3163,8 +3739,13 @@ export default function RPGGame({
       currentCanvas?.removeEventListener("click", handleClick);
     };
   }, [
+    activeMap,
+    activeMapNpcIndices,
+    activeMapNpcs,
     scenario,
     dialogue,
+    flashBlockedTileHint,
+    examineScenarioObject,
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
@@ -3193,6 +3774,7 @@ export default function RPGGame({
   useEffect(() => {
     if (gameComplete) {
       npcIndicatorsRef.current.forEach((ind) => {
+        if (!ind) return;
         ind.visible = false;
       });
       return;
@@ -3202,6 +3784,7 @@ export default function RPGGame({
     const nextTargetIdx = currentStep?.npcIdx;
 
     npcIndicatorsRef.current.forEach((ind, i) => {
+      if (!ind) return;
       ind.visible = nextTargetIdx !== undefined && i === nextTargetIdx;
     });
   }, [gameComplete, questProgress, questSteps]);
@@ -3215,86 +3798,83 @@ export default function RPGGame({
     });
   }, [gatherUnlocked]);
 
-  const completeNPCChapter = useCallback(
-    () => {
-      // Stop any playing TTS and clear heard speech when completing a chapter
-      stopNPCSpeech();
-      setLastHeardSpeech("");
+  const completeNPCChapter = useCallback(() => {
+    // Stop any playing TTS and clear heard speech when completing a chapter
+    stopNPCSpeech();
+    setLastHeardSpeech("");
 
-      const newCompleted = completedSteps + 1;
-      setCompletedSteps(newCompleted);
+    const newCompleted = completedSteps + 1;
+    setCompletedSteps(newCompleted);
 
-      const nextStepIdx = questProgress.currentStepIdx + 1;
-      setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
+    const nextStepIdx = questProgress.currentStepIdx + 1;
+    setQuestProgress({ currentStepIdx: nextStepIdx, currentNodeId: null });
 
-      // Pre-generate contextual player bridge + NPC greeting for the next step
-      pendingBridgeRef.current = null;
-      pendingNpcGreetingRef.current = null;
-      const nextStep = questSteps[nextStepIdx];
-      if (nextStep && newCompleted < totalSteps) {
-        const history = conversationLogRef.current
-          .slice(-10)
-          .map((e) => `${e.speaker}: ${e.text}`)
-          .join("\n");
-        const seed = quest?.storySeed || "";
-        const nextNpcName =
-          npcCharacterNamesRef.current[nextStep.npcIdx] ||
-          scenario?.npcs?.[nextStep.npcIdx]?.name ||
-          "NPC";
-        const bridgePrompt = buildStrictDialoguePrompt(
-          "You are writing a line for the player in a language-learning RPG.",
-          `Story seed: ${seed}`,
-          history ? `Recent history:\n${history}` : "",
-          `The player is walking up to ${nextNpcName}.`,
-          `Write exactly 1 short sentence the player says on arrival in ${targetLangName}.`,
-          "Return only the sentence, with no quotes or labels.",
-        );
-        callResponses({ input: bridgePrompt })
-          .then((playerBridge) => {
-            const text = (playerBridge || "").trim();
-            if (text.length > 0 && text.length < 200) {
-              pendingBridgeRef.current = text;
-            }
-            // Now generate a contextual NPC greeting that responds to the player's bridge
-            const npcPersonality =
-              scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
-            const npcGreetPrompt = buildStrictDialoguePrompt(
-              `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` with personality "${npcPersonality}"` : ""}.`,
-              `Story seed: ${seed}`,
-              history ? `Recent history:\n${history}` : "",
-              text ? `The player arrives and says: "${text}"` : "",
-              `Reply as ${nextNpcName} in 1-2 short sentences in ${targetLangName}.`,
-              "Return only the sentences, with no quotes or labels.",
-            );
-            return callResponses({ input: npcGreetPrompt });
-          })
-          .then((result) => {
-            const text = (result || "").trim();
-            if (text.length > 0 && text.length < 300) {
-              pendingNpcGreetingRef.current = text;
-            }
-          })
-          .catch(() => {});
-      }
+    // Pre-generate contextual player bridge + NPC greeting for the next step
+    pendingBridgeRef.current = null;
+    pendingNpcGreetingRef.current = null;
+    const nextStep = questSteps[nextStepIdx];
+    if (nextStep && newCompleted < totalSteps) {
+      const history = conversationLogRef.current
+        .slice(-10)
+        .map((e) => `${e.speaker}: ${e.text}`)
+        .join("\n");
+      const seed = quest?.storySeed || "";
+      const nextNpcName =
+        npcCharacterNamesRef.current[nextStep.npcIdx] ||
+        scenario?.npcs?.[nextStep.npcIdx]?.name ||
+        "NPC";
+      const bridgePrompt = buildStrictDialoguePrompt(
+        "You are writing a line for the player in a language-learning RPG.",
+        `Story seed: ${seed}`,
+        history ? `Recent history:\n${history}` : "",
+        `The player is walking up to ${nextNpcName}.`,
+        `Write exactly 1 short sentence the player says on arrival in ${targetLangName}.`,
+        "Return only the sentence, with no quotes or labels.",
+      );
+      callResponses({ input: bridgePrompt })
+        .then((playerBridge) => {
+          const text = (playerBridge || "").trim();
+          if (text.length > 0 && text.length < 200) {
+            pendingBridgeRef.current = text;
+          }
+          // Now generate a contextual NPC greeting that responds to the player's bridge
+          const npcPersonality =
+            scenario?.npcs?.[nextStep.npcIdx]?.personality || "";
+          const npcGreetPrompt = buildStrictDialoguePrompt(
+            `You are ${nextNpcName}, a character in an adventure${npcPersonality ? ` with personality "${npcPersonality}"` : ""}.`,
+            `Story seed: ${seed}`,
+            history ? `Recent history:\n${history}` : "",
+            text ? `The player arrives and says: "${text}"` : "",
+            `Reply as ${nextNpcName} in 1-2 short sentences in ${targetLangName}.`,
+            "Return only the sentences, with no quotes or labels.",
+          );
+          return callResponses({ input: npcGreetPrompt });
+        })
+        .then((result) => {
+          const text = (result || "").trim();
+          if (text.length > 0 && text.length < 300) {
+            pendingNpcGreetingRef.current = text;
+          }
+        })
+        .catch(() => {});
+    }
 
-      setTimeout(() => {
-        setDialogue(null);
-        setFeedback(null);
-        if (newCompleted >= totalSteps) setGameComplete(true);
-      }, 800);
-    },
-    [
-      buildStrictDialoguePrompt,
-      completedSteps,
-      quest,
-      questProgress,
-      questSteps,
-      scenario,
-      stopNPCSpeech,
-      targetLangName,
-      totalSteps,
-    ],
-  );
+    setTimeout(() => {
+      setDialogue(null);
+      setFeedback(null);
+      if (newCompleted >= totalSteps) setGameComplete(true);
+    }, 800);
+  }, [
+    buildStrictDialoguePrompt,
+    completedSteps,
+    quest,
+    questProgress,
+    questSteps,
+    scenario,
+    stopNPCSpeech,
+    targetLangName,
+    totalSteps,
+  ]);
 
   // ─── Generate dynamic choices for choice nodes via LLM ────────────────
   const generateDynamicChoices = useCallback(
@@ -3445,14 +4025,14 @@ export default function RPGGame({
   // Return an item from inventory back to the map near the player
   const returnItemToMap = (itemName) => {
     const gs = gameStateRef.current;
-    if (!gs || !scenario) return;
+    if (!gs || !scenario || !activeMap) return;
     const sprite = gatherSpritesRef.current.find(
       (s) => s.name === itemName && s.collected,
     );
     if (!sprite) return;
-    const MAP_W = scenario.mapWidth;
-    const MAP_H = scenario.mapHeight;
-    const TILE = scenario.tileSize;
+    const MAP_W = activeMap.mapWidth;
+    const MAP_H = activeMap.mapHeight;
+    const TILE = activeMap.tileSize || scenario.tileSize;
     const offsets = [
       [1, 0],
       [-1, 0],
@@ -3474,15 +4054,18 @@ export default function RPGGame({
         break;
       }
     }
+    sprite.mapId = activeMap.id;
     sprite.tx = dropX;
     sprite.ty = dropY;
     sprite.collected = false;
-    sprite.mesh.position.set(
-      dropX * TILE + TILE / 2,
-      (MAP_H - 1 - dropY) * TILE + TILE / 2,
-      3,
-    );
-    sprite.mesh.visible = gatherUnlocked;
+    if (sprite.mesh) {
+      sprite.mesh.position.set(
+        dropX * TILE + TILE / 2,
+        (MAP_H - 1 - dropY) * TILE + TILE / 2,
+        3,
+      );
+      sprite.mesh.visible = gatherUnlocked;
+    }
   };
 
   const dropInventoryItem = (itemIndex) => {
@@ -3635,8 +4218,8 @@ export default function RPGGame({
           const dynamicReply =
             llmResult && llmResult.trim().length > 0
               ? llmResult.trim()
-              : (dialogue.node.speechContinueReply ||
-                "I understand. Let's continue.");
+              : dialogue.node.speechContinueReply ||
+                "I understand. Let's continue.";
 
           conversationLogRef.current.push({
             speaker: npcName,
@@ -3710,9 +4293,19 @@ export default function RPGGame({
       if (item.mesh) item.mesh.visible = false;
     });
     setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
+    mapEntrySpawnRef.current = null;
+    transitionCooldownUntilRef.current = 0;
+    setActiveMapId(scenario?.startMapId || scenario?.id || null);
     if (scenario && gameStateRef.current) {
-      gameStateRef.current.playerX = scenario.playerStart.x;
-      gameStateRef.current.playerY = scenario.playerStart.y;
+      const resetMap =
+        scenario.maps?.find(
+          (entry) => entry.id === (scenario.startMapId || scenario.id),
+        ) || scenario;
+      const start = resetMap?.playerStart || scenario.playerStart;
+      gameStateRef.current.playerX = start.x;
+      gameStateRef.current.playerY = start.y;
+      gameStateRef.current.renderX = start.x;
+      gameStateRef.current.renderY = start.y;
     }
   };
 
@@ -3738,6 +4331,7 @@ export default function RPGGame({
     }
     setScenarioId(null);
     setScenario(null);
+    setActiveMapId(null);
     setNpcNameMap(null);
     setLoadingScenarioId(null);
     setCompletedSteps(0);
@@ -3745,6 +4339,10 @@ export default function RPGGame({
     setFeedback(null);
     setGameComplete(false);
     setLastHeardSpeech("");
+    mapEntrySpawnRef.current = null;
+    transitionCooldownUntilRef.current = 0;
+    npcAssignmentsCacheRef.current = null;
+    gatherPlacementCacheKeyRef.current = null;
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
@@ -3767,7 +4365,8 @@ export default function RPGGame({
   ]);
 
   useEffect(() => {
-    if (!isEmbedded || isTutorialGame || scenarioId || loadingScenarioId) return;
+    if (!isEmbedded || isTutorialGame || scenarioId || loadingScenarioId)
+      return;
     void handleSelectScenario(REVIEW_WORLD_ID);
   }, [
     handleSelectScenario,
@@ -3783,7 +4382,10 @@ export default function RPGGame({
     const bonusXp = Number(lessonContext?.content?.game?.xpReward || 30);
     const npub = localStorage.getItem("local_npub") || "";
     const lang =
-      lessonContext?.targetLang || targetLang || localStorageSettings.targetLang || "es";
+      lessonContext?.targetLang ||
+      targetLang ||
+      localStorageSettings.targetLang ||
+      "es";
 
     if (!npub || !bonusXp) {
       xpAwardedRef.current = true;
@@ -3984,7 +4586,9 @@ export default function RPGGame({
           <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
             {GAME_LOADING_MESSAGES[loadingMsgIdx]}
           </Text>
-          {!isTutorialGame && <Button onClick={goToScenarioSelect}>{ui.back}</Button>}
+          {!isTutorialGame && (
+            <Button onClick={goToScenarioSelect}>{ui.back}</Button>
+          )}
         </VStack>
       </Box>
     );
@@ -4045,6 +4649,19 @@ export default function RPGGame({
             >
               {ui.skip}
             </Button>
+          )}
+          {!!activeAreaLabel && (
+            <Badge
+              bg="blackAlpha.700"
+              color="white"
+              px={3}
+              py={1.5}
+              borderRadius="full"
+              fontSize="xs"
+              textTransform="none"
+            >
+              {activeAreaLabel}
+            </Badge>
           )}
         </HStack>
         <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
@@ -4217,6 +4834,69 @@ export default function RPGGame({
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      {objectExamine && !dialogue && !gameComplete && (
+        <Box
+          position="absolute"
+          left="50%"
+          bottom={{ base: 4, md: 5 }}
+          transform="translateX(-50%)"
+          zIndex={18}
+          w={{ base: "calc(100% - 24px)", md: "min(86vw, 420px)" }}
+          pointerEvents="none"
+        >
+          <Box
+            bg="rgba(250, 244, 232, 0.96)"
+            color="gray.800"
+            border="2px solid"
+            borderColor="orange.200"
+            borderRadius="xl"
+            px={4}
+            py={3}
+            boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+          >
+            {objectExamine.pending ? (
+              <HStack spacing={2}>
+                <Spinner size="xs" color="gray.500" />
+                <Text fontSize="sm" color="gray.700">
+                  ...
+                </Text>
+              </HStack>
+            ) : (
+              <VStack align="stretch" spacing={1}>
+                {objectExamine.name || objectExamine.supportName ? (
+                  <Text
+                    fontSize="sm"
+                    lineHeight="1.35"
+                    color="gray.800"
+                    fontWeight="semibold"
+                  >
+                    {objectExamine.name}
+                    {objectExamine.supportName
+                      ? ` (${objectExamine.supportName})`
+                      : ""}
+                  </Text>
+                ) : null}
+                {objectExamine.text ? (
+                  <Text fontSize="sm" lineHeight="1.45" color="gray.800">
+                    {objectExamine.text}
+                  </Text>
+                ) : null}
+                {objectExamine.supportText ? (
+                  <Text
+                    fontSize="xs"
+                    lineHeight="1.35"
+                    color="gray.600"
+                    fontStyle="italic"
+                  >
+                    ({objectExamine.supportText})
+                  </Text>
+                ) : null}
+              </VStack>
+            )}
+          </Box>
+        </Box>
+      )}
 
       {/* Dialogue bubble (desktop) / bottom sheet (mobile) */}
       {dialogue &&
