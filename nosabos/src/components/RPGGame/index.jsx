@@ -4376,7 +4376,11 @@ export default function RPGGame({
   ]);
 
   useEffect(() => {
-    if (!isTutorialGame || !gameComplete || tutorialCompletionHandledRef.current) {
+    if (
+      !isTutorialGame ||
+      !gameComplete ||
+      tutorialCompletionHandledRef.current
+    ) {
       return;
     }
 
