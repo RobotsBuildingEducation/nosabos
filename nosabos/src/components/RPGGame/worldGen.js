@@ -33,6 +33,11 @@ const SUPPORTED_OBJECT_TYPES = [
   "desk",
   "bookshelf",
   "suitcaseStack",
+  "house",
+  "building",
+  "pavilion",
+  "greenhouse",
+  "doorway",
 ];
 
 const OBJECT_TYPE_ALIASES = {
@@ -50,6 +55,24 @@ const OBJECT_TYPE_ALIASES = {
   plant: "plant",
   potted_plant: "plant",
   pottedplant: "plant",
+  house: "house",
+  home: "house",
+  apartment: "building",
+  apartments: "building",
+  building: "building",
+  buildings: "building",
+  storefront: "building",
+  shop: "building",
+  office: "building",
+  pavilion: "pavilion",
+  gazebo: "pavilion",
+  shelter: "pavilion",
+  greenhouse: "greenhouse",
+  conservatory: "greenhouse",
+  doorway: "doorway",
+  door: "doorway",
+  archway: "doorway",
+  room: "doorway",
 };
 
 const DEFAULT_ZONE_BY_TYPE = {
@@ -73,6 +96,11 @@ const DEFAULT_ZONE_BY_TYPE = {
   desk: "interior",
   bookshelf: "edge",
   suitcaseStack: "interior",
+  house: "entrance",
+  building: "entrance",
+  pavilion: "entrance",
+  greenhouse: "entrance",
+  doorway: "entrance",
 };
 
 const FILLER_TERM_RE = /(review|comprehensive|mastery|conversation|structures|game|practice|lesson)/i;
@@ -950,8 +978,9 @@ export function buildDynamicTileLibrary(environment) {
       detail: theme.pathDetail,
     },
     2: {
-      name: "wall",
+      name: "void",
       solid: true,
+      void: true,
       colors: theme.wallColors,
       detail: "wall",
     },
