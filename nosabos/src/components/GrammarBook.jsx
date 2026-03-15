@@ -64,6 +64,10 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitSound from "../assets/submit.mp3";
+import LessonFlashcard, {
+  FlashcardDeckReview,
+  buildLessonFlashcardPrompt,
+} from "./LessonFlashcard";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1054,11 +1058,21 @@ export default function GrammarBook({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate" | "flashcard"
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
   const autoInitRef = useRef(false);
+
+  // ── Testing flag: when true, ONLY flashcard questions render ──
+  const FLASHCARD_TESTING_MODE = true;
+
+  // ── Flashcard state ──
+  const [fcConcept, setFcConcept] = useState("");
+  const [fcAnswer, setFcAnswer] = useState("");
+  const [loadingFC, setLoadingFC] = useState(false);
+  const [fcDeck, setFcDeck] = useState([]);
+  const [showDeckReview, setShowDeckReview] = useState(false);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -1710,8 +1724,22 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      const order = repeatOnlyQuestions
+      // When FLASHCARD_TESTING_MODE is on, only flashcards are generated
+      // Flashcards are excluded from quiz mode (isFinalQuiz)
+      const order = FLASHCARD_TESTING_MODE
+        ? [generateFlashcard]
+        : repeatOnlyQuestions
         ? [generateRepeatTranslate]
+        : isFinalQuiz
+        ? [ // no flashcard in quiz
+            generateFill,
+            generateMC,
+            generateMA,
+            generateSpeak,
+            generateMatch,
+            generateTranslate,
+            generateRepeatTranslate,
+          ]
         : [
             generateFill,
             generateMC,
@@ -1720,6 +1748,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
             generateMatch,
             generateTranslate,
             generateRepeatTranslate,
+            generateFlashcard,
           ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1753,6 +1782,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateTranslate;
       case "repeat":
         return generateRepeatTranslate;
+      case "flashcard":
+        return generateFlashcard;
       default:
         return generateRandom;
     }
@@ -3185,6 +3216,90 @@ Return JSON ONLY:
 
   async function generateRepeatTranslate() {
     return generateTranslate({ useRepeatUI: true });
+  }
+
+  /* ---------------------------
+     STREAM Generate — FLASHCARD
+  --------------------------- */
+  async function generateFlashcard() {
+    setMode("flashcard");
+    setLoadingFC(true);
+    setFcConcept("");
+    setFcAnswer("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    setExplanationText("");
+    setAssistantSupportText("");
+
+    const prompt = buildLessonFlashcardPrompt({
+      cefrLevel,
+      targetLang,
+      supportLang: resolveSupportLang(supportLang, userLanguage),
+      moduleType: "grammar",
+      lessonContent,
+      collectedConcepts: fcDeck.map((c) => c.concept),
+    });
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+      }
+
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) buffer = finalText;
+
+      const jsonStart = buffer.indexOf("{");
+      const jsonEnd = buffer.lastIndexOf("}");
+      let parsed = false;
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        try {
+          const obj = JSON.parse(buffer.slice(jsonStart, jsonEnd + 1));
+          if (obj.concept && obj.answer) {
+            setFcConcept(String(obj.concept));
+            setFcAnswer(String(obj.answer));
+            parsed = true;
+          }
+        } catch {}
+      }
+
+      if (!parsed) throw new Error("no-flashcard-parse");
+    } catch (err) {
+      console.error("Flashcard generation error:", err);
+      try {
+        const response = await callResponses({
+          model: MODEL,
+          input: prompt,
+        });
+        const jsonStart = (response || "").indexOf("{");
+        const jsonEnd = (response || "").lastIndexOf("}");
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+          const obj = JSON.parse(response.slice(jsonStart, jsonEnd + 1));
+          if (obj.concept && obj.answer) {
+            setFcConcept(String(obj.concept));
+            setFcAnswer(String(obj.answer));
+          }
+        }
+      } catch {
+        setFcConcept("I am");
+        setFcAnswer("yo soy");
+      }
+    } finally {
+      setLoadingFC(false);
+    }
   }
 
   /* ---------------------------
@@ -5755,7 +5870,58 @@ Return JSON ONLY:
             />
           )
         ) : null}
+
+        {/* ---- FLASHCARD UI ---- */}
+        {mode === "flashcard" && (fcConcept || loadingFC) ? (
+          <LessonFlashcard
+            concept={fcConcept}
+            answer={fcAnswer}
+            loading={loadingFC}
+            targetLang={targetLang}
+            supportLang={resolveSupportLang(supportLang, userLanguage)}
+            cefrLevel={cefrLevel}
+            userLanguage={userLanguage}
+            pauseMs={pauseMs}
+            deckSize={fcDeck.length}
+            onOpenDeck={() => setShowDeckReview(true)}
+            onCorrect={(xpAmount) => {
+              if (!isFinalQuiz) {
+                awardXp(npub, xpAmount, targetLang).catch(() => {});
+              }
+              setLastOk(true);
+              setRecentXp(xpAmount);
+            }}
+            onCollect={(card) => {
+              setFcDeck((prev) => [...prev, card]);
+            }}
+            onNext={() => {
+              setLastOk(null);
+              setRecentXp(0);
+              setExplanationText("");
+              setAssistantSupportText("");
+              setNextAction(null);
+              playSound(nextButtonSound);
+              if (onSkip && !isFinalQuiz) {
+                onSkip();
+                return;
+              }
+              generateRandom();
+            }}
+            onSkip={canSkip ? handleSkip : undefined}
+          />
+        ) : null}
+
       </VStack>
+
+      {/* Flashcard Deck Review Overlay */}
+      <FlashcardDeckReview
+        cards={fcDeck}
+        isOpen={showDeckReview}
+        onClose={() => setShowDeckReview(false)}
+        targetLang={targetLang}
+        supportLang={resolveSupportLang(supportLang, userLanguage)}
+        userLanguage={userLanguage}
+      />
     </Box>
   );
 }
