@@ -470,13 +470,15 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
       border="2px solid"
       borderColor="rgba(59, 130, 246, 0.2)"
+      maxW="340px"
+      mx="auto"
     >
       <Box
-        p={5}
+        p={4}
         position="relative"
         bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
-        <VStack spacing={4} align="stretch">
+        <VStack spacing={3} align="stretch">
           {/* Header */}
           <HStack justify="space-between">
             <Badge
@@ -660,38 +662,33 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
           {/* Unified Input - Show both text and speech */}
           {!showResult && (
-            <VStack spacing={4}>
+            <VStack spacing={3}>
               {/* Grading State */}
               {isGrading ? (
-                <VStack spacing={2} py={3}>
-                  <Spinner size="md" color="blue.200" />
-                  <Text color="whiteAlpha.700">
+                <VStack spacing={2} py={2}>
+                  <Spinner size="sm" color="blue.200" />
+                  <Text color="whiteAlpha.700" fontSize="sm">
                     {t("grading")}
                   </Text>
                 </VStack>
               ) : (
-                <VStack spacing={4} w="100%">
-                  {/* Record Button - Top */}
+                <VStack spacing={3} w="100%">
+                  {/* Record Button */}
                   <Button
                     w="100%"
-                    size="md"
+                    size="sm"
                     colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
                     leftIcon={
                       isConnecting ? (
-                        <Spinner size="sm" />
+                        <Spinner size="xs" />
                       ) : isRecording ? (
-                        <RiStopCircleLine size={20} />
+                        <RiStopCircleLine size={16} />
                       ) : (
-                        <RiMicLine size={20} />
+                        <RiMicLine size={16} />
                       )
                     }
                     onClick={handleRecord}
                     isDisabled={!supportsSpeech || isConnecting}
-                    _hover={{
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
-                    }}
-                    _active={{ transform: "translateY(0)" }}
                   >
                     {isConnecting
                       ? userLanguage === "es"
@@ -705,35 +702,34 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {/* Recognized speech text */}
                   {recognizedText && (
                     <Box
-                      p={4}
-                      borderRadius="lg"
+                      p={3}
+                      borderRadius="md"
                       bg="whiteAlpha.100"
                       border="1px solid"
                       borderColor="whiteAlpha.200"
                       w="100%"
                     >
-                      <Text fontSize="sm" color="whiteAlpha.700" mb={1}>
+                      <Text fontSize="xs" color="whiteAlpha.700" mb={1}>
                         {userLanguage === "es" ? "Reconocido:" : "Recognized:"}
                       </Text>
-                      <Text fontSize="lg" color="teal.200">
+                      <Text fontSize="sm" color="teal.200">
                         {recognizedText}
                       </Text>
                     </Box>
                   )}
 
                   {/* Text Input and Submit Group */}
-                  <VStack spacing={3} w="100%">
-                    {/* Text Input */}
+                  <VStack spacing={2} w="100%">
                     <Input
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder={t("type_placeholder")}
-                      size="md"
-                      fontSize="16px"
+                      size="sm"
+                      fontSize="14px"
                       textAlign="center"
                       bg="#f4f5ffff"
-                      border="2px solid"
+                      border="1px solid"
                       borderColor="whiteAlpha.200"
                       color="black"
                       _placeholder={{ color: "gray.500" }}
@@ -743,20 +739,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }}
                     />
 
-                    {/* Submit Button */}
                     <Button
                       w="100%"
-                      size="md"
+                      size="sm"
                       color="white"
                       onClick={handleTextSubmit}
                       isDisabled={!textAnswer.trim()}
-                      leftIcon={<RiKeyboardLine size={20} />}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
-                      }}
-                      padding={9}
-                      _active={{ transform: "translateY(0)" }}
+                      leftIcon={<RiKeyboardLine size={14} />}
                     >
                       {t("submit")}
                     </Button>
@@ -764,10 +753,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                   {/* Cancel button */}
                   <Button
-                    w="100%"
-                    size="md"
+                    size="xs"
                     variant="ghost"
-                    color="white"
+                    color="whiteAlpha.600"
                     onClick={onSkip || onNext}
                     _hover={{ bg: "whiteAlpha.100" }}
                   >
@@ -832,16 +820,15 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {isCorrect ? (
                     <>
                       <HStack spacing={2} color="yellow.400">
-                        <RiStarLine size={20} />
-                        <Text fontSize="lg" fontWeight="bold">
+                        <RiStarLine size={16} />
+                        <Text fontSize="md" fontWeight="bold">
                           +{xpAwarded} XP
                         </Text>
                       </HStack>
 
                       {/* Next */}
                       <Button
-                        w="100%"
-                        size="md"
+                        size="sm"
                         colorScheme="teal"
                         onClick={onNext}
                       >
@@ -851,17 +838,16 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   ) : (
                     <VStack w="100%" spacing={2} mt={1}>
                       <Button
-                        size="md"
+                        size="sm"
                         bg="teal"
                         colorScheme="teal"
                         onClick={handleTryAgain}
-                        w="100%"
                       >
                         {t("try_again")}
                       </Button>
 
                       <Button
-                        size="md"
+                        size="sm"
                         colorScheme="pink"
                         variant="solid"
                         onClick={handleExplainAnswer}
@@ -872,12 +858,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         }
                         leftIcon={
                           isLoadingExplanation ? (
-                            <Spinner size="sm" />
+                            <Spinner size="xs" />
                           ) : (
-                            <FiHelpCircle />
+                            <FiHelpCircle size={14} />
                           )
                         }
-                        w="100%"
                       >
                         {t("explain")}
                       </Button>
@@ -887,7 +872,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {!isCorrect && explanationText && (
                     <Box
                       w="100%"
-                      p={4}
+                      p={3}
                       borderRadius="md"
                       bg="rgba(244, 114, 182, 0.08)"
                       border="1px solid"
