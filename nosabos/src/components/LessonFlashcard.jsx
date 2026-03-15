@@ -218,6 +218,7 @@ export default function LessonFlashcard({
         collected: "Collected!",
         deck_label: "Deck",
         next: "Next question",
+        added_to_deck: "Added to deck",
       },
       es: {
         translate_to: `Traduce al ${LANG_NAME(targetLang)}`,
@@ -239,6 +240,7 @@ export default function LessonFlashcard({
         collected: "¡Recogida!",
         deck_label: "Mazo",
         next: "Siguiente pregunta",
+        added_to_deck: "Añadida al mazo",
       },
     };
     return (dict[userLanguage] || dict.en)[key] || key;
@@ -287,8 +289,13 @@ export default function LessonFlashcard({
       setShowResult(true);
       playSound(isYes ? deliciousSound : clickSound);
 
-      if (isYes && onCorrect) {
-        onCorrect(xp);
+      if (isYes) {
+        onCorrect?.(xp);
+        // Auto-collect to deck
+        if (!collected) {
+          setCollected(true);
+          onCollect?.({ concept, answer, cefrLevel, targetLang, supportLang });
+        }
       }
     } catch (error) {
       console.error("AI grading error:", error);
@@ -464,6 +471,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
   if (!concept) return null;
 
   return (
+    <VStack spacing={3} w="100%" maxW="400px" mx="auto">
     <Box
       borderRadius="2xl"
       overflow="hidden"
@@ -471,8 +479,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       border="2px solid"
       borderColor="rgba(59, 130, 246, 0.2)"
       w="100%"
-      maxW="400px"
-      mx="auto"
     >
       <Box
         px={4}
@@ -481,24 +487,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
         <VStack spacing={2} align="stretch">
-          {/* Deck button (only if cards collected) */}
-          {deckSize > 0 && (
-            <HStack justify="flex-end">
-              <Button
-                size="sm"
-                variant="solid"
-                bg="whiteAlpha.200"
-                color="white"
-                leftIcon={<RiStackLine size={14} />}
-                onClick={onOpenDeck}
-                _hover={{ bg: "whiteAlpha.300" }}
-                fontSize="xs"
-              >
-                {t("deck_label")} ({deckSize})
-              </Button>
-            </HStack>
-          )}
-
           {/* Flip Card */}
           <Box
             position="relative"
@@ -777,25 +765,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     >
                       {isCorrect ? t("correct") : t("incorrect")}
                     </Text>
-                    {/* Collect card button (icon only, in header) */}
-                    {isCorrect && (
-                      <IconButton
-                        icon={
-                          collected ? (
-                            <RiCheckLine size={18} />
-                          ) : (
-                            <RiBookmarkLine size={18} />
-                          )
-                        }
-                        aria-label={collected ? t("collected") : t("collect")}
-                        colorScheme={collected ? "green" : "gray"}
-                        variant={collected ? "solid" : "ghost"}
-                        onClick={handleCollect}
-                        isDisabled={collected}
-                        size="sm"
-                        flexShrink={0}
-                      />
-                    )}
                   </HStack>
 
                   {isCorrect ? (
@@ -804,6 +773,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <RiStarLine size={16} />
                         <Text fontSize="md" fontWeight="bold">
                           +{xpAwarded} XP
+                        </Text>
+                      </HStack>
+
+                      <HStack spacing={1} color="blue.200">
+                        <RiBookmarkLine size={14} />
+                        <Text fontSize="xs">
+                          {t("added_to_deck")}
                         </Text>
                       </HStack>
 
@@ -909,6 +885,47 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         </VStack>
       </Box>
     </Box>
+
+    {/* Collected deck display */}
+    {deckSize > 0 && (
+      <Box
+        w="100%"
+        p={3}
+        borderRadius="xl"
+        bg="whiteAlpha.50"
+        border="1px solid"
+        borderColor="whiteAlpha.100"
+        cursor="pointer"
+        onClick={onOpenDeck}
+        _hover={{ bg: "whiteAlpha.100" }}
+        transition="background 0.2s"
+      >
+        <HStack justify="space-between" align="center">
+          <HStack spacing={2}>
+            <RiStackLine size={16} color="#93C5FD" />
+            <Text fontSize="sm" color="blue.200" fontWeight="medium">
+              {t("deck_label")}
+            </Text>
+          </HStack>
+          <HStack spacing={1}>
+            {Array.from({ length: Math.min(deckSize, 8) }).map((_, i) => (
+              <Box
+                key={i}
+                w="6px"
+                h="8px"
+                borderRadius="sm"
+                bg="blue.400"
+                opacity={0.5 + (i / Math.min(deckSize, 8)) * 0.5}
+              />
+            ))}
+            <Text fontSize="xs" color="whiteAlpha.600" ml={1}>
+              {deckSize}
+            </Text>
+          </HStack>
+        </HStack>
+      </Box>
+    )}
+    </VStack>
   );
 }
 
