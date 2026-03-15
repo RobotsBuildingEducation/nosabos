@@ -938,7 +938,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     spacing={2}
                     p={3}
                     borderRadius="xl"
-                    bg={isCorrect ? "teal.500" : "red.900"}
+                    bg={isCorrect ? "transparent" : "red.900"}
                     border="2px solid"
                     borderColor={isCorrect ? "green.500" : "red.500"}
                   >
@@ -967,13 +967,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           </Text>
                         </HStack>
 
-                        <HStack spacing={1} color="blue.200">
-                          <RiBookmarkLine size={14} />
-                          <Text fontSize="xs">{t("added_to_deck")}</Text>
-                        </HStack>
-
                         {/* Next */}
-                        <Button size="sm" colorScheme="teal" onClick={onNext}>
+                        <Button
+                          size="sm"
+                          bg="teal"
+                          variant="outline"
+                          onClick={onNext}
+                        >
                           {t("next")}
                         </Button>
                       </>
@@ -1070,8 +1070,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           </VStack>
         </Box>
       </Box>
-
-      {deckDisplay}
     </VStack>
   );
 }
