@@ -69,6 +69,10 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitSound from "../assets/submit.mp3";
+import LessonFlashcard, {
+  FlashcardDeckReview,
+  buildLessonFlashcardPrompt,
+} from "./LessonFlashcard";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1172,9 +1176,19 @@ export default function Vocabulary({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate" | "flashcard"
   // ✅ always randomize (no manual lock controls in the UI)
   const lockedType = null;
+
+  // ── Testing flag: when true, ONLY flashcard questions render ──
+  const FLASHCARD_TESTING_MODE = true;
+
+  // ── Flashcard state ──
+  const [fcConcept, setFcConcept] = useState("");
+  const [fcAnswer, setFcAnswer] = useState("");
+  const [loadingFC, setLoadingFC] = useState(false);
+  const [fcDeck, setFcDeck] = useState([]); // unit-scoped collected cards
+  const [showDeckReview, setShowDeckReview] = useState(false);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -1879,9 +1893,15 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }, [targetLang]);
 
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
-  const types = repeatOnlyQuestions
+  // When FLASHCARD_TESTING_MODE is on, only flashcards are generated
+  // Flashcards are also excluded from quiz mode (isFinalQuiz)
+  const types = FLASHCARD_TESTING_MODE
+    ? ["flashcard"]
+    : repeatOnlyQuestions
     ? ["repeat"]
-    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
+    : isFinalQuiz
+    ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
+    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat", "flashcard"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1907,6 +1927,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateTranslate;
       case "repeat":
         return generateRepeatTranslate;
+      case "flashcard":
+        return generateFlashcard;
       default:
         return generateFill;
     }
@@ -3701,6 +3723,93 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   async function generateRepeatTranslate() {
     return generateTranslate({ useRepeatUI: true });
+  }
+
+  /* ---------------------------
+     STREAM Generate — FLASHCARD
+  --------------------------- */
+  async function generateFlashcard() {
+    setMode("flashcard");
+    setLoadingFC(true);
+    setFcConcept("");
+    setFcAnswer("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    setExplanationText("");
+    setAssistantSupportText("");
+
+    const prompt = buildLessonFlashcardPrompt({
+      cefrLevel,
+      targetLang,
+      supportLang: resolveSupportLang(supportLang, userLanguage),
+      moduleType: "vocabulary",
+      lessonContent,
+      collectedConcepts: fcDeck.map((c) => c.concept),
+    });
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      let parsed = false;
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+      }
+
+      // Also grab final aggregated response
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) buffer = finalText;
+
+      // Parse the JSON from the buffer
+      const jsonStart = buffer.indexOf("{");
+      const jsonEnd = buffer.lastIndexOf("}");
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        try {
+          const obj = JSON.parse(buffer.slice(jsonStart, jsonEnd + 1));
+          if (obj.concept && obj.answer) {
+            setFcConcept(String(obj.concept));
+            setFcAnswer(String(obj.answer));
+            parsed = true;
+          }
+        } catch {}
+      }
+
+      if (!parsed) throw new Error("no-flashcard-parse");
+    } catch (err) {
+      console.error("Flashcard generation error:", err);
+      // Fallback
+      try {
+        const response = await callResponses({
+          model: MODEL,
+          input: prompt,
+        });
+        const jsonStart = (response || "").indexOf("{");
+        const jsonEnd = (response || "").lastIndexOf("}");
+        if (jsonStart !== -1 && jsonEnd > jsonStart) {
+          const obj = JSON.parse(response.slice(jsonStart, jsonEnd + 1));
+          if (obj.concept && obj.answer) {
+            setFcConcept(String(obj.concept));
+            setFcAnswer(String(obj.answer));
+          }
+        }
+      } catch {
+        setFcConcept("hello");
+        setFcAnswer("hola");
+      }
+    } finally {
+      setLoadingFC(false);
+    }
   }
 
   function canSubmitMatch() {
@@ -6092,7 +6201,57 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             />
           )
         ) : null}
+
+        {/* ---- FLASHCARD UI ---- */}
+        {mode === "flashcard" && (fcConcept || loadingFC) ? (
+          <LessonFlashcard
+            concept={fcConcept}
+            answer={fcAnswer}
+            loading={loadingFC}
+            targetLang={targetLang}
+            supportLang={resolveSupportLang(supportLang, userLanguage)}
+            cefrLevel={cefrLevel}
+            userLanguage={userLanguage}
+            pauseMs={pauseMs}
+            deckSize={fcDeck.length}
+            onOpenDeck={() => setShowDeckReview(true)}
+            onCorrect={(xpAmount) => {
+              if (!isFinalQuiz) {
+                awardXp(npub, xpAmount, targetLang).catch(() => {});
+              }
+              setLastOk(true);
+              setRecentXp(xpAmount);
+            }}
+            onCollect={(card) => {
+              setFcDeck((prev) => [...prev, card]);
+            }}
+            onNext={() => {
+              setLastOk(null);
+              setRecentXp(0);
+              setExplanationText("");
+              setAssistantSupportText("");
+              setNextAction(null);
+              playSound(nextButtonSound);
+              if (onSkip && !isFinalQuiz) {
+                onSkip();
+                return;
+              }
+              generateRandom();
+            }}
+            onSkip={canSkip ? handleSkip : undefined}
+          />
+        ) : null}
       </VStack>
+
+      {/* Flashcard Deck Review Overlay */}
+      <FlashcardDeckReview
+        cards={fcDeck}
+        isOpen={showDeckReview}
+        onClose={() => setShowDeckReview(false)}
+        targetLang={targetLang}
+        supportLang={resolveSupportLang(supportLang, userLanguage)}
+        userLanguage={userLanguage}
+      />
 
       {/* Quiz Success Modal */}
       <Modal
