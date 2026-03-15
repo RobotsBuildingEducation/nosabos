@@ -1064,9 +1064,6 @@ export default function GrammarBook({
   const modeLocked = false;
   const autoInitRef = useRef(false);
 
-  // ── Testing flag: when true, ONLY flashcard questions render ──
-  const FLASHCARD_TESTING_MODE = true;
-
   // ── Flashcard state ──
   const [fcConcept, setFcConcept] = useState("");
   const [fcAnswer, setFcAnswer] = useState("");
@@ -1724,11 +1721,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      // When FLASHCARD_TESTING_MODE is on, only flashcards are generated
       // Flashcards are excluded from quiz mode (isFinalQuiz)
-      const order = FLASHCARD_TESTING_MODE
-        ? [generateFlashcard]
-        : repeatOnlyQuestions
+      const order = repeatOnlyQuestions
         ? [generateRepeatTranslate]
         : isFinalQuiz
         ? [ // no flashcard in quiz

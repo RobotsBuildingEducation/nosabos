@@ -1180,9 +1180,6 @@ export default function Vocabulary({
   // ✅ always randomize (no manual lock controls in the UI)
   const lockedType = null;
 
-  // ── Testing flag: when true, ONLY flashcard questions render ──
-  const FLASHCARD_TESTING_MODE = true;
-
   // ── Flashcard state ──
   const [fcConcept, setFcConcept] = useState("");
   const [fcAnswer, setFcAnswer] = useState("");
@@ -1893,11 +1890,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }, [targetLang]);
 
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
-  // When FLASHCARD_TESTING_MODE is on, only flashcards are generated
-  // Flashcards are also excluded from quiz mode (isFinalQuiz)
-  const types = FLASHCARD_TESTING_MODE
-    ? ["flashcard"]
-    : repeatOnlyQuestions
+  // Flashcards are excluded from quiz mode (isFinalQuiz)
+  const types = repeatOnlyQuestions
     ? ["repeat"]
     : isFinalQuiz
     ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
