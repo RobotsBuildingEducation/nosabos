@@ -129,14 +129,17 @@ const FlashcardCard = React.memo(function FlashcardCard({
       <Box
         w="100%"
         h="100%"
+        bg={isActive ? "#08142b" : undefined}
         bgGradient={
-          isCompleted
+          isActive
+            ? undefined
+            : isCompleted
             ? "linear(135deg, whiteAlpha.100, whiteAlpha.50)"
             : cefrColor.gradient
         }
         borderRadius="2xl"
         border="2px solid"
-        borderColor={isCompleted ? "whiteAlpha.200" : `${cefrColor.primary}80`}
+        borderColor={isCompleted ? "whiteAlpha.200" : isActive ? "rgba(56,189,248,0.3)" : `${cefrColor.primary}80`}
         boxShadow={
           isActive
             ? "0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(0,0,0,0)"
@@ -149,8 +152,38 @@ const FlashcardCard = React.memo(function FlashcardCard({
         position="relative"
         overflow="hidden"
         opacity={isCompleted ? 0.6 : 1}
+        sx={isActive ? {
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+              "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+              "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+              "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+            animation: "matrixGlowShift 10s ease-in-out infinite",
+            zIndex: 0,
+          },
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: 0.45,
+            mixBlendMode: "screen",
+            zIndex: 0,
+          },
+          "@keyframes matrixGlowShift": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "50%": { transform: "translate(0, -2%) scale(1.02)" },
+          },
+        } : undefined}
       >
         {/* Decorative gradient overlay */}
+        {!isActive && (
         <Box
           position="absolute"
           top="0"
@@ -160,6 +193,7 @@ const FlashcardCard = React.memo(function FlashcardCard({
           bgGradient="linear(to-b, whiteAlpha.200, transparent)"
           pointerEvents="none"
         />
+        )}
 
         {/* Sparkle effect for completed cards */}
         {isCompleted && (
