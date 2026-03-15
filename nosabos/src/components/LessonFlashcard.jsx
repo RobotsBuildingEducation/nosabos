@@ -470,7 +470,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
       border="2px solid"
       borderColor="rgba(59, 130, 246, 0.2)"
-      maxW="340px"
+      maxW="360px"
       mx="auto"
     >
       <Box
@@ -520,7 +520,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           <Box
             position="relative"
             w="100%"
-            h="100px"
+            h="120px"
             sx={{ perspective: "1000px" }}
           >
             <MotionBox
@@ -552,7 +552,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {t("translate_to")}
                 </Text>
                 <Text
-                  fontSize="2xl"
+                  fontSize="xl"
                   fontWeight="black"
                   color="white"
                   textAlign="center"
