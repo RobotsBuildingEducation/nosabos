@@ -656,7 +656,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {/* Record Button */}
                   <Button
                     w="100%"
-                    size="sm"
+                    size="md"
                     colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
                     leftIcon={
                       isConnecting ? (
@@ -721,7 +721,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                     <Button
                       w="100%"
-                      size="sm"
+                      size="md"
                       color="white"
                       onClick={handleTextSubmit}
                       isDisabled={!textAnswer.trim()}
