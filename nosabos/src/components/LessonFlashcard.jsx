@@ -213,7 +213,7 @@ export default function LessonFlashcard({
         try_again: "Try again",
         explain: "Explain my answer",
         explanation_heading: "Explanation",
-        cancel: "Cancel",
+        skip: "Skip",
         collect: "Collect card",
         collected: "Collected!",
         deck_label: "Deck",
@@ -234,7 +234,7 @@ export default function LessonFlashcard({
         try_again: "Intentar de nuevo",
         explain: "Explicar mi respuesta",
         explanation_heading: "Explicación",
-        cancel: "Cancelar",
+        skip: "Omitir",
         collect: "Recoger tarjeta",
         collected: "¡Recogida!",
         deck_label: "Mazo",
@@ -732,7 +732,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     </Button>
                   </VStack>
 
-                  {/* Cancel button */}
+                  {/* Skip button */}
                   <Button
                     size="xs"
                     variant="ghost"
@@ -740,7 +740,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     onClick={onSkip || onNext}
                     _hover={{ bg: "whiteAlpha.100" }}
                   >
-                    {t("cancel")}
+                    {t("skip")}
                   </Button>
                 </VStack>
               )}
