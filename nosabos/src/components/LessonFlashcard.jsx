@@ -493,14 +493,44 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         <Box
           borderRadius="2xl"
           overflow="hidden"
-          bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+          bg="#08142b"
           boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
           border="2px solid"
           borderColor="rgba(59, 130, 246, 0.2)"
           w="100%"
           p={5}
+          position="relative"
+          sx={{
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+                "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+                "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+                "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+              animation: "matrixGlowShift 10s ease-in-out infinite",
+              pointerEvents: "none",
+            },
+            "&::after": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              backgroundImage:
+                "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+              opacity: 0.45,
+              mixBlendMode: "screen",
+              pointerEvents: "none",
+            },
+            "@keyframes matrixGlowShift": {
+              "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+              "50%": { transform: "translate(0, -2%) scale(1.02)" },
+            },
+          }}
         >
-          <VStack spacing={3} py={4} align="center">
+          <VStack spacing={3} py={4} align="center" position="relative" zIndex={1}>
             <Spinner size="md" color="blue.200" />
             <Text color="whiteAlpha.800" fontSize="sm">
               {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
@@ -535,9 +565,38 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         px={4}
         py={3}
         position="relative"
-        bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+        bg="#08142b"
+        sx={{
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+              "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+              "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+              "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+            animation: "matrixGlowShift 10s ease-in-out infinite",
+            pointerEvents: "none",
+          },
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: 0.45,
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          },
+          "@keyframes matrixGlowShift": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "50%": { transform: "translate(0, -2%) scale(1.02)" },
+          },
+        }}
       >
-        <VStack spacing={2} align="stretch">
+        <VStack spacing={2} align="stretch" position="relative" zIndex={1}>
           {/* Flip Card */}
           <Box
             position="relative"
@@ -1018,18 +1077,52 @@ export function FlashcardDeckReview({
                 flexDirection="column"
                 justifyContent="center"
                 alignItems="center"
-                bgGradient="linear(135deg, #1E3A8A, #2563EB)"
+                bg="#08142b"
                 borderRadius="xl"
-                sx={{ backfaceVisibility: "hidden" }}
+                border="2px solid"
+                borderColor="rgba(59, 130, 246, 0.2)"
+                sx={{
+                  backfaceVisibility: "hidden",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "xl",
+                    background:
+                      "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+                      "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+                      "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+                      "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+                    animation: "matrixGlowShift 10s ease-in-out infinite",
+                    pointerEvents: "none",
+                  },
+                  "&::after": {
+                    content: '""',
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "xl",
+                    backgroundImage:
+                      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+                    opacity: 0.45,
+                    mixBlendMode: "screen",
+                    pointerEvents: "none",
+                  },
+                  "@keyframes matrixGlowShift": {
+                    "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                    "50%": { transform: "translate(0, -2%) scale(1.02)" },
+                  },
+                }}
+                overflow="hidden"
                 p={4}
               >
-                <Text fontSize="xs" color="whiteAlpha.700" mb={2}>
+                <Text fontSize="xs" color="whiteAlpha.700" mb={2} position="relative" zIndex={1}>
                   {LANG_NAME(supportLang)}
                 </Text>
-                <Text fontSize="2xl" fontWeight="bold" color="white" textAlign="center">
+                <Text fontSize="2xl" fontWeight="bold" color="white" textAlign="center" position="relative" zIndex={1}>
                   {card.concept}
                 </Text>
-                <Text fontSize="xs" color="whiteAlpha.600" mt={4}>
+                <Text fontSize="xs" color="whiteAlpha.600" mt={4} position="relative" zIndex={1}>
                   {userLanguage === "es" ? "Toca para voltear" : "Tap to flip"}
                 </Text>
               </Box>
@@ -1044,6 +1137,8 @@ export function FlashcardDeckReview({
                 alignItems="center"
                 bgGradient="linear(135deg, #065F46, #059669)"
                 borderRadius="xl"
+                border="2px solid"
+                borderColor="rgba(59, 130, 246, 0.2)"
                 sx={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
                 p={4}
               >

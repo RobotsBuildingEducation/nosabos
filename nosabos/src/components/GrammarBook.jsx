@@ -36,7 +36,6 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
-import { RiStackLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -1072,22 +1071,8 @@ export default function GrammarBook({
   const [fcConcept, setFcConcept] = useState("");
   const [fcAnswer, setFcAnswer] = useState("");
   const [loadingFC, setLoadingFC] = useState(false);
-  const fcDeckKey = lesson?.id ? `fcDeck_grammar_${lesson.id}` : null;
-  const [fcDeck, setFcDeck] = useState(() => {
-    if (!fcDeckKey) return [];
-    try {
-      const saved = localStorage.getItem(fcDeckKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
+  const [fcDeck, setFcDeck] = useState([]);
   const [showDeckReview, setShowDeckReview] = useState(false);
-
-  // Persist fcDeck to localStorage
-  useEffect(() => {
-    if (fcDeckKey && fcDeck.length > 0) {
-      try { localStorage.setItem(fcDeckKey, JSON.stringify(fcDeck)); } catch {}
-    }
-  }, [fcDeck, fcDeckKey]);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -5926,47 +5911,6 @@ Return JSON ONLY:
           />
         ) : null}
 
-        {/* ---- DECK INDICATOR (all modes) ---- */}
-        {fcDeck.length > 0 && mode !== "flashcard" && (
-          <Box
-            w="100%"
-            maxW="400px"
-            mx="auto"
-            p={3}
-            borderRadius="xl"
-            bg="whiteAlpha.50"
-            border="1px solid"
-            borderColor="whiteAlpha.100"
-            cursor="pointer"
-            onClick={() => setShowDeckReview(true)}
-            _hover={{ bg: "whiteAlpha.100" }}
-            transition="background 0.2s"
-          >
-            <HStack justify="space-between" align="center">
-              <HStack spacing={2}>
-                <RiStackLine size={16} color="#93C5FD" />
-                <Text fontSize="sm" color="blue.200" fontWeight="medium">
-                  {userLanguage === "es" ? "Mazo" : "Deck"}
-                </Text>
-              </HStack>
-              <HStack spacing={1}>
-                {Array.from({ length: Math.min(fcDeck.length, 8) }).map((_, i) => (
-                  <Box
-                    key={i}
-                    w="6px"
-                    h="8px"
-                    borderRadius="sm"
-                    bg="blue.400"
-                    opacity={0.5 + (i / Math.min(fcDeck.length, 8)) * 0.5}
-                  />
-                ))}
-                <Text fontSize="xs" color="whiteAlpha.600" ml={1}>
-                  {fcDeck.length}
-                </Text>
-              </HStack>
-            </HStack>
-          </Box>
-        )}
       </VStack>
 
       {/* Flashcard Deck Review Overlay */}
