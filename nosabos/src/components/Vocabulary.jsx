@@ -1187,8 +1187,22 @@ export default function Vocabulary({
   const [fcConcept, setFcConcept] = useState("");
   const [fcAnswer, setFcAnswer] = useState("");
   const [loadingFC, setLoadingFC] = useState(false);
-  const [fcDeck, setFcDeck] = useState([]); // unit-scoped collected cards
+  const fcDeckKey = lesson?.id ? `fcDeck_vocab_${lesson.id}` : null;
+  const [fcDeck, setFcDeck] = useState(() => {
+    if (!fcDeckKey) return [];
+    try {
+      const saved = localStorage.getItem(fcDeckKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [showDeckReview, setShowDeckReview] = useState(false);
+
+  // Persist fcDeck to localStorage
+  useEffect(() => {
+    if (fcDeckKey && fcDeck.length > 0) {
+      try { localStorage.setItem(fcDeckKey, JSON.stringify(fcDeck)); } catch {}
+    }
+  }, [fcDeck, fcDeckKey]);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false

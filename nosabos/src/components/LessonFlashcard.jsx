@@ -447,28 +447,79 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
   // --------- RENDER ---------
 
+  // Deck display helper (reused across early returns)
+  const deckDisplay = deckSize > 0 ? (
+    <Box
+      w="100%"
+      p={3}
+      borderRadius="xl"
+      bg="whiteAlpha.50"
+      border="1px solid"
+      borderColor="whiteAlpha.100"
+      cursor="pointer"
+      onClick={onOpenDeck}
+      _hover={{ bg: "whiteAlpha.100" }}
+      transition="background 0.2s"
+    >
+      <HStack justify="space-between" align="center">
+        <HStack spacing={2}>
+          <RiStackLine size={16} color="#93C5FD" />
+          <Text fontSize="sm" color="blue.200" fontWeight="medium">
+            {t("deck_label")}
+          </Text>
+        </HStack>
+        <HStack spacing={1}>
+          {Array.from({ length: Math.min(deckSize, 8) }).map((_, i) => (
+            <Box
+              key={i}
+              w="6px"
+              h="8px"
+              borderRadius="sm"
+              bg="blue.400"
+              opacity={0.5 + (i / Math.min(deckSize, 8)) * 0.5}
+            />
+          ))}
+          <Text fontSize="xs" color="whiteAlpha.600" ml={1}>
+            {deckSize}
+          </Text>
+        </HStack>
+      </HStack>
+    </Box>
+  ) : null;
+
   if (loading) {
     return (
-      <Box
-        borderRadius="2xl"
-        overflow="hidden"
-        bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
-        boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
-        border="2px solid"
-        borderColor="rgba(59, 130, 246, 0.2)"
-        p={5}
-      >
-        <VStack spacing={3} py={4} align="center">
-          <Spinner size="md" color="blue.200" />
-          <Text color="whiteAlpha.800" fontSize="sm">
-            {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
-          </Text>
-        </VStack>
-      </Box>
+      <VStack spacing={3} w="100%" maxW="400px" mx="auto">
+        <Box
+          borderRadius="2xl"
+          overflow="hidden"
+          bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+          boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+          border="2px solid"
+          borderColor="rgba(59, 130, 246, 0.2)"
+          w="100%"
+          p={5}
+        >
+          <VStack spacing={3} py={4} align="center">
+            <Spinner size="md" color="blue.200" />
+            <Text color="whiteAlpha.800" fontSize="sm">
+              {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
+            </Text>
+          </VStack>
+        </Box>
+        {deckDisplay}
+      </VStack>
     );
   }
 
-  if (!concept) return null;
+  if (!concept) {
+    // Still show deck even when no concept
+    return deckSize > 0 ? (
+      <VStack spacing={3} w="100%" maxW="400px" mx="auto">
+        {deckDisplay}
+      </VStack>
+    ) : null;
+  }
 
   return (
     <VStack spacing={3} w="100%" maxW="400px" mx="auto">
@@ -886,45 +937,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       </Box>
     </Box>
 
-    {/* Collected deck display */}
-    {deckSize > 0 && (
-      <Box
-        w="100%"
-        p={3}
-        borderRadius="xl"
-        bg="whiteAlpha.50"
-        border="1px solid"
-        borderColor="whiteAlpha.100"
-        cursor="pointer"
-        onClick={onOpenDeck}
-        _hover={{ bg: "whiteAlpha.100" }}
-        transition="background 0.2s"
-      >
-        <HStack justify="space-between" align="center">
-          <HStack spacing={2}>
-            <RiStackLine size={16} color="#93C5FD" />
-            <Text fontSize="sm" color="blue.200" fontWeight="medium">
-              {t("deck_label")}
-            </Text>
-          </HStack>
-          <HStack spacing={1}>
-            {Array.from({ length: Math.min(deckSize, 8) }).map((_, i) => (
-              <Box
-                key={i}
-                w="6px"
-                h="8px"
-                borderRadius="sm"
-                bg="blue.400"
-                opacity={0.5 + (i / Math.min(deckSize, 8)) * 0.5}
-              />
-            ))}
-            <Text fontSize="xs" color="whiteAlpha.600" ml={1}>
-              {deckSize}
-            </Text>
-          </HStack>
-        </HStack>
-      </Box>
-    )}
+    {deckDisplay}
     </VStack>
   );
 }
