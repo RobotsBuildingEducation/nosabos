@@ -30,8 +30,9 @@ import {
   RiStackLine,
 } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
-import { MdOutlineSupportAgent } from "react-icons/md";
+import { MdOutlineSupportAgent, MdKeyboard } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
+import VirtualKeyboard from "./VirtualKeyboard";
 import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
@@ -181,6 +182,7 @@ export default function LessonFlashcard({
   pauseMs = 2000,
 }) {
   const [textAnswer, setTextAnswer] = useState("");
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
@@ -311,6 +313,18 @@ export default function LessonFlashcard({
       playSound(submitActionSound);
       setExplanationText("");
       checkAnswerWithAI(textAnswer);
+    }
+  };
+
+  // Virtual keyboard support (Japanese, Russian, Greek)
+  const hasVirtualKeyboard =
+    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
+
+  const handleKeyboardInput = (key) => {
+    if (key === "⌫") {
+      setTextAnswer((prev) => prev.slice(0, -1));
+    } else {
+      setTextAnswer((prev) => prev + key);
     }
   };
 
@@ -800,7 +814,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   )}
 
                   {/* Text Input and Submit Group */}
-                  <VStack spacing={2} w="100%">
+                  <VStack spacing={3} w="100%" mt={6}>
                     <Input
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
@@ -820,16 +834,40 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }}
                     />
 
-                    <Button
-                      w="100%"
-                      size="md"
-                      color="white"
-                      onClick={handleTextSubmit}
-                      isDisabled={!textAnswer.trim()}
-                      leftIcon={<RiKeyboardLine size={14} />}
-                    >
-                      {t("submit")}
-                    </Button>
+                    {/* Virtual keyboard */}
+                    {hasVirtualKeyboard && showKeyboard && (
+                      <VirtualKeyboard
+                        lang={targetLang}
+                        onKeyPress={handleKeyboardInput}
+                        onClose={() => setShowKeyboard(false)}
+                      />
+                    )}
+
+                    <HStack spacing={2} w="100%">
+                      {hasVirtualKeyboard && (
+                        <IconButton
+                          aria-label={showKeyboard ? "Close keyboard" : "Open keyboard"}
+                          icon={<MdKeyboard size={20} />}
+                          size="md"
+                          variant="solid"
+                          bg={showKeyboard ? "blue.500" : "whiteAlpha.200"}
+                          color="white"
+                          onClick={() => setShowKeyboard(!showKeyboard)}
+                          _hover={{ bg: showKeyboard ? "blue.600" : "whiteAlpha.300" }}
+                          flexShrink={0}
+                        />
+                      )}
+                      <Button
+                        flex={1}
+                        size="md"
+                        color="white"
+                        onClick={handleTextSubmit}
+                        isDisabled={!textAnswer.trim()}
+                        leftIcon={<RiKeyboardLine size={14} />}
+                      >
+                        {t("submit")}
+                      </Button>
+                    </HStack>
                   </VStack>
 
                   {/* Skip button */}
