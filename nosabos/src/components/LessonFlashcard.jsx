@@ -442,346 +442,508 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
   if (loading) {
     return (
-      <VStack spacing={4} py={12} align="center">
-        <Spinner size="lg" color="blue.400" />
-        <Text color="gray.400" fontSize="sm">
-          {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
-        </Text>
-      </VStack>
+      <Box
+        borderRadius="2xl"
+        overflow="hidden"
+        bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+        boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+        border="2px solid"
+        borderColor="rgba(59, 130, 246, 0.2)"
+        p={8}
+      >
+        <VStack spacing={4} py={8} align="center">
+          <Spinner size="lg" color="blue.200" />
+          <Text color="whiteAlpha.800" fontSize="sm">
+            {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
+          </Text>
+        </VStack>
+      </Box>
     );
   }
 
   if (!concept) return null;
 
   return (
-    <VStack align="stretch" spacing={4}>
-      {/* Header row */}
-      <HStack justify="space-between">
-        <Text fontSize="xl" fontWeight="bold" color="white">
-          {userLanguage === "es" ? "Tarjeta de memoria" : "Flashcard"}
-        </Text>
-        {/* Deck button */}
-        {deckSize > 0 && (
-          <Button
-            size="sm"
-            variant="ghost"
-            color="blue.200"
-            leftIcon={<RiStackLine />}
-            onClick={onOpenDeck}
-          >
-            {t("deck_label")} ({deckSize})
-          </Button>
-        )}
-      </HStack>
-
-      {/* Flip Card */}
+    <Box
+      borderRadius="2xl"
+      overflow="hidden"
+      boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+      border="2px solid"
+      borderColor="rgba(59, 130, 246, 0.2)"
+    >
       <Box
+        p={8}
         position="relative"
-        w="100%"
-        h="160px"
-        sx={{ perspective: "1000px" }}
-        borderRadius="xl"
-        overflow="hidden"
+        bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
-        <MotionBox
-          position="absolute"
-          w="100%"
-          h="100%"
-          style={{ transformStyle: "preserve-3d" }}
-          animate={{ rotateY: isFlipped ? 180 : 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-        >
-          {/* Front Side */}
-          <Box
-            position="absolute"
-            w="100%"
-            h="100%"
-            p={4}
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-            bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6)"
-            borderRadius="xl"
-            sx={{ backfaceVisibility: "hidden" }}
-          >
-            <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
-              {t("translate_to")}
-            </Text>
-            <Text
-              fontSize="3xl"
+        <VStack spacing={6} align="stretch">
+          {/* Header */}
+          <HStack justify="space-between">
+            <Badge
+              px={4}
+              py={2}
+              borderRadius="full"
+              bg="blue.500"
+              color="white"
+              fontSize="md"
               fontWeight="black"
-              color="white"
-              textAlign="center"
-              textShadow="0 2px 4px rgba(0,0,0,0.2)"
+              boxShadow="0 2px 12px rgba(59, 130, 246, 0.6)"
             >
-              {concept}
-            </Text>
-            <Button
-              position="absolute"
-              bottom={3}
-              right={3}
-              size="sm"
-              variant="solid"
-              bg="whiteAlpha.200"
-              color="white"
-              rightIcon={<RiEyeLine size={14} />}
-              onClick={handleFlip}
-              _hover={{ bg: "whiteAlpha.300" }}
-              fontSize="xs"
-            >
-              {t("show_answer")}
-            </Button>
-          </Box>
+              {cefrLevel}
+            </Badge>
 
-          {/* Back Side */}
-          <Box
-            position="absolute"
-            w="100%"
-            h="100%"
-            p={4}
-            display="flex"
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="center"
-            bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6)"
-            borderRadius="xl"
-            sx={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-            cursor="pointer"
-            onClick={handleFlip}
-          >
-            <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
-              {t("answer_label")}
-            </Text>
-            <Text
-              fontSize="3xl"
-              fontWeight="black"
-              color="white"
-              textAlign="center"
-              textShadow="0 2px 4px rgba(0,0,0,0.3)"
-            >
-              {answer || "..."}
-            </Text>
-            {answer && (
-              <IconButton
-                aria-label="Listen"
-                position="absolute"
-                bottom={3}
-                left={3}
-                size="sm"
-                variant="solid"
-                colorScheme="purple"
-                color="white"
-                icon={
-                  loadingTts ? (
-                    <Spinner size="xs" />
-                  ) : isPlayingAudio ? (
-                    <RiStopLine size={14} />
-                  ) : (
-                    <RiVolumeUpLine size={14} />
-                  )
-                }
-                onClick={handleListenToAnswer}
-                isDisabled={loadingTts}
-                _hover={{ bg: "whiteAlpha.300" }}
-              />
-            )}
-            <Text position="absolute" bottom={3} right={3} fontSize="xs" color="white">
-              {t("tap_to_flip")}
-            </Text>
-          </Box>
-        </MotionBox>
-      </Box>
-
-      {/* Input section */}
-      {!showResult && (
-        <VStack spacing={4}>
-          {isGrading ? (
-            <VStack spacing={3} py={4}>
-              <Spinner size="lg" color="blue.400" />
-              <Text color="gray.400">{t("grading")}</Text>
-            </VStack>
-          ) : (
-            <VStack spacing={4} w="100%">
-              {/* Record */}
-              <Button
-                w="100%"
-                size="lg"
-                colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
-                leftIcon={
-                  isConnecting ? (
-                    <Spinner size="sm" />
-                  ) : isRecording ? (
-                    <RiStopCircleLine size={20} />
-                  ) : (
-                    <RiMicLine size={20} />
-                  )
-                }
-                onClick={handleRecord}
-                isDisabled={!supportsSpeech || isConnecting}
-                padding={9}
-              >
-                {isConnecting
-                  ? "Connecting..."
-                  : isRecording
-                  ? t("stop_recording")
-                  : t("record")}
-              </Button>
-
-              {recognizedText && (
-                <Box p={4} borderRadius="lg" bg="whiteAlpha.100" border="1px solid" borderColor="whiteAlpha.200" w="100%">
-                  <Text fontSize="sm" color="gray.400" mb={1}>
-                    {userLanguage === "es" ? "Reconocido:" : "Recognized:"}
-                  </Text>
-                  <Text fontSize="lg" color="teal.200">{recognizedText}</Text>
-                </Box>
-              )}
-
-              {/* Text input */}
-              <VStack spacing={3} w="100%" pt={6}>
-                <Input
-                  value={textAnswer}
-                  onChange={(e) => setTextAnswer(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={t("type_placeholder")}
-                  size="lg"
-                  fontSize="16px"
-                  textAlign="center"
-                  bg="#f4f5ffff"
-                  border="2px solid"
-                  borderColor="whiteAlpha.200"
-                  color="black"
-                  _placeholder={{ color: "gray.500" }}
-                  _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3B82F6" }}
-                />
+            <HStack spacing={3}>
+              {/* Deck button */}
+              {deckSize > 0 && (
                 <Button
-                  w="100%"
-                  size="lg"
+                  size="sm"
+                  variant="solid"
+                  bg="whiteAlpha.200"
                   color="white"
-                  onClick={handleTextSubmit}
-                  isDisabled={!textAnswer.trim()}
-                  leftIcon={<RiKeyboardLine size={20} />}
-                  padding={9}
+                  leftIcon={<RiStackLine size={14} />}
+                  onClick={onOpenDeck}
+                  _hover={{ bg: "whiteAlpha.300" }}
+                  fontSize="xs"
                 >
-                  {t("submit")}
+                  {t("deck_label")} ({deckSize})
                 </Button>
-              </VStack>
-            </VStack>
-          )}
-        </VStack>
-      )}
+              )}
+              <Text fontSize="sm" color="white" fontWeight="medium">
+                {LANG_NAME(supportLang)} → {LANG_NAME(targetLang)}
+              </Text>
+            </HStack>
+          </HStack>
 
-      {/* Result */}
-      {showResult && (
-        <AnimatePresence>
-          <MotionBox
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
+          {/* Flip Card */}
+          <Box
+            position="relative"
+            w="100%"
+            h="140px"
+            sx={{ perspective: "1000px" }}
           >
-            <VStack
-              spacing={4}
-              p={6}
-              borderRadius="xl"
-              bg={isCorrect ? "teal.500" : "red.900"}
-              border="2px solid"
-              borderColor={isCorrect ? "green.500" : "red.500"}
+            <MotionBox
+              position="absolute"
+              w="100%"
+              h="100%"
+              style={{ transformStyle: "preserve-3d" }}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-              <HStack spacing={3} w="100%">
-                {isCorrect ? (
-                  <RiCheckLine size={32} color="#22C55E" />
-                ) : (
-                  <RiCloseLine size={32} color="#EF4444" />
-                )}
-                <Text fontSize="2xl" fontWeight="bold" color="white" flex="1">
-                  {isCorrect ? t("correct") : t("incorrect")}
+              {/* Front Side */}
+              <Box
+                position="absolute"
+                w="100%"
+                h="100%"
+                p={4}
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                sx={{ backfaceVisibility: "hidden" }}
+              >
+                <Text
+                  fontSize="xs"
+                  color="whiteAlpha.800"
+                  fontWeight="medium"
+                  mb={1}
+                >
+                  {t("translate_to")}
                 </Text>
-              </HStack>
+                <Text
+                  fontSize="3xl"
+                  fontWeight="black"
+                  color="white"
+                  textAlign="center"
+                  textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                >
+                  {concept}
+                </Text>
+                <Box mt={6}>
+                  <Button
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    size="sm"
+                    variant="solid"
+                    bg="whiteAlpha.200"
+                    color="white"
+                    rightIcon={<RiEyeLine size={14} />}
+                    onClick={handleFlip}
+                    _hover={{ bg: "whiteAlpha.300" }}
+                    fontSize="xs"
+                  >
+                    {t("show_answer")}
+                  </Button>
+                </Box>
+              </Box>
 
-              {isCorrect ? (
-                <>
-                  <HStack spacing={2} color="yellow.400">
-                    <RiStarLine size={20} />
-                    <Text fontSize="lg" fontWeight="bold">+{xpAwarded} XP</Text>
-                  </HStack>
+              {/* Back Side */}
+              <Box
+                position="absolute"
+                w="100%"
+                h="100%"
+                p={4}
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                alignItems="center"
+                sx={{
+                  backfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                }}
+                cursor="pointer"
+                onClick={handleFlip}
+              >
+                <Text
+                  fontSize="xs"
+                  color="white"
+                  fontWeight="medium"
+                  mb={1}
+                >
+                  {t("answer_label")}
+                </Text>
+                <Text
+                  fontSize="3xl"
+                  fontWeight="black"
+                  color="white"
+                  textAlign="center"
+                  textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                >
+                  {answer || "..."}
+                </Text>
+                {/* Listen Button */}
+                <Box mt={6}>
+                  {answer && (
+                    <IconButton
+                      aria-label={
+                        loadingTts
+                          ? "Loading"
+                          : isPlayingAudio
+                          ? "Stop"
+                          : "Listen"
+                      }
+                      position="absolute"
+                      bottom={3}
+                      left={3}
+                      size="sm"
+                      variant="solid"
+                      colorScheme="purple"
+                      color="white"
+                      icon={
+                        loadingTts ? (
+                          <Spinner size="xs" />
+                        ) : isPlayingAudio ? (
+                          <RiStopLine size={14} />
+                        ) : (
+                          <RiVolumeUpLine size={14} />
+                        )
+                      }
+                      onClick={handleListenToAnswer}
+                      isDisabled={loadingTts}
+                      _hover={{ bg: "whiteAlpha.300" }}
+                      fontSize="xs"
+                    />
+                  )}
+                  <Text
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    fontSize="xs"
+                    color="white"
+                  >
+                    {t("tap_to_flip")}
+                  </Text>
+                </Box>
+              </Box>
+            </MotionBox>
+          </Box>
 
-                  {/* Collect card button */}
+          {/* Unified Input - Show both text and speech */}
+          {!showResult && (
+            <VStack spacing={4}>
+              {/* Grading State */}
+              {isGrading ? (
+                <VStack spacing={3} py={4}>
+                  <Spinner size="lg" color="blue.200" />
+                  <Text color="whiteAlpha.700">
+                    {t("grading")}
+                  </Text>
+                </VStack>
+              ) : (
+                <VStack spacing={4} w="100%">
+                  {/* Record Button - Top */}
+                  <Button
+                    w="100%"
+                    size="lg"
+                    colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
+                    leftIcon={
+                      isConnecting ? (
+                        <Spinner size="sm" />
+                      ) : isRecording ? (
+                        <RiStopCircleLine size={20} />
+                      ) : (
+                        <RiMicLine size={20} />
+                      )
+                    }
+                    onClick={handleRecord}
+                    isDisabled={!supportsSpeech || isConnecting}
+                    _hover={{
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
+                    }}
+                    padding={9}
+                    _active={{ transform: "translateY(0)" }}
+                  >
+                    {isConnecting
+                      ? userLanguage === "es"
+                        ? "Conectando..."
+                        : "Connecting..."
+                      : isRecording
+                      ? t("stop_recording")
+                      : t("record")}
+                  </Button>
+
+                  {/* Recognized speech text */}
+                  {recognizedText && (
+                    <Box
+                      p={4}
+                      borderRadius="lg"
+                      bg="whiteAlpha.100"
+                      border="1px solid"
+                      borderColor="whiteAlpha.200"
+                      w="100%"
+                    >
+                      <Text fontSize="sm" color="whiteAlpha.700" mb={1}>
+                        {userLanguage === "es" ? "Reconocido:" : "Recognized:"}
+                      </Text>
+                      <Text fontSize="lg" color="teal.200">
+                        {recognizedText}
+                      </Text>
+                    </Box>
+                  )}
+
+                  {/* Text Input and Submit Group */}
+                  <VStack spacing={3} w="100%" pt={6}>
+                    {/* Text Input */}
+                    <Input
+                      value={textAnswer}
+                      onChange={(e) => setTextAnswer(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      placeholder={t("type_placeholder")}
+                      size="lg"
+                      fontSize="16px"
+                      textAlign="center"
+                      bg="#f4f5ffff"
+                      border="2px solid"
+                      borderColor="whiteAlpha.200"
+                      color="black"
+                      _placeholder={{ color: "gray.500" }}
+                      _focus={{
+                        borderColor: "blue.300",
+                        boxShadow: "0 0 0 1px #3B82F6",
+                      }}
+                    />
+
+                    {/* Submit Button */}
+                    <Button
+                      w="100%"
+                      size="lg"
+                      color="white"
+                      onClick={handleTextSubmit}
+                      isDisabled={!textAnswer.trim()}
+                      leftIcon={<RiKeyboardLine size={20} />}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
+                      }}
+                      padding={9}
+                      _active={{ transform: "translateY(0)" }}
+                    >
+                      {t("submit")}
+                    </Button>
+                  </VStack>
+
+                  {/* Cancel button */}
                   <Button
                     w="100%"
                     size="md"
-                    colorScheme={collected ? "green" : "blue"}
-                    leftIcon={collected ? <RiCheckLine /> : <RiBookmarkLine />}
-                    onClick={handleCollect}
-                    isDisabled={collected}
+                    variant="ghost"
+                    color="white"
+                    onClick={onSkip || onNext}
+                    _hover={{ bg: "whiteAlpha.100" }}
                   >
-                    {collected ? t("collected") : t("collect")}
-                  </Button>
-
-                  {/* Next */}
-                  <Button
-                    w="100%"
-                    size="lg"
-                    colorScheme="teal"
-                    onClick={onNext}
-                  >
-                    {t("next")}
-                  </Button>
-                </>
-              ) : (
-                <VStack w="100%" spacing={3} mt={2}>
-                  <Button size="lg" bg="teal" colorScheme="teal" onClick={handleTryAgain} w="100%">
-                    {t("try_again")}
-                  </Button>
-                  <Button
-                    size="lg"
-                    colorScheme="pink"
-                    variant="solid"
-                    onClick={handleExplainAnswer}
-                    isDisabled={isLoadingExplanation || !!explanationText || isGrading}
-                    leftIcon={isLoadingExplanation ? <Spinner size="sm" /> : <FiHelpCircle />}
-                    w="100%"
-                  >
-                    {t("explain")}
+                    {t("cancel")}
                   </Button>
                 </VStack>
               )}
-
-              {!isCorrect && explanationText && (
-                <Box
-                  w="100%"
-                  p={4}
-                  borderRadius="md"
-                  bg="rgba(244, 114, 182, 0.08)"
-                  border="1px solid"
-                  borderColor="pink.400"
-                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-                >
-                  <Text fontSize="sm" fontWeight="semibold" color="pink.200" mb={2} display="flex" alignItems="center" gap={2}>
-                    <RiEyeLine />
-                    {t("explanation_heading")}
-                  </Text>
-                  <Box
-                    color="white"
-                    fontSize="sm"
-                    lineHeight="1.6"
-                    sx={{
-                      "& p": { mb: 2 },
-                      "& p:last-child": { mb: 0 },
-                      "& strong": { fontWeight: "bold", color: "pink.100" },
-                    }}
-                  >
-                    <ReactMarkdown>{explanationText}</ReactMarkdown>
-                  </Box>
-                </Box>
-              )}
             </VStack>
-            <Box mt="-2" paddingBottom={6}>
-              <RandomCharacter />
-            </Box>
-          </MotionBox>
-        </AnimatePresence>
-      )}
-    </VStack>
+          )}
+
+          {/* Result */}
+          {showResult && (
+            <AnimatePresence>
+              <MotionBox
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3 }}
+              >
+                <VStack
+                  spacing={4}
+                  p={6}
+                  borderRadius="xl"
+                  bg={isCorrect ? "teal.500" : "red.900"}
+                  border="2px solid"
+                  borderColor={isCorrect ? "green.500" : "red.500"}
+                >
+                  <HStack spacing={3} w="100%">
+                    {isCorrect ? (
+                      <RiCheckLine size={32} color="#22C55E" />
+                    ) : (
+                      <RiCloseLine size={32} color="#EF4444" />
+                    )}
+                    <Text
+                      fontSize="2xl"
+                      fontWeight="bold"
+                      color="white"
+                      flex="1"
+                    >
+                      {isCorrect ? t("correct") : t("incorrect")}
+                    </Text>
+                    {/* Collect card button (icon only, in header) */}
+                    {isCorrect && (
+                      <IconButton
+                        icon={
+                          collected ? (
+                            <RiCheckLine size={18} />
+                          ) : (
+                            <RiBookmarkLine size={18} />
+                          )
+                        }
+                        aria-label={collected ? t("collected") : t("collect")}
+                        colorScheme={collected ? "green" : "gray"}
+                        variant={collected ? "solid" : "ghost"}
+                        onClick={handleCollect}
+                        isDisabled={collected}
+                        size="sm"
+                        flexShrink={0}
+                      />
+                    )}
+                  </HStack>
+
+                  {isCorrect ? (
+                    <>
+                      <HStack spacing={2} color="yellow.400">
+                        <RiStarLine size={20} />
+                        <Text fontSize="lg" fontWeight="bold">
+                          +{xpAwarded} XP
+                        </Text>
+                      </HStack>
+
+                      {/* Next */}
+                      <Button
+                        w="100%"
+                        size="lg"
+                        colorScheme="teal"
+                        onClick={onNext}
+                      >
+                        {t("next")}
+                      </Button>
+                    </>
+                  ) : (
+                    <VStack w="100%" spacing={3} mt={2}>
+                      <Button
+                        size="lg"
+                        bg="teal"
+                        colorScheme="teal"
+                        onClick={handleTryAgain}
+                        w="100%"
+                      >
+                        {t("try_again")}
+                      </Button>
+
+                      <Button
+                        size="lg"
+                        colorScheme="pink"
+                        variant="solid"
+                        onClick={handleExplainAnswer}
+                        isDisabled={
+                          isLoadingExplanation ||
+                          !!explanationText ||
+                          isGrading
+                        }
+                        leftIcon={
+                          isLoadingExplanation ? (
+                            <Spinner size="sm" />
+                          ) : (
+                            <FiHelpCircle />
+                          )
+                        }
+                        w="100%"
+                      >
+                        {t("explain")}
+                      </Button>
+                    </VStack>
+                  )}
+
+                  {!isCorrect && explanationText && (
+                    <Box
+                      w="100%"
+                      p={4}
+                      borderRadius="md"
+                      bg="rgba(244, 114, 182, 0.08)"
+                      border="1px solid"
+                      borderColor="pink.400"
+                      boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                    >
+                      <Text
+                        fontSize="sm"
+                        fontWeight="semibold"
+                        color="pink.200"
+                        mb={2}
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
+                      >
+                        <RiEyeLine />
+                        {t("explanation_heading")}
+                      </Text>
+                      <Box
+                        color="white"
+                        fontSize="sm"
+                        lineHeight="1.6"
+                        sx={{
+                          "& p": { mb: 2 },
+                          "& p:last-child": { mb: 0 },
+                          "& strong": {
+                            fontWeight: "bold",
+                            color: "pink.100",
+                          },
+                          "& em": { fontStyle: "italic" },
+                          "& ul, & ol": { pl: 4, mb: 2 },
+                          "& li": { mb: 1 },
+                          "& code": {
+                            bg: "rgba(0,0,0,0.3)",
+                            px: 1,
+                            py: 0.5,
+                            borderRadius: "sm",
+                            fontFamily: "mono",
+                          },
+                        }}
+                      >
+                        <ReactMarkdown>{explanationText}</ReactMarkdown>
+                      </Box>
+                    </Box>
+                  )}
+                </VStack>
+                <Box mt="-2" paddingBottom={6}>
+                  <RandomCharacter />
+                </Box>
+              </MotionBox>
+            </AnimatePresence>
+          )}
+        </VStack>
+      </Box>
+    </Box>
   );
 }
 
