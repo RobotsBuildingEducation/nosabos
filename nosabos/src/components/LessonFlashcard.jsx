@@ -470,7 +470,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
       border="2px solid"
       borderColor="rgba(59, 130, 246, 0.2)"
-      maxW="360px"
+      maxW="400px"
       mx="auto"
     >
       <Box
@@ -480,48 +480,29 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
         <VStack spacing={2} align="stretch">
-          {/* Header */}
-          <HStack justify="space-between">
-            <Badge
-              px={3}
-              py={1}
-              borderRadius="full"
-              bg="blue.500"
-              color="white"
-              fontSize="sm"
-              fontWeight="black"
-              boxShadow="0 2px 12px rgba(59, 130, 246, 0.6)"
-            >
-              {cefrLevel}
-            </Badge>
-
-            <HStack spacing={3}>
-              {/* Deck button */}
-              {deckSize > 0 && (
-                <Button
-                  size="sm"
-                  variant="solid"
-                  bg="whiteAlpha.200"
-                  color="white"
-                  leftIcon={<RiStackLine size={14} />}
-                  onClick={onOpenDeck}
-                  _hover={{ bg: "whiteAlpha.300" }}
-                  fontSize="xs"
-                >
-                  {t("deck_label")} ({deckSize})
-                </Button>
-              )}
-              <Text fontSize="sm" color="white" fontWeight="medium">
-                {LANG_NAME(supportLang)} → {LANG_NAME(targetLang)}
-              </Text>
+          {/* Deck button (only if cards collected) */}
+          {deckSize > 0 && (
+            <HStack justify="flex-end">
+              <Button
+                size="sm"
+                variant="solid"
+                bg="whiteAlpha.200"
+                color="white"
+                leftIcon={<RiStackLine size={14} />}
+                onClick={onOpenDeck}
+                _hover={{ bg: "whiteAlpha.300" }}
+                fontSize="xs"
+              >
+                {t("deck_label")} ({deckSize})
+              </Button>
             </HStack>
-          </HStack>
+          )}
 
           {/* Flip Card */}
           <Box
             position="relative"
             w="100%"
-            h="120px"
+            h="140px"
             sx={{ perspective: "1000px" }}
           >
             <MotionBox
@@ -537,7 +518,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 position="absolute"
                 w="100%"
                 h="100%"
-                p={3}
+                px={3}
+                pt={2}
+                pb={1}
                 display="flex"
                 flexDirection="column"
                 justifyContent="center"
@@ -561,23 +544,19 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 >
                   {concept}
                 </Text>
-                <Box>
-                  <Button
-                    position="absolute"
-                    bottom={2}
-                    right={2}
-                    size="sm"
-                    variant="solid"
-                    bg="whiteAlpha.200"
-                    color="white"
-                    rightIcon={<RiEyeLine size={14} />}
-                    onClick={handleFlip}
-                    _hover={{ bg: "whiteAlpha.300" }}
-                    fontSize="xs"
-                  >
-                    {t("show_answer")}
-                  </Button>
-                </Box>
+                <Button
+                  mt={3}
+                  size="sm"
+                  variant="solid"
+                  bg="whiteAlpha.200"
+                  color="white"
+                  rightIcon={<RiEyeLine size={14} />}
+                  onClick={handleFlip}
+                  _hover={{ bg: "whiteAlpha.300" }}
+                  fontSize="xs"
+                >
+                  {t("show_answer")}
+                </Button>
               </Box>
 
               {/* Back Side */}
@@ -663,7 +642,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
           {/* Unified Input - Show both text and speech */}
           {!showResult && (
-            <VStack spacing={2}>
+            <VStack spacing={2} mt={2}>
               {/* Grading State */}
               {isGrading ? (
                 <VStack spacing={2} py={2}>
