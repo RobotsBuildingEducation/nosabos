@@ -449,10 +449,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
         border="2px solid"
         borderColor="rgba(59, 130, 246, 0.2)"
-        p={8}
+        p={5}
       >
-        <VStack spacing={4} py={8} align="center">
-          <Spinner size="lg" color="blue.200" />
+        <VStack spacing={3} py={4} align="center">
+          <Spinner size="md" color="blue.200" />
           <Text color="whiteAlpha.800" fontSize="sm">
             {userLanguage === "es" ? "Generando tarjeta..." : "Generating flashcard..."}
           </Text>
@@ -472,20 +472,20 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       borderColor="rgba(59, 130, 246, 0.2)"
     >
       <Box
-        p={8}
+        p={5}
         position="relative"
         bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
-        <VStack spacing={6} align="stretch">
+        <VStack spacing={4} align="stretch">
           {/* Header */}
           <HStack justify="space-between">
             <Badge
-              px={4}
-              py={2}
+              px={3}
+              py={1}
               borderRadius="full"
               bg="blue.500"
               color="white"
-              fontSize="md"
+              fontSize="sm"
               fontWeight="black"
               boxShadow="0 2px 12px rgba(59, 130, 246, 0.6)"
             >
@@ -518,7 +518,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           <Box
             position="relative"
             w="100%"
-            h="140px"
+            h="100px"
             sx={{ perspective: "1000px" }}
           >
             <MotionBox
@@ -534,7 +534,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 position="absolute"
                 w="100%"
                 h="100%"
-                p={4}
+                p={3}
                 display="flex"
                 flexDirection="column"
                 justifyContent="center"
@@ -550,7 +550,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {t("translate_to")}
                 </Text>
                 <Text
-                  fontSize="3xl"
+                  fontSize="2xl"
                   fontWeight="black"
                   color="white"
                   textAlign="center"
@@ -558,11 +558,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 >
                   {concept}
                 </Text>
-                <Box mt={6}>
+                <Box>
                   <Button
                     position="absolute"
-                    bottom={3}
-                    right={3}
+                    bottom={2}
+                    right={2}
                     size="sm"
                     variant="solid"
                     bg="whiteAlpha.200"
@@ -582,7 +582,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 position="absolute"
                 w="100%"
                 h="100%"
-                p={4}
+                p={3}
                 display="flex"
                 flexDirection="column"
                 justifyContent="center"
@@ -603,7 +603,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {t("answer_label")}
                 </Text>
                 <Text
-                  fontSize="3xl"
+                  fontSize="2xl"
                   fontWeight="black"
                   color="white"
                   textAlign="center"
@@ -612,7 +612,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {answer || "..."}
                 </Text>
                 {/* Listen Button */}
-                <Box mt={6}>
+                <Box>
                   {answer && (
                     <IconButton
                       aria-label={
@@ -623,8 +623,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           : "Listen"
                       }
                       position="absolute"
-                      bottom={3}
-                      left={3}
+                      bottom={2}
+                      left={2}
                       size="sm"
                       variant="solid"
                       colorScheme="purple"
@@ -646,8 +646,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   )}
                   <Text
                     position="absolute"
-                    bottom={3}
-                    right={3}
+                    bottom={2}
+                    right={2}
                     fontSize="xs"
                     color="white"
                   >
@@ -663,8 +663,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             <VStack spacing={4}>
               {/* Grading State */}
               {isGrading ? (
-                <VStack spacing={3} py={4}>
-                  <Spinner size="lg" color="blue.200" />
+                <VStack spacing={2} py={3}>
+                  <Spinner size="md" color="blue.200" />
                   <Text color="whiteAlpha.700">
                     {t("grading")}
                   </Text>
@@ -674,7 +674,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {/* Record Button - Top */}
                   <Button
                     w="100%"
-                    size="lg"
+                    size="md"
                     colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
                     leftIcon={
                       isConnecting ? (
@@ -691,7 +691,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       transform: "translateY(-2px)",
                       boxShadow: "0 8px 20px rgba(59, 130, 246, 0.4)",
                     }}
-                    padding={9}
                     _active={{ transform: "translateY(0)" }}
                   >
                     {isConnecting
@@ -723,14 +722,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   )}
 
                   {/* Text Input and Submit Group */}
-                  <VStack spacing={3} w="100%" pt={6}>
+                  <VStack spacing={3} w="100%">
                     {/* Text Input */}
                     <Input
                       value={textAnswer}
                       onChange={(e) => setTextAnswer(e.target.value)}
                       onKeyPress={handleKeyPress}
                       placeholder={t("type_placeholder")}
-                      size="lg"
+                      size="md"
                       fontSize="16px"
                       textAlign="center"
                       bg="#f4f5ffff"
@@ -747,7 +746,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     {/* Submit Button */}
                     <Button
                       w="100%"
-                      size="lg"
+                      size="md"
                       color="white"
                       onClick={handleTextSubmit}
                       isDisabled={!textAnswer.trim()}
@@ -788,8 +787,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 transition={{ duration: 0.3 }}
               >
                 <VStack
-                  spacing={4}
-                  p={6}
+                  spacing={3}
+                  p={4}
                   borderRadius="xl"
                   bg={isCorrect ? "teal.500" : "red.900"}
                   border="2px solid"
@@ -842,7 +841,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       {/* Next */}
                       <Button
                         w="100%"
-                        size="lg"
+                        size="md"
                         colorScheme="teal"
                         onClick={onNext}
                       >
@@ -850,9 +849,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       </Button>
                     </>
                   ) : (
-                    <VStack w="100%" spacing={3} mt={2}>
+                    <VStack w="100%" spacing={2} mt={1}>
                       <Button
-                        size="lg"
+                        size="md"
                         bg="teal"
                         colorScheme="teal"
                         onClick={handleTryAgain}
@@ -862,7 +861,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       </Button>
 
                       <Button
-                        size="lg"
+                        size="md"
                         colorScheme="pink"
                         variant="solid"
                         onClick={handleExplainAnswer}
