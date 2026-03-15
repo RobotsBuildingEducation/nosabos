@@ -30,6 +30,7 @@ import {
   RiStackLine,
 } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import {
   LOW_LATENCY_TTS_FORMAT,
@@ -626,6 +627,20 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 alignItems="center"
                 sx={{ backfaceVisibility: "hidden" }}
               >
+                {/* Support agent button – top left */}
+                <IconButton
+                  aria-label={t("show_answer")}
+                  icon={<MdOutlineSupportAgent size={18} />}
+                  position="absolute"
+                  top={2}
+                  left={2}
+                  size="sm"
+                  variant="ghost"
+                  color="whiteAlpha.700"
+                  _hover={{ bg: "whiteAlpha.200", color: "white" }}
+                  onClick={handleFlip}
+                  zIndex={2}
+                />
                 <Text
                   fontSize="xs"
                   color="whiteAlpha.800"
@@ -643,19 +658,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 >
                   {concept}
                 </Text>
-                <Button
-                  mt={3}
-                  size="sm"
-                  variant="solid"
-                  bg="whiteAlpha.200"
-                  color="white"
-                  rightIcon={<RiEyeLine size={14} />}
-                  onClick={handleFlip}
-                  _hover={{ bg: "whiteAlpha.300" }}
-                  fontSize="xs"
-                >
-                  {t("show_answer")}
-                </Button>
               </Box>
 
               {/* Back Side */}
