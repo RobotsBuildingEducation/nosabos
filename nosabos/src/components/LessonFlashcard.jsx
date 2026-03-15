@@ -872,11 +872,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                   {/* Skip button */}
                   <Button
-                    size="xs"
+                    size="sm"
                     variant="ghost"
                     color="whiteAlpha.600"
                     onClick={onSkip || onNext}
                     _hover={{ bg: "whiteAlpha.100" }}
+                    mt={8}
+                    w="100%"
+                    py={5}
                   >
                     {t("skip")}
                   </Button>
