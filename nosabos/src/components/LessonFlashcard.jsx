@@ -470,6 +470,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
       border="2px solid"
       borderColor="rgba(59, 130, 246, 0.2)"
+      w="100%"
       maxW="400px"
       mx="auto"
     >
@@ -645,8 +646,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             <VStack spacing={2} mt={2}>
               {/* Grading State */}
               {isGrading ? (
-                <VStack spacing={2} py={2}>
-                  <Spinner size="sm" color="blue.200" />
+                <VStack spacing={2} py={6} w="100%" minH="140px" justify="center">
+                  <Spinner size="md" color="blue.200" />
                   <Text color="whiteAlpha.700" fontSize="sm">
                     {t("grading")}
                   </Text>
