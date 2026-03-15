@@ -474,11 +474,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       mx="auto"
     >
       <Box
-        p={4}
+        px={4}
+        py={3}
         position="relative"
         bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
       >
-        <VStack spacing={3} align="stretch">
+        <VStack spacing={2} align="stretch">
           {/* Header */}
           <HStack justify="space-between">
             <Badge
@@ -605,7 +606,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {t("answer_label")}
                 </Text>
                 <Text
-                  fontSize="2xl"
+                  fontSize="xl"
                   fontWeight="black"
                   color="white"
                   textAlign="center"
@@ -662,7 +663,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
           {/* Unified Input - Show both text and speech */}
           {!showResult && (
-            <VStack spacing={3}>
+            <VStack spacing={2}>
               {/* Grading State */}
               {isGrading ? (
                 <VStack spacing={2} py={2}>
@@ -672,7 +673,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   </Text>
                 </VStack>
               ) : (
-                <VStack spacing={3} w="100%">
+                <VStack spacing={2} w="100%">
                   {/* Record Button */}
                   <Button
                     w="100%"
@@ -702,7 +703,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   {/* Recognized speech text */}
                   {recognizedText && (
                     <Box
-                      p={3}
+                      p={2}
                       borderRadius="md"
                       bg="whiteAlpha.100"
                       border="1px solid"
@@ -775,21 +776,21 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 transition={{ duration: 0.3 }}
               >
                 <VStack
-                  spacing={3}
-                  p={4}
+                  spacing={2}
+                  p={3}
                   borderRadius="xl"
                   bg={isCorrect ? "teal.500" : "red.900"}
                   border="2px solid"
                   borderColor={isCorrect ? "green.500" : "red.500"}
                 >
-                  <HStack spacing={3} w="100%">
+                  <HStack spacing={2} w="100%">
                     {isCorrect ? (
-                      <RiCheckLine size={32} color="#22C55E" />
+                      <RiCheckLine size={24} color="#22C55E" />
                     ) : (
-                      <RiCloseLine size={32} color="#EF4444" />
+                      <RiCloseLine size={24} color="#EF4444" />
                     )}
                     <Text
-                      fontSize="2xl"
+                      fontSize="lg"
                       fontWeight="bold"
                       color="white"
                       flex="1"
