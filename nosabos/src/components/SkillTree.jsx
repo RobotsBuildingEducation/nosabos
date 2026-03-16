@@ -1503,16 +1503,28 @@ const UnitSection = React.memo(function UnitSection({
  * Lesson Detail Modal
  * Shows detailed information about a lesson
  */
-const GAME_LOADING_MESSAGES = [
-  "Building your world...",
-  "Placing NPCs...",
-  "Writing quest dialogue...",
-  "Generating vocabulary challenges...",
-  "Designing the map layout...",
-  "Preparing language puzzles...",
-  "Setting the scene...",
-  "Crafting your adventure...",
-];
+const GAME_LOADING_MESSAGES = {
+  en: [
+    "Building your world...",
+    "Placing NPCs...",
+    "Writing quest dialogue...",
+    "Generating vocabulary challenges...",
+    "Designing the map layout...",
+    "Preparing language puzzles...",
+    "Setting the scene...",
+    "Crafting your adventure...",
+  ],
+  es: [
+    "Construyendo tu mundo...",
+    "Colocando NPCs...",
+    "Escribiendo diálogos de misión...",
+    "Generando desafíos de vocabulario...",
+    "Diseñando el mapa...",
+    "Preparando acertijos de idiomas...",
+    "Ambientando la escena...",
+    "Creando tu aventura...",
+  ],
+};
 
 function LessonDetailModal({
   isOpen,
@@ -1526,14 +1538,16 @@ function LessonDetailModal({
   const [gameLoading, setGameLoading] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
 
+  const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+
   // Rotate loading messages every 1.5 seconds
   useEffect(() => {
     if (!gameLoading) return;
     const interval = setInterval(() => {
-      setLoadingMsgIdx((prev) => (prev + 1) % GAME_LOADING_MESSAGES.length);
+      setLoadingMsgIdx((prev) => (prev + 1) % loadingMessages.length);
     }, 1500);
     return () => clearInterval(interval);
-  }, [gameLoading]);
+  }, [gameLoading, loadingMessages]);
 
   // Reset loading state when modal closes
   useEffect(() => {
@@ -1543,7 +1557,7 @@ function LessonDetailModal({
     }
   }, [isOpen]);
 
-  if (!lesson) return null;
+  if (!isOpen || !lesson || !unit) return null;
 
   const lessonTitle = getUIDisplayText(lesson.title);
   const unitTitle = getUIDisplayText(unit.title);
@@ -1684,7 +1698,7 @@ function LessonDetailModal({
                     color="white"
                     textAlign="center"
                   >
-                    Generating your game...
+                    {supportLang === "es" ? "Generando tu juego..." : "Generating your game..."}
                   </Text>
                   <Text
                     fontSize="sm"
@@ -1700,7 +1714,7 @@ function LessonDetailModal({
                       },
                     }}
                   >
-                    {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                    {loadingMessages[loadingMsgIdx]}
                   </Text>
                 </VStack>
               </VStack>
@@ -2418,17 +2432,15 @@ export default function SkillTree({
         )}
 
         {/* Lesson Detail Modal */}
-        {selectedLesson && selectedUnit && (
-          <LessonDetailModal
-            isOpen={isOpen}
-            onClose={onClose}
-            lesson={selectedLesson}
-            unit={selectedUnit}
-            onStartLesson={handleStartLesson}
-            supportLang={supportLang}
-            targetLang={targetLang}
-          />
-        )}
+        <LessonDetailModal
+          isOpen={isOpen}
+          onClose={onClose}
+          lesson={selectedLesson}
+          unit={selectedUnit}
+          onStartLesson={handleStartLesson}
+          supportLang={supportLang}
+          targetLang={targetLang}
+        />
       </Container>
     </Box>
   );
