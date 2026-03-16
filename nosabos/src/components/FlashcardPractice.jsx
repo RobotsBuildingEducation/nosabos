@@ -682,12 +682,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     left={3}
                     size="sm"
                     variant="solid"
-                    bg="whiteAlpha.200"
-                    color="white"
+                    bg="white"
+                    color="blue"
+                    boxShadow="0 4px 0 blue"
                     icon={<MdOutlineSupportAgent size={18} />}
                     onClick={handleShowAnswer}
-                    _hover={{ bg: "whiteAlpha.300" }}
-                    borderRadius="full"
+                    _hover={{ bg: "gray.50" }}
+                    rounded="xl"
                   />
                 </Box>
 
