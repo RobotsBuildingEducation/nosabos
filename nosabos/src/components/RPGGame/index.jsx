@@ -63,6 +63,7 @@ import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
 import RobotBuddyPro from "../RobotBuddyPro";
+import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -4546,9 +4547,9 @@ export default function RPGGame({
         borderRadius={isEmbedded ? "xl" : undefined}
         bg={isEmbedded ? "transparent" : "#1a1a2e"}
         display="flex"
-        alignItems={isEmbedded ? "flex-start" : "center"}
+        flexDirection="column"
+        alignItems="center"
         justifyContent="center"
-        pt={isEmbedded ? 6 : undefined}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -4558,11 +4559,19 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <VStack spacing={4}>
-          <RobotBuddyPro state="thinking" maxW={140} />
+        <Box
+          w={isEmbedded ? "90%" : { base: "90vw", md: "40vw" }}
+          h={isEmbedded ? "55%" : { base: "50vh", md: "40vh" }}
+          borderRadius="xl"
+          overflow="hidden"
+          position="relative"
+        >
+          <LoadingMiniGame supportLang={supportLang} />
+        </Box>
+        <VStack spacing={2} mt={3}>
           <Text
             color="white"
-            fontSize="xl"
+            fontSize="md"
             fontWeight="bold"
             textAlign="center"
           >
@@ -4570,11 +4579,11 @@ export default function RPGGame({
               ? ui.loadingTutorialScene
               : ui.loadingGeneratingGame}
           </Text>
-          <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
+          <Text fontSize="xs" color="purple.200" textAlign="center" minH="16px">
             {loadingMessages[loadingMsgIdx]}
           </Text>
           {!isTutorialGame && (
-            <Button onClick={goToScenarioSelect}>{ui.back}</Button>
+            <Button size="sm" onClick={goToScenarioSelect}>{ui.back}</Button>
           )}
         </VStack>
       </Box>
