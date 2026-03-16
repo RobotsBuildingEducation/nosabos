@@ -218,6 +218,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { loadFlashcardsForLevel } from "../data/flashcardData";
 import { translations } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
@@ -2069,6 +2070,24 @@ export default function SkillTree({
   const visibleUnits = useMemo(() => {
     return units.filter((unit) => unit.cefrLevel === effectiveActiveLevel);
   }, [units, effectiveActiveLevel]);
+
+  // Preload flashcard chunks in the background so switching to flashcard mode feels instant.
+  useEffect(() => {
+    const levels = [activeFlashcardLevel].filter(Boolean);
+    const currentLevelIdx = CEFR_LEVELS.indexOf(activeFlashcardLevel);
+    const nextLevel =
+      currentLevelIdx >= 0 && currentLevelIdx < CEFR_LEVELS.length - 1
+        ? CEFR_LEVELS[currentLevelIdx + 1]
+        : null;
+
+    if (nextLevel) {
+      levels.push(nextLevel);
+    }
+
+    levels.forEach((levelToPreload) => {
+      void loadFlashcardsForLevel(levelToPreload);
+    });
+  }, [activeFlashcardLevel]);
 
   // Calculate max unlocked proficiency level for conversations
   // Uses the highest unlocked level between skill tree and flashcards
