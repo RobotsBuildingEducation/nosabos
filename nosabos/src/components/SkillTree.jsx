@@ -1618,12 +1618,19 @@ function LessonDetailModal({
       <ModalContent
         bg="gray.900"
         color="gray.100"
-        borderRadius={gameLoading ? "xl" : "2xl"}
+        borderRadius={gameLoading ? { base: "0", md: "xl" } : "2xl"}
         overflow="hidden"
         boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
         border="1px solid"
         borderColor={gameLoading ? "whiteAlpha.100" : `${unit.color}30`}
-        {...(gameLoading ? { maxW: "95vw", maxH: "80vh", w: "95vw", h: "80vh", my: "auto", mx: "auto" } : {})}
+        {...(gameLoading ? {
+          w: { base: "100vw", md: "75vw" },
+          h: { base: "100vh", md: "50vh" },
+          maxW: { base: "100vw", md: "75vw" },
+          maxH: { base: "100vh", md: "50vh" },
+          m: { base: 0, md: "auto" },
+          borderRadius: { base: "0", md: "xl" },
+        } : {})}
       >
         {/* Decorative gradient background */}
         {!gameLoading && (
