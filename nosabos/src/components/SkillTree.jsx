@@ -1995,6 +1995,21 @@ export default function SkillTree({
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
+  // Defer heavy mode content by one frame so the old view clears instantly
+  const [deferredPathMode, setDeferredPathMode] = useState(pathMode);
+  const prevPathModeRef = useRef(pathMode);
+  useEffect(() => {
+    if (prevPathModeRef.current !== pathMode) {
+      prevPathModeRef.current = pathMode;
+      // Defer the content switch by one frame so React can paint
+      // the cleared view before mounting the new heavy component
+      const frame = requestAnimationFrame(() => {
+        setDeferredPathMode(pathMode);
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [pathMode]);
+
   // Sound settings
   const playSound = useSoundSettings((s) => s.playSound);
 
@@ -2344,7 +2359,10 @@ export default function SkillTree({
         )}
 
         {/* Skill Tree Units, Flashcards, or Conversations */}
-        {pathMode === "path" ? (
+        {/* When pathMode changes, deferredPathMode lags by one frame.
+            Render nothing during that gap so the old view clears instantly
+            before the new heavy component mounts on the next frame. */}
+        {pathMode !== deferredPathMode ? null : deferredPathMode === "path" ? (
           <Box>
             <VStack spacing={8} align="stretch">
               {visibleUnits.length > 0 ? (
@@ -2375,7 +2393,7 @@ export default function SkillTree({
               )}
             </VStack>
           </Box>
-        ) : pathMode === "flashcards" ? (
+        ) : deferredPathMode === "flashcards" ? (
           <Box>
             <FlashcardSkillTree
               userProgress={userProgress}
