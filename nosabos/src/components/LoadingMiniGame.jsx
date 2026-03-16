@@ -908,11 +908,13 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const mapW = room.map[0].length;
       const mapH = room.map.length;
 
-      // Convert click position to tile coordinates
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const tileX = Math.floor((e.clientX - rect.left) * scaleX / T);
-      const tileY = Math.floor((e.clientY - rect.top) * scaleY / T);
+      // Convert click position through camera transform to tile coordinates
+      const pixelX = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const pixelY = (e.clientY - rect.top) * (canvas.height / rect.height);
+      const worldX = (pixelX - (s.camX || 0)) / (s.scaleVal || 1);
+      const worldY = (pixelY - (s.camY || 0)) / (s.scaleVal || 1);
+      const tileX = Math.floor(worldX / T);
+      const tileY = Math.floor(worldY / T);
 
       if (tileX < 0 || tileX >= mapW || tileY < 0 || tileY >= mapH) return;
 
@@ -1051,20 +1053,17 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const s = stateRef.current;
       s.frame++;
 
-      // Resize canvas to fill container
+      // Match canvas buffer to container size (like RPGGame does with renderer.setSize)
       const container = containerRef.current;
-      if (container) {
-        const rect = container.getBoundingClientRect();
-        const room = ROOMS[s.currentRoom];
-        const mapW = room.map[0].length;
-        const mapH = room.map.length;
-        const neededW = mapW * T;
-        const neededH = mapH * T;
-        if (canvas.width !== neededW || canvas.height !== neededH) {
-          canvas.width = neededW;
-          canvas.height = neededH;
-          ctx.imageSmoothingEnabled = false;
-        }
+      if (!container) { animId = requestAnimationFrame(loop); return; }
+      const cRect = container.getBoundingClientRect();
+      const cw = Math.round(cRect.width);
+      const ch = Math.round(cRect.height);
+      if (cw === 0 || ch === 0) { animId = requestAnimationFrame(loop); return; }
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+        ctx.imageSmoothingEnabled = false;
       }
 
       // Handle transition
@@ -1096,11 +1095,39 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const room = ROOMS[s.currentRoom];
       const mapW = room.map[0].length;
       const mapH = room.map.length;
-      const canvasW = mapW * T;
-      const canvasH = mapH * T;
+      const mapPixelW = mapW * T;
+      const mapPixelH = mapH * T;
       const isIndoor = s.currentRoom !== "plaza";
 
-      ctx.clearRect(0, 0, canvasW, canvasH);
+      // Calculate scale to fill the container (cover, not contain)
+      const scaleVal = Math.max(cw / mapPixelW, ch / mapPixelH);
+
+      // Camera follows player, clamped to map edges
+      const playerCenterX = (s.px + 0.5) * T * scaleVal;
+      const playerCenterY = (s.py + 0.5) * T * scaleVal;
+      const scaledMapW = mapPixelW * scaleVal;
+      const scaledMapH = mapPixelH * scaleVal;
+
+      let camX = cw / 2 - playerCenterX;
+      let camY = ch / 2 - playerCenterY;
+      // Clamp so we don't show past map edges
+      camX = Math.min(0, Math.max(cw - scaledMapW, camX));
+      camY = Math.min(0, Math.max(ch - scaledMapH, camY));
+
+      // Store camera info for click coordinate conversion
+      s.camX = camX;
+      s.camY = camY;
+      s.scaleVal = scaleVal;
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Fill background for any uncovered area
+      ctx.fillStyle = isIndoor ? "#3a2a1a" : "#08142b";
+      ctx.fillRect(0, 0, cw, ch);
+
+      ctx.save();
+      ctx.translate(camX, camY);
+      ctx.scale(scaleVal, scaleVal);
 
       // Draw tiles
       for (let y = 0; y < mapH; y++) {
@@ -1126,9 +1153,11 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const animFrame = s.moving ? s.walkFrame : 0;
       drawDogCharacter(ctx, s.px, s.py, s.dir, animFrame);
 
-      // Draw transition overlay
+      ctx.restore();
+
+      // Draw transition overlay (full screen)
       if (s.transitioning) {
-        drawTransition(ctx, canvasW, canvasH, s.transitionProgress);
+        drawTransition(ctx, cw, ch, s.transitionProgress);
       }
 
       animId = requestAnimationFrame(loop);
@@ -1166,11 +1195,12 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
         ref={canvasRef}
         onClick={handleCanvasClick}
         style={{
-          display: "block",
+          position: "absolute",
+          top: 0,
+          left: 0,
           width: "100%",
           height: "100%",
           imageRendering: "pixelated",
-          objectFit: "contain",
         }}
         tabIndex={0}
       />
