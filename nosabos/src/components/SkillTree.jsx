@@ -27,6 +27,7 @@ import {
   Flex,
   useBreakpointValue,
 } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import Conversations from "./Conversations";
@@ -1538,8 +1539,22 @@ function LessonDetailModal({
 }) {
   const [gameLoading, setGameLoading] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  const [loadingModalSize, setLoadingModalSize] = useState(null);
+  const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
+  const modalContentRef = useRef(null);
+  const generationTokenRef = useRef(0);
 
   const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+
+  const captureModalSize = useCallback(() => {
+    if (!isDesktop || !modalContentRef.current) return;
+    const rect = modalContentRef.current.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    setLoadingModalSize({
+      width: Math.round(rect.width),
+      height: Math.round(rect.height),
+    });
+  }, [isDesktop]);
 
   // Rotate loading messages every 1.5 seconds
   useEffect(() => {
@@ -1553,10 +1568,24 @@ function LessonDetailModal({
   // Reset loading state when modal closes
   useEffect(() => {
     if (!isOpen) {
+      generationTokenRef.current += 1;
       setGameLoading(false);
       setLoadingMsgIdx(0);
+      setLoadingModalSize(null);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || gameLoading) return;
+    captureModalSize();
+  }, [captureModalSize, gameLoading, isOpen, lesson]);
+
+  const handleCancelGameLoading = useCallback(() => {
+    generationTokenRef.current += 1;
+    setGameLoading(false);
+    setLoadingMsgIdx(0);
+    onClose();
+  }, [onClose]);
 
   if (!isOpen || !lesson || !unit) return null;
 
@@ -1569,6 +1598,9 @@ function LessonDetailModal({
     : lesson;
 
   const handleStartGame = async () => {
+    captureModalSize();
+    const requestToken = generationTokenRef.current + 1;
+    generationTokenRef.current = requestToken;
     setGameLoading(true);
     setLoadingMsgIdx(0);
 
@@ -1592,45 +1624,79 @@ function LessonDetailModal({
         reviewContext,
       );
 
+      if (requestToken !== generationTokenRef.current) return;
+
       // Pass both lesson and pre-generated scenario to parent
       onStartLesson(lessonWithReviewContext, scenario);
       onClose();
     } catch (e) {
+      if (requestToken !== generationTokenRef.current) return;
       console.error("Failed to generate game scenario:", e);
       // Fall back to normal lesson start
       onStartLesson(lessonWithReviewContext);
       onClose();
     } finally {
-      setGameLoading(false);
+      if (requestToken === generationTokenRef.current) {
+        setGameLoading(false);
+      }
     }
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={gameLoading ? undefined : onClose}
-      size={gameLoading ? "full" : "xl"}
+      onClose={gameLoading ? handleCancelGameLoading : onClose}
+      size={gameLoading && !isDesktop ? "full" : "xl"}
       isCentered
       closeOnOverlayClick={!gameLoading}
       closeOnEsc={!gameLoading}
     >
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
       <ModalContent
+        ref={modalContentRef}
         bg="gray.900"
         color="gray.100"
-        borderRadius={gameLoading ? { base: "0", md: "xl" } : "2xl"}
+        borderRadius={gameLoading ? { base: "0", md: "2xl" } : "2xl"}
         overflow="hidden"
         boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
         border="1px solid"
-        borderColor={gameLoading ? "whiteAlpha.100" : `${unit.color}30`}
-        {...(gameLoading ? {
-          w: { base: "100vw", md: "50vw" },
-          h: { base: "100vh", md: "50vh" },
-          maxW: { base: "100vw", md: "50vw" },
-          maxH: { base: "100vh", md: "50vh" },
-          m: { base: 0, md: "auto" },
-          borderRadius: { base: "0", md: "xl" },
-        } : {})}
+        borderColor={`${unit.color}30`}
+        {...(gameLoading
+          ? {
+              w: {
+                base: "100vw",
+                md: loadingModalSize?.width
+                  ? `${loadingModalSize.width}px`
+                  : undefined,
+              },
+              h: {
+                base: "100vh",
+                md: loadingModalSize?.height
+                  ? `${loadingModalSize.height}px`
+                  : undefined,
+              },
+              maxW: {
+                base: "100vw",
+                md: loadingModalSize?.width
+                  ? `${loadingModalSize.width}px`
+                  : undefined,
+              },
+              maxH: {
+                base: "100vh",
+                md: loadingModalSize?.height
+                  ? `${loadingModalSize.height}px`
+                  : undefined,
+              },
+              minH: {
+                base: "100vh",
+                md: loadingModalSize?.height
+                  ? `${loadingModalSize.height}px`
+                  : undefined,
+              },
+              m: { base: 0, md: "auto" },
+              borderRadius: { base: "0", md: "2xl" },
+            }
+          : {})}
       >
         {/* Decorative gradient background */}
         {!gameLoading && (
@@ -1649,36 +1715,50 @@ function LessonDetailModal({
         {gameLoading ? (
           /* ── Interactive mini-map while game generates ── */
           <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
-            {/* Game fills the modal */}
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              zIndex={2}
+              px={{ base: 3, md: 4 }}
+              py={{ base: 3, md: 4 }}
+              bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+            >
+              <HStack align="flex-start" justify="space-between" spacing={3}>
+                <Text
+                  fontSize={{ base: "sm", md: "md" }}
+                  color="blue.100"
+                  minH="24px"
+                  key={loadingMsgIdx}
+                  fontFamily="monospace"
+                  maxW="calc(100% - 56px)"
+                  sx={{
+                    animation: "fadeIn 0.4s ease-in-out",
+                    "@keyframes fadeIn": {
+                      "0%": { opacity: 0, transform: "translateY(-4px)" },
+                      "100%": { opacity: 1, transform: "translateY(0)" },
+                    },
+                  }}
+                >
+                  {loadingMessages[loadingMsgIdx]}
+                </Text>
+                <IconButton
+                  icon={<CloseIcon boxSize={3} />}
+                  aria-label={supportLang === "es" ? "Salir" : "Exit"}
+                  size="sm"
+                  variant="outline"
+                  color="white"
+                  borderColor="whiteAlpha.500"
+                  bg="blackAlpha.400"
+                  _hover={{ bg: "whiteAlpha.200", borderColor: "whiteAlpha.700" }}
+                  _active={{ bg: "whiteAlpha.300" }}
+                  onClick={handleCancelGameLoading}
+                />
+              </HStack>
+            </Box>
             <Box flex="1" overflow="hidden" position="relative">
               <LoadingMiniGame supportLang={supportLang} />
-            </Box>
-            {/* Small status bar at the bottom */}
-            <Box
-              px={4}
-              py={2}
-              bg="rgba(8, 20, 43, 0.95)"
-              borderTop="1px solid"
-              borderColor="whiteAlpha.100"
-              flexShrink={0}
-              textAlign="center"
-            >
-              <Text
-                fontSize="sm"
-                color="blue.100"
-                minH="18px"
-                key={loadingMsgIdx}
-                fontFamily="monospace"
-                sx={{
-                  animation: "fadeIn 0.4s ease-in-out",
-                  "@keyframes fadeIn": {
-                    "0%": { opacity: 0, transform: "translateY(4px)" },
-                    "100%": { opacity: 1, transform: "translateY(0)" },
-                  },
-                }}
-              >
-                {loadingMessages[loadingMsgIdx]}
-              </Text>
             </Box>
           </Box>
         ) : (
