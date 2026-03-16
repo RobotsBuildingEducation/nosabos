@@ -1440,6 +1440,7 @@ export default function RPGGame({
   );
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
   const [npcNameMap, setNpcNameMap] = useState(null);
+  const shouldCenterLessonSpawn = !!lessonContext && !!initialScenario;
 
   // Game state
   const [dialogue, setDialogue] = useState(null);
@@ -1752,6 +1753,60 @@ export default function RPGGame({
       ""
     );
   }, [activeMap, supportLang]);
+
+  const resolvePreferredPlayerStart = useCallback(
+    (map, options = {}) => {
+      const fallback = map?.playerStart || scenario?.playerStart || { x: 2, y: 2 };
+      if (!shouldCenterLessonSpawn || !map) return fallback;
+
+      const mapWidth = Number(map?.mapWidth || scenario?.mapWidth || 0);
+      const mapHeight = Number(map?.mapHeight || scenario?.mapHeight || 0);
+      const mapData = Array.isArray(options.mapData) ? options.mapData : null;
+      const tileDefs = options.tiles || map?.tiles || scenario?.tiles || [];
+
+      if (!mapWidth || !mapHeight || !mapData?.length) {
+        return fallback;
+      }
+
+      const occupied = new Set();
+      (options.npcs || []).forEach((npc) => {
+        occupied.add(`${npc.tx},${npc.ty}`);
+      });
+      (options.portals || []).forEach((portal) => {
+        occupied.add(`${portal.tx},${portal.ty}`);
+      });
+
+      const centerX = Math.floor((mapWidth - 1) / 2);
+      const centerY = Math.floor((mapHeight - 1) / 2);
+      let best = null;
+      let bestScore = Number.POSITIVE_INFINITY;
+      let bestTieBreaker = Number.POSITIVE_INFINITY;
+
+      for (let y = 0; y < mapHeight; y++) {
+        for (let x = 0; x < mapWidth; x++) {
+          if (occupied.has(`${x},${y}`)) continue;
+          const tileType = mapData[y * mapWidth + x];
+          const tileDef = tileDefs[tileType];
+          if (tileDef?.solid) continue;
+          if (!tileDef && tileType !== 0) continue;
+
+          const score = Math.abs(x - centerX) + Math.abs(y - centerY);
+          const tieBreaker = Math.hypot(x - centerX, y - centerY);
+          if (
+            score < bestScore ||
+            (score === bestScore && tieBreaker < bestTieBreaker)
+          ) {
+            best = { x, y };
+            bestScore = score;
+            bestTieBreaker = tieBreaker;
+          }
+        }
+      }
+
+      return best || fallback;
+    },
+    [scenario, shouldCenterLessonSpawn],
+  );
 
   const flashBlockedTileHint = useCallback(
     (tx, ty) => {
@@ -2597,19 +2652,28 @@ export default function RPGGame({
     const currentMapNpcs = activeMapNpcs;
     const currentMapTiles = activeMap.tiles || scenario.tiles;
     const currentMapPortals = activeMap.portals || [];
-    const entrySpawn =
+    const queuedMapEntrySpawn =
       mapEntrySpawnRef.current?.mapId === activeMap.id
         ? {
             x: mapEntrySpawnRef.current.x,
             y: mapEntrySpawnRef.current.y,
           }
-        : activeMap.playerStart || scenario.playerStart;
+        : null;
     mapEntrySpawnRef.current = null;
 
     // Generate map
     const mapData =
       typeof activeMap.generate === "function" ? activeMap.generate(seed) : [];
     mapDataRef.current = mapData;
+
+    const resolvedEntrySpawn =
+      queuedMapEntrySpawn ||
+      resolvePreferredPlayerStart(activeMap, {
+        mapData,
+        npcs: currentMapNpcs,
+        portals: currentMapPortals,
+        tiles: currentMapTiles,
+      });
 
     const getTile = (x, y) => {
       if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 2;
@@ -2623,10 +2687,10 @@ export default function RPGGame({
 
     // Init game state
     gameStateRef.current = {
-      playerX: entrySpawn.x,
-      playerY: entrySpawn.y,
-      renderX: entrySpawn.x,
-      renderY: entrySpawn.y,
+      playerX: resolvedEntrySpawn.x,
+      playerY: resolvedEntrySpawn.y,
+      renderX: resolvedEntrySpawn.x,
+      renderY: resolvedEntrySpawn.y,
       playerDir: "down",
       keysDown: new Set(),
       moveTimer: 0,
@@ -2640,6 +2704,11 @@ export default function RPGGame({
 
     const width = canvasRef.current.clientWidth;
     const height = canvasRef.current.clientHeight;
+    const PLAYER_WIDTH_TILES = 0.9;
+    const PLAYER_HEIGHT_TILES = 1.2;
+    const PLAYER_FOOT_MARGIN_TILES = 0.02;
+    const playerVerticalOffset =
+      TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -2706,8 +2775,8 @@ export default function RPGGame({
       1000,
     );
     camera.position.set(
-      entrySpawn.x * TILE + TILE / 2,
-      (MAP_H - 1 - entrySpawn.y) * TILE + TILE / 2,
+      resolvedEntrySpawn.x * TILE + TILE / 2,
+      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
       100,
     );
     cameraRef.current = camera;
@@ -2929,11 +2998,6 @@ export default function RPGGame({
 
     // ── Player sprite ─────────────────────────────────────────────────────
     const playerTex = fallbackPlayerTexture;
-    const PLAYER_WIDTH_TILES = 0.9;
-    const PLAYER_HEIGHT_TILES = 1.2;
-    const PLAYER_FOOT_MARGIN_TILES = 0.02;
-    const playerVerticalOffset =
-      TILE * ((PLAYER_HEIGHT_TILES - 1) / 2 + PLAYER_FOOT_MARGIN_TILES);
     const playerGeo = new THREE.PlaneGeometry(
       TILE * PLAYER_WIDTH_TILES,
       TILE * PLAYER_HEIGHT_TILES,
@@ -2944,8 +3008,8 @@ export default function RPGGame({
     });
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
-      entrySpawn.x * TILE + TILE / 2,
-      (MAP_H - 1 - entrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
+      resolvedEntrySpawn.x * TILE + TILE / 2,
+      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
@@ -3134,7 +3198,7 @@ export default function RPGGame({
         item.mesh = itemMesh;
       });
     } else if (allGatherItems.length > 0) {
-      const playerStart = activeMap.playerStart || scenario.playerStart;
+      const playerStart = resolvedEntrySpawn;
       const placed = [];
       const occupied = new Set();
       currentMapNpcs.forEach((n) => occupied.add(`${n.tx},${n.ty}`));
@@ -3348,7 +3412,8 @@ export default function RPGGame({
 
       // Camera follow (smooth)
       const camTargetX = gs.renderX * TILE + TILE / 2;
-      const camTargetY = (MAP_H - 1 - gs.renderY) * TILE + TILE / 2;
+      const camTargetY =
+        (MAP_H - 1 - gs.renderY) * TILE + TILE / 2 + playerVerticalOffset;
       camera.position.x += (camTargetX - camera.position.x) * 0.1;
       camera.position.y += (camTargetY - camera.position.y) * 0.1;
 
@@ -4317,7 +4382,21 @@ export default function RPGGame({
         scenario.maps?.find(
           (entry) => entry.id === (scenario.startMapId || scenario.id),
         ) || scenario;
-      const start = resetMap?.playerStart || scenario.playerStart;
+      const resetMapNpcs =
+        scenario?.npcs?.filter(
+          (npc) =>
+            (npc.mapId || scenario.startMapId || scenario.id) ===
+            (resetMap?.id || scenario?.id),
+        ) || [];
+      const start = resolvePreferredPlayerStart(resetMap || scenario, {
+        mapData:
+          activeMap?.id === resetMap?.id && Array.isArray(mapDataRef.current)
+            ? mapDataRef.current
+            : null,
+        npcs: resetMapNpcs,
+        portals: resetMap?.portals || [],
+        tiles: resetMap?.tiles || scenario?.tiles,
+      });
       gameStateRef.current.playerX = start.x;
       gameStateRef.current.playerY = start.y;
       gameStateRef.current.renderX = start.x;
@@ -4362,7 +4441,6 @@ export default function RPGGame({
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
-  const isGameReview = !!lessonContext && !!initialScenario && !isTutorialGame;
   const isTutorialGame =
     !!lessonContext?.isTutorial &&
     lessonContext?.content?.game?.topic === "tutorial";
@@ -4587,9 +4665,8 @@ export default function RPGGame({
   return (
     <Box
       position="relative"
-      w={isEmbedded ? "100%" : isGameReview ? { base: "100vw", md: "800px" } : "100vw"}
-      h={isEmbedded ? "80vh" : isGameReview ? { base: "100vh", md: "50vh" } : "100vh"}
-      mx={isGameReview ? "auto" : undefined}
+      w={isEmbedded ? "100%" : "100vw"}
+      h={isEmbedded ? "80vh" : "100vh"}
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
