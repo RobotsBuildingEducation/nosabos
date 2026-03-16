@@ -273,7 +273,6 @@ export default function FlashcardSkillTree({
       : FLASHCARD_DATA
   );
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
-  const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   // Sound settings
@@ -284,21 +283,12 @@ export default function FlashcardSkillTree({
     [userProgress, targetLang]
   );
 
-  // Skip initial animation on first render to prevent stutter
-  // Use double RAF to ensure we're past layout and paint
+  // Enable animations after first render (single RAF is sufficient)
   useEffect(() => {
-    let frame1, frame2;
-    frame1 = requestAnimationFrame(() => {
-      setHasMounted(true);
-      // Second RAF ensures we're fully rendered before enabling animations
-      frame2 = requestAnimationFrame(() => {
-        setIsReady(true);
-      });
+    const frame = requestAnimationFrame(() => {
+      setIsReady(true);
     });
-    return () => {
-      cancelAnimationFrame(frame1);
-      cancelAnimationFrame(frame2);
-    };
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // Reset local completed cards when language changes
@@ -508,13 +498,10 @@ export default function FlashcardSkillTree({
   }, []);
 
   return (
-    <MotionBox
+    <Box
       w="100%"
       minH="500px"
       position="relative"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.15, ease: "easeOut" }}
     >
       {/* Main container with vertical layout */}
       <VStack spacing={8} align="stretch">
@@ -643,6 +630,6 @@ export default function FlashcardSkillTree({
           languageXp={languageXp}
         />
       )}
-    </MotionBox>
+    </Box>
   );
 }
