@@ -4362,6 +4362,7 @@ export default function RPGGame({
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
+  const isGameReview = !!lessonContext && !!initialScenario && !isTutorialGame;
   const isTutorialGame =
     !!lessonContext?.isTutorial &&
     lessonContext?.content?.game?.topic === "tutorial";
@@ -4586,8 +4587,9 @@ export default function RPGGame({
   return (
     <Box
       position="relative"
-      w={isEmbedded ? "100%" : "100vw"}
-      h={isEmbedded ? "80vh" : "100vh"}
+      w={isEmbedded ? "100%" : isGameReview ? { base: "100vw", md: "800px" } : "100vw"}
+      h={isEmbedded ? "80vh" : isGameReview ? { base: "100vh", md: "50vh" } : "100vh"}
+      mx={isGameReview ? "auto" : undefined}
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
