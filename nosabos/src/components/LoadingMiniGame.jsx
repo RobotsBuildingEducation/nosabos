@@ -713,16 +713,19 @@ function drawDogCharacter(ctx, px, py, dir, frame) {
     d(DOG.ear, cx - 14, headY + 2, 6, 14);
     d(DOG.ear, cx + 8, headY + 2, 6, 14);
   } else {
-    // side views (left / right)
-    const flip = dir === "right";
-    const fx = flip ? -1 : 1;
-    const offX = flip ? cx + 2 : cx - 12;
+    // Side view: always draw facing left, flip canvas for right
+    if (dir === "right") {
+      ctx.save();
+      ctx.translate(cx, 0);
+      ctx.scale(-1, 1);
+      ctx.translate(-cx, 0);
+    }
 
-    // tail
-    const tailX = flip ? cx - 10 + tailWag : cx + 6 - tailWag;
-    d(DOG.furDark, tailX, by - 22 + bob, 4, 8);
-    if (dir === "left") d(DOG.furLight, tailX + 1, by - 22 + bob, 2, 4);
-    else d(DOG.furLight, tailX + 1, by - 22 + bob, 2, 4);
+    const offX = cx - 12;
+
+    // tail (behind, right side of body when facing left)
+    d(DOG.furDark, cx + 6 - tailWag, by - 22 + bob, 4, 8);
+    d(DOG.furLight, cx + 7 - tailWag, by - 22 + bob, 2, 4);
 
     // body
     d(DOG.fur, offX, by - 18 + bob, 20, 14);
@@ -735,24 +738,24 @@ function drawDogCharacter(ctx, px, py, dir, frame) {
     d(DOG.paw, offX + 12 - stride, by - 2, 6, 5);
 
     // head
-    const hx = flip ? cx - 8 : cx - 12;
+    const hx = cx - 12;
     d(DOG.fur, hx, headY, 20, 16);
-    // ear (one visible)
-    const earX = flip ? hx + 14 : hx - 4;
-    d(DOG.ear, earX, headY + 2, 6, 14);
+    // ear (one visible, left side)
+    d(DOG.ear, hx - 4, headY + 2, 6, 14);
     // muzzle
-    const muzzleX = flip ? hx + 12 : hx - 2;
-    d(DOG.belly, muzzleX, headY + 8, 10, 8);
+    d(DOG.belly, hx - 2, headY + 8, 10, 8);
     // eye
-    const eyeX = flip ? hx + 10 : hx + 4;
-    d(DOG.eyeWhite, eyeX, headY + 6, 4, 4);
-    d(DOG.eyePupil, eyeX + (flip ? 1 : 0), headY + 7, 3, 3);
+    d(DOG.eyeWhite, hx + 4, headY + 6, 4, 4);
+    d(DOG.eyePupil, hx + 4, headY + 7, 3, 3);
     // nose
-    const noseX = flip ? hx + 16 : hx - 1;
-    d(DOG.nose, noseX, headY + 10, 3, 3);
+    d(DOG.nose, hx - 1, headY + 10, 3, 3);
     // tongue
     if (phase % 4 < 2) {
-      d(DOG.tongue, noseX, headY + 13, 3, 3);
+      d(DOG.tongue, hx - 1, headY + 13, 3, 3);
+    }
+
+    if (dir === "right") {
+      ctx.restore();
     }
   }
 }

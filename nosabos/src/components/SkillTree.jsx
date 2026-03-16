@@ -1624,9 +1624,9 @@ function LessonDetailModal({
         border="1px solid"
         borderColor={gameLoading ? "whiteAlpha.100" : `${unit.color}30`}
         {...(gameLoading ? {
-          w: { base: "100vw", md: "75vw" },
+          w: { base: "100vw", md: "50vw" },
           h: { base: "100vh", md: "50vh" },
-          maxW: { base: "100vw", md: "75vw" },
+          maxW: { base: "100vw", md: "50vw" },
           maxH: { base: "100vh", md: "50vh" },
           m: { base: 0, md: "auto" },
           borderRadius: { base: "0", md: "xl" },
