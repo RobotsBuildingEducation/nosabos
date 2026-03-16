@@ -63,6 +63,7 @@ import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
 import RobotBuddyPro from "../RobotBuddyPro";
+import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
 import RandomCharacter from "../RandomCharacter";
@@ -4361,6 +4362,7 @@ export default function RPGGame({
   };
 
   const isEmbedded = !!lessonContext && !initialScenario;
+  const isGameReview = !!lessonContext && !!initialScenario && !isTutorialGame;
   const isTutorialGame =
     !!lessonContext?.isTutorial &&
     lessonContext?.content?.game?.topic === "tutorial";
@@ -4540,15 +4542,18 @@ export default function RPGGame({
   if (!scenario) {
     return (
       <Box
-        w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "80vh" : "100vh"}
+        w={isEmbedded ? "100%" : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }}
+        h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "50vh" }}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
         bg={isEmbedded ? "transparent" : "#1a1a2e"}
+        mx="auto"
         display="flex"
-        alignItems={isEmbedded ? "flex-start" : "center"}
-        justifyContent="center"
-        pt={isEmbedded ? 6 : undefined}
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="flex-start"
+        pt={0}
+        mt={isEmbedded ? -2 : 0}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -4558,25 +4563,22 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <VStack spacing={4}>
-          <RobotBuddyPro state="thinking" maxW={140} />
-          <Text
-            color="white"
-            fontSize="xl"
-            fontWeight="bold"
-            textAlign="center"
-          >
-            {isTutorialGame
-              ? ui.loadingTutorialScene
-              : ui.loadingGeneratingGame}
-          </Text>
-          <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
-            {loadingMessages[loadingMsgIdx]}
-          </Text>
-          {!isTutorialGame && (
-            <Button onClick={goToScenarioSelect}>{ui.back}</Button>
-          )}
-        </VStack>
+        <Text fontSize="md" color="purple.200" textAlign="center" minH="20px" py={0} mb={0}>
+          {loadingMessages[loadingMsgIdx]}
+        </Text>
+        {!isTutorialGame && (
+          <Button size="sm" onClick={goToScenarioSelect} mb={0}>{ui.back}</Button>
+        )}
+        <Box
+          w={isEmbedded ? "100%" : { base: "95vw", md: "100%" }}
+          maxW="800px"
+          h={isEmbedded ? "70%" : { base: "60vh", md: "85%" }}
+          borderRadius="xl"
+          overflow="hidden"
+          position="relative"
+        >
+          <LoadingMiniGame supportLang={supportLang} />
+        </Box>
       </Box>
     );
   }
@@ -4585,8 +4587,9 @@ export default function RPGGame({
   return (
     <Box
       position="relative"
-      w={isEmbedded ? "100%" : "100vw"}
-      h={isEmbedded ? "80vh" : "100vh"}
+      w={isEmbedded ? "100%" : isGameReview ? { base: "100vw", md: "800px" } : "100vw"}
+      h={isEmbedded ? "80vh" : isGameReview ? { base: "100vh", md: "50vh" } : "100vh"}
+      mx={isGameReview ? "auto" : undefined}
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"

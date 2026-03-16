@@ -233,6 +233,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
 import RobotBuddyPro from "./RobotBuddyPro";
+import LoadingMiniGame from "./LoadingMiniGame";
 import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
 
@@ -1608,7 +1609,7 @@ function LessonDetailModal({
     <Modal
       isOpen={isOpen}
       onClose={gameLoading ? undefined : onClose}
-      size="xl"
+      size={gameLoading ? "full" : "xl"}
       isCentered
       closeOnOverlayClick={!gameLoading}
       closeOnEsc={!gameLoading}
@@ -1617,11 +1618,19 @@ function LessonDetailModal({
       <ModalContent
         bg="gray.900"
         color="gray.100"
-        borderRadius="2xl"
+        borderRadius={gameLoading ? { base: "0", md: "xl" } : "2xl"}
         overflow="hidden"
         boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
         border="1px solid"
-        borderColor={`${unit.color}30`}
+        borderColor={gameLoading ? "whiteAlpha.100" : `${unit.color}30`}
+        {...(gameLoading ? {
+          w: { base: "100vw", md: "50vw" },
+          h: { base: "100vh", md: "50vh" },
+          maxW: { base: "100vw", md: "50vw" },
+          maxH: { base: "100vh", md: "50vh" },
+          m: { base: 0, md: "auto" },
+          borderRadius: { base: "0", md: "xl" },
+        } : {})}
       >
         {/* Decorative gradient background */}
         {!gameLoading && (
@@ -1638,88 +1647,40 @@ function LessonDetailModal({
         )}
 
         {gameLoading ? (
-          /* ── Game loading state with dark blue matrix styling ── */
-          <>
+          /* ── Interactive mini-map while game generates ── */
+          <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+            {/* Game fills the modal */}
+            <Box flex="1" overflow="hidden" position="relative">
+              <LoadingMiniGame supportLang={supportLang} />
+            </Box>
+            {/* Small status bar at the bottom */}
             <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              overflow="hidden"
-              borderRadius="2xl"
-              pointerEvents="none"
-              bg="#08142b"
-              sx={{
-                "&::before": {
-                  content: '""',
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
-                    "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
-                    "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
-                    "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
-                  animation: "matrixGlowShift 10s ease-in-out infinite",
-                },
-                "&::after": {
-                  content: '""',
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage:
-                    "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
-                    "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
-                  opacity: 0.45,
-                  mixBlendMode: "screen",
-                },
-                "@keyframes matrixGlowShift": {
-                  "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-                  "50%": { transform: "translate(0, -2%) scale(1.02)" },
-                },
-              }}
-            />
-            <ModalBody py={16} position="relative" zIndex={1}>
-              <VStack spacing={8} align="center">
-                <Box
-                  animation="gentleBob 3s ease-in-out infinite"
-                  sx={{
-                    "@keyframes gentleBob": {
-                      "0%, 100%": { transform: "translateY(0)" },
-                      "50%": { transform: "translateY(-6px)" },
-                    },
-                  }}
-                >
-                  <RobotBuddyPro state="thinking" maxW={140} />
-                </Box>
-                <VStack spacing={3}>
-                  <Text
-                    fontSize="lg"
-                    fontWeight="bold"
-                    color="white"
-                    textAlign="center"
-                  >
-                    {supportLang === "es" ? "Generando tu juego..." : "Generating your game..."}
-                  </Text>
-                  <Text
-                    fontSize="sm"
-                    color="blue.100"
-                    textAlign="center"
-                    minH="20px"
-                    key={loadingMsgIdx}
-                    sx={{
-                      animation: "fadeIn 0.4s ease-in-out",
-                      "@keyframes fadeIn": {
-                        "0%": { opacity: 0, transform: "translateY(4px)" },
-                        "100%": { opacity: 1, transform: "translateY(0)" },
-                      },
-                    }}
-                  >
-                    {loadingMessages[loadingMsgIdx]}
-                  </Text>
-                </VStack>
-              </VStack>
-            </ModalBody>
-          </>
+              px={4}
+              py={2}
+              bg="rgba(8, 20, 43, 0.95)"
+              borderTop="1px solid"
+              borderColor="whiteAlpha.100"
+              flexShrink={0}
+              textAlign="center"
+            >
+              <Text
+                fontSize="sm"
+                color="blue.100"
+                minH="18px"
+                key={loadingMsgIdx}
+                fontFamily="monospace"
+                sx={{
+                  animation: "fadeIn 0.4s ease-in-out",
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(4px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" },
+                  },
+                }}
+              >
+                {loadingMessages[loadingMsgIdx]}
+              </Text>
+            </Box>
+          </Box>
         ) : (
           /* ── Normal modal content ── */
           <>
