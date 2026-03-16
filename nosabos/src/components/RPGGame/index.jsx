@@ -4550,6 +4550,8 @@ export default function RPGGame({
         flexDirection="column"
         alignItems="center"
         justifyContent="flex-start"
+        pt={0}
+        mt={isEmbedded ? -2 : 0}
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -4559,7 +4561,7 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <Text fontSize="xs" color="purple.200" textAlign="center" minH="14px" py={0}>
+        <Text fontSize="md" color="purple.200" textAlign="center" minH="20px" py={0} mb={0}>
           {loadingMessages[loadingMsgIdx]}
         </Text>
         {!isTutorialGame && (
