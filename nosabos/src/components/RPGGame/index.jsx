@@ -4542,7 +4542,7 @@ export default function RPGGame({
     return (
       <Box
         w={isEmbedded ? "100%" : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }}
-        h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "600px" }}
+        h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "50vh" }}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
         bg={isEmbedded ? "transparent" : "#1a1a2e"}
@@ -4569,9 +4569,9 @@ export default function RPGGame({
           <Button size="sm" onClick={goToScenarioSelect} mb={0}>{ui.back}</Button>
         )}
         <Box
-          w={isEmbedded ? "100%" : { base: "95vw", md: "40vw" }}
+          w={isEmbedded ? "100%" : { base: "95vw", md: "100%" }}
           maxW="800px"
-          h={isEmbedded ? "70%" : { base: "60vh", md: "45vh" }}
+          h={isEmbedded ? "70%" : { base: "60vh", md: "85%" }}
           borderRadius="xl"
           overflow="hidden"
           position="relative"
