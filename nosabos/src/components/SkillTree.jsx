@@ -1609,7 +1609,7 @@ function LessonDetailModal({
     <Modal
       isOpen={isOpen}
       onClose={gameLoading ? undefined : onClose}
-      size="xl"
+      size={gameLoading ? "full" : "xl"}
       isCentered
       closeOnOverlayClick={!gameLoading}
       closeOnEsc={!gameLoading}
@@ -1618,11 +1618,12 @@ function LessonDetailModal({
       <ModalContent
         bg="gray.900"
         color="gray.100"
-        borderRadius="2xl"
+        borderRadius={gameLoading ? "xl" : "2xl"}
         overflow="hidden"
         boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
         border="1px solid"
-        borderColor={`${unit.color}30`}
+        borderColor={gameLoading ? "whiteAlpha.100" : `${unit.color}30`}
+        {...(gameLoading ? { maxW: "95vw", maxH: "80vh", w: "95vw", h: "80vh", my: "auto", mx: "auto" } : {})}
       >
         {/* Decorative gradient background */}
         {!gameLoading && (
@@ -1640,50 +1641,39 @@ function LessonDetailModal({
 
         {gameLoading ? (
           /* ── Interactive mini-map while game generates ── */
-          <>
+          <Box display="flex" flexDirection="column" h="100%" overflow="hidden">
+            {/* Game fills the modal */}
+            <Box flex="1" overflow="hidden" position="relative">
+              <LoadingMiniGame supportLang={supportLang} />
+            </Box>
+            {/* Small status bar at the bottom */}
             <Box
-              position="absolute"
-              top={0}
-              left={0}
-              right={0}
-              bottom={0}
-              overflow="hidden"
-              borderRadius="2xl"
-              bg="#08142b"
-              pointerEvents="none"
-            />
-            <ModalBody py={6} position="relative" zIndex={1}>
-              <VStack spacing={4} align="center">
-                <Text
-                  fontSize="md"
-                  fontWeight="bold"
-                  color="white"
-                  textAlign="center"
-                >
-                  {supportLang === "es"
-                    ? "Explora mientras carga tu juego..."
-                    : "Explore while your game loads..."}
-                </Text>
-                <LoadingMiniGame supportLang={supportLang} />
-                <Text
-                  fontSize="xs"
-                  color="blue.100"
-                  textAlign="center"
-                  minH="16px"
-                  key={loadingMsgIdx}
-                  sx={{
-                    animation: "fadeIn 0.4s ease-in-out",
-                    "@keyframes fadeIn": {
-                      "0%": { opacity: 0, transform: "translateY(4px)" },
-                      "100%": { opacity: 1, transform: "translateY(0)" },
-                    },
-                  }}
-                >
-                  {loadingMessages[loadingMsgIdx]}
-                </Text>
-              </VStack>
-            </ModalBody>
-          </>
+              px={4}
+              py={2}
+              bg="rgba(8, 20, 43, 0.95)"
+              borderTop="1px solid"
+              borderColor="whiteAlpha.100"
+              flexShrink={0}
+              textAlign="center"
+            >
+              <Text
+                fontSize="sm"
+                color="blue.100"
+                minH="18px"
+                key={loadingMsgIdx}
+                fontFamily="monospace"
+                sx={{
+                  animation: "fadeIn 0.4s ease-in-out",
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(4px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" },
+                  },
+                }}
+              >
+                {loadingMessages[loadingMsgIdx]}
+              </Text>
+            </Box>
+          </Box>
         ) : (
           /* ── Normal modal content ── */
           <>
