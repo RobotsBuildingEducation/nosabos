@@ -678,9 +678,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     top={2}
                     left={2}
                     size="sm"
-                    variant="ghost"
-                    color="whiteAlpha.700"
-                    _hover={{ bg: "whiteAlpha.200", color: "white" }}
+                    variant="solid"
+                    bg="white"
+                    color="blue"
+                    boxShadow="0 4px 0 blue"
+                    rounded="xl"
+                    _hover={{ bg: "gray.50" }}
                     onClick={handleFlip}
                     zIndex={2}
                   />

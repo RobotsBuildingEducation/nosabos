@@ -29,6 +29,7 @@ import {
   RiVolumeUpLine,
   RiStopLine,
 } from "react-icons/ri";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
@@ -579,38 +580,51 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
     <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.700" />
       <ModalContent
-        bg="gray.900"
+        bg="#08142b"
         borderRadius="2xl"
         overflow="hidden"
-        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px ${cefrColor.primary}40`}
+        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(56,189,248,0.2)`}
         border="2px solid"
-        borderColor={`${cefrColor.primary}30`}
+        borderColor="rgba(56,189,248,0.3)"
+        position="relative"
+        sx={{
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+              "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+              "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+              "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+            animation: "matrixGlowShift 10s ease-in-out infinite",
+            zIndex: 0,
+            borderRadius: "2xl",
+          },
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: 0.45,
+            mixBlendMode: "screen",
+            zIndex: 0,
+            borderRadius: "2xl",
+          },
+          "@keyframes matrixGlowShift": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "50%": { transform: "translate(0, -2%) scale(1.02)" },
+          },
+        }}
       >
         <ModalBody
           p={8}
           position="relative"
-          bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+          zIndex={1}
         >
           <VStack spacing={6} align="stretch">
-            {/* Header */}
-            <HStack justify="space-between">
-              <Badge
-                px={4}
-                py={2}
-                borderRadius="full"
-                bg={cefrColor.primary}
-                color="white"
-                fontSize="md"
-                fontWeight="black"
-                boxShadow={`0 2px 12px ${cefrColor.primary}60`}
-              >
-                {card.cefrLevel}
-              </Badge>
-
-              <Text fontSize="sm" color="white" fontWeight="medium">
-                {LANG_NAME(supportLang)} → {LANG_NAME(targetLang)}
-              </Text>
-            </HStack>
 
             {/* Flip Card */}
             <Box
@@ -661,23 +675,21 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       getEffectiveCardLanguage(supportLang)
                     )}
                   </Text>
-                  <Box mt={6}>
-                    <Button
-                      position="absolute"
-                      bottom={3}
-                      right={3}
-                      size="sm"
-                      variant="solid"
-                      bg="whiteAlpha.200"
-                      color="white"
-                      rightIcon={<RiEyeLine size={14} />}
-                      onClick={handleShowAnswer}
-                      _hover={{ bg: "whiteAlpha.300" }}
-                      fontSize="xs"
-                    >
-                      {getTranslation("flashcard_show_answer")}
-                    </Button>
-                  </Box>
+                  <IconButton
+                    aria-label={getTranslation("flashcard_show_answer")}
+                    position="absolute"
+                    top={3}
+                    left={3}
+                    size="sm"
+                    variant="solid"
+                    bg="white"
+                    color="blue"
+                    boxShadow="0 4px 0 blue"
+                    icon={<MdOutlineSupportAgent size={18} />}
+                    onClick={handleShowAnswer}
+                    _hover={{ bg: "gray.50" }}
+                    rounded="xl"
+                  />
                 </Box>
 
                 {/* Back Side */}
