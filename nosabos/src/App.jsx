@@ -4466,92 +4466,55 @@ export default function App() {
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
   const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("Pre-A1");
-  const [initializedLevelsLang, setInitializedLevelsLang] = useState(null);
+  const normalizedTargetLang = String(resolvedTargetLang || "").toLowerCase();
+  const levelsPersistenceKey = `${activeNpub || "local"}:${normalizedTargetLang}`;
+  const [initializedLevelsKey, setInitializedLevelsKey] = useState(null);
+  const hasHydratedUserProgress =
+    user?.progress && typeof user.progress === "object";
 
   // Sync active levels from user document when it loads
   useEffect(() => {
+    if (isLoadingApp) return;
     if (!user) return;
-    if (initializedLevelsLang === resolvedTargetLang) return;
+    if (!hasHydratedUserProgress) return;
+    if (!normalizedTargetLang) return;
+    if (initializedLevelsKey === levelsPersistenceKey) return;
 
-    // Only use per-language proficiency placement (no global fallback)
-    const placement = user?.proficiencyPlacements?.[resolvedTargetLang] || null;
-    const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
+    const savedLessonLevel =
+      (CEFR_LEVELS.includes(
+        user?.progress?.activeLessonLevels?.[normalizedTargetLang],
+      ) &&
+        user.progress.activeLessonLevels[normalizedTargetLang]) ||
+      (CEFR_LEVELS.includes(user?.activeLessonLevels?.[normalizedTargetLang]) &&
+        user.activeLessonLevels[normalizedTargetLang]) ||
+      (CEFR_LEVELS.includes(user?.activeLessonLevel) &&
+        user.activeLessonLevel) ||
+      currentLessonLevel;
 
-    // Initialize from user document if available, but validate they're unlocked
-    if (
-      user.activeLessonLevel &&
-      CEFR_LEVELS.includes(user.activeLessonLevel)
-    ) {
-      // Validate the saved level is actually unlocked
-      const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeLessonLevel);
-      let isUnlocked = user.activeLessonLevel === "Pre-A1";
+    const savedFlashcardLevel =
+      (CEFR_LEVELS.includes(
+        user?.progress?.activeFlashcardLevels?.[normalizedTargetLang],
+      ) &&
+        user.progress.activeFlashcardLevels[normalizedTargetLang]) ||
+      (CEFR_LEVELS.includes(
+        user?.activeFlashcardLevels?.[normalizedTargetLang],
+      ) &&
+        user.activeFlashcardLevels[normalizedTargetLang]) ||
+      (CEFR_LEVELS.includes(user?.activeFlashcardLevel) &&
+        user.activeFlashcardLevel) ||
+      currentFlashcardLevel;
 
-      // Proficiency placement unlocks levels up to the placed level
-      if (!isUnlocked && savedLevelIndex <= placementIndex) {
-        isUnlocked = true;
-      }
-
-      if (!isUnlocked) {
-        isUnlocked = true;
-        for (let i = 0; i < savedLevelIndex; i++) {
-          if (
-            !lessonLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete &&
-            i >= placementIndex
-          ) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Use saved level if unlocked, otherwise use the highest unlocked level
-      setActiveLessonLevel(
-        isUnlocked ? user.activeLessonLevel : currentLessonLevel,
-      );
-    } else {
-      setActiveLessonLevel(currentLessonLevel);
-    }
-
-    if (
-      user.activeFlashcardLevel &&
-      CEFR_LEVELS.includes(user.activeFlashcardLevel)
-    ) {
-      // Validate the saved level is actually unlocked
-      const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeFlashcardLevel);
-      let isUnlocked = user.activeFlashcardLevel === "Pre-A1";
-
-      if (!isUnlocked && savedLevelIndex <= placementIndex) {
-        isUnlocked = true;
-      }
-
-      if (!isUnlocked) {
-        isUnlocked = true;
-        for (let i = 0; i < savedLevelIndex; i++) {
-          if (
-            !flashcardLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete &&
-            i >= placementIndex
-          ) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Use saved level if unlocked, otherwise use the highest unlocked level
-      setActiveFlashcardLevel(
-        isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel,
-      );
-    } else {
-      setActiveFlashcardLevel(currentFlashcardLevel);
-    }
-
-    setInitializedLevelsLang(resolvedTargetLang);
+    setActiveLessonLevel(savedLessonLevel);
+    setActiveFlashcardLevel(savedFlashcardLevel);
+    setInitializedLevelsKey(levelsPersistenceKey);
   }, [
+    isLoadingApp,
     user,
-    initializedLevelsLang,
-    resolvedTargetLang,
-    lessonLevelCompletionStatus,
-    flashcardLevelCompletionStatus,
+    hasHydratedUserProgress,
+    activeNpub,
+    initializedLevelsKey,
+    levelsPersistenceKey,
+    normalizedTargetLang,
     currentLessonLevel,
     currentFlashcardLevel,
   ]);
@@ -4562,51 +4525,102 @@ export default function App() {
   // Persist active lesson level to Firestore
   const prevLessonLevelRef = useRef(null);
   useEffect(() => {
-    // Skip if not initialized yet or no change
-    if (initializedLevelsLang !== resolvedTargetLang || !activeNpub) return;
+    if (!normalizedTargetLang) return;
+    if (initializedLevelsKey !== levelsPersistenceKey || !activeNpub) return;
     if (prevLessonLevelRef.current === activeLessonLevel) return;
     prevLessonLevelRef.current = activeLessonLevel;
 
-    // Save to Firestore
-    setDoc(
-      doc(database, "users", activeNpub),
-      { activeLessonLevel, updatedAt: new Date().toISOString() },
-      { merge: true },
-    ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
+    const latestUser = useUserStore.getState()?.user || {};
+    const latestProgress = latestUser?.progress || {};
+    patchUser?.({
+      activeLessonLevel,
+      progress: {
+        ...latestProgress,
+        activeLessonLevels: {
+          ...(latestProgress?.activeLessonLevels || {}),
+          [normalizedTargetLang]: activeLessonLevel,
+        },
+      },
+    });
+
+    updateDoc(doc(database, "users", activeNpub), {
+      activeLessonLevel,
+      [`progress.activeLessonLevels.${normalizedTargetLang}`]:
+        activeLessonLevel,
+      updatedAt: new Date().toISOString(),
+    }).catch((e) => console.error("Failed to save activeLessonLevel:", e));
   }, [
     activeLessonLevel,
     activeNpub,
-    initializedLevelsLang,
-    resolvedTargetLang,
+    initializedLevelsKey,
+    levelsPersistenceKey,
+    normalizedTargetLang,
+    patchUser,
   ]);
 
   // Persist active flashcard level to Firestore
   const prevFlashcardLevelRef = useRef(null);
   useEffect(() => {
-    // Skip if not initialized yet or no change
-    if (initializedLevelsLang !== resolvedTargetLang || !activeNpub) return;
+    if (!normalizedTargetLang) return;
+    if (initializedLevelsKey !== levelsPersistenceKey || !activeNpub) return;
     if (prevFlashcardLevelRef.current === activeFlashcardLevel) return;
     prevFlashcardLevelRef.current = activeFlashcardLevel;
 
-    // Save to Firestore
-    setDoc(
-      doc(database, "users", activeNpub),
-      { activeFlashcardLevel, updatedAt: new Date().toISOString() },
-      { merge: true },
-    ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
+    const latestUser = useUserStore.getState()?.user || {};
+    const latestProgress = latestUser?.progress || {};
+    patchUser?.({
+      activeFlashcardLevel,
+      progress: {
+        ...latestProgress,
+        activeFlashcardLevels: {
+          ...(latestProgress?.activeFlashcardLevels || {}),
+          [normalizedTargetLang]: activeFlashcardLevel,
+        },
+      },
+    });
+
+    updateDoc(doc(database, "users", activeNpub), {
+      activeFlashcardLevel,
+      [`progress.activeFlashcardLevels.${normalizedTargetLang}`]:
+        activeFlashcardLevel,
+      updatedAt: new Date().toISOString(),
+    }).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
   }, [
     activeFlashcardLevel,
     activeNpub,
-    initializedLevelsLang,
-    resolvedTargetLang,
+    initializedLevelsKey,
+    levelsPersistenceKey,
+    normalizedTargetLang,
+    patchUser,
   ]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
   const prevFlashcardCompletionRef = useRef({});
+  const lessonCompletionSeedKeyRef = useRef(null);
+  const flashcardCompletionSeedKeyRef = useRef(null);
 
   // Detect lesson level completion and show celebration modal
   useEffect(() => {
+    const completionSnapshot = CEFR_LEVELS.reduce((acc, level) => {
+      acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
+      return acc;
+    }, {});
+
+    if (initializedLevelsKey !== levelsPersistenceKey) {
+      prevLessonCompletionRef.current = completionSnapshot;
+      return;
+    }
+
+    if (
+      isTestUnlockActive ||
+      lessonCompletionSeedKeyRef.current !== levelsPersistenceKey
+    ) {
+      lessonCompletionSeedKeyRef.current = levelsPersistenceKey;
+      prevLessonCompletionRef.current = completionSnapshot;
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevLessonCompletionRef.current[level];
       const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
@@ -4637,14 +4651,37 @@ export default function App() {
     });
 
     // Update ref for next comparison
-    prevLessonCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
-      acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
-      return acc;
-    }, {});
-  }, [lessonLevelCompletionStatus, activeLessonLevel, wasCelebrationShown]);
+    prevLessonCompletionRef.current = completionSnapshot;
+  }, [
+    lessonLevelCompletionStatus,
+    activeLessonLevel,
+    wasCelebrationShown,
+    initializedLevelsKey,
+    levelsPersistenceKey,
+    isTestUnlockActive,
+  ]);
 
   // Detect flashcard level completion and show celebration modal
   useEffect(() => {
+    const completionSnapshot = CEFR_LEVELS.reduce((acc, level) => {
+      acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
+      return acc;
+    }, {});
+
+    if (initializedLevelsKey !== levelsPersistenceKey) {
+      prevFlashcardCompletionRef.current = completionSnapshot;
+      return;
+    }
+
+    if (
+      isTestUnlockActive ||
+      flashcardCompletionSeedKeyRef.current !== levelsPersistenceKey
+    ) {
+      flashcardCompletionSeedKeyRef.current = levelsPersistenceKey;
+      prevFlashcardCompletionRef.current = completionSnapshot;
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevFlashcardCompletionRef.current[level];
       const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
@@ -4675,14 +4712,14 @@ export default function App() {
     });
 
     // Update ref for next comparison
-    prevFlashcardCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
-      acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
-      return acc;
-    }, {});
+    prevFlashcardCompletionRef.current = completionSnapshot;
   }, [
     flashcardLevelCompletionStatus,
     activeFlashcardLevel,
     wasCelebrationShown,
+    initializedLevelsKey,
+    levelsPersistenceKey,
+    isTestUnlockActive,
   ]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
@@ -4918,7 +4955,7 @@ export default function App() {
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box pb={{ base: 32, md: 24 }} w="100%">
-          {initializedLevelsLang !== resolvedTargetLang ? (
+          {initializedLevelsKey !== levelsPersistenceKey ? (
             <Box
               display="flex"
               justifyContent="center"
