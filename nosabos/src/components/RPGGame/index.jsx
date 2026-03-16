@@ -4541,11 +4541,12 @@ export default function RPGGame({
   if (!scenario) {
     return (
       <Box
-        w={isEmbedded ? "100%" : "100vw"}
-        h={isEmbedded ? "80vh" : "100vh"}
+        w={isEmbedded ? "100%" : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }}
+        h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "600px" }}
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
         bg={isEmbedded ? "transparent" : "#1a1a2e"}
+        mx="auto"
         display="flex"
         flexDirection="column"
         alignItems="center"
@@ -4585,8 +4586,9 @@ export default function RPGGame({
   return (
     <Box
       position="relative"
-      w={isEmbedded ? "100%" : "100vw"}
-      h={isEmbedded ? "80vh" : "100vh"}
+      w={isEmbedded ? "100%" : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }}
+      h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "600px" }}
+      mx="auto"
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
