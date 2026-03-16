@@ -883,6 +883,55 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
     }
   }, [handleInteract]);
 
+  // Click/tap to interact with a specific tile
+  const handleCanvasClick = useCallback(
+    (e) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const s = stateRef.current;
+      if (s.transitioning) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const room = ROOMS[s.currentRoom];
+      const mapW = room.map[0].length;
+      const mapH = room.map.length;
+
+      // Convert click position to tile coordinates
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const tileX = Math.floor((e.clientX - rect.left) * scaleX / T);
+      const tileY = Math.floor((e.clientY - rect.top) * scaleY / T);
+
+      if (tileX < 0 || tileX >= mapW || tileY < 0 || tileY >= mapH) return;
+
+      const tile = room.map[tileY][tileX];
+
+      // Check if clicked tile is interactable (adjacent not required for click)
+      if (INTERACT_TILES.has(tile)) {
+        handleInteract(tileX, tileY);
+        // Face toward the clicked object
+        const diffX = tileX - s.px;
+        const diffY = tileY - s.py;
+        if (Math.abs(diffX) > Math.abs(diffY)) {
+          s.dir = diffX > 0 ? "right" : "left";
+        } else {
+          s.dir = diffY > 0 ? "down" : "up";
+        }
+        return;
+      }
+
+      // Check if clicked a door
+      if (tile === DOOR) {
+        const door = room.doors.find((d) => d.x === tileX && d.y === tileY);
+        if (door) {
+          enterDoor(door);
+          return;
+        }
+      }
+    },
+    [handleInteract, enterDoor],
+  );
+
   const enterDoor = useCallback(
     (door) => {
       const s = stateRef.current;
@@ -1103,118 +1152,84 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
     showRoomName(ROOMS.plaza.name[lang]);
   }, [supportLang, showRoomName]);
 
-  const lang = supportLang === "es" ? "es" : "en";
-  const controlHint =
-    lang === "es"
-      ? "WASD / Flechas · E para interactuar · Puertas para explorar salas"
-      : "WASD / Arrows · E to interact · Walk into doors to explore rooms";
-
   return (
     <Box
       ref={containerRef}
       position="relative"
       w="100%"
       h="100%"
-      display="flex"
-      flexDirection="column"
       bg="#08142b"
+      overflow="hidden"
     >
-      {/* Game canvas - fills available space */}
-      <Box
-        flex="1"
-        display="flex"
-        alignItems="center"
-        justifyContent="center"
-        overflow="hidden"
-        position="relative"
-      >
-        <canvas
-          ref={canvasRef}
-          style={{
-            display: "block",
-            maxWidth: "100%",
-            maxHeight: "100%",
-            imageRendering: "pixelated",
-            objectFit: "contain",
+      {/* Game canvas - fills entire container */}
+      <canvas
+        ref={canvasRef}
+        onClick={handleCanvasClick}
+        style={{
+          display: "block",
+          width: "100%",
+          height: "100%",
+          imageRendering: "pixelated",
+          objectFit: "contain",
+        }}
+        tabIndex={0}
+      />
+
+      {/* Room name overlay */}
+      {roomName && (
+        <Box
+          position="absolute"
+          top="12px"
+          left="50%"
+          transform="translateX(-50%)"
+          bg="rgba(8, 20, 43, 0.88)"
+          border="2px solid"
+          borderColor="cyan.600"
+          borderRadius="lg"
+          px={5}
+          py={2}
+          pointerEvents="none"
+          sx={{
+            animation: "roomFadeIn 0.4s ease-out",
+            "@keyframes roomFadeIn": {
+              "0%": { opacity: 0, transform: "translateX(-50%) translateY(-8px)" },
+              "100%": { opacity: 1, transform: "translateX(-50%) translateY(0)" },
+            },
           }}
-          tabIndex={0}
-        />
+        >
+          <Text fontSize="md" fontWeight="bold" color="cyan.100" fontFamily="monospace" whiteSpace="nowrap">
+            {roomName}
+          </Text>
+        </Box>
+      )}
 
-        {/* Room name overlay */}
-        {roomName && (
-          <Box
-            position="absolute"
-            top="12px"
-            left="50%"
-            transform="translateX(-50%)"
-            bg="rgba(8, 20, 43, 0.88)"
-            border="2px solid"
-            borderColor="cyan.600"
-            borderRadius="lg"
-            px={5}
-            py={2}
-            sx={{
-              animation: "roomFadeIn 0.4s ease-out",
-              "@keyframes roomFadeIn": {
-                "0%": { opacity: 0, transform: "translateX(-50%) translateY(-8px)" },
-                "100%": { opacity: 1, transform: "translateX(-50%) translateY(0)" },
-              },
-            }}
-          >
-            <Text fontSize="md" fontWeight="bold" color="cyan.100" fontFamily="monospace" whiteSpace="nowrap">
-              {roomName}
-            </Text>
-          </Box>
-        )}
-
-        {/* Message overlay */}
-        {message && (
-          <Box
-            position="absolute"
-            bottom="12px"
-            left="12px"
-            right="12px"
-            bg="rgba(8, 20, 43, 0.94)"
-            border="2px solid"
-            borderColor="cyan.400"
-            borderRadius="lg"
-            px={4}
-            py={3}
-            sx={{
-              animation: "msgSlideUp 0.3s ease-out",
-              "@keyframes msgSlideUp": {
-                "0%": { opacity: 0, transform: "translateY(8px)" },
-                "100%": { opacity: 1, transform: "translateY(0)" },
-              },
-            }}
-          >
-            <Text fontSize="sm" color="cyan.50" fontFamily="monospace">
-              {message}
-            </Text>
-          </Box>
-        )}
-      </Box>
-
-      {/* Bottom bar - controls & discovery */}
-      <Box
-        px={4}
-        py={2}
-        borderTop="1px solid"
-        borderColor="whiteAlpha.100"
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        flexShrink={0}
-      >
-        <Text fontSize="xs" color="whiteAlpha.400" fontFamily="monospace">
-          {controlHint}
-        </Text>
-        <Text fontSize="xs" color="blue.200" fontFamily="monospace" opacity={0.7}>
-          {lang === "es"
-            ? `${objectsFound.size}/${totalInteractables.current}`
-            : `${objectsFound.size}/${totalInteractables.current}`}
-        </Text>
-      </Box>
+      {/* Message overlay */}
+      {message && (
+        <Box
+          position="absolute"
+          bottom="12px"
+          left="12px"
+          right="12px"
+          bg="rgba(8, 20, 43, 0.94)"
+          border="2px solid"
+          borderColor="cyan.400"
+          borderRadius="lg"
+          px={4}
+          py={3}
+          pointerEvents="none"
+          sx={{
+            animation: "msgSlideUp 0.3s ease-out",
+            "@keyframes msgSlideUp": {
+              "0%": { opacity: 0, transform: "translateY(8px)" },
+              "100%": { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          <Text fontSize="sm" color="cyan.50" fontFamily="monospace">
+            {message}
+          </Text>
+        </Box>
+      )}
     </Box>
   );
 }
