@@ -4559,16 +4559,7 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <Box
-          w={isEmbedded ? "100%" : { base: "95vw", md: "40vw" }}
-          h={isEmbedded ? "70%" : { base: "60vh", md: "45vh" }}
-          borderRadius="xl"
-          overflow="hidden"
-          position="relative"
-        >
-          <LoadingMiniGame supportLang={supportLang} />
-        </Box>
-        <VStack spacing={1} mt={1}>
+        <VStack spacing={1} mb={1}>
           <Text
             color="white"
             fontSize="md"
@@ -4586,6 +4577,16 @@ export default function RPGGame({
             <Button size="sm" onClick={goToScenarioSelect}>{ui.back}</Button>
           )}
         </VStack>
+        <Box
+          w={isEmbedded ? "100%" : { base: "95vw", md: "40vw" }}
+          maxW="800px"
+          h={isEmbedded ? "70%" : { base: "60vh", md: "45vh" }}
+          borderRadius="xl"
+          overflow="hidden"
+          position="relative"
+        >
+          <LoadingMiniGame supportLang={supportLang} />
+        </Box>
       </Box>
     );
   }
