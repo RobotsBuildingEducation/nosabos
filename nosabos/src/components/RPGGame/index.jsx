@@ -1123,6 +1123,7 @@ const UI_TEXT = {
     continue: "Continue",
     skip: "Skip",
     loadingTutorialScene: "Loading tutorial scene...",
+    loadingGeneratingGame: "Generating your game...",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -1149,6 +1150,7 @@ const UI_TEXT = {
     continue: "Continuar",
     skip: "Saltar",
     loadingTutorialScene: "Cargando escena tutorial...",
+    loadingGeneratingGame: "Generando tu juego...",
   },
 };
 
@@ -1157,16 +1159,28 @@ const SCENARIO_EMOJIS = {
   [TUTORIAL_MAP_ID]: "👋",
 };
 
-const GAME_LOADING_MESSAGES = [
-  "Building your world...",
-  "Placing NPCs...",
-  "Writing quest dialogue...",
-  "Generating vocabulary challenges...",
-  "Designing the map layout...",
-  "Preparing language puzzles...",
-  "Setting the scene...",
-  "Crafting your adventure...",
-];
+const GAME_LOADING_MESSAGES = {
+  en: [
+    "Building your world...",
+    "Placing NPCs...",
+    "Writing quest dialogue...",
+    "Generating vocabulary challenges...",
+    "Designing the map layout...",
+    "Preparing language puzzles...",
+    "Setting the scene...",
+    "Crafting your adventure...",
+  ],
+  es: [
+    "Construyendo tu mundo...",
+    "Colocando NPCs...",
+    "Escribiendo diálogos de misión...",
+    "Generando desafíos de vocabulario...",
+    "Diseñando el mapa...",
+    "Preparando acertijos de idiomas...",
+    "Ambientando la escena...",
+    "Creando tu aventura...",
+  ],
+};
 
 const SCENARIO_OBJECT_VISUALS = {
   tree: { width: 1.3, height: 1.6, yOffset: 0.6, z: 2 },
@@ -2513,13 +2527,15 @@ export default function RPGGame({
     };
   }, [stopNPCSpeech]);
 
+  const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+
   useEffect(() => {
     if (!loadingScenarioId) return;
     const interval = setInterval(() => {
-      setLoadingMsgIdx((prev) => (prev + 1) % GAME_LOADING_MESSAGES.length);
+      setLoadingMsgIdx((prev) => (prev + 1) % loadingMessages.length);
     }, 1500);
     return () => clearInterval(interval);
-  }, [loadingScenarioId]);
+  }, [loadingScenarioId, loadingMessages]);
 
   useEffect(() => {
     const unlockAudio = () => {
@@ -4460,7 +4476,7 @@ export default function RPGGame({
                   textAlign="center"
                   minH="20px"
                 >
-                  {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+                  {loadingMessages[loadingMsgIdx]}
                 </Text>
               </VStack>
             </>
@@ -4552,10 +4568,10 @@ export default function RPGGame({
           >
             {isTutorialGame
               ? ui.loadingTutorialScene
-              : "Generating your game..."}
+              : ui.loadingGeneratingGame}
           </Text>
           <Text fontSize="sm" color="purple.200" textAlign="center" minH="20px">
-            {GAME_LOADING_MESSAGES[loadingMsgIdx]}
+            {loadingMessages[loadingMsgIdx]}
           </Text>
           {!isTutorialGame && (
             <Button onClick={goToScenarioSelect}>{ui.back}</Button>
