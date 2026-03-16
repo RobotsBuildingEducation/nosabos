@@ -883,6 +883,18 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
     }
   }, [handleInteract]);
 
+  const enterDoor = useCallback(
+    (door) => {
+      const s = stateRef.current;
+      if (s.transitioning) return;
+      s.transitioning = true;
+      s.transitionProgress = 0;
+      s.transitionTarget = door;
+      playGameSound("rpgDialogueSelect");
+    },
+    [playGameSound],
+  );
+
   // Click/tap to interact with a specific tile
   const handleCanvasClick = useCallback(
     (e) => {
@@ -906,7 +918,7 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
 
       const tile = room.map[tileY][tileX];
 
-      // Check if clicked tile is interactable (adjacent not required for click)
+      // Check if clicked tile is interactable
       if (INTERACT_TILES.has(tile)) {
         handleInteract(tileX, tileY);
         // Face toward the clicked object
@@ -930,18 +942,6 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       }
     },
     [handleInteract, enterDoor],
-  );
-
-  const enterDoor = useCallback(
-    (door) => {
-      const s = stateRef.current;
-      if (s.transitioning) return;
-      s.transitioning = true;
-      s.transitionProgress = 0;
-      s.transitionTarget = door;
-      playGameSound("rpgDialogueSelect");
-    },
-    [playGameSound],
   );
 
   const tryMove = useCallback(
