@@ -4549,7 +4549,7 @@ export default function RPGGame({
         display="flex"
         flexDirection="column"
         alignItems="center"
-        justifyContent="center"
+        justifyContent="flex-start"
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -4560,15 +4560,15 @@ export default function RPGGame({
         }}
       >
         <Box
-          w={isEmbedded ? "90%" : { base: "90vw", md: "40vw" }}
-          h={isEmbedded ? "55%" : { base: "50vh", md: "40vh" }}
+          w={isEmbedded ? "100%" : { base: "95vw", md: "40vw" }}
+          h={isEmbedded ? "70%" : { base: "60vh", md: "45vh" }}
           borderRadius="xl"
           overflow="hidden"
           position="relative"
         >
           <LoadingMiniGame supportLang={supportLang} />
         </Box>
-        <VStack spacing={2} mt={3}>
+        <VStack spacing={1} mt={1}>
           <Text
             color="white"
             fontSize="md"
