@@ -4559,24 +4559,12 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <VStack spacing={1} mb={1}>
-          <Text
-            color="white"
-            fontSize="md"
-            fontWeight="bold"
-            textAlign="center"
-          >
-            {isTutorialGame
-              ? ui.loadingTutorialScene
-              : ui.loadingGeneratingGame}
-          </Text>
-          <Text fontSize="xs" color="purple.200" textAlign="center" minH="16px">
-            {loadingMessages[loadingMsgIdx]}
-          </Text>
-          {!isTutorialGame && (
-            <Button size="sm" onClick={goToScenarioSelect}>{ui.back}</Button>
-          )}
-        </VStack>
+        <Text fontSize="xs" color="purple.200" textAlign="center" minH="14px" py={0}>
+          {loadingMessages[loadingMsgIdx]}
+        </Text>
+        {!isTutorialGame && (
+          <Button size="sm" onClick={goToScenarioSelect} mb={0}>{ui.back}</Button>
+        )}
         <Box
           w={isEmbedded ? "100%" : { base: "95vw", md: "40vw" }}
           maxW="800px"
