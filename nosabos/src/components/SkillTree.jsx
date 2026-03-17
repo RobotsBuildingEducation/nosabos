@@ -1725,37 +1725,22 @@ function LessonDetailModal({
               py={{ base: 3, md: 4 }}
               bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
             >
-              <HStack align="flex-start" justify="space-between" spacing={3}>
-                <Text
-                  fontSize={{ base: "sm", md: "md" }}
-                  color="blue.100"
-                  minH="24px"
-                  key={loadingMsgIdx}
-                  fontFamily="monospace"
-                  maxW="calc(100% - 56px)"
-                  sx={{
-                    animation: "fadeIn 0.4s ease-in-out",
-                    "@keyframes fadeIn": {
-                      "0%": { opacity: 0, transform: "translateY(-4px)" },
-                      "100%": { opacity: 1, transform: "translateY(0)" },
-                    },
-                  }}
-                >
-                  {loadingMessages[loadingMsgIdx]}
-                </Text>
-                <IconButton
-                  icon={<CloseIcon boxSize={3} />}
-                  aria-label={supportLang === "es" ? "Salir" : "Exit"}
-                  size="sm"
-                  variant="outline"
-                  color="white"
-                  borderColor="whiteAlpha.500"
-                  bg="blackAlpha.400"
-                  _hover={{ bg: "whiteAlpha.200", borderColor: "whiteAlpha.700" }}
-                  _active={{ bg: "whiteAlpha.300" }}
-                  onClick={handleCancelGameLoading}
-                />
-              </HStack>
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color="blue.100"
+                minH="24px"
+                key={loadingMsgIdx}
+                fontFamily="monospace"
+                sx={{
+                  animation: "fadeIn 0.4s ease-in-out",
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(-4px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" },
+                  },
+                }}
+              >
+                {loadingMessages[loadingMsgIdx]}
+              </Text>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
               <LoadingMiniGame supportLang={supportLang} />
