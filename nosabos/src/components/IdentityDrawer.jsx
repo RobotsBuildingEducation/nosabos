@@ -54,6 +54,8 @@ import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
+import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
+import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 
 export default function IdentityDrawer({
   isOpen,
@@ -75,6 +77,10 @@ export default function IdentityDrawer({
   postNostrContent,
 }) {
   const toast = useToast();
+  const swipeDismiss = useBottomDrawerSwipeDismiss({
+    isOpen,
+    onClose,
+  });
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
@@ -297,8 +303,13 @@ export default function IdentityDrawer({
   return (
     <>
       <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerOverlay
+          bg="blackAlpha.600"
+          opacity={swipeDismiss.overlayOpacity}
+          transition="opacity 0.18s ease"
+        />
         <DrawerContent
+          {...swipeDismiss.drawerContentProps}
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"
@@ -306,6 +317,7 @@ export default function IdentityDrawer({
           display="flex"
           flexDirection="column"
         >
+          <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
           <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
             <DrawerHeader>
               {displayName

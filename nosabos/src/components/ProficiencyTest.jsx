@@ -37,7 +37,9 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { database, gradingModel } from "../firebaseResources/firebaseResources";
 
 import useUserStore from "../hooks/useUserStore";
+import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import RobotBuddyPro from "./RobotBuddyPro";
+import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
@@ -626,6 +628,11 @@ export default function ProficiencyTest() {
 
   // Progress bar
   const progressPct = Math.min(100, (userMessageCount / MAX_EXCHANGES) * 100);
+  const closeRubric = useCallback(() => setShowRubric(false), []);
+  const rubricSwipeDismiss = useBottomDrawerSwipeDismiss({
+    isOpen: showRubric,
+    onClose: closeRubric,
+  });
 
   useEffect(() => {
     if (!showRubric || !rubricBodyRef.current) return;
@@ -2152,11 +2159,17 @@ Return ONLY valid JSON:
       <Drawer
         isOpen={showRubric}
         placement="bottom"
-        onClose={() => setShowRubric(false)}
+        onClose={closeRubric}
         initialFocusRef={rubricInitialFocusRef}
       >
-        <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
+        <DrawerOverlay
+          bg="blackAlpha.700"
+          backdropFilter="blur(6px)"
+          opacity={rubricSwipeDismiss.overlayOpacity}
+          transition="opacity 0.18s ease"
+        />
         <DrawerContent
+          {...rubricSwipeDismiss.drawerContentProps}
           bg="linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"
           color="gray.100"
           borderTopRadius="24px"
@@ -2169,6 +2182,7 @@ Return ONLY valid JSON:
             },
           }}
         >
+          <BottomDrawerDragHandle isDragging={rubricSwipeDismiss.isDragging} />
           <DrawerBody ref={rubricBodyRef} py={6} overflowY="auto">
             <VStack
               align="stretch"
@@ -2301,7 +2315,7 @@ Return ONLY valid JSON:
                 p={4}
                 color="white"
                 rounded="xl"
-                onClick={() => setShowRubric(false)}
+                onClick={closeRubric}
               >
                 {isEs ? "Entendido" : "Got it"}
               </Button>
