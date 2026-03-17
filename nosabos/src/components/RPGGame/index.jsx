@@ -79,6 +79,9 @@ import { buildGameReviewContext } from "../../utils/gameReviewContext";
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
 const GATHER_SPRITE_GRID = 16;
+const GAME_SPEECH_VAD_MS = 850;
+const GAME_SPEECH_STOP_DELAY_MS = 250;
+const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
 
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -4223,6 +4226,9 @@ export default function RPGGame({
   } = useSpeechPractice({
     targetText: dialogue?.node?.npcLine || "",
     targetLang,
+    vadSilenceDurationMs: GAME_SPEECH_VAD_MS,
+    speechStopDelayMs: GAME_SPEECH_STOP_DELAY_MS,
+    responseDoneDelayMs: GAME_SPEECH_RESPONSE_DONE_DELAY_MS,
     onResult: async ({ recognizedText }) => {
       const heard = (recognizedText || "").trim();
       setLastHeardSpeech(heard);
@@ -4244,11 +4250,6 @@ export default function RPGGame({
         npcCharacterNamesRef.current[dialogue.npcIdx] ||
         scenario?.npcs?.[dialogue.npcIdx]?.name ||
         "NPC";
-      const seed = quest?.storySeed || "";
-      const historyContext = conversationLogRef.current
-        .slice(-10)
-        .map((e) => `${e.speaker}: ${e.text}`)
-        .join("\n");
 
       // Log the user's speech
       conversationLogRef.current.push({
@@ -4272,81 +4273,32 @@ export default function RPGGame({
           currentNodeId: nextNode.id,
         }));
       }
-
-      // Build LLM prompt for a dynamic, personalized NPC reply
-      const characterId = npcVariantAssignmentsRef.current[dialogue.npcIdx];
-      const personality = characterId
-        ? getCharacterPersonality(characterId)
-        : null;
-      const llmPrompt = buildStrictDialoguePrompt(
-        `You are ${npcName}, a character in an adventure.`,
-        personality ? `Your personality: ${personality}.` : "",
-        `Story seed: ${seed}`,
-        historyContext ? `Conversation history:\n${historyContext}` : "",
-        `The player just said: "${heard}"`,
-        `Reply in 1-2 brief sentences in ${targetLangName}.`,
-        "Respond only as the character with no narration or labels.",
-      );
-
-      // Stop any currently playing TTS before the new speech reply
-      stopNPCSpeech();
-
-      // Fire LLM call without blocking dialogue progression
       const npcIdx = dialogue.npcIdx;
       const stepIdx = dialogue.stepIdx;
-      callResponses({ input: llmPrompt })
-        .then((llmResult) => {
-          const dynamicReply =
-            llmResult && llmResult.trim().length > 0
-              ? llmResult.trim()
-              : dialogue.node.speechContinueReply ||
-                "I understand. Let's continue.";
+      const scriptedReply =
+        dialogue.node.speechContinueReply || "I understand. Let's continue.";
 
-          conversationLogRef.current.push({
-            speaker: npcName,
-            text: dynamicReply,
-            npcIdx,
-          });
+      conversationLogRef.current.push({
+        speaker: npcName,
+        text: scriptedReply,
+        npcIdx,
+      });
 
-          let fullReply = dynamicReply;
-          if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
-            fullReply = `${dynamicReply}\n\n${nextNode.npcLine}`;
-          }
+      let fullReply = scriptedReply;
+      if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
+        fullReply = `${scriptedReply}\n\n${nextNode.npcLine}`;
+      }
 
-          setDialogue((prev) => ({
-            ...prev,
-            ...(nextNode ? { node: nextNode } : {}),
-            npcReply: fullReply,
-          }));
-          speakNPCText(fullReply, { warmAudio, npcIdx });
+      setDialogue((prev) => ({
+        ...prev,
+        ...(nextNode ? { node: nextNode } : {}),
+        npcReply: fullReply,
+      }));
+      speakNPCText(fullReply, { warmAudio, npcIdx });
 
-          // Generate dynamic choices if the next node is a choice node
-          if (nextNode?.responseMode === "choice") {
-            generateDynamicChoices(nextNode, npcIdx, stepIdx);
-          }
-        })
-        .catch(() => {
-          const fallback =
-            dialogue.node.speechContinueReply ||
-            "I understand. Let's continue.";
-          conversationLogRef.current.push({
-            speaker: npcName,
-            text: fallback,
-            npcIdx,
-          });
-
-          let fullReply = fallback;
-          if (nextNode?.npcLine && nextNode.responseMode !== "speech") {
-            fullReply = `${fallback}\n\n${nextNode.npcLine}`;
-          }
-
-          setDialogue((prev) => ({
-            ...prev,
-            ...(nextNode ? { node: nextNode } : {}),
-            npcReply: fullReply,
-          }));
-          speakNPCText(fullReply, { warmAudio, npcIdx });
-        });
+      if (nextNode?.responseMode === "choice") {
+        generateDynamicChoices(nextNode, npcIdx, stepIdx);
+      }
     },
   });
 
