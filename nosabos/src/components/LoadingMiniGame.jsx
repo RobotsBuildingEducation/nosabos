@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { Box, Text } from "@chakra-ui/react";
+import * as Tone from "tone";
 import useSoundSettings from "../hooks/useSoundSettings";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -1014,6 +1015,28 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
     (name) => { void (async () => { await warmupAudio(); await playSound(name); })(); },
     [playSound, warmupAudio],
   );
+
+  useEffect(() => {
+    const unlockAudio = () => {
+      // Run Tone.start() during the gesture so iOS/mobile treat audio as user initiated.
+      Tone.start();
+      void warmupAudio();
+    };
+
+    window.addEventListener("touchstart", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+    window.addEventListener("pointerdown", unlockAudio, {
+      passive: true,
+      once: true,
+    });
+
+    return () => {
+      window.removeEventListener("touchstart", unlockAudio);
+      window.removeEventListener("pointerdown", unlockAudio);
+    };
+  }, [warmupAudio]);
 
   const showMessage = useCallback((text) => {
     setMessage(text);

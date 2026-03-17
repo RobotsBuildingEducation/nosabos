@@ -1365,9 +1365,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         {/* Help chat bottom drawer */}
         <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
           <DrawerOverlay
+            {...chatSwipeDismiss.overlayProps}
             bg="blackAlpha.600"
-            opacity={chatSwipeDismiss.overlayOpacity}
-            transition="opacity 0.18s ease"
           />
           <DrawerContent
             {...chatSwipeDismiss.drawerContentProps}
