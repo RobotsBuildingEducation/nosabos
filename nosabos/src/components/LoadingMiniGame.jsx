@@ -1260,14 +1260,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
 
       {roomName && (
         <Box
-          position="absolute" top="12px" left="50%" transform="translateX(-50%)"
+          position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)"
           bg="rgba(8, 20, 43, 0.88)" border="2px solid" borderColor="cyan.600"
           borderRadius="lg" px={5} py={2} pointerEvents="none"
           sx={{
             animation: "roomFadeIn 0.4s ease-out",
             "@keyframes roomFadeIn": {
-              "0%": { opacity: 0, transform: "translateX(-50%) translateY(-8px)" },
-              "100%": { opacity: 1, transform: "translateX(-50%) translateY(0)" },
+              "0%": { opacity: 0, transform: "translate(-50%, -50%) scale(0.95)" },
+              "100%": { opacity: 1, transform: "translate(-50%, -50%) scale(1)" },
             },
           }}
         >
