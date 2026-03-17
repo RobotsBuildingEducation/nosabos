@@ -14,13 +14,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Spinner,
   Text,
   Tooltip,
@@ -90,6 +83,8 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import clickSound from "../assets/click.mp3";
+import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
+import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -229,6 +224,10 @@ const HelpChatFab = forwardRef(
     const isOpen = isControlled ? controlledIsOpen : disclosure.isOpen;
     const onOpen = controlledOnOpen || disclosure.onOpen;
     const onClose = controlledOnClose || disclosure.onClose;
+    const chatSwipeDismiss = useBottomDrawerSwipeDismiss({
+      isOpen,
+      onClose,
+    });
     const toast = useToast();
     const playSound = useSoundSettings((s) => s.playSound);
 
@@ -1363,20 +1362,31 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           </Tooltip>
         )}
 
-        {/* Full screen modal chat */}
-        <Modal isOpen={isOpen} onClose={onClose} size="full">
-          <ModalOverlay />
-          <ModalContent
+        {/* Help chat bottom drawer */}
+        <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
+          <DrawerOverlay
+            bg="blackAlpha.600"
+            opacity={chatSwipeDismiss.overlayOpacity}
+            transition="opacity 0.18s ease"
+          />
+          <DrawerContent
+            {...chatSwipeDismiss.drawerContentProps}
             bg="gray.900"
             color="gray.100"
-            borderRadius="0"
-            h="100vh"
-            maxH="100vh"
+            borderTopRadius="24px"
+            h="95vh"
             m={0}
             overflow="hidden"
+            sx={{
+              "@supports (height: 100dvh)": {
+                height: "95dvh",
+              },
+            }}
           >
+            <BottomDrawerDragHandle isDragging={chatSwipeDismiss.isDragging} />
+
             {/* Main layout: Sidebar + Chat Area */}
-            <Flex h="100vh">
+            <Flex flex="1" minH="0">
               {/* Desktop Sidebar - always visible on md+ */}
               {isDesktop && (
                 <Box
@@ -1393,7 +1403,13 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               )}
 
               {/* Chat Area */}
-              <Flex flex="1" direction="column" h="100%" overflow="hidden">
+              <Flex
+                flex="1"
+                direction="column"
+                minH="0"
+                h="100%"
+                overflow="hidden"
+              >
                 {/* Header */}
                 <HStack
                   px={4}
@@ -1437,7 +1453,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     >
                       {appLanguage === "es" ? "Guardar" : "Save chat"}
                     </Button>
-                    <ModalCloseButton
+                    <DrawerCloseButton
                       position="static"
                       size="md"
                       border="1px solid white"
@@ -1831,8 +1847,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 <audio ref={audioRef} style={{ display: "none" }} />
               </Flex>
             </Flex>
-          </ModalContent>
-        </Modal>
+          </DrawerContent>
+        </Drawer>
 
         {/* Mobile Drawer Menu */}
         {!isDesktop && (

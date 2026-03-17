@@ -119,6 +119,7 @@ import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
 import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
+import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
@@ -157,6 +158,7 @@ import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
 import GlassContainer from "./components/GlassContainer";
+import useBottomDrawerSwipeDismiss from "./hooks/useBottomDrawerSwipeDismiss";
 import {
   buildGameReviewContext,
   inferCefrLevelFromLessonId,
@@ -551,6 +553,10 @@ function TopBar({
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
+  const settingsSwipeDismiss = useBottomDrawerSwipeDismiss({
+    isOpen: settingsOpen,
+    onClose: closeSettings,
+  });
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
@@ -1041,13 +1047,21 @@ function TopBar({
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
-        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerOverlay
+          bg="blackAlpha.600"
+          opacity={settingsSwipeDismiss.overlayOpacity}
+          transition="opacity 0.18s ease"
+        />
         <DrawerContent
+          {...settingsSwipeDismiss.drawerContentProps}
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"
           maxH="75vh"
         >
+          <BottomDrawerDragHandle
+            isDragging={settingsSwipeDismiss.isDragging}
+          />
           <DrawerBody pb={2}>
             <Box maxW="600px" mx="auto" w="100%" mb={4} mt={2}>
               <Text fontWeight="bold" fontSize={"xl"}>
