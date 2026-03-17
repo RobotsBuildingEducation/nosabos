@@ -331,6 +331,7 @@ async function getRealtimePlayer({
   let responseDone = false;
   let finalizeResolved = false;
   let playbackMonitorTimer = null;
+  let responseDoneWatchTimer = null;
   let hardFallbackTimer = null;
   audio.addEventListener(
     "playing",
@@ -353,6 +354,10 @@ async function getRealtimePlayer({
       clearTimeout(playbackMonitorTimer);
       playbackMonitorTimer = null;
     }
+    if (responseDoneWatchTimer) {
+      clearTimeout(responseDoneWatchTimer);
+      responseDoneWatchTimer = null;
+    }
     if (hardFallbackTimer) {
       clearTimeout(hardFallbackTimer);
       hardFallbackTimer = null;
@@ -365,10 +370,14 @@ async function getRealtimePlayer({
     resolveFinalize?.();
   };
   const startPlaybackCompletionWatch = () => {
+    if (responseDoneWatchTimer) {
+      clearTimeout(responseDoneWatchTimer);
+      responseDoneWatchTimer = null;
+    }
     if (playbackMonitorTimer || finalizeResolved) return;
 
     const pollMs = 150;
-    const stagnantThreshold = 10;
+    const stagnantThreshold = 20;
     const maxMonitorMs = Math.max(12000, text.length * 140 + 4000);
     const startedAt = Date.now();
     let lastTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
@@ -394,9 +403,7 @@ async function getRealtimePlayer({
 
       if (
         sawPlaybackProgress &&
-        (audioEnded ||
-          (audio.paused && currentTime > 0.01) ||
-          stagnantPolls >= stagnantThreshold)
+        (audioEnded || stagnantPolls >= stagnantThreshold)
       ) {
         finishFinalize();
         return;
@@ -414,6 +421,18 @@ async function getRealtimePlayer({
     };
 
     playbackMonitorTimer = setTimeout(poll, pollMs);
+  };
+  const schedulePlaybackCompletionWatch = (delayMs = 0) => {
+    if (finalizeResolved) return;
+    if (delayMs <= 0) {
+      startPlaybackCompletionWatch();
+      return;
+    }
+    if (playbackMonitorTimer || responseDoneWatchTimer) return;
+    responseDoneWatchTimer = setTimeout(() => {
+      responseDoneWatchTimer = null;
+      startPlaybackCompletionWatch();
+    }, delayMs);
   };
 
   const ready = new Promise((resolve, reject) => {
@@ -499,7 +518,7 @@ async function getRealtimePlayer({
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
-        startPlaybackCompletionWatch();
+        schedulePlaybackCompletionWatch(1200);
       }
     } catch {}
   };
