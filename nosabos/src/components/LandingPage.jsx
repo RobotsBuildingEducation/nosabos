@@ -128,7 +128,7 @@ const translations = {
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
     feature_game_review: "Game Review RPG",
     feature_game_review_desc:
-      "Reinforce what you've learned in an RPG where you battle using your language knowledge to level up and defeat enemies.",
+      "Explore quest-driven worlds, talk to NPCs, and collect items—all in your target language—to review vocabulary from your lessons.",
     feature_phonics: "Phonics",
     feature_phonics_desc:
       "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
@@ -231,7 +231,7 @@ const translations = {
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
     feature_game_review: "Repaso RPG",
     feature_game_review_desc:
-      "Refuerza lo aprendido con un RPG donde batallas usando tu conocimiento del idioma para subir de nivel y derrotar enemigos.",
+      "Explora mundos con misiones, habla con NPCs y recolecta objetos—todo en tu idioma objetivo—para repasar el vocabulario de tus lecciones.",
     feature_phonics: "Fonética",
     feature_phonics_desc:
       "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
