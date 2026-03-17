@@ -1069,59 +1069,141 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
     [playGameSound],
   );
 
-  const handleCanvasClick = useCallback(
-    (e) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const s = stateRef.current;
-      if (s.transitioning) return;
-      const rect = canvas.getBoundingClientRect();
-      const room = world.rooms[s.currentRoom];
-      const mapW = room.map[0].length; const mapH = room.map.length;
-      const pixelX = (e.clientX - rect.left) * (canvas.width / rect.width);
-      const pixelY = (e.clientY - rect.top) * (canvas.height / rect.height);
-      const worldX = (pixelX - (s.camX || 0)) / (s.scaleVal || 1);
-      const worldY = (pixelY - (s.camY || 0)) / (s.scaleVal || 1);
-      const tileX = Math.floor(worldX / T); const tileY = Math.floor(worldY / T);
-      if (tileX < 0 || tileX >= mapW || tileY < 0 || tileY >= mapH) return;
-      const tile = room.map[tileY][tileX];
-      if (INTERACT_TILES.has(tile)) {
-        handleInteract(tileX, tileY);
-        const diffX = tileX - s.px; const diffY = tileY - s.py;
-        if (Math.abs(diffX) > Math.abs(diffY)) s.dir = diffX > 0 ? "right" : "left";
-        else s.dir = diffY > 0 ? "down" : "up";
-        return;
-      }
-      if (tile === DOOR) {
-        const door = room.doors.find((d) => d.x === tileX && d.y === tileY);
-        if (door) { enterDoor(door); return; }
-      }
-    },
-    [handleInteract, enterDoor, world],
-  );
-
   const tryMove = useCallback(
     (dir) => {
       const now = Date.now(); const s = stateRef.current;
       s.dir = dir;
-      if (s.transitioning) return;
-      if (now - s.lastMove < MOVE_COOLDOWN) return;
+      if (s.transitioning) return false;
+      if (now - s.lastMove < MOVE_COOLDOWN) return false;
       const room = world.rooms[s.currentRoom];
       const mapW = room.map[0].length; const mapH = room.map.length;
       const dx = { left: -1, right: 1, up: 0, down: 0 }[dir];
       const dy = { left: 0, right: 0, up: -1, down: 1 }[dir];
       const nx = s.px + dx; const ny = s.py + dy;
-      if (nx < 0 || nx >= mapW || ny < 0 || ny >= mapH) return;
+      if (nx < 0 || nx >= mapW || ny < 0 || ny >= mapH) return false;
       const targetTile = room.map[ny][nx];
       if (targetTile === DOOR) {
         const door = room.doors.find((d) => d.x === nx && d.y === ny);
-        if (door) { enterDoor(door); s.lastMove = now; return; }
+        if (door) {
+          enterDoor(door);
+          s.lastMove = now;
+          return true;
+        }
       }
-      if (SOLID_TILES.has(targetTile) || INTERACT_TILES.has(targetTile)) return;
+      if (SOLID_TILES.has(targetTile) || INTERACT_TILES.has(targetTile)) {
+        return false;
+      }
       s.px = nx; s.py = ny; s.lastMove = now; s.walkFrame++; s.moving = true;
       playGameSound("rpgStep");
+      return true;
     },
     [enterDoor, playGameSound, world],
+  );
+
+  const faceTowardTile = useCallback((tileX, tileY) => {
+    const s = stateRef.current;
+    const diffX = tileX - s.px;
+    const diffY = tileY - s.py;
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      s.dir = diffX > 0 ? "right" : "left";
+    } else if (diffY !== 0) {
+      s.dir = diffY > 0 ? "down" : "up";
+    }
+  }, []);
+
+  const moveOneStepToward = useCallback((tileX, tileY) => {
+    const s = stateRef.current;
+    const diffX = tileX - s.px;
+    const diffY = tileY - s.py;
+    if (diffX === 0 && diffY === 0) return false;
+
+    const primaryDir =
+      Math.abs(diffX) >= Math.abs(diffY)
+        ? diffX > 0
+          ? "right"
+          : "left"
+        : diffY > 0
+          ? "down"
+          : "up";
+    const secondaryDir =
+      Math.abs(diffX) >= Math.abs(diffY)
+        ? diffY === 0
+          ? null
+          : diffY > 0
+            ? "down"
+            : "up"
+        : diffX === 0
+          ? null
+          : diffX > 0
+            ? "right"
+            : "left";
+
+    if (tryMove(primaryDir)) return true;
+    if (secondaryDir) return tryMove(secondaryDir);
+    return false;
+  }, [tryMove]);
+
+  const resolveTileAtClientPoint = useCallback((clientX, clientY) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const s = stateRef.current;
+    const room = world.rooms[s.currentRoom];
+    const rect = canvas.getBoundingClientRect();
+    const pixelX = (clientX - rect.left) * (canvas.width / rect.width);
+    const pixelY = (clientY - rect.top) * (canvas.height / rect.height);
+    const worldX = (pixelX - (s.camX || 0)) / (s.scaleVal || 1);
+    const worldY = (pixelY - (s.camY || 0)) / (s.scaleVal || 1);
+    const tileX = Math.floor(worldX / T);
+    const tileY = Math.floor(worldY / T);
+    const mapW = room.map[0].length;
+    const mapH = room.map.length;
+
+    if (tileX < 0 || tileX >= mapW || tileY < 0 || tileY >= mapH) return null;
+    return { tileX, tileY, room };
+  }, [world]);
+
+  const handleTileSelection = useCallback((tileX, tileY, room) => {
+    const s = stateRef.current;
+    if (s.transitioning) return;
+
+    const targetRoom = room || world.rooms[s.currentRoom];
+    const tile = targetRoom.map[tileY]?.[tileX];
+    if (tile == null) return;
+
+    const distance = Math.abs(tileX - s.px) + Math.abs(tileY - s.py);
+    faceTowardTile(tileX, tileY);
+
+    if (INTERACT_TILES.has(tile)) {
+      if (distance === 1) {
+        handleInteract(tileX, tileY);
+      } else {
+        moveOneStepToward(tileX, tileY);
+      }
+      return;
+    }
+
+    if (tile === DOOR) {
+      const door = targetRoom.doors.find((entry) => entry.x === tileX && entry.y === tileY);
+      if (!door) return;
+      if (distance === 1) {
+        enterDoor(door);
+      } else {
+        moveOneStepToward(tileX, tileY);
+      }
+      return;
+    }
+
+    moveOneStepToward(tileX, tileY);
+  }, [enterDoor, faceTowardTile, handleInteract, moveOneStepToward, world]);
+
+  const handleCanvasClick = useCallback(
+    (e) => {
+      const target = resolveTileAtClientPoint(e.clientX, e.clientY);
+      if (!target) return;
+      handleTileSelection(target.tileX, target.tileY, target.room);
+    },
+    [handleTileSelection, resolveTileAtClientPoint],
   );
 
   // Keyboard
@@ -1150,14 +1232,20 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const dx = t.clientX - stateRef.current.touchStart.x;
       const dy = t.clientY - stateRef.current.touchStart.y;
       stateRef.current.touchStart = null;
-      if (Math.sqrt(dx * dx + dy * dy) < 15) { tryInteract(); return; }
+      if (Math.sqrt(dx * dx + dy * dy) < 15) {
+        const target = resolveTileAtClientPoint(t.clientX, t.clientY);
+        if (target) {
+          handleTileSelection(target.tileX, target.tileY, target.room);
+        }
+        return;
+      }
       if (Math.abs(dx) > Math.abs(dy)) tryMove(dx > 0 ? "right" : "left");
       else tryMove(dy > 0 ? "down" : "up");
     };
     canvas.addEventListener("touchstart", onTouchStart, { passive: false });
     canvas.addEventListener("touchend", onTouchEnd, { passive: false });
     return () => { canvas.removeEventListener("touchstart", onTouchStart); canvas.removeEventListener("touchend", onTouchEnd); };
-  }, [tryMove, tryInteract]);
+  }, [handleTileSelection, resolveTileAtClientPoint, tryMove]);
 
   // Game loop
   useEffect(() => {
