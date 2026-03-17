@@ -3,10 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const DRAG_ACTIVATION_DISTANCE = 6;
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 0.6;
-const SNAP_BACK_TRANSITION =
-  "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)";
-const DISMISS_TRANSITION =
-  "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)";
+const SNAP_BACK_TRANSITION = "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)";
+const DISMISS_TRANSITION = "transform 150ms cubic-bezier(0.22, 1, 0.36, 1)";
 const INTERACTIVE_TARGET_SELECTOR = [
   "button",
   "input",
@@ -134,15 +132,21 @@ export default function useBottomDrawerSwipeDismiss({
     });
   }, [syncPresentation]);
 
-  const setDrawerOffset = useCallback((nextOffset) => {
-    offsetYRef.current = nextOffset;
-    schedulePresentationSync();
-  }, [schedulePresentationSync]);
+  const setDrawerOffset = useCallback(
+    (nextOffset) => {
+      offsetYRef.current = nextOffset;
+      schedulePresentationSync();
+    },
+    [schedulePresentationSync],
+  );
 
-  const setDrawerTransition = useCallback((nextTransition) => {
-    transitionRef.current = nextTransition;
-    schedulePresentationSync();
-  }, [schedulePresentationSync]);
+  const setDrawerTransition = useCallback(
+    (nextTransition) => {
+      transitionRef.current = nextTransition;
+      schedulePresentationSync();
+    },
+    [schedulePresentationSync],
+  );
 
   const measureSheetHeight = useCallback(() => {
     if (typeof window === "undefined") {
@@ -213,7 +217,14 @@ export default function useBottomDrawerSwipeDismiss({
       setDrawerTransition("none");
       setDragging(false);
     },
-    [clearCloseTimeout, isEnabled, isOpen, onClose, setDrawerTransition, setDragging],
+    [
+      clearCloseTimeout,
+      isEnabled,
+      isOpen,
+      onClose,
+      setDrawerTransition,
+      setDragging,
+    ],
   );
 
   useEffect(() => {
