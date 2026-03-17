@@ -4632,6 +4632,7 @@ export default function RPGGame({
         justifyContent="flex-start"
         pt={0}
         mt={isEmbedded ? -2 : 0}
+        overflow="hidden"
         onPointerDownCapture={() => {
           Tone.start();
           void warmupAudio();
@@ -4641,21 +4642,53 @@ export default function RPGGame({
           void warmupAudio();
         }}
       >
-        <Text fontSize="md" color="purple.200" textAlign="center" minH="20px" py={0} mb={0}>
-          {loadingMessages[loadingMsgIdx]}
-        </Text>
+        {!isTutorialGame && (
+          <Text fontSize="md" color="purple.200" textAlign="center" minH="20px" py={0} mb={0}>
+            {loadingMessages[loadingMsgIdx]}
+          </Text>
+        )}
         {!isTutorialGame && (
           <Button size="sm" onClick={goToScenarioSelect} mb={0}>{ui.back}</Button>
         )}
         <Box
           w={isEmbedded ? "100%" : { base: "95vw", md: "100%" }}
-          maxW="800px"
-          h={isEmbedded ? "70%" : { base: "60vh", md: "85%" }}
-          borderRadius="xl"
+          maxW={isTutorialGame ? undefined : "800px"}
+          h={isTutorialGame ? "100%" : isEmbedded ? "70%" : { base: "60vh", md: "85%" }}
+          flex={isTutorialGame ? "1" : undefined}
+          borderRadius={isTutorialGame ? undefined : "xl"}
           overflow="hidden"
           position="relative"
         >
           <LoadingMiniGame supportLang={supportLang} />
+          {isTutorialGame && (
+            <Box
+              position="absolute"
+              top={0}
+              left={0}
+              right={0}
+              zIndex={2}
+              px={{ base: 3, md: 4 }}
+              py={{ base: 3, md: 4 }}
+              bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
+            >
+              <Text
+                fontSize={{ base: "sm", md: "md" }}
+                color="blue.100"
+                minH="24px"
+                key={loadingMsgIdx}
+                fontFamily="monospace"
+                sx={{
+                  animation: "fadeIn 0.4s ease-in-out",
+                  "@keyframes fadeIn": {
+                    "0%": { opacity: 0, transform: "translateY(-4px)" },
+                    "100%": { opacity: 1, transform: "translateY(0)" },
+                  },
+                }}
+              >
+                {loadingMessages[loadingMsgIdx]}
+              </Text>
+            </Box>
+          )}
         </Box>
       </Box>
     );
