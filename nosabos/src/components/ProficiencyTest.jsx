@@ -2163,10 +2163,9 @@ Return ONLY valid JSON:
         initialFocusRef={rubricInitialFocusRef}
       >
         <DrawerOverlay
+          {...rubricSwipeDismiss.overlayProps}
           bg="blackAlpha.700"
           backdropFilter="blur(6px)"
-          opacity={rubricSwipeDismiss.overlayOpacity}
-          transition="opacity 0.18s ease"
         />
         <DrawerContent
           {...rubricSwipeDismiss.drawerContentProps}

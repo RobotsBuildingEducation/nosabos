@@ -63,9 +63,8 @@ export default function TeamsDrawer({
   return (
     <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
       <DrawerOverlay
+        {...swipeDismiss.overlayProps}
         bg="blackAlpha.600"
-        opacity={swipeDismiss.overlayOpacity}
-        transition="opacity 0.18s ease"
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}

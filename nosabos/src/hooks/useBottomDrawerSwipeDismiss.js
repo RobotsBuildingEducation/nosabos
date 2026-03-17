@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const DRAG_ACTIVATION_DISTANCE = 6;
 const DISMISS_DISTANCE = 120;
@@ -54,18 +54,22 @@ export default function useBottomDrawerSwipeDismiss({
   isEnabled = true,
 }) {
   const contentRef = useRef(null);
+  const containerRef = useRef(null);
+  const overlayRef = useRef(null);
   const closeTimeoutRef = useRef(null);
+  const animationFrameRef = useRef(null);
   const gestureRef = useRef(null);
   const activePointerIdRef = useRef(null);
   const offsetYRef = useRef(0);
+  const transitionRef = useRef("none");
+  const sheetHeightRef = useRef(0);
+  const isDraggingRef = useRef(false);
 
-  const [offsetY, setOffsetY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [transition, setTransition] = useState("none");
 
-  const setDrawerOffset = useCallback((nextOffset) => {
-    offsetYRef.current = nextOffset;
-    setOffsetY(nextOffset);
+  const setDragging = useCallback((nextValue) => {
+    isDraggingRef.current = nextValue;
+    setIsDragging((prev) => (prev === nextValue ? prev : nextValue));
   }, []);
 
   const clearCloseTimeout = useCallback(() => {
@@ -78,20 +82,85 @@ export default function useBottomDrawerSwipeDismiss({
   const resetGesture = useCallback(() => {
     gestureRef.current = null;
     activePointerIdRef.current = null;
-    setIsDragging(false);
-  }, []);
+    setDragging(false);
+  }, [setDragging]);
 
   const getSheetHeight = useCallback(() => {
+    if (sheetHeightRef.current > 0) return sheetHeightRef.current;
     if (typeof window === "undefined") return 0;
     const rect = contentRef.current?.getBoundingClientRect?.();
-    return rect?.height || Math.round(window.innerHeight * 0.75);
+    const height = rect?.height || Math.round(window.innerHeight * 0.75);
+    sheetHeightRef.current = height;
+    return height;
+  }, []);
+
+  const syncPresentation = useCallback(() => {
+    const offsetY = offsetYRef.current;
+    const transition = transitionRef.current;
+    const containerNode = containerRef.current;
+
+    if (containerNode) {
+      containerNode.style.transform = `translate3d(0, ${offsetY}px, 0)`;
+      containerNode.style.transition = transition;
+      containerNode.style.willChange =
+        isDraggingRef.current || offsetY > 0 ? "transform" : "";
+      containerNode.style.backfaceVisibility = "hidden";
+    }
+
+    const overlayNode = overlayRef.current;
+    if (overlayNode) {
+      const height = getSheetHeight();
+      const progress = height ? Math.min(offsetY / height, 1) : 0;
+      const overlayTransition =
+        transition === "none"
+          ? isDraggingRef.current || offsetY > 0
+            ? "none"
+            : "opacity 0.18s ease"
+          : transition.replace("transform", "opacity");
+      overlayNode.style.opacity = String(1 - progress * 0.55);
+      overlayNode.style.transition = overlayTransition;
+      overlayNode.style.willChange =
+        isDraggingRef.current || offsetY > 0 ? "opacity" : "";
+    }
+  }, [getSheetHeight]);
+
+  const schedulePresentationSync = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (animationFrameRef.current !== null) return;
+
+    animationFrameRef.current = window.requestAnimationFrame(() => {
+      animationFrameRef.current = null;
+      syncPresentation();
+    });
+  }, [syncPresentation]);
+
+  const setDrawerOffset = useCallback((nextOffset) => {
+    offsetYRef.current = nextOffset;
+    schedulePresentationSync();
+  }, [schedulePresentationSync]);
+
+  const setDrawerTransition = useCallback((nextTransition) => {
+    transitionRef.current = nextTransition;
+    schedulePresentationSync();
+  }, [schedulePresentationSync]);
+
+  const measureSheetHeight = useCallback(() => {
+    if (typeof window === "undefined") {
+      sheetHeightRef.current = 0;
+      return 0;
+    }
+
+    const rect = contentRef.current?.getBoundingClientRect?.();
+    const height = rect?.height || Math.round(window.innerHeight * 0.75);
+    sheetHeightRef.current = height;
+    return height;
   }, []);
 
   const animateBack = useCallback(() => {
-    setTransition(SNAP_BACK_TRANSITION);
+    setDrawerTransition(SNAP_BACK_TRANSITION);
     setDrawerOffset(0);
     resetGesture();
-  }, [resetGesture, setDrawerOffset]);
+  }, [resetGesture, setDrawerOffset, setDrawerTransition]);
 
   const dismissDrawer = useCallback(() => {
     if (typeof onClose !== "function") {
@@ -100,7 +169,7 @@ export default function useBottomDrawerSwipeDismiss({
     }
 
     clearCloseTimeout();
-    setTransition(DISMISS_TRANSITION);
+    setDrawerTransition(DISMISS_TRANSITION);
     setDrawerOffset(getSheetHeight() + 40);
     resetGesture();
 
@@ -115,6 +184,7 @@ export default function useBottomDrawerSwipeDismiss({
     onClose,
     resetGesture,
     setDrawerOffset,
+    setDrawerTransition,
   ]);
 
   const handlePointerDown = useCallback(
@@ -140,10 +210,10 @@ export default function useBottomDrawerSwipeDismiss({
           : null,
       };
 
-      setTransition("none");
-      setIsDragging(false);
+      setDrawerTransition("none");
+      setDragging(false);
     },
-    [clearCloseTimeout, isEnabled, isOpen, onClose],
+    [clearCloseTimeout, isEnabled, isOpen, onClose, setDrawerTransition, setDragging],
   );
 
   useEffect(() => {
@@ -172,6 +242,7 @@ export default function useBottomDrawerSwipeDismiss({
         }
 
         gesture.hasActivated = true;
+        setDragging(true);
       }
 
       event.preventDefault();
@@ -181,7 +252,6 @@ export default function useBottomDrawerSwipeDismiss({
       gesture.currentY = event.clientY;
       gesture.currentTime = now;
 
-      setIsDragging(true);
       setDrawerOffset(Math.max(0, deltaY));
     };
 
@@ -239,30 +309,60 @@ export default function useBottomDrawerSwipeDismiss({
     if (!isOpen) {
       clearCloseTimeout();
       resetGesture();
+      setDrawerTransition("none");
+      setDrawerOffset(0);
       return undefined;
     }
 
-    setTransition("none");
+    setDrawerTransition("none");
     setDrawerOffset(0);
-    setIsDragging(false);
+    setDragging(false);
 
     return undefined;
-  }, [clearCloseTimeout, isOpen, resetGesture, setDrawerOffset]);
+  }, [
+    clearCloseTimeout,
+    isOpen,
+    resetGesture,
+    setDrawerOffset,
+    setDrawerTransition,
+    setDragging,
+  ]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleResize = () => {
+      measureSheetHeight();
+      schedulePresentationSync();
+    };
+
+    handleResize();
+
+    let observer;
+    if (typeof ResizeObserver !== "undefined" && contentRef.current) {
+      observer = new ResizeObserver(handleResize);
+      observer.observe(contentRef.current);
+    }
+
+    window.addEventListener("resize", handleResize, { passive: true });
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isOpen, measureSheetHeight, schedulePresentationSync]);
 
   useEffect(
     () => () => {
       if (typeof window !== "undefined") {
         clearCloseTimeout();
+        if (animationFrameRef.current !== null) {
+          window.cancelAnimationFrame(animationFrameRef.current);
+        }
       }
     },
     [clearCloseTimeout],
   );
-
-  const progress = useMemo(() => {
-    const height = getSheetHeight();
-    if (!height) return 0;
-    return Math.min(offsetY / height, 1);
-  }, [getSheetHeight, offsetY]);
 
   return {
     contentRef,
@@ -270,14 +370,21 @@ export default function useBottomDrawerSwipeDismiss({
       ref: contentRef,
       onPointerDown: handlePointerDown,
       containerProps: {
+        ref: containerRef,
         style: {
-          transform: `translateY(${offsetY}px)`,
-          transition,
-          willChange: isDragging || offsetY > 0 ? "transform" : undefined,
+          transform: "translate3d(0, 0, 0)",
+          transition: "none",
+          backfaceVisibility: "hidden",
         },
       },
     },
-    overlayOpacity: 1 - progress * 0.55,
+    overlayProps: {
+      ref: overlayRef,
+      style: {
+        opacity: 1,
+        transition: "opacity 0.18s ease",
+      },
+    },
     isDragging,
   };
 }

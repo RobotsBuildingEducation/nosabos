@@ -304,9 +304,8 @@ export default function IdentityDrawer({
     <>
       <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
         <DrawerOverlay
+          {...swipeDismiss.overlayProps}
           bg="blackAlpha.600"
-          opacity={swipeDismiss.overlayOpacity}
-          transition="opacity 0.18s ease"
         />
         <DrawerContent
           {...swipeDismiss.drawerContentProps}

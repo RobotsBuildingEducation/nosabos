@@ -1048,9 +1048,8 @@ function TopBar({
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
         <DrawerOverlay
+          {...settingsSwipeDismiss.overlayProps}
           bg="blackAlpha.600"
-          opacity={settingsSwipeDismiss.overlayOpacity}
-          transition="opacity 0.18s ease"
         />
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
