@@ -39,6 +39,9 @@ export function useSpeechPractice({
   targetLang = "es",
   onResult,
   timeoutMs = 15000,
+  vadSilenceDurationMs = null,
+  speechStopDelayMs = 1500,
+  responseDoneDelayMs = 500,
 } = {}) {
   const pcRef = useRef(null);
   const dcRef = useRef(null);
@@ -173,11 +176,33 @@ export function useSpeechPractice({
       const dc = pc.createDataChannel("oai-events");
       dcRef.current = dc;
 
-      let hasReceivedSpeech = false;
+      let hasDetectedSpeech = false;
+      let waitingForTurnEnd = false;
+
+      const scheduleFinish = (
+        preferredDelayMs,
+        { waitForTranscript = false } = {}
+      ) => {
+        if (evalRef.current.silenceTimeoutId) {
+          clearTimeout(evalRef.current.silenceTimeoutId);
+        }
+
+        const transcriptReady = !!transcriptRef.current.trim();
+        const delayMs =
+          waitForTranscript && !transcriptReady
+            ? Math.max(preferredDelayMs, 900)
+            : preferredDelayMs;
+
+        evalRef.current.silenceTimeoutId = setTimeout(() => {
+          if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
+          finishRecording();
+        }, delayMs);
+      };
 
       const finishRecording = async () => {
         if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
         evalRef.current.speechDone = true;
+        waitingForTurnEnd = false;
 
         if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
         if (evalRef.current.silenceTimeoutId)
@@ -209,7 +234,8 @@ export function useSpeechPractice({
               modalities: ["audio", "text"], // Need audio to process incoming speech
               turn_detection: {
                 type: "server_vad",
-                silence_duration_ms: Math.min(timeoutMs, 2000), // End after silence
+                silence_duration_ms:
+                  vadSilenceDurationMs ?? Math.min(timeoutMs, 2000), // End after silence
                 threshold: 0.35,
                 prefix_padding_ms: 120,
               },
@@ -236,7 +262,7 @@ export function useSpeechPractice({
           ) {
             const transcript = (msg.transcript || "").trim();
             if (transcript) {
-              hasReceivedSpeech = true;
+              hasDetectedSpeech = true;
               transcriptRef.current = transcript;
 
               // Reset silence timeout when we receive speech
@@ -248,12 +274,17 @@ export function useSpeechPractice({
               evalRef.current.silenceTimeoutId = setTimeout(() => {
                 finishRecording();
               }, timeoutMs);
+
+              if (waitingForTurnEnd) {
+                scheduleFinish(Math.min(speechStopDelayMs, 180));
+              }
             }
           }
 
           // Handle speech started
           if (msgType === "input_audio_buffer.speech_started") {
-            hasReceivedSpeech = true;
+            hasDetectedSpeech = true;
+            waitingForTurnEnd = false;
             if (evalRef.current.silenceTimeoutId) {
               clearTimeout(evalRef.current.silenceTimeoutId);
               evalRef.current.silenceTimeoutId = null;
@@ -262,29 +293,24 @@ export function useSpeechPractice({
 
           // Handle speech stopped - server detected end of speech
           if (msgType === "input_audio_buffer.speech_stopped") {
-            if (hasReceivedSpeech) {
-              // Give a bit of time for the final transcription to come through
-              evalRef.current.silenceTimeoutId = setTimeout(() => {
-                finishRecording();
-              }, 1500);
+            if (hasDetectedSpeech) {
+              waitingForTurnEnd = true;
+              // Give Whisper a moment to deliver the final transcript, then finish quickly.
+              scheduleFinish(speechStopDelayMs, { waitForTranscript: true });
             }
           }
 
           // Handle response done (AI finished - means user turn is complete)
           if (msgType === "response.done") {
-            // Wait a moment for final transcription
-            setTimeout(() => {
-              if (!evalRef.current.speechDone) {
-                finishRecording();
-              }
-            }, 500);
+            waitingForTurnEnd = true;
+            scheduleFinish(responseDoneDelayMs, { waitForTranscript: true });
           }
 
           // Handle errors
           if (msgType === "error") {
             console.error("Realtime API error:", msg.error);
             // Don't fail completely on errors, just report what we have
-            if (hasReceivedSpeech) {
+            if (hasDetectedSpeech) {
               finishRecording();
             } else {
               evalRef.current.speechDone = false;
@@ -359,7 +385,17 @@ export function useSpeechPractice({
         err?.message || "Failed to connect to realtime API"
       );
     }
-  }, [report, targetLang, targetText, timeoutMs, onResult, cleanup]);
+  }, [
+    report,
+    targetLang,
+    targetText,
+    timeoutMs,
+    vadSilenceDurationMs,
+    speechStopDelayMs,
+    responseDoneDelayMs,
+    onResult,
+    cleanup,
+  ]);
 
   const stopRecording = useCallback(() => {
     if (!evalRef.current.inProgress) return;
