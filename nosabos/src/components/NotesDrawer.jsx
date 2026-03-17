@@ -27,6 +27,8 @@ import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
 import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
 import translations from "../utils/translation";
+import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
+import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -59,6 +61,7 @@ export default function NotesDrawer({
   const [loadingTts, setLoadingTts] = useState(null);
   const audioRef = useRef(null);
   const pcRef = useRef(null);
+  const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
 
   const lang = appLanguage === "es" ? "es" : "en";
 
@@ -277,27 +280,48 @@ export default function NotesDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
-      <DrawerOverlay />
-      <DrawerContent bg="gray.900" color="white">
-        <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
-          <HStack justify="space-between" align="center" pr={8}>
-            <Text>{drawerTitle}</Text>
-            {filteredNotes.length > 0 && (
-              <Button
-                size="xs"
-                variant="ghost"
-                colorScheme="red"
-                onClick={() => clearNotesForLanguage(targetLang)}
-              >
-                {clearAllLabel}
-              </Button>
-            )}
-          </HStack>
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+      <DrawerOverlay
+        bg="blackAlpha.600"
+        opacity={swipeDismiss.overlayOpacity}
+        transition="opacity 0.18s ease"
+      />
+      <DrawerContent
+        {...swipeDismiss.drawerContentProps}
+        display="flex"
+        flexDirection="column"
+        bg="gray.900"
+        color="white"
+        borderTopRadius="24px"
+        h="90vh"
+        sx={{
+          "@supports (height: 100dvh)": {
+            height: "90dvh",
+          },
+        }}
+      >
+        <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
+        <DrawerCloseButton color="white" top={4} right={4} />
+        <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200" pr={12}>
+          <Box maxW="720px" mx="auto" w="100%">
+            <HStack justify="space-between" align="center">
+              <Text>{drawerTitle}</Text>
+              {filteredNotes.length > 0 && (
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="red"
+                  onClick={() => clearNotesForLanguage(targetLang)}
+                >
+                  {clearAllLabel}
+                </Button>
+              )}
+            </HStack>
+          </Box>
         </DrawerHeader>
 
-        <DrawerBody py={4}>
+        <DrawerBody overflowY="auto" flex="1" py={4}>
+          <Box maxW="720px" mx="auto" w="100%">
           {filteredNotes.length === 0 ? (
             <Flex
               direction="column"
@@ -391,11 +415,14 @@ export default function NotesDrawer({
               })}
             </Accordion>
           )}
+          </Box>
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
-          <Button variant={"ghost"} onClick={onClose}>
-            {translations[appLanguage]["teams_drawer_close"] || "Close"}
-          </Button>
+          <Box maxW="720px" mx="auto" w="100%" display="flex" justifyContent="flex-end">
+            <Button variant={"ghost"} onClick={onClose}>
+              {translations[appLanguage]["teams_drawer_close"] || "Close"}
+            </Button>
+          </Box>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
