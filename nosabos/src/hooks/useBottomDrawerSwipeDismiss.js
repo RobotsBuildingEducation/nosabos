@@ -209,7 +209,6 @@ export default function useBottomDrawerSwipeDismiss({
         currentTime: performance.now(),
         velocityY: 0,
         hasActivated: false,
-        capturedTarget: event.currentTarget,
         scrollElement: contentNode
           ? getNearestScrollableAncestor(event.target, contentNode)
           : null,
@@ -254,20 +253,7 @@ export default function useBottomDrawerSwipeDismiss({
         }
 
         gesture.hasActivated = true;
-
-        // Capture pointer so mobile browsers don't lose the touch mid-drag
-        try {
-          gesture.capturedTarget?.setPointerCapture?.(event.pointerId);
-        } catch {
-          // ignore if capture fails (e.g. pointer already released)
-        }
-
-        // Suppress native touch behaviors (scroll, pull-to-refresh) during drag
-        const node = contentRef.current;
-        if (node) {
-          gesture.prevTouchAction = node.style.touchAction;
-          node.style.touchAction = "none";
-        }
+        setDragging(true);
       }
 
       event.preventDefault();
@@ -280,27 +266,9 @@ export default function useBottomDrawerSwipeDismiss({
       setDrawerOffset(Math.max(0, deltaY));
     };
 
-    const releasePointer = (gesture, pointerId) => {
-      // Release pointer capture
-      try {
-        gesture?.capturedTarget?.releasePointerCapture?.(pointerId);
-      } catch {
-        // ignore
-      }
-
-      // Restore touch-action
-      const node = contentRef.current;
-      if (node && gesture?.prevTouchAction !== undefined) {
-        node.style.touchAction = gesture.prevTouchAction;
-      }
-    };
-
-    const finishGesture = (pointerId) => {
+    const finishGesture = () => {
       const gesture = gestureRef.current;
       if (!gesture) return;
-
-      releasePointer(gesture, pointerId);
-
       if (!gesture.hasActivated) {
         resetGesture();
         return;
@@ -320,12 +288,11 @@ export default function useBottomDrawerSwipeDismiss({
 
     const handlePointerUp = (event) => {
       if (event.pointerId !== activePointerIdRef.current) return;
-      finishGesture(event.pointerId);
+      finishGesture();
     };
 
     const handlePointerCancel = (event) => {
       if (event.pointerId !== activePointerIdRef.current) return;
-      releasePointer(gestureRef.current, event.pointerId);
       animateBack();
     };
 
@@ -416,10 +383,9 @@ export default function useBottomDrawerSwipeDismiss({
       containerProps: {
         ref: containerRef,
         style: {
-          transform: `translateY(${offsetY}px)`,
-          transition,
-          willChange: isDragging || offsetY > 0 ? "transform" : undefined,
-          touchAction: isDragging ? "none" : undefined,
+          transform: "translate3d(0, 0, 0)",
+          transition: "none",
+          backfaceVisibility: "hidden",
         },
       },
     },
