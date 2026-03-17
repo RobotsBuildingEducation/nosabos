@@ -1260,7 +1260,14 @@ function buildFallbackObjectExamineText(object) {
   };
 }
 
-function findScenarioObjectAtTile(objects = [], tileX, tileY) {
+function findScenarioObjectAtTile(objects = [], tileX, tileY, options = {}) {
+  if (options.exact) {
+    return (
+      objects.find((object) => object?.tx === tileX && object?.ty === tileY) ||
+      null
+    );
+  }
+
   const candidates = objects
     .map((object) => {
       const visual =
@@ -1461,6 +1468,7 @@ export default function RPGGame({
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
+  const gatherUnlockedRef = useRef(gatherUnlocked);
   const conversationLogRef = useRef([]);
   const pendingBridgeRef = useRef(null);
   const pendingNpcGreetingRef = useRef(null);
@@ -1479,6 +1487,7 @@ export default function RPGGame({
   const gatherPlacementCacheKeyRef = useRef(null);
   const objectExamineCacheRef = useRef(new Map());
   const objectExaminePendingMapsRef = useRef(new Set());
+  gatherUnlockedRef.current = gatherUnlocked;
 
   const playSound = useSoundSettings((state) => state.playSound);
   const warmupAudio = useSoundSettings((state) => state.warmupAudio);
@@ -2662,21 +2671,20 @@ export default function RPGGame({
             y: mapEntrySpawnRef.current.y,
           }
         : null;
+    const preservedPlayerState =
+      !queuedMapEntrySpawn && gameStateRef.current?.mapId === activeMap.id
+        ? {
+            x: gameStateRef.current.playerX,
+            y: gameStateRef.current.playerY,
+            playerDir: gameStateRef.current.playerDir || "down",
+          }
+        : null;
     mapEntrySpawnRef.current = null;
 
     // Generate map
     const mapData =
       typeof activeMap.generate === "function" ? activeMap.generate(seed) : [];
     mapDataRef.current = mapData;
-
-    const resolvedEntrySpawn =
-      queuedMapEntrySpawn ||
-      resolvePreferredPlayerStart(activeMap, {
-        mapData,
-        npcs: currentMapNpcs,
-        portals: currentMapPortals,
-        tiles: currentMapTiles,
-      });
 
     const getTile = (x, y) => {
       if (x < 0 || x >= MAP_W || y < 0 || y >= MAP_H) return 2;
@@ -2687,14 +2695,30 @@ export default function RPGGame({
       const tileDef = currentMapTiles[t];
       return tileDef ? tileDef.solid : true;
     };
+    const canStandOnTile = (x, y) =>
+      !isSolid(x, y) && !currentMapNpcs.some((npc) => npc.tx === x && npc.ty === y);
+
+    const resolvedEntrySpawn =
+      queuedMapEntrySpawn ||
+      (preservedPlayerState &&
+      canStandOnTile(preservedPlayerState.x, preservedPlayerState.y)
+        ? { x: preservedPlayerState.x, y: preservedPlayerState.y }
+        : null) ||
+      resolvePreferredPlayerStart(activeMap, {
+        mapData,
+        npcs: currentMapNpcs,
+        portals: currentMapPortals,
+        tiles: currentMapTiles,
+      });
 
     // Init game state
     gameStateRef.current = {
+      mapId: activeMap.id,
       playerX: resolvedEntrySpawn.x,
       playerY: resolvedEntrySpawn.y,
       renderX: resolvedEntrySpawn.x,
       renderY: resolvedEntrySpawn.y,
-      playerDir: "down",
+      playerDir: preservedPlayerState?.playerDir || "down",
       keysDown: new Set(),
       moveTimer: 0,
       idleHoldMs: 0,
@@ -3196,7 +3220,7 @@ export default function RPGGame({
           (MAP_H - 1 - item.ty) * TILE + TILE / 2,
           3,
         );
-        itemMesh.visible = gatherUnlocked && !item.collected;
+        itemMesh.visible = gatherUnlockedRef.current && !item.collected;
         scene.add(itemMesh);
         item.mesh = itemMesh;
       });
@@ -3241,7 +3265,7 @@ export default function RPGGame({
           (MAP_H - 1 - ty) * TILE + TILE / 2,
           3,
         );
-        itemMesh.visible = false;
+        itemMesh.visible = gatherUnlockedRef.current && !item.collected;
         scene.add(itemMesh);
 
         placed.push({
@@ -3503,7 +3527,6 @@ export default function RPGGame({
     activeMap,
     activeMapNpcs,
     activeMapNpcIndices,
-    gatherUnlocked,
     scenario,
   ]);
 
@@ -3737,7 +3760,9 @@ export default function RPGGame({
 
       const clickedObject =
         !dialogue &&
-        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY);
+        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY, {
+          exact: true,
+        });
       if (clickedObject) {
         examineScenarioObject(clickedObject);
         return;
@@ -3747,8 +3772,8 @@ export default function RPGGame({
       const npcIdx =
         activeMapNpcIndices.find(
           (index) =>
-            Math.abs(scenario.npcs[index]?.tx - tileX) <= 1 &&
-            Math.abs(scenario.npcs[index]?.ty - tileY) <= 1,
+            scenario.npcs[index]?.tx === tileX &&
+            scenario.npcs[index]?.ty === tileY,
         ) ?? -1;
 
       if (npcIdx !== -1 && !dialogue) {
