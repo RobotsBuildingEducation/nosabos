@@ -24,6 +24,8 @@ import {
   FaMap,
   FaBullseye,
   FaVolumeUp,
+  FaGamepad,
+  FaMicrophone,
 } from "react-icons/fa";
 
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -125,6 +127,12 @@ const translations = {
     feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
+    feature_game_review: "Game Review RPG",
+    feature_game_review_desc:
+      "Explore quest-driven worlds, talk to NPCs, and collect items—all in your target language—to review vocabulary from your lessons.",
+    feature_proficiency_test: "Proficiency Test",
+    feature_proficiency_test_desc:
+      "Have a 10-exchange voice conversation with AI that adapts in real time to place you at your exact CEFR level.",
     feature_phonics: "Phonics",
     feature_phonics_desc:
       "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
@@ -225,6 +233,12 @@ const translations = {
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
+    feature_game_review: "Repaso RPG",
+    feature_game_review_desc:
+      "Explora mundos con misiones, habla con NPCs y recolecta objetos—todo en tu idioma objetivo—para repasar el vocabulario de tus lecciones.",
+    feature_proficiency_test: "Prueba de Nivel",
+    feature_proficiency_test_desc:
+      "Mantén una conversación de voz de 10 intercambios con IA que se adapta en tiempo real para ubicarte en tu nivel CEFR exacto.",
     feature_phonics: "Fonética",
     feature_phonics_desc:
       "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
@@ -1012,6 +1026,16 @@ const LandingPage = ({ onAuthenticated }) => {
   }, [authWithExtension, onAuthenticated]);
 
   const features = [
+    {
+      icon: <FaGamepad />,
+      title: copy.feature_game_review,
+      desc: copy.feature_game_review_desc,
+    },
+    {
+      icon: <FaMicrophone />,
+      title: copy.feature_proficiency_test,
+      desc: copy.feature_proficiency_test_desc,
+    },
     {
       icon: <FaComments />,
       title: copy.feature_conversations,
