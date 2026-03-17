@@ -1260,18 +1260,19 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
 
       {roomName && (
         <Box
-          position="absolute" top="12px" left="50%" transform="translateX(-50%)"
-          bg="rgba(8, 20, 43, 0.88)" border="2px solid" borderColor="cyan.600"
-          borderRadius="lg" px={5} py={2} pointerEvents="none"
+          position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)"
+          bg="rgba(250, 244, 232, 0.96)" border="2px solid" borderColor="orange.200"
+          borderRadius="xl" px={5} py={2} pointerEvents="none"
+          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
           sx={{
             animation: "roomFadeIn 0.4s ease-out",
             "@keyframes roomFadeIn": {
-              "0%": { opacity: 0, transform: "translateX(-50%) translateY(-8px)" },
-              "100%": { opacity: 1, transform: "translateX(-50%) translateY(0)" },
+              "0%": { opacity: 0, transform: "translate(-50%, -50%) scale(0.95)" },
+              "100%": { opacity: 1, transform: "translate(-50%, -50%) scale(1)" },
             },
           }}
         >
-          <Text fontSize="md" fontWeight="bold" color="cyan.100" fontFamily="monospace" whiteSpace="nowrap">
+          <Text fontSize="md" fontWeight="bold" color="gray.800" fontFamily="monospace" whiteSpace="nowrap">
             {roomName}
           </Text>
         </Box>
@@ -1280,8 +1281,9 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       {message && (
         <Box
           position="absolute" bottom="12px" left="12px" right="12px"
-          bg="rgba(8, 20, 43, 0.94)" border="2px solid" borderColor="cyan.400"
-          borderRadius="lg" px={4} py={3} pointerEvents="none"
+          bg="rgba(250, 244, 232, 0.96)" border="2px solid" borderColor="orange.200"
+          borderRadius="xl" px={4} py={3} pointerEvents="none"
+          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
           sx={{
             animation: "msgSlideUp 0.3s ease-out",
             "@keyframes msgSlideUp": {
@@ -1290,7 +1292,7 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
             },
           }}
         >
-          <Text fontSize="sm" color="cyan.50" fontFamily="monospace">{message}</Text>
+          <Text fontSize="sm" color="gray.800" fontFamily="monospace">{message}</Text>
         </Box>
       )}
     </Box>
