@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Box,
   Text,
@@ -35,6 +35,7 @@ const pulseKeyframes = keyframes`
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
+    tutorialId: "back",
     icon: ArrowBackIcon,
     label: { en: "Back Button", es: "Botón Atrás" },
     description: {
@@ -45,6 +46,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "teams",
+    tutorialId: "teams",
     icon: PiUsersBold,
     label: { en: "Teams", es: "Equipos" },
     description: {
@@ -55,6 +57,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "settings",
+    tutorialId: "settings",
     icon: SettingsIcon,
     label: { en: "Settings", es: "Configuración" },
     description: {
@@ -65,6 +68,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "notes",
+    tutorialId: "notes",
     icon: RiBookmarkLine,
     label: { en: "Notes", es: "Notas" },
     description: {
@@ -75,6 +79,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
+    tutorialId: "identity",
     icon: FaBitcoin,
     label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
@@ -85,6 +90,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "help",
+    tutorialId: "help",
     icon: MdOutlineSupportAgent,
     label: { en: "Assistant", es: "Asistente" },
     description: {
@@ -95,6 +101,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "mode",
+    tutorialId: "mode",
     icon: PiPath,
     label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
     description: {
@@ -112,24 +119,66 @@ export default function TutorialActionBarPopovers({
   isOnSkillTree = false, // When true, skip the "back" button explanation
 }) {
   // Filter out the back button when on skill tree (no back button there)
-  const activeExplanations = isOnSkillTree
-    ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
-    : BUTTON_EXPLANATIONS;
+  const activeExplanations = useMemo(
+    () =>
+      isOnSkillTree
+        ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
+        : BUTTON_EXPLANATIONS,
+    [isOnSkillTree]
+  );
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [arrowLeft, setArrowLeft] = useState("50%");
+  const popoverRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
+
+  // Measure the target button and compute arrow position
+  const measureArrow = useCallback(
+    (step) => {
+      const btn = activeExplanations[step];
+      if (!btn) return;
+      const el = document.querySelector(
+        `[data-tutorial-id="${btn.tutorialId}"]`
+      );
+      const popover = popoverRef.current;
+      if (!el || !popover) return;
+      const btnRect = el.getBoundingClientRect();
+      const popoverRect = popover.getBoundingClientRect();
+      const btnCenterX = btnRect.left + btnRect.width / 2;
+      const arrowOffset = btnCenterX - popoverRect.left;
+      const clamped = Math.max(
+        20,
+        Math.min(popoverRect.width - 20, arrowOffset)
+      );
+      setArrowLeft(`${clamped}px`);
+    },
+    [activeExplanations]
+  );
 
   useEffect(() => {
     if (!isActive) {
       setCurrentStep(0);
       setIsVisible(false);
+      setArrowLeft("50%");
       return;
     }
-
-    // Start showing popovers
     setIsVisible(true);
   }, [isActive]);
+
+  // Measure arrow after render when step changes or on resize
+  useEffect(() => {
+    if (!isActive || !isVisible) return;
+    // Use rAF to ensure popoverRef is measured after layout
+    const frame = requestAnimationFrame(() => measureArrow(currentStep));
+
+    const handleResize = () => measureArrow(currentStep);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isActive, isVisible, currentStep, measureArrow]);
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -165,6 +214,7 @@ export default function TutorialActionBarPopovers({
 
   return (
     <Box
+      ref={popoverRef}
       position="fixed"
       bottom="90px"
       left="50%"
@@ -273,17 +323,18 @@ export default function TutorialActionBarPopovers({
             </HStack>
           </VStack>
 
-          {/* Arrow pointing down to action bar */}
+          {/* Arrow pointing down to target button */}
           <Box
             position="absolute"
             bottom="-10px"
-            left="50%"
+            left={arrowLeft}
             transform="translateX(-50%)"
             w={0}
             h={0}
             borderLeft="12px solid transparent"
             borderRight="12px solid transparent"
             borderTop="12px solid rgba(139, 92, 246, 0.95)"
+            transition="left 0.3s ease"
           />
         </Box>
       </Fade>

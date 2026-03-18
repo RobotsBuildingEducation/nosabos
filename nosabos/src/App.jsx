@@ -2221,6 +2221,7 @@ export default function App() {
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
+  const [shouldShowGettingStartedAfterProficiency, setShouldShowGettingStartedAfterProficiency] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const gettingStartedCheckDoneRef = useRef(false);
 
@@ -2893,6 +2894,7 @@ export default function App() {
       setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
       setShouldShowProficiencyAfterTimer(true);
+      setShouldShowGettingStartedAfterProficiency(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -3622,6 +3624,11 @@ export default function App() {
 
   const handleProficiencySkip = useCallback(async () => {
     setProficiencyTestOpen(false);
+    // Chain to Getting Started modal immediately
+    if (shouldShowGettingStartedAfterProficiency) {
+      setShouldShowGettingStartedAfterProficiency(false);
+      setGettingStartedOpen(true);
+    }
     // Persist skip so the modal doesn't reappear every session.
     // "skipped" is a sentinel — treated as falsy by the placement check
     // but truthy enough to prevent the modal from re-opening.
@@ -3648,7 +3655,7 @@ export default function App() {
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
-  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
+  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang, shouldShowGettingStartedAfterProficiency]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);
@@ -5817,6 +5824,7 @@ function BottomActionBar({
               borderRadius="24px"
             >
               <IconButton
+                data-tutorial-id="teams"
                 icon={<PiUsersBold size={18} />}
                 onClick={() => handleActionClick(onOpenTeams)}
                 aria-label={teamsLabel}
@@ -5834,6 +5842,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="settings"
                 icon={<SettingsIcon boxSize={4} />}
                 color="gray.100"
                 onClick={() => handleActionClick(onOpenSettings)}
@@ -5846,6 +5855,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="notes"
                 icon={<RiBookmarkLine size={18} />}
                 aria-label={notesLabel}
                 onClick={() => handleActionClick(onOpenNotes)}
@@ -5885,6 +5895,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="identity"
                 icon={<FaBitcoin size={18} />}
                 onClick={() => handleActionClick(onOpenIdentity)}
                 aria-label={identityLabel}
@@ -5896,6 +5907,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="help"
                 icon={<MdOutlineSupportAgent size={18} />}
                 onClick={() => handleActionClick(onOpenHelpChat)}
                 aria-label={helpChatLabel}
@@ -5911,6 +5923,7 @@ function BottomActionBar({
               {/* Path Mode Menu */}
               <Menu placement="top-end">
                 <MenuButton
+                  data-tutorial-id="mode"
                   as={IconButton}
                   icon={<CurrentModeIcon size={18} />}
                   aria-label={modeMenuLabel}
