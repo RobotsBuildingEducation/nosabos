@@ -2221,6 +2221,7 @@ export default function App() {
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
+  const [shouldShowGettingStartedAfterProficiency, setShouldShowGettingStartedAfterProficiency] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const gettingStartedCheckDoneRef = useRef(false);
 
@@ -2893,6 +2894,7 @@ export default function App() {
       setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
       setShouldShowProficiencyAfterTimer(true);
+      setShouldShowGettingStartedAfterProficiency(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -3622,6 +3624,11 @@ export default function App() {
 
   const handleProficiencySkip = useCallback(async () => {
     setProficiencyTestOpen(false);
+    // Chain to Getting Started modal immediately
+    if (shouldShowGettingStartedAfterProficiency) {
+      setShouldShowGettingStartedAfterProficiency(false);
+      setGettingStartedOpen(true);
+    }
     // Persist skip so the modal doesn't reappear every session.
     // "skipped" is a sentinel — treated as falsy by the placement check
     // but truthy enough to prevent the modal from re-opening.
@@ -3648,7 +3655,7 @@ export default function App() {
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
-  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
+  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang, shouldShowGettingStartedAfterProficiency]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);
