@@ -195,6 +195,105 @@ function uniqueWords(items = []) {
   );
 }
 
+function escapeRegExp(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const NPC_PLACEHOLDER_REGEX = /__NPC_\d+__/g;
+
+function buildNpcPlaceholderEntries(names = []) {
+  return uniqueWords(names)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map((name, idx) => ({
+      name,
+      placeholder: `__NPC_${idx}__`,
+      regex: new RegExp(
+        `(^|[^\\p{L}\\p{N}_])(${escapeRegExp(name)})(?=$|[^\\p{L}\\p{N}_])`,
+        "gu",
+      ),
+    }));
+}
+
+function replaceNpcNamesInText(text, placeholderEntries = [], mode = "protect") {
+  if (typeof text !== "string" || !placeholderEntries.length) return text;
+
+  let nextText = text;
+  if (mode === "restore") {
+    placeholderEntries.forEach((entry) => {
+      nextText = nextText.replaceAll(entry.placeholder, entry.name);
+    });
+    return nextText;
+  }
+
+  placeholderEntries.forEach((entry) => {
+    nextText = nextText.replace(
+      entry.regex,
+      (_, prefix = "") => `${prefix}${entry.placeholder}`,
+    );
+  });
+  return nextText;
+}
+
+function transformNpcNamesInValue(value, placeholderEntries = [], mode = "protect") {
+  if (!placeholderEntries.length || value == null) return value;
+  if (typeof value === "string") {
+    return replaceNpcNamesInText(value, placeholderEntries, mode);
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) =>
+      transformNpcNamesInValue(entry, placeholderEntries, mode),
+    );
+  }
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        transformNpcNamesInValue(entry, placeholderEntries, mode),
+      ]),
+    );
+  }
+  return value;
+}
+
+function extractNpcPlaceholders(text = "") {
+  return Array.from(new Set(String(text).match(NPC_PLACEHOLDER_REGEX) || [])).sort();
+}
+
+function areNpcPlaceholdersPreserved(candidate, protectedValue) {
+  if (typeof protectedValue === "string") {
+    const expectedPlaceholders = extractNpcPlaceholders(protectedValue);
+    if (!expectedPlaceholders.length) return true;
+    if (typeof candidate !== "string") return false;
+    const actualPlaceholders = extractNpcPlaceholders(candidate);
+    return (
+      actualPlaceholders.length === expectedPlaceholders.length &&
+      actualPlaceholders.every(
+        (placeholder, idx) => placeholder === expectedPlaceholders[idx],
+      )
+    );
+  }
+
+  if (Array.isArray(protectedValue)) {
+    return (
+      Array.isArray(candidate) &&
+      candidate.length === protectedValue.length &&
+      protectedValue.every((entry, idx) =>
+        areNpcPlaceholdersPreserved(candidate[idx], entry),
+      )
+    );
+  }
+
+  if (protectedValue && typeof protectedValue === "object") {
+    if (!candidate || typeof candidate !== "object") return false;
+    return Object.keys(protectedValue).every((key) =>
+      areNpcPlaceholdersPreserved(candidate[key], protectedValue[key]),
+    );
+  }
+
+  return true;
+}
+
 function resolveTargetLanguageName(code) {
   return getLanguagePromptName(code) || String(code || "").toUpperCase();
 }
@@ -1461,6 +1560,7 @@ async function adaptQuestForReviewContext(
   targetLang,
   cefrLevel,
   reviewContext = null,
+  protectedCharacterNames = [],
 ) {
   const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
   if (!quest) {
@@ -1469,6 +1569,14 @@ async function adaptQuestForReviewContext(
 
   const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
   const levelKey = cefrLevel || reviewContext?.cefrLevel || "A1";
+  const npcPlaceholderEntries = buildNpcPlaceholderEntries(
+    protectedCharacterNames,
+  );
+  const protectedQuest = transformNpcNamesInValue(
+    quest,
+    npcPlaceholderEntries,
+    "protect",
+  );
   const prompt = [
     "You are rewriting a structured RPG quest so it becomes a chapter review for a language-learning game.",
     `Target language: ${targetLangName} (code: ${normalizedTargetLang}).`,
@@ -1504,12 +1612,14 @@ async function adaptQuestForReviewContext(
     "This includes intro, storySeed, step titles/intros, node dialogue, player lines, choice text, choice replies, gather item names, hints, and gather-data item names/hints.",
     "Keep the JSON structure exactly the same.",
     "Do NOT change keys, ids, stepIdx, npcIdx, startNpcIdx, nextNodeId, responseMode, terminal, isCorrect, sprite, or any numbers/booleans.",
-    "Keep character names as written.",
+    npcPlaceholderEntries.length
+      ? "Character name placeholders like __NPC_0__ represent the fixed roster. Preserve every placeholder exactly as written and never invent any other person name."
+      : "Keep character names as written and do not invent any new person names.",
     "Preserve the placeholders {{wrongItem}} and {{correctItem}} exactly.",
     `Use only ${targetLangName}. Do not use Spanish, English, or any other language unless ${targetLangName} is that language.`,
     "Return ONLY valid JSON.",
     "",
-    JSON.stringify(quest),
+    JSON.stringify(protectedQuest),
   ].join("\n");
 
   const localizedRaw = await callResponses({
@@ -1517,8 +1627,14 @@ async function adaptQuestForReviewContext(
     input: prompt,
   });
   const localized = parseJSON(localizedRaw);
-
-  return isQuestLocalizationValid(localized, quest) ? localized : quest;
+  const placeholdersPreserved = areNpcPlaceholdersPreserved(
+    localized,
+    protectedQuest,
+  );
+  if (!isQuestLocalizationValid(localized, quest) || !placeholdersPreserved) {
+    return quest;
+  }
+  return transformNpcNamesInValue(localized, npcPlaceholderEntries, "restore");
 }
 
 function normalizeMapData(mapData, mapWidth, mapHeight) {
@@ -2748,6 +2864,7 @@ async function fallbackScenario(
       targetLang,
       cefrLevel,
       reviewContext,
+      npcs.map((npc) => npc.name),
     );
     const visualizedQuest = await enrichQuestGatherVisuals(
       quest,
@@ -3010,6 +3127,7 @@ Constraints:
 - Exactly ${npcCount} NPCs in the npcs array.
 - At least 8 questions, all at ${levelKey} difficulty.
 - Questions should directly test the curriculum terms listed above.
+- Only refer to named people who appear in the npcs array. Do not invent or mention any off-screen named characters.
 - Make the world feel specific and lived-in, not generic.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable and navigable.
@@ -3076,6 +3194,7 @@ Constraints:
 - Exactly ${npcCount} NPCs in the npcs array.
 - At least 8 questions, all at ${levelKey} difficulty.
 - Questions should test the curriculum terms listed above.
+- Only refer to named people who appear in the npcs array. Do not invent or mention any off-screen named characters.
 - Ensure playerStart and NPCs are in-bounds.
 - Keep mapData playable (not all solid).
 - No extra keys.`;
@@ -3255,6 +3374,7 @@ async function withQuest(
     targetLang,
     cefrLevel,
     reviewContext,
+    scenario.npcs.map((npc) => npc.name),
   );
   const visualizedQuest = await enrichQuestGatherVisuals(
     localizedQuest,

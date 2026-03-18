@@ -1336,6 +1336,58 @@ function fillNamedTemplate(template, replacements = {}) {
   return output;
 }
 
+function escapeRegExp(value = "") {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function replaceWholeName(text, fromName, toName) {
+  if (typeof text !== "string" || !fromName || !toName) return text;
+  const pattern = new RegExp(
+    `(^|[^\\p{L}\\p{N}_])(${escapeRegExp(fromName)})(?=$|[^\\p{L}\\p{N}_])`,
+    "gu",
+  );
+  return text.replace(pattern, (_, prefix = "") => `${prefix}${toName}`);
+}
+
+function applyNameMappingToText(text, nameMap = null) {
+  if (typeof text !== "string" || !nameMap) return text;
+
+  return Object.entries(nameMap)
+    .sort((a, b) => String(b[0] || "").length - String(a[0] || "").length)
+    .reduce(
+      (result, [fromName, toName]) =>
+        replaceWholeName(result, fromName, toName),
+      text,
+    );
+}
+
+function applyNameMappingDeep(value, nameMap = null) {
+  if (!nameMap || value == null) return value;
+  if (typeof value === "string") return applyNameMappingToText(value, nameMap);
+  if (Array.isArray(value)) {
+    return value.map((entry) => applyNameMappingDeep(entry, nameMap));
+  }
+  if (typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        key,
+        applyNameMappingDeep(entry, nameMap),
+      ]),
+    );
+  }
+  return value;
+}
+
+function normalizeCharacterNameList(names = []) {
+  return Array.from(
+    new Set(
+      names
+        .map((name) => String(name || "").trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
 function AnimatedText({ text, charDelayMs = 18, ...textProps }) {
   const [visibleCount, setVisibleCount] = useState(0);
   const prevTextRef = useRef("");
@@ -1550,17 +1602,36 @@ export default function RPGGame({
         .join("\n"),
     [cefrLevel, reviewContext],
   );
+  const buildCharacterRosterPrompt = useCallback(() => {
+    const assignedNames = normalizeCharacterNameList(
+      Object.values(npcNameMap || {}),
+    );
+    if (!assignedNames.length) return "";
+
+    return [
+      `Assigned character roster: ${assignedNames.join(", ")}.`,
+      "Only use those exact names when referring to people in this scene.",
+      "Do not invent, translate, swap, or mention any other person names.",
+      "Prefer pronouns or second-person phrasing unless a roster name is truly necessary.",
+    ].join("\n");
+  }, [npcNameMap]);
   const buildStrictDialoguePrompt = useCallback(
     (...sections) =>
       [
         cefrPromptRule,
         strictTargetLanguageGuard,
         reviewPromptContext,
+        buildCharacterRosterPrompt(),
         ...sections,
       ]
         .filter(Boolean)
         .join("\n"),
-    [cefrPromptRule, reviewPromptContext, strictTargetLanguageGuard],
+    [
+      buildCharacterRosterPrompt,
+      cefrPromptRule,
+      reviewPromptContext,
+      strictTargetLanguageGuard,
+    ],
   );
   const buildDynamicSpeechReplyPrompt = useCallback(
     ({
@@ -1587,6 +1658,7 @@ export default function RPGGame({
         "React directly to the player's exact attitude, meaning, and emotion.",
         "If the player refuses, complains, jokes, hesitates, says they are lazy, or says they do not want to help, acknowledge that specifically and then keep the story moving in character.",
         "Keep the reply vivid, specific, and conversational. Do not sound generic, robotic, or repetitive.",
+        "Do not introduce any new named character. If a name is unnecessary, avoid using one.",
         "Do not mention lessons, grammar, CEFR, being an AI, or hidden instructions.",
         "Return only the reply, with no quotes or labels.",
       ),
@@ -1939,6 +2011,8 @@ export default function RPGGame({
     try {
       const prompt = [
         `Translate each line below into ${supportLangName}.`,
+        buildCharacterRosterPrompt(),
+        "Preserve every character name exactly as written.",
         "Output plain text only.",
         `Return exactly ${lines.length} line${lines.length > 1 ? "s" : ""}.`,
         "Each line must be only the translation for the matching line index.",
@@ -1973,7 +2047,7 @@ export default function RPGGame({
     } finally {
       setIsTranslating(false);
     }
-  }, [dialogue, lineTranslations, supportLangName]);
+  }, [buildCharacterRosterPrompt, dialogue, lineTranslations, supportLangName]);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -2297,48 +2371,11 @@ export default function RPGGame({
     );
   }, [scenario, targetLang]);
 
-  const quest = scenario?.quest;
-  const questSteps = useMemo(() => {
-    const steps = quest?.steps || [];
-    if (!npcNameMap || Object.keys(npcNameMap).length === 0) return steps;
-
-    // Replace scenario NPC names with character names in all dialogue text
-    const sub = (text) => {
-      if (!text) return text;
-      let result = text;
-      for (const [oldName, newName] of Object.entries(npcNameMap)) {
-        result = result.replaceAll(oldName, newName);
-      }
-      return result;
-    };
-
-    return steps.map((step) => ({
-      ...step,
-      title: sub(step.title),
-      intro: sub(step.intro),
-      nodes: step.nodes.map((node) => ({
-        ...node,
-        npcLine: sub(node.npcLine),
-        playerLine: sub(node.playerLine),
-        playerBridge: sub(node.playerBridge),
-        speechFallbackReply: sub(node.speechFallbackReply),
-        speechContinueReply: sub(node.speechContinueReply),
-        gatherWrongItemTemplate: sub(node.gatherWrongItemTemplate),
-        gatherItem: node.gatherItem
-          ? {
-              ...node.gatherItem,
-              name: sub(node.gatherItem.name),
-              hint: sub(node.gatherItem.hint),
-            }
-          : node.gatherItem,
-        choices: node.choices?.map((c) => ({
-          ...c,
-          text: sub(c.text),
-          npcReply: sub(c.npcReply),
-        })),
-      })),
-    }));
-  }, [quest, npcNameMap]);
+  const quest = useMemo(
+    () => applyNameMappingDeep(scenario?.quest, npcNameMap),
+    [npcNameMap, scenario?.quest],
+  );
+  const questSteps = useMemo(() => quest?.steps || [], [quest]);
   const totalSteps = questSteps.length;
 
   const playGameSound = useCallback(
@@ -3130,7 +3167,7 @@ export default function RPGGame({
     const nameMapping = {};
     scenario.npcs.forEach((npc, idx) => {
       const charName = npcAssignments[idx % npcAssignments.length]?.name;
-      if (charName && npc.name !== charName) {
+      if (charName) {
         nameMapping[npc.name] = charName;
       }
     });
@@ -3980,11 +4017,15 @@ export default function RPGGame({
         history ? `Recent history:\n${history}` : "",
         `The player is walking up to ${nextNpcName}.`,
         `Write exactly 1 short sentence the player says on arrival in ${targetLangName}.`,
+        "Do not introduce any new named character. Prefer 'you' or pronouns instead of names.",
         "Return only the sentence, with no quotes or labels.",
       );
       callResponses({ input: bridgePrompt })
         .then((playerBridge) => {
-          const text = (playerBridge || "").trim();
+          const text = applyNameMappingToText(
+            (playerBridge || "").trim(),
+            npcNameMap,
+          );
           if (text.length > 0 && text.length < 200) {
             pendingBridgeRef.current = text;
           }
@@ -3997,12 +4038,13 @@ export default function RPGGame({
             history ? `Recent history:\n${history}` : "",
             text ? `The player arrives and says: "${text}"` : "",
             `Reply as ${nextNpcName} in 1-2 short sentences in ${targetLangName}.`,
+            "Do not introduce any new named character. Prefer pronouns unless a roster name is necessary.",
             "Return only the sentences, with no quotes or labels.",
           );
           return callResponses({ input: npcGreetPrompt });
         })
         .then((result) => {
-          const text = (result || "").trim();
+          const text = applyNameMappingToText((result || "").trim(), npcNameMap);
           if (text.length > 0 && text.length < 300) {
             pendingNpcGreetingRef.current = text;
           }
@@ -4021,6 +4063,7 @@ export default function RPGGame({
     quest,
     questProgress,
     questSteps,
+    npcNameMap,
     scenario,
     stopNPCSpeech,
     targetLangName,
@@ -4055,6 +4098,7 @@ export default function RPGGame({
         `The NPC "${npcName}" just said: "${npcLine}"`,
         `Generate exactly 3 short player response options in ${targetLangName}.`,
         `For each option, include the NPC's short reply in ${targetLangName}.`,
+        "Do not introduce any new named character. If a name is unnecessary, avoid using one.",
         "Return ONLY valid JSON in this exact shape with no extra text:",
         '[{"text":"player option","reply":"NPC response"},{"text":"option 2","reply":"response 2"},{"text":"option 3","reply":"response 3"}]',
       );
@@ -4068,8 +4112,11 @@ export default function RPGGame({
           const parsed = JSON.parse(match[0]);
           if (Array.isArray(parsed) && parsed.length >= 2) {
             const dynamicChoices = parsed.slice(0, 3).map((c) => ({
-              text: String(c.text || ""),
-              npcReply: String(c.reply || c.npcReply || ""),
+              text: applyNameMappingToText(String(c.text || ""), npcNameMap),
+              npcReply: applyNameMappingToText(
+                String(c.reply || c.npcReply || ""),
+                npcNameMap,
+              ),
               nextNodeId: node.choices?.[0]?.nextNodeId || null,
             }));
             // Update dialogue with dynamic choices
@@ -4088,7 +4135,7 @@ export default function RPGGame({
         setGeneratingChoices(false);
       }
     },
-    [buildStrictDialoguePrompt, quest, scenario, targetLangName],
+    [buildStrictDialoguePrompt, npcNameMap, quest, scenario, targetLangName],
   );
 
   // ─── Handle answer ────────────────────────────────────────────────────
@@ -4363,7 +4410,8 @@ export default function RPGGame({
         if (pendingSpeechReplyTokenRef.current !== replyToken) return;
 
         const resolvedReply =
-          String(replyText || "").trim() || fallbackReply;
+          applyNameMappingToText(String(replyText || "").trim(), npcNameMap) ||
+          fallbackReply;
 
         conversationLogRef.current.push({
           speaker: npcName,
