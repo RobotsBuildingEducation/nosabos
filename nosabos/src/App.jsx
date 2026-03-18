@@ -2329,9 +2329,7 @@ export default function App() {
 
     gettingStartedCheckDoneRef.current = true;
 
-    setTimeout(() => {
-      setGettingStartedOpen(true);
-    }, 500);
+    setGettingStartedOpen(true);
   }, [
     isLoadingApp,
     user,
@@ -5269,6 +5267,7 @@ export default function App() {
         isOpen={gettingStartedOpen}
         onClose={handleGettingStartedSkip}
         onStartTutorial={handleGettingStartedStart}
+        secretKey={activeNsec}
         lang={appLanguage}
       />
 
