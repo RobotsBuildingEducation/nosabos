@@ -2,9 +2,8 @@ import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Button,
-  Divider,
-  Flex,
-  HStack,
+  Grid,
+  GridItem,
   Modal,
   ModalBody,
   ModalContent,
@@ -127,31 +126,30 @@ export default function GettingStartedModal({
                 : "For the best experience, install the app on your device."}
             </Text>
 
-            <Box bg="gray.800" p={3} rounded="md">
-              {installSteps.map((step, idx) => (
-                <Box key={step.id} py={2}>
-                  <Flex
-                    align="center"
-                    gap={3}
-                    justify="space-between"
-                    flexWrap="wrap"
-                  >
-                    <HStack align="center" gap={3}>
-                      <Box color="teal.200">{step.icon}</Box>
-                      <Text fontSize="sm">{step.text}</Text>
-                    </HStack>
-                  </Flex>
-                  {step.subText ? (
-                    <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                      {step.subText}
-                    </Text>
-                  ) : null}
-                  {idx < installSteps.length - 1 && (
-                    <Divider my={3} borderColor="gray.700" />
-                  )}
-                </Box>
+            <Grid
+              templateColumns="repeat(2, 1fr)"
+              gap={3}
+            >
+              {installSteps.map((step) => (
+                <GridItem
+                  key={step.id}
+                  colSpan={step.subText ? 2 : 1}
+                  bg="gray.800"
+                  p={3}
+                  rounded="md"
+                >
+                  <VStack spacing={1} align="center" textAlign="center">
+                    <Box color="teal.200">{step.icon}</Box>
+                    <Text fontSize="xs">{step.text}</Text>
+                    {step.subText ? (
+                      <Text fontSize="xs" color="teal.100" mt={1}>
+                        {step.subText}
+                      </Text>
+                    ) : null}
+                  </VStack>
+                </GridItem>
               ))}
-            </Box>
+            </Grid>
 
             <Button
               w="100%"
