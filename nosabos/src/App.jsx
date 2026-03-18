@@ -2329,9 +2329,7 @@ export default function App() {
 
     gettingStartedCheckDoneRef.current = true;
 
-    setTimeout(() => {
-      setGettingStartedOpen(true);
-    }, 500);
+    setGettingStartedOpen(true);
   }, [
     isLoadingApp,
     user,
