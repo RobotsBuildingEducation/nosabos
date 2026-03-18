@@ -872,6 +872,7 @@ async function enrichQuestGatherVisuals(
   const raw = await callResponses({
     model: SCENARIO_MODEL,
     input: prompt,
+    forceProxy: true,
   });
   const parsed = parseJSON(raw);
   if (!Array.isArray(parsed)) return quest;
@@ -1625,6 +1626,7 @@ async function adaptQuestForReviewContext(
   const localizedRaw = await callResponses({
     model: SCENARIO_MODEL,
     input: prompt,
+    forceProxy: true,
   });
   const localized = parseJSON(localizedRaw);
   const placeholdersPreserved = areNpcPlaceholdersPreserved(
@@ -3429,6 +3431,7 @@ export async function generateScenarioWithAI(
   const text = await callResponses({
     model: SCENARIO_MODEL,
     input: prompt,
+    forceProxy: true,
   });
 
   const parsed = parseJSON(text);

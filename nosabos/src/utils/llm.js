@@ -21,8 +21,9 @@ function textFromChunk(chunk) {
 export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
+  forceProxy = false,
 }) {
-  if (simplemodel) {
+  if (simplemodel && !forceProxy) {
     try {
       const resp = await simplemodel.generateContentStream({
         contents: [{ role: "user", parts: [{ text: input }] }],
