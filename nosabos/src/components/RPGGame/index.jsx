@@ -82,6 +82,73 @@ const GATHER_SPRITE_GRID = 16;
 const GAME_SPEECH_VAD_MS = 850;
 const GAME_SPEECH_STOP_DELAY_MS = 250;
 const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
+const OBJECT_SEARCH_TEST_COPY = {
+  en: {
+    intro: (itemName) =>
+      `I need ${itemName}. Search the objects in any room on this map. Each one hides one item. Bring me the right one.`,
+    wrongItem: (wrongName, correctName) =>
+      `That's ${wrongName}. I still need ${correctName}. Keep checking the objects.`,
+    success: (itemName) => `Perfect. ${itemName} is exactly what I needed.`,
+    chooseItem: "Choose an item to hand over:",
+    foundItem: (itemName) => `Found: ${itemName}`,
+    alreadyChecked: "You already checked this object.",
+    nothingFound: "Nothing useful here.",
+    continueSearching: "Keep searching",
+  },
+  es: {
+    intro: (itemName) =>
+      `Necesito ${itemName}. Revisa los objetos en cualquier cuarto de este mapa. Cada uno esconde un objeto. Traeme el correcto.`,
+    wrongItem: (wrongName, correctName) =>
+      `Eso es ${wrongName}. Todavia necesito ${correctName}. Sigue revisando los objetos.`,
+    success: (itemName) => `Perfecto. ${itemName} es exactamente lo que necesitaba.`,
+    chooseItem: "Elige un objeto para entregar:",
+    foundItem: (itemName) => `Encontraste: ${itemName}`,
+    alreadyChecked: "Ya revisaste este objeto.",
+    nothingFound: "No hay nada util aqui.",
+    continueSearching: "Seguir buscando",
+  },
+};
+
+const QUEST_LOG_COPY = {
+  en: {
+    title: "Quest Log",
+    button: "Quest log",
+    currentTask: "Current task",
+    progress: (done, total) => `Progress: ${done}/${total}`,
+    complete: "Quest complete! Nice work.",
+    defaultTask: "Keep exploring and talk to the next character.",
+    startObjectSearch: (npcName, itemName) =>
+      `Talk to ${npcName} to start the search for ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Search the examinable objects in any room for ${itemName}. Each object hides one item.`,
+    returnItem: (itemName, npcName) =>
+      `Bring ${itemName} back to ${npcName}.`,
+    gatherSearch: (itemName) => `Search the area for ${itemName}.`,
+    gatherHint: (hint) => `Hint: ${hint}`,
+    choiceTask: (npcName) => `Talk to ${npcName} and choose a response.`,
+    speechTask: (npcName) => `Talk to ${npcName} and answer with your voice.`,
+    continueTask: (npcName) => `Talk to ${npcName} to continue.`,
+  },
+  es: {
+    title: "Registro de mision",
+    button: "Registro de mision",
+    currentTask: "Tarea actual",
+    progress: (done, total) => `Progreso: ${done}/${total}`,
+    complete: "Mision completada. Buen trabajo.",
+    defaultTask: "Sigue explorando y habla con el siguiente personaje.",
+    startObjectSearch: (npcName, itemName) =>
+      `Habla con ${npcName} para comenzar la busqueda de ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Revisa los objetos examinables en cualquier cuarto para encontrar ${itemName}. Cada objeto esconde un item.`,
+    returnItem: (itemName, npcName) =>
+      `Lleva ${itemName} de regreso con ${npcName}.`,
+    gatherSearch: (itemName) => `Busca ${itemName} en esta zona.`,
+    gatherHint: (hint) => `Pista: ${hint}`,
+    choiceTask: (npcName) => `Habla con ${npcName} y elige una respuesta.`,
+    speechTask: (npcName) => `Habla con ${npcName} y responde con tu voz.`,
+    continueTask: (npcName) => `Habla con ${npcName} para continuar.`,
+  },
+};
 
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
@@ -1093,6 +1160,133 @@ function BackpackIcon({ size = 28 }) {
   );
 }
 
+function QuestLogIcon({ size = 28 }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const RES = 64;
+    canvas.width = RES;
+    canvas.height = RES;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+    });
+    renderer.setSize(RES, RES);
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const half = RES / 2;
+    const camera = new THREE.OrthographicCamera(
+      -half,
+      half,
+      half,
+      -half,
+      0.1,
+      100,
+    );
+    camera.position.z = 10;
+
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = 32;
+    texCanvas.height = 32;
+    const ctx = texCanvas.getContext("2d");
+    const px = (x, y, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, 1, 1);
+    };
+    const rect = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    };
+
+    // Folded treasure-map silhouette
+    rect(6, 7, 5, 16, "#ead7a6");
+    rect(11, 5, 5, 20, "#f6e8be");
+    rect(16, 7, 5, 16, "#ead7a6");
+    rect(21, 5, 5, 20, "#f6e8be");
+
+    // Outer outline
+    rect(6, 7, 1, 16, "#8d6338");
+    rect(10, 6, 1, 18, "#8d6338");
+    rect(15, 5, 1, 20, "#8d6338");
+    rect(20, 6, 1, 18, "#8d6338");
+    rect(25, 5, 1, 20, "#8d6338");
+    rect(7, 6, 3, 1, "#8d6338");
+    rect(11, 5, 4, 1, "#8d6338");
+    rect(16, 6, 4, 1, "#8d6338");
+    rect(21, 5, 4, 1, "#8d6338");
+    rect(7, 23, 3, 1, "#8d6338");
+    rect(11, 24, 4, 1, "#8d6338");
+    rect(16, 23, 4, 1, "#8d6338");
+    rect(21, 24, 4, 1, "#8d6338");
+
+    // Fold shadows/highlights
+    rect(8, 8, 1, 13, "#fff5d4");
+    rect(13, 7, 1, 16, "#dabb88");
+    rect(18, 8, 1, 13, "#fff5d4");
+    rect(23, 7, 1, 16, "#dabb88");
+
+    // Map path and landmark
+    rect(11, 12, 2, 2, "#5d8a58");
+    rect(18, 17, 2, 2, "#5d8a58");
+    rect(14, 15, 1, 1, "#6e90b9");
+    rect(16, 14, 1, 1, "#6e90b9");
+    rect(17, 13, 1, 1, "#6e90b9");
+    rect(18, 12, 1, 1, "#6e90b9");
+    rect(19, 11, 1, 1, "#6e90b9");
+    rect(20, 10, 1, 1, "#6e90b9");
+    rect(21, 10, 1, 1, "#6e90b9");
+    px(12, 17, "#c77d38");
+    px(13, 18, "#c77d38");
+    px(14, 19, "#c77d38");
+
+    // Quest marker with exclamation point
+    rect(20, 2, 7, 7, "#cf4f4a");
+    rect(21, 1, 5, 1, "#e56e68");
+    rect(21, 8, 5, 1, "#8d2d2d");
+    rect(19, 3, 1, 5, "#8d2d2d");
+    rect(27, 3, 1, 5, "#8d2d2d");
+    rect(23, 3, 1, 3, "#ffd84d");
+    px(23, 7, "#ffd84d");
+
+    const texture = new THREE.CanvasTexture(texCanvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    const geo = new THREE.PlaneGeometry(RES, RES);
+    const mat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    renderer.render(scene, camera);
+
+    return () => {
+      geo.dispose();
+      mat.dispose();
+      texture.dispose();
+      renderer.dispose();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        width: size,
+        height: size,
+        imageRendering: "pixelated",
+        display: "block",
+      }}
+    />
+  );
+}
+
 const NPC_SPRITE_ROWS = [
   { id: "hamster", rowIndex: 0, name: "Sheilfer" },
   { id: "frog", rowIndex: 1, name: "Jiraiya" },
@@ -1489,6 +1683,11 @@ export default function RPGGame({
     "en",
   );
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
+  const objectSearchCopy =
+    OBJECT_SEARCH_TEST_COPY[targetLang === "es" ? "es" : "en"] ||
+    OBJECT_SEARCH_TEST_COPY.en;
+  const questLogCopy =
+    QUEST_LOG_COPY[supportLang === "es" ? "es" : "en"] || QUEST_LOG_COPY.en;
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 
@@ -1513,12 +1712,20 @@ export default function RPGGame({
   const [lastHeardSpeech, setLastHeardSpeech] = useState("");
   const [generatingChoices, setGeneratingChoices] = useState(false);
   const [lineTranslations, setLineTranslations] = useState(null);
+  const [choiceTranslations, setChoiceTranslations] = useState(null);
+  const [actionTranslations, setActionTranslations] = useState(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [dialogueBubblePosition, setDialogueBubblePosition] = useState(null);
   const [objectExamine, setObjectExamine] = useState(null);
+  const [pickupBanner, setPickupBanner] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
+  const [startedObjectSearchStepKey, setStartedObjectSearchStepKey] =
+    useState(null);
+  const [collectedObjectSearchKeys, setCollectedObjectSearchKeys] = useState(
+    {},
+  );
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const gatherUnlockedRef = useRef(gatherUnlocked);
   const conversationLogRef = useRef([]);
@@ -1526,6 +1733,7 @@ export default function RPGGame({
   const pendingNpcGreetingRef = useRef(null);
   const inventoryModal = useDisclosure();
   const helpChat = useDisclosure();
+  const questLogModal = useDisclosure();
   const helpChatRef = useRef(null);
   const isTouchDevice = useRef(false);
   const levelCompleteSoundPlayedRef = useRef(false);
@@ -1946,6 +2154,9 @@ export default function RPGGame({
     objectExamineCacheRef.current = new Map();
     objectExaminePendingMapsRef.current = new Set();
     setObjectExamine(null);
+    setPickupBanner(null);
+    setStartedObjectSearchStepKey(null);
+    setCollectedObjectSearchKeys({});
   }, [scenario?.id]);
 
   useEffect(() => {
@@ -1964,62 +2175,182 @@ export default function RPGGame({
   }, [objectExamine]);
 
   useEffect(() => {
+    if (!pickupBanner) return undefined;
+    const timer = setTimeout(() => {
+      setPickupBanner((current) =>
+        current?.openedAt === pickupBanner.openedAt ? null : current,
+      );
+    }, 1600);
+    return () => clearTimeout(timer);
+  }, [pickupBanner]);
+
+  useEffect(() => {
     setObjectExamine(null);
+    setPickupBanner(null);
   }, [activeMapId]);
 
   useEffect(() => {
     if (dialogue || gameComplete) {
       setObjectExamine(null);
+      setPickupBanner(null);
     }
   }, [dialogue, gameComplete]);
 
-  const toggleTranslation = useCallback(async () => {
-    if (lineTranslations) {
-      setLineTranslations(null);
-      return;
-    }
+  const clearDialogueTranslations = useCallback(() => {
+    setLineTranslations(null);
+    setChoiceTranslations(null);
+    setActionTranslations(null);
+  }, []);
 
-    const npcText =
+  const dialogueNpcText = useMemo(
+    () =>
       dialogue?.npcReply ||
       dialogue?.node?.npcLine ||
       dialogue?.node?.prompt ||
       dialogue?.question?.prompt ||
-      "";
-    if (!npcText.trim()) return;
+      "",
+    [dialogue],
+  );
+  const dialogueTextLines = useMemo(
+    () => splitIntoSentences(dialogueNpcText),
+    [dialogueNpcText],
+  );
+  const dialogueChoiceTexts = useMemo(() => {
+    if (dialogue?.node?.responseMode !== "choice") return [];
+    return (dialogue.node?.choices || []).map((optRaw) =>
+      typeof optRaw === "string" ? optRaw : optRaw?.text || "",
+    );
+  }, [dialogue]);
+  const dialogueActionTargets = useMemo(() => {
+    if (!dialogue?.node) return [];
 
-    const lines = splitIntoSentences(npcText);
-    if (!lines.length) return;
+    if (["gather", "objectSearch"].includes(dialogue.node.responseMode)) {
+      const submitPrompt =
+        dialogue.node.responseMode === "objectSearch"
+          ? objectSearchCopy.chooseItem
+          : targetLang === "es"
+            ? "Elige un objeto para entregar:"
+            : "Choose an item to hand over:";
+      const continueLabel =
+        dialogue.node.responseMode === "objectSearch"
+          ? objectSearchCopy.continueSearching
+          : targetLang === "es"
+            ? "Seguir buscando"
+            : "Keep searching";
+
+      return [
+        ...(inventory.length > 0
+          ? [{ key: "submitPrompt", text: submitPrompt }]
+          : []),
+        { key: "continue", text: continueLabel },
+      ];
+    }
+
+    if (dialogue.node.responseMode === "none") {
+      return [{ key: "continue", text: ui.continue }];
+    }
+
+    return [];
+  }, [dialogue, inventory.length, objectSearchCopy, targetLang, ui.continue]);
+  const dialogueActionLabelMap = useMemo(
+    () =>
+      dialogueActionTargets.reduce((acc, entry) => {
+        acc[entry.key] = entry.text;
+        return acc;
+      }, {}),
+    [dialogueActionTargets],
+  );
+  const hasDialogueTranslations =
+    !!lineTranslations || !!choiceTranslations || !!actionTranslations;
+
+  const toggleTranslation = useCallback(async () => {
+    if (hasDialogueTranslations) {
+      clearDialogueTranslations();
+      return;
+    }
+
+    const translationTargets = [
+      ...dialogueTextLines.map((text, index) => ({
+        kind: "line",
+        index,
+        text,
+      })),
+      ...dialogueChoiceTexts
+        .map((text, index) => ({
+          kind: "choice",
+          index,
+          text: String(text || "").trim(),
+        }))
+        .filter((entry) => entry.text),
+      ...dialogueActionTargets
+        .map((entry) => ({
+          kind: "action",
+          key: entry.key,
+          text: String(entry.text || "").trim(),
+        }))
+        .filter((entry) => entry.text),
+    ].filter((entry) => String(entry.text || "").trim());
+
+    if (!translationTargets.length) return;
 
     setIsTranslating(true);
-    const nextLines = Array(lines.length).fill("");
-    setLineTranslations([...nextLines]);
+    const nextLines = Array(dialogueTextLines.length).fill("");
+    const nextChoices = Array(dialogueChoiceTexts.length).fill("");
+    const nextActions = dialogueActionTargets.reduce((acc, entry) => {
+      acc[entry.key] = "";
+      return acc;
+    }, {});
+
+    setLineTranslations(dialogueTextLines.length ? [...nextLines] : null);
+    setChoiceTranslations(dialogueChoiceTexts.length ? [...nextChoices] : null);
+    setActionTranslations(
+      dialogueActionTargets.length ? { ...nextActions } : null,
+    );
 
     let receivedCount = 0;
     let lineBuffer = "";
 
+    const syncTranslations = () => {
+      setLineTranslations(dialogueTextLines.length ? [...nextLines] : null);
+      setChoiceTranslations(dialogueChoiceTexts.length ? [...nextChoices] : null);
+      setActionTranslations(
+        dialogueActionTargets.length ? { ...nextActions } : null,
+      );
+    };
+
     const applyLine = (rawLine) => {
-      if (receivedCount >= lines.length) return;
+      if (receivedCount >= translationTargets.length) return;
       const clean = String(rawLine || "")
         .replace(/^\s*\d+[\).:-]\s*/, "")
         .trim();
       if (!clean) return;
-      nextLines[receivedCount] = clean;
+
+      const target = translationTargets[receivedCount];
+      if (target.kind === "line") {
+        nextLines[target.index] = clean;
+      } else if (target.kind === "choice") {
+        nextChoices[target.index] = clean;
+      } else if (target.kind === "action") {
+        nextActions[target.key] = clean;
+      }
       receivedCount += 1;
-      setLineTranslations([...nextLines]);
+      syncTranslations();
     };
 
     try {
       const prompt = [
-        `Translate each line below into ${supportLangName}.`,
+        `Translate each entry below into ${supportLangName}.`,
         buildCharacterRosterPrompt(),
         "Preserve every character name exactly as written.",
         "Output plain text only.",
-        `Return exactly ${lines.length} line${lines.length > 1 ? "s" : ""}.`,
-        "Each line must be only the translation for the matching line index.",
+        `Return exactly ${translationTargets.length} line${
+          translationTargets.length > 1 ? "s" : ""
+        }.`,
+        "Each line must be only the translation for the matching entry index.",
         "No numbering, labels, markdown, or commentary.",
         "",
-        "Lines:",
-        ...lines.map((l, i) => `${i + 1}. ${l}`),
+        "Entries:",
+        ...translationTargets.map((entry, index) => `${index + 1}. ${entry.text}`),
       ].join("\n");
 
       if (simplemodel) {
@@ -2039,15 +2370,23 @@ export default function RPGGame({
         const result = await callResponses({ input: prompt });
         const resultLines = (result || "")
           .split(/\r?\n/)
-          .filter((l) => l.trim());
-        for (const rl of resultLines) applyLine(rl);
+          .filter((line) => line.trim());
+        for (const resultLine of resultLines) applyLine(resultLine);
       }
     } catch {
-      setLineTranslations(null);
+      clearDialogueTranslations();
     } finally {
       setIsTranslating(false);
     }
-  }, [buildCharacterRosterPrompt, dialogue, lineTranslations, supportLangName]);
+  }, [
+    buildCharacterRosterPrompt,
+    clearDialogueTranslations,
+    dialogueActionTargets,
+    dialogueChoiceTexts,
+    dialogueTextLines,
+    hasDialogueTranslations,
+    supportLangName,
+  ]);
 
   // Three.js refs
   const gameStateRef = useRef(null);
@@ -2377,6 +2716,257 @@ export default function RPGGame({
   );
   const questSteps = useMemo(() => quest?.steps || [], [quest]);
   const totalSteps = questSteps.length;
+  const currentQuestStep = useMemo(
+    () => questSteps[questProgress.currentStepIdx] || null,
+    [questProgress.currentStepIdx, questSteps],
+  );
+  const currentQuestNpc = useMemo(() => {
+    if (!currentQuestStep || !scenario?.npcs?.length) return null;
+    return scenario.npcs[currentQuestStep.npcIdx] || null;
+  }, [currentQuestStep, scenario]);
+  const currentQuestNode = useMemo(() => {
+    if (!currentQuestStep) return null;
+    const firstNode = currentQuestStep.nodes?.[0] || null;
+    const nodeId = questProgress.currentNodeId || firstNode?.id;
+    return (
+      currentQuestStep.nodes?.find((node) => node.id === nodeId) || firstNode
+    );
+  }, [currentQuestStep, questProgress.currentNodeId]);
+  const currentObjectSearchQuest = useMemo(() => {
+    if (
+      !scenario ||
+      !currentQuestStep ||
+      currentQuestNode?.responseMode !== "objectSearch"
+    ) {
+      return null;
+    }
+
+    const questMaps =
+      Array.isArray(scenario.maps) && scenario.maps.length
+        ? scenario.maps
+        : [scenario].filter(Boolean);
+    const searchableObjects = questMaps.flatMap((map) =>
+      (Array.isArray(map?.objects) ? map.objects : [])
+        .filter((object) => object?.tx != null && object?.ty != null)
+        .map((object) => ({ map, object })),
+    );
+    if (!searchableObjects.length) return null;
+
+    const allItems = Array.isArray(quest?.gatherData?.all)
+      ? quest.gatherData.all.filter(Boolean)
+      : [];
+    const correctItems = Array.isArray(quest?.gatherData?.correct)
+      ? quest.gatherData.correct.filter(Boolean)
+      : allItems.filter((item) => item?.isCorrect);
+    const targetItem =
+      correctItems[questProgress.currentStepIdx % Math.max(correctItems.length, 1)] ||
+      allItems[0] ||
+      null;
+    if (!targetItem) return null;
+
+    const stepKey = `${scenario.id || "scenario"}:object-search:${
+      questProgress.currentStepIdx
+    }`;
+    const orderedObjects = [...searchableObjects]
+      .sort((a, b) => {
+        if ((a.map?.id || "") !== (b.map?.id || "")) {
+          return String(a.map?.id || "").localeCompare(String(b.map?.id || ""));
+        }
+        if (a.object.ty !== b.object.ty) return a.object.ty - b.object.ty;
+        if (a.object.tx !== b.object.tx) return a.object.tx - b.object.tx;
+        return String(a.object.type || "").localeCompare(
+          String(b.object.type || ""),
+        );
+      });
+    if (!orderedObjects.length) return null;
+
+    const decoys = allItems.filter((item) => item?.name !== targetItem.name);
+    const rotationSeed = Array.from(stepKey).reduce(
+      (sum, char) => sum + char.charCodeAt(0),
+      0,
+    );
+    const correctObjectIdx = rotationSeed % orderedObjects.length;
+    const decoyRotationOffset = decoys.length
+      ? rotationSeed % decoys.length
+      : 0;
+    const rotatedDecoys = decoys.length
+      ? decoys
+          .slice(decoyRotationOffset)
+          .concat(decoys.slice(0, decoyRotationOffset))
+      : [];
+    const assignments = new Map();
+
+    orderedObjects.forEach((entry, idx) => {
+      const decoyIdx = idx < correctObjectIdx ? idx : idx - 1;
+      const item =
+        idx === correctObjectIdx
+          ? targetItem
+          : rotatedDecoys.length
+            ? rotatedDecoys[decoyIdx % rotatedDecoys.length]
+            : {
+                ...targetItem,
+                name:
+                  targetLang === "es"
+                    ? "el objeto equivocado"
+                    : "the wrong item",
+                isCorrect: false,
+              };
+      const objectKey = getObjectExamineKey(entry.map, entry.object);
+      assignments.set(objectKey, {
+        ...item,
+        isCorrect: idx === correctObjectIdx,
+        objectKey,
+        mapId: entry.map?.id || null,
+      });
+    });
+
+    if (!assignments.size) return null;
+
+    return {
+      stepKey,
+      npcIdx: currentQuestStep.npcIdx,
+      targetItem,
+      assignments,
+      npcLine: objectSearchCopy.intro(targetItem.name),
+      wrongItemTemplate: objectSearchCopy.wrongItem(
+        "{{wrongItem}}",
+        "{{correctItem}}",
+      ),
+      successText: objectSearchCopy.success(targetItem.name),
+    };
+  }, [
+    currentQuestNode,
+    currentQuestStep,
+    getObjectExamineKey,
+    objectSearchCopy,
+    quest,
+    questProgress.currentStepIdx,
+    scenario,
+  ]);
+  const isObjectSearchQuestStarted =
+    !!currentObjectSearchQuest &&
+    startedObjectSearchStepKey === currentObjectSearchQuest.stepKey;
+  const currentQuestNpcDisplayName = useMemo(() => {
+    const npcIdx = currentQuestStep?.npcIdx;
+    const mappedName =
+      Number.isInteger(npcIdx) && npcCharacterNamesRef.current[npcIdx]
+        ? npcCharacterNamesRef.current[npcIdx]
+        : applyNameMappingToText(currentQuestNpc?.name || "", npcNameMap);
+    return mappedName || currentQuestNpc?.name || "NPC";
+  }, [currentQuestNpc, currentQuestStep, npcNameMap]);
+  const currentQuestLog = useMemo(() => {
+    const npcName = currentQuestNpcDisplayName;
+    const progressText = questLogCopy.progress(completedSteps, totalSteps);
+
+    if (gameComplete) {
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items: [questLogCopy.complete],
+      };
+    }
+
+    if (currentObjectSearchQuest) {
+      const hasCorrectObjectSearchItem = inventory.some(
+        (item) =>
+          item?.objectSearchStepKey === currentObjectSearchQuest.stepKey &&
+          item?.isCorrect,
+      );
+
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items: hasCorrectObjectSearchItem
+          ? [
+              questLogCopy.returnItem(
+                currentObjectSearchQuest.targetItem.name,
+                npcName,
+              ),
+            ]
+          : [
+              isObjectSearchQuestStarted
+                ? questLogCopy.searchObjects(
+                    currentObjectSearchQuest.targetItem.name,
+                  )
+                : questLogCopy.startObjectSearch(
+                    npcName,
+                    currentObjectSearchQuest.targetItem.name,
+                  ),
+            ],
+      };
+    }
+
+    if (!currentQuestNode) {
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items: [questLogCopy.defaultTask],
+      };
+    }
+
+    if (currentQuestNode.responseMode === "gather") {
+      const gatherItemName = currentQuestNode.gatherItem?.name || "item";
+      const hasCorrectGatherItem = inventory.some(
+        (item) => item?.isCorrect && item?.name === gatherItemName,
+      );
+      const items = [
+        hasCorrectGatherItem
+          ? questLogCopy.returnItem(gatherItemName, npcName)
+          : questLogCopy.gatherSearch(gatherItemName),
+      ];
+      if (currentQuestNode.gatherItem?.hint) {
+        items.push(questLogCopy.gatherHint(currentQuestNode.gatherItem.hint));
+      }
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items,
+      };
+    }
+
+    if (currentQuestNode.responseMode === "choice") {
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items: [questLogCopy.choiceTask(npcName)],
+      };
+    }
+
+    if (currentQuestNode.responseMode === "speech") {
+      return {
+        title: questLogCopy.title,
+        progressText,
+        items: [questLogCopy.speechTask(npcName)],
+      };
+    }
+
+    return {
+      title: questLogCopy.title,
+      progressText,
+      items: [questLogCopy.continueTask(npcName)],
+    };
+  }, [
+    completedSteps,
+    currentObjectSearchQuest,
+    currentQuestNode,
+    currentQuestNpcDisplayName,
+    gameComplete,
+    inventory,
+    isObjectSearchQuestStarted,
+    npcNameMap,
+    questLogCopy,
+    totalSteps,
+  ]);
+
+  useEffect(() => {
+    if (!currentObjectSearchQuest) {
+      setStartedObjectSearchStepKey(null);
+      return;
+    }
+    setStartedObjectSearchStepKey((prev) =>
+      prev === currentObjectSearchQuest.stepKey ? prev : null,
+    );
+  }, [currentObjectSearchQuest]);
 
   const playGameSound = useCallback(
     (name) => {
@@ -2388,24 +2978,94 @@ export default function RPGGame({
     [playSound, warmupAudio],
   );
 
+  // Show a quick toast when picking up an item
+  const showPickupToast = useCallback(
+    (itemName) => {
+      setPickupBanner({
+        itemName,
+        openedAt: Date.now(),
+      });
+    },
+    [],
+  );
+
   const examineScenarioObject = useCallback(
     (object) => {
       if (!activeMap || !object) return;
       const key = getObjectExamineKey(activeMap, object);
       const cachedEntry = objectExamineCacheRef.current.get(key);
+      let lootText = "";
+
+      if (
+        isObjectSearchQuestStarted
+      ) {
+        const assignedItem = currentObjectSearchQuest.assignments.get(key);
+        const alreadyCollected = !!collectedObjectSearchKeys?.[
+          currentObjectSearchQuest.stepKey
+        ]?.[key];
+
+        if (assignedItem && !alreadyCollected) {
+          setCollectedObjectSearchKeys((prev) => ({
+            ...prev,
+            [currentObjectSearchQuest.stepKey]: {
+              ...(prev[currentObjectSearchQuest.stepKey] || {}),
+              [key]: true,
+            },
+          }));
+          setInventory((prev) => {
+            const alreadyInInventory = prev.some(
+              (item) =>
+                item?.objectSearchStepKey === currentObjectSearchQuest.stepKey &&
+                item?.sourceObjectKey === key,
+            );
+            if (alreadyInInventory) return prev;
+            return [
+              ...prev,
+              {
+                name: assignedItem.name,
+                isCorrect: assignedItem.isCorrect,
+                sprite: assignedItem.sprite || "default",
+                visual: assignedItem.visual || null,
+                objectSearchItem: true,
+                objectSearchStepKey: currentObjectSearchQuest.stepKey,
+                sourceObjectKey: key,
+              },
+            ];
+          });
+          playGameSound("rpgDialogueSelect");
+          showPickupToast(assignedItem.name);
+          lootText = "";
+        } else if (assignedItem) {
+          lootText = objectSearchCopy.alreadyChecked;
+        } else {
+          lootText = objectSearchCopy.nothingFound;
+        }
+      }
+
       setObjectExamine({
         key,
         name: cachedEntry?.name || "",
         supportName: cachedEntry?.supportName || "",
         text: cachedEntry?.text || "",
         supportText: cachedEntry?.supportText || "",
+        lootText,
         pending: !cachedEntry,
         openedAt: Date.now(),
       });
       requestObjectExamineTexts(activeMap, [object]);
       playGameSound("rpgDialogueOpen");
     },
-    [activeMap, getObjectExamineKey, playGameSound, requestObjectExamineTexts],
+    [
+      activeMap,
+      collectedObjectSearchKeys,
+      currentObjectSearchQuest,
+      getObjectExamineKey,
+      isObjectSearchQuestStarted,
+      objectSearchCopy,
+      playGameSound,
+      requestObjectExamineTexts,
+      showPickupToast,
+    ],
   );
 
   // Generate a data URL for a gather item sprite (for UI display)
@@ -2418,37 +3078,21 @@ export default function RPGGame({
     return canvas.toDataURL();
   }, []);
 
-  // Show a quick toast when picking up an item
-  const showPickupToast = useCallback(
-    (itemName) => {
-      toast({
-        duration: 1500,
-        isClosable: false,
-        position: "bottom",
-        render: () => (
-          <HStack
-            bg="gray.800"
-            border="1px solid"
-            borderColor="yellow.400"
-            borderRadius="lg"
-            px={3}
-            py={2}
-            spacing={2}
-            justify="center"
-            boxShadow="0 0 12px rgba(236,201,75,0.3)"
-          >
-            <Text color="yellow.300" fontSize="sm" fontWeight="bold">
-              +
-            </Text>
-            <Text color="white" fontSize="sm">
-              {itemName}
-            </Text>
-          </HStack>
-        ),
-      });
-    },
-    [toast],
-  );
+  const reopenObjectSearchSource = useCallback((item) => {
+    if (!item?.objectSearchStepKey || !item?.sourceObjectKey) return;
+    setCollectedObjectSearchKeys((prev) => {
+      const currentStepState = { ...(prev[item.objectSearchStepKey] || {}) };
+      delete currentStepState[item.sourceObjectKey];
+
+      const nextState = { ...prev };
+      if (Object.keys(currentStepState).length > 0) {
+        nextState[item.objectSearchStepKey] = currentStepState;
+      } else {
+        delete nextState[item.objectSearchStepKey];
+      }
+      return nextState;
+    });
+  }, []);
 
   const getDialogueCharacterForNPC = useCallback((npcIdx) => {
     const existingCharacter = npcDialogueCharactersRef.current.get(npcIdx);
@@ -2461,6 +3105,42 @@ export default function RPGGame({
     npcDialogueCharactersRef.current.set(npcIdx, nextCharacter);
     return nextCharacter;
   }, []);
+
+  const openObjectSearchDialogue = useCallback(
+    (npcIdx) => {
+      if (!scenario || !currentObjectSearchQuest) return false;
+
+      setStartedObjectSearchStepKey(currentObjectSearchQuest.stepKey);
+      setLastHeardSpeech("");
+      setDialogue({
+        npcIdx,
+        stepIdx: questProgress.currentStepIdx,
+        npcName:
+          npcCharacterNamesRef.current[npcIdx] || scenario.npcs[npcIdx]?.name,
+        npcCharacter: getDialogueCharacterForNPC(npcIdx),
+        question: { prompt: currentObjectSearchQuest.npcLine },
+        node: {
+          id: `${currentObjectSearchQuest.stepKey}:dialogue`,
+          npcLine: currentObjectSearchQuest.npcLine,
+          responseMode: "objectSearch",
+          gatherItem: currentObjectSearchQuest.targetItem,
+          gatherWrongItemTemplate: currentObjectSearchQuest.wrongItemTemplate,
+          objectSearchStepKey: currentObjectSearchQuest.stepKey,
+          objectSearchSuccessText: currentObjectSearchQuest.successText,
+        },
+        npcReply: "",
+      });
+      playGameSound("rpgDialogueOpen");
+      return true;
+    },
+    [
+      currentObjectSearchQuest,
+      getDialogueCharacterForNPC,
+      playGameSound,
+      questProgress.currentStepIdx,
+      scenario,
+    ],
+  );
 
   const closeDialogue = useCallback(() => {
     if (!dialogue) return;
@@ -2482,16 +3162,26 @@ export default function RPGGame({
     playGameSound("click");
     setDialogue(null);
     setFeedback(null);
-    setLineTranslations(null);
+    clearDialogueTranslations();
     setLastHeardSpeech("");
-  }, [dialogue, playGameSound]);
+  }, [clearDialogueTranslations, dialogue, playGameSound]);
 
   // Clear translation when dialogue node changes
   const dialogueNodeId = dialogue?.node?.id;
   const dialogueNpcReply = dialogue?.npcReply;
+  const dialogueChoiceSignature = dialogueChoiceTexts.join("\n");
+  const dialogueActionSignature = dialogueActionTargets
+    .map((entry) => `${entry.key}:${entry.text}`)
+    .join("\n");
   useEffect(() => {
-    setLineTranslations(null);
-  }, [dialogueNodeId, dialogueNpcReply]);
+    clearDialogueTranslations();
+  }, [
+    clearDialogueTranslations,
+    dialogueActionSignature,
+    dialogueChoiceSignature,
+    dialogueNodeId,
+    dialogueNpcReply,
+  ]);
 
   const updateDialogueBubblePosition = useCallback(() => {
     if (
@@ -2622,6 +3312,10 @@ export default function RPGGame({
       setGameComplete(false);
       setCompletedSteps(0);
       setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
+      setInventory([]);
+      setGatherUnlocked(false);
+      setStartedObjectSearchStepKey(null);
+      setCollectedObjectSearchKeys({});
       setLoadingMsgIdx(0);
       mapEntrySpawnRef.current = null;
       transitionCooldownUntilRef.current = 0;
@@ -3647,6 +4341,10 @@ export default function RPGGame({
             setTimeout(() => setFeedback(null), 1200);
             return;
           }
+          if (currentObjectSearchQuest) {
+            openObjectSearchDialogue(npcIdx);
+            return;
+          }
           const question = getQuestionForNPC(npcIdx);
           if (!question) continue;
           const stepArc = questSteps[questProgress.currentStepIdx];
@@ -3867,6 +4565,11 @@ export default function RPGGame({
           return;
         }
 
+        if (currentObjectSearchQuest) {
+          openObjectSearchDialogue(npcIdx);
+          return;
+        }
+
         const question = getQuestionForNPC(npcIdx);
         if (question) {
           const stepArc = questSteps[questProgress.currentStepIdx];
@@ -3937,6 +4640,8 @@ export default function RPGGame({
     gameComplete,
     getQuestionForNPC,
     getDialogueCharacterForNPC,
+    currentObjectSearchQuest,
+    openObjectSearchDialogue,
     playGameSound,
     questProgress,
     questSteps,
@@ -3990,6 +4695,20 @@ export default function RPGGame({
     // Stop any playing TTS and clear heard speech when completing a chapter
     stopNPCSpeech();
     setLastHeardSpeech("");
+
+    if (currentObjectSearchQuest?.stepKey) {
+      setStartedObjectSearchStepKey(null);
+      setCollectedObjectSearchKeys((prev) => {
+        const nextState = { ...prev };
+        delete nextState[currentObjectSearchQuest.stepKey];
+        return nextState;
+      });
+      setInventory((prev) =>
+        prev.filter(
+          (item) => item?.objectSearchStepKey !== currentObjectSearchQuest.stepKey,
+        ),
+      );
+    }
 
     const newCompleted = completedSteps + 1;
     setCompletedSteps(newCompleted);
@@ -4063,6 +4782,7 @@ export default function RPGGame({
     quest,
     questProgress,
     questSteps,
+    currentObjectSearchQuest,
     npcNameMap,
     scenario,
     stopNPCSpeech,
@@ -4274,26 +4994,28 @@ export default function RPGGame({
       copy.splice(itemIndex, 1);
       return copy;
     });
+    if (droppedItem.objectSearchItem) {
+      reopenObjectSearchSource(droppedItem);
+      return;
+    }
     returnItemToMap(droppedItem.name);
   };
 
-  const handleGatherSubmit = (itemIndex) => {
-    if (!dialogue?.node || dialogue.node.responseMode !== "gather") return;
+  const handleItemSubmit = (itemIndex) => {
+    if (
+      !dialogue?.node ||
+      !["gather", "objectSearch"].includes(dialogue.node.responseMode)
+    ) {
+      return;
+    }
     const submittedItem = inventory[itemIndex];
     if (!submittedItem) return;
 
     playGameSound("rpgDialogueSelect");
     const requiredItem = dialogue.node.gatherItem?.name;
-
-    // Remove the submitted item from inventory
-    setInventory((prev) => {
-      const copy = [...prev];
-      copy.splice(itemIndex, 1);
-      return copy;
-    });
+    const isObjectSearchTurnIn = dialogue.node.responseMode === "objectSearch";
 
     if (!submittedItem.isCorrect) {
-      // Wrong item — NPC tells you it's wrong, drop item back near the player
       const wrongText = fillNamedTemplate(
         dialogue.node.gatherWrongItemTemplate ||
           "That is {{wrongItem}}. Not what I need. Look for {{correctItem}}.",
@@ -4303,12 +5025,36 @@ export default function RPGGame({
         },
       );
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
-      speakNPCText(wrongText, { npcIdx: dialogue.npcIdx });
-      returnItemToMap(submittedItem.name);
+      if (!isObjectSearchTurnIn) {
+        setInventory((prev) => {
+          const copy = [...prev];
+          copy.splice(itemIndex, 1);
+          return copy;
+        });
+        speakNPCText(wrongText, { npcIdx: dialogue.npcIdx });
+        returnItemToMap(submittedItem.name);
+      }
       return;
     }
 
-    // Correct item — advance quest
+    setInventory((prev) => {
+      const copy = [...prev];
+      copy.splice(itemIndex, 1);
+      return copy;
+    });
+
+    if (isObjectSearchTurnIn) {
+      const successText =
+        dialogue.node.objectSearchSuccessText ||
+        objectSearchCopy.success(submittedItem.name);
+      setDialogue((prev) => ({ ...prev, npcReply: successText }));
+      setStartedObjectSearchStepKey(null);
+      setTimeout(() => {
+        completeNPCChapter(dialogue.npcIdx);
+      }, 450);
+      return;
+    }
+
     setGatherUnlocked(false);
     const nextNodeId = dialogue.node.nextNodeId;
     const nextNode = questSteps[dialogue.stepIdx]?.nodes?.find(
@@ -4477,6 +5223,8 @@ export default function RPGGame({
     setLastHeardSpeech("");
     setInventory([]);
     setGatherUnlocked(false);
+    setStartedObjectSearchStepKey(null);
+    setCollectedObjectSearchKeys({});
     conversationLogRef.current = [];
     gatherSpritesRef.current.forEach((item) => {
       item.collected = false;
@@ -4889,7 +5637,18 @@ export default function RPGGame({
 
       {/* Quick actions */}
       {!gameComplete && (
-        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={3}>
+        <VStack position="absolute" top={14} right={3} zIndex={10} spacing={4}>
+          <IconButton
+            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
+            icon={<MdOutlineSupportAgent size={20} />}
+            size="md"
+            variant="solid"
+            bg="white"
+            color="blue.600"
+            boxShadow="0 2px 0 #2b6cb0"
+            _hover={{ bg: "gray.50" }}
+            onClick={helpChat.onOpen}
+          />
           <IconButton
             aria-label="Inventory"
             icon={
@@ -4927,15 +5686,19 @@ export default function RPGGame({
             onClick={inventoryModal.onOpen}
           />
           <IconButton
-            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
-            icon={<MdOutlineSupportAgent size={20} />}
+            aria-label={questLogCopy.button}
+            icon={<QuestLogIcon size={22} />}
             size="md"
-            variant="solid"
-            bg="white"
-            color="blue.600"
-            boxShadow="0 2px 0 #2b6cb0"
-            _hover={{ bg: "gray.50" }}
-            onClick={helpChat.onOpen}
+            variant="ghost"
+            bg="transparent"
+            border="none"
+            outline="none"
+            boxShadow="none"
+            _hover={{ bg: "transparent", border: "none", boxShadow: "none" }}
+            _active={{ bg: "transparent", border: "none", boxShadow: "none" }}
+            _focus={{ boxShadow: "none", outline: "none" }}
+            _focusVisible={{ boxShadow: "none", outline: "none" }}
+            onClick={questLogModal.onOpen}
           />
         </VStack>
       )}
@@ -5044,66 +5807,191 @@ export default function RPGGame({
         </ModalContent>
       </Modal>
 
-      {objectExamine && !dialogue && !gameComplete && (
+      <Modal
+        isOpen={questLogModal.isOpen}
+        onClose={questLogModal.onClose}
+        isCentered
+        size="sm"
+      >
+        <ModalOverlay bg="blackAlpha.700" />
+        <ModalContent
+          bg="rgba(250, 244, 232, 0.96)"
+          border="2px solid"
+          borderColor="orange.200"
+          borderRadius="xl"
+          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+        >
+          <ModalHeader color="orange.800" fontSize="md" pb={1}>
+            {currentQuestLog.title}
+          </ModalHeader>
+          <ModalCloseButton
+            color="gray.600"
+            _hover={{ bg: "whiteAlpha.200" }}
+          />
+          <ModalBody pb={4}>
+            <VStack align="stretch" spacing={3}>
+              <HStack
+                justify="space-between"
+                bg="orange.50"
+                borderRadius="lg"
+                px={3}
+                py={2}
+                border="1px solid"
+                borderColor="orange.200"
+              >
+                <Text color="gray.700" fontSize="xs" fontWeight="semibold">
+                  {questLogCopy.currentTask}
+                </Text>
+                <Text color="orange.800" fontSize="xs" fontWeight="bold">
+                  {currentQuestLog.progressText}
+                </Text>
+              </HStack>
+
+              <VStack align="stretch" spacing={2}>
+                {currentQuestLog.items.map((item, idx) => (
+                  <HStack
+                    key={`${item}-${idx}`}
+                    align="flex-start"
+                    spacing={3}
+                    bg="whiteAlpha.700"
+                    borderRadius="lg"
+                    px={3}
+                    py={2}
+                    border="1px solid"
+                    borderColor="orange.100"
+                  >
+                    <Text
+                      color="orange.600"
+                      fontSize="sm"
+                      fontWeight="bold"
+                      lineHeight="1.4"
+                    >
+                      {idx + 1}.
+                    </Text>
+                    <Text color="gray.800" fontSize="sm" lineHeight="1.45">
+                      {item}
+                    </Text>
+                  </HStack>
+                ))}
+              </VStack>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {(pickupBanner || objectExamine) && !dialogue && !gameComplete && (
         <Box
           position="absolute"
           left="50%"
-          bottom={{ base: 4, md: 5 }}
+          bottom={{
+            base: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+            md: "1.25rem",
+          }}
           transform="translateX(-50%)"
           zIndex={18}
           w={{ base: "calc(100% - 24px)", md: "min(86vw, 420px)" }}
           pointerEvents="none"
         >
-          <Box
-            bg="rgba(250, 244, 232, 0.96)"
-            color="gray.800"
-            border="2px solid"
-            borderColor="orange.200"
-            borderRadius="xl"
-            px={4}
-            py={3}
-            boxShadow="0 18px 38px rgba(0,0,0,0.52)"
-          >
-            {objectExamine.pending ? (
-              <HStack spacing={2}>
-                <Spinner size="xs" color="gray.500" />
-                <Text fontSize="sm" color="gray.700">
-                  ...
+          <VStack align="stretch" spacing={2}>
+            {pickupBanner ? (
+              <HStack
+                alignSelf="center"
+                bg="gray.800"
+                border="1px solid"
+                borderColor="yellow.400"
+                borderRadius="lg"
+                px={3}
+                py={2}
+                spacing={2}
+                justify="center"
+                boxShadow="0 0 12px rgba(236,201,75,0.3)"
+                maxW="min(82vw, 320px)"
+              >
+                <Text color="yellow.300" fontSize="sm" fontWeight="bold">
+                  +
+                </Text>
+                <Text color="white" fontSize="sm">
+                  {pickupBanner.itemName}
                 </Text>
               </HStack>
-            ) : (
-              <VStack align="stretch" spacing={1}>
-                {objectExamine.name || objectExamine.supportName ? (
-                  <Text
-                    fontSize="sm"
-                    lineHeight="1.35"
-                    color="gray.800"
-                    fontWeight="semibold"
-                  >
-                    {objectExamine.name}
-                    {objectExamine.supportName
-                      ? ` (${objectExamine.supportName})`
-                      : ""}
-                  </Text>
-                ) : null}
-                {objectExamine.text ? (
-                  <Text fontSize="sm" lineHeight="1.45" color="gray.800">
-                    {objectExamine.text}
-                  </Text>
-                ) : null}
-                {objectExamine.supportText ? (
-                  <Text
-                    fontSize="xs"
-                    lineHeight="1.35"
-                    color="gray.600"
-                    fontStyle="italic"
-                  >
-                    ({objectExamine.supportText})
-                  </Text>
-                ) : null}
-              </VStack>
-            )}
-          </Box>
+            ) : null}
+
+            {objectExamine ? (
+              <Box
+                bg="rgba(250, 244, 232, 0.96)"
+                color="gray.800"
+                border="2px solid"
+                borderColor="orange.200"
+                borderRadius="xl"
+                px={4}
+                py={3}
+                boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+              >
+                {objectExamine.pending ? (
+                  <VStack align="stretch" spacing={1}>
+                    {objectExamine.lootText ? (
+                      <Text
+                        fontSize="xs"
+                        lineHeight="1.35"
+                        color="orange.700"
+                        fontWeight="semibold"
+                      >
+                        {objectExamine.lootText}
+                      </Text>
+                    ) : null}
+                    <HStack spacing={2}>
+                      <Spinner size="xs" color="gray.500" />
+                      <Text fontSize="sm" color="gray.700">
+                        ...
+                      </Text>
+                    </HStack>
+                  </VStack>
+                ) : (
+                  <VStack align="stretch" spacing={1}>
+                    {objectExamine.lootText ? (
+                      <Text
+                        fontSize="xs"
+                        lineHeight="1.35"
+                        color="orange.700"
+                        fontWeight="semibold"
+                        pb={1}
+                      >
+                        {objectExamine.lootText}
+                      </Text>
+                    ) : null}
+                    {objectExamine.name || objectExamine.supportName ? (
+                      <Text
+                        fontSize="sm"
+                        lineHeight="1.35"
+                        color="gray.800"
+                        fontWeight="semibold"
+                      >
+                        {objectExamine.name}
+                        {objectExamine.supportName
+                          ? ` (${objectExamine.supportName})`
+                          : ""}
+                      </Text>
+                    ) : null}
+                    {objectExamine.text ? (
+                      <Text fontSize="sm" lineHeight="1.45" color="gray.800">
+                        {objectExamine.text}
+                      </Text>
+                    ) : null}
+                    {objectExamine.supportText ? (
+                      <Text
+                        fontSize="xs"
+                        lineHeight="1.35"
+                        color="gray.600"
+                        fontStyle="italic"
+                      >
+                        ({objectExamine.supportText})
+                      </Text>
+                    ) : null}
+                  </VStack>
+                )}
+              </Box>
+            ) : null}
+          </VStack>
         </Box>
       )}
 
@@ -5128,7 +6016,14 @@ export default function RPGGame({
                     }
                   : `${dialogueBubblePosition?.top || 0}px`
               }
-              bottom={isMobileDialogueLayout ? { base: 4, md: "auto" } : "auto"}
+              bottom={
+                isMobileDialogueLayout
+                  ? {
+                      base: "calc(env(safe-area-inset-bottom, 0px) + 1rem)",
+                      md: "auto",
+                    }
+                  : "auto"
+              }
               transform={
                 isMobileDialogueLayout
                   ? "none"
@@ -5257,7 +6152,7 @@ export default function RPGGame({
                   <HStack justify="flex-end">
                     <IconButton
                       aria-label={
-                        lineTranslations
+                        hasDialogueTranslations
                           ? supportLang === "es"
                             ? "Deshacer traducción"
                             : "Undo translation"
@@ -5266,7 +6161,7 @@ export default function RPGGame({
                             : "Translate text"
                       }
                       icon={
-                        lineTranslations ? (
+                        hasDialogueTranslations ? (
                           <MdUndo size={14} />
                         ) : (
                           <MdOutlineSupportAgent size={14} />
@@ -5275,9 +6170,11 @@ export default function RPGGame({
                       size="xs"
                       rounded="md"
                       bg="white"
-                      color={lineTranslations ? "orange.500" : "blue.600"}
+                      color={hasDialogueTranslations ? "orange.500" : "blue.600"}
                       boxShadow={
-                        lineTranslations ? "0 1px 0 #c05621" : "0 1px 0 #2b6cb0"
+                        hasDialogueTranslations
+                          ? "0 1px 0 #c05621"
+                          : "0 1px 0 #2b6cb0"
                       }
                       _hover={{ bg: "gray.50" }}
                       onClick={toggleTranslation}
@@ -5288,13 +6185,8 @@ export default function RPGGame({
                   {lineTranslations ? (
                     <VStack align="stretch" spacing={1}>
                       {(() => {
-                        const npcText =
-                          dialogue.npcReply ||
-                          dialogue.node?.npcLine ||
-                          dialogue.node?.prompt ||
-                          dialogue.question.prompt;
                         const isReply = !!dialogue.npcReply;
-                        return splitIntoSentences(npcText).map((line, i) => (
+                        return dialogueTextLines.map((line, i) => (
                           <Box key={i}>
                             {isReply ? (
                               <Box
@@ -5385,6 +6277,7 @@ export default function RPGGame({
                         {(dialogue.node?.choices || []).map((optRaw, idx) => {
                           const opt =
                             typeof optRaw === "string" ? optRaw : optRaw.text;
+                          const translatedOpt = choiceTranslations?.[idx];
 
                           return (
                             <Button
@@ -5406,7 +6299,22 @@ export default function RPGGame({
                               h="auto"
                               py={2}
                             >
-                              {String.fromCharCode(65 + idx)}. {opt}
+                              <VStack align="stretch" spacing={0} w="100%">
+                                <Text color="gray.900" fontSize="sm" m={0}>
+                                  {String.fromCharCode(65 + idx)}. {opt}
+                                </Text>
+                                {translatedOpt ? (
+                                  <Text
+                                    color="blue.700"
+                                    fontSize="xs"
+                                    fontStyle="italic"
+                                    m={0}
+                                    whiteSpace="normal"
+                                  >
+                                    {translatedOpt}
+                                  </Text>
+                                ) : null}
+                              </VStack>
                             </Button>
                           );
                         })}
@@ -5467,21 +6375,33 @@ export default function RPGGame({
                     </HStack>
                   )}
 
-                  {dialogue.node?.responseMode === "gather" && (
+                  {["gather", "objectSearch"].includes(
+                    dialogue.node?.responseMode,
+                  ) && (
                     <VStack spacing={2}>
                       {inventory.length > 0 ? (
                         <>
-                          <Text color="gray.600" fontSize="xs">
-                            {targetLang === "es"
-                              ? "Elige un objeto para entregar:"
-                              : "Choose an item to hand over:"}
-                          </Text>
+                          <VStack align="stretch" spacing={0}>
+                            <Text color="gray.600" fontSize="xs" m={0}>
+                              {dialogueActionLabelMap.submitPrompt}
+                            </Text>
+                            {actionTranslations?.submitPrompt ? (
+                              <Text
+                                color="blue.700"
+                                fontSize="xs"
+                                fontStyle="italic"
+                                m={0}
+                              >
+                                {actionTranslations.submitPrompt}
+                              </Text>
+                            ) : null}
+                          </VStack>
                           <Wrap spacing={2} justify="center">
                             {inventory.map((item, idx) => (
                               <WrapItem key={`${item.name}-${idx}`}>
                                 <Box
                                   as="button"
-                                  onClick={() => handleGatherSubmit(idx)}
+                                  onClick={() => handleItemSubmit(idx)}
                                   bg="rgba(255,255,255,0.92)"
                                   border="2px solid"
                                   borderColor="blackAlpha.200"
@@ -5521,10 +6441,24 @@ export default function RPGGame({
                         variant="outline"
                         onClick={closeDialogue}
                         w="100%"
+                        h="auto"
+                        py={2}
                       >
-                        {targetLang === "es"
-                          ? "Seguir buscando"
-                          : "Keep searching"}
+                        <VStack align="stretch" spacing={0} w="100%">
+                          <Text m={0}>{dialogueActionLabelMap.continue}</Text>
+                          {actionTranslations?.continue ? (
+                            <Text
+                              color="blue.700"
+                              fontSize="xs"
+                              fontStyle="italic"
+                              fontWeight="normal"
+                              whiteSpace="normal"
+                              m={0}
+                            >
+                              {actionTranslations.continue}
+                            </Text>
+                          ) : null}
+                        </VStack>
                       </Button>
                     </VStack>
                   )}
@@ -5534,8 +6468,24 @@ export default function RPGGame({
                       size="sm"
                       colorScheme="yellow"
                       onClick={() => completeNPCChapter(dialogue.npcIdx)}
+                      h="auto"
+                      py={2}
                     >
-                      {ui.continue}
+                      <VStack align="stretch" spacing={0}>
+                        <Text m={0}>{dialogueActionLabelMap.continue || ui.continue}</Text>
+                        {actionTranslations?.continue ? (
+                          <Text
+                            color="blue.700"
+                            fontSize="xs"
+                            fontStyle="italic"
+                            fontWeight="normal"
+                            whiteSpace="normal"
+                            m={0}
+                          >
+                            {actionTranslations.continue}
+                          </Text>
+                        ) : null}
+                      </VStack>
                     </Button>
                   )}
                 </VStack>
