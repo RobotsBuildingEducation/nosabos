@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Box,
   Text,
@@ -119,30 +119,39 @@ export default function TutorialActionBarPopovers({
   isOnSkillTree = false, // When true, skip the "back" button explanation
 }) {
   // Filter out the back button when on skill tree (no back button there)
-  const activeExplanations = isOnSkillTree
-    ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
-    : BUTTON_EXPLANATIONS;
+  const activeExplanations = useMemo(
+    () =>
+      isOnSkillTree
+        ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
+        : BUTTON_EXPLANATIONS,
+    [isOnSkillTree]
+  );
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const [targetPos, setTargetPos] = useState(null);
+  const [arrowLeft, setArrowLeft] = useState("50%");
   const popoverRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
 
-  // Measure the target button position
-  const measureTarget = useCallback(
+  // Measure the target button and compute arrow position
+  const measureArrow = useCallback(
     (step) => {
       const btn = activeExplanations[step];
       if (!btn) return;
       const el = document.querySelector(
         `[data-tutorial-id="${btn.tutorialId}"]`
       );
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      setTargetPos({
-        centerX: rect.left + rect.width / 2,
-        top: rect.top,
-      });
+      const popover = popoverRef.current;
+      if (!el || !popover) return;
+      const btnRect = el.getBoundingClientRect();
+      const popoverRect = popover.getBoundingClientRect();
+      const btnCenterX = btnRect.left + btnRect.width / 2;
+      const arrowOffset = btnCenterX - popoverRect.left;
+      const clamped = Math.max(
+        20,
+        Math.min(popoverRect.width - 20, arrowOffset)
+      );
+      setArrowLeft(`${clamped}px`);
     },
     [activeExplanations]
   );
@@ -151,24 +160,25 @@ export default function TutorialActionBarPopovers({
     if (!isActive) {
       setCurrentStep(0);
       setIsVisible(false);
-      setTargetPos(null);
+      setArrowLeft("50%");
       return;
     }
-
-    // Start showing popovers
     setIsVisible(true);
-    measureTarget(0);
-  }, [isActive, measureTarget]);
+  }, [isActive]);
 
-  // Re-measure when step changes or on resize
+  // Measure arrow after render when step changes or on resize
   useEffect(() => {
     if (!isActive || !isVisible) return;
-    measureTarget(currentStep);
+    // Use rAF to ensure popoverRef is measured after layout
+    const frame = requestAnimationFrame(() => measureArrow(currentStep));
 
-    const handleResize = () => measureTarget(currentStep);
+    const handleResize = () => measureArrow(currentStep);
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [isActive, isVisible, currentStep, measureTarget]);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isActive, isVisible, currentStep, measureArrow]);
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -201,16 +211,6 @@ export default function TutorialActionBarPopovers({
     currentButton.id === "back" || currentButton.id === "settings";
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === activeExplanations.length - 1;
-
-  // Arrow position: popover stays centered, only the arrow moves
-  let arrowLeft = "50%";
-
-  if (targetPos && popoverRef.current) {
-    const popoverRect = popoverRef.current.getBoundingClientRect();
-    const arrowOffset = targetPos.centerX - popoverRect.left;
-    const clampedArrow = Math.max(20, Math.min(popoverRect.width - 20, arrowOffset));
-    arrowLeft = `${clampedArrow}px`;
-  }
 
   return (
     <Box
