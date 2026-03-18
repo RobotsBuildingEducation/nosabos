@@ -88,7 +88,7 @@ function useT(uiLang = "en") {
    LLM plumbing (backend for XP scoring + fallback)
 --------------------------- */
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.4-nano";
 
 async function callResponses({ model, input }) {
   try {

@@ -35,7 +35,7 @@ const CORS_ORIGINS = [
 ];
 
 // Only permit the models you actually use with /proxyResponses
-const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
+const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5.4-nano"]);
 
 // Optionally require Firebase App Check (set true after client wiring)
 const REQUIRE_APPCHECK = false;
@@ -201,7 +201,7 @@ exports.proxyResponses = onRequest(
     }
 
     // Inject minimal reasoning effort and low verbosity
-    body.reasoning = { effort: "minimal" };
+    body.reasoning = { effort: "low" };
     body.text = { ...(body.text || {}), verbosity: "low" };
 
     let upstream;

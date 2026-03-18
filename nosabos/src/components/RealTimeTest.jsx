@@ -58,7 +58,7 @@ const REALTIME_URL = `${
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5.4-nano";
 
 /* ---------------------------
    Utils & helpers

@@ -3,7 +3,7 @@
 import { simplemodel } from "../firebaseResources/firebaseResources";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const DEFAULT_RESPONSES_MODEL = "gpt-5-nano";
+const DEFAULT_RESPONSES_MODEL = "gpt-5.4-nano";
 
 function textFromChunk(chunk) {
   try {
@@ -21,8 +21,9 @@ function textFromChunk(chunk) {
 export async function callResponses({
   model = DEFAULT_RESPONSES_MODEL,
   input,
+  forceProxy = false,
 }) {
-  if (simplemodel) {
+  if (simplemodel && !forceProxy) {
     try {
       const resp = await simplemodel.generateContentStream({
         contents: [{ role: "user", parts: [{ text: input }] }],
