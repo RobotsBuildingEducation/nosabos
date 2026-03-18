@@ -19,7 +19,7 @@ import {
   readEnvironmentAmbientColor,
 } from "./worldGen";
 
-const SCENARIO_MODEL = "gpt-5-nano";
+const SCENARIO_MODEL = "gpt-5.4-nano";
 
 const CEFR_LEVELS_FOR_GAME = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
