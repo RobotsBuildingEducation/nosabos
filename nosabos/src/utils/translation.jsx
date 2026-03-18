@@ -252,9 +252,10 @@ export const translations = {
     app_lang_es: "ES",
     app_install_title: "Install as app",
     app_install_step1: "Open the browser menu.",
-    app_install_step2: "Choose 'Share' or 'Install'.",
-    app_install_step3: "Add to Home Screen.",
-    app_install_step4: "Launch from your Home Screen.",
+    app_install_step2: "Open in browser.",
+    app_install_step3: "Choose 'Share' or 'Install'.",
+    app_install_step4: "Add to Home Screen.",
+    app_install_step5: "Launch from your Home Screen.",
     app_close: "Close",
     app_sign_out: "Sign out",
     app_sign_out_confirm_title: "Sign out?",
@@ -813,11 +814,12 @@ export const translations = {
     app_install_title: "Instalar App",
     app_install_step1:
       "1. Abre esta página en tu navegador con el botón de Más Opciones",
-    app_install_step2: "2. Presiona el botón de Compartir",
-    app_install_step3:
-      "3. Presiona el botón de Agregar a la Pantalla de Inicio",
+    app_install_step2: "2. Abre en el navegador.",
+    app_install_step3: "3. Presiona el botón de Compartir",
     app_install_step4:
-      "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
+      "4. Presiona el botón de Agregar a la Pantalla de Inicio",
+    app_install_step5:
+      "5. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
     app_close: "Cerrar",
     app_sign_out: "Cerrar sesión",
     app_sign_out_confirm_title: "¿Cerrar sesión?",

@@ -44,7 +44,7 @@ import { SiCashapp, SiPatreon } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuDoorOpen, LuGlobe, LuKeyRound } from "react-icons/lu";
 import { LuKey } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import { doc, updateDoc } from "firebase/firestore";
@@ -259,18 +259,23 @@ export default function IdentityDrawer({
       },
       {
         id: "step2",
-        icon: <MdOutlineFileUpload size={28} />,
-        text: t?.app_install_step2 || "Choose 'Share' or 'Install'.",
+        icon: <LuGlobe size={28} />,
+        text: t?.app_install_step2 || "Open in browser.",
       },
       {
         id: "step3",
-        icon: <CiSquarePlus size={28} />,
-        text: t?.app_install_step3 || "Add to Home Screen.",
+        icon: <MdOutlineFileUpload size={28} />,
+        text: t?.app_install_step3 || "Choose 'Share' or 'Install'.",
       },
       {
         id: "step4",
+        icon: <CiSquarePlus size={28} />,
+        text: t?.app_install_step4 || "Add to Home Screen.",
+      },
+      {
+        id: "step5",
         icon: <LuBadgeCheck size={28} />,
-        text: t?.app_install_step4 || "Launch from your Home Screen.",
+        text: t?.app_install_step5 || "Launch from your Home Screen.",
       },
       {
         id: "step5",

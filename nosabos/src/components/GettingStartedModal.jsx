@@ -16,7 +16,7 @@ import {
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuCopy, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuCopy, LuGlobe, LuKeyRound } from "react-icons/lu";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
@@ -58,18 +58,23 @@ export default function GettingStartedModal({
       },
       {
         id: "step2",
+        icon: <LuGlobe size={28} />,
+        text: isEs ? "Abre en el navegador." : "Open in browser.",
+      },
+      {
+        id: "step3",
         icon: <MdOutlineFileUpload size={28} />,
         text: isEs
           ? "Elige 'Compartir' o 'Instalar'."
           : "Choose 'Share' or 'Install'.",
       },
       {
-        id: "step3",
+        id: "step4",
         icon: <CiSquarePlus size={28} />,
         text: isEs ? "Agregar a la Pantalla de Inicio." : "Add to Home Screen.",
       },
       {
-        id: "step4",
+        id: "step5",
         icon: <LuBadgeCheck size={28} />,
         text: isEs
           ? "Abre desde tu Pantalla de Inicio."
