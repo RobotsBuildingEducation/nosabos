@@ -58,7 +58,11 @@ export default function GettingStartedModal({
       },
       {
         id: "step2",
-        icon: <RxExternalLink size={28} />,
+        icon: (
+          <Box mt={{ base: "-10px", md: "6px" }}>
+            <RxExternalLink size={20} />
+          </Box>
+        ),
         text: isEs ? "Abre en el navegador." : "Open in browser.",
       },
       {
