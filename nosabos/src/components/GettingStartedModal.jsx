@@ -2,7 +2,6 @@ import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Button,
-  Flex,
   Grid,
   GridItem,
   Modal,
@@ -16,7 +15,8 @@ import {
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuCopy, LuGlobe, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { RxExternalLink } from "react-icons/rx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
@@ -58,7 +58,7 @@ export default function GettingStartedModal({
       },
       {
         id: "step2",
-        icon: <LuGlobe size={28} />,
+        icon: <RxExternalLink size={28} />,
         text: isEs ? "Abre en el navegador." : "Open in browser.",
       },
       {
@@ -143,31 +143,28 @@ export default function GettingStartedModal({
                   </VStack>
                 </GridItem>
               ))}
+              {secretKey ? (
+                <GridItem
+                  bg="gray.800"
+                  p={3}
+                  rounded="md"
+                  cursor="pointer"
+                  onClick={handleCopyKey}
+                >
+                  <VStack spacing={1} align="center" textAlign="center">
+                    <Box color="teal.200">
+                      <LuKeyRound size={28} />
+                    </Box>
+                    <Text fontSize="xs">
+                      6.{" "}
+                      {isEs
+                        ? "Copia tu llave secreta."
+                        : "Copy your secret key."}
+                    </Text>
+                  </VStack>
+                </GridItem>
+              ) : null}
             </Grid>
-
-            {secretKey ? (
-              <Box bg="gray.800" p={3} rounded="md">
-                <Flex align="center" gap={3}>
-                  <Box color="teal.200" flexShrink={0}>
-                    <LuKeyRound size={20} />
-                  </Box>
-                  <Text fontSize="xs" flex={1}>
-                    {isEs
-                      ? "Copia tu llave secreta para iniciar sesión en tu cuenta"
-                      : "Copy your secret key to sign into your account"}
-                  </Text>
-                  <Button
-                    size="xs"
-                    colorScheme="teal"
-                    variant="ghost"
-                    onClick={handleCopyKey}
-                    flexShrink={0}
-                  >
-                    <LuCopy size={16} />
-                  </Button>
-                </Flex>
-              </Box>
-            ) : null}
 
             <Button
               w="100%"

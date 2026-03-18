@@ -44,7 +44,8 @@ import { SiCashapp, SiPatreon } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuDoorOpen, LuGlobe, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
+import { RxExternalLink } from "react-icons/rx";
 import { LuKey } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import { doc, updateDoc } from "firebase/firestore";
@@ -259,7 +260,7 @@ export default function IdentityDrawer({
       },
       {
         id: "step2",
-        icon: <LuGlobe size={28} />,
+        icon: <RxExternalLink size={28} />,
         text: t?.app_install_step2 || "Open in browser.",
       },
       {
