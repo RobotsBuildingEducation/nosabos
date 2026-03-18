@@ -250,9 +250,6 @@ export const translations = {
     app_account_aria: "Account",
     app_lang_en: "EN",
     app_lang_es: "ES",
-    onboarding_install_subtitle:
-      "For the best experience, install the app on your device.",
-    onboarding_got_it: "Got it!",
     app_install_title: "Install as app",
     app_install_step1: "Open the browser menu.",
     app_install_step2: "Choose 'Share' or 'Install'.",
@@ -812,9 +809,6 @@ export const translations = {
     app_switch: "Cambiar",
     app_switch_note:
       "Si la cuenta no existe, la crearemos en tu colección de usuarios.",
-    onboarding_install_subtitle:
-      "Para la mejor experiencia, instala la app en tu dispositivo.",
-    onboarding_got_it: "¡Entendido!",
     app_install_title: "Instalar App",
     app_install_step1:
       "1. Abre esta página en tu navegador con el botón de Más Opciones",

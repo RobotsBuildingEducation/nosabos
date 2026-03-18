@@ -1,30 +1,63 @@
 // src/components/Onboarding.jsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Divider,
   Drawer,
   DrawerBody,
   DrawerContent,
+  DrawerHeader,
   DrawerOverlay,
-  Flex,
   HStack,
+  Input,
+  Switch,
   Text,
   VStack,
+  Wrap,
+  WrapItem,
+  Spacer,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItemOption,
+  MenuOptionGroup,
+  useBreakpointValue,
 } from "@chakra-ui/react";
-import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload } from "react-icons/md";
-import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { ChevronDownIcon } from "@chakra-ui/icons";
+import { HiVolumeUp } from "react-icons/hi";
 import submitActionSound from "../assets/submitaction.mp3";
+import selectSound from "../assets/select.mp3";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
+import {
+  brazilianFlag,
+  frenchFlag,
+  germanFlag,
+  greekFlag,
+  irishFlag,
+  italianFlag,
+  japaneseFlag,
+  mexicanFlag,
+  netherlandsFlag,
+  polishFlag,
+  russianFlag,
+  usaFlag,
+} from "./flagsIcons/flags";
 import RandomCharacter from "./RandomCharacter";
 
 const BASE_PATH = "/onboarding";
+
+const personaDefaultFor = (lang) =>
+  translations?.[lang]?.DEFAULT_PERSONA ||
+  translations?.[lang]?.onboarding_persona_default_example ||
+  translations?.en?.onboarding_persona_default_example ||
+  "";
 
 export default function Onboarding({
   onComplete,
@@ -33,57 +66,182 @@ export default function Onboarding({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
-  const supportLang = userLanguage === "es" ? "es" : "en";
+  const normalizedUserLang = userLanguage === "es" ? "es" : "en";
+  const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
+  const [supportLang, setSupportLang] = useState(initialSupportLang);
   const ui = translations[supportLang] || translations.en;
 
+  const defaults = useMemo(() => {
+    return {
+      level: initialDraft.level || "beginner",
+      supportLang: initialSupportLang,
+      targetLang:
+        initialDraft.targetLang || (initialSupportLang === "es" ? "en" : "es"),
+      voicePersona:
+        initialDraft.voicePersona ||
+        personaDefaultFor(initialSupportLang) ||
+        translations.en.onboarding_persona_default_example,
+      pauseMs:
+        typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
+          ? initialDraft.pauseMs
+          : 1200,
+      soundEnabled:
+        typeof initialDraft.soundEnabled === "boolean"
+          ? initialDraft.soundEnabled
+          : true,
+      soundVolume:
+        typeof initialDraft.soundVolume === "number"
+          ? initialDraft.soundVolume
+          : 40,
+    };
+  }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
+
+  const [level, setLevel] = useState(defaults.level);
+  const [targetLang, setTargetLang] = useState(defaults.targetLang);
+  const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
+  const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
+  const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
+  const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
   const playSound = useSoundSettings((s) => s.playSound);
+  const setGlobalVolume = useSoundSettings((s) => s.setVolume);
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
 
+  // Japanese is visible for everyone (beta label applied in UI)
+  const showJapanese = true;
+
+  const practiceLanguageOptions = useMemo(() => {
+    const collator = new Intl.Collator(supportLang === "es" ? "es" : "en");
+    const options = [
+      {
+        value: "nl",
+        label: ui.onboarding_practice_nl,
+        beta: false,
+        flag: netherlandsFlag(),
+      },
+      {
+        value: "en",
+        label: ui.onboarding_practice_en,
+        beta: false,
+        flag: usaFlag(),
+      },
+      {
+        value: "fr",
+        label: ui.onboarding_practice_fr,
+        beta: false,
+        flag: frenchFlag(),
+      },
+      {
+        value: "de",
+        label: ui.onboarding_practice_de,
+        beta: false,
+        flag: germanFlag(),
+      },
+      {
+        value: "it",
+        label: ui.onboarding_practice_it,
+        beta: false,
+        flag: italianFlag(),
+      },
+      {
+        value: "nah",
+        label: `${ui.onboarding_practice_nah} (${supportLang === "es" ? "alfa" : "alpha"})`,
+        beta: false,
+        alpha: true,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "yua",
+        label: `${ui.onboarding_practice_yua} (${supportLang === "es" ? "alfa" : "alpha"})`,
+        beta: false,
+        alpha: true,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "pt",
+        label: ui.onboarding_practice_pt,
+        beta: false,
+        flag: brazilianFlag(),
+      },
+      {
+        value: "es",
+        label: ui.onboarding_practice_es,
+        beta: false,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "el",
+        label: ui.onboarding_practice_el,
+        beta: true,
+        flag: greekFlag(),
+      },
+      {
+        value: "ja",
+        label: ui.onboarding_practice_ja,
+        beta: true,
+        hidden: !showJapanese,
+        flag: japaneseFlag(),
+      },
+      {
+        value: "ru",
+        label: ui.onboarding_practice_ru,
+        beta: true,
+        flag: russianFlag(),
+      },
+      {
+        value: "pl",
+        label: ui.onboarding_practice_pl,
+        beta: true,
+        flag: polishFlag(),
+      },
+      {
+        value: "ga",
+        label: ui.onboarding_practice_ga,
+        beta: true,
+        flag: irishFlag(),
+      },
+    ];
+
+    const visible = options.filter((option) => !option.hidden);
+    const stable = visible
+      .filter((option) => !option.beta && !option.alpha)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const alpha = visible
+      .filter((option) => option.alpha)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const beta = visible
+      .filter((option) => option.beta)
+      .sort((a, b) => collator.compare(a.label, b.label));
+
+    return [...stable, ...alpha, ...beta];
+  }, [supportLang, ui, showJapanese]);
+
   useEffect(() => {
+    const localizedDefault = personaDefaultFor(supportLang);
+    const enDefault = personaDefaultFor("en");
+    const esDefault = personaDefaultFor("es");
+    const current = (voicePersona || "").trim();
+
+    if (!current || current === enDefault || current === esDefault) {
+      const next = localizedDefault || current;
+      if (next && next !== current) {
+        setVoicePersona(next);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supportLang]);
+
+  useEffect(() => {
+    // Redirect to onboarding base path if not already there
     if (!location.pathname.startsWith(BASE_PATH)) {
       navigate(BASE_PATH, { replace: true });
     }
   }, [location.pathname, navigate]);
 
-  const installSteps = useMemo(
-    () => [
-      {
-        id: "step1",
-        icon: <IoIosMore size={28} />,
-        text: ui?.app_install_step1 || "Open the browser menu.",
-      },
-      {
-        id: "step2",
-        icon: <MdOutlineFileUpload size={28} />,
-        text: ui?.app_install_step2 || "Choose 'Share' or 'Install'.",
-      },
-      {
-        id: "step3",
-        icon: <CiSquarePlus size={28} />,
-        text: ui?.app_install_step3 || "Add to Home Screen.",
-      },
-      {
-        id: "step4",
-        icon: <LuBadgeCheck size={28} />,
-        text: ui?.app_install_step4 || "Launch from your Home Screen.",
-      },
-      {
-        id: "step5",
-        icon: <LuKeyRound size={24} />,
-        text:
-          ui?.account_final_step_title ||
-          "Copy your secret key to sign into your account",
-        subText:
-          ui?.account_final_step_description ||
-          "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
-      },
-    ],
-    [ui],
-  );
-
-  async function handleGotIt() {
+  async function handleStart() {
     if (typeof onComplete !== "function") {
       console.error("Onboarding.onComplete is not provided.");
       return;
@@ -92,32 +250,44 @@ export default function Onboarding({
     try {
       playSound(submitActionSound);
       const payload = {
-        level: initialDraft.level || "beginner",
+        level,
         supportLang,
-        voicePersona:
-          initialDraft.voicePersona ||
-          translations[supportLang]?.onboarding_persona_default_example ||
-          translations.en.onboarding_persona_default_example,
-        targetLang:
-          initialDraft.targetLang || (supportLang === "es" ? "en" : "es"),
-        pauseMs:
-          typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
-            ? initialDraft.pauseMs
-            : 1200,
-        soundEnabled:
-          typeof initialDraft.soundEnabled === "boolean"
-            ? initialDraft.soundEnabled
-            : true,
-        soundVolume:
-          typeof initialDraft.soundVolume === "number"
-            ? initialDraft.soundVolume
-            : 40,
+        voicePersona,
+        targetLang,
+        pauseMs,
+        soundEnabled,
+        soundVolume,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
       setIsSaving(false);
     }
   }
+
+  const personaPlaceholder = (
+    ui.onboarding_persona_input_placeholder || 'e.g., "{example}"'
+  ).replace(
+    "{example}",
+    ui.onboarding_persona_default_example || "patient, encouraging, playful",
+  );
+
+  const VAD_LABEL =
+    ui.ra_vad_label ||
+    (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
+  const VAD_HINT =
+    ui.onboarding_vad_hint ||
+    (supportLang === "es"
+      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
+      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+  const pauseSeconds = (pauseMs / 1000).toFixed(1);
+  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+  const supportOption =
+    supportLang === "es"
+      ? { flag: mexicanFlag(), label: ui.onboarding_support_es }
+      : { flag: usaFlag(), label: ui.onboarding_support_en };
+  const selectedPracticeOption =
+    practiceLanguageOptions.find((option) => option.value === targetLang) ||
+    practiceLanguageOptions[0];
 
   return (
     <Box
@@ -149,41 +319,288 @@ export default function Onboarding({
                 <HStack display="flex" alignItems={"center"}>
                   <RandomCharacter notSoRandomCharacter={"24"} />
                   <Text fontWeight="bold" fontSize="lg">
-                    {ui?.app_install_title || "Install as app"}
+                    {ui.onboarding_title}
                   </Text>
                 </HStack>
                 <Text opacity={0.85} fontSize="sm">
-                  {ui?.onboarding_install_subtitle ||
-                    "For the best experience, install the app on your device."}
+                  {ui.onboarding_subtitle}
                 </Text>
               </VStack>
             </Box>
-            <Box maxW="600px" mx="auto" w="100%" mt={4}>
-              <Box bg="gray.800" p={3} rounded="md">
-                {installSteps.map((step, idx) => (
-                  <Box key={step.id} py={2}>
-                    <Flex
-                      align="center"
-                      gap={3}
-                      justify="space-between"
-                      flexWrap="wrap"
+            <Box maxW="600px" mx="auto" w="100%">
+              <VStack align="stretch" spacing={4}>
+                {/* Support Language */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_support_language_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_support_language_desc}
+                  </Text>
+                  <Menu
+                    autoSelect={false}
+                    isLazy
+                    onOpen={() => playSound(selectSound)}
+                  >
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      w="100%"
+                      textAlign="left"
+                      padding={5}
+                      onClick={() => playSound(selectSound)}
                     >
-                      <HStack align="center" gap={3}>
-                        <Box color="teal.200">{step.icon}</Box>
-                        <Text fontSize="sm">{step.text}</Text>
+                      <HStack spacing={2}>
+                        {supportOption.flag}
+                        <Text as="span">{supportOption.label}</Text>
                       </HStack>
-                    </Flex>
-                    {step.subText ? (
-                      <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                        {step.subText}
-                      </Text>
-                    ) : null}
-                    {idx < installSteps.length - 1 && (
-                      <Divider my={3} borderColor="gray.700" />
-                    )}
-                  </Box>
-                ))}
-              </Box>
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <Box
+                        px={3}
+                        pt={2}
+                        pb={1}
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color="gray.400"
+                      >
+                        {ui.onboarding_support_menu_label || "Support:"}
+                      </Box>
+                      <MenuOptionGroup
+                        type="radio"
+                        value={supportLang}
+                        onChange={(value) => {
+                          playSound(selectSound);
+                          setSupportLang(value);
+                        }}
+                      >
+                        <MenuItemOption value="en" padding={5} pl={1}>
+                          <HStack spacing={2}>
+                            {usaFlag()}
+                            <Text as="span">{ui.onboarding_support_en}</Text>
+                          </HStack>
+                        </MenuItemOption>
+                        <MenuItemOption value="es" padding={5} pl={1}>
+                          <HStack spacing={2}>
+                            {mexicanFlag()}
+                            <Text as="span">{ui.onboarding_support_es}</Text>
+                          </HStack>
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
+                </Box>
+
+                {/* Practice Language */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_practice_language_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_practice_language_desc}
+                  </Text>
+                  <Menu
+                    autoSelect={false}
+                    isLazy
+                    onOpen={() => playSound(selectSound)}
+                  >
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      w="100%"
+                      textAlign="left"
+                      title={ui.onboarding_practice_label_title}
+                      padding={5}
+                      onClick={() => playSound(selectSound)}
+                    >
+                      <HStack spacing={2}>
+                        {selectedPracticeOption?.flag}
+                        <Text as="span">
+                          {selectedPracticeOption?.label}
+                          {selectedPracticeOption?.beta ? " (beta)" : ""}
+                        </Text>
+                      </HStack>
+                    </MenuButton>
+                    <MenuList
+                      borderColor="gray.700"
+                      bg="gray.900"
+                      maxH="300px"
+                      overflowY="auto"
+                      sx={{
+                        "&::-webkit-scrollbar": {
+                          width: "8px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          bg: "gray.800",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          bg: "gray.600",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          bg: "gray.500",
+                        },
+                      }}
+                    >
+                      <Box
+                        px={3}
+                        pt={2}
+                        pb={1}
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color="gray.400"
+                      >
+                        {ui.onboarding_practice_menu_label || "Practice:"}
+                      </Box>
+                      <MenuOptionGroup
+                        type="radio"
+                        value={targetLang}
+                        onChange={(value) => {
+                          playSound(selectSound);
+                          setTargetLang(value);
+                        }}
+                      >
+                        {practiceLanguageOptions.map((option) => (
+                          <MenuItemOption
+                            key={option.value}
+                            value={option.value}
+                            padding={5}
+                            pl={1}
+                          >
+                            <div style={{ display: "inline-flex" }}>
+                              {option?.flag}&nbsp;
+                              {option.label}
+                              {option.beta ? " (beta)" : ""}
+                            </div>
+                          </MenuItemOption>
+                        ))}
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
+                </Box>
+
+                {/* Voice Personality */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_section_voice_persona}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_persona_help_text}
+                  </Text>
+                  <Input
+                    value={voicePersona}
+                    onChange={(e) => setVoicePersona(e.target.value)}
+                    bg="gray.700"
+                    placeholder={personaPlaceholder}
+                  />
+                </Box>
+
+                {/* Voice Activity Pause Slider */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_vad_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_vad_explanation}
+                  </Text>
+                  <HStack justify="space-between" mb={2}>
+                    <Text fontSize="sm">{VAD_LABEL}</Text>
+                    <Text fontSize="sm" opacity={0.8}>
+                      {pauseSeconds} {secondsLabel}
+                    </Text>
+                  </HStack>
+                  <Slider
+                    aria-label="onboarding-pause-slider"
+                    min={200}
+                    max={4000}
+                    step={100}
+                    value={pauseMs}
+                    onChange={(val) => {
+                      setPauseMs(val);
+                      playSliderTick(val, 200, 4000);
+                    }}
+                  >
+                    <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                      <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
+                    </SliderTrack>
+                    <SliderThumb boxSize={6} />
+                  </Slider>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {VAD_HINT}
+                  </Text>
+                </Box>
+
+                {/* Sound Effects toggle */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <HStack justifyContent="space-between">
+                    <Text fontSize="sm">
+                      {ui.sound_effects_label || "Sound effects"}
+                    </Text>
+                    <Switch
+                      id="onboarding-sound-effects-switch"
+                      isChecked={soundEnabled}
+                      onChange={(e) => setSoundEnabled(e.target.checked)}
+                    />
+                  </HStack>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {soundEnabled
+                      ? ui.sound_effects_enabled || "Sound effects are enabled."
+                      : ui.sound_effects_disabled || "Sound effects are muted."}
+                  </Text>
+                  {soundEnabled && !isMobile && (
+                    <HStack mt={3} spacing={3} align="center">
+                      <Box w="50%">
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm">
+                            {ui.sound_volume_label || "Volume"}
+                          </Text>
+                          <Text fontSize="sm" opacity={0.8}>
+                            {soundVolume}%
+                          </Text>
+                        </HStack>
+                        <Slider
+                          aria-label="onboarding-volume-slider"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={soundVolume}
+                          onChange={(val) => {
+                            setSoundVolume(val);
+                            setGlobalVolume(val);
+                            playSliderTick(val, 0, 100);
+                          }}
+                        >
+                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                          </SliderTrack>
+                          <SliderThumb boxSize={6} />
+                        </Slider>
+                      </Box>
+                      <Button
+                        leftIcon={<HiVolumeUp />}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => playSound(submitActionSound)}
+                      >
+                        {ui.test_sound || "Test sound"}
+                      </Button>
+                    </HStack>
+                  )}
+                </Box>
+              </VStack>
             </Box>
           </DrawerBody>
 
@@ -198,12 +615,12 @@ export default function Onboarding({
               <Button
                 size="lg"
                 colorScheme="teal"
-                onClick={handleGotIt}
+                onClick={handleStart}
                 isLoading={isSaving}
                 loadingText={ui.common_saving}
                 w="100%"
               >
-                {ui?.onboarding_got_it || "Got it!"}
+                {ui.onboarding_cta_start}
               </Button>
             </Box>
           </Box>
