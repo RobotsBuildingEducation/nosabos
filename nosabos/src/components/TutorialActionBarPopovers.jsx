@@ -201,43 +201,31 @@ export default function TutorialActionBarPopovers({
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === activeExplanations.length - 1;
 
-  // Calculate popover width and position
+  // Arrow position: popover stays centered, only the arrow moves
   const popoverWidth = 320;
-  const popoverHalfWidth = popoverWidth / 2;
-  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 400;
-  const margin = 12;
-
-  // Default center position (fallback)
-  let popoverLeft = viewportWidth / 2;
   let arrowLeft = "50%";
 
   if (targetPos) {
-    // Ideal: center the popover on the button
-    let idealLeft = targetPos.centerX;
-
-    // Clamp so the popover doesn't overflow the viewport
-    const minLeft = margin + popoverHalfWidth;
-    const maxLeft = viewportWidth - margin - popoverHalfWidth;
-    popoverLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
-
-    // Arrow always points to the actual button center
-    const popoverLeftEdge = popoverLeft - popoverHalfWidth;
+    // The popover is centered on screen via left:50% + translateX(-50%)
+    // Calculate where the popover's left edge actually is
+    const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 400;
+    const effectiveWidth = Math.min(popoverWidth, viewportWidth * 0.9);
+    const popoverLeftEdge = (viewportWidth - effectiveWidth) / 2;
     const arrowOffset = targetPos.centerX - popoverLeftEdge;
     // Clamp arrow within the popover bounds
-    const clampedArrow = Math.max(20, Math.min(popoverWidth - 20, arrowOffset));
+    const clampedArrow = Math.max(20, Math.min(effectiveWidth - 20, arrowOffset));
     arrowLeft = `${clampedArrow}px`;
   }
 
   return (
     <Box
       position="fixed"
-      bottom={targetPos ? `${window.innerHeight - targetPos.top + 12}px` : "90px"}
-      left={`${popoverLeft}px`}
+      bottom="90px"
+      left="50%"
       transform="translateX(-50%)"
       zIndex={1000}
       w={`${popoverWidth}px`}
       maxW="90vw"
-      transition="left 0.3s ease, bottom 0.3s ease"
     >
       <Fade in={isVisible}>
         <Box
