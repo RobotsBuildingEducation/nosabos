@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   Box,
   Text,
@@ -81,7 +87,7 @@ const BUTTON_EXPLANATIONS = [
     id: "identity",
     tutorialId: "identity",
     icon: FaBitcoin,
-    label: { en: "Account Key", es: "Llave de cuenta" },
+    label: { en: "Account", es: "Cuenta" },
     description: {
       en: "Access your account info to install the app and access your password",
       es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
@@ -124,7 +130,7 @@ export default function TutorialActionBarPopovers({
       isOnSkillTree
         ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
         : BUTTON_EXPLANATIONS,
-    [isOnSkillTree]
+    [isOnSkillTree],
   );
 
   const [currentStep, setCurrentStep] = useState(0);
@@ -139,7 +145,7 @@ export default function TutorialActionBarPopovers({
       const btn = activeExplanations[step];
       if (!btn) return;
       const el = document.querySelector(
-        `[data-tutorial-id="${btn.tutorialId}"]`
+        `[data-tutorial-id="${btn.tutorialId}"]`,
       );
       const popover = popoverRef.current;
       if (!el || !popover) return;
@@ -149,11 +155,11 @@ export default function TutorialActionBarPopovers({
       const arrowOffset = btnCenterX - popoverRect.left;
       const clamped = Math.max(
         20,
-        Math.min(popoverRect.width - 20, arrowOffset)
+        Math.min(popoverRect.width - 20, arrowOffset),
       );
       setArrowLeft(`${clamped}px`);
     },
-    [activeExplanations]
+    [activeExplanations],
   );
 
   useEffect(() => {
