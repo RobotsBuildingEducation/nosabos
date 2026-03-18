@@ -271,19 +271,19 @@ export default function IdentityDrawer({
       {
         id: "step4",
         icon: <CiSquarePlus size={28} />,
-        text: t?.app_install_step4 || "Add to Home Screen.",
+        text: t?.app_install_step4 || "Add to home screen.",
       },
       {
         id: "step5",
         icon: <LuBadgeCheck size={28} />,
-        text: t?.app_install_step5 || "Launch from your Home Screen.",
+        text: t?.app_install_step5 || "Launch from your home screen.",
       },
       {
-        id: "step5",
+        id: "step6",
         icon: <LuKeyRound size={24} />,
         text:
           t?.account_final_step_title ||
-          "Copy your secret key to sign into your account",
+          "Copy secret key to sign in.",
         subText:
           t?.account_final_step_description ||
           "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",

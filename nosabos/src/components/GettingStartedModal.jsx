@@ -15,7 +15,7 @@ import {
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuCopy, LuKeyRound } from "react-icons/lu";
 import { RxExternalLink } from "react-icons/rx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -71,14 +71,14 @@ export default function GettingStartedModal({
       {
         id: "step4",
         icon: <CiSquarePlus size={28} />,
-        text: isEs ? "Agregar a la Pantalla de Inicio." : "Add to Home Screen.",
+        text: isEs ? "Agregar a la pantalla de inicio." : "Add to home screen.",
       },
       {
         id: "step5",
         icon: <LuBadgeCheck size={28} />,
         text: isEs
-          ? "Abre desde tu Pantalla de Inicio."
-          : "Launch from your Home Screen.",
+          ? "Abre desde tu pantalla de inicio."
+          : "Launch from your home screen.",
       },
     ],
     [isEs],
@@ -158,9 +158,17 @@ export default function GettingStartedModal({
                     <Text fontSize="xs">
                       6.{" "}
                       {isEs
-                        ? "Copia tu llave secreta."
-                        : "Copy your secret key."}
+                        ? "Copia la llave secreta para iniciar sesión."
+                        : "Copy secret key to sign in."}
                     </Text>
+                    <Button
+                      size="xs"
+                      colorScheme="teal"
+                      variant="ghost"
+                      onClick={handleCopyKey}
+                    >
+                      <LuCopy size={16} />
+                    </Button>
                   </VStack>
                 </GridItem>
               ) : null}
