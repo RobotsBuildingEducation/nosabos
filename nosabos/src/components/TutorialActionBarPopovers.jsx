@@ -202,30 +202,26 @@ export default function TutorialActionBarPopovers({
   const isLastStep = currentStep === activeExplanations.length - 1;
 
   // Arrow position: popover stays centered, only the arrow moves
-  const popoverWidth = 320;
+  const popoverRef = useRef(null);
   let arrowLeft = "50%";
 
-  if (targetPos) {
-    // The popover is centered on screen via left:50% + translateX(-50%)
-    // Calculate where the popover's left edge actually is
-    const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 400;
-    const effectiveWidth = Math.min(popoverWidth, viewportWidth * 0.9);
-    const popoverLeftEdge = (viewportWidth - effectiveWidth) / 2;
-    const arrowOffset = targetPos.centerX - popoverLeftEdge;
-    // Clamp arrow within the popover bounds
-    const clampedArrow = Math.max(20, Math.min(effectiveWidth - 20, arrowOffset));
+  if (targetPos && popoverRef.current) {
+    const popoverRect = popoverRef.current.getBoundingClientRect();
+    const arrowOffset = targetPos.centerX - popoverRect.left;
+    const clampedArrow = Math.max(20, Math.min(popoverRect.width - 20, arrowOffset));
     arrowLeft = `${clampedArrow}px`;
   }
 
   return (
     <Box
+      ref={popoverRef}
       position="fixed"
       bottom="90px"
       left="50%"
       transform="translateX(-50%)"
       zIndex={1000}
-      w={`${popoverWidth}px`}
-      maxW="90vw"
+      w="90%"
+      maxW="400px"
     >
       <Fade in={isVisible}>
         <Box
