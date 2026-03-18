@@ -126,6 +126,7 @@ export default function TutorialActionBarPopovers({
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [targetPos, setTargetPos] = useState(null);
+  const popoverRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
 
   // Measure the target button position
@@ -202,7 +203,6 @@ export default function TutorialActionBarPopovers({
   const isLastStep = currentStep === activeExplanations.length - 1;
 
   // Arrow position: popover stays centered, only the arrow moves
-  const popoverRef = useRef(null);
   let arrowLeft = "50%";
 
   if (targetPos && popoverRef.current) {
