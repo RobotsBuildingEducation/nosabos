@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Box,
   Text,
@@ -35,6 +35,7 @@ const pulseKeyframes = keyframes`
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
+    tutorialId: "back",
     icon: ArrowBackIcon,
     label: { en: "Back Button", es: "Botón Atrás" },
     description: {
@@ -45,6 +46,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "teams",
+    tutorialId: "teams",
     icon: PiUsersBold,
     label: { en: "Teams", es: "Equipos" },
     description: {
@@ -55,6 +57,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "settings",
+    tutorialId: "settings",
     icon: SettingsIcon,
     label: { en: "Settings", es: "Configuración" },
     description: {
@@ -65,6 +68,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "notes",
+    tutorialId: "notes",
     icon: RiBookmarkLine,
     label: { en: "Notes", es: "Notas" },
     description: {
@@ -75,6 +79,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
+    tutorialId: "identity",
     icon: FaBitcoin,
     label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
@@ -85,6 +90,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "help",
+    tutorialId: "help",
     icon: MdOutlineSupportAgent,
     label: { en: "Assistant", es: "Asistente" },
     description: {
@@ -95,6 +101,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "mode",
+    tutorialId: "mode",
     icon: PiPath,
     label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
     description: {
@@ -118,18 +125,49 @@ export default function TutorialActionBarPopovers({
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
+  const [targetPos, setTargetPos] = useState(null);
   const playSound = useSoundSettings((s) => s.playSound);
+
+  // Measure the target button position
+  const measureTarget = useCallback(
+    (step) => {
+      const btn = activeExplanations[step];
+      if (!btn) return;
+      const el = document.querySelector(
+        `[data-tutorial-id="${btn.tutorialId}"]`
+      );
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setTargetPos({
+        centerX: rect.left + rect.width / 2,
+        top: rect.top,
+      });
+    },
+    [activeExplanations]
+  );
 
   useEffect(() => {
     if (!isActive) {
       setCurrentStep(0);
       setIsVisible(false);
+      setTargetPos(null);
       return;
     }
 
     // Start showing popovers
     setIsVisible(true);
-  }, [isActive]);
+    measureTarget(0);
+  }, [isActive, measureTarget]);
+
+  // Re-measure when step changes or on resize
+  useEffect(() => {
+    if (!isActive || !isVisible) return;
+    measureTarget(currentStep);
+
+    const handleResize = () => measureTarget(currentStep);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [isActive, isVisible, currentStep, measureTarget]);
 
   const handlePrevious = () => {
     if (currentStep > 0) {
@@ -163,15 +201,43 @@ export default function TutorialActionBarPopovers({
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === activeExplanations.length - 1;
 
+  // Calculate popover width and position
+  const popoverWidth = 320;
+  const popoverHalfWidth = popoverWidth / 2;
+  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 400;
+  const margin = 12;
+
+  // Default center position (fallback)
+  let popoverLeft = viewportWidth / 2;
+  let arrowLeft = "50%";
+
+  if (targetPos) {
+    // Ideal: center the popover on the button
+    let idealLeft = targetPos.centerX;
+
+    // Clamp so the popover doesn't overflow the viewport
+    const minLeft = margin + popoverHalfWidth;
+    const maxLeft = viewportWidth - margin - popoverHalfWidth;
+    popoverLeft = Math.max(minLeft, Math.min(maxLeft, idealLeft));
+
+    // Arrow always points to the actual button center
+    const popoverLeftEdge = popoverLeft - popoverHalfWidth;
+    const arrowOffset = targetPos.centerX - popoverLeftEdge;
+    // Clamp arrow within the popover bounds
+    const clampedArrow = Math.max(20, Math.min(popoverWidth - 20, arrowOffset));
+    arrowLeft = `${clampedArrow}px`;
+  }
+
   return (
     <Box
       position="fixed"
-      bottom="90px"
-      left="50%"
+      bottom={targetPos ? `${window.innerHeight - targetPos.top + 12}px` : "90px"}
+      left={`${popoverLeft}px`}
       transform="translateX(-50%)"
       zIndex={1000}
-      w="90%"
-      maxW="400px"
+      w={`${popoverWidth}px`}
+      maxW="90vw"
+      transition="left 0.3s ease, bottom 0.3s ease"
     >
       <Fade in={isVisible}>
         <Box
@@ -273,17 +339,18 @@ export default function TutorialActionBarPopovers({
             </HStack>
           </VStack>
 
-          {/* Arrow pointing down to action bar */}
+          {/* Arrow pointing down to target button */}
           <Box
             position="absolute"
             bottom="-10px"
-            left="50%"
+            left={arrowLeft}
             transform="translateX(-50%)"
             w={0}
             h={0}
             borderLeft="12px solid transparent"
             borderRight="12px solid transparent"
             borderTop="12px solid rgba(139, 92, 246, 0.95)"
+            transition="left 0.3s ease"
           />
         </Box>
       </Fade>

@@ -357,6 +357,9 @@ export default function SessionTimerModal({
           borderTop="1px solid"
           borderColor="gray.800"
         >
+          <Button variant="ghost" colorScheme="gray" onClick={handleClose}>
+            {t.timer_modal_close || "Close"}
+          </Button>
           <Button colorScheme="teal" onClick={handleStart}>
             {isRunning
               ? t.timer_modal_restart || "Restart timer"

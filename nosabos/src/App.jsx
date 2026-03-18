@@ -5817,6 +5817,7 @@ function BottomActionBar({
               borderRadius="24px"
             >
               <IconButton
+                data-tutorial-id="teams"
                 icon={<PiUsersBold size={18} />}
                 onClick={() => handleActionClick(onOpenTeams)}
                 aria-label={teamsLabel}
@@ -5834,6 +5835,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="settings"
                 icon={<SettingsIcon boxSize={4} />}
                 color="gray.100"
                 onClick={() => handleActionClick(onOpenSettings)}
@@ -5846,6 +5848,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="notes"
                 icon={<RiBookmarkLine size={18} />}
                 aria-label={notesLabel}
                 onClick={() => handleActionClick(onOpenNotes)}
@@ -5885,6 +5888,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="identity"
                 icon={<FaBitcoin size={18} />}
                 onClick={() => handleActionClick(onOpenIdentity)}
                 aria-label={identityLabel}
@@ -5896,6 +5900,7 @@ function BottomActionBar({
               />
 
               <IconButton
+                data-tutorial-id="help"
                 icon={<MdOutlineSupportAgent size={18} />}
                 onClick={() => handleActionClick(onOpenHelpChat)}
                 aria-label={helpChatLabel}
@@ -5911,6 +5916,7 @@ function BottomActionBar({
               {/* Path Mode Menu */}
               <Menu placement="top-end">
                 <MenuButton
+                  data-tutorial-id="mode"
                   as={IconButton}
                   icon={<CurrentModeIcon size={18} />}
                   aria-label={modeMenuLabel}
