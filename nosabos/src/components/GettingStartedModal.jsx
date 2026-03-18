@@ -136,7 +136,7 @@ export default function GettingStartedModal({
               templateColumns="repeat(2, 1fr)"
               gap={3}
             >
-              {installSteps.map((step) => (
+              {installSteps.map((step, idx) => (
                 <GridItem
                   key={step.id}
                   bg="gray.800"
@@ -145,7 +145,7 @@ export default function GettingStartedModal({
                 >
                   <VStack spacing={1} align="center" textAlign="center">
                     <Box color="teal.200">{step.icon}</Box>
-                    <Text fontSize="xs">{step.text}</Text>
+                    <Text fontSize="xs">{idx + 1}. {step.text}</Text>
                   </VStack>
                 </GridItem>
               ))}
