@@ -45,6 +45,7 @@ export default function GettingStartedModal({
       status: "success",
       duration: 2000,
       isClosable: true,
+      position: "top",
     });
   }, [secretKey, isEs, toast]);
 
