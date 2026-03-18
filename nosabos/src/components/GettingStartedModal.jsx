@@ -144,30 +144,24 @@ export default function GettingStartedModal({
                 </GridItem>
               ))}
               {secretKey ? (
-                <GridItem
-                  bg="gray.800"
-                  p={3}
-                  rounded="md"
-                  cursor="pointer"
-                  onClick={handleCopyKey}
-                >
+                <GridItem bg="gray.800" p={3} rounded="md">
                   <VStack spacing={1} align="center" textAlign="center">
                     <Box color="teal.200">
                       <LuKeyRound size={28} />
                     </Box>
-                    <Text fontSize="xs">
-                      6.{" "}
-                      {isEs
-                        ? "Copia la llave secreta para iniciar sesión."
-                        : "Copy secret key to sign in."}
-                    </Text>
                     <Button
                       size="xs"
                       colorScheme="teal"
                       variant="ghost"
                       onClick={handleCopyKey}
+                      rightIcon={<LuCopy size={14} />}
                     >
-                      <LuCopy size={16} />
+                      <Text fontSize="xs">
+                        6.{" "}
+                        {isEs
+                          ? "Copia la llave secreta para iniciar sesión."
+                          : "Copy secret key to sign in."}
+                      </Text>
                     </Button>
                   </VStack>
                 </GridItem>
