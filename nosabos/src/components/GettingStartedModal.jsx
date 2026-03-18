@@ -132,14 +132,16 @@ export default function GettingStartedModal({
 
         <ModalBody px={6} py={6}>
           <VStack spacing={5} align="stretch">
-            <Grid
-              templateColumns="repeat(2, 1fr)"
-              autoRows="1fr"
-              gap={3}
-            >
+            <Grid templateColumns="repeat(2, 1fr)" autoRows="1fr" gap={3}>
               {installSteps.map((step, idx) => (
                 <GridItem key={step.id} bg="gray.800" p={3} rounded="md">
-                  <VStack spacing={1} align="center" textAlign="center" h="100%" justify="center">
+                  <VStack
+                    spacing={1}
+                    align="center"
+                    textAlign="center"
+                    h="100%"
+                    justify="center"
+                  >
                     <Box color="teal.200">{step.icon}</Box>
                     <Text fontSize="xs">
                       {idx + 1}. {step.text}
@@ -155,7 +157,13 @@ export default function GettingStartedModal({
                   cursor="pointer"
                   onClick={handleCopyKey}
                 >
-                  <VStack spacing={1} align="center" textAlign="center" h="100%" justify="center">
+                  <VStack
+                    spacing={1}
+                    align="center"
+                    textAlign="center"
+                    h="100%"
+                    justify="center"
+                  >
                     <Box color="teal.200">
                       <LuKeyRound size={28} />
                     </Box>
@@ -164,7 +172,11 @@ export default function GettingStartedModal({
                       {isEs
                         ? "Copia la llave secreta para iniciar sesión."
                         : "Copy secret key to sign in."}{" "}
-                      <Box as="span" display="inline-block" verticalAlign="middle">
+                      <Box
+                        as="span"
+                        display="inline-block"
+                        verticalAlign="middle"
+                      >
                         <LuCopy size={12} />
                       </Box>
                     </Text>
