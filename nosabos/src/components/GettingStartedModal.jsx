@@ -156,14 +156,10 @@ export default function GettingStartedModal({
                   <Box color="teal.200" flexShrink={0}>
                     <LuKeyRound size={20} />
                   </Box>
-                  <Text
-                    fontSize="xs"
-                    flex={1}
-                    isTruncated
-                    fontFamily="mono"
-                    color="gray.300"
-                  >
-                    {secretKey}
+                  <Text fontSize="xs" flex={1}>
+                    {isEs
+                      ? "Copia tu llave secreta para iniciar sesión en tu cuenta"
+                      : "Copy your secret key to sign into your account"}
                   </Text>
                   <Button
                     size="xs"
