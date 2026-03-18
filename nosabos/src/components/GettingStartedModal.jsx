@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Button,
+  Flex,
   Grid,
   GridItem,
   Modal,
@@ -9,12 +10,13 @@ import {
   ModalContent,
   ModalOverlay,
   Text,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuCopy, LuKeyRound } from "react-icons/lu";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
@@ -23,15 +25,28 @@ export default function GettingStartedModal({
   isOpen,
   onClose,
   onStartTutorial,
+  secretKey = "",
   lang = "en",
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const toast = useToast();
   const isEs = lang === "es";
 
   const handleGotIt = useCallback(() => {
     playSound(submitActionSound);
     onClose?.();
   }, [onClose, playSound]);
+
+  const handleCopyKey = useCallback(() => {
+    if (!secretKey) return;
+    navigator.clipboard.writeText(secretKey);
+    toast({
+      title: isEs ? "¡Copiada!" : "Copied!",
+      status: "success",
+      duration: 2000,
+      isClosable: true,
+    });
+  }, [secretKey, isEs, toast]);
 
   const installSteps = useMemo(
     () => [
@@ -62,16 +77,6 @@ export default function GettingStartedModal({
         text: isEs
           ? "Abre desde tu Pantalla de Inicio."
           : "Launch from your Home Screen.",
-      },
-      {
-        id: "step5",
-        icon: <LuKeyRound size={24} />,
-        text: isEs
-          ? "Copia tu llave secreta para iniciar sesión en tu cuenta"
-          : "Copy your secret key to sign into your account",
-        subText: isEs
-          ? "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un administrador de contraseñas o en un lugar seguro. No podemos recuperarla por ti."
-          : "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
       },
     ],
     [isEs],
@@ -133,7 +138,6 @@ export default function GettingStartedModal({
               {installSteps.map((step) => (
                 <GridItem
                   key={step.id}
-                  colSpan={step.subText ? 2 : 1}
                   bg="gray.800"
                   p={3}
                   rounded="md"
@@ -141,15 +145,38 @@ export default function GettingStartedModal({
                   <VStack spacing={1} align="center" textAlign="center">
                     <Box color="teal.200">{step.icon}</Box>
                     <Text fontSize="xs">{step.text}</Text>
-                    {step.subText ? (
-                      <Text fontSize="xs" color="teal.100" mt={1}>
-                        {step.subText}
-                      </Text>
-                    ) : null}
                   </VStack>
                 </GridItem>
               ))}
             </Grid>
+
+            {secretKey ? (
+              <Box bg="gray.800" p={3} rounded="md">
+                <Flex align="center" gap={3}>
+                  <Box color="teal.200" flexShrink={0}>
+                    <LuKeyRound size={20} />
+                  </Box>
+                  <Text
+                    fontSize="xs"
+                    flex={1}
+                    isTruncated
+                    fontFamily="mono"
+                    color="gray.300"
+                  >
+                    {secretKey}
+                  </Text>
+                  <Button
+                    size="xs"
+                    colorScheme="teal"
+                    variant="ghost"
+                    onClick={handleCopyKey}
+                    flexShrink={0}
+                  >
+                    <LuCopy size={16} />
+                  </Button>
+                </Flex>
+              </Box>
+            ) : null}
 
             <Button
               w="100%"

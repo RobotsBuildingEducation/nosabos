@@ -5267,6 +5267,7 @@ export default function App() {
         isOpen={gettingStartedOpen}
         onClose={handleGettingStartedSkip}
         onStartTutorial={handleGettingStartedStart}
+        secretKey={activeNsec}
         lang={appLanguage}
       />
 
