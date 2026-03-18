@@ -54,9 +54,7 @@ export default function GettingStartedModal({
       {
         id: "step1",
         icon: <IoIosMore size={28} />,
-        text: isEs
-          ? "Abre el menú del navegador."
-          : "Open the browser menu.",
+        text: isEs ? "Abre el menú del navegador." : "Open the browser menu.",
       },
       {
         id: "step2",
@@ -68,9 +66,7 @@ export default function GettingStartedModal({
       {
         id: "step3",
         icon: <CiSquarePlus size={28} />,
-        text: isEs
-          ? "Agregar a la Pantalla de Inicio."
-          : "Add to Home Screen.",
+        text: isEs ? "Agregar a la Pantalla de Inicio." : "Add to Home Screen.",
       },
       {
         id: "step4",
@@ -116,13 +112,8 @@ export default function GettingStartedModal({
             >
               {isEs ? "Instalar como app" : "Install as app"}
             </Text>
-          </VStack>
-        </Box>
-
-        <ModalBody px={6} py={6}>
-          <VStack spacing={5} align="stretch">
             <Text
-              fontSize="sm"
+              fontSize="2xs"
               opacity={0.85}
               textAlign="center"
               lineHeight="1.6"
@@ -131,21 +122,19 @@ export default function GettingStartedModal({
                 ? "Para la mejor experiencia, instala la app en tu dispositivo."
                 : "For the best experience, install the app on your device."}
             </Text>
+          </VStack>
+        </Box>
 
-            <Grid
-              templateColumns="repeat(2, 1fr)"
-              gap={3}
-            >
+        <ModalBody px={6} py={6}>
+          <VStack spacing={5} align="stretch">
+            <Grid templateColumns="repeat(2, 1fr)" gap={3}>
               {installSteps.map((step, idx) => (
-                <GridItem
-                  key={step.id}
-                  bg="gray.800"
-                  p={3}
-                  rounded="md"
-                >
+                <GridItem key={step.id} bg="gray.800" p={3} rounded="md">
                   <VStack spacing={1} align="center" textAlign="center">
                     <Box color="teal.200">{step.icon}</Box>
-                    <Text fontSize="xs">{idx + 1}. {step.text}</Text>
+                    <Text fontSize="xs">
+                      {idx + 1}. {step.text}
+                    </Text>
                   </VStack>
                 </GridItem>
               ))}
