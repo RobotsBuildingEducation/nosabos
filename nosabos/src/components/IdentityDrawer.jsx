@@ -45,6 +45,7 @@ import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
+import { RxExternalLink } from "react-icons/rx";
 import { LuKey } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import { doc, updateDoc } from "firebase/firestore";
@@ -259,25 +260,30 @@ export default function IdentityDrawer({
       },
       {
         id: "step2",
-        icon: <MdOutlineFileUpload size={28} />,
-        text: t?.app_install_step2 || "Choose 'Share' or 'Install'.",
+        icon: <RxExternalLink size={28} />,
+        text: t?.app_install_step2 || "Open in browser.",
       },
       {
         id: "step3",
-        icon: <CiSquarePlus size={28} />,
-        text: t?.app_install_step3 || "Add to Home Screen.",
+        icon: <MdOutlineFileUpload size={28} />,
+        text: t?.app_install_step3 || "Choose 'Share' or 'Install'.",
       },
       {
         id: "step4",
-        icon: <LuBadgeCheck size={28} />,
-        text: t?.app_install_step4 || "Launch from your Home Screen.",
+        icon: <CiSquarePlus size={28} />,
+        text: t?.app_install_step4 || "Add to home screen.",
       },
       {
         id: "step5",
+        icon: <LuBadgeCheck size={28} />,
+        text: t?.app_install_step5 || "Launch from your home screen.",
+      },
+      {
+        id: "step6",
         icon: <LuKeyRound size={24} />,
         text:
           t?.account_final_step_title ||
-          "Copy your secret key to sign into your account",
+          "Copy secret key to sign in.",
         subText:
           t?.account_final_step_description ||
           "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",

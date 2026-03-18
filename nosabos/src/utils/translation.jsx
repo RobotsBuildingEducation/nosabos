@@ -252,9 +252,10 @@ export const translations = {
     app_lang_es: "ES",
     app_install_title: "Install as app",
     app_install_step1: "Open the browser menu.",
-    app_install_step2: "Choose 'Share' or 'Install'.",
-    app_install_step3: "Add to Home Screen.",
-    app_install_step4: "Launch from your Home Screen.",
+    app_install_step2: "Open in browser.",
+    app_install_step3: "Choose 'Share' or 'Install'.",
+    app_install_step4: "Add to home screen.",
+    app_install_step5: "Launch from your home screen.",
     app_close: "Close",
     app_sign_out: "Sign out",
     app_sign_out_confirm_title: "Sign out?",
@@ -263,7 +264,7 @@ export const translations = {
     app_sign_out_confirm: "Sign out",
     app_copy_id: "Copy User ID",
     app_copy_secret: "Copy Secret Key",
-    account_final_step_title: "Copy your secret key to sign into your account",
+    account_final_step_title: "Copy secret key to sign in.",
     account_final_step_description:
       "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
     account_copy_secret: "Copy Secret Key",
@@ -792,7 +793,7 @@ export const translations = {
     ra_help_help: "Describe tu meta o contexto (esto guía la experiencia).",
     ra_vad_label: "Pausa entre turnos (segundos)",
     account_final_step_title:
-      "Copia tu llave secreta para iniciar sesión en tu cuenta",
+      "Copia la llave secreta para iniciar sesión.",
     account_final_step_description:
       "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
     account_copy_secret: "Copiar Llave Secreta",
@@ -813,11 +814,12 @@ export const translations = {
     app_install_title: "Instalar App",
     app_install_step1:
       "1. Abre esta página en tu navegador con el botón de Más Opciones",
-    app_install_step2: "2. Presiona el botón de Compartir",
-    app_install_step3:
-      "3. Presiona el botón de Agregar a la Pantalla de Inicio",
+    app_install_step2: "2. Abre en el navegador.",
+    app_install_step3: "3. Presiona el botón de Compartir",
     app_install_step4:
-      "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
+      "4. Presiona el botón de Agregar a la pantalla de inicio",
+    app_install_step5:
+      "5. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
     app_close: "Cerrar",
     app_sign_out: "Cerrar sesión",
     app_sign_out_confirm_title: "¿Cerrar sesión?",
