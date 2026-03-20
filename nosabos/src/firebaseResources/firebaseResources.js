@@ -52,4 +52,12 @@ const gradingModel = getGenerativeModel(vertexAI, {
   },
 });
 
-export { database, vertexAI, messaging, Schema, analytics, simplemodel, gradingModel };
+export {
+  database,
+  vertexAI,
+  messaging,
+  Schema,
+  analytics,
+  simplemodel,
+  gradingModel,
+};
