@@ -34,6 +34,10 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
+import {
+  LANGUAGE_FALLBACK_LABELS,
+  getPracticeLanguageOptions,
+} from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -91,6 +95,12 @@ const translations = {
     hero_subtitle: "Use intelligent tools to practice and learn new languages.",
     cta_start: "Start Learning",
     cta_signin: "I Already Have A Key",
+    languages_label: "LANGUAGES",
+    languages_title: "Practice in",
+    languages_title_accent: "14 Languages",
+    languages_stable: "Stable",
+    languages_beta: "Beta",
+    languages_alpha: "Alpha",
     features_label: "CAPABILITIES",
     features_title: "Everything You Need to",
     features_title_accent: "Become Fluent",
@@ -195,6 +205,12 @@ const translations = {
       "Usa herramientas inteligentes para practicar y aprender nuevos idiomas.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
+    languages_label: "IDIOMAS",
+    languages_title: "Practica en",
+    languages_title_accent: "14 Idiomas",
+    languages_stable: "Estable",
+    languages_beta: "Beta",
+    languages_alpha: "Alfa",
     features_label: "CAPACIDADES",
     features_title: "Todo lo que Necesitas para",
     features_title_accent: "Ser Fluido",
@@ -1322,6 +1338,113 @@ const LandingPage = ({ onAuthenticated }) => {
               </Button>
             </div>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Languages Section */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "48px" }}>
+            <SectionLabel>{copy.languages_label}</SectionLabel>
+            <motion.h2
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "50px" }}
+              transition={{ duration: 0.25 }}
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "clamp(2rem, 5vw, 3rem)",
+                fontWeight: 600,
+                lineHeight: 1.2,
+              }}
+            >
+              {copy.languages_title}
+              <br />
+              <span style={{ color: theme.colors.accent.primary }}>
+                {copy.languages_title_accent}
+              </span>
+            </motion.h2>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns:
+                "repeat(auto-fill, minmax(min(140px, 45%), 1fr))",
+              gap: "16px",
+              justifyItems: "center",
+            }}
+          >
+            {getPracticeLanguageOptions({ uiLang: lang }).map((langOption, i) => (
+              <motion.div
+                key={langOption.value}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "50px" }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "20px 16px",
+                  borderRadius: "16px",
+                  background: theme.colors.bg.elevated,
+                  border: `1px solid ${theme.colors.border.subtle}`,
+                  width: "100%",
+                  minHeight: "120px",
+                }}
+              >
+                <div style={{ fontSize: "32px", lineHeight: 1 }}>
+                  {langOption.flag}
+                </div>
+                <span
+                  style={{
+                    fontFamily: theme.fonts.body,
+                    fontSize: "0.85rem",
+                    fontWeight: 500,
+                    color: theme.colors.text.primary,
+                    textAlign: "center",
+                  }}
+                >
+                  {langOption.value === "nah"
+                    ? "Huasteca Nahuatl"
+                    : LANGUAGE_FALLBACK_LABELS[langOption.value]}
+                </span>
+                <span
+                  style={{
+                    fontFamily: theme.fonts.mono,
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    visibility:
+                      langOption.alpha || langOption.beta
+                        ? "visible"
+                        : "hidden",
+                    color: langOption.alpha
+                      ? theme.colors.accent.warm
+                      : theme.colors.accent.tertiary,
+                    background: langOption.alpha
+                      ? "rgba(249, 115, 22, 0.12)"
+                      : "rgba(167, 139, 250, 0.12)",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  {langOption.alpha
+                    ? copy.languages_alpha
+                    : copy.languages_beta}
+                </span>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
