@@ -1391,13 +1391,13 @@ const LandingPage = ({ onAuthenticated }) => {
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  gap: "10px",
+                  justifyContent: "space-between",
                   padding: "20px 16px",
                   borderRadius: "16px",
                   background: theme.colors.bg.elevated,
                   border: `1px solid ${theme.colors.border.subtle}`,
                   width: "100%",
-                  position: "relative",
+                  minHeight: "120px",
                 }}
               >
                 <div style={{ fontSize: "32px", lineHeight: 1 }}>
@@ -1412,31 +1412,35 @@ const LandingPage = ({ onAuthenticated }) => {
                     textAlign: "center",
                   }}
                 >
-                  {LANGUAGE_FALLBACK_LABELS[langOption.value]}
+                  {langOption.value === "nah"
+                    ? "Nahuatl"
+                    : LANGUAGE_FALLBACK_LABELS[langOption.value]}
                 </span>
-                {(langOption.alpha || langOption.beta) && (
-                  <span
-                    style={{
-                      fontFamily: theme.fonts.mono,
-                      fontSize: "0.6rem",
-                      fontWeight: 600,
-                      letterSpacing: "0.1em",
-                      textTransform: "uppercase",
-                      color: langOption.alpha
-                        ? theme.colors.accent.warm
-                        : theme.colors.accent.tertiary,
-                      background: langOption.alpha
-                        ? "rgba(249, 115, 22, 0.12)"
-                        : "rgba(167, 139, 250, 0.12)",
-                      padding: "2px 8px",
-                      borderRadius: "6px",
-                    }}
-                  >
-                    {langOption.alpha
-                      ? copy.languages_alpha
-                      : copy.languages_beta}
-                  </span>
-                )}
+                <span
+                  style={{
+                    fontFamily: theme.fonts.mono,
+                    fontSize: "0.6rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    visibility:
+                      langOption.alpha || langOption.beta
+                        ? "visible"
+                        : "hidden",
+                    color: langOption.alpha
+                      ? theme.colors.accent.warm
+                      : theme.colors.accent.tertiary,
+                    background: langOption.alpha
+                      ? "rgba(249, 115, 22, 0.12)"
+                      : "rgba(167, 139, 250, 0.12)",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  {langOption.alpha
+                    ? copy.languages_alpha
+                    : copy.languages_beta}
+                </span>
               </motion.div>
             ))}
           </div>
