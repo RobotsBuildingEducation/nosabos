@@ -1353,9 +1353,10 @@ const LandingPage = ({ onAuthenticated }) => {
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
             <SectionLabel>{copy.languages_label}</SectionLabel>
             <motion.h2
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "50px" }}
+              transition={{ duration: 0.25 }}
               style={{
                 fontFamily: theme.fonts.display,
                 fontSize: "clamp(2rem, 5vw, 3rem)",
@@ -1383,10 +1384,10 @@ const LandingPage = ({ onAuthenticated }) => {
             {getPracticeLanguageOptions({ uiLang: lang }).map((langOption, i) => (
               <motion.div
                 key={langOption.value}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
+                viewport={{ once: true, margin: "50px" }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -1413,7 +1414,7 @@ const LandingPage = ({ onAuthenticated }) => {
                   }}
                 >
                   {langOption.value === "nah"
-                    ? "Nahuatl"
+                    ? "Huasteca Nahuatl"
                     : LANGUAGE_FALLBACK_LABELS[langOption.value]}
                 </span>
                 <span
