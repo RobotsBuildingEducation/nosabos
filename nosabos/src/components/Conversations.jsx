@@ -846,6 +846,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
+  const liveUiState =
+    status === "connected" && uiState !== "speaking" ? "listening" : uiState;
 
   // Which language to show in secondary lane
   const secondaryPref =
@@ -1994,8 +1996,25 @@ Do not return the whole sentence as a single chunk.`;
   return (
     <>
       <Box minH="100vh" color="gray.100" position="relative" pb="120px">
-        {/* Header area with centered Robot and Goal UI */}
-        <Box px={4} mt={0} display="flex" justifyContent="center">
+        {/* Header area: robot separated from goal card */}
+        <VStack px={4} mt={0} spacing={3} align="center">
+          <VStack spacing={1} align="center">
+            <Box width="132px" opacity={0.95} flexShrink={0}>
+              <RobotBuddyPro
+                state={liveUiState}
+                loudness={liveUiState === "listening" ? volume : 0}
+                mood={mood}
+                variant="abstract"
+                maxW={132}
+              />
+            </Box>
+            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+              <Badge colorScheme="purple" variant="subtle">
+                {uiStateLabel(liveUiState, uiLang)}
+              </Badge>
+            )}
+          </VStack>
+
           <Box
             bg="gray.800"
             p={2}
@@ -2030,28 +2049,6 @@ Do not return the whole sentence as a single chunk.`;
                   {uiLang === "es" ? "Historial" : "Chat log"}
                 </Button>
               </HStack>
-
-              <VStack spacing={1} align="center">
-                <Box
-                  width="120px"
-                  opacity={0.95}
-                  flexShrink={0}
-                  mt="-6px"
-                >
-                  <RobotBuddyPro
-                    state={uiState}
-                    loudness={uiState === "listening" ? volume : 0}
-                    mood={mood}
-                    variant="abstract"
-                    maxW={120}
-                  />
-                </Box>
-                {status === "connected" && uiStateLabel(uiState, uiLang) && (
-                  <Badge colorScheme="purple" variant="subtle">
-                    {uiStateLabel(uiState, uiLang)}
-                  </Badge>
-                )}
-              </VStack>
 
               {/* Goal Text with Checkmark or Loader */}
               <VStack spacing={2} align="center" width="100%">
@@ -2155,13 +2152,20 @@ Do not return the whole sentence as a single chunk.`;
               </Box>
             </VStack>
           </Box>
-        </Box>
+        </VStack>
 
         {/* Centered live reply */}
-        <Center px={4} mt={5}>
-          <VStack w="100%" maxW="640px" spacing={3}>
+        <Center px={4} mt={4} minH={{ base: "300px", md: "320px" }}>
+          <VStack w="100%" maxW="640px" spacing={3} justify="center">
             {latestAssistantMessage ? (
-              <>
+              <Box
+                w="100%"
+                minH={{ base: "180px", md: "210px" }}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                position="relative"
+              >
                 {fadingAssistantMessage && (
                   <Box
                     w="100%"
@@ -2169,6 +2173,9 @@ Do not return the whole sentence as a single chunk.`;
                     transform="translateY(44px) scale(0.96)"
                     transition="all 0.45s ease-out"
                     pointerEvents="none"
+                    position="absolute"
+                    top="0"
+                    left="0"
                   >
                     <AlignedBubble
                       primaryLabel={languageNameFor(
@@ -2195,7 +2202,7 @@ Do not return the whole sentence as a single chunk.`;
                     />
                   </Box>
                 )}
-                <Box w="100%">
+                <Box w="100%" position="relative" zIndex={1}>
                   <AlignedBubble
                     primaryLabel={languageNameFor(
                       latestAssistantMessage.lang || targetLang || "es"
@@ -2230,7 +2237,7 @@ Do not return the whole sentence as a single chunk.`;
                     replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
                   />
                 </Box>
-              </>
+              </Box>
             ) : (
               <Text opacity={0.75} textAlign="center" fontSize="sm" mt={2}>
                 {uiLang === "es"
