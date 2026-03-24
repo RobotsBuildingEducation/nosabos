@@ -1381,69 +1381,71 @@ const LandingPage = ({ onAuthenticated }) => {
               justifyItems: "center",
             }}
           >
-            {getPracticeLanguageOptions({ uiLang: lang }).map((langOption, i) => (
-              <motion.div
-                key={langOption.value}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "50px" }}
-                transition={{ duration: 0.2, delay: i * 0.02 }}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "20px 16px",
-                  borderRadius: "16px",
-                  background: theme.colors.bg.elevated,
-                  border: `1px solid ${theme.colors.border.subtle}`,
-                  width: "100%",
-                  minHeight: "120px",
-                }}
-              >
-                <div style={{ fontSize: "32px", lineHeight: 1 }}>
-                  {langOption.flag}
-                </div>
-                <span
+            {getPracticeLanguageOptions({ uiLang: lang }).map(
+              (langOption, i) => (
+                <motion.div
+                  key={langOption.value}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "50px" }}
+                  transition={{ duration: 0.2, delay: i * 0.02 }}
                   style={{
-                    fontFamily: theme.fonts.body,
-                    fontSize: "0.85rem",
-                    fontWeight: 500,
-                    color: theme.colors.text.primary,
-                    textAlign: "center",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "20px 16px",
+                    borderRadius: "16px",
+                    background: theme.colors.bg.elevated,
+                    border: `1px solid ${theme.colors.border.subtle}`,
+                    width: "100%",
+                    minHeight: "120px",
                   }}
                 >
-                  {langOption.value === "nah"
-                    ? "Huasteca Nahuatl"
-                    : LANGUAGE_FALLBACK_LABELS[langOption.value]}
-                </span>
-                <span
-                  style={{
-                    fontFamily: theme.fonts.mono,
-                    fontSize: "0.6rem",
-                    fontWeight: 600,
-                    letterSpacing: "0.1em",
-                    textTransform: "uppercase",
-                    visibility:
-                      langOption.alpha || langOption.beta
-                        ? "visible"
-                        : "hidden",
-                    color: langOption.alpha
-                      ? theme.colors.accent.warm
-                      : theme.colors.accent.tertiary,
-                    background: langOption.alpha
-                      ? "rgba(249, 115, 22, 0.12)"
-                      : "rgba(167, 139, 250, 0.12)",
-                    padding: "2px 8px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  {langOption.alpha
-                    ? copy.languages_alpha
-                    : copy.languages_beta}
-                </span>
-              </motion.div>
-            ))}
+                  <div style={{ fontSize: "32px", lineHeight: 1 }}>
+                    {langOption.flag}
+                  </div>
+                  <span
+                    style={{
+                      fontFamily: theme.fonts.body,
+                      fontSize: "0.85rem",
+                      fontWeight: 500,
+                      color: theme.colors.text.primary,
+                      textAlign: "center",
+                    }}
+                  >
+                    {langOption.value === "nah"
+                      ? "Huasteca Nahuatl"
+                      : LANGUAGE_FALLBACK_LABELS[langOption.value]}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: theme.fonts.mono,
+                      fontSize: "0.6rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      visibility:
+                        langOption.alpha || langOption.beta
+                          ? "visible"
+                          : "hidden",
+                      color: langOption.alpha
+                        ? theme.colors.accent.warm
+                        : theme.colors.accent.tertiary,
+                      background: langOption.alpha
+                        ? "rgba(249, 115, 22, 0.12)"
+                        : "rgba(167, 139, 250, 0.12)",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                    }}
+                  >
+                    {langOption.alpha
+                      ? copy.languages_alpha
+                      : copy.languages_beta}
+                  </span>
+                </motion.div>
+              ),
+            )}
           </div>
         </div>
       </section>
