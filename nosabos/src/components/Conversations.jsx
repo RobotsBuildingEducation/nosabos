@@ -1998,23 +1998,6 @@ Do not return the whole sentence as a single chunk.`;
       <Box minH="100vh" color="gray.100" position="relative" pb="120px">
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={3} align="center">
-          <VStack spacing={1} align="center">
-            <Box width="132px" opacity={0.95} flexShrink={0}>
-              <RobotBuddyPro
-                state={liveUiState}
-                loudness={liveUiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={132}
-              />
-            </Box>
-            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
-              <Badge colorScheme="purple" variant="subtle">
-                {uiStateLabel(liveUiState, uiLang)}
-              </Badge>
-            )}
-          </VStack>
-
           <Box
             bg="gray.800"
             p={2}
@@ -2152,6 +2135,23 @@ Do not return the whole sentence as a single chunk.`;
               </Box>
             </VStack>
           </Box>
+
+          <VStack spacing={1} align="center">
+            <Box width="132px" opacity={0.95} flexShrink={0}>
+              <RobotBuddyPro
+                state={liveUiState}
+                loudness={liveUiState === "listening" ? volume : 0}
+                mood={mood}
+                variant="abstract"
+                maxW={132}
+              />
+            </Box>
+            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+              <Badge colorScheme="purple" variant="subtle">
+                {uiStateLabel(liveUiState, uiLang)}
+              </Badge>
+            )}
+          </VStack>
         </VStack>
 
         {/* Centered live reply */}
