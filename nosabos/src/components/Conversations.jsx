@@ -74,6 +74,30 @@ const MOBILE_TEXT_SX = {
   overflowWrap: "break-word",
   hyphens: "auto",
 };
+const MATRIX_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+    "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+    "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.45,
+    mixBlendMode: "screen",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
 const isoNow = () => {
   try {
     return new Date().toISOString();
@@ -293,12 +317,13 @@ function AlignedBubble({
 
   return (
     <Box
-      bg="gray.700"
+      bg="transparent"
       p={3}
       rounded="2xl"
       border="1px solid rgba(255,255,255,0.06)"
       maxW="100%"
       borderBottomLeftRadius="0px"
+      sx={MATRIX_PANEL_SX}
     >
       <HStack justify="space-between" mb={1}>
         <Badge variant="subtle">{primaryLabel}</Badge>
@@ -851,17 +876,23 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
+  const [robotFadeIn, setRobotFadeIn] = useState(true);
 
   useEffect(() => {
     if (liveUiState === displayRobotState) return;
     setPreviousRobotState(displayRobotState);
     setDisplayRobotState(liveUiState);
     setIsRobotTransitioning(true);
+    setRobotFadeIn(false);
+    const raf = requestAnimationFrame(() => setRobotFadeIn(true));
     const timer = setTimeout(() => {
       setIsRobotTransitioning(false);
       setPreviousRobotState(null);
     }, 500);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(timer);
+    };
   }, [liveUiState, displayRobotState]);
 
   // Which language to show in secondary lane
@@ -2012,14 +2043,15 @@ Do not return the whole sentence as a single chunk.`;
     <>
       <Box minH="100vh" color="gray.100" position="relative" pb="120px">
         {/* Header area: robot separated from goal card */}
-        <VStack px={4} mt={0} spacing={3} align="center">
+        <VStack px={4} mt={0} spacing={1} align="center">
           <Box
-            bg="gray.800"
+            bg="transparent"
             p={2}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
+            sx={MATRIX_PANEL_SX}
           >
             <VStack spacing={3} align="center" width="100%">
               <HStack width="100%" justify="space-between" align="center">
@@ -2151,7 +2183,7 @@ Do not return the whole sentence as a single chunk.`;
             </VStack>
           </Box>
 
-          <VStack spacing={1} align="center">
+          <VStack spacing={0.5} align="center">
             <Box width="132px" opacity={0.95} flexShrink={0} position="relative">
               {previousRobotState && (
                 <Box
@@ -2170,7 +2202,7 @@ Do not return the whole sentence as a single chunk.`;
                 </Box>
               )}
               <Box
-                opacity={isRobotTransitioning ? 1 : 1}
+                opacity={isRobotTransitioning ? (robotFadeIn ? 1 : 0) : 1}
                 transition="opacity 0.5s ease"
               >
                 <RobotBuddyPro
@@ -2183,23 +2215,23 @@ Do not return the whole sentence as a single chunk.`;
               </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
-              <Badge colorScheme="purple" variant="subtle">
+              <Text fontSize="xs" color="whiteAlpha.800">
                 {uiStateLabel(liveUiState, uiLang)}
-              </Badge>
+              </Text>
             )}
           </VStack>
         </VStack>
 
         {/* Centered live reply */}
-        <Center px={4} mt={1} minH={{ base: "230px", md: "250px" }}>
-          <VStack w="100%" maxW="640px" spacing={3} justify="center">
+        <Box px={4} mt={0}>
+          <VStack w="100%" maxW="640px" mx="auto" spacing={2} align="stretch">
             {latestAssistantMessage ? (
               <Box
                 w="100%"
-                minH={{ base: "180px", md: "210px" }}
+                minH={{ base: "150px", md: "165px" }}
                 display="flex"
-                alignItems="center"
-                justifyContent="center"
+                alignItems="stretch"
+                justifyContent="flex-start"
                 position="relative"
               >
                 {fadingAssistantMessage && (
@@ -2282,7 +2314,7 @@ Do not return the whole sentence as a single chunk.`;
               </Text>
             )}
           </VStack>
-        </Center>
+        </Box>
 
         {/* Bottom dock - Connect button only */}
         <Center
