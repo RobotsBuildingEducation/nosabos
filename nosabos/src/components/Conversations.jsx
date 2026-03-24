@@ -336,7 +336,7 @@ function AlignedBubble({
       {showSecondary && !!secondaryText && (
         <Box
           as="p"
-          fontSize="sm"
+          fontSize="xs"
           mt={1}
           lineHeight="1.55"
           sx={MOBILE_TEXT_SX}
@@ -369,7 +369,7 @@ function AlignedBubble({
                     {p.lhs}
                   </Text>
                   <Text
-                    fontSize="xs"
+                    fontSize="2xs"
                     color="whiteAlpha.800"
                     mt={1}
                     lineHeight="1.35"
@@ -848,6 +848,21 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const ui = translations[uiLang];
   const liveUiState =
     status === "connected" && uiState !== "speaking" ? "listening" : uiState;
+  const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
+  const [previousRobotState, setPreviousRobotState] = useState(null);
+  const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
+
+  useEffect(() => {
+    if (liveUiState === displayRobotState) return;
+    setPreviousRobotState(displayRobotState);
+    setDisplayRobotState(liveUiState);
+    setIsRobotTransitioning(true);
+    const timer = setTimeout(() => {
+      setIsRobotTransitioning(false);
+      setPreviousRobotState(null);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [liveUiState, displayRobotState]);
 
   // Which language to show in secondary lane
   const secondaryPref =
@@ -2137,14 +2152,35 @@ Do not return the whole sentence as a single chunk.`;
           </Box>
 
           <VStack spacing={1} align="center">
-            <Box width="132px" opacity={0.95} flexShrink={0}>
-              <RobotBuddyPro
-                state={liveUiState}
-                loudness={liveUiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={132}
-              />
+            <Box width="132px" opacity={0.95} flexShrink={0} position="relative">
+              {previousRobotState && (
+                <Box
+                  position="absolute"
+                  inset={0}
+                  opacity={isRobotTransitioning ? 0 : 1}
+                  transition="opacity 0.5s ease"
+                >
+                  <RobotBuddyPro
+                    state={previousRobotState}
+                    loudness={previousRobotState === "listening" ? volume : 0}
+                    mood={mood}
+                    variant="abstract"
+                    maxW={132}
+                  />
+                </Box>
+              )}
+              <Box
+                opacity={isRobotTransitioning ? 1 : 1}
+                transition="opacity 0.5s ease"
+              >
+                <RobotBuddyPro
+                  state={displayRobotState}
+                  loudness={displayRobotState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={132}
+                />
+              </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
               <Badge colorScheme="purple" variant="subtle">
@@ -2155,7 +2191,7 @@ Do not return the whole sentence as a single chunk.`;
         </VStack>
 
         {/* Centered live reply */}
-        <Center px={4} mt={4} minH={{ base: "300px", md: "320px" }}>
+        <Center px={4} mt={1} minH={{ base: "230px", md: "250px" }}>
           <VStack w="100%" maxW="640px" spacing={3} justify="center">
             {latestAssistantMessage ? (
               <Box
@@ -2271,14 +2307,18 @@ Do not return the whole sentence as a single chunk.`;
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                  <FaStop /> &nbsp; {uiLang === "es" ? "Terminar" : "End"}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? ui.ra_btn_connecting
-                    : ui.ra_btn_connect}
+                    ? uiLang === "es"
+                      ? "Iniciando..."
+                      : "Starting..."
+                    : uiLang === "es"
+                      ? "Iniciar"
+                      : "Start"}
                 </>
               )}
             </Button>
