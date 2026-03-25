@@ -1912,7 +1912,7 @@ Return ONLY valid JSON:
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
-              mb={20}
+              mb={3}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
               {status === "connected" ? (
@@ -1955,7 +1955,11 @@ Return ONLY valid JSON:
         <audio ref={audioRef} />
       </Box>
 
-      <Modal isOpen={showChatLog} onClose={() => setShowChatLog(false)} size="xl">
+      <Modal
+        isOpen={showChatLog}
+        onClose={() => setShowChatLog(false)}
+        size="xl"
+      >
         <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
         <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
           <ModalHeader>{isEs ? "Historial" : "Chat log"}</ModalHeader>
@@ -1976,7 +1980,10 @@ Return ONLY valid JSON:
                 if (!text) return null;
                 return (
                   <RowLeft key={m.id}>
-                    <AssistantBubble label={isEs ? "Evaluador" : "Assessor"} text={text} />
+                    <AssistantBubble
+                      label={isEs ? "Evaluador" : "Assessor"}
+                      text={text}
+                    />
                   </RowLeft>
                 );
               })}

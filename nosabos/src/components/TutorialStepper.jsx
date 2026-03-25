@@ -154,12 +154,13 @@ export default function TutorialStepper({
                         as="button"
                         aria-label={`Tutorial step: ${config?.label?.[lang] || module}`}
                         size={{ base: "36px", md: "44px" }}
+                        border={`1px solid ${config?.color}`}
                         bg={
                           isCompleted
                             ? config?.color || "green.500"
                             : isCurrent
-                            ? "whiteAlpha.200"
-                            : "whiteAlpha.100"
+                              ? "whiteAlpha.200"
+                              : "whiteAlpha.100"
                         }
                         transition="all 0.3s ease"
                         transform={isCurrent ? "scale(1.1)" : "scale(1)"}
@@ -182,9 +183,13 @@ export default function TutorialStepper({
                             : "scale(1.02) translateY(4px)",
                           boxShadow: "0px 0px 0px rgba(15, 23, 42, 0.75)",
                         }}
+                        mb={1}
                       >
                         {isCompleted ? (
-                          <CheckIcon boxSize={{ base: 4, md: 5 }} color="white" />
+                          <CheckIcon
+                            boxSize={{ base: 4, md: 5 }}
+                            color="white"
+                          />
                         ) : (
                           <Icon
                             size={isMobile ? 16 : 20}
@@ -212,7 +217,9 @@ export default function TutorialStepper({
                           color={config?.color || "white"}
                           mb={1}
                         >
-                          {config?.label?.[supportLang] || config?.label?.en || module}
+                          {config?.label?.[supportLang] ||
+                            config?.label?.en ||
+                            module}
                         </Text>
                         <Text fontSize="sm" color="gray.200" lineHeight="1.4">
                           {getModuleDescription(module) ||
@@ -242,7 +249,6 @@ export default function TutorialStepper({
           })}
         </HStack>
       </Box>
-
     </VStack>
   );
 }
