@@ -338,20 +338,6 @@ function AlignedBubble({
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
     >
-      <HStack justify="flex-end" mb={1}>
-        {canTranslate && (
-          <IconButton
-            size="xs"
-            variant="ghost"
-            colorScheme="cyan"
-            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
-            onClick={onTranslate}
-            isDisabled={isTranslating}
-            aria-label="Translate message"
-          />
-        )}
-      </HStack>
-
       <HStack align="flex-start" spacing={2}>
         {canReplay && (
           <IconButton
@@ -420,6 +406,20 @@ function AlignedBubble({
             );
           })}
         </Wrap>
+      )}
+
+      {canTranslate && (
+        <HStack justify="flex-end" mt={2}>
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
+            onClick={onTranslate}
+            isDisabled={isTranslating}
+            aria-label="Translate message"
+          />
+        </HStack>
       )}
     </Box>
   );
@@ -886,7 +886,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
   const liveUiState =
-    status === "connected" && uiState !== "speaking" ? "listening" : uiState;
+    status === "connected" &&
+    uiState !== "speaking" &&
+    uiState !== "thinking"
+      ? "listening"
+      : uiState;
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
