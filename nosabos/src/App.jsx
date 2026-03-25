@@ -5952,9 +5952,13 @@ function BottomActionBar({
                           key={mode.id}
                           onClick={() => {
                             playSound?.(modeSwitcherSound);
-                            // If clicking path when already in path mode, just scroll
-                            if (mode.id === "path" && isSelected) {
-                              onScrollToLatest?.();
+                            // If clicking the already-selected mode, navigate back to skill tree (if in a lesson) or scroll
+                            if (isSelected) {
+                              if (viewMode !== "skillTree") {
+                                onNavigateToSkillTree?.();
+                              } else if (mode.id === "path") {
+                                onScrollToLatest?.();
+                              }
                             } else {
                               onPathModeChange?.(mode.id);
                             }
