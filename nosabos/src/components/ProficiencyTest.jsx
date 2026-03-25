@@ -205,6 +205,13 @@ function scoreColor(score) {
   return "red";
 }
 
+function uiStateLabel(uiState, isEs) {
+  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
+  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
+  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+  return "";
+}
+
 /* ---- helpers ---- */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -1717,28 +1724,21 @@ Return ONLY valid JSON:
             position="relative"
             sx={MATRIX_PANEL_SX}
           >
-            <Box
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              leftIcon={<FaRegCommentDots size={12} />}
+              onClick={() => setShowChatLog(true)}
+              isDisabled={!timeline.length}
               position="absolute"
-              top={8}
-              left={3}
-              width="72px"
-              opacity={0.95}
+              top={2}
+              right={2}
             >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
+              {isEs ? "Historial" : "Chat log"}
+            </Button>
 
-            <VStack
-              align="flex-start"
-              spacing={2}
-              width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-            >
+            <VStack align="center" spacing={2} width="100%">
               <Text
                 fontSize="lg"
                 fontWeight="bold"
@@ -1747,6 +1747,22 @@ Return ONLY valid JSON:
               >
                 {isEs ? "Prueba de Nivel" : "Proficiency Test"}
               </Text>
+              <VStack spacing={0.5}>
+                <Box width="112px" opacity={0.95}>
+                  <RobotBuddyPro
+                    state={uiState}
+                    loudness={0}
+                    mood={mood}
+                    variant="abstract"
+                    maxW={112}
+                  />
+                </Box>
+                {uiStateLabel(uiState, isEs) && (
+                  <Text fontSize="xs" color="whiteAlpha.800">
+                    {uiStateLabel(uiState, isEs)}
+                  </Text>
+                )}
+              </VStack>
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
@@ -1787,16 +1803,6 @@ Return ONLY valid JSON:
                   onClick={() => setShowRubric(true)}
                 >
                   {isEs ? "Rúbrica" : "Grading rubric"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  colorScheme="teal"
-                  leftIcon={<FaRegCommentDots size={12} />}
-                  onClick={() => setShowChatLog(true)}
-                  isDisabled={!timeline.length}
-                >
-                  {isEs ? "Historial" : "Chat log"}
                 </Button>
               </HStack>
             </VStack>
