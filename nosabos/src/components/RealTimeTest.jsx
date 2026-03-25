@@ -24,6 +24,7 @@ import {
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaDice, FaRegCommentDots } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
+import { MdOutlineTranslate } from "react-icons/md";
 
 import {
   doc,
@@ -329,51 +330,32 @@ function AlignedBubble({
 
   return (
     <Box
-      bg="gray.700"
+      bg="transparent"
       p={3}
       rounded="2xl"
       border="1px solid rgba(255,255,255,0.06)"
+      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
       maxW="100%"
       borderBottomLeftRadius="0px"
+      sx={MATRIX_PANEL_SX}
     >
-      <HStack justify="flex-end" mb={1}>
-        <HStack>
-          {canReplay && (
-            <IconButton
-              size="xs"
-              variant="ghost"
-              colorScheme="cyan"
-              icon={
-                isReplaying ? (
-                  <Spinner size="xs" />
-                ) : (
-                  <RiVolumeUpLine size={14} />
-                )
-              }
-              onClick={onReplay}
-              isDisabled={isReplaying}
-              aria-label={replayLabel || "Replay"}
-            />
-          )}
-          {showSecondary && isTranslating && (
-            <Spinner size="xs" thickness="2px" speed="0.5s" />
-          )}
-          {canTranslate && (
-            <Button
-              size="xs"
-              variant="ghost"
-              colorScheme="cyan"
-              onClick={onTranslate}
-            >
-              Translate
-            </Button>
-          )}
-        </HStack>
+      <HStack align="flex-start" spacing={2}>
+        {canReplay && (
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
+            onClick={onReplay}
+            isDisabled={isReplaying}
+            aria-label={replayLabel || "Replay"}
+            mt="2px"
+          />
+        )}
+        <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX} flex="1">
+          {primaryNodes}
+        </Box>
       </HStack>
-
-      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
-        {primaryNodes}
-      </Box>
 
       {showSecondary && !!secondaryText && (
         <Box
@@ -423,6 +405,20 @@ function AlignedBubble({
             );
           })}
         </Wrap>
+      )}
+
+      {canTranslate && (
+        <HStack justify="flex-end" mt={2}>
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
+            onClick={onTranslate}
+            isDisabled={isTranslating}
+            aria-label="Translate message"
+          />
+        </HStack>
       )}
     </Box>
   );
@@ -2897,47 +2893,24 @@ Do not return the whole sentence as a single chunk.`;
 
         {/* 🎯 Active goal display */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
-          <Box
-            sx={MATRIX_PANEL_SX}
-            p={3}
-            rounded="2xl"
-            border="1px solid rgba(255,255,255,0.16)"
-            width="100%"
-            maxWidth="520px"
-            position="relative"
-            overflow="hidden"
-          >
+          <VStack spacing={2} w="100%" maxW="520px" align="center">
             <Box
-              position="absolute"
-              top={3}
-              left={3}
-              width="72px"
-              opacity={0.95}
-            >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={uiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
-
-            <VStack
-              align="flex-start"
-              spacing={2}
+              sx={{ ...MATRIX_PANEL_SX, overflow: "visible" }}
+              p={3}
+              rounded="2xl"
+              border="1px solid rgba(255,255,255,0.16)"
               width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-              pt={{ base: 1, sm: 0 }}
+              maxWidth="520px"
+              position="relative"
             >
+              <VStack
+                align="flex-start"
+                spacing={2}
+                width="100%"
+              >
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
-                    {!!liveStateLabel && (
-                      <Badge colorScheme="purple" variant="subtle" fontSize="10px">
-                        {liveStateLabel}
-                      </Badge>
-                    )}
                     <IconButton
                       icon={
                         isGeneratingGoal ? (
@@ -2971,14 +2944,18 @@ Do not return the whole sentence as a single chunk.`;
                         : goalTitleForUI(currentGoal) || "—"}
                     </Text>
                   </HStack>
-                  <IconButton
-                    icon={<FaRegCommentDots />}
+                  <Button
+                    leftIcon={<FaRegCommentDots size={12} />}
                     size="xs"
                     variant="ghost"
                     colorScheme="cyan"
-                    aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                    opacity={0.8}
+                    _hover={{ opacity: 1 }}
                     onClick={() => setShowChatLog(true)}
-                  />
+                    isDisabled={!timeline.length}
+                  >
+                    {uiLang === "es" ? "Historial" : "Chat log"}
+                  </Button>
                 </HStack>
                 {!!currentGoal && !isGeneratingGoal && (
                   <Text fontSize="xs" opacity={0.8}>
@@ -3004,8 +2981,26 @@ Do not return the whole sentence as a single chunk.`;
                   <WaveBar value={progressPct} />
                 </Box>
               </Box>
+              </VStack>
+            </Box>
+
+            <VStack spacing={0.5} align="center">
+              <Box width="132px" opacity={0.95} flexShrink={0}>
+                <RobotBuddyPro
+                  state={uiState}
+                  loudness={uiState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={132}
+                />
+              </Box>
+              {!!liveStateLabel && (
+                <Text fontSize="xs" color="whiteAlpha.800">
+                  {liveStateLabel}
+                </Text>
+              )}
             </VStack>
-          </Box>
+          </VStack>
         </Box>
 
         {/* Timeline — user messages only (assistant is surfaced in live panel) */}
