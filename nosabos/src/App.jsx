@@ -65,6 +65,7 @@ import {
 import {
   SettingsIcon,
   ChevronDownIcon,
+  ChevronUpIcon,
   CheckCircleIcon,
   ArrowBackIcon,
 } from "@chakra-ui/icons";
@@ -5770,11 +5771,113 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
+  // Auto-minimize when entering a lesson
+  const [isMinimized, setIsMinimized] = useState(viewMode === "lesson");
+  const prevViewMode = useRef(viewMode);
+
+  useEffect(() => {
+    if (viewMode === "lesson" && prevViewMode.current !== "lesson") {
+      setIsMinimized(true);
+    } else if (viewMode !== "lesson") {
+      setIsMinimized(false);
+    }
+    prevViewMode.current = viewMode;
+  }, [viewMode]);
+
   const handleActionClick = (action) => {
     if (!action) return;
     playSound?.(selectSound);
     action();
   };
+
+  // Minimized bar highlight when a note is saved
+  const minimizedHighlight = notesIsDone
+    ? "0 0 0 2px rgba(74,222,128,0.5), 0 0 16px rgba(74,222,128,0.7)"
+    : notesIsLoading
+      ? "0 0 0 2px rgba(34,211,238,0.5), 0 0 16px rgba(34,211,238,0.7)"
+      : undefined;
+  const minimizedBorderColor = notesIsDone
+    ? "green.400"
+    : notesIsLoading
+      ? "cyan.400"
+      : "whiteAlpha.200";
+  const minimizedAnimation = notesIsLoading
+    ? "notesPulse 1.5s ease-in-out infinite"
+    : notesIsDone
+      ? "notesDone 1.5s ease-out"
+      : undefined;
+
+  // Render minimized pill when in lesson and minimized
+  if (isMinimized && viewMode === "lesson") {
+    return (
+      <Box
+        position="fixed"
+        bottom={0}
+        left={0}
+        right={0}
+        zIndex={80}
+        width="100%"
+        maxW="480px"
+        margin="0 auto"
+        mb={3}
+        paddingLeft={2}
+        paddingRight={2}
+        display="flex"
+        justifyContent="center"
+      >
+        <Box
+          as="button"
+          onClick={() => {
+            playSound?.(selectSound);
+            setIsMinimized(false);
+          }}
+          borderRadius="24px"
+          bg="rgba(11, 18, 32, 0.6)"
+          backdropFilter="blur(8px)"
+          px={6}
+          py={2}
+          cursor="pointer"
+          display="flex"
+          alignItems="center"
+          gap={2}
+          borderWidth={notesIsDone || notesIsLoading ? "2px" : "1px"}
+          borderColor={minimizedBorderColor}
+          boxShadow={minimizedHighlight || "0 2px 8px rgba(0,0,0,0.3)"}
+          transition="all 0.3s ease"
+          animation={minimizedAnimation}
+          _hover={{ bg: "rgba(11, 18, 32, 0.8)" }}
+          sx={{
+            "@keyframes notesPulse": {
+              "0%": {
+                boxShadow:
+                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+              },
+              "50%": {
+                boxShadow:
+                  "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
+              },
+              "100%": {
+                boxShadow:
+                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+              },
+            },
+            "@keyframes notesDone": {
+              "0%": {
+                boxShadow:
+                  "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+              },
+              "100%": { boxShadow: "0 2px 8px rgba(0,0,0,0.3)", borderColor: "whiteAlpha.200" },
+            },
+          }}
+        >
+          <ChevronUpIcon boxSize={4} color="gray.300" />
+          <Box as="span" fontSize="xs" color="gray.400" fontWeight="medium">
+            Menu
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -5790,6 +5893,37 @@ function BottomActionBar({
       paddingLeft={2}
       paddingRight={2}
     >
+      {/* Minimize handle when in lesson */}
+      {viewMode === "lesson" && (
+        <Flex
+          justify="center"
+          mb={1}
+        >
+          <Box
+            as="button"
+            onClick={() => {
+              playSound?.(selectSound);
+              setIsMinimized(true);
+            }}
+            bg="transparent"
+            border="none"
+            cursor="pointer"
+            display="flex"
+            alignItems="center"
+            gap={1}
+            px={3}
+            py={1}
+            borderRadius="12px"
+            _hover={{ bg: "whiteAlpha.100" }}
+            transition="background 0.2s"
+          >
+            <ChevronDownIcon boxSize={4} color="gray.500" />
+            <Box as="span" fontSize="xs" color="gray.500">
+              Minimize
+            </Box>
+          </Box>
+        </Flex>
+      )}
       <Box borderRadius="24px" overflow="hidden">
         <GlassContainer
           borderRadius="24px"
