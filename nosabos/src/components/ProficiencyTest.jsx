@@ -1912,7 +1912,7 @@ Return ONLY valid JSON:
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
-              mb={1}
+              mb={20}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
               {status === "connected" ? (
