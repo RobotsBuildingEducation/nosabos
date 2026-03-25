@@ -21,7 +21,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
+import { FaStop, FaCheckCircle, FaDice, FaRegCommentDots } from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
@@ -78,10 +78,10 @@ const MATRIX_PANEL_SX = {
   position: "relative",
   overflow: "hidden",
   background:
-    "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
-    "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
-    "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
-    "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+    "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.1) 0%, transparent 40%), " +
+    "radial-gradient(circle at 50% 100%, rgba(15,23,42,0.52) 0%, transparent 62%), " +
+    "linear-gradient(180deg, rgba(2,6,14,0.98) 0%, rgba(1,3,10,0.99) 100%)",
   "&::after": {
     content: '""',
     position: "absolute",
@@ -321,6 +321,7 @@ function AlignedBubble({
       p={3}
       rounded="2xl"
       border="1px solid rgba(255,255,255,0.06)"
+      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
       maxW="100%"
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
@@ -2068,6 +2069,7 @@ Do not return the whole sentence as a single chunk.`;
                   {uiLang === "es" ? "Configuración" : "Conversation settings"}
                 </Button>
                 <Button
+                  leftIcon={<FaRegCommentDots size={12} />}
                   size="xs"
                   variant="ghost"
                   colorScheme="cyan"
@@ -2155,11 +2157,11 @@ Do not return the whole sentence as a single chunk.`;
                     px={3}
                     py={1.5}
                     borderRadius="md"
-                    bg={currentGoal.completed ? "green.900" : "orange.900"}
-                    color={currentGoal.completed ? "green.200" : "orange.200"}
+                    bg={currentGoal.completed ? "green.900" : "purple.900"}
+                    color={currentGoal.completed ? "green.200" : "purple.200"}
                     border="1px solid"
                     borderColor={
-                      currentGoal.completed ? "green.600" : "orange.600"
+                      currentGoal.completed ? "green.600" : "purple.600"
                     }
                     maxW="90%"
                   >
