@@ -14,9 +14,15 @@ import {
   useToast,
   Flex,
   Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaDice } from "react-icons/fa";
+import { FaStop, FaDice, FaRegCommentDots } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import {
@@ -71,6 +77,37 @@ const MOBILE_TEXT_SX = {
   overflowWrap: "break-word",
   hyphens: "auto",
 };
+const MATRIX_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.1) 0%, transparent 40%), " +
+    "radial-gradient(circle at 50% 100%, rgba(15,23,42,0.52) 0%, transparent 62%), " +
+    "linear-gradient(180deg, rgba(2,6,14,0.98) 0%, rgba(1,3,10,0.99) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.45,
+    mixBlendMode: "screen",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+
+function uiStateLabel(uiState, isEs) {
+  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
+  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
+  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+  return "";
+}
 const isoNow = () => {
   try {
     return new Date().toISOString();
@@ -262,6 +299,8 @@ function AlignedBubble({
   onReplay,
   isReplaying,
   replayLabel,
+  canTranslate,
+  onTranslate,
 }) {
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
@@ -318,6 +357,16 @@ function AlignedBubble({
           )}
           {showSecondary && isTranslating && (
             <Spinner size="xs" thickness="2px" speed="0.5s" />
+          )}
+          {canTranslate && (
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              onClick={onTranslate}
+            >
+              Translate
+            </Button>
           )}
         </HStack>
       </HStack>
@@ -539,6 +588,8 @@ export default function RealTimeTest({
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(2000);
   const [replayingId, setReplayingId] = useState(null);
+  const [showChatLog, setShowChatLog] = useState(false);
+  const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
@@ -921,7 +972,6 @@ export default function RealTimeTest({
 
   const DEBOUNCE_MS = 350;
   const respToMsg = useRef(new Map());
-  const translateTimers = useRef(new Map());
   const sessionUpdateTimer = useRef(null);
   const profileSaveTimer = useRef(null);
   const lastUserSaveRef = useRef({ text: "", ts: 0 });
@@ -2103,8 +2153,6 @@ Return ONLY JSON:
     }, 500);
   }
   function clearAllDebouncers() {
-    for (const t of translateTimers.current.values()) clearTimeout(t);
-    translateTimers.current.clear();
     clearTimeout(sessionUpdateTimer.current);
     clearTimeout(profileSaveTimer.current);
   }
@@ -2501,7 +2549,6 @@ Return ONLY JSON:
         textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
         textStream: "",
       }));
-      scheduleDebouncedTranslate(mid);
       return;
     }
 
@@ -2529,10 +2576,7 @@ Return ONLY JSON:
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
-        try {
-          await translateMessage(mid, "completed");
-          logEvent(analytics, "handleTurn", { action: "turn_completed" });
-        } catch {}
+        logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
       setUiState("idle");
@@ -2582,15 +2626,6 @@ Return ONLY JSON:
   /* ---------------------------
      Translation + PERSIST
   --------------------------- */
-  function scheduleDebouncedTranslate(id) {
-    const prev = translateTimers.current.get(id);
-    if (prev) clearTimeout(prev);
-    const timer = setTimeout(() => {
-      translateMessage(id).catch(() => {});
-    }, 300);
-    translateTimers.current.set(id, timer);
-  }
-
   async function translateMessage(id) {
     const m = messagesRef.current.find((x) => x.id === id);
     if (!m) return;
@@ -2801,6 +2836,31 @@ Do not return the whole sentence as a single chunk.`;
     return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
   }, [messages, history]);
 
+  const latestAssistantMessage = useMemo(
+    () => timeline.find((m) => m.role === "assistant") || null,
+    [timeline],
+  );
+
+  const liveStateLabel = uiStateLabel(uiState, uiLang === "es");
+
+  async function handleManualTranslate(id) {
+    if (!id || translatingMessageId === id) return;
+    try {
+      setTranslatingMessageId(id);
+      await translateMessage(id);
+    } catch (e) {
+      toast({
+        title: uiLang === "es" ? "Error de traducción" : "Translation failed",
+        description: e?.message || String(e),
+        status: "error",
+        duration: 2200,
+        isClosable: true,
+      });
+    } finally {
+      setTranslatingMessageId(null);
+    }
+  }
+
   return (
     <>
       <Box
@@ -2838,12 +2898,12 @@ Do not return the whole sentence as a single chunk.`;
         {/* 🎯 Active goal display */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
           <Box
-            bg="gray.800"
+            sx={MATRIX_PANEL_SX}
             p={3}
             rounded="2xl"
-            border="1px solid rgba(255,255,255,0.06)"
+            border="1px solid rgba(255,255,255,0.16)"
             width="100%"
-            maxWidth="400px"
+            maxWidth="520px"
             position="relative"
             overflow="hidden"
           >
@@ -2873,6 +2933,11 @@ Do not return the whole sentence as a single chunk.`;
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
+                    {!!liveStateLabel && (
+                      <Badge colorScheme="purple" variant="subtle" fontSize="10px">
+                        {liveStateLabel}
+                      </Badge>
+                    )}
                     <IconButton
                       icon={
                         isGeneratingGoal ? (
@@ -2906,6 +2971,14 @@ Do not return the whole sentence as a single chunk.`;
                         : goalTitleForUI(currentGoal) || "—"}
                     </Text>
                   </HStack>
+                  <IconButton
+                    icon={<FaRegCommentDots />}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="cyan"
+                    aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                    onClick={() => setShowChatLog(true)}
+                  />
                 </HStack>
                 {!!currentGoal && !isGeneratingGoal && (
                   <Text fontSize="xs" opacity={0.8}>
@@ -2935,59 +3008,63 @@ Do not return the whole sentence as a single chunk.`;
           </Box>
         </Box>
 
-        {/* Timeline — newest first */}
+        {/* Timeline — user messages only (assistant is surfaced in live panel) */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
           {timeline.map((m) => {
             const isUser = m.role === "user";
-            if (isUser) {
-              return (
-                <RowRight key={m.id}>
-                  <UserBubble label={ui.ra_label_you} text={m.textFinal} />
-                </RowRight>
-              );
-            }
-
-            const primaryText = (m.textFinal || "") + (m.textStream || "");
-            const lang = m.lang || targetLang || "es";
-            const primaryLabel = languageNameFor(lang);
-
-            const secondaryText =
-              m.source === "hist"
-                ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
-                : m.translation || "";
-
-            const secondaryLabel =
-              lang === "es"
-                ? translations[uiLang].language_en
-                : translations[uiLang][`language_${secondaryPref}`];
-
-            const isTranslating =
-              !secondaryText && !!m.textStream && showTranslations;
-
-            const canReplay =
-              !!m.hasAudio || audioCacheIndexRef.current.has(m.id);
-            const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
-
-            if (!primaryText.trim()) return null;
+            if (!isUser) return null;
             return (
-              <RowLeft key={m.id}>
-                <AlignedBubble
-                  primaryLabel={primaryLabel}
-                  secondaryLabel={secondaryLabel}
-                  primaryText={primaryText}
-                  secondaryText={showTranslations ? secondaryText : ""}
-                  pairs={m.pairs || []}
-                  showSecondary={showTranslations}
-                  isTranslating={isTranslating}
-                  canReplay={canReplay}
-                  onReplay={() => playSavedClip(m.id)}
-                  isReplaying={replayingId === m.id}
-                  replayLabel={replayLabel}
-                />
-              </RowLeft>
+              <RowRight key={m.id}>
+                <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+              </RowRight>
             );
           })}
         </VStack>
+
+        {latestAssistantMessage ? (
+          <VStack align="stretch" spacing={3} px={4} mt={3}>
+            <Center>
+              <Box w="100%" maxW="720px">
+                <AlignedBubble
+                  primaryLabel={languageNameFor(
+                    latestAssistantMessage.lang || targetLang || "es",
+                  )}
+                  secondaryLabel={
+                    (latestAssistantMessage.lang || targetLang || "es") === "es"
+                      ? translations[uiLang].language_en
+                      : translations[uiLang][`language_${secondaryPref}`]
+                  }
+                  primaryText={`${latestAssistantMessage.textFinal || ""}${
+                    latestAssistantMessage.textStream || ""
+                  }`}
+                  secondaryText={
+                    showTranslations
+                      ? latestAssistantMessage.source === "hist"
+                        ? (secondaryPref === "es"
+                            ? latestAssistantMessage.trans_es
+                            : latestAssistantMessage.trans_en) || ""
+                        : latestAssistantMessage.translation || ""
+                      : ""
+                  }
+                  pairs={latestAssistantMessage.pairs || []}
+                  showSecondary={showTranslations}
+                  isTranslating={translatingMessageId === latestAssistantMessage.id}
+                  canReplay={
+                    !!latestAssistantMessage.hasAudio ||
+                    audioCacheIndexRef.current.has(latestAssistantMessage.id)
+                  }
+                  onReplay={() => playSavedClip(latestAssistantMessage.id)}
+                  isReplaying={replayingId === latestAssistantMessage.id}
+                  replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                  canTranslate={showTranslations}
+                  onTranslate={() =>
+                    handleManualTranslate(latestAssistantMessage.id)
+                  }
+                />
+              </Box>
+            </Center>
+          </VStack>
+        ) : null}
 
         {/* Bottom dock */}
         <Center
@@ -3055,6 +3132,57 @@ Do not return the whole sentence as a single chunk.`;
             </Button>
           </HStack>
         </Center>
+
+        <Modal isOpen={showChatLog} onClose={() => setShowChatLog(false)} size="xl">
+          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+          <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
+            <ModalHeader>{uiLang === "es" ? "Historial" : "Chat log"}</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <VStack align="stretch" spacing={3}>
+                {timeline.map((m) => {
+                  if (m.role === "user") {
+                    return (
+                      <RowRight key={m.id}>
+                        <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                      </RowRight>
+                    );
+                  }
+                  const secondaryText =
+                    m.source === "hist"
+                      ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
+                      : m.translation || "";
+                  const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
+                  return (
+                    <RowLeft key={m.id}>
+                      <AlignedBubble
+                        primaryLabel={languageNameFor(m.lang || targetLang || "es")}
+                        secondaryLabel={
+                          (m.lang || targetLang || "es") === "es"
+                            ? translations[uiLang].language_en
+                            : translations[uiLang][`language_${secondaryPref}`]
+                        }
+                        primaryText={`${m.textFinal || ""}${m.textStream || ""}`}
+                        secondaryText={showTranslations ? secondaryText : ""}
+                        pairs={m.pairs || []}
+                        showSecondary={showTranslations}
+                        isTranslating={translatingMessageId === m.id}
+                        canReplay={
+                          !!m.hasAudio || audioCacheIndexRef.current.has(m.id)
+                        }
+                        onReplay={() => playSavedClip(m.id)}
+                        isReplaying={replayingId === m.id}
+                        replayLabel={replayLabel}
+                        canTranslate={showTranslations}
+                        onTranslate={() => handleManualTranslate(m.id)}
+                      />
+                    </RowLeft>
+                  );
+                })}
+              </VStack>
+            </ModalBody>
+          </ModalContent>
+        </Modal>
 
         {err && (
           <Box px={4} pt={2}>
