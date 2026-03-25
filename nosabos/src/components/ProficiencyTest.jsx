@@ -1701,10 +1701,31 @@ Return ONLY valid JSON:
     <>
       <Box
         minH="100vh"
-        bg="gray.900"
+        bg="#0b1020"
         color="gray.100"
         position="relative"
         pb="140px"
+        sx={{
+          background:
+            "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.2) 0%, transparent 42%), " +
+            "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.14) 0%, transparent 40%), " +
+            "linear-gradient(180deg, rgba(9,13,30,0.98) 0%, rgba(4,8,22,0.99) 100%)",
+          "&::before": {
+            content: '\"\"',
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: 0.45,
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          },
+          "& > *": {
+            position: "relative",
+            zIndex: 1,
+          },
+        }}
       >
         {/* Header */}
         <Box px={4} py={4} position="relative">
