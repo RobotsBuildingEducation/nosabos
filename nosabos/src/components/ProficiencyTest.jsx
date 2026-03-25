@@ -20,6 +20,8 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
+  ModalCloseButton,
+  ModalHeader,
   Text,
   VStack,
   Badge,
@@ -30,7 +32,7 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop } from "react-icons/fa";
+import { FaRegCommentDots, FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
@@ -57,6 +59,30 @@ const REALTIME_URL = `${
 )}`;
 
 const MAX_EXCHANGES = 10;
+const MATRIX_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.1) 0%, transparent 40%), " +
+    "radial-gradient(circle at 50% 100%, rgba(15,23,42,0.52) 0%, transparent 62%), " +
+    "linear-gradient(180deg, rgba(2,6,14,0.98) 0%, rgba(1,3,10,0.99) 100%)",
+  "&::after": {
+    content: '\"\"',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.45,
+    mixBlendMode: "screen",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
 
 const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -177,6 +203,13 @@ function scoreColor(score) {
   if (score >= 6) return "teal";
   if (score >= 4) return "yellow";
   return "red";
+}
+
+function uiStateLabel(uiState, isEs) {
+  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
+  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
+  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+  return "";
 }
 
 /* ---- helpers ---- */
@@ -457,12 +490,14 @@ function AssistantBubble({ label, text }) {
   if (!text) return null;
   return (
     <Box
-      bg="gray.700"
+      bg="transparent"
       p={3}
       rounded="2xl"
       border="1px solid rgba(255,255,255,0.06)"
+      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
       maxW="100%"
       borderBottomLeftRadius="0px"
+      sx={MATRIX_PANEL_SX}
     >
       <Text fontSize="2xs" opacity={0.6} mb={1}>
         {label}
@@ -580,6 +615,7 @@ export default function ProficiencyTest() {
   const [err, setErr] = useState("");
   const [uiState, setUiState] = useState("idle");
   const [mood, setMood] = useState("neutral");
+  const [showChatLog, setShowChatLog] = useState(false);
 
   // Messages
   const messagesRef = useRef([]);
@@ -832,6 +868,16 @@ export default function ProficiencyTest() {
 
     // --- Ported from RealTimeTest / Conversations (proven pattern) ---
 
+    if (
+      t === "response.output_audio.done" ||
+      t === "output_audio.done" ||
+      t === "output_audio_buffer.stopped"
+    ) {
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      return;
+    }
+
     if (t === "response.created") {
       isIdleRef.current = false;
       const mid = uid();
@@ -966,8 +1012,6 @@ export default function ProficiencyTest() {
         updateMessage(mid, (m) => ({ ...m, done: true }));
         respToMsg.current.delete(rid);
       }
-      setUiState("idle");
-      setMood("neutral");
       return;
     }
 
@@ -1475,7 +1519,7 @@ Return ONLY valid JSON:
 
       setStatus("connected");
       aliveRef.current = true;
-      setUiState("idle");
+      setUiState("listening");
     } catch (e) {
       setStatus("disconnected");
       setUiState("idle");
@@ -1587,6 +1631,17 @@ Return ONLY valid JSON:
     }
     return alternated;
   }, [messages]);
+  const latestAssistantMessage = useMemo(
+    () =>
+      timeline.find(
+        (m) =>
+          m.role === "assistant" &&
+          `${m.textFinal || ""}${m.textStream || ""}`.trim(),
+      ) || null,
+    [timeline],
+  );
+  const liveUiState =
+    status === "connected" && uiState === "idle" ? "listening" : uiState;
 
   /* ---- Render ---- */
   const levelInfo = assessedLevel ? CEFR_LEVEL_INFO[assessedLevel] : null;
@@ -1646,10 +1701,31 @@ Return ONLY valid JSON:
     <>
       <Box
         minH="100vh"
-        bg="gray.900"
+        bg="#0b1020"
         color="gray.100"
         position="relative"
         pb="140px"
+        sx={{
+          background:
+            "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.2) 0%, transparent 42%), " +
+            "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.14) 0%, transparent 40%), " +
+            "linear-gradient(180deg, rgba(9,13,30,0.98) 0%, rgba(4,8,22,0.99) 100%)",
+          "&::before": {
+            content: '\"\"',
+            position: "absolute",
+            inset: 0,
+            backgroundImage:
+              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: 0.45,
+            mixBlendMode: "screen",
+            pointerEvents: "none",
+          },
+          "& > *": {
+            position: "relative",
+            zIndex: 1,
+          },
+        }}
       >
         {/* Header */}
         <Box px={4} py={4} position="relative">
@@ -1670,37 +1746,30 @@ Return ONLY valid JSON:
         {/* Progress + Robot */}
         <Box px={4} mt={4} display="flex" justifyContent="center">
           <Box
-            bg="gray.800"
+            bg="transparent"
             p={3}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
             position="relative"
-            overflow="hidden"
+            sx={MATRIX_PANEL_SX}
           >
-            <Box
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              leftIcon={<FaRegCommentDots size={12} />}
+              onClick={() => setShowChatLog(true)}
+              isDisabled={!timeline.length}
               position="absolute"
-              top={8}
-              left={3}
-              width="72px"
-              opacity={0.95}
+              top={2}
+              right={2}
             >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
+              {isEs ? "Historial" : "Chat log"}
+            </Button>
 
-            <VStack
-              align="flex-start"
-              spacing={2}
-              width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-            >
+            <VStack align="center" spacing={2} width="100%">
               <Text
                 fontSize="lg"
                 fontWeight="bold"
@@ -1755,7 +1824,24 @@ Return ONLY valid JSON:
           </Box>
         </Box>
 
-        {/* Timeline — newest first */}
+        <VStack spacing={0.5} align="center" mt={2}>
+          <Box width="132px" opacity={0.95}>
+            <RobotBuddyPro
+              state={liveUiState}
+              loudness={0}
+              mood={mood}
+              variant="abstract"
+              maxW={132}
+            />
+          </Box>
+          {uiStateLabel(liveUiState, isEs) && (
+            <Text fontSize="xs" color="whiteAlpha.800">
+              {uiStateLabel(liveUiState, isEs)}
+            </Text>
+          )}
+        </VStack>
+
+        {/* Live assistant panel */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
           {isEvaluating && (
             <VStack spacing={0} py={6}>
@@ -1793,28 +1879,18 @@ Return ONLY valid JSON:
               </Box>
             </VStack>
           )}
-          {timeline.map((m) => {
-            const isUser = m.role === "user";
-            if (isUser) {
-              const userText = m.pendingTranscript ? "…" : m.textFinal;
-              return (
-                <RowRight key={m.id}>
-                  <UserBubble label={isEs ? "Tú" : "You"} text={userText} />
-                </RowRight>
-              );
-            }
-
-            const text = (m.textFinal || "") + (m.textStream || "");
-            if (!text.trim()) return null;
-            return (
-              <RowLeft key={m.id}>
+          {latestAssistantMessage && (
+            <Center>
+              <Box w="100%" maxW="680px">
                 <AssistantBubble
                   label={isEs ? "Evaluador" : "Assessor"}
-                  text={text}
+                  text={`${latestAssistantMessage.textFinal || ""}${
+                    latestAssistantMessage.textStream || ""
+                  }`}
                 />
-              </RowLeft>
-            );
-          })}
+              </Box>
+            </Center>
+          )}
         </VStack>
 
         {/* Bottom dock */}
@@ -1836,7 +1912,7 @@ Return ONLY valid JSON:
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
-              mb={1}
+              mb={3}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
               {status === "connected" ? (
@@ -1878,6 +1954,43 @@ Return ONLY valid JSON:
         {/* Remote live audio sink */}
         <audio ref={audioRef} />
       </Box>
+
+      <Modal
+        isOpen={showChatLog}
+        onClose={() => setShowChatLog(false)}
+        size="xl"
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
+          <ModalHeader>{isEs ? "Historial" : "Chat log"}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <VStack align="stretch" spacing={3}>
+              {timeline.map((m) => {
+                if (m.role === "user") {
+                  const userText = m.pendingTranscript ? "…" : m.textFinal;
+                  return (
+                    <RowRight key={m.id}>
+                      <UserBubble label={isEs ? "Tú" : "You"} text={userText} />
+                    </RowRight>
+                  );
+                }
+
+                const text = `${m.textFinal || ""}${m.textStream || ""}`.trim();
+                if (!text) return null;
+                return (
+                  <RowLeft key={m.id}>
+                    <AssistantBubble
+                      label={isEs ? "Evaluador" : "Assessor"}
+                      text={text}
+                    />
+                  </RowLeft>
+                );
+              })}
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
 
       {/* ---- Result Drawer ---- */}
       <Drawer

@@ -7,6 +7,17 @@ import {
   Center,
   HStack,
   IconButton,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
   Text,
   VStack,
   Wrap,
@@ -15,7 +26,14 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
+import {
+  FaStop,
+  FaCheckCircle,
+  FaDice,
+  FaRegCommentDots,
+  FaExclamation,
+} from "react-icons/fa";
+import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
@@ -67,6 +85,30 @@ const MOBILE_TEXT_SX = {
   wordBreak: "break-word",
   overflowWrap: "break-word",
   hyphens: "auto",
+};
+const MATRIX_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.1) 0%, transparent 40%), " +
+    "radial-gradient(circle at 50% 100%, rgba(15,23,42,0.52) 0%, transparent 62%), " +
+    "linear-gradient(180deg, rgba(2,6,14,0.98) 0%, rgba(1,3,10,0.99) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.45,
+    mixBlendMode: "screen",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
 };
 const isoNow = () => {
   try {
@@ -248,14 +290,14 @@ function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
 }
 
 function AlignedBubble({
-  primaryLabel,
-  secondaryLabel,
   primaryText,
   secondaryText,
   pairs,
   showSecondary,
   isTranslating,
   canReplay,
+  onTranslate,
+  canTranslate,
   onReplay,
   isReplaying,
   replayLabel,
@@ -287,50 +329,39 @@ function AlignedBubble({
 
   return (
     <Box
-      bg="gray.700"
+      bg="transparent"
       p={3}
       rounded="2xl"
       border="1px solid rgba(255,255,255,0.06)"
+      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
       maxW="100%"
       borderBottomLeftRadius="0px"
+      sx={MATRIX_PANEL_SX}
     >
-      <HStack justify="space-between" mb={1}>
-        <Badge variant="subtle">{primaryLabel}</Badge>
-        <HStack>
-          {canReplay && (
-            <IconButton
-              size="xs"
-              variant="ghost"
-              colorScheme="cyan"
-              icon={
-                isReplaying ? (
-                  <Spinner size="xs" />
-                ) : (
-                  <RiVolumeUpLine size={14} />
-                )
-              }
-              onClick={onReplay}
-              isDisabled={isReplaying}
-              aria-label={replayLabel || "Replay"}
-            />
-          )}
-          {showSecondary && !!secondaryText && (
-            <Badge variant="outline">{secondaryLabel}</Badge>
-          )}
-          {showSecondary && isTranslating && (
-            <Spinner size="xs" thickness="2px" speed="0.5s" />
-          )}
-        </HStack>
+      <HStack align="flex-start" spacing={2}>
+        {canReplay && (
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={
+              isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />
+            }
+            onClick={onReplay}
+            isDisabled={isReplaying}
+            aria-label={replayLabel || "Replay"}
+            mt="2px"
+          />
+        )}
+        <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX} flex="1">
+          {primaryNodes}
+        </Box>
       </HStack>
-
-      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
-        {primaryNodes}
-      </Box>
 
       {showSecondary && !!secondaryText && (
         <Box
           as="p"
-          fontSize="sm"
+          fontSize="xs"
           mt={1}
           lineHeight="1.55"
           sx={MOBILE_TEXT_SX}
@@ -363,7 +394,7 @@ function AlignedBubble({
                     {p.lhs}
                   </Text>
                   <Text
-                    fontSize="xs"
+                    fontSize="2xs"
                     color="whiteAlpha.800"
                     mt={1}
                     lineHeight="1.35"
@@ -375,6 +406,20 @@ function AlignedBubble({
             );
           })}
         </Wrap>
+      )}
+
+      {canTranslate && (
+        <HStack justify="flex-end" mt={2}>
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
+            onClick={onTranslate}
+            isDisabled={isTranslating}
+            aria-label="Translate message"
+          />
+        </HStack>
       )}
     </Box>
   );
@@ -412,6 +457,15 @@ function UserBubble({ label, text }) {
       </Box>
     </Box>
   );
+}
+
+function uiStateLabel(uiState, uiLang) {
+  if (uiState === "speaking") return uiLang === "es" ? "Hablando" : "Speaking";
+  if (uiState === "listening")
+    return uiLang === "es" ? "Escuchando" : "Listening";
+  if (uiState === "thinking")
+    return uiLang === "es" ? "Pensando" : "Thinking";
+  return "";
 }
 
 /* ---------------------------
@@ -520,6 +574,7 @@ export default function Conversations({
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(initialPauseMs);
   const [replayingId, setReplayingId] = useState(null);
+  const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs
   const [voice, setVoice] = useState(user?.progress?.voice || "alloy");
@@ -544,6 +599,11 @@ export default function Conversations({
     isOpen: isSettingsOpen,
     onOpen: openSettings,
     onClose: closeSettings,
+  } = useDisclosure();
+  const {
+    isOpen: isTranscriptOpen,
+    onOpen: openTranscript,
+    onClose: closeTranscript,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
     playSound(selectSound);
@@ -793,8 +853,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const streamBuffersRef = useRef(new Map());
   const streamFlushScheduled = useRef(false);
 
-  // Translate timers & response mapping
-  const translateTimers = useRef(new Map());
+  // Response mapping
   const respToMsg = useRef(new Map());
   const sessionUpdateTimer = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
@@ -826,10 +885,29 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
+  const liveUiState =
+    status === "connected" &&
+    uiState !== "speaking" &&
+    uiState !== "thinking"
+      ? "listening"
+      : uiState;
+  const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
+  const [previousRobotState, setPreviousRobotState] = useState(null);
+  const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
 
-  // Which language to show in secondary lane
-  const secondaryPref =
-    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+  useEffect(() => {
+    if (liveUiState === displayRobotState) return;
+    setPreviousRobotState(displayRobotState);
+    setDisplayRobotState(liveUiState);
+    setIsRobotTransitioning(true);
+    const timer = setTimeout(() => {
+      setIsRobotTransitioning(false);
+      setPreviousRobotState(null);
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [liveUiState, displayRobotState]);
 
   // XP level calculation
   const xpLevelNumber = Math.floor(xp / 100) + 1;
@@ -837,27 +915,31 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Timeline sorted by timestamp (newest-first for display)
   const timeline = [...messages].sort((a, b) => b.ts - a.ts);
+  const latestAssistantMessage = timeline.find((m) => {
+    if (m.role !== "assistant") return false;
+    const text = `${m.textFinal || ""}${m.textStream || ""}`.trim();
+    return Boolean(text);
+  });
+  const [fadingAssistantMessage, setFadingAssistantMessage] = useState(null);
+  const previousAssistantIdRef = useRef(null);
 
-  // Language name helper
-  const languageNameFor = (code) => {
-    if (code === "es") return translations[uiLang].language_es;
-    if (code === "en") return translations[uiLang].language_en;
-    if (code === "pt") return translations[uiLang].language_pt || "Portuguese";
-    if (code === "fr") return translations[uiLang].language_fr || "French";
-    if (code === "it") return translations[uiLang].language_it || "Italian";
-    if (code === "nl") return translations[uiLang].language_nl || "Dutch";
-    if (code === "nah")
-      return translations[uiLang].language_nah || "Eastern Huasteca Nahuatl";
-    if (code === "ja") return translations[uiLang].language_ja || "Japanese";
-    if (code === "ru") return translations[uiLang].language_ru || "Russian";
-    if (code === "de") return translations[uiLang].language_de || "German";
-    if (code === "el") return translations[uiLang].language_el || "Greek";
-    if (code === "pl") return translations[uiLang].language_pl || "Polish";
-    if (code === "ga") return translations[uiLang].language_ga || "Irish";
-    if (code === "yua")
-      return translations[uiLang].language_yua || "Yucatec Maya";
-    return code;
-  };
+  useEffect(() => {
+    if (!latestAssistantMessage?.id) return;
+    const nextId = latestAssistantMessage.id;
+    const prevId = previousAssistantIdRef.current;
+    previousAssistantIdRef.current = nextId;
+    if (
+      prevId &&
+      prevId !== nextId
+    ) {
+      const previousMessage = timeline.find((m) => m.id === prevId);
+      if (previousMessage) {
+        setFadingAssistantMessage(previousMessage);
+        const timer = setTimeout(() => setFadingAssistantMessage(null), 450);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [latestAssistantMessage?.id, timeline]);
 
   /* ---------------------------
      Replay playback helpers
@@ -1344,8 +1426,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   function clearAllDebouncers() {
-    for (const t of translateTimers.current.values()) clearTimeout(t);
-    translateTimers.current.clear();
     clearTimeout(sessionUpdateTimer.current);
   }
 
@@ -1658,6 +1738,16 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
+    if (
+      t === "response.output_audio.done" ||
+      t === "output_audio.done" ||
+      t === "output_audio_buffer.stopped"
+    ) {
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      return;
+    }
+
     if (t === "response.created") {
       isIdleRef.current = false;
       // Record when this response started (user spoke before this)
@@ -1762,7 +1852,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
         textStream: "",
       }));
-      scheduleDebouncedTranslate(mid);
       return;
     }
 
@@ -1790,12 +1879,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
-        try {
-          await translateMessage(mid, "completed");
-          logEvent(analytics, "conversation_turn", {
-            action: "turn_completed",
-          });
-        } catch {}
+        logEvent(analytics, "conversation_turn", {
+          action: "turn_completed",
+        });
 
         // Evaluate goal completion with the AI response
         const aiMessage = messagesRef.current.find((m) => m.id === mid);
@@ -1806,8 +1892,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
         respToMsg.current.delete(rid);
       }
-      setUiState("idle");
-      setMood("neutral");
       return;
     }
 
@@ -1860,15 +1944,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   /* ---------------------------
      Translation
   --------------------------- */
-  function scheduleDebouncedTranslate(id) {
-    const prev = translateTimers.current.get(id);
-    if (prev) clearTimeout(prev);
-    const timer = setTimeout(() => {
-      translateMessage(id).catch(() => {});
-    }, 300);
-    translateTimers.current.set(id, timer);
-  }
-
   async function translateMessage(id) {
     const m = messagesRef.current.find((x) => x.id === id);
     if (!m) return;
@@ -1943,43 +2018,40 @@ Do not return the whole sentence as a single chunk.`;
     updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
   }
 
+  async function handleManualTranslate(id) {
+    const previousUiState = uiState;
+    setTranslatingMessageId(id);
+    setUiState("thinking");
+    try {
+      await translateMessage(id);
+    } catch {}
+    setTranslatingMessageId(null);
+    if (status === "connected") {
+      setUiState("listening");
+    } else {
+      setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
+    }
+  }
+
   /* ---------------------------
      Render
   --------------------------- */
   return (
     <>
       <Box minH="100vh" color="gray.100" position="relative" pb="120px">
-        {/* Header area with centered Robot and Goal UI */}
-        <Box px={4} mt={0} display="flex" justifyContent="center">
+        {/* Header area: robot separated from goal card */}
+        <VStack px={4} mt={0} spacing={1} align="center">
           <Box
-            bg="gray.800"
+            bg="transparent"
             p={2}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
+            sx={{ ...MATRIX_PANEL_SX, overflow: "visible" }}
           >
             <VStack spacing={3} align="center" width="100%">
-              {/* Robot and Settings Row */}
               <HStack width="100%" justify="space-between" align="center">
-                {/* RobotBuddyPro on the left */}
-                <Box
-                  width="75px"
-                  opacity={0.95}
-                  flexShrink={0}
-                  mt="-12px"
-                  ml={"-22px"}
-                >
-                  <RobotBuddyPro
-                    state={uiState}
-                    loudness={uiState === "listening" ? volume : 0}
-                    mood={mood}
-                    variant="abstract"
-                    maxW={75}
-                  />
-                </Box>
-
-                {/* Conversation Settings Button */}
                 <Button
                   leftIcon={<FiSettings />}
                   size="xs"
@@ -1991,6 +2063,18 @@ Do not return the whole sentence as a single chunk.`;
                   fontWeight="medium"
                 >
                   {uiLang === "es" ? "Configuración" : "Conversation settings"}
+                </Button>
+                <Button
+                  leftIcon={<FaRegCommentDots size={12} />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="cyan"
+                  onClick={openTranscript}
+                  opacity={0.8}
+                  _hover={{ opacity: 1 }}
+                  isDisabled={!timeline.length}
+                >
+                  {uiLang === "es" ? "Historial" : "Chat log"}
                 </Button>
               </HStack>
 
@@ -2049,6 +2133,48 @@ Do not return the whole sentence as a single chunk.`;
                         flex="1"
                       >
                         {currentGoal.text[uiLang] || currentGoal.text.en}
+                        {goalFeedback &&
+                          !isGeneratingGoal &&
+                          !currentGoal.completed && (
+                            <Popover placement="bottom-end" isLazy>
+                              <PopoverTrigger>
+                                <Box
+                                  as="button"
+                                  type="button"
+                                  aria-label={
+                                    uiLang === "es"
+                                      ? "Mostrar sugerencia"
+                                      : "Show suggestion"
+                                  }
+                                  ml="6px"
+                                  width="12px"
+                                  height="12px"
+                                  display="inline-flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  borderRadius="full"
+                                  border="1px solid"
+                                  borderColor="red.300"
+                                  bg="rgba(239,68,68,0.9)"
+                                  color="white"
+                                  verticalAlign="text-bottom"
+                                  transform="translateY(-1px)"
+                                  lineHeight={1}
+                                >
+                                  <FaExclamation size={6} />
+                                </Box>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                bg="red.900"
+                                color="red.100"
+                                borderColor="red.500"
+                                maxW="320px"
+                              >
+                                <PopoverArrow bg="red.900" />
+                                <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                       </Text>
                       {currentGoal.completed && (
                         <Box
@@ -2062,23 +2188,21 @@ Do not return the whole sentence as a single chunk.`;
                 </HStack>
 
                 {/* Goal Feedback */}
-                {goalFeedback && !isGeneratingGoal && (
-                  <Text
-                    fontSize="xs"
-                    textAlign="center"
-                    px={3}
-                    py={1.5}
-                    borderRadius="md"
-                    bg={currentGoal.completed ? "green.900" : "orange.900"}
-                    color={currentGoal.completed ? "green.200" : "orange.200"}
-                    border="1px solid"
-                    borderColor={
-                      currentGoal.completed ? "green.600" : "orange.600"
-                    }
-                    maxW="90%"
-                  >
-                    {goalFeedback}
-                  </Text>
+                {goalFeedback && !isGeneratingGoal && currentGoal.completed && (
+                    <Text
+                      fontSize="xs"
+                      textAlign="center"
+                      px={3}
+                      py={1.5}
+                      borderRadius="md"
+                      bg="green.900"
+                      color="green.200"
+                      border="1px solid"
+                      borderColor="green.600"
+                      maxW="90%"
+                    >
+                      {goalFeedback}
+                    </Text>
                 )}
               </VStack>
 
@@ -2096,58 +2220,113 @@ Do not return the whole sentence as a single chunk.`;
               </Box>
             </VStack>
           </Box>
-        </Box>
 
-        {/* Timeline — newest first */}
-        <VStack align="stretch" spacing={3} px={4} mt={3}>
-          {timeline.map((m) => {
-            const isUser = m.role === "user";
-            if (isUser) {
-              return (
-                <RowRight key={m.id}>
-                  <UserBubble label={ui.ra_label_you} text={m.textFinal} />
-                </RowRight>
-              );
-            }
-
-            const primaryText = (m.textFinal || "") + (m.textStream || "");
-            const lang = m.lang || targetLang || "es";
-            const primaryLabel = languageNameFor(lang);
-
-            const secondaryText = m.translation || "";
-
-            const secondaryLabel =
-              lang === "es"
-                ? translations[uiLang].language_en
-                : translations[uiLang][`language_${secondaryPref}`];
-
-            const isTranslating =
-              !secondaryText && !!m.textStream && showTranslations;
-
-            const canReplay =
-              !!m.hasAudio || audioCacheIndexRef.current.has(m.id);
-            const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
-
-            if (!primaryText.trim()) return null;
-            return (
-              <RowLeft key={m.id}>
-                <AlignedBubble
-                  primaryLabel={primaryLabel}
-                  secondaryLabel={secondaryLabel}
-                  primaryText={primaryText}
-                  secondaryText={showTranslations ? secondaryText : ""}
-                  pairs={m.pairs || []}
-                  showSecondary={showTranslations}
-                  isTranslating={isTranslating}
-                  canReplay={canReplay}
-                  onReplay={() => playSavedClip(m.id)}
-                  isReplaying={replayingId === m.id}
-                  replayLabel={replayLabel}
+          <VStack spacing={0.5} align="center">
+            <Box width="132px" opacity={0.95} flexShrink={0} position="relative">
+              {previousRobotState && (
+                <Box
+                  position="absolute"
+                  inset={0}
+                  opacity={isRobotTransitioning ? 0 : 1}
+                  transition="opacity 0.5s ease"
+                >
+                  <RobotBuddyPro
+                    state={previousRobotState}
+                    loudness={previousRobotState === "listening" ? volume : 0}
+                    mood={mood}
+                    variant="abstract"
+                    maxW={132}
+                  />
+                </Box>
+              )}
+              <Box opacity={1} transition="opacity 0.5s ease">
+                <RobotBuddyPro
+                  state={displayRobotState}
+                  loudness={displayRobotState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={132}
                 />
-              </RowLeft>
-            );
-          })}
+              </Box>
+            </Box>
+            {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
+              <Text fontSize="xs" color="whiteAlpha.800">
+                {uiStateLabel(liveUiState, uiLang)}
+              </Text>
+            )}
+          </VStack>
         </VStack>
+
+        {/* Centered live reply */}
+        <Box px={4} mt="6px">
+          <VStack w="100%" maxW="640px" mx="auto" spacing={2} align="stretch">
+            {latestAssistantMessage ? (
+              <Box
+                w="100%"
+                minH={{ base: "150px", md: "165px" }}
+                display="flex"
+                alignItems="stretch"
+                justifyContent="flex-start"
+                position="relative"
+              >
+                {fadingAssistantMessage && (
+                  <Box
+                    w="100%"
+                    opacity={0}
+                    transform="translateY(44px) scale(0.96)"
+                    transition="all 0.45s ease-out"
+                    pointerEvents="none"
+                    position="absolute"
+                    top="0"
+                    left="0"
+                  >
+                    <AlignedBubble
+                      primaryText={`${fadingAssistantMessage.textFinal || ""}${
+                        fadingAssistantMessage.textStream || ""
+                      }`}
+                      secondaryText={
+                        showTranslations
+                          ? fadingAssistantMessage.translation || ""
+                          : ""
+                      }
+                      pairs={fadingAssistantMessage.pairs || []}
+                      showSecondary={showTranslations}
+                      isTranslating={false}
+                      canTranslate={false}
+                      canReplay={false}
+                    />
+                  </Box>
+                )}
+                <Box w="100%" position="relative" zIndex={1}>
+                  <AlignedBubble
+                    primaryText={`${latestAssistantMessage.textFinal || ""}${
+                      latestAssistantMessage.textStream || ""
+                    }`}
+                    secondaryText={
+                      showTranslations
+                        ? latestAssistantMessage.translation || ""
+                        : ""
+                    }
+                    pairs={latestAssistantMessage.pairs || []}
+                    showSecondary={showTranslations}
+                    isTranslating={
+                      translatingMessageId === latestAssistantMessage.id
+                    }
+                    canTranslate={showTranslations}
+                    onTranslate={() => handleManualTranslate(latestAssistantMessage.id)}
+                    canReplay={
+                      !!latestAssistantMessage.hasAudio ||
+                      audioCacheIndexRef.current.has(latestAssistantMessage.id)
+                    }
+                    onReplay={() => playSavedClip(latestAssistantMessage.id)}
+                    isReplaying={replayingId === latestAssistantMessage.id}
+                    replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                  />
+                </Box>
+              </Box>
+            ) : null}
+          </VStack>
+        </Box>
 
         {/* Bottom dock - Connect button only */}
         <Center
@@ -2172,14 +2351,18 @@ Do not return the whole sentence as a single chunk.`;
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                  <FaStop /> &nbsp; {uiLang === "es" ? "Terminar" : "End"}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? ui.ra_btn_connecting
-                    : ui.ra_btn_connect}
+                    ? uiLang === "es"
+                      ? "Iniciando..."
+                      : "Starting..."
+                    : uiLang === "es"
+                      ? "Iniciar"
+                      : "Start"}
                 </>
               )}
             </Button>
@@ -2214,6 +2397,52 @@ Do not return the whole sentence as a single chunk.`;
         onSettingsChange={handleSettingsChange}
         supportLang={supportLang}
       />
+
+      <Modal isOpen={isTranscriptOpen} onClose={closeTranscript} size="xl">
+        <ModalOverlay bg="blackAlpha.700" />
+        <ModalContent bg="gray.800" color="gray.100" mx={3}>
+          <ModalHeader>
+            {uiLang === "es" ? "Historial de conversación" : "Conversation log"}
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={5}>
+            <VStack align="stretch" spacing={3}>
+              {timeline.map((m) => {
+                const isUser = m.role === "user";
+                if (isUser) {
+                  return (
+                    <RowRight key={m.id}>
+                      <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                    </RowRight>
+                  );
+                }
+
+                const primaryText = (m.textFinal || "") + (m.textStream || "");
+                const secondaryText = m.translation || "";
+
+                if (!primaryText.trim()) return null;
+                return (
+                  <RowLeft key={m.id}>
+                    <AlignedBubble
+                      primaryText={primaryText}
+                      secondaryText={showTranslations ? secondaryText : ""}
+                      pairs={m.pairs || []}
+                      showSecondary={showTranslations}
+                      isTranslating={translatingMessageId === m.id}
+                      canTranslate={showTranslations}
+                      onTranslate={() => handleManualTranslate(m.id)}
+                      canReplay={!!m.hasAudio || audioCacheIndexRef.current.has(m.id)}
+                      onReplay={() => playSavedClip(m.id)}
+                      isReplaying={replayingId === m.id}
+                      replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                    />
+                  </RowLeft>
+                );
+              })}
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }
