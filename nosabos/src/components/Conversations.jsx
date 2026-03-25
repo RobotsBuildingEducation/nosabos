@@ -2149,6 +2149,39 @@ Do not return the whole sentence as a single chunk.`;
                       >
                         {currentGoal.text[uiLang] || currentGoal.text.en}
                       </Text>
+                      {goalFeedback &&
+                        !isGeneratingGoal &&
+                        !currentGoal.completed && (
+                          <Popover placement="bottom" isLazy>
+                            <PopoverTrigger>
+                              <IconButton
+                                aria-label={
+                                  uiLang === "es"
+                                    ? "Mostrar sugerencia"
+                                    : "Show suggestion"
+                                }
+                                icon={<FaExclamation size={10} />}
+                                size="xs"
+                                minW="18px"
+                                h="18px"
+                                w="18px"
+                                p={0}
+                                borderRadius="full"
+                                variant="outline"
+                                colorScheme="red"
+                              />
+                            </PopoverTrigger>
+                            <PopoverContent
+                              bg="purple.900"
+                              color="purple.100"
+                              borderColor="purple.600"
+                              maxW="320px"
+                            >
+                              <PopoverArrow bg="purple.900" />
+                              <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
+                            </PopoverContent>
+                          </Popover>
+                        )}
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
@@ -2161,8 +2194,7 @@ Do not return the whole sentence as a single chunk.`;
                 </HStack>
 
                 {/* Goal Feedback */}
-                {goalFeedback && !isGeneratingGoal && (
-                  currentGoal.completed ? (
+                {goalFeedback && !isGeneratingGoal && currentGoal.completed && (
                     <Text
                       fontSize="xs"
                       textAlign="center"
@@ -2177,34 +2209,6 @@ Do not return the whole sentence as a single chunk.`;
                     >
                       {goalFeedback}
                     </Text>
-                  ) : (
-                    <Popover placement="bottom" isLazy>
-                      <PopoverTrigger>
-                        <IconButton
-                          aria-label={
-                            uiLang === "es"
-                              ? "Mostrar sugerencia"
-                              : "Show suggestion"
-                          }
-                          icon={<FaExclamation />}
-                          size="xs"
-                          borderRadius="full"
-                          color="white"
-                          bg="red.500"
-                          _hover={{ bg: "red.400" }}
-                        />
-                      </PopoverTrigger>
-                      <PopoverContent
-                        bg="purple.900"
-                        color="purple.100"
-                        borderColor="purple.600"
-                        maxW="320px"
-                      >
-                        <PopoverArrow bg="purple.900" />
-                        <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
-                      </PopoverContent>
-                    </Popover>
-                  )
                 )}
               </VStack>
 
