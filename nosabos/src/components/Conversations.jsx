@@ -2162,8 +2162,8 @@ Do not return the whole sentence as a single chunk.`;
                                       : "Show suggestion"
                                   }
                                   ml="6px"
-                                  width="18px"
-                                  height="18px"
+                                  width="14px"
+                                  height="14px"
                                   display="inline-flex"
                                   alignItems="center"
                                   justifyContent="center"
@@ -2175,7 +2175,7 @@ Do not return the whole sentence as a single chunk.`;
                                   verticalAlign="middle"
                                   lineHeight={1}
                                 >
-                                  <FaExclamation size={10} />
+                                  <FaExclamation size={7} />
                                 </Box>
                               </PopoverTrigger>
                               <PopoverContent
