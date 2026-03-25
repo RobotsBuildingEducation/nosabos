@@ -5,7 +5,11 @@ import {
   VStack,
   Text,
   Circle,
-  Flex,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverBody,
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
@@ -97,24 +101,16 @@ export default function TutorialStepper({
   // Ensure currentModule is valid, fallback to first module if not
   const validModule = MODULE_CONFIG[currentModule] ? currentModule : modules[0];
   const currentIndex = modules.indexOf(validModule);
-  const currentConfig = MODULE_CONFIG[validModule];
-
-  // Get description: prefer passed tutorialDescription, fall back to built-in
-  const getDescription = () => {
-    if (tutorialDescription) {
+  const getModuleDescription = (module) => {
+    const config = MODULE_CONFIG[module];
+    if (!config) return null;
+    if (module === validModule && tutorialDescription) {
       return typeof tutorialDescription === "object"
         ? tutorialDescription[supportLang] || tutorialDescription.en
         : tutorialDescription;
     }
-    if (currentConfig?.description) {
-      return (
-        currentConfig.description[supportLang] || currentConfig.description.en
-      );
-    }
-    return null;
+    return config.description?.[supportLang] || config.description?.en || null;
   };
-
-  const description = getDescription();
 
   return (
     <VStack spacing={4} w="100%" mb={2}>
@@ -132,7 +128,6 @@ export default function TutorialStepper({
             const Icon = config?.icon || FaBook;
             const isCompleted = completedModules.includes(module);
             const isCurrent = module === validModule;
-            const isPending = !isCompleted && !isCurrent;
 
             return (
               <React.Fragment key={module}>
@@ -151,46 +146,75 @@ export default function TutorialStepper({
                   />
                 )}
 
-                {/* Step Circle */}
+                {/* Step Circle + Popover */}
                 <VStack spacing={1}>
-                  <Circle
-                    size={{ base: "36px", md: "44px" }}
-                    bg={
-                      isCompleted
-                        ? config?.color || "green.500"
-                        : isCurrent
-                        ? "whiteAlpha.200"
-                        : "whiteAlpha.100"
-                    }
-                    borderWidth={isCurrent ? "3px" : "2px"}
-                    borderColor={
-                      isCompleted
-                        ? config?.color || "green.500"
-                        : isCurrent
-                        ? config?.color || "blue.400"
-                        : "whiteAlpha.300"
-                    }
-                    transition="all 0.3s ease"
-                    transform={isCurrent ? "scale(1.1)" : "scale(1)"}
-                    boxShadow={
-                      isCurrent
-                        ? `0 0 20px ${config?.color || "blue.400"}40`
-                        : "none"
-                    }
-                  >
-                    {isCompleted ? (
-                      <CheckIcon boxSize={{ base: 4, md: 5 }} color="white" />
-                    ) : (
-                      <Icon
-                        size={isMobile ? 16 : 20}
-                        color={
-                          isCurrent
-                            ? config?.color || "#60A5FA"
-                            : "rgba(255,255,255,0.5)"
+                  <Popover trigger="click" placement="bottom" isLazy>
+                    <PopoverTrigger>
+                      <Circle
+                        as="button"
+                        aria-label={`Tutorial step: ${config?.label?.[lang] || module}`}
+                        size={{ base: "36px", md: "44px" }}
+                        bg={
+                          isCompleted
+                            ? config?.color || "green.500"
+                            : isCurrent
+                            ? "whiteAlpha.200"
+                            : "whiteAlpha.100"
                         }
-                      />
-                    )}
-                  </Circle>
+                        borderWidth={isCurrent ? "3px" : "2px"}
+                        borderColor={
+                          isCompleted
+                            ? config?.color || "green.500"
+                            : isCurrent
+                            ? config?.color || "blue.400"
+                            : "whiteAlpha.300"
+                        }
+                        transition="all 0.3s ease"
+                        transform={isCurrent ? "scale(1.1)" : "scale(1)"}
+                        boxShadow={
+                          isCurrent
+                            ? `0 0 20px ${config?.color || "blue.400"}40`
+                            : "none"
+                        }
+                      >
+                        {isCompleted ? (
+                          <CheckIcon boxSize={{ base: 4, md: 5 }} color="white" />
+                        ) : (
+                          <Icon
+                            size={isMobile ? 16 : 20}
+                            color={
+                              isCurrent
+                                ? config?.color || "#60A5FA"
+                                : "rgba(255,255,255,0.5)"
+                            }
+                          />
+                        )}
+                      </Circle>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      bg="rgba(30, 41, 59, 0.97)"
+                      borderColor={config?.color || "whiteAlpha.500"}
+                      borderWidth="2px"
+                      color="white"
+                      maxW="280px"
+                    >
+                      <PopoverArrow bg="rgba(30, 41, 59, 0.97)" />
+                      <PopoverBody py={3}>
+                        <Text
+                          fontSize="sm"
+                          fontWeight="bold"
+                          color={config?.color || "white"}
+                          mb={1}
+                        >
+                          {config?.label?.[supportLang] || config?.label?.en || module}
+                        </Text>
+                        <Text fontSize="sm" color="gray.200" lineHeight="1.4">
+                          {getModuleDescription(module) ||
+                            "No description available"}
+                        </Text>
+                      </PopoverBody>
+                    </PopoverContent>
+                  </Popover>
 
                   {/* Step Label */}
                   <Text
@@ -213,46 +237,6 @@ export default function TutorialStepper({
         </HStack>
       </Box>
 
-      {/* Current Module Description - always show when currentConfig exists */}
-      {currentConfig && (
-        <Box
-          w="100%"
-          maxWidth="600px"
-          mx="auto"
-          bg="rgba(30, 41, 59, 0.9)"
-          borderRadius="xl"
-          p={4}
-          borderWidth="2px"
-          borderColor={currentConfig.color}
-          zIndex="10"
-        >
-          <Flex align="center" gap={3}>
-            <Circle size="40px" bg={`${currentConfig.color}30`} flexShrink={0}>
-              {React.createElement(currentConfig.icon, {
-                size: 20,
-                color: currentConfig.color,
-              })}
-            </Circle>
-            <VStack align="start" spacing={0}>
-              <Text
-                fontSize="sm"
-                fontWeight="bold"
-                color={currentConfig.color || "white"}
-              >
-                {currentConfig.label?.[supportLang] ||
-                  currentConfig.label?.en ||
-                  validModule}
-              </Text>
-              <Text fontSize="sm" color="gray.300" lineHeight="1.4">
-                {description ||
-                  currentConfig.description?.[supportLang] ||
-                  currentConfig.description?.en ||
-                  "No description available"}
-              </Text>
-            </VStack>
-          </Flex>
-        </Box>
-      )}
     </VStack>
   );
 }
