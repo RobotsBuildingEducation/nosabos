@@ -3003,19 +3003,6 @@ Do not return the whole sentence as a single chunk.`;
           </VStack>
         </Box>
 
-        {/* Timeline — user messages only (assistant is surfaced in live panel) */}
-        <VStack align="stretch" spacing={3} px={4} mt={3}>
-          {timeline.map((m) => {
-            const isUser = m.role === "user";
-            if (!isUser) return null;
-            return (
-              <RowRight key={m.id}>
-                <UserBubble label={ui.ra_label_you} text={m.textFinal} />
-              </RowRight>
-            );
-          })}
-        </VStack>
-
         {latestAssistantMessage ? (
           <VStack align="stretch" spacing={3} px={4} mt={3}>
             <Center>
