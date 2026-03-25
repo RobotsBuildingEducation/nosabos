@@ -1511,7 +1511,7 @@ Return ONLY valid JSON:
 
       setStatus("connected");
       aliveRef.current = true;
-      setUiState("idle");
+      setUiState("listening");
     } catch (e) {
       setStatus("disconnected");
       setUiState("idle");
@@ -1632,6 +1632,8 @@ Return ONLY valid JSON:
       ) || null,
     [timeline],
   );
+  const liveUiState =
+    status === "connected" && uiState === "idle" ? "listening" : uiState;
 
   /* ---- Render ---- */
   const levelInfo = assessedLevel ? CEFR_LEVEL_INFO[assessedLevel] : null;
@@ -1794,18 +1796,18 @@ Return ONLY valid JSON:
         </Box>
 
         <VStack spacing={0.5} align="center" mt={2}>
-          <Box width="112px" opacity={0.95}>
+          <Box width="132px" opacity={0.95}>
             <RobotBuddyPro
-              state={uiState}
+              state={liveUiState}
               loudness={0}
               mood={mood}
               variant="abstract"
-              maxW={112}
+              maxW={132}
             />
           </Box>
-          {uiStateLabel(uiState, isEs) && (
+          {uiStateLabel(liveUiState, isEs) && (
             <Text fontSize="xs" color="whiteAlpha.800">
-              {uiStateLabel(uiState, isEs)}
+              {uiStateLabel(liveUiState, isEs)}
             </Text>
           )}
         </VStack>
