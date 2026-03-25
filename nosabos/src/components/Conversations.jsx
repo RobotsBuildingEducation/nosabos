@@ -13,6 +13,11 @@ import {
   ModalContent,
   ModalHeader,
   ModalOverlay,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
   Text,
   VStack,
   Wrap,
@@ -21,7 +26,13 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle, FaDice, FaRegCommentDots } from "react-icons/fa";
+import {
+  FaStop,
+  FaCheckCircle,
+  FaDice,
+  FaRegCommentDots,
+  FaExclamation,
+} from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
@@ -2151,22 +2162,49 @@ Do not return the whole sentence as a single chunk.`;
 
                 {/* Goal Feedback */}
                 {goalFeedback && !isGeneratingGoal && (
-                  <Text
-                    fontSize="xs"
-                    textAlign="center"
-                    px={3}
-                    py={1.5}
-                    borderRadius="md"
-                    bg={currentGoal.completed ? "green.900" : "purple.900"}
-                    color={currentGoal.completed ? "green.200" : "purple.200"}
-                    border="1px solid"
-                    borderColor={
-                      currentGoal.completed ? "green.600" : "purple.600"
-                    }
-                    maxW="90%"
-                  >
-                    {goalFeedback}
-                  </Text>
+                  currentGoal.completed ? (
+                    <Text
+                      fontSize="xs"
+                      textAlign="center"
+                      px={3}
+                      py={1.5}
+                      borderRadius="md"
+                      bg="green.900"
+                      color="green.200"
+                      border="1px solid"
+                      borderColor="green.600"
+                      maxW="90%"
+                    >
+                      {goalFeedback}
+                    </Text>
+                  ) : (
+                    <Popover placement="bottom" isLazy>
+                      <PopoverTrigger>
+                        <IconButton
+                          aria-label={
+                            uiLang === "es"
+                              ? "Mostrar sugerencia"
+                              : "Show suggestion"
+                          }
+                          icon={<FaExclamation />}
+                          size="xs"
+                          borderRadius="full"
+                          color="white"
+                          bg="red.500"
+                          _hover={{ bg: "red.400" }}
+                        />
+                      </PopoverTrigger>
+                      <PopoverContent
+                        bg="purple.900"
+                        color="purple.100"
+                        borderColor="purple.600"
+                        maxW="320px"
+                      >
+                        <PopoverArrow bg="purple.900" />
+                        <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
+                      </PopoverContent>
+                    </Popover>
+                  )
                 )}
               </VStack>
 
@@ -2225,7 +2263,7 @@ Do not return the whole sentence as a single chunk.`;
         </VStack>
 
         {/* Centered live reply */}
-        <Box px={4} mt={0}>
+        <Box px={4} mt="6px">
           <VStack w="100%" maxW="640px" mx="auto" spacing={2} align="stretch">
             {latestAssistantMessage ? (
               <Box
