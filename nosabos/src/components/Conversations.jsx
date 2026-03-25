@@ -33,6 +33,7 @@ import {
   FaRegCommentDots,
   FaExclamation,
 } from "react-icons/fa";
+import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
@@ -289,14 +290,14 @@ function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
 }
 
 function AlignedBubble({
-  primaryLabel,
-  secondaryLabel,
   primaryText,
   secondaryText,
   pairs,
   showSecondary,
   isTranslating,
   canReplay,
+  onTranslate,
+  canTranslate,
   onReplay,
   isReplaying,
   replayLabel,
@@ -337,38 +338,39 @@ function AlignedBubble({
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
     >
-      <HStack justify="space-between" mb={1}>
-        <Badge variant="subtle">{primaryLabel}</Badge>
-        <HStack>
-          {canReplay && (
-            <IconButton
-              size="xs"
-              variant="ghost"
-              colorScheme="cyan"
-              icon={
-                isReplaying ? (
-                  <Spinner size="xs" />
-                ) : (
-                  <RiVolumeUpLine size={14} />
-                )
-              }
-              onClick={onReplay}
-              isDisabled={isReplaying}
-              aria-label={replayLabel || "Replay"}
-            />
-          )}
-          {showSecondary && !!secondaryText && (
-            <Badge variant="outline">{secondaryLabel}</Badge>
-          )}
-          {showSecondary && isTranslating && (
-            <Spinner size="xs" thickness="2px" speed="0.5s" />
-          )}
-        </HStack>
+      <HStack justify="flex-end" mb={1}>
+        {canTranslate && (
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
+            onClick={onTranslate}
+            isDisabled={isTranslating}
+            aria-label="Translate message"
+          />
+        )}
       </HStack>
 
-      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
-        {primaryNodes}
-      </Box>
+      <HStack align="flex-start" spacing={2}>
+        {canReplay && (
+          <IconButton
+            size="xs"
+            variant="ghost"
+            colorScheme="cyan"
+            icon={
+              isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />
+            }
+            onClick={onReplay}
+            isDisabled={isReplaying}
+            aria-label={replayLabel || "Replay"}
+            mt="2px"
+          />
+        )}
+        <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX} flex="1">
+          {primaryNodes}
+        </Box>
+      </HStack>
 
       {showSecondary && !!secondaryText && (
         <Box
@@ -572,6 +574,7 @@ export default function Conversations({
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(initialPauseMs);
   const [replayingId, setReplayingId] = useState(null);
+  const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs
   const [voice, setVoice] = useState(user?.progress?.voice || "alloy");
@@ -850,8 +853,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const streamBuffersRef = useRef(new Map());
   const streamFlushScheduled = useRef(false);
 
-  // Translate timers & response mapping
-  const translateTimers = useRef(new Map());
+  // Response mapping
   const respToMsg = useRef(new Map());
   const sessionUpdateTimer = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
@@ -907,10 +909,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     };
   }, [liveUiState, displayRobotState]);
 
-  // Which language to show in secondary lane
-  const secondaryPref =
-    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
-
   // XP level calculation
   const xpLevelNumber = Math.floor(xp / 100) + 1;
   const progressPct = xp % 100;
@@ -942,27 +940,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       }
     }
   }, [latestAssistantMessage?.id, timeline]);
-
-  // Language name helper
-  const languageNameFor = (code) => {
-    if (code === "es") return translations[uiLang].language_es;
-    if (code === "en") return translations[uiLang].language_en;
-    if (code === "pt") return translations[uiLang].language_pt || "Portuguese";
-    if (code === "fr") return translations[uiLang].language_fr || "French";
-    if (code === "it") return translations[uiLang].language_it || "Italian";
-    if (code === "nl") return translations[uiLang].language_nl || "Dutch";
-    if (code === "nah")
-      return translations[uiLang].language_nah || "Eastern Huasteca Nahuatl";
-    if (code === "ja") return translations[uiLang].language_ja || "Japanese";
-    if (code === "ru") return translations[uiLang].language_ru || "Russian";
-    if (code === "de") return translations[uiLang].language_de || "German";
-    if (code === "el") return translations[uiLang].language_el || "Greek";
-    if (code === "pl") return translations[uiLang].language_pl || "Polish";
-    if (code === "ga") return translations[uiLang].language_ga || "Irish";
-    if (code === "yua")
-      return translations[uiLang].language_yua || "Yucatec Maya";
-    return code;
-  };
 
   /* ---------------------------
      Replay playback helpers
@@ -1449,8 +1426,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   function clearAllDebouncers() {
-    for (const t of translateTimers.current.values()) clearTimeout(t);
-    translateTimers.current.clear();
     clearTimeout(sessionUpdateTimer.current);
   }
 
@@ -1867,7 +1842,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
         textStream: "",
       }));
-      scheduleDebouncedTranslate(mid);
       return;
     }
 
@@ -1895,12 +1869,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
-        try {
-          await translateMessage(mid, "completed");
-          logEvent(analytics, "conversation_turn", {
-            action: "turn_completed",
-          });
-        } catch {}
+        logEvent(analytics, "conversation_turn", {
+          action: "turn_completed",
+        });
 
         // Evaluate goal completion with the AI response
         const aiMessage = messagesRef.current.find((m) => m.id === mid);
@@ -1965,15 +1936,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   /* ---------------------------
      Translation
   --------------------------- */
-  function scheduleDebouncedTranslate(id) {
-    const prev = translateTimers.current.get(id);
-    if (prev) clearTimeout(prev);
-    const timer = setTimeout(() => {
-      translateMessage(id).catch(() => {});
-    }, 300);
-    translateTimers.current.set(id, timer);
-  }
-
   async function translateMessage(id) {
     const m = messagesRef.current.find((x) => x.id === id);
     if (!m) return;
@@ -2046,6 +2008,21 @@ Do not return the whole sentence as a single chunk.`;
     const pairs = tidyPairs(rawPairs);
 
     updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
+  }
+
+  async function handleManualTranslate(id) {
+    const previousUiState = uiState;
+    setTranslatingMessageId(id);
+    setUiState("thinking");
+    try {
+      await translateMessage(id);
+    } catch {}
+    setTranslatingMessageId(null);
+    if (status === "connected") {
+      setUiState("listening");
+    } else {
+      setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
+    }
   }
 
   /* ---------------------------
@@ -2162,8 +2139,8 @@ Do not return the whole sentence as a single chunk.`;
                                       : "Show suggestion"
                                   }
                                   ml="6px"
-                                  width="14px"
-                                  height="14px"
+                                  width="12px"
+                                  height="12px"
                                   display="inline-flex"
                                   alignItems="center"
                                   justifyContent="center"
@@ -2172,10 +2149,11 @@ Do not return the whole sentence as a single chunk.`;
                                   borderColor="red.300"
                                   bg="rgba(239,68,68,0.9)"
                                   color="white"
-                                  verticalAlign="middle"
+                                  verticalAlign="text-bottom"
+                                  transform="translateY(-1px)"
                                   lineHeight={1}
                                 >
-                                  <FaExclamation size={7} />
+                                  <FaExclamation size={6} />
                                 </Box>
                               </PopoverTrigger>
                               <PopoverContent
@@ -2298,15 +2276,6 @@ Do not return the whole sentence as a single chunk.`;
                     left="0"
                   >
                     <AlignedBubble
-                      primaryLabel={languageNameFor(
-                        fadingAssistantMessage.lang || targetLang || "es"
-                      )}
-                      secondaryLabel={
-                        (fadingAssistantMessage.lang || targetLang || "es") ===
-                        "es"
-                          ? translations[uiLang].language_en
-                          : translations[uiLang][`language_${secondaryPref}`]
-                      }
                       primaryText={`${fadingAssistantMessage.textFinal || ""}${
                         fadingAssistantMessage.textStream || ""
                       }`}
@@ -2318,21 +2287,13 @@ Do not return the whole sentence as a single chunk.`;
                       pairs={fadingAssistantMessage.pairs || []}
                       showSecondary={showTranslations}
                       isTranslating={false}
+                      canTranslate={false}
                       canReplay={false}
                     />
                   </Box>
                 )}
                 <Box w="100%" position="relative" zIndex={1}>
                   <AlignedBubble
-                    primaryLabel={languageNameFor(
-                      latestAssistantMessage.lang || targetLang || "es"
-                    )}
-                    secondaryLabel={
-                      (latestAssistantMessage.lang || targetLang || "es") ===
-                      "es"
-                        ? translations[uiLang].language_en
-                        : translations[uiLang][`language_${secondaryPref}`]
-                    }
                     primaryText={`${latestAssistantMessage.textFinal || ""}${
                       latestAssistantMessage.textStream || ""
                     }`}
@@ -2344,10 +2305,10 @@ Do not return the whole sentence as a single chunk.`;
                     pairs={latestAssistantMessage.pairs || []}
                     showSecondary={showTranslations}
                     isTranslating={
-                      !latestAssistantMessage.translation &&
-                      !!latestAssistantMessage.textStream &&
-                      showTranslations
+                      translatingMessageId === latestAssistantMessage.id
                     }
+                    canTranslate={showTranslations}
+                    onTranslate={() => handleManualTranslate(latestAssistantMessage.id)}
                     canReplay={
                       !!latestAssistantMessage.hasAudio ||
                       audioCacheIndexRef.current.has(latestAssistantMessage.id)
@@ -2358,13 +2319,7 @@ Do not return the whole sentence as a single chunk.`;
                   />
                 </Box>
               </Box>
-            ) : (
-              <Text opacity={0.75} textAlign="center" fontSize="sm" mt={2}>
-                {uiLang === "es"
-                  ? "Conéctate para iniciar la conversación en tiempo real."
-                  : "Connect to start the real-time conversation."}
-              </Text>
-            )}
+            ) : null}
           </VStack>
         </Box>
 
@@ -2458,26 +2413,19 @@ Do not return the whole sentence as a single chunk.`;
                 }
 
                 const primaryText = (m.textFinal || "") + (m.textStream || "");
-                const lang = m.lang || targetLang || "es";
                 const secondaryText = m.translation || "";
-                const secondaryLabel =
-                  lang === "es"
-                    ? translations[uiLang].language_en
-                    : translations[uiLang][`language_${secondaryPref}`];
-                const isTranslating =
-                  !secondaryText && !!m.textStream && showTranslations;
 
                 if (!primaryText.trim()) return null;
                 return (
                   <RowLeft key={m.id}>
                     <AlignedBubble
-                      primaryLabel={languageNameFor(lang)}
-                      secondaryLabel={secondaryLabel}
                       primaryText={primaryText}
                       secondaryText={showTranslations ? secondaryText : ""}
                       pairs={m.pairs || []}
                       showSecondary={showTranslations}
-                      isTranslating={isTranslating}
+                      isTranslating={translatingMessageId === m.id}
+                      canTranslate={showTranslations}
+                      onTranslate={() => handleManualTranslate(m.id)}
                       canReplay={!!m.hasAudio || audioCacheIndexRef.current.has(m.id)}
                       onReplay={() => playSavedClip(m.id)}
                       isReplaying={replayingId === m.id}
