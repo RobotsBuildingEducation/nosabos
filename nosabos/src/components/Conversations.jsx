@@ -1742,6 +1742,16 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
+    if (
+      t === "response.output_audio.done" ||
+      t === "output_audio.done" ||
+      t === "output_audio_buffer.stopped"
+    ) {
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      return;
+    }
+
     if (t === "response.created") {
       isIdleRef.current = false;
       // Record when this response started (user spoke before this)
@@ -1886,8 +1896,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
         respToMsg.current.delete(rid);
       }
-      setUiState("idle");
-      setMood("neutral");
       return;
     }
 
