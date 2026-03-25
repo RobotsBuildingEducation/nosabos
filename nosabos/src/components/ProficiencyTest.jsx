@@ -1747,22 +1747,6 @@ Return ONLY valid JSON:
               >
                 {isEs ? "Prueba de Nivel" : "Proficiency Test"}
               </Text>
-              <VStack spacing={0.5}>
-                <Box width="112px" opacity={0.95}>
-                  <RobotBuddyPro
-                    state={uiState}
-                    loudness={0}
-                    mood={mood}
-                    variant="abstract"
-                    maxW={112}
-                  />
-                </Box>
-                {uiStateLabel(uiState, isEs) && (
-                  <Text fontSize="xs" color="whiteAlpha.800">
-                    {uiStateLabel(uiState, isEs)}
-                  </Text>
-                )}
-              </VStack>
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
@@ -1808,6 +1792,23 @@ Return ONLY valid JSON:
             </VStack>
           </Box>
         </Box>
+
+        <VStack spacing={0.5} align="center" mt={2}>
+          <Box width="112px" opacity={0.95}>
+            <RobotBuddyPro
+              state={uiState}
+              loudness={0}
+              mood={mood}
+              variant="abstract"
+              maxW={112}
+            />
+          </Box>
+          {uiStateLabel(uiState, isEs) && (
+            <Text fontSize="xs" color="whiteAlpha.800">
+              {uiStateLabel(uiState, isEs)}
+            </Text>
+          )}
+        </VStack>
 
         {/* Live assistant panel */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
