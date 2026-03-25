@@ -868,6 +868,16 @@ export default function ProficiencyTest() {
 
     // --- Ported from RealTimeTest / Conversations (proven pattern) ---
 
+    if (
+      t === "response.output_audio.done" ||
+      t === "output_audio.done" ||
+      t === "output_audio_buffer.stopped"
+    ) {
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      return;
+    }
+
     if (t === "response.created") {
       isIdleRef.current = false;
       const mid = uid();
@@ -1002,8 +1012,6 @@ export default function ProficiencyTest() {
         updateMessage(mid, (m) => ({ ...m, done: true }));
         respToMsg.current.delete(rid);
       }
-      setUiState("idle");
-      setMood("neutral");
       return;
     }
 
