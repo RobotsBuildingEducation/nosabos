@@ -2063,7 +2063,7 @@ Do not return the whole sentence as a single chunk.`;
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
-            sx={MATRIX_PANEL_SX}
+            sx={{ ...MATRIX_PANEL_SX, overflow: "visible" }}
           >
             <VStack spacing={3} align="center" width="100%">
               <HStack width="100%" justify="space-between" align="center">
@@ -2148,40 +2148,48 @@ Do not return the whole sentence as a single chunk.`;
                         flex="1"
                       >
                         {currentGoal.text[uiLang] || currentGoal.text.en}
+                        {goalFeedback &&
+                          !isGeneratingGoal &&
+                          !currentGoal.completed && (
+                            <Popover placement="bottom-end" isLazy>
+                              <PopoverTrigger>
+                                <Box
+                                  as="button"
+                                  type="button"
+                                  aria-label={
+                                    uiLang === "es"
+                                      ? "Mostrar sugerencia"
+                                      : "Show suggestion"
+                                  }
+                                  ml="6px"
+                                  width="18px"
+                                  height="18px"
+                                  display="inline-flex"
+                                  alignItems="center"
+                                  justifyContent="center"
+                                  borderRadius="full"
+                                  border="1px solid"
+                                  borderColor="red.300"
+                                  bg="rgba(239,68,68,0.9)"
+                                  color="white"
+                                  verticalAlign="middle"
+                                  lineHeight={1}
+                                >
+                                  <FaExclamation size={10} />
+                                </Box>
+                              </PopoverTrigger>
+                              <PopoverContent
+                                bg="red.900"
+                                color="red.100"
+                                borderColor="red.500"
+                                maxW="320px"
+                              >
+                                <PopoverArrow bg="red.900" />
+                                <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                       </Text>
-                      {goalFeedback &&
-                        !isGeneratingGoal &&
-                        !currentGoal.completed && (
-                          <Popover placement="bottom" isLazy>
-                            <PopoverTrigger>
-                              <IconButton
-                                aria-label={
-                                  uiLang === "es"
-                                    ? "Mostrar sugerencia"
-                                    : "Show suggestion"
-                                }
-                                icon={<FaExclamation size={10} />}
-                                size="xs"
-                                minW="18px"
-                                h="18px"
-                                w="18px"
-                                p={0}
-                                borderRadius="full"
-                                variant="outline"
-                                colorScheme="red"
-                              />
-                            </PopoverTrigger>
-                            <PopoverContent
-                              bg="purple.900"
-                              color="purple.100"
-                              borderColor="purple.600"
-                              maxW="320px"
-                            >
-                              <PopoverArrow bg="purple.900" />
-                              <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
-                            </PopoverContent>
-                          </Popover>
-                        )}
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
