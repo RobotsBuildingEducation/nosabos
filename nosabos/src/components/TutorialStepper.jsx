@@ -173,15 +173,22 @@ export default function TutorialStepper({
                         transform={isCurrent ? "scale(1.1)" : "scale(1)"}
                         boxShadow={
                           isCurrent
-                            ? `0 0 20px ${config?.color || "blue.400"}40, 0 10px 24px rgba(0,0,0,0.22)`
-                            : "0 10px 24px rgba(0,0,0,0.22)"
+                            ? `0px 4px 0px ${config?.color || "#60A5FA"}`
+                            : "0px 4px 0px rgba(15, 23, 42, 0.75)"
                         }
                         _hover={{
-                          transform: isCurrent ? "scale(1.12)" : "scale(1.04)",
-                          boxShadow: `0 0 16px ${config?.color || "blue.400"}55, 0 10px 24px rgba(0,0,0,0.25)`,
+                          transform: isCurrent
+                            ? "scale(1.1) translateY(1px)"
+                            : "scale(1.03) translateY(1px)",
+                          boxShadow: isCurrent
+                            ? `0px 3px 0px ${config?.color || "#60A5FA"}`
+                            : "0px 3px 0px rgba(15, 23, 42, 0.75)",
                         }}
                         _active={{
-                          transform: isCurrent ? "scale(1.08)" : "scale(1.01)",
+                          transform: isCurrent
+                            ? "scale(1.1) translateY(4px)"
+                            : "scale(1.02) translateY(4px)",
+                          boxShadow: "0px 0px 0px rgba(15, 23, 42, 0.75)",
                         }}
                       >
                         {isCompleted ? (
