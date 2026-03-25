@@ -161,14 +161,6 @@ export default function TutorialStepper({
                             ? "whiteAlpha.200"
                             : "whiteAlpha.100"
                         }
-                        borderWidth={isCurrent ? "3px" : "2px"}
-                        borderColor={
-                          isCompleted
-                            ? config?.color || "green.500"
-                            : isCurrent
-                            ? config?.color || "blue.400"
-                            : "whiteAlpha.300"
-                        }
                         transition="all 0.3s ease"
                         transform={isCurrent ? "scale(1.1)" : "scale(1)"}
                         boxShadow={
