@@ -894,21 +894,17 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
-  const [robotFadeIn, setRobotFadeIn] = useState(true);
 
   useEffect(() => {
     if (liveUiState === displayRobotState) return;
     setPreviousRobotState(displayRobotState);
     setDisplayRobotState(liveUiState);
     setIsRobotTransitioning(true);
-    setRobotFadeIn(false);
-    const raf = requestAnimationFrame(() => setRobotFadeIn(true));
     const timer = setTimeout(() => {
       setIsRobotTransitioning(false);
       setPreviousRobotState(null);
     }, 500);
     return () => {
-      cancelAnimationFrame(raf);
       clearTimeout(timer);
     };
   }, [liveUiState, displayRobotState]);
@@ -2243,10 +2239,7 @@ Do not return the whole sentence as a single chunk.`;
                   />
                 </Box>
               )}
-              <Box
-                opacity={isRobotTransitioning ? (robotFadeIn ? 1 : 0) : 1}
-                transition="opacity 0.5s ease"
-              >
+              <Box opacity={1} transition="opacity 0.5s ease">
                 <RobotBuddyPro
                   state={displayRobotState}
                   loudness={displayRobotState === "listening" ? volume : 0}
