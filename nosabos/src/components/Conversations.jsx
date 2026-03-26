@@ -1398,6 +1398,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    // If AI is currently speaking, skip — VAD will be re-enabled when response ends
+    if (!isIdleRef.current) return;
 
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructions();

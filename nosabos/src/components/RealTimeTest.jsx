@@ -2155,6 +2155,8 @@ Return ONLY JSON:
 
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    // If AI is currently speaking, skip — VAD will be re-enabled when response ends
+    if (!isIdleRef.current) return;
     safeCancelActiveResponse();
 
     const uniqIds = Array.from(new Set(guardrailItemIdsRef.current));
@@ -2277,6 +2279,8 @@ Return ONLY JSON:
 
   function sendSessionUpdate() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    // If AI is currently speaking, skip — VAD will be re-enabled when response ends
+    if (!isIdleRef.current) return;
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructionsFromRefs();
     try {
