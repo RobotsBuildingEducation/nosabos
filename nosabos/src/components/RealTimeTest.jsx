@@ -2585,9 +2585,6 @@ Return ONLY JSON:
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
-      // Default back to "listening" when connected so users see the mic is active
-      setUiState(aliveRef.current ? "listening" : "idle");
-      setMood("neutral");
       return;
     }
 
