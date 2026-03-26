@@ -227,418 +227,221 @@ function buildInfiniteRibbonPath({
   return d;
 }
 
-/** ---------- VARIANT: Abstract Orb — IMPROVED STATES ---------- **/
+/** ---------- VARIANT: Shader Orb (OpenAI-style) ---------- **/
 function AbstractAvatar({ amp, state, mood, colors, reduced }) {
-  const t = useClock(reduced);
-  const moodColor =
-    mood === "happy"
-      ? colors.secondary
-      : mood === "encourage"
-        ? colors.primary
-        : colors.neutral;
+  const canvasRef = useRef(null);
+  const propsRef = useRef({ amp, state, mood, colors, reduced });
 
-  const isListening = state === "listening";
-  const isSpeaking = state === "speaking";
+  useEffect(() => {
+    propsRef.current = { amp, state, mood, colors, reduced };
+  });
 
-  const breathCycle = Math.sin(t / 2200) * 0.5 + 0.5;
-  const speakPulse = Math.sin(t / 1800) * 0.5 + 0.5;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = 360,
+      H = 240,
+      CX = 180,
+      CY = 120,
+      BASE_R = 88;
+    let rafId;
 
-  const baseR = 88;
-  const orbRadius = isListening
-    ? baseR + 8 + breathCycle * 12 + amp * 6
-    : isSpeaking
-      ? baseR + 2 + amp * 4
-      : baseR;
-  const spreadMult = isListening ? 1.35 + breathCycle * 0.3 : 1.0;
+    const draw = (ts) => {
+      const { amp, state, reduced: isReduced } = propsRef.current;
+      const t = ts * 0.001;
+      const isListening = state === "listening";
+      const isSpeaking = state === "speaking";
 
-  const pulse = (speed, offset = 0, min = 0.85, max = 1.25) => {
-    const s = Math.sin(t / speed + offset) * 0.5 + 0.5;
-    return min + (max - min) * s;
-  };
-  const blobScale = isListening
-    ? (speed, offset) => pulse(speed * 1.5, offset, 0.9, 1.15)
-    : (speed, offset) => pulse(speed, offset);
+      ctx.clearRect(0, 0, W, H);
 
-  const dispBase = isListening ? 6 : 10;
-  const dispAmpMult = isListening ? 18 : 32;
-  const dispA = Math.round(dispBase + amp * dispAmpMult);
-  const dispB = Math.round(dispBase * 0.8 + amp * dispAmpMult * 0.85);
-  const dispC = Math.round(dispBase * 1.1 + amp * dispAmpMult * 1.1);
+      const breathCycle = Math.sin(t * 0.45) * 0.5 + 0.5;
+      const orbR =
+        BASE_R +
+        (isListening ? 8 + breathCycle * 12 + amp * 6 : 0) +
+        (isSpeaking ? 2 + amp * 4 : 0);
+      const speedMult = isSpeaking
+        ? 1.4 + amp * 0.8
+        : isListening
+          ? 0.65
+          : 1.0;
 
-  const glowR = isListening
-    ? 85 + breathCycle * 20 + amp * 10
-    : isSpeaking
-      ? 82 + amp * 10
-      : 80 + amp * 22;
-  const glowOpacity = isListening
-    ? 0.25 + breathCycle * 0.1
-    : isSpeaking
-      ? 0.3 + amp * 0.12
-      : 0.35;
+      // — Outer glow —
+      const glowR = orbR * (1.3 + amp * 0.15);
+      const glowAlpha = isListening
+        ? 0.22 + breathCycle * 0.08
+        : isSpeaking
+          ? 0.26 + amp * 0.1
+          : 0.2;
+      const glowColor = isSpeaking ? "22,220,180" : "28,162,251";
+      const outerGlow = ctx.createRadialGradient(
+        CX,
+        CY,
+        orbR * 0.88,
+        CX,
+        CY,
+        glowR,
+      );
+      outerGlow.addColorStop(0, `rgba(${glowColor},${glowAlpha})`);
+      outerGlow.addColorStop(1, `rgba(${glowColor},0)`);
+      ctx.fillStyle = outerGlow;
+      ctx.beginPath();
+      ctx.arc(CX, CY, glowR, 0, Math.PI * 2);
+      ctx.fill();
 
-  // Unified colors from palette
-  const color1 = colors.accent; // #16f2d2 teal green
-  const color2 = colors.primary; // #1cb6fb bright blue
-  const color3 = colors.secondary; // #74cdfc pale soft blue
-  const colorCenter = colors.neutral; // #69dafa center mix
+      // — Clipped orb interior —
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(CX, CY, orbR, 0, Math.PI * 2);
+      ctx.clip();
 
-  const speakPath = useMemo(() => {
-    const cx = 180,
-      cy = 120,
-      baseRadius = 58 + amp * 8,
-      N = 72,
-      points = [];
-    for (let i = 0; i <= N; i++) {
-      const angle = (i / N) * Math.PI * 2;
-      const w1 = Math.sin(angle * 2 + t / 1400) * (4 + amp * 3);
-      const w2 = Math.sin(angle * 3 + t / 2100) * (3 + amp * 2.5);
-      const w3 = Math.sin(angle * 5 + t / 3300) * (2 + amp * 2);
-      const r = baseRadius + w1 + w2 + w3;
-      const x = cx + Math.cos(angle) * r;
-      const y = cy + Math.sin(angle) * r * 0.92;
-      points.push(`${i === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`);
-    }
-    return points.join(" ") + " Z";
-  }, [t, amp]);
+      // Deep navy base
+      ctx.fillStyle = "#030d1a";
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
 
-  const gradAngle1 = t / 6000,
-    gradAngle2 = t / 8000 + Math.PI * 0.8;
-  const f1x = 50 + Math.cos(gradAngle1) * 25,
-    f1y = 50 + Math.sin(gradAngle1) * 20;
-  const f2x = 50 + Math.cos(gradAngle2) * 25,
-    f2y = 50 + Math.sin(gradAngle2) * 20;
+      ctx.globalCompositeOperation = "screen";
 
-  const satA = {
-    cx: 180 - 28 * spreadMult - Math.sin(t / 1800) * 10 * spreadMult,
-    cy: 120 + 6 + Math.cos(t / 2000) * 8,
-  };
-  const satB = {
-    cx: 180 + 28 * spreadMult + Math.sin(t / 1600) * 9 * spreadMult,
-    cy: 118 - 8 + Math.cos(t / 2200) * 7,
-  };
-  const satC = {
-    cx: 180 + Math.sin(t / 1500) * 7 * spreadMult,
-    cy: 120 + Math.cos(t / 1800) * 6,
-  };
-  const satDist = 22 + breathCycle * 14 + amp * 8;
-  const satSize = 8 + amp * 5 + breathCycle * 3;
+      // Primary blue pool
+      const b0x = CX + Math.cos(t * 0.18 * speedMult) * orbR * 0.28;
+      const b0y = CY + Math.sin(t * 0.13 * speedMult) * orbR * 0.22;
+      const b0r = orbR * (0.92 + amp * 0.1);
+      const b0 = ctx.createRadialGradient(b0x, b0y, 0, b0x, b0y, b0r);
+      const [b0r0, b0g0, b0b0] = isSpeaking
+        ? [20, 180, 255]
+        : isListening
+          ? [10, 130, 240]
+          : [28, 140, 251];
+      b0.addColorStop(0, `rgba(${b0r0},${b0g0},${b0b0},0.88)`);
+      b0.addColorStop(0.45, `rgba(${b0r0},${b0g0},${b0b0},0.28)`);
+      b0.addColorStop(1, `rgba(${b0r0},${b0g0},${b0b0},0)`);
+      ctx.fillStyle = b0;
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
 
-  const blobA = {
-    cx: satA.cx,
-    cy: satA.cy,
-    r: (26 + amp * 14) * blobScale(1400, 0.3),
-  };
-  const blobB = {
-    cx: satB.cx,
-    cy: satB.cy,
-    r: (24 + amp * 12) * blobScale(1200, 0.9),
-  };
-  const blobC = {
-    cx: satC.cx,
-    cy: satC.cy,
-    r: (18 + amp * 11) * blobScale(1000, 1.6),
-  };
+      // Teal / cyan pool
+      const b1x =
+        CX + Math.cos(t * 0.14 * speedMult + 1.85) * orbR * 0.33;
+      const b1y =
+        CY + Math.sin(t * 0.11 * speedMult + 1.85) * orbR * 0.26;
+      const b1r = orbR * (0.78 + amp * 0.1);
+      const b1 = ctx.createRadialGradient(b1x, b1y, 0, b1x, b1y, b1r);
+      const [b1r0, b1g0, b1b0] = isSpeaking
+        ? [0, 240, 200]
+        : isListening
+          ? [0, 195, 215]
+          : [22, 210, 190];
+      b1.addColorStop(0, `rgba(${b1r0},${b1g0},${b1b0},0.78)`);
+      b1.addColorStop(0.48, `rgba(${b1r0},${b1g0},${b1b0},0.22)`);
+      b1.addColorStop(1, `rgba(${b1r0},${b1g0},${b1b0},0)`);
+      ctx.fillStyle = b1;
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
+
+      // Deep indigo accent (adds depth)
+      const b2x =
+        CX + Math.cos(t * 0.21 * speedMult + 3.6) * orbR * 0.25;
+      const b2y =
+        CY + Math.sin(t * 0.16 * speedMult + 3.6) * orbR * 0.2;
+      const b2r = orbR * (0.72 + amp * 0.07);
+      const b2 = ctx.createRadialGradient(b2x, b2y, 0, b2x, b2y, b2r);
+      b2.addColorStop(0, `rgba(30,60,200,0.82)`);
+      b2.addColorStop(0.5, `rgba(30,60,200,0.18)`);
+      b2.addColorStop(1, `rgba(30,60,200,0)`);
+      ctx.fillStyle = b2;
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
+
+      // Speaking burst pool
+      if (isSpeaking) {
+        const b3x =
+          CX +
+          Math.cos(t * 0.38 + 0.9) * orbR * 0.18 +
+          Math.sin(t * 2.2) * orbR * amp * 0.14;
+        const b3y =
+          CY +
+          Math.sin(t * 0.31 + 0.9) * orbR * 0.16 +
+          Math.cos(t * 1.9) * orbR * amp * 0.11;
+        const b3r = orbR * (0.52 + amp * 0.22);
+        const b3 = ctx.createRadialGradient(b3x, b3y, 0, b3x, b3y, b3r);
+        b3.addColorStop(
+          0,
+          `rgba(120,255,230,${0.55 + amp * 0.3})`,
+        );
+        b3.addColorStop(0.4, `rgba(80,220,200,${0.18 + amp * 0.1})`);
+        b3.addColorStop(1, `rgba(80,220,200,0)`);
+        ctx.fillStyle = b3;
+        ctx.fillRect(
+          CX - orbR - 2,
+          CY - orbR - 2,
+          orbR * 2 + 4,
+          orbR * 2 + 4,
+        );
+      }
+
+      // Specular highlight (sphere illusion — upper-left)
+      const hlx =
+        CX - orbR * 0.28 + Math.cos(t * 0.07 * speedMult) * orbR * 0.06;
+      const hly =
+        CY - orbR * 0.32 + Math.sin(t * 0.055 * speedMult) * orbR * 0.05;
+      const hlr = orbR * (0.44 + amp * 0.04);
+      const hl = ctx.createRadialGradient(hlx, hly, 0, hlx, hly, hlr);
+      hl.addColorStop(0, `rgba(255,255,255,${0.38 + amp * 0.06})`);
+      hl.addColorStop(0.3, `rgba(200,230,255,0.12)`);
+      hl.addColorStop(1, `rgba(200,230,255,0)`);
+      ctx.fillStyle = hl;
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
+
+      // Edge vignette for depth
+      ctx.globalCompositeOperation = "source-over";
+      const vign = ctx.createRadialGradient(CX, CY, orbR * 0.58, CX, CY, orbR);
+      vign.addColorStop(0, "rgba(0,0,0,0)");
+      vign.addColorStop(0.68, "rgba(0,0,0,0.08)");
+      vign.addColorStop(1, "rgba(0,0,0,0.62)");
+      ctx.fillStyle = vign;
+      ctx.fillRect(CX - orbR - 2, CY - orbR - 2, orbR * 2 + 4, orbR * 2 + 4);
+
+      ctx.restore();
+
+      // — Listening inward rings —
+      if (isListening && !isReduced) {
+        for (let i = 0; i < 3; i++) {
+          const ph = ((ts * 0.000125) + i / 3) % 1;
+          const ringR = orbR + Math.sqrt(ph) * (32 + amp * 8);
+          const fade = Math.pow(1 - ph, 2.2) * (0.26 + amp * 0.14);
+          const sw = Math.max(0.3, 1.4 * (1 - ph * 0.55));
+          ctx.beginPath();
+          ctx.arc(CX, CY, ringR, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(28,182,251,${fade})`;
+          ctx.lineWidth = sw;
+          ctx.stroke();
+        }
+      }
+
+      // — Speaking outward rings —
+      if (isSpeaking && !isReduced) {
+        for (let i = 0; i < 2; i++) {
+          const phase = ((ts * 0.0003125) + i / 2) % 1;
+          const ringR = orbR * 0.7 + phase * (orbR * 0.5 + amp * 10);
+          const alpha = (1 - phase) * (0.22 + amp * 0.12);
+          ctx.beginPath();
+          ctx.arc(CX, CY, ringR, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(22,242,210,${alpha})`;
+          ctx.lineWidth = 1.2 * (1 - phase * 0.5);
+          ctx.stroke();
+        }
+      }
+
+      rafId = requestAnimationFrame(draw);
+    };
+
+    rafId = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(rafId);
+  }, []); // animation loop runs once; live values read from propsRef
 
   return (
-    <svg
-      viewBox="0 0 360 240"
-      width="100%"
-      height="100%"
-      style={{ display: "block" }}
-    >
-      <defs>
-        <radialGradient id="rbgrad" cx="50%" cy="45%" r="65%">
-          <stop offset="0%" stopColor={color2} stopOpacity={glowOpacity} />
-          <stop
-            offset="60%"
-            stopColor={color1}
-            stopOpacity={glowOpacity * 0.5}
-          />
-          <stop offset="100%" stopColor="transparent" stopOpacity="0" />
-        </radialGradient>
-        {isSpeaking && (
-          <>
-            <radialGradient id="sg1" cx={`${f1x}%`} cy={`${f1y}%`} r="65%">
-              <stop offset="0%" stopColor={color1} stopOpacity="0.95" />
-              <stop offset="50%" stopColor={color1} stopOpacity="0.4" />
-              <stop offset="100%" stopColor={color1} stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="sg2" cx={`${f2x}%`} cy={`${f2y}%`} r="65%">
-              <stop offset="0%" stopColor={color2} stopOpacity="0.95" />
-              <stop offset="50%" stopColor={color3} stopOpacity="0.4" />
-              <stop offset="100%" stopColor={color3} stopOpacity="0" />
-            </radialGradient>
-            <radialGradient id="sgCenter" cx="50%" cy="50%" r="40%">
-              <stop offset="0%" stopColor={colorCenter} stopOpacity="0.85" />
-              <stop offset="60%" stopColor={colorCenter} stopOpacity="0.15" />
-              <stop offset="100%" stopColor={colorCenter} stopOpacity="0" />
-            </radialGradient>
-          </>
-        )}
-        <mask id="orbMask">
-          <rect width="100%" height="100%" fill="black" />
-          <circle cx="180" cy="120" r={orbRadius} fill="white" />
-        </mask>
-        <filter id="rbgoo">
-          <feGaussianBlur
-            in="SourceGraphic"
-            stdDeviation={isListening ? 10 : 8}
-            result="blur"
-          />
-          <feColorMatrix
-            in="blur"
-            result="goo"
-            type="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8"
-          />
-          <feBlend in="SourceGraphic" in2="goo" />
-        </filter>
-        <filter id="gelDispA" x="-50%" y="-50%" width="200%" height="200%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.012"
-            numOctaves="2"
-            seed="3"
-            result="n"
-          >
-            {!reduced && (
-              <animate
-                attributeName="baseFrequency"
-                dur={isListening ? "10s" : "7s"}
-                values={isListening ? "0.008;0.015;0.008" : "0.01;0.02;0.01"}
-                repeatCount="indefinite"
-              />
-            )}
-          </feTurbulence>
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="n"
-            scale={dispA}
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-        <filter id="gelDispB" x="-50%" y="-50%" width="200%" height="200%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.011"
-            numOctaves="2"
-            seed="7"
-            result="n"
-          >
-            {!reduced && (
-              <animate
-                attributeName="baseFrequency"
-                dur={isListening ? "11s" : "8s"}
-                values={isListening ? "0.007;0.014;0.007" : "0.009;0.018;0.009"}
-                repeatCount="indefinite"
-              />
-            )}
-          </feTurbulence>
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="n"
-            scale={dispB}
-            xChannelSelector="G"
-            yChannelSelector="B"
-          />
-        </filter>
-        <filter id="gelDispC" x="-50%" y="-50%" width="200%" height="200%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.013"
-            numOctaves="2"
-            seed="11"
-            result="n"
-          >
-            {!reduced && (
-              <animate
-                attributeName="baseFrequency"
-                dur={isListening ? "9s" : "6s"}
-                values={isListening ? "0.01;0.018;0.01" : "0.012;0.022;0.012"}
-                repeatCount="indefinite"
-              />
-            )}
-          </feTurbulence>
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="n"
-            scale={dispC}
-            xChannelSelector="R"
-            yChannelSelector="B"
-          />
-        </filter>
-        <filter id="gelDispSpeak" x="-50%" y="-50%" width="200%" height="200%">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.008"
-            numOctaves="2"
-            seed="17"
-            result="n"
-          >
-            {!reduced && (
-              <animate
-                attributeName="baseFrequency"
-                dur="12s"
-                values="0.006;0.012;0.006"
-                repeatCount="indefinite"
-              />
-            )}
-          </feTurbulence>
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="n"
-            scale={Math.round(4 + amp * 6)}
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-      </defs>
-
-      {isListening && !reduced && (
-        <g>
-          {[0, 1, 2].map((i) => {
-            const ph = (t / 8000 + i / 3) % 1;
-            const eased = Math.sqrt(ph);
-            const r = orbRadius + eased * (34 + amp * 8);
-            const fade = Math.pow(1 - ph, 2.2);
-            const sw = 1.4 * (1 - eased * 0.55);
-            const wobble = Math.sin(ph * Math.PI * 1.5 + i * 1.3) * 0.15;
-            return (
-              <circle
-                key={`lr${i}`}
-                cx="180"
-                cy="120"
-                r={r}
-                fill="none"
-                stroke={hexWithAlpha(color2, 0.5)}
-                strokeWidth={Math.max(0.3, sw + wobble)}
-                opacity={fade * (0.28 + amp * 0.2)}
-              />
-            );
-          })}
-        </g>
-      )}
-      {isSpeaking && !reduced && (
-        <g opacity={0.2 + amp * 0.2}>
-          {[0, 1].map((i) => {
-            const phase = (t / 3200 + i / 2) % 1;
-            const r = orbRadius * 0.7 + phase * (orbRadius * 0.5 + amp * 10);
-            return (
-              <circle
-                key={`sr${i}`}
-                cx="180"
-                cy="120"
-                r={r}
-                fill="none"
-                stroke={hexWithAlpha(color2, 0.4)}
-                strokeWidth={1.2 * (1 - phase * 0.5)}
-                opacity={(1 - phase) * (0.25 + amp * 0.15)}
-              />
-            );
-          })}
-        </g>
-      )}
-
-      <circle cx="180" cy="120" r={glowR} fill="url(#rbgrad)" />
-      {isSpeaking && (
-        <circle
-          cx="180"
-          cy="120"
-          r={orbRadius + 3}
-          fill="none"
-          stroke={hexWithAlpha(color2, 0.06 + amp * 0.08)}
-          strokeWidth={1 + amp * 0.5}
-          opacity={0.3 + speakPulse * 0.2}
-        />
-      )}
-      {isListening && (
-        <circle
-          cx="180"
-          cy="120"
-          r={orbRadius + 6 + breathCycle * 8}
-          fill="none"
-          stroke={hexWithAlpha(color2, 0.08 + breathCycle * 0.12)}
-          strokeWidth={2 + breathCycle * 2}
-          opacity={0.6}
-        />
-      )}
-
-      {isSpeaking && (
-        <g filter="url(#gelDispSpeak)">
-          <path d={speakPath} fill="url(#sg1)" opacity="0.9" />
-          <path d={speakPath} fill="url(#sg2)" opacity="0.85" />
-          <path d={speakPath} fill="url(#sgCenter)" opacity="0.7" />
-        </g>
-      )}
-
-      {!isSpeaking && (
-        <g
-          mask="url(#orbMask)"
-          filter="url(#rbgoo)"
-          style={{ mixBlendMode: "screen" }}
-        >
-          <g filter="url(#gelDispA)">
-            <circle
-              cx={blobA.cx}
-              cy={blobA.cy}
-              r={blobA.r}
-              fill={hexWithAlpha(color1, 0.98)}
-            />
-            {isListening && (
-              <circle
-                cx={satA.cx + Math.cos(t / 1800 + 0.5) * satDist}
-                cy={satA.cy + Math.sin(t / 2100 + 0.5) * satDist * 0.7}
-                r={satSize}
-                fill={hexWithAlpha(color1, 0.75)}
-              />
-            )}
-          </g>
-          <g filter="url(#gelDispB)">
-            <circle
-              cx={blobB.cx}
-              cy={blobB.cy}
-              r={blobB.r}
-              fill={hexWithAlpha(color2, 0.96)}
-            />
-            {isListening && (
-              <circle
-                cx={satB.cx + Math.cos(t / 1600 + 2.1) * satDist}
-                cy={satB.cy + Math.sin(t / 1900 + 2.1) * satDist * 0.7}
-                r={satSize * 0.9}
-                fill={hexWithAlpha(color2, 0.7)}
-              />
-            )}
-          </g>
-          <g filter="url(#gelDispC)">
-            <circle
-              cx={blobC.cx}
-              cy={blobC.cy}
-              r={blobC.r}
-              fill={hexWithAlpha(color3, 0.98)}
-            />
-            {isListening && (
-              <circle
-                cx={satC.cx + Math.cos(t / 2000 + 4.0) * satDist * 0.85}
-                cy={satC.cy + Math.sin(t / 2300 + 4.0) * satDist * 0.65}
-                r={satSize * 0.8}
-                fill={hexWithAlpha(color3, 0.65)}
-              />
-            )}
-          </g>
-        </g>
-      )}
-
-      {isListening && (
-        <circle
-          cx="180"
-          cy="120"
-          r={12 + breathCycle * 8}
-          fill={hexWithAlpha(color2, 0.06 + breathCycle * 0.06)}
-          style={{ mixBlendMode: "screen" }}
-        />
-      )}
-    </svg>
+    <canvas
+      ref={canvasRef}
+      width={360}
+      height={240}
+      style={{ display: "block", width: "100%", height: "100%" }}
+    />
   );
 }
 
