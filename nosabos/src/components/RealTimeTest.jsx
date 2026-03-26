@@ -2447,6 +2447,29 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      // Unmute mic + re-enable VAD so user can speak again (turn-based)
+      try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
+          const vadMs = pauseMsRef.current || 2000;
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: vadMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -2454,6 +2477,21 @@ Return ONLY JSON:
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      // Mute mic + disable VAD so user cannot interrupt AI speech (turn-based)
+      try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            })
+          );
+        }
+      } catch {}
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -2565,6 +2603,29 @@ Return ONLY JSON:
     ) {
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
+      // Safety fallback: ensure mic + VAD are re-enabled when response ends
+      try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
+          const vadMs = pauseMsRef.current || 2000;
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: vadMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       idleWaitersRef.current.splice(0).forEach((fn) => {
         try {
           fn();
