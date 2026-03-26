@@ -873,6 +873,24 @@ export default function ProficiencyTest() {
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      // Re-enable VAD so user can speak again (turn-based)
+      try {
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: pauseMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -880,6 +898,17 @@ export default function ProficiencyTest() {
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      // Disable VAD so user cannot interrupt AI speech (turn-based)
+      try {
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            })
+          );
+        }
+      } catch {}
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
@@ -998,6 +1027,24 @@ export default function ProficiencyTest() {
       t === "response.canceled"
     ) {
       isIdleRef.current = true;
+      // Safety fallback: ensure VAD is re-enabled when response ends
+      try {
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: pauseMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
         const buf = streamBuffersRef.current.get(mid) || "";

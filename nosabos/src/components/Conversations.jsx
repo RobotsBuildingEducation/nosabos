@@ -1743,6 +1743,25 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      // Re-enable VAD so user can speak again (turn-based)
+      try {
+        if (dcRef.current?.readyState === "open") {
+          const vadMs = pauseMsRef.current || 2000;
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: vadMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -1750,6 +1769,17 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      // Disable VAD so user cannot interrupt AI speech (turn-based)
+      try {
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            })
+          );
+        }
+      } catch {}
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
       const mdKind = data?.response?.metadata?.kind;
@@ -1862,6 +1892,25 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     ) {
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
+      // Safety fallback: ensure VAD is re-enabled when response ends
+      try {
+        if (dcRef.current?.readyState === "open") {
+          const vadMs = pauseMsRef.current || 2000;
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: vadMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       idleWaitersRef.current.splice(0).forEach((fn) => {
         try {
           fn();
