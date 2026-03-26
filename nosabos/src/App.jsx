@@ -4960,6 +4960,7 @@ export default function App() {
               setScrollToLatestTrigger((prev) => prev + 1);
             }
           }}
+          currentTab={currentTab}
         />
       )}
 
@@ -5694,6 +5695,7 @@ function BottomActionBar({
   pathMode = "path",
   onPathModeChange,
   onScrollToLatest,
+  currentTab,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -5771,9 +5773,10 @@ function BottomActionBar({
     : notesIsDone
       ? "notesDone 1.5s ease-out"
       : undefined;
-  // Auto-minimize when entering a lesson
+  // Auto-minimize when entering a lesson or switching modules
   const [isMinimized, setIsMinimized] = useState(viewMode === "lesson");
   const prevViewMode = useRef(viewMode);
+  const prevTab = useRef(currentTab);
 
   useEffect(() => {
     if (viewMode === "lesson" && prevViewMode.current !== "lesson") {
@@ -5783,6 +5786,14 @@ function BottomActionBar({
     }
     prevViewMode.current = viewMode;
   }, [viewMode]);
+
+  // Re-minimize when switching modules within a lesson
+  useEffect(() => {
+    if (viewMode === "lesson" && currentTab !== prevTab.current) {
+      setIsMinimized(true);
+    }
+    prevTab.current = currentTab;
+  }, [currentTab, viewMode]);
 
   const handleActionClick = (action) => {
     if (!action) return;
