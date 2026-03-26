@@ -2585,8 +2585,9 @@ Return ONLY JSON:
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
-      // Don't set uiState here — wait for output_audio.done so we stay
-      // in "speaking" until the AI actually finishes speaking audio.
+      // Default back to "listening" when connected so users see the mic is active
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
       return;
     }
 
