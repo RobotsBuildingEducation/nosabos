@@ -2447,7 +2447,7 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
-      setUiState(status === "connected" ? "listening" : "idle");
+      setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
     }
@@ -2586,7 +2586,7 @@ Return ONLY JSON:
         respToMsg.current.delete(rid);
       }
       // Default back to "listening" when connected so users see the mic is active
-      setUiState(status === "connected" ? "listening" : "idle");
+      setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
     }
