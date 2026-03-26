@@ -1210,7 +1210,7 @@ export default function RealTimeTest({
 
       setStatus("connected");
       aliveRef.current = true;
-      setUiState("idle");
+      setUiState("listening");
     } catch (e) {
       setStatus("disconnected");
       setUiState("idle");
@@ -2442,6 +2442,16 @@ Return ONLY JSON:
       return;
     }
 
+    if (
+      t === "response.output_audio.done" ||
+      t === "output_audio.done" ||
+      t === "output_audio_buffer.stopped"
+    ) {
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      return;
+    }
+
     if (t === "response.created") {
       isIdleRef.current = false;
       const mdKind = data?.response?.metadata?.kind;
@@ -2575,8 +2585,8 @@ Return ONLY JSON:
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
-      setUiState("idle");
-      setMood("neutral");
+      // Don't set uiState here — wait for output_audio.done so we stay
+      // in "speaking" until the AI actually finishes speaking audio.
       return;
     }
 
@@ -2841,8 +2851,10 @@ Do not return the whole sentence as a single chunk.`;
 
   async function handleManualTranslate(id) {
     if (!id || translatingMessageId === id) return;
+    const previousUiState = uiState;
+    setTranslatingMessageId(id);
+    setUiState("thinking");
     try {
-      setTranslatingMessageId(id);
       await translateMessage(id);
     } catch (e) {
       toast({
@@ -2852,8 +2864,12 @@ Do not return the whole sentence as a single chunk.`;
         duration: 2200,
         isClosable: true,
       });
-    } finally {
-      setTranslatingMessageId(null);
+    }
+    setTranslatingMessageId(null);
+    if (status === "connected") {
+      setUiState("listening");
+    } else {
+      setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
     }
   }
 
