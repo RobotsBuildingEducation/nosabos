@@ -2451,29 +2451,9 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
-      // Unmute mic + re-enable VAD so user can speak again (turn-based)
-      try {
-        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
-        if (dcRef.current?.readyState === "open") {
-          dcRef.current.send(
-            JSON.stringify({ type: "input_audio_buffer.clear" })
-          );
-          const vadMs = pauseMsRef.current || 2000;
-          dcRef.current.send(
-            JSON.stringify({
-              type: "session.update",
-              session: {
-                turn_detection: {
-                  type: "server_vad",
-                  silence_duration_ms: vadMs,
-                  threshold: 0.35,
-                  prefix_padding_ms: 120,
-                },
-              },
-            })
-          );
-        }
-      } catch {}
+      // Only update UI — do NOT re-enable VAD/mic here.
+      // VAD is re-enabled when the full response completes,
+      // preventing premature interruption while audio is still playing.
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -2600,14 +2580,35 @@ Return ONLY JSON:
       return;
     }
 
+    // When response is canceled (interrupted), keep mic muted + VAD off.
+    // The server already captured the speech that caused the interruption
+    // and will create a new response — we stay muted until that completes.
+    if (t === "response.canceled") {
+      stopRecorderAfterTail(rid);
+      const mid = rid && respToMsg.current.get(rid);
+      if (mid) {
+        const buf = streamBuffersRef.current.get(mid) || "";
+        if (buf) {
+          streamBuffersRef.current.set(mid, "");
+          updateMessage(mid, (m) => ({
+            ...m,
+            textStream: "",
+            textFinal: ((m.textFinal || "") + " " + buf).trim(),
+          }));
+        }
+        updateMessage(mid, (m) => ({ ...m, done: true }));
+        respToMsg.current.delete(rid);
+      }
+      return;
+    }
+
     if (
       t === "response.completed" ||
-      t === "response.done" ||
-      t === "response.canceled"
+      t === "response.done"
     ) {
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
-      // Safety fallback: ensure mic + VAD are re-enabled when response ends
+      // Response fully completed — unmute mic + re-enable VAD for user's turn
       try {
         localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
         if (dcRef.current?.readyState === "open") {
