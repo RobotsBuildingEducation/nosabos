@@ -1743,9 +1743,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
-      // Re-enable VAD so user can speak again (turn-based)
+      // Unmute mic + re-enable VAD so user can speak again (turn-based)
       try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
         if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
           const vadMs = pauseMsRef.current || 2000;
           dcRef.current.send(
             JSON.stringify({
@@ -1769,9 +1773,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (t === "response.created") {
       isIdleRef.current = false;
-      // Disable VAD so user cannot interrupt AI speech (turn-based)
+      // Mute mic + disable VAD so user cannot interrupt AI speech (turn-based)
       try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
         if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
           dcRef.current.send(
             JSON.stringify({
               type: "session.update",
@@ -1892,9 +1900,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     ) {
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
-      // Safety fallback: ensure VAD is re-enabled when response ends
+      // Safety fallback: ensure mic + VAD are re-enabled when response ends
       try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
         if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
           const vadMs = pauseMsRef.current || 2000;
           dcRef.current.send(
             JSON.stringify({
