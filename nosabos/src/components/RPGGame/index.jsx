@@ -27,9 +27,7 @@ import {
   useDisclosure,
   Tooltip,
   Image,
-  SimpleGrid,
-  Spinner,
-} from "@chakra-ui/react";
+  SimpleGrid, } from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
@@ -5940,7 +5938,7 @@ export default function RPGGame({
                       </Text>
                     ) : null}
                     <HStack spacing={2}>
-                      <Spinner size="xs" color="gray.500" />
+                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                       <Text fontSize="sm" color="gray.700">
                         ...
                       </Text>
@@ -6267,7 +6265,7 @@ export default function RPGGame({
                   {dialogue.node?.responseMode === "choice" &&
                     (generatingChoices ? (
                       <HStack justify="center" py={4}>
-                        <Spinner size="sm" color="gray.500" />
+                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                         <Text fontSize="sm" color="gray.500">
                           {targetLang === "es" ? "Pensando..." : "Thinking..."}
                         </Text>

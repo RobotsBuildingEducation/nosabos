@@ -12,9 +12,7 @@ import {
   Wrap,
   WrapItem,
   useToast,
-  Flex,
-  Spinner,
-  Modal,
+  Flex, Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
@@ -345,7 +343,7 @@ function AlignedBubble({
             size="xs"
             variant="ghost"
             colorScheme="cyan"
-            icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
+            icon={isReplaying ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <RiVolumeUpLine size={14} />}
             onClick={onReplay}
             isDisabled={isReplaying}
             aria-label={replayLabel || "Replay"}
@@ -413,7 +411,7 @@ function AlignedBubble({
             size="xs"
             variant="ghost"
             colorScheme="cyan"
-            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
+            icon={isTranslating ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineTranslate />}
             onClick={onTranslate}
             isDisabled={isTranslating}
             aria-label="Translate message"
@@ -2928,7 +2926,7 @@ Do not return the whole sentence as a single chunk.`;
                     <IconButton
                       icon={
                         isGeneratingGoal ? (
-                          <Spinner size="xs" color="white" />
+                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                         ) : (
                           <FaDice />
                         )

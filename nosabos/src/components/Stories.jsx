@@ -17,9 +17,7 @@ import {
   Badge,
   IconButton,
   Spacer,
-  Divider,
-  Spinner,
-  Input,
+  Divider, Input,
   Tag,
   TagLabel,
   Flex,
@@ -66,7 +64,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
 
 /* ================================
    ENV / API
@@ -1674,7 +1672,7 @@ export default function StoryMode({
             <Text color="#94a3b8" fontSize="sm">
               {uiText.generatingSub}
             </Text>
-            <Spinner color="teal.300" />
+            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
           </VStack>
         </Center>
       </Box>
@@ -2035,7 +2033,7 @@ export default function StoryMode({
                           fontSize="lg"
                           leftIcon={
                             isConnecting ? (
-                              <Spinner size="sm" />
+                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                             ) : (
                               <PiMicrophoneStageDuotone />
                             )

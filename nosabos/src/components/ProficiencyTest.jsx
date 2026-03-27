@@ -24,9 +24,7 @@ import {
   ModalHeader,
   Text,
   VStack,
-  Badge,
-  Spinner,
-  Divider,
+  Badge, Divider,
   Grid,
   GridItem,
 } from "@chakra-ui/react";

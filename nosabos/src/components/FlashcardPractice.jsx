@@ -13,9 +13,7 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
-  Badge,
-  Spinner,
-  useToast,
+  Badge, useToast,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -52,6 +50,7 @@ import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import RandomCharacter from "./RandomCharacter";
+import VoiceOrb from "./VoiceOrb";
 
 const MotionBox = motion(Box);
 
@@ -719,7 +718,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     {getTranslation("flashcard_answer_label")}
                   </Text>
                   {isStreaming && !streamedAnswer ? (
-                    <Spinner size="md" color="blue.200" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
                   ) : (
                     <Text
                       fontSize="3xl"
@@ -751,7 +750,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         color="white"
                         icon={
                           loadingTts ? (
-                            <Spinner size="xs" />
+                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                           ) : isPlayingAudio ? (
                             <RiStopLine size={14} />
                           ) : (
@@ -784,7 +783,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 {/* Grading State */}
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
-                    <Spinner size="lg" color={cefrColor.primary} />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
                     <Text color="gray.400">
                       {getTranslation("flashcard_grading")}
                     </Text>
@@ -798,7 +797,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
                       leftIcon={
                         isConnecting ? (
-                          <Spinner size="sm" />
+                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                         ) : isRecording ? (
                           <RiStopCircleLine size={20} />
                         ) : (
@@ -937,7 +936,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       <IconButton
                         icon={
                           isCreatingNote ? (
-                            <Spinner size="xs" />
+                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                           ) : (
                             <RiBookmarkLine size={18} />
                           )
@@ -990,7 +989,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           }
                           leftIcon={
                             isLoadingExplanation ? (
-                              <Spinner size="sm" />
+                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                             ) : (
                               <FiHelpCircle />
                             )

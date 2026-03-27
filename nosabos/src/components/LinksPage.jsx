@@ -20,9 +20,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Stack,
-  Spinner,
-  Switch,
+  Stack, Switch,
   Text,
   IconButton,
   useDisclosure,
@@ -1365,7 +1363,7 @@ export default function LinksPage() {
                 {/* Loading/hydration spinner */}
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
-                    <Spinner size="sm" color="#00ffff" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                     <Text fontSize="sm" color="gray.400">
                       {translations.loadingWallet}
                     </Text>

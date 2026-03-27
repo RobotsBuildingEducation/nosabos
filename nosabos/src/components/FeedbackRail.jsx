@@ -5,9 +5,7 @@ import {
   Flex,
   HStack,
   IconButton,
-  SlideFade,
-  Spinner,
-  Text,
+  SlideFade, Text,
   VStack,
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
@@ -19,6 +17,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import sparkleSound from "../assets/sparkle.mp3";
+import VoiceOrb from "./VoiceOrb";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -125,7 +124,7 @@ const FeedbackRail = React.memo(
                 <IconButton
                   icon={
                     isCreatingNote ? (
-                      <Spinner size="xs" />
+                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                     ) : (
                       <RiBookmarkLine size={18} />
                     )
@@ -182,7 +181,7 @@ const FeedbackRail = React.memo(
               <Button
                 leftIcon={
                   isLoadingExplanation ? (
-                    <Spinner size="sm" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                   ) : (
                     <FiHelpCircle />
                   )

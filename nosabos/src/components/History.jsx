@@ -13,9 +13,7 @@ import {
   Flex,
   HStack,
   VStack,
-  Text,
-  Spinner,
-  Divider,
+  Text, Divider,
   IconButton,
   Center,
   Stack,
@@ -60,10 +58,11 @@ import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
 import RandomCharacter from "./RandomCharacter";
+import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
-    <Spinner size="xs" />
+    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
   ) : (
     <PiSpeakerHighDuotone style={{ marginLeft: "12px" }} />
   );
@@ -1924,14 +1923,14 @@ Return ONLY valid JSON:
           >
             {isLoading ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <Spinner size="lg" color="teal.400" />
+                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
                 <Text fontSize="lg" opacity={0.9}>
                   {t("reading_loading") || "Loading settings..."}
                 </Text>
               </VStack>
             ) : isGenerating && !draftLecture ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <Spinner size="lg" color="teal.400" />
+                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
                 <Text fontSize="lg" opacity={0.9}>
                   {t("reading_generating") || "Creating lecture..."}
                 </Text>
@@ -1953,7 +1952,7 @@ Return ONLY valid JSON:
                     <IconButton
                       icon={
                         isSynthesizingTarget ? (
-                          <Spinner size="sm" />
+                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                         ) : (
                           <PiLightningDuotone size="20px" />
                         )
@@ -2611,7 +2610,7 @@ Return ONLY valid JSON:
                       </VStack>
                     ) : isGeneratingQuestion ? (
                       <HStack justify="center" py={4}>
-                        <Spinner size="sm" color="teal.400" />
+                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                         <Text fontSize="sm" opacity={0.7}>
                           {t("history_generating_question")}
                         </Text>
@@ -2864,7 +2863,7 @@ Return ONLY valid JSON:
                                   <Button
                                     leftIcon={
                                       isLoadingExplanation ? (
-                                        <Spinner size="sm" />
+                                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                                       ) : (
                                         <FiHelpCircle />
                                       )

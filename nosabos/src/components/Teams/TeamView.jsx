@@ -12,9 +12,7 @@ import {
   Button,
   Divider,
   HStack,
-  Progress,
-  Spinner,
-  Text,
+  Progress, Text,
   useToast,
   VStack,
 } from "@chakra-ui/react";
@@ -29,6 +27,7 @@ import {
   subscribeToTeamInvites,
   subscribeToTeamUpdates,
 } from "../../utils/teams";
+import VoiceOrb from "../VoiceOrb";
 
 const formatCountLabel = (count, singular, plural) => {
   if (count === 1) return `${count} ${singular}`;
@@ -222,7 +221,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   if (loading) {
     return (
       <VStack py={8} spacing={3} align="center">
-        <Spinner />
+        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
         <Text fontSize="sm" color="gray.400">
           {t?.teams_view_loading || "Loading teams..."}
         </Text>

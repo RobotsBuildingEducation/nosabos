@@ -11,9 +11,7 @@ import {
   Input,
   Button,
   IconButton,
-  Badge,
-  Spinner,
-  useToast,
+  Badge, useToast,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -47,6 +45,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import RandomCharacter from "./RandomCharacter";
+import VoiceOrb from "./VoiceOrb";
 
 const MotionBox = motion(Box);
 
@@ -573,7 +572,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             position="relative"
             zIndex={1}
           >
-            <Spinner size="md" color="blue.200" />
+            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
             <Text color="whiteAlpha.800" fontSize="sm">
               {userLanguage === "es"
                 ? "Generando tarjeta..."
@@ -755,7 +754,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         color="white"
                         icon={
                           loadingTts ? (
-                            <Spinner size="xs" />
+                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                           ) : isPlayingAudio ? (
                             <RiStopLine size={14} />
                           ) : (
@@ -794,7 +793,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     minH="140px"
                     justify="center"
                   >
-                    <Spinner size="md" color="blue.200" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
                     <Text color="whiteAlpha.700" fontSize="sm">
                       {t("grading")}
                     </Text>
@@ -810,7 +809,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }
                       leftIcon={
                         isConnecting ? (
-                          <Spinner size="xs" />
+                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                         ) : isRecording ? (
                           <RiStopCircleLine size={16} />
                         ) : (
@@ -1003,7 +1002,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           }
                           leftIcon={
                             isLoadingExplanation ? (
-                              <Spinner size="xs" />
+                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                             ) : (
                               <FiHelpCircle size={14} />
                             )

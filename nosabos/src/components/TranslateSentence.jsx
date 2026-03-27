@@ -5,9 +5,7 @@ import {
   Button,
   Flex,
   HStack,
-  IconButton,
-  Spinner,
-  Text,
+  IconButton, Text,
   VStack,
   Stack,
   Center,
@@ -21,9 +19,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
 
 /**
  * TranslateSentence - A Duolingo-style translation exercise component
@@ -299,7 +298,7 @@ export default function TranslateSentence({
                           ? "Pedir ayuda"
                           : "Ask the assistant"
                       }
-                      icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                      icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
                       size="sm"
                       fontSize="lg"
                       rounded="xl"
@@ -347,7 +346,7 @@ export default function TranslateSentence({
               <Text fontWeight="semibold" color="blue.300">
                 {userLanguage === "es" ? "Asistente" : "Assistant"}
               </Text>
-              {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+              {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
             </HStack>
             <Box
               fontSize="md"
@@ -569,7 +568,7 @@ export default function TranslateSentence({
             px={{ base: 7, md: 12 }}
             py={{ base: 3, md: 4 }}
           >
-            {isSubmitting ? <Spinner size="sm" /> : submitLabel}
+            {isSubmitting ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : submitLabel}
           </Button>
         </Stack>
 

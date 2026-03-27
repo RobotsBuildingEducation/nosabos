@@ -12,9 +12,7 @@ import {
   Button,
   Flex,
   HStack,
-  Input,
-  Spinner,
-  Text,
+  Input, Text,
   VStack,
   Radio,
   RadioGroup,
@@ -50,9 +48,10 @@ import {
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -1353,7 +1352,7 @@ YES or NO
         >
           {isLoading ? (
             <VStack spacing={4}>
-              <Spinner color="teal.300" />
+              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
               <Text color="white">
                 {userLanguage === "es"
                   ? "Generando pregunta..."

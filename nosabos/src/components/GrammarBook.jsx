@@ -12,9 +12,7 @@ import {
   Button,
   Flex,
   HStack,
-  Input,
-  Spinner,
-  Text,
+  Input, Text,
   VStack,
   Radio,
   RadioGroup,
@@ -70,7 +68,7 @@ import LessonFlashcard, {
 } from "./LessonFlashcard";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -3945,7 +3943,7 @@ Return JSON ONLY:
         aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
         icon={
           isLoadingAssistantSupport ? (
-            <Spinner size="xs" />
+            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
           ) : (
             <MdOutlineSupportAgent />
           )
@@ -3981,7 +3979,7 @@ Return JSON ONLY:
           <Text fontWeight="semibold" color="blue.300">
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
-          {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+          {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
         </HStack>
         <Box
           fontSize="md"
@@ -4631,7 +4629,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
+                {loadingG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -4910,7 +4908,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
+                {loadingMCG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -5197,7 +5195,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
+                {loadingMAG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -5455,7 +5453,7 @@ Return JSON ONLY:
                   }
                   icon={
                     isLoadingAssistantSupport ? (
-                      <Spinner size="xs" />
+                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                     ) : (
                       <MdOutlineSupportAgent />
                     )
@@ -5768,7 +5766,7 @@ Return JSON ONLY:
                 px={{ base: 8, md: 14 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
+                {loadingMJ ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
               </Button>
             </Stack>
 
