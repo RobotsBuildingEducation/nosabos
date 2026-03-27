@@ -12,14 +12,13 @@ import {
   Wrap,
   WrapItem,
   useToast,
-  Flex,
-  Spinner,
-  Modal,
+  Flex, Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaDice, FaRegCommentDots } from "react-icons/fa";
@@ -2928,7 +2927,7 @@ Do not return the whole sentence as a single chunk.`;
                     <IconButton
                       icon={
                         isGeneratingGoal ? (
-                          <Spinner size="xs" color="white" />
+                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                         ) : (
                           <FaDice />
                         )

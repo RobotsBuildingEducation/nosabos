@@ -12,9 +12,7 @@ import {
   Button,
   Flex,
   HStack,
-  Input,
-  Spinner,
-  Text,
+  Input, Text,
   VStack,
   Radio,
   RadioGroup,
@@ -32,6 +30,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Spinner,
 } from "@chakra-ui/react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
@@ -50,6 +49,7 @@ import {
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1353,7 +1353,7 @@ YES or NO
         >
           {isLoading ? (
             <VStack spacing={4}>
-              <Spinner color="teal.300" />
+              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
               <Text color="white">
                 {userLanguage === "es"
                   ? "Generando pregunta..."

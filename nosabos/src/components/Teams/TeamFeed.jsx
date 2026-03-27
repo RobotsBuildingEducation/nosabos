@@ -9,14 +9,13 @@ import {
   HStack,
   Image,
   Link,
-  Progress,
-  Spinner,
-  Switch,
+  Progress, Switch,
   Text,
   useToast,
   VStack,
 } from "@chakra-ui/react";
 import useNOSTR from "../../hooks/useNOSTR";
+import VoiceOrb from "../VoiceOrb";
 
 const TOTAL_FEED_STEPS = 120;
 const HASHTAG = "LearnWithNostr";
@@ -361,7 +360,7 @@ export default function TeamFeed({
   if (isLoading) {
     return (
       <VStack py={8} spacing={3} align="center">
-        <Spinner />
+        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
         <Text fontSize="sm" color="gray.400">
           {localeStrings.loading}
         </Text>

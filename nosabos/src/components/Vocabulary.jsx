@@ -12,9 +12,7 @@ import {
   Button,
   Flex,
   HStack,
-  Input,
-  Spinner,
-  Text,
+  Input, Text,
   VStack,
   Radio,
   RadioGroup,
@@ -27,6 +25,7 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
+  Spinner,
 } from "@chakra-ui/react";
 import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -4297,7 +4296,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     return (
       <IconButton
         aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
-        icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+        icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
         size="sm"
         fontSize="lg"
         rounded="xl"
@@ -4329,7 +4328,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           <Text fontWeight="semibold" color="blue.300">
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
-          {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+          {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
         </HStack>
         <Box
           fontSize="md"
@@ -4997,7 +4996,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
+                {loadingGFill ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -5266,7 +5265,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
+                {loadingGMC ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -5544,7 +5543,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
+                {loadingGMA ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -5579,7 +5578,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                  icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -5668,7 +5667,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 py={{ base: 3, md: 4 }}
                 leftIcon={
                   isSpeakConnecting ? (
-                    <Spinner size="sm" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                   ) : isSpeakRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -5821,7 +5820,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                  icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -6108,7 +6107,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
+                {loadingMJ ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
               </Button>
             </Stack>
 

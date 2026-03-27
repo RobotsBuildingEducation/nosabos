@@ -5,9 +5,8 @@ import {
   Button,
   Flex,
   HStack,
-  IconButton,
+  IconButton, Stack,
   Spinner,
-  Stack,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -20,6 +19,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -287,7 +287,7 @@ export default function RepeatWhatYouHear({
                           }
                           icon={
                             isLoadingAssistantSupport ? (
-                              <Spinner size="xs" />
+                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                             ) : (
                               <MdOutlineSupportAgent />
                             )
@@ -479,7 +479,7 @@ export default function RepeatWhatYouHear({
                 {userLanguage === "es" ? "Asistente" : "Assistant"}
               </Text>
               {isLoadingAssistantSupport && (
-                <Spinner size="xs" color="blue.400" />
+                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
               )}
             </HStack>
             <Box
@@ -523,7 +523,7 @@ export default function RepeatWhatYouHear({
             px={{ base: 7, md: 12 }}
             py={{ base: 3, md: 4 }}
           >
-            {isSubmitting ? <Spinner size="sm" /> : submitLabel}
+            {isSubmitting ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : submitLabel}
           </Button>
         </Stack>
 

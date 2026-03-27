@@ -17,13 +17,12 @@ import {
   Badge,
   IconButton,
   Spacer,
-  Divider,
-  Spinner,
-  Input,
+  Divider, Input,
   Tag,
   TagLabel,
   Flex,
   SlideFade,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
@@ -1674,7 +1673,7 @@ export default function StoryMode({
             <Text color="#94a3b8" fontSize="sm">
               {uiText.generatingSub}
             </Text>
-            <Spinner color="teal.300" />
+            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
           </VStack>
         </Center>
       </Box>
@@ -2035,7 +2034,7 @@ export default function StoryMode({
                           fontSize="lg"
                           leftIcon={
                             isConnecting ? (
-                              <Spinner size="sm" />
+                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                             ) : (
                               <PiMicrophoneStageDuotone />
                             )

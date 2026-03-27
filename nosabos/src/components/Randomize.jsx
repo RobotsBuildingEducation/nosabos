@@ -5,9 +5,7 @@ import {
   Button,
   HStack,
   Badge,
-  Text,
-  Spinner,
-  useToast, // ✅ toast
+  Text, useToast, // ✅ toast
 } from "@chakra-ui/react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
@@ -15,6 +13,7 @@ import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
+import VoiceOrb from "./VoiceOrb";
 
 // Lazy-load modules
 const StoryMode = React.lazy(() => import("./Stories"));
@@ -277,13 +276,13 @@ export default function Randomize() {
         <Suspense
           fallback={
             <HStack justify="center" py={12}>
-              <Spinner color="teal.300" />
+              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
             </HStack>
           }
         >
           {!currentMode ? (
             <HStack justify="center" py={12}>
-              <Spinner color="teal.300" />
+              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
               <Text color="white" ml={2}>
                 {STR.picking}
               </Text>

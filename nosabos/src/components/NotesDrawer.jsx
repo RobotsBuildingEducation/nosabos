@@ -18,9 +18,7 @@ import {
   DrawerOverlay,
   Flex,
   HStack,
-  IconButton,
-  Spinner,
-  Text,
+  IconButton, Text,
   VStack,
 } from "@chakra-ui/react";
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
@@ -29,6 +27,7 @@ import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
 import translations from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
+import VoiceOrb from "./VoiceOrb";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -247,7 +246,7 @@ export default function NotesDrawer({
               <IconButton
                 icon={
                   loadingTts === note.id ? (
-                    <Spinner size="xs" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                   ) : playingNoteId === note.id ? (
                     <RiStopLine size={16} />
                   ) : (

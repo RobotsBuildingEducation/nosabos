@@ -21,9 +21,8 @@ import {
   Text,
   VStack,
   Wrap,
-  WrapItem,
   Spinner,
-  useDisclosure,
+  WrapItem, useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import {
@@ -2088,12 +2087,7 @@ Do not return the whole sentence as a single chunk.`;
                 >
                   {isGeneratingGoal ? (
                     <>
-                      <Spinner
-                        size="sm"
-                        color="white"
-                        thickness="2px"
-                        speed="0.8s"
-                      />
+                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"

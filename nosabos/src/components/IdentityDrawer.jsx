@@ -32,9 +32,7 @@ import {
   Input,
   Link,
   Radio,
-  RadioGroup,
-  Spinner,
-  Text,
+  RadioGroup, Text,
   VStack,
   useToast,
 } from "@chakra-ui/react";
@@ -57,6 +55,7 @@ import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
+import VoiceOrb from "./VoiceOrb";
 
 export default function IdentityDrawer({
   isOpen,
@@ -1055,7 +1054,7 @@ export function BitcoinWalletSection({
       {/* Loading/hydration spinner (only after refresh / first mount) */}
       {hydrating && !cashuWallet && (
         <HStack py={2}>
-          <Spinner size="sm" />
+          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
           <Text fontSize="sm">
             {userLanguage === "es" ? "Cargando billetera…" : "Loading wallet…"}
           </Text>

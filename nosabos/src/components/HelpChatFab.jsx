@@ -13,9 +13,7 @@ import {
   Button,
   HStack,
   IconButton,
-  Input,
-  Spinner,
-  Text,
+  Input, Text,
   Tooltip,
   VStack,
   useDisclosure,
@@ -85,6 +83,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import clickSound from "../assets/click.mp3";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
+import VoiceOrb from "./VoiceOrb";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -1506,7 +1505,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <Spinner size="sm" />
+                                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                                 ) : (
                                   <FaMicrophone />
                                 )
@@ -1664,7 +1663,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                     }
                                     icon={
                                       replayLoadingId === m.id ? (
-                                        <Spinner size="xs" />
+                                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                                       ) : (
                                         <RiVolumeUpLine size={14} />
                                       )
@@ -1681,7 +1680,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   />
                                   <Box flex="1">
                                     {!m.done && (
-                                      <Spinner size="xs" speed="0.6s" mb={2} />
+                                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                                     )}
                                     <Markdown>{main}</Markdown>
                                     {!!gloss && (
@@ -1735,7 +1734,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <Spinner size="sm" />
+                                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                                 ) : (
                                   <FaMicrophone />
                                 )

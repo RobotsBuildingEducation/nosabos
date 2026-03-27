@@ -17,9 +17,7 @@ import {
   Flex,
   Box,
   Button,
-  IconButton,
-  Spinner,
-  useToast,
+  IconButton, useToast,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
@@ -63,6 +61,7 @@ import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import VoiceOrb from "./VoiceOrb";
 
 const MotionBox = motion(Box);
 
@@ -819,7 +818,7 @@ function LetterCard({
                   onClick={() => onPlay(letter)}
                 >
                   {isLoading ? (
-                    <Spinner size="sm" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                   ) : isPlaying ? (
                     <RiStopCircleLine size={18} />
                   ) : (
@@ -903,7 +902,7 @@ function LetterCard({
               aria-label="Play word"
               icon={
                 isLoadingTts ? (
-                  <Spinner size="xs" />
+                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
                 ) : isPlayingWord ? (
                   <RiStopCircleLine />
                 ) : (
@@ -928,7 +927,7 @@ function LetterCard({
           {/* Recording / Result Area */}
           {isGrading ? (
             <VStack spacing={2} py={2}>
-              <Spinner size="md" color="teal.300" />
+              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
               <Text fontSize="xs" color="whiteAlpha.700">
                 {appLanguage === "es" ? "Evaluando..." : "Grading..."}
               </Text>
@@ -991,7 +990,7 @@ function LetterCard({
                 }
                 leftIcon={
                   isConnecting ? (
-                    <Spinner size="sm" />
+                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
                   ) : isRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -1261,7 +1260,7 @@ export default function AlphabetBootcamp({
 
       {!isInitialized ? (
         <Flex align="center" justify="center" py={12}>
-          <Spinner size="lg" color="teal.300" />
+          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
         </Flex>
       ) : hasLetters ? (
         <VStack spacing={8} w="100%" zIndex={10}>
