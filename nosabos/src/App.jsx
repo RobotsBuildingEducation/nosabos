@@ -5918,41 +5918,38 @@ function BottomActionBar({
           fallbackBlur="2px"
           fallbackBg="rgba(11, 18, 32, 0.05)"
         >
-          {/* Minimize caret inside top of container */}
-          {viewMode === "lesson" && (
-            <Flex
-              justify="center"
-              pt={1}
-            >
-              <Box
-                as="button"
-                onClick={() => {
-                  playSound?.(selectSound);
-                  setIsMinimized(true);
-                }}
-                bg="transparent"
-                border="none"
-                cursor="pointer"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                px={4}
-                py={0}
-                _hover={{ opacity: 0.7 }}
-                transition="opacity 0.2s"
-              >
-                <ChevronDownIcon boxSize={5} color="gray.400" />
-              </Box>
-            </Flex>
-          )}
           <Box
             py={2}
             px={{ base: 3, md: 6 }}
             width="100%"
             paddingBottom={5}
-            paddingTop={viewMode === "lesson" ? 1 : 3}
+            paddingTop={3}
             borderRadius="24px"
           >
+            {/* Minimize caret above buttons */}
+            {viewMode === "lesson" && (
+              <Flex justify="center" mb={1}>
+                <Box
+                  as="button"
+                  onClick={() => {
+                    playSound?.(selectSound);
+                    setIsMinimized(true);
+                  }}
+                  bg="transparent"
+                  border="none"
+                  cursor="pointer"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  px={4}
+                  py={0}
+                  _hover={{ opacity: 0.7 }}
+                  transition="opacity 0.2s"
+                >
+                  <ChevronDownIcon boxSize={5} color="gray.400" />
+                </Box>
+              </Flex>
+            )}
             <Flex
               as="nav"
               maxW="560px"
