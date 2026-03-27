@@ -3000,7 +3000,7 @@ Do not return the whole sentence as a single chunk.`;
 
             <VStack spacing={0.5} align="center">
               <Box width="132px" opacity={0.95} flexShrink={0}>
-                <VoiceOrb state={uiState} size={132} />
+                <VoiceOrb state={uiState} />
               </Box>
               {!!liveStateLabel && (
                 <Text fontSize="xs" color="whiteAlpha.800">

@@ -1212,7 +1212,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.2 }}
             style={{ marginBottom: "16px" }}
           >
-            <VoiceOrb state="idle" size={140} />
+            <VoiceOrb state="idle" />
           </motion.div>
 
           {/* Title */}

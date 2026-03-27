@@ -5397,7 +5397,7 @@ export default function RPGGame({
 
           {isTutorialGame ? (
             <>
-              <VoiceOrb state="idle" size={140} />
+              <VoiceOrb state="idle" />
               <VStack spacing={2}>
                 <Text
                   color="white"

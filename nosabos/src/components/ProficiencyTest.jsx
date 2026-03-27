@@ -1826,7 +1826,7 @@ Return ONLY valid JSON:
 
         <VStack spacing={0.5} align="center" mt={2}>
           <Box width="132px" opacity={0.95}>
-            <VoiceOrb state={liveUiState} size={132} />
+            <VoiceOrb state={liveUiState} />
           </Box>
           {uiStateLabel(liveUiState, isEs) && (
             <Text fontSize="xs" color="whiteAlpha.800">
@@ -1841,7 +1841,7 @@ Return ONLY valid JSON:
             <VStack spacing={0} py={6}>
               {/* Robot — outside and above the card */}
               <Box mb={0} zIndex={1}>
-                <VoiceOrb state="idle" size={140} />
+                <VoiceOrb state="idle" />
               </Box>
 
               {/* Card with loading text */}

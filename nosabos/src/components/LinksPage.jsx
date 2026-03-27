@@ -537,7 +537,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state="idle" size={110} />
+          <VoiceOrb state="idle" />
         </Box>
       ),
       launchAppText: translations.launchApp,

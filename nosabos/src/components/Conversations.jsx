@@ -2230,11 +2230,11 @@ Do not return the whole sentence as a single chunk.`;
                   opacity={isRobotTransitioning ? 0 : 1}
                   transition="opacity 0.5s ease"
                 >
-                  <VoiceOrb state={previousRobotState} size={132} />
+                  <VoiceOrb state={previousRobotState} />
                 </Box>
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
-                <VoiceOrb state={displayRobotState} size={132} />
+                <VoiceOrb state={displayRobotState} />
               </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
