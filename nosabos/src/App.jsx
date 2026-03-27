@@ -5904,37 +5904,6 @@ function BottomActionBar({
       paddingLeft={2}
       paddingRight={2}
     >
-      {/* Minimize handle when in lesson */}
-      {viewMode === "lesson" && (
-        <Flex
-          justify="center"
-          mb={1}
-        >
-          <Box
-            as="button"
-            onClick={() => {
-              playSound?.(selectSound);
-              setIsMinimized(true);
-            }}
-            bg="transparent"
-            border="none"
-            cursor="pointer"
-            display="flex"
-            alignItems="center"
-            gap={1}
-            px={3}
-            py={1}
-            borderRadius="12px"
-            _hover={{ bg: "whiteAlpha.100" }}
-            transition="background 0.2s"
-          >
-            <ChevronDownIcon boxSize={4} color="gray.500" />
-            <Box as="span" fontSize="xs" color="gray.500">
-              Minimize
-            </Box>
-          </Box>
-        </Flex>
-      )}
       <Box borderRadius="24px" overflow="hidden">
         <GlassContainer
           borderRadius="24px"
@@ -5949,12 +5918,39 @@ function BottomActionBar({
           fallbackBlur="2px"
           fallbackBg="rgba(11, 18, 32, 0.05)"
         >
+          {/* Minimize caret inside top of container */}
+          {viewMode === "lesson" && (
+            <Flex
+              justify="center"
+              pt={1}
+            >
+              <Box
+                as="button"
+                onClick={() => {
+                  playSound?.(selectSound);
+                  setIsMinimized(true);
+                }}
+                bg="transparent"
+                border="none"
+                cursor="pointer"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                px={4}
+                py={0}
+                _hover={{ opacity: 0.7 }}
+                transition="opacity 0.2s"
+              >
+                <ChevronDownIcon boxSize={5} color="gray.400" />
+              </Box>
+            </Flex>
+          )}
           <Box
-            py={3}
+            py={2}
             px={{ base: 3, md: 6 }}
             width="100%"
-            paddingBottom={6}
-            paddingTop={4}
+            paddingBottom={5}
+            paddingTop={viewMode === "lesson" ? 1 : 3}
             borderRadius="24px"
           >
             <Flex
@@ -5970,9 +5966,10 @@ function BottomActionBar({
             >
               <IconButton
                 data-tutorial-id="teams"
-                icon={<PiUsersBold size={18} />}
+                icon={<PiUsersBold size={16} />}
                 onClick={() => handleActionClick(onOpenTeams)}
                 aria-label={teamsLabel}
+                size="sm"
                 rounded="xl"
                 flexShrink={0}
                 borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
@@ -5988,10 +5985,11 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="settings"
-                icon={<SettingsIcon boxSize={4} />}
+                icon={<SettingsIcon boxSize="14px" />}
                 color="gray.100"
                 onClick={() => handleActionClick(onOpenSettings)}
                 aria-label={settingsLabel}
+                size="sm"
                 rounded="xl"
                 flexShrink={0}
                 colorScheme="gray"
@@ -6001,7 +5999,7 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="notes"
-                icon={<RiBookmarkLine size={18} />}
+                icon={<RiBookmarkLine size={16} />}
                 aria-label={notesLabel}
                 onClick={() => handleActionClick(onOpenNotes)}
                 isLoading={notesIsLoading}
@@ -6009,7 +6007,7 @@ function BottomActionBar({
                 bg="gray.800"
                 boxShadow="0 4px 0 #313a4b"
                 color="white"
-                // size="lg"
+                size="sm"
                 zIndex={50}
                 rounded="xl"
                 transition="all 0.3s ease"
@@ -6041,10 +6039,11 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="identity"
-                icon={<FaBitcoin size={18} />}
+                icon={<FaBitcoin size={16} />}
                 onClick={() => handleActionClick(onOpenIdentity)}
                 aria-label={identityLabel}
                 isLoading={isIdentitySaving}
+                size="sm"
                 rounded="xl"
                 flexShrink={0}
                 bg="#f08e19"
@@ -6053,10 +6052,11 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="help"
-                icon={<MdOutlineSupportAgent size={18} />}
+                icon={<MdOutlineSupportAgent size={16} />}
                 onClick={() => handleActionClick(onOpenHelpChat)}
                 aria-label={helpChatLabel}
                 isDisabled={!onOpenHelpChat}
+                size="sm"
                 rounded="xl"
                 bg="white"
                 color="blue"
@@ -6070,8 +6070,9 @@ function BottomActionBar({
                 <MenuButton
                   data-tutorial-id="mode"
                   as={IconButton}
-                  icon={<CurrentModeIcon size={18} />}
+                  icon={<CurrentModeIcon size={16} />}
                   aria-label={modeMenuLabel}
+                  size="sm"
                   rounded="xl"
                   flexShrink={0}
                   onClick={() => playSound?.(modeSwitcherSound)}
