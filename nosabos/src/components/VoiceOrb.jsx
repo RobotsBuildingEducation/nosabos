@@ -189,6 +189,7 @@ export default function VoiceOrb({ state = "idle", size = 75 }) {
         width: size,
         height: size,
         display: "block",
+        margin: "0 auto",
       }}
     />
   );
