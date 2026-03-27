@@ -1398,6 +1398,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    // If AI is currently speaking, skip — VAD will be re-enabled when response ends
+    if (!isIdleRef.current) return;
 
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructions();
@@ -1743,6 +1745,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      // Only update UI — do NOT re-enable VAD/mic here.
+      // VAD is re-enabled when the full response completes,
+      // preventing premature interruption while audio is still playing.
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -1750,6 +1755,21 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      // Mute mic + disable VAD so user cannot interrupt AI speech (turn-based)
+      try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = false; });
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: { turn_detection: null },
+            })
+          );
+        }
+      } catch {}
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
       const mdKind = data?.response?.metadata?.kind;
@@ -1855,13 +1875,57 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
+    // When response is canceled (interrupted), keep mic muted + VAD off.
+    // The server already captured the speech that caused the interruption
+    // and will create a new response — we stay muted until that completes.
+    if (t === "response.canceled") {
+      stopRecorderAfterTail(rid);
+      const mid = rid && respToMsg.current.get(rid);
+      if (mid) {
+        const buf = streamBuffersRef.current.get(mid) || "";
+        if (buf) {
+          streamBuffersRef.current.set(mid, "");
+          updateMessage(mid, (m) => ({
+            ...m,
+            textStream: "",
+            textFinal: ((m.textFinal || "") + " " + buf).trim(),
+          }));
+        }
+        updateMessage(mid, (m) => ({ ...m, done: true }));
+        respToMsg.current.delete(rid);
+      }
+      return;
+    }
+
     if (
       t === "response.completed" ||
-      t === "response.done" ||
-      t === "response.canceled"
+      t === "response.done"
     ) {
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
+      // Response fully completed — unmute mic + re-enable VAD for user's turn
+      try {
+        localRef.current?.getAudioTracks().forEach((t) => { t.enabled = true; });
+        if (dcRef.current?.readyState === "open") {
+          dcRef.current.send(
+            JSON.stringify({ type: "input_audio_buffer.clear" })
+          );
+          const vadMs = pauseMsRef.current || 2000;
+          dcRef.current.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: vadMs,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+              },
+            })
+          );
+        }
+      } catch {}
       idleWaitersRef.current.splice(0).forEach((fn) => {
         try {
           fn();
