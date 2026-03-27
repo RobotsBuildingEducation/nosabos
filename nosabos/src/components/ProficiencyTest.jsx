@@ -40,7 +40,7 @@ import { database, gradingModel } from "../firebaseResources/firebaseResources";
 
 import useUserStore from "../hooks/useUserStore";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
@@ -1826,13 +1826,7 @@ Return ONLY valid JSON:
 
         <VStack spacing={0.5} align="center" mt={2}>
           <Box width="132px" opacity={0.95}>
-            <RobotBuddyPro
-              state={liveUiState}
-              loudness={0}
-              mood={mood}
-              variant="abstract"
-              maxW={132}
-            />
+            <VoiceOrb state={liveUiState} />
           </Box>
           {uiStateLabel(liveUiState, isEs) && (
             <Text fontSize="xs" color="whiteAlpha.800">
@@ -1847,7 +1841,7 @@ Return ONLY valid JSON:
             <VStack spacing={0} py={6}>
               {/* Robot — outside and above the card */}
               <Box mb={0} zIndex={1}>
-                <RobotBuddyPro state="thinking" mood="thinking" maxW={140} />
+                <VoiceOrb state="idle" />
               </Box>
 
               {/* Card with loading text */}

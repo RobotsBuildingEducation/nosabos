@@ -62,22 +62,22 @@ void main(){
   float n2 = smoothstep(0.33, 0.65, fbm(dpFinal * 2.8 - vec2(t*0.40, t*0.22)));
   float n3 = smoothstep(0.33, 0.65, fbm(dpFinal * 1.9 + vec2(t*0.18, t*0.44)));
 
-  vec3 colA = vec3(0.00, 0.99, 0.95);
-  vec3 colB = vec3(0.00, 0.00, 0.95);
-  vec3 colC = vec3(0.00, 0.99, 0.00);
-  vec3 colD = vec3(0.00, 0.70, 1.00);
-  vec3 coreCol = vec3(0.40, 0.88, 1.00);
+vec3 colA = vec3(0.09, 0.93, 0.72); 
+vec3 colB = vec3(0.02, 0.08, 0.28); 
+vec3 colC = vec3(0.70, 0.80, 0.80); 
+vec3 colD = vec3(0.15, 0.70, 0.99);
+vec3 coreCol = vec3(0.95, 0.94, 1.00); 
 
-  vec3 col = colB;
-  col = mix(col, colA, n1 * 0.70);
-  col = mix(col, colC, n2 * 0.40);
-  col = mix(col, colD, n3 * 0.99);
+vec3 col = colB;
+col = mix(col, colA, n1 * 0.70);
+col = mix(col, colC, n2 * 0.32);
+col = mix(col, colD, n3 * 0.92);
 
-  float tightCore = smoothstep(0.38, 0.0, r) * (0.4 + 0.6*n1);
-  col = mix(col, coreCol, tightCore * 0.75);
+float tightCore = smoothstep(0.38, 0.0, r) * (0.4 + 0.6*n1);
+col = mix(col, coreCol, tightCore * 0.78);
 
-  float rim = pow(1.0 - r, 0.35) * 0.45;
-  col += vec3(0.0, 0.60, 1.0) * rim * (1.0 + energy * 0.6);
+float rim = pow(1.0 - r, 0.35) * 0.45;
+col += vec3(0.18, 0.45, 0.90) * rim * (1.0 + energy * 0.6);
   col *= mask;
   float breathe = sin(t * 0.9) * 0.03 + 0.97;
   col *= 0.9 + breathe * 0.1;
@@ -189,6 +189,7 @@ export default function VoiceOrb({ state = "idle", size = 75 }) {
         width: size,
         height: size,
         display: "block",
+        margin: "0 auto",
       }}
     />
   );

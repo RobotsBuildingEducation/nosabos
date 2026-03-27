@@ -58,7 +58,7 @@ import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -1652,7 +1652,7 @@ export default function StoryMode({
             <Text color="#94a3b8" fontSize="sm">
               {uiText.generatingSub}
             </Text>
-            <RobotBuddyPro />
+            <VoiceOrb />
           </VStack>
         </Center>
       </Box>

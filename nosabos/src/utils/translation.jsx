@@ -792,8 +792,7 @@ export const translations = {
       "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…",
     ra_help_help: "Describe tu meta o contexto (esto guía la experiencia).",
     ra_vad_label: "Pausa entre turnos (segundos)",
-    account_final_step_title:
-      "Copia la llave secreta para iniciar sesión.",
+    account_final_step_title: "Copia la llave secreta para iniciar sesión.",
     account_final_step_description:
       "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
     account_copy_secret: "Copiar Llave Secreta",

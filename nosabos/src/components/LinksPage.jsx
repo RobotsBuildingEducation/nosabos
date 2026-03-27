@@ -40,7 +40,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
@@ -537,7 +537,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <RobotBuddyPro state="idle" palette="ocean" maxW={110} />
+          <VoiceOrb state="idle" />
         </Box>
       ),
       launchAppText: translations.launchApp,

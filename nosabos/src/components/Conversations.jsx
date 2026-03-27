@@ -47,7 +47,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
@@ -2230,23 +2230,11 @@ Do not return the whole sentence as a single chunk.`;
                   opacity={isRobotTransitioning ? 0 : 1}
                   transition="opacity 0.5s ease"
                 >
-                  <RobotBuddyPro
-                    state={previousRobotState}
-                    loudness={previousRobotState === "listening" ? volume : 0}
-                    mood={mood}
-                    variant="abstract"
-                    maxW={132}
-                  />
+                  <VoiceOrb state={previousRobotState} />
                 </Box>
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
-                <RobotBuddyPro
-                  state={displayRobotState}
-                  loudness={displayRobotState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={132}
-                />
+                <VoiceOrb state={displayRobotState} />
               </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (

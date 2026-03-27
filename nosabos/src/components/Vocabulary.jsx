@@ -35,7 +35,7 @@ import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone, PiMicrophoneStageDuotone } from "react-icons/pi";
@@ -5593,7 +5593,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             </HStack>
             {loadingQSpeak ? (
               <Box textAlign="center" py={12}>
-                <RobotBuddyPro palette="ocean" variant="abstract" />
+                <VoiceOrb />
                 <Text mt={4} fontSize="sm" opacity={0.7}>
                   {userLanguage === "es"
                     ? "Generando pregunta..."
