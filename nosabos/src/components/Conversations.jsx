@@ -1424,10 +1424,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
-  /** Disable VAD so the user cannot interrupt AI speech. */
+  /** Disable VAD and mute mic so the user cannot interrupt AI speech. */
   function disableVAD() {
+    if (localRef.current) {
+      localRef.current.getAudioTracks().forEach((tr) => { tr.enabled = false; });
+    }
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
+      dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
@@ -1437,8 +1441,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
-  /** Re-enable server VAD after AI finishes speaking. */
+  /** Re-enable server VAD and unmute mic after AI finishes speaking. */
   function enableVAD() {
+    if (localRef.current) {
+      localRef.current.getAudioTracks().forEach((tr) => { tr.enabled = true; });
+    }
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
       dcRef.current.send(
