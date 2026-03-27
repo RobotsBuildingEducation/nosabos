@@ -1788,6 +1788,15 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
+    // Mute mic as early as possible — before response.created fires
+    if (
+      t === "input_audio_buffer.speech_stopped" ||
+      t === "input_audio_buffer.committed"
+    ) {
+      disableVAD();
+      return;
+    }
+
     if (
       t === "response.output_audio.done" ||
       t === "output_audio.done" ||

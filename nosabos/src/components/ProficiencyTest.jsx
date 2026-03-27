@@ -1086,33 +1086,40 @@ export default function ProficiencyTest() {
       return;
     }
 
-    if (t === "input_audio_buffer.speech_stopped") {
-      const now = Date.now();
-      const turn = currentSpeechTurnRef.current;
-      if (turn) {
-        turn.endTs = now;
-        turn.durationMs = Math.max(0, now - (turn.startTs || now));
-        if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+    if (
+      t === "input_audio_buffer.speech_stopped" ||
+      t === "input_audio_buffer.committed"
+    ) {
+      disableVAD();
+
+      if (t === "input_audio_buffer.speech_stopped") {
+        const now = Date.now();
+        const turn = currentSpeechTurnRef.current;
+        if (turn) {
+          turn.endTs = now;
+          turn.durationMs = Math.max(0, now - (turn.startTs || now));
+          if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+        }
+        currentSpeechTurnRef.current = null;
+        stopSpeechSampling();
+
+        // Create placeholder user message so it renders before the AI response
+        const placeholderId = uid();
+        pendingUserMsgRef.current = placeholderId;
+        pushMessage({
+          id: placeholderId,
+          role: "user",
+          lang: targetLang,
+          textFinal: "",
+          textStream: "",
+          done: false,
+          pendingTranscript: true,
+          ts: now,
+        });
+
+        setUiState("thinking");
+        setMood("thinking");
       }
-      currentSpeechTurnRef.current = null;
-      stopSpeechSampling();
-
-      // Create placeholder user message so it renders before the AI response
-      const placeholderId = uid();
-      pendingUserMsgRef.current = placeholderId;
-      pushMessage({
-        id: placeholderId,
-        role: "user",
-        lang: targetLang,
-        textFinal: "",
-        textStream: "",
-        done: false,
-        pendingTranscript: true,
-        ts: now,
-      });
-
-      setUiState("thinking");
-      setMood("thinking");
       return;
     }
 
