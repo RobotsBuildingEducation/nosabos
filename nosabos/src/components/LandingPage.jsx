@@ -28,7 +28,7 @@ import {
   FaMicrophone,
 } from "react-icons/fa";
 
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
@@ -40,7 +40,6 @@ import {
 } from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
-import VoiceOrb from "./VoiceOrb";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 
@@ -1213,16 +1212,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.2 }}
             style={{ marginBottom: "16px" }}
           >
-            {/* <VoiceOrb state="speaking" /> */}
-            <RobotBuddyPro
-              state="idle"
-              mood="happy"
-              palette="ocean"
-              variant="abstract"
-              showBadges={false}
-              compact={true}
-              maxW={140}
-            />
+            <VoiceOrb state="idle" size={140} />
           </motion.div>
 
           {/* Title */}

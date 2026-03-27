@@ -118,7 +118,7 @@ import useSoundSettings from "./hooks/useSoundSettings";
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
-import RobotBuddyPro from "./components/RobotBuddyPro";
+import VoiceOrb from "./components/VoiceOrb";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 
@@ -4786,7 +4786,7 @@ export default function App() {
         justify="center"
         p={6}
       >
-        <RobotBuddyPro state="Loading" />
+        <VoiceOrb state="idle" />
       </Flex>
     );
   }
@@ -4982,7 +4982,7 @@ export default function App() {
               alignItems="center"
               minH="60vh"
             >
-              <RobotBuddyPro state="thinking" />
+              <VoiceOrb state="idle" />
             </Box>
           ) : showAlphabetBootcamp ? (
             <AlphabetBootcamp

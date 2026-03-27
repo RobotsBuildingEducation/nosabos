@@ -43,7 +43,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
@@ -3000,13 +3000,7 @@ Do not return the whole sentence as a single chunk.`;
 
             <VStack spacing={0.5} align="center">
               <Box width="132px" opacity={0.95} flexShrink={0}>
-                <RobotBuddyPro
-                  state={uiState}
-                  loudness={uiState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={132}
-                />
+                <VoiceOrb state={uiState} size={132} />
               </Box>
               {!!liveStateLabel && (
                 <Text fontSize="xs" color="whiteAlpha.800">

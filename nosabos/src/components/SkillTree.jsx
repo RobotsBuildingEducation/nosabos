@@ -233,7 +233,7 @@ import { TbLanguage } from "react-icons/tb";
 import useSoundSettings from "../hooks/useSoundSettings";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
-import RobotBuddyPro from "./RobotBuddyPro";
+import VoiceOrb from "./VoiceOrb";
 import LoadingMiniGame from "./LoadingMiniGame";
 import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
 import { buildGameReviewContext } from "../utils/gameReviewContext";

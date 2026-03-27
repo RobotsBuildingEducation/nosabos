@@ -62,7 +62,7 @@ import { callResponses } from "../../utils/llm";
 import { simplemodel } from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
 import HelpChatFab from "../HelpChatFab";
-import RobotBuddyPro from "../RobotBuddyPro";
+import VoiceOrb from "../VoiceOrb";
 import LoadingMiniGame from "../LoadingMiniGame";
 import playerSpriteSheetUrl from "../../sprites/sprite_sheet_6.png";
 import npcSpriteSheetUrl from "../../sprites/NPC_sprites.png";
@@ -5397,7 +5397,7 @@ export default function RPGGame({
 
           {isTutorialGame ? (
             <>
-              <RobotBuddyPro state="thinking" maxW={140} />
+              <VoiceOrb state="idle" size={140} />
               <VStack spacing={2}>
                 <Text
                   color="white"
