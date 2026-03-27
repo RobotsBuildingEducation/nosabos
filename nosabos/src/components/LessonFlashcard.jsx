@@ -242,7 +242,7 @@ export default function LessonFlashcard({
         try_again: "Intentar de nuevo",
         explain: "Explicar mi respuesta",
         explanation_heading: "Explicación",
-        skip: "Omitir",
+        skip: "Saltar",
         collect: "Recoger tarjeta",
         collected: "¡Recogida!",
         deck_label: "Mazo",
