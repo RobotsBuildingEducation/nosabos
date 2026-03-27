@@ -40,6 +40,7 @@ import {
 } from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import VoiceOrb from "./VoiceOrb";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 
@@ -1212,6 +1213,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.2 }}
             style={{ marginBottom: "16px" }}
           >
+            {/* <VoiceOrb state="speaking" /> */}
             <RobotBuddyPro
               state="idle"
               mood="happy"
