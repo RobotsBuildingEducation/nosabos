@@ -1070,10 +1070,15 @@ export default function RealTimeTest({
     } catch {}
   }
 
-  /** Disable VAD and mute mic so the user cannot interrupt AI speech. */
+  /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
-    if (localRef.current) {
-      localRef.current.getAudioTracks().forEach((tr) => { tr.enabled = false; });
+    // Detach audio track from the WebRTC sender so no audio reaches the server
+    if (pcRef.current) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (s.track?.kind === "audio") {
+          s.replaceTrack(null).catch(() => {});
+        }
+      });
     }
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
@@ -1087,10 +1092,16 @@ export default function RealTimeTest({
     } catch {}
   }
 
-  /** Re-enable server VAD and unmute mic after AI finishes speaking. */
+  /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
   function enableVAD() {
-    if (localRef.current) {
-      localRef.current.getAudioTracks().forEach((tr) => { tr.enabled = true; });
+    // Reattach the mic audio track to the WebRTC sender
+    const micTrack = localRef.current?.getAudioTracks()?.[0];
+    if (pcRef.current && micTrack) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (!s.track || s.track?.kind === "audio") {
+          s.replaceTrack(micTrack).catch(() => {});
+        }
+      });
     }
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     try {
