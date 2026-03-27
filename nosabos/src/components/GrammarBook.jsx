@@ -22,6 +22,7 @@ import {
   IconButton,
   useToast,
   Center,
+  Spinner,
 } from "@chakra-ui/react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -68,7 +69,7 @@ import LessonFlashcard, {
 } from "./LessonFlashcard";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Tiny helpers for Gemini streaming

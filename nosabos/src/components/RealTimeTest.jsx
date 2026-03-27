@@ -18,6 +18,7 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
+  Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaDice, FaRegCommentDots } from "react-icons/fa";
@@ -343,7 +344,7 @@ function AlignedBubble({
             size="xs"
             variant="ghost"
             colorScheme="cyan"
-            icon={isReplaying ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <RiVolumeUpLine size={14} />}
+            icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
             onClick={onReplay}
             isDisabled={isReplaying}
             aria-label={replayLabel || "Replay"}
@@ -411,7 +412,7 @@ function AlignedBubble({
             size="xs"
             variant="ghost"
             colorScheme="cyan"
-            icon={isTranslating ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineTranslate />}
+            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
             onClick={onTranslate}
             isDisabled={isTranslating}
             aria-label="Translate message"

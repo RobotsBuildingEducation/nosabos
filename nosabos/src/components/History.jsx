@@ -21,6 +21,7 @@ import {
   SlideFade,
   Grid,
   GridItem,
+  Spinner,
   Switch,
 } from "@chakra-ui/react";
 import {
@@ -62,7 +63,7 @@ import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
-    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+    <Spinner size="xs" />
   ) : (
     <PiSpeakerHighDuotone style={{ marginLeft: "12px" }} />
   );

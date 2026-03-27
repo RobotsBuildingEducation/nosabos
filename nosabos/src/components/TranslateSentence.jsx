@@ -6,6 +6,7 @@ import {
   Flex,
   HStack,
   IconButton, Text,
+  Spinner,
   VStack,
   Stack,
   Center,
@@ -22,7 +23,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /**
  * TranslateSentence - A Duolingo-style translation exercise component

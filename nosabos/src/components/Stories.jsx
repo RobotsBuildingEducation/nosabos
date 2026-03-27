@@ -22,6 +22,7 @@ import {
   TagLabel,
   Flex,
   SlideFade,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
@@ -64,7 +65,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ================================
    ENV / API

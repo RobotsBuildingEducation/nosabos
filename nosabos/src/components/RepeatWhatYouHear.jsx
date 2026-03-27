@@ -6,6 +6,7 @@ import {
   Flex,
   HStack,
   IconButton, Stack,
+  Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -21,7 +22,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise

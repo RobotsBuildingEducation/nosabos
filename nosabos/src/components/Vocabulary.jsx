@@ -25,6 +25,7 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
+  Spinner,
 } from "@chakra-ui/react";
 import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
@@ -73,7 +74,7 @@ import LessonFlashcard, {
 } from "./LessonFlashcard";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)

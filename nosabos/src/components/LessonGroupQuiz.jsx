@@ -30,6 +30,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
+  Spinner,
 } from "@chakra-ui/react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
@@ -51,7 +52,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <PiSpeakerHighDuotone />;
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)
