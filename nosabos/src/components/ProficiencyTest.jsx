@@ -838,6 +838,39 @@ export default function ProficiencyTest() {
       .trim();
   }
 
+  /** Disable VAD so the user cannot interrupt AI speech. */
+  function disableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: null },
+        }),
+      );
+    } catch {}
+  }
+
+  /** Re-enable server VAD after AI finishes speaking. */
+  function enableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: {
+              type: "server_vad",
+              silence_duration_ms: pauseMs || 800,
+              threshold: 0.35,
+              prefix_padding_ms: 120,
+            },
+          },
+        }),
+      );
+    } catch {}
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -871,6 +904,7 @@ export default function ProficiencyTest() {
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      enableVAD();
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -878,6 +912,7 @@ export default function ProficiencyTest() {
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      disableVAD();
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
@@ -995,6 +1030,7 @@ export default function ProficiencyTest() {
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      enableVAD();
       isIdleRef.current = true;
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {

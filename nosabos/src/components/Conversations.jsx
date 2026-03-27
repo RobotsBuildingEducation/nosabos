@@ -1424,6 +1424,39 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch {}
   }
 
+  /** Disable VAD so the user cannot interrupt AI speech. */
+  function disableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: null },
+        }),
+      );
+    } catch {}
+  }
+
+  /** Re-enable server VAD after AI finishes speaking. */
+  function enableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: {
+              type: "server_vad",
+              silence_duration_ms: pauseMsRef.current || 2000,
+              threshold: 0.35,
+              prefix_padding_ms: 120,
+            },
+          },
+        }),
+      );
+    } catch {}
+  }
+
   function clearAllDebouncers() {
     clearTimeout(sessionUpdateTimer.current);
   }
@@ -1742,6 +1775,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      enableVAD();
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -1749,6 +1783,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      disableVAD();
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
       const mdKind = data?.response?.metadata?.kind;
@@ -1812,6 +1847,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         t === "response.done" ||
         t === "response.canceled"
       ) {
+        enableVAD();
         stopRecorderAfterTail(rid);
         replayRidSetRef.current.delete(rid);
       }
@@ -1859,6 +1895,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      enableVAD();
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {

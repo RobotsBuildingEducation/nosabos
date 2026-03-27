@@ -1069,6 +1069,39 @@ export default function RealTimeTest({
       dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
     } catch {}
   }
+
+  /** Disable VAD so the user cannot interrupt AI speech. */
+  function disableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: null },
+        }),
+      );
+    } catch {}
+  }
+
+  /** Re-enable server VAD after AI finishes speaking. */
+  function enableVAD() {
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: {
+              type: "server_vad",
+              silence_duration_ms: pauseMsRef.current || 2000,
+              threshold: 0.35,
+              prefix_padding_ms: 120,
+            },
+          },
+        }),
+      );
+    } catch {}
+  }
   async function start() {
     playSound(submitActionSound);
     setErr("");
@@ -2446,6 +2479,7 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      enableVAD();
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -2453,6 +2487,7 @@ Return ONLY JSON:
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      disableVAD();
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -2515,6 +2550,7 @@ Return ONLY JSON:
         t === "response.done" ||
         t === "response.canceled"
       ) {
+        enableVAD();
         stopRecorderAfterTail(rid);
         replayRidSetRef.current.delete(rid);
       }
@@ -2562,6 +2598,7 @@ Return ONLY JSON:
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      enableVAD();
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {
