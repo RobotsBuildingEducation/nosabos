@@ -880,6 +880,7 @@ export default function ProficiencyTest() {
               silence_duration_ms: pauseMs || 800,
               threshold: 0.35,
               prefix_padding_ms: 120,
+              interrupt_response: false,
             },
           },
         }),
@@ -1529,6 +1530,7 @@ Return ONLY valid JSON:
                 silence_duration_ms: pauseMs,
                 threshold: 0.35,
                 prefix_padding_ms: 120,
+                interrupt_response: false,
               },
               input_audio_transcription: {
                 model: "whisper-1",
