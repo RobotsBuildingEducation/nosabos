@@ -1313,9 +1313,6 @@ function TopBar({
                     </SliderTrack>
                     <SliderThumb boxSize={6} />
                   </Slider>
-                  <Text fontSize="xs" opacity={0.6} mt={2}>
-                    {vadHint}
-                  </Text>
                 </Box>
 
                 {/* Allow Posts toggle */}

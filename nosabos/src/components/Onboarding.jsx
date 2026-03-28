@@ -572,9 +572,6 @@ export default function Onboarding({
                         </SliderTrack>
                         <SliderThumb boxSize={6} />
                       </Slider>
-                      <Text fontSize="xs" opacity={0.6} mt={2}>
-                        {VAD_HINT}
-                      </Text>
                     </Box>
                   </>
                 )}
@@ -602,9 +599,9 @@ export default function Onboarding({
                             "Sound effects are muted."}
                       </Text>
                       {soundEnabled && (
-                        <HStack mt={3} spacing={3} align="center">
-                          <Box w="50%">
-                            <HStack justify="space-between" mb={2}>
+                        <VStack mt={3} spacing={3} align="center">
+                          <Box w="100%">
+                            <HStack justify="space-between" mb={2} mt={3}>
                               <Text fontSize="sm">
                                 {ui.sound_volume_label || "Volume"}
                               </Text>
@@ -626,7 +623,7 @@ export default function Onboarding({
                             >
                               <SliderTrack
                                 bg="gray.700"
-                                h={3}
+                                h={4}
                                 borderRadius="full"
                               >
                                 <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
@@ -639,10 +636,11 @@ export default function Onboarding({
                             size="sm"
                             variant="outline"
                             onClick={() => playSound(submitActionSound)}
+                            mt={4}
                           >
                             {ui.test_sound || "Test sound"}
                           </Button>
-                        </HStack>
+                        </VStack>
                       )}
                     </Box>
                   </>
