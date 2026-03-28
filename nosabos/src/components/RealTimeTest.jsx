@@ -65,6 +65,7 @@ const REALTIME_URL = `${
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+const AUTO_DISCONNECT_MS = 10000;
 
 /* ---------------------------
    Utils & helpers
@@ -518,6 +519,7 @@ export default function RealTimeTest({
 }) {
   const toast = useToast();
   const aliveRef = useRef(false);
+  const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
 
   // Lesson content ref
@@ -535,6 +537,10 @@ export default function RealTimeTest({
   // Scroll to top when component mounts or lesson changes
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [lesson?.id]);
+
+  useEffect(() => {
+    stop();
   }, [lesson?.id]);
 
   // User id
@@ -1155,8 +1161,31 @@ export default function RealTimeTest({
       );
     } catch {}
   }
+  function clearAutoStopTimer() {
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+  }
+  function scheduleAutoStop() {
+    clearAutoStopTimer();
+    autoStopTimerRef.current = setTimeout(() => {
+      if (!aliveRef.current) return;
+      stop();
+      toast({
+        status: "info",
+        description:
+          uiLang === "es"
+            ? "La sesión se cerró automáticamente tras 10 segundos."
+            : "The session closed automatically after 10 seconds.",
+        duration: 2500,
+        position: "top",
+      });
+    }, AUTO_DISCONNECT_MS);
+  }
   async function start() {
     playSound(submitActionSound);
+    clearAutoStopTimer();
     setErr("");
     setMessages([]);
     respToMsg.current.clear();
@@ -1292,7 +1321,9 @@ export default function RealTimeTest({
       setStatus("connected");
       aliveRef.current = true;
       setUiState("listening");
+      scheduleAutoStop();
     } catch (e) {
+      clearAutoStopTimer();
       setStatus("disconnected");
       setUiState("idle");
       setErr(e?.message || String(e));
@@ -1300,6 +1331,7 @@ export default function RealTimeTest({
   }
 
   async function stop() {
+    clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
     setLocalMicEnabled(true);
@@ -1957,6 +1989,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
   function skipGoal() {
     playSound(nextButtonSound);
+    stop();
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[RealTimeTest] Skipping to next lesson module");
@@ -1980,6 +2013,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     if (goalBusyRef.current) return;
 
     playSound(nextButtonSound);
+    stop();
 
     // In lesson mode, move to the next module (same behavior as Skip)
     if (onSkip && typeof onSkip === "function") {

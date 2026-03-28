@@ -275,6 +275,53 @@ export async function cleanupExpiredCache() {
 
 // Track in-flight requests to avoid duplicate fetches
 const inFlightRequests = new Map();
+const activeTTSPlayers = new Map();
+
+function registerActiveTTSPlayer(audio, cleanup) {
+  if (!audio || typeof cleanup !== "function") return;
+  activeTTSPlayers.set(audio, cleanup);
+}
+
+function unregisterActiveTTSPlayer(audio, cleanup) {
+  if (!audio) return;
+  if (!cleanup || activeTTSPlayers.get(audio) === cleanup) {
+    activeTTSPlayers.delete(audio);
+  }
+}
+
+export function stopTTSPlayback(audio) {
+  if (!audio) return;
+
+  const cleanup = activeTTSPlayers.get(audio) || audio._ttsCleanup;
+  unregisterActiveTTSPlayer(audio, cleanup);
+
+  try {
+    cleanup?.();
+  } catch {}
+
+  try {
+    audio.pause?.();
+  } catch {}
+
+  try {
+    audio.currentTime = 0;
+  } catch {}
+}
+
+export function stopAllTTSPlayback() {
+  Array.from(activeTTSPlayers.keys()).forEach((audio) => {
+    stopTTSPlayback(audio);
+  });
+
+  if (
+    typeof window !== "undefined" &&
+    typeof window.speechSynthesis?.cancel === "function"
+  ) {
+    try {
+      window.speechSynthesis.cancel();
+    } catch {}
+  }
+}
 
 /**
  * Fetch TTS audio with multi-layer caching:
@@ -463,6 +510,7 @@ async function getRealtimePlayer({
 
   // Track when we're intentionally ending to prevent spurious error events
   let intentionalEnd = false;
+  let cleanupFn = null;
 
   // Track when response is done via data channel messages
   const finalize = new Promise((resolve) => {
@@ -483,6 +531,7 @@ async function getRealtimePlayer({
     const fallbackTimeoutMs = Math.max(45000, text.length * 180 + 10000);
     hardFallbackTimer = setTimeout(finishFinalize, fallbackTimeoutMs);
   }).finally(() => {
+    unregisterActiveTTSPlayer(audio, cleanupFn);
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
     audioEnded = true;
@@ -583,10 +632,12 @@ async function getRealtimePlayer({
   if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
   await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
-  const cleanupFn = () => {
+  cleanupFn = () => {
     intentionalEnd = true;
+    unregisterActiveTTSPlayer(audio, cleanupFn);
     finishFinalize();
   };
+  registerActiveTTSPlayer(audio, cleanupFn);
   audio._ttsCleanup = cleanupFn;
 
   return { audio, audioUrl: null, ready, finalize, cleanup: cleanupFn };

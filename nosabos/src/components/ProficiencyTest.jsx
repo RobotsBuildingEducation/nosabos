@@ -57,6 +57,7 @@ const REALTIME_URL = `${
 )}`;
 
 const MAX_EXCHANGES = 10;
+const AUTO_DISCONNECT_MS = 10000;
 const MATRIX_PANEL_SX = {
   position: "relative",
   overflow: "hidden",
@@ -581,6 +582,7 @@ export default function ProficiencyTest() {
   }, [setUser, user]);
 
   const aliveRef = useRef(false);
+  const autoStopTimerRef = useRef(null);
 
   // Derive settings from user
   const targetLang =
@@ -923,6 +925,21 @@ export default function ProficiencyTest() {
         }),
       );
     } catch {}
+  }
+
+  function clearAutoStopTimer() {
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+  }
+
+  function scheduleAutoStop() {
+    clearAutoStopTimer();
+    autoStopTimerRef.current = setTimeout(() => {
+      if (!aliveRef.current) return;
+      stop();
+    }, AUTO_DISCONNECT_MS);
   }
 
   async function handleRealtimeEvent(evt) {
@@ -1498,6 +1515,7 @@ Return ONLY valid JSON:
   /* ---- Connect / Disconnect ---- */
   async function start() {
     playSound(submitActionSound);
+    clearAutoStopTimer();
     setErr("");
     setMessages([]);
     respToMsg.current.clear();
@@ -1619,7 +1637,9 @@ Return ONLY valid JSON:
       setStatus("connected");
       aliveRef.current = true;
       setUiState("listening");
+      scheduleAutoStop();
     } catch (e) {
+      clearAutoStopTimer();
       setStatus("disconnected");
       setUiState("idle");
       setErr(e?.message || String(e));
@@ -1627,6 +1647,7 @@ Return ONLY valid JSON:
   }
 
   function stop() {
+    clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
     setLocalMicEnabled(true);
@@ -1688,6 +1709,7 @@ Return ONLY valid JSON:
   useEffect(() => {
     return () => {
       aliveRef.current = false;
+      clearAutoStopTimer();
       if (streamFlushTimerRef.current)
         clearTimeout(streamFlushTimerRef.current);
       stopSpeechSampling();

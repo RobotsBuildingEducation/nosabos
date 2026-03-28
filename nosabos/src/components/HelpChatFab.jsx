@@ -93,6 +93,7 @@ const REALTIME_URL = `${
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL,
 )}`;
+const AUTO_DISCONNECT_MS = 10000;
 
 /**
  * Small Markdown renderer mapped to Chakra components
@@ -269,6 +270,8 @@ const HelpChatFab = forwardRef(
     const localRef = useRef(null);
     const dcRef = useRef(null);
     const realtimeAliveRef = useRef(false);
+    const realtimeAutoStopTimerRef = useRef(null);
+    const stopRealtimeRef = useRef(() => {});
     // Track current assistant message being built (to prevent splitting)
     const currentAssistantIdRef = useRef(null);
     // Track the most recent assistant message (even after it's marked done)
@@ -988,7 +991,23 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       }
     }, []);
 
+    const clearRealtimeAutoStopTimer = useCallback(() => {
+      if (realtimeAutoStopTimerRef.current) {
+        clearTimeout(realtimeAutoStopTimerRef.current);
+        realtimeAutoStopTimerRef.current = null;
+      }
+    }, []);
+
+    const scheduleRealtimeAutoStop = useCallback(() => {
+      clearRealtimeAutoStopTimer();
+      realtimeAutoStopTimerRef.current = setTimeout(() => {
+        if (!realtimeAliveRef.current) return;
+        stopRealtimeRef.current();
+      }, AUTO_DISCONNECT_MS);
+    }, [clearRealtimeAutoStopTimer]);
+
     const startRealtime = useCallback(async () => {
+      clearRealtimeAutoStopTimer();
       setRealtimeStatus("connecting");
       try {
         const pc = new RTCPeerConnection();
@@ -1059,8 +1078,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
         setRealtimeStatus("connected");
         realtimeAliveRef.current = true;
+        scheduleRealtimeAutoStop();
       } catch (e) {
         console.error("Realtime connection error:", e);
+        clearRealtimeAutoStopTimer();
         setRealtimeStatus("disconnected");
         toast({
           status: "error",
@@ -1069,9 +1090,17 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           description: e?.message || String(e),
         });
       }
-    }, [appLanguage, buildRealtimeInstructions, handleRealtimeEvent, toast]);
+    }, [
+      appLanguage,
+      buildRealtimeInstructions,
+      clearRealtimeAutoStopTimer,
+      handleRealtimeEvent,
+      scheduleRealtimeAutoStop,
+      toast,
+    ]);
 
     const stopRealtime = useCallback(() => {
+      clearRealtimeAutoStopTimer();
       realtimeAliveRef.current = false;
       currentAssistantIdRef.current = null;
 
@@ -1113,7 +1142,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       pcRef.current = null;
 
       setRealtimeStatus("disconnected");
-    }, []);
+    }, [clearRealtimeAutoStopTimer]);
+
+    useEffect(() => {
+      stopRealtimeRef.current = stopRealtime;
+    }, [stopRealtime]);
 
     const toggleRealtime = useCallback(() => {
       if (realtimeStatus === "connected") {
