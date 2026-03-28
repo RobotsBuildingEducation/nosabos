@@ -2222,7 +2222,10 @@ export default function App() {
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
-  const [shouldShowGettingStartedAfterProficiency, setShouldShowGettingStartedAfterProficiency] = useState(false);
+  const [
+    shouldShowGettingStartedAfterProficiency,
+    setShouldShowGettingStartedAfterProficiency,
+  ] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const gettingStartedCheckDoneRef = useRef(false);
 
@@ -3656,7 +3659,13 @@ export default function App() {
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
-  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang, shouldShowGettingStartedAfterProficiency]);
+  }, [
+    resolveNpub,
+    patchUser,
+    user?.proficiencyPlacements,
+    resolvedTargetLang,
+    shouldShowGettingStartedAfterProficiency,
+  ]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);
@@ -5877,7 +5886,10 @@ function BottomActionBar({
                 boxShadow:
                   "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
               },
-              "100%": { boxShadow: "0 2px 8px rgba(0,0,0,0.3)", borderColor: "whiteAlpha.200" },
+              "100%": {
+                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+                borderColor: "whiteAlpha.200",
+              },
             },
           }}
         >

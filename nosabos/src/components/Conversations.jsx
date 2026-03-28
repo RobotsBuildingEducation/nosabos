@@ -561,6 +561,7 @@ export default function Conversations({
   // Idle gating
   const isIdleRef = useRef(true);
   const idleWaitersRef = useRef([]);
+  const assistantInputLockedRef = useRef(false);
 
   // Track when current response started (for proper user message ordering)
   const responseStartTimeRef = useRef(null);
@@ -1153,6 +1154,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
+      assistantInputLockedRef.current = false;
+      setLocalMicEnabled(true);
 
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
@@ -1213,6 +1216,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   async function stop() {
     aliveRef.current = false;
+    assistantInputLockedRef.current = false;
+    setLocalMicEnabled(true);
     try {
       if (dcRef.current?.readyState === "open") {
         dcRef.current.send(
@@ -1395,12 +1400,47 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       .join(" ");
   }
 
+  function buildTurnDetectionConfig() {
+    if (assistantInputLockedRef.current) return null;
+    return {
+      type: "server_vad",
+      silence_duration_ms: pauseMsRef.current || 2000,
+      threshold: 0.35,
+      prefix_padding_ms: 120,
+    };
+  }
+
+  function setLocalMicEnabled(enabled) {
+    try {
+      localRef.current?.getAudioTracks?.().forEach((track) => {
+        track.enabled = enabled;
+      });
+    } catch {}
+  }
+
+  // Prevent background sounds from barging in while the assistant is speaking.
+  function setAssistantInputLocked(locked) {
+    assistantInputLockedRef.current = locked;
+    if (locked) setLocalMicEnabled(false);
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            session: { turn_detection: buildTurnDetectionConfig() },
+          })
+        );
+      }
+    } catch {}
+    if (!locked) setLocalMicEnabled(true);
+  }
+
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructions();
-    const vadMs = pauseMsRef.current || 2000;
 
     try {
       dcRef.current.send(
@@ -1410,13 +1450,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             instructions,
             modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: vadMs,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
+            turn_detection: buildTurnDetectionConfig(),
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
@@ -1802,7 +1836,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
-      enableVAD();
+      setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -1813,6 +1847,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       disableVAD();
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
+      setAssistantInputLocked(true);
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -1922,7 +1957,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       t === "response.done" ||
       t === "response.canceled"
     ) {
-      enableVAD();
+      if (t === "response.canceled") setAssistantInputLocked(false);
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {
