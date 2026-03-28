@@ -30,13 +30,14 @@ function getAngleFromCenter(clientX, clientY, rect) {
 }
 
 // Analog clock component that visualizes the selected duration
+const STEP = 5; // minute increment per tick
+
 function ClockVisual({
   minutes,
   onMinutesChange,
   rotationMinutes = 120,
   maxMinutes = 240,
-  playSound,
-  selectSoundSrc,
+  playSliderTick,
 }) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
   const clockRef = useRef(null);
@@ -47,10 +48,8 @@ function ClockVisual({
   minutesRef.current = minutes;
   const onMinutesChangeRef = useRef(onMinutesChange);
   onMinutesChangeRef.current = onMinutesChange;
-  const playSoundRef = useRef(playSound);
-  playSoundRef.current = playSound;
-  const selectSoundSrcRef = useRef(selectSoundSrc);
-  selectSoundSrcRef.current = selectSoundSrc;
+  const playSliderTickRef = useRef(playSliderTick);
+  playSliderTickRef.current = playSliderTick;
 
   // Circular drag gesture handling — stable effect, runs once on mount
   useEffect(() => {
@@ -75,22 +74,22 @@ function ClockVisual({
 
       // Convert angular delta to minutes (360° = rotationMinutes)
       const minuteDelta = (delta / 360) * rotationMinutes;
-      state.currentMinutes = Math.max(
-        1,
-        Math.min(maxMinutes, state.currentMinutes + minuteDelta)
+      state.accumMinutes = Math.max(
+        STEP,
+        Math.min(maxMinutes, state.accumMinutes + minuteDelta)
       );
 
-      const newMinutes = Math.round(state.currentMinutes);
-      if (newMinutes !== state.lastEmitted) {
-        state.lastEmitted = newMinutes;
-        onMinutesChangeRef.current?.(String(newMinutes));
+      // Snap to nearest STEP
+      const snapped =
+        Math.round(state.accumMinutes / STEP) * STEP || STEP;
+      if (snapped !== state.lastEmitted) {
+        state.lastEmitted = snapped;
+        onMinutesChangeRef.current?.(String(snapped));
+        playSliderTickRef.current?.(snapped, STEP, maxMinutes);
       }
     };
 
     const onPointerUp = () => {
-      if (dragState.current) {
-        playSoundRef.current?.(selectSoundSrcRef.current);
-      }
       dragState.current = null;
       window.removeEventListener("mousemove", onPointerMove);
       window.removeEventListener("mouseup", onPointerUp);
@@ -105,12 +104,15 @@ function ClockVisual({
       const rect = el.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      const current = Math.max(1, Math.min(maxMinutes, Number(minutesRef.current) || 25));
+      const current = Math.max(
+        STEP,
+        Math.min(maxMinutes, Number(minutesRef.current) || 25)
+      );
 
       dragState.current = {
         rect,
         lastAngle: getAngleFromCenter(clientX, clientY, rect),
-        currentMinutes: current,
+        accumMinutes: current,
         lastEmitted: current,
       };
 
@@ -234,6 +236,7 @@ function ClockVisual({
         borderColor="gray.700"
         cursor={onMinutesChange ? "grab" : "default"}
         userSelect="none"
+        sx={onMinutesChange ? { touchAction: "none" } : {}}
         _active={onMinutesChange ? { cursor: "grabbing" } : {}}
       >
         <svg
@@ -380,6 +383,7 @@ export default function SessionTimerModal({
 }) {
   const presets = [10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const handleClose = useCallback(() => {
     playSound(selectSound);
     onClose?.();
@@ -417,8 +421,7 @@ export default function SessionTimerModal({
             <ClockVisual
               minutes={minutes}
               onMinutesChange={onMinutesChange}
-              playSound={playSound}
-              selectSoundSrc={selectSound}
+              playSliderTick={playSliderTick}
             />
 
             {helper}
