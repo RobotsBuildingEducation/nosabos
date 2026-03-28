@@ -25,8 +25,7 @@ export const translations = {
     daily_goal_quick_picks: "Quick picks",
     daily_goal_fine_tune: "Fine-tune",
     daily_goal_xp_unit: "XP / day",
-    daily_goal_level_explainer:
-      "Each level is 100 XP. This goal is {pct}% of a level per day.",
+    daily_goal_level_explainer: "Each level is 100 XP.",
     daily_goal_preview: "Goal preview",
     daily_goal_resets_in: "Resets in 24h · {when}",
     daily_goal_error_no_user: "No user ID",

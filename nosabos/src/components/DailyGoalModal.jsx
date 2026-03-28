@@ -53,7 +53,7 @@ export default function DailyGoalModal({
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
     () => t || allTranslations[resolvedLang] || allTranslations.en,
-    [t, resolvedLang]
+    [t, resolvedLang],
   );
 
   const getLabel = useCallback(
@@ -62,7 +62,7 @@ export default function DailyGoalModal({
       translate("en", key, vars) ||
       resolvedTranslations?.[key] ||
       fallback,
-    [resolvedLang, resolvedTranslations]
+    [resolvedLang, resolvedTranslations],
   );
 
   const L = useMemo(
@@ -71,11 +71,10 @@ export default function DailyGoalModal({
       fineTune: getLabel("daily_goal_fine_tune", "Fine-tune"),
       xpUnit: getLabel("daily_goal_xp_unit", "XP / day"),
       levelExplainer: (pct, lvls) =>
-        getLabel(
-          "daily_goal_level_explainer",
-          `Each level is 100 XP. This goal is ${pct}% of a level (≈ ${lvls} levels per day).`,
-          { pct, levels: lvls }
-        ),
+        getLabel("daily_goal_level_explainer", `Each level is 100 XP.`, {
+          pct,
+          levels: lvls,
+        }),
       goalPreview: getLabel("daily_goal_preview", "Goal preview"),
       resetsIn: (when) =>
         getLabel("daily_goal_resets_in", `Resets in 24h · ${when}`, { when }),
@@ -83,28 +82,28 @@ export default function DailyGoalModal({
       title: getLabel("daily_goal_title", "Daily XP goal"),
       subtitle: getLabel(
         "daily_goal_subtitle",
-        "Each level = 100 XP. How many XP do you want to earn per day?"
+        "Each level = 100 XP. How many XP do you want to earn per day?",
       ),
       inputLabel: getLabel("daily_goal_input_label", "XP per day"),
       errNoUserTitle: getLabel("daily_goal_error_no_user", "No user ID"),
       errNoUserDesc: getLabel(
         "daily_goal_error_no_user_desc",
-        "Please sign in again."
+        "Please sign in again.",
       ),
       errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
       calendarTitle: getLabel("daily_goal_calendar_title", "Your progress"),
     }),
-    [getLabel]
+    [getLabel],
   );
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
 
   // Calendar month navigation state
   const [calendarYear, setCalendarYear] = useState(() =>
-    new Date().getFullYear()
+    new Date().getFullYear(),
   );
   const [calendarMonth, setCalendarMonth] = useState(() =>
-    new Date().getMonth()
+    new Date().getMonth(),
   );
 
   // Reset field when modal re-opens or default changes
@@ -126,7 +125,7 @@ export default function DailyGoalModal({
   // Clamp + parse
   const parsed = useMemo(
     () => Math.max(1, Math.min(1000, Math.round(Number(goal) || 0))),
-    [goal]
+    [goal],
   );
 
   // Pretty preview of “next reset” (local time)
@@ -163,7 +162,7 @@ export default function DailyGoalModal({
           dailyHasCelebrated: false,
           updatedAt: new Date().toISOString(),
         },
-        { merge: true }
+        { merge: true },
       );
       onClose?.();
     } catch (e) {
@@ -284,37 +283,6 @@ export default function DailyGoalModal({
             <Divider borderColor="gray.700" />
 
             {/* Preview */}
-            <Box>
-              <HStack spacing={2} mb={2}>
-                <Box as={FiZap} aria-hidden fontSize="18px" color="teal.300" />
-                <Text fontWeight="semibold">{L.goalPreview}</Text>
-              </HStack>
-              <WaveBar
-                value={Math.min(levelPct, 100)}
-                size="sm"
-                rounded="md"
-                hasStripe
-                isAnimated
-                start="rgba(28, 145, 248, 1)"
-                end="rgba(0, 157, 255, 1)"
-              />
-              <HStack mt={2} justify="space-between" fontSize="sm">
-                <Text opacity={0.85}>
-                  {parsed} {L.xpUnit}
-                </Text>
-                <HStack spacing={2}>
-                  <Box
-                    as={FiClock}
-                    aria-hidden
-                    fontSize="16px"
-                    color="gray.300"
-                  />
-                  <Text opacity={0.8}>{L.resetsIn(resetPreview)}</Text>
-                </HStack>
-              </HStack>
-            </Box>
-
-            <Divider borderColor="gray.700" />
 
             {/* Goal Calendar */}
             <Box>
