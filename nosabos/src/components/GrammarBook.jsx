@@ -51,6 +51,7 @@ import {
   LOW_LATENCY_TTS_FORMAT,
   TTS_LANG_TAG,
   getTTSPlayer,
+  stopAllTTSPlayback,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
@@ -1468,6 +1469,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
 
   function handleNext() {
     playSound(nextButtonSound);
+    stopModuleTTS();
     setLastOk(null);
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
@@ -1544,6 +1546,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
 
   function handleSkip() {
     playSound(nextButtonSound);
+    stopModuleTTS();
     if (isSpeakRecording) {
       try {
         stopSpeakRecording();
@@ -1630,56 +1633,55 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [matchWordSynthesizing, setMatchWordSynthesizing] = useState(null); // index of word being synthesized
   const matchWordAudioRef = useRef(null);
 
-  useEffect(() => {
-    return () => {
+  const stopModuleTTS = useCallback(() => {
+    stopAllTTSPlayback();
+    speakAudioRef.current = null;
+    questionAudioRef.current = null;
+    matchWordAudioRef.current = null;
+    questionTextRef.current = "";
+
+    if (speakAudioUrlRef.current) {
       try {
-        speakAudioRef.current?.pause?.();
+        URL.revokeObjectURL(speakAudioUrlRef.current);
       } catch {}
-      speakAudioRef.current = null;
+      speakAudioUrlRef.current = null;
+    }
+
+    if (questionAudioUrlRef.current) {
       try {
-        questionAudioRef.current?.pause?.();
+        URL.revokeObjectURL(questionAudioUrlRef.current);
       } catch {}
-      questionAudioRef.current = null;
-      if (speakAudioUrlRef.current) {
-        try {
-          URL.revokeObjectURL(speakAudioUrlRef.current);
-        } catch {}
-        speakAudioUrlRef.current = null;
-      }
-      if (questionAudioUrlRef.current) {
-        try {
-          URL.revokeObjectURL(questionAudioUrlRef.current);
-        } catch {}
-        questionAudioUrlRef.current = null;
-      }
-    };
+      questionAudioUrlRef.current = null;
+    }
+
+    setIsSpeakPlaying(false);
+    setIsSpeakSynthesizing(false);
+    setIsQuestionPlaying(false);
+    setIsQuestionSynthesizing(false);
+    setMatchWordSynthesizing(null);
   }, []);
 
   useEffect(() => {
-    try {
-      speakAudioRef.current?.pause?.();
-    } catch {}
-    speakAudioRef.current = null;
-    setIsSpeakPlaying(false);
-    try {
-      questionAudioRef.current?.pause?.();
-    } catch {}
-    questionAudioRef.current = null;
-    setIsQuestionPlaying(false);
-  }, [sTarget]);
+    return () => {
+      stopModuleTTS();
+    };
+  }, [stopModuleTTS]);
 
   useEffect(() => {
-    try {
-      questionAudioRef.current?.pause?.();
-    } catch {}
-    questionAudioRef.current = null;
-    setIsQuestionPlaying(false);
-    setIsQuestionSynthesizing(false);
-  }, [mcQ, maQ, targetLang]);
+    stopModuleTTS();
+  }, [sTarget, stopModuleTTS]);
+
+  useEffect(() => {
+    stopModuleTTS();
+  }, [mcQ, maQ, targetLang, stopModuleTTS]);
 
   useEffect(() => {
     setQuestionTTsLang(targetLang);
   }, [targetLang]);
+
+  useEffect(() => {
+    stopModuleTTS();
+  }, [lesson?.id, stopModuleTTS]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -4033,28 +4035,14 @@ Return JSON ONLY:
     if (!text) return;
 
     if (isSpeakPlaying && speakAudioRef.current) {
-      try {
-        speakAudioRef.current.pause();
-      } catch {}
-      speakAudioRef.current = null;
-      setIsSpeakPlaying(false);
-      setIsSpeakSynthesizing(false);
+      stopModuleTTS();
       return;
     }
 
     try {
+      stopModuleTTS();
       setIsSpeakSynthesizing(true);
       setIsSpeakPlaying(true);
-      try {
-        speakAudioRef.current?.pause?.();
-      } catch {}
-      speakAudioRef.current = null;
-      if (speakAudioUrlRef.current) {
-        try {
-          URL.revokeObjectURL(speakAudioUrlRef.current);
-        } catch {}
-        speakAudioUrlRef.current = null;
-      }
 
       const player = await getTTSPlayer({
         text,
@@ -4080,11 +4068,9 @@ Return JSON ONLY:
       await audio.play();
     } catch (err) {
       console.error("Grammar speak playback failed", err);
-      setIsSpeakSynthesizing(false);
-      setIsSpeakPlaying(false);
-      speakAudioRef.current = null;
+      stopModuleTTS();
     }
-  }, [isSpeakPlaying, sTarget, toast, userLanguage]);
+  }, [isSpeakPlaying, sTarget, stopModuleTTS, toast, userLanguage]);
 
   const handlePlayQuestionTTS = useCallback(
     async (text, langOverride = null) => {
@@ -4092,29 +4078,14 @@ Return JSON ONLY:
       if (!ttsText) return;
 
       if (isQuestionPlaying && questionTextRef.current === ttsText) {
-        try {
-          questionAudioRef.current?.pause?.();
-        } catch {}
-        questionAudioRef.current = null;
-        setIsQuestionPlaying(false);
-        setIsQuestionSynthesizing(false);
+        stopModuleTTS();
         return;
       }
 
       try {
+        stopModuleTTS();
         setIsQuestionSynthesizing(true);
         questionTextRef.current = ttsText;
-
-        try {
-          questionAudioRef.current?.pause?.();
-        } catch {}
-        questionAudioRef.current = null;
-        if (questionAudioUrlRef.current) {
-          try {
-            URL.revokeObjectURL(questionAudioUrlRef.current);
-          } catch {}
-          questionAudioUrlRef.current = null;
-        }
 
         const lang = langOverride || targetLang;
         const player = await getTTSPlayer({
@@ -4142,11 +4113,10 @@ Return JSON ONLY:
         await audio.play();
       } catch (err) {
         console.error("Grammar question playback failed", err);
-        setIsQuestionSynthesizing(false);
-        setIsQuestionPlaying(false);
+        stopModuleTTS();
       }
     },
-    [isQuestionPlaying, targetLang, toast, userLanguage],
+    [isQuestionPlaying, stopModuleTTS, targetLang, toast, userLanguage],
   );
 
   // Handler for playing TTS on individual match words

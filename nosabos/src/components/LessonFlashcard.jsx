@@ -2,7 +2,7 @@
 // Inline flashcard question UI for Vocabulary/Grammar modules.
 // AI-generates a card from the lesson context. Collected cards form a
 // unit-scoped deck the learner can review (reviewing does NOT count for progress).
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   VStack,
@@ -35,6 +35,8 @@ import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
   getTTSPlayer,
+  stopAllTTSPlayback,
+  stopTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
@@ -201,6 +203,25 @@ export default function LessonFlashcard({
   const audioRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
+
+  const stopAnswerAudio = () => {
+    stopTTSPlayback(audioRef.current);
+    audioRef.current = null;
+    setIsPlayingAudio(false);
+    setLoadingTts(false);
+  };
+
+  useEffect(() => {
+    stopAnswerAudio();
+    explanationStreamingRef.current = false;
+  }, [concept, answer]);
+
+  useEffect(() => {
+    return () => {
+      stopAnswerAudio();
+      explanationStreamingRef.current = false;
+    };
+  }, []);
 
   const t = (key) => {
     const dict = {
@@ -385,18 +406,11 @@ export default function LessonFlashcard({
   const handleListenToAnswer = async (e) => {
     e?.stopPropagation?.();
     if (isPlayingAudio) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      setIsPlayingAudio(false);
+      stopAnswerAudio();
       return;
     }
     if (!answer || loadingTts) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    stopAnswerAudio();
     setLoadingTts(true);
     try {
       const player = await getTTSPlayer({
@@ -410,9 +424,8 @@ export default function LessonFlashcard({
       const cleanup = () => {
         if (cleanedUp) return;
         cleanedUp = true;
-        setIsPlayingAudio(false);
-        audioRef.current = null;
         player.cleanup?.();
+        stopAnswerAudio();
       };
       player.audio.onended = cleanup;
       player.audio.onerror = cleanup;
@@ -421,9 +434,22 @@ export default function LessonFlashcard({
       setIsPlayingAudio(true);
       await player.audio.play();
     } catch {
-      setLoadingTts(false);
-      setIsPlayingAudio(false);
+      stopAnswerAudio();
     }
+  };
+
+  const handleAdvance = () => {
+    stopAllTTSPlayback();
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+    onNext?.();
+  };
+
+  const handleNextQuestion = () => {
+    stopAllTTSPlayback();
+    onNext?.();
   };
 
   const handleCollect = () => {
@@ -915,7 +941,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       size="sm"
                       variant="ghost"
                       color="whiteAlpha.600"
-                      onClick={onSkip || onNext}
+                      onClick={handleAdvance}
                       _hover={{ bg: "whiteAlpha.100" }}
                       mt={8}
                       w="100%"
@@ -974,7 +1000,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           size="sm"
                           bg="teal"
                           variant="outline"
-                          onClick={onNext}
+                          onClick={handleNextQuestion}
                         >
                           {t("next")}
                         </Button>

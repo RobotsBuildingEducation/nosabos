@@ -17,7 +17,8 @@ import {
   Badge,
   IconButton,
   Spacer,
-  Divider, Input,
+  Divider,
+  Input,
   Tag,
   TagLabel,
   Flex,
@@ -49,6 +50,7 @@ import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
   getTTSPlayer,
+  stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
@@ -637,12 +639,8 @@ export default function StoryMode({
   };
 
   const stopAllAudio = useCallback(() => {
-    try {
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    } catch {}
+    stopAllTTSPlayback();
     if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
       currentAudioRef.current = null;
     }
     currentUtteranceRef.current = null;
@@ -1179,6 +1177,7 @@ export default function StoryMode({
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {
     playSound(nextButtonSound);
+    stopAllAudio();
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[StoryMode] Skipping to next lesson module");
@@ -1673,7 +1672,12 @@ export default function StoryMode({
             <Text color="#94a3b8" fontSize="sm">
               {uiText.generatingSub}
             </Text>
-            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={32}
+            />
           </VStack>
         </Center>
       </Box>
@@ -2029,12 +2033,26 @@ export default function StoryMode({
                                 ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
                                 : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
                           }
+                          boxShadow={
+                            isRecording
+                              ? "0px 4px 0px #ef4444"
+                              : isConnecting
+                                ? "0px 4px 0px #eab308"
+                                : "0px 4px 0px rgb(0, 157, 255)"
+                          }
                           color="white"
                           fontWeight="600"
                           fontSize="lg"
                           leftIcon={
                             isConnecting ? (
-                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                              <VoiceOrb
+                                state={
+                                  ["idle", "listening", "speaking"][
+                                    Math.floor(Math.random() * 3)
+                                  ]
+                                }
+                                size={24}
+                              />
                             ) : (
                               <PiMicrophoneStageDuotone />
                             )

@@ -73,6 +73,7 @@ const REALTIME_URL = `${
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
+const AUTO_DISCONNECT_MS = 10000;
 
 /* ---------------------------
    Utils & helpers
@@ -525,6 +526,7 @@ export default function Conversations({
   maxProficiencyLevel = "A1",
 }) {
   const aliveRef = useRef(false);
+  const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
 
   // User id
@@ -1147,6 +1149,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   --------------------------- */
   async function start() {
     playSound(submitActionSound);
+    clearAutoStopTimer();
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
@@ -1207,7 +1210,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       setStatus("connected");
       aliveRef.current = true;
       setUiState("idle");
+      scheduleAutoStop();
     } catch (e) {
+      clearAutoStopTimer();
       setStatus("disconnected");
       setUiState("idle");
       setErr(e?.message || String(e));
@@ -1215,6 +1220,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }
 
   async function stop() {
+    clearAutoStopTimer();
     aliveRef.current = false;
     assistantInputLockedRef.current = false;
     setLocalMicEnabled(true);
@@ -1511,6 +1517,21 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   function clearAllDebouncers() {
     clearTimeout(sessionUpdateTimer.current);
+  }
+
+  function clearAutoStopTimer() {
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
+    }
+  }
+
+  function scheduleAutoStop() {
+    clearAutoStopTimer();
+    autoStopTimerRef.current = setTimeout(() => {
+      if (!aliveRef.current) return;
+      stop();
+    }, AUTO_DISCONNECT_MS);
   }
 
   /* ---------------------------

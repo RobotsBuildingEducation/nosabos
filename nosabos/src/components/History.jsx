@@ -50,6 +50,7 @@ import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
   getTTSPlayer,
+  stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -1477,14 +1478,9 @@ export default function History({
 
   const stopSpeech = () => {
     setActiveSentenceIndex(-1);
-    try {
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    } catch {}
+    stopAllTTSPlayback();
     try {
       if (currentAudioRef.current) {
-        currentAudioRef.current._ttsCleanup?.();
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
         currentAudioRef.current = null;
       }
     } catch {}
@@ -1856,6 +1852,7 @@ Return ONLY valid JSON:
   function finishReadingAndNext() {
     if (!activeLecture || isGenerating) return;
     playSound(submitActionSound);
+    stopSpeech();
     // XP is already awarded on correct answer; just move to next module
     if (onSkip) {
       onSkip();
@@ -1865,6 +1862,7 @@ Return ONLY valid JSON:
   // Skip handler
   function handleSkip() {
     playSound(nextButtonSound);
+    stopSpeech();
     if (onSkip) {
       onSkip();
     }

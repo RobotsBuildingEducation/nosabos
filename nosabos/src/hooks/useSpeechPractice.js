@@ -39,6 +39,7 @@ export function useSpeechPractice({
   targetLang = "es",
   onResult,
   timeoutMs = 15000,
+  maxConnectionMs = 10000,
   vadSilenceDurationMs = null,
   speechStopDelayMs = 1500,
   responseDoneDelayMs = 500,
@@ -51,6 +52,7 @@ export function useSpeechPractice({
     speechDone: false,
     timeoutId: null,
     silenceTimeoutId: null,
+    connectionTimeoutId: null,
   });
   const transcriptRef = useRef("");
   const [isRecording, setIsRecording] = useState(false);
@@ -91,8 +93,11 @@ export function useSpeechPractice({
     if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
     if (evalRef.current.silenceTimeoutId)
       clearTimeout(evalRef.current.silenceTimeoutId);
+    if (evalRef.current.connectionTimeoutId)
+      clearTimeout(evalRef.current.connectionTimeoutId);
     evalRef.current.timeoutId = null;
     evalRef.current.silenceTimeoutId = null;
+    evalRef.current.connectionTimeoutId = null;
     evalRef.current.inProgress = false;
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
@@ -207,6 +212,8 @@ export function useSpeechPractice({
         if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
         if (evalRef.current.silenceTimeoutId)
           clearTimeout(evalRef.current.silenceTimeoutId);
+        if (evalRef.current.connectionTimeoutId)
+          clearTimeout(evalRef.current.connectionTimeoutId);
 
         const finalTranscript = transcriptRef.current.trim();
 
@@ -372,12 +379,11 @@ export function useSpeechPractice({
       setIsConnecting(false);
       setIsRecording(true);
 
-      // Maximum timeout as safety (30 seconds)
-      evalRef.current.timeoutId = setTimeout(() => {
+      evalRef.current.connectionTimeoutId = setTimeout(() => {
         if (evalRef.current.inProgress && !evalRef.current.speechDone) {
           finishRecording();
         }
-      }, 30000);
+      }, maxConnectionMs);
     } catch (err) {
       cleanup();
       throw makeError(
@@ -390,6 +396,7 @@ export function useSpeechPractice({
     targetLang,
     targetText,
     timeoutMs,
+    maxConnectionMs,
     vadSilenceDurationMs,
     speechStopDelayMs,
     responseDoneDelayMs,
