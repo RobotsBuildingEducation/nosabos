@@ -574,6 +574,7 @@ export default function RealTimeTest({
   // Idle gating
   const isIdleRef = useRef(true);
   const idleWaitersRef = useRef([]);
+  const assistantInputLockedRef = useRef(false);
 
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
@@ -1062,6 +1063,39 @@ export default function RealTimeTest({
       setTimeout(resolve, timeoutMs);
     });
   }
+  function buildTurnDetectionConfig() {
+    if (assistantInputLockedRef.current) return null;
+    return {
+      type: "server_vad",
+      silence_duration_ms: pauseMsRef.current || 2000,
+      threshold: 0.35,
+      prefix_padding_ms: 120,
+    };
+  }
+  function setLocalMicEnabled(enabled) {
+    try {
+      localRef.current?.getAudioTracks?.().forEach((track) => {
+        track.enabled = enabled;
+      });
+    } catch {}
+  }
+  // Prevent background audio from barging in while the assistant is speaking.
+  function setAssistantInputLocked(locked) {
+    assistantInputLockedRef.current = locked;
+    if (locked) setLocalMicEnabled(false);
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            session: { turn_detection: buildTurnDetectionConfig() },
+          }),
+        );
+      }
+    } catch {}
+    if (!locked) setLocalMicEnabled(true);
+  }
   function safeCancelActiveResponse() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     if (isIdleRef.current) return;
@@ -1128,6 +1162,8 @@ export default function RealTimeTest({
         },
       });
       localRef.current = local;
+      assistantInputLockedRef.current = false;
+      setLocalMicEnabled(true);
       local.getTracks().forEach((track) => pc.addTrack(track, local));
 
       const dc = pc.createDataChannel("oai-events");
@@ -1153,7 +1189,6 @@ export default function RealTimeTest({
         voiceRef.current = voiceName;
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
-        const vadMs = pauseMsRef.current || 2000;
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
         const sttLang =
           tLang === "es" ? "es" : tLang === "en" ? "en" : undefined;
@@ -1165,12 +1200,7 @@ export default function RealTimeTest({
               instructions,
               modalities: ["audio", "text"],
               voice: voiceName,
-              turn_detection: {
-                type: "server_vad",
-                silence_duration_ms: vadMs,
-                threshold: 0.35,
-                prefix_padding_ms: 120,
-              },
+              turn_detection: buildTurnDetectionConfig(),
               input_audio_transcription: sttLang
                 ? { model: "whisper-1", language: sttLang }
                 : { model: "whisper-1" },
@@ -1219,6 +1249,8 @@ export default function RealTimeTest({
 
   async function stop() {
     aliveRef.current = false;
+    assistantInputLockedRef.current = false;
+    setLocalMicEnabled(true);
     try {
       if (dcRef.current?.readyState === "open") {
         safeCancelActiveResponse();
@@ -2168,7 +2200,6 @@ Return ONLY JSON:
 
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructionsFromRefs();
-    const vadMs = pauseMsRef.current || 2000;
 
     try {
       dcRef.current.send(
@@ -2178,12 +2209,7 @@ Return ONLY JSON:
             instructions,
             modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: vadMs,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-            },
+            turn_detection: buildTurnDetectionConfig(),
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
@@ -2218,12 +2244,7 @@ Return ONLY JSON:
           session: {
             voice: voiceName,
             modalities: ["audio", "text"],
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-            },
+            turn_detection: buildTurnDetectionConfig(),
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
@@ -2286,12 +2307,7 @@ Return ONLY JSON:
             instructions,
             modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-            },
+            turn_detection: buildTurnDetectionConfig(),
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
@@ -2446,6 +2462,7 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      setAssistantInputLocked(false);
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -2453,6 +2470,7 @@ Return ONLY JSON:
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      setAssistantInputLocked(true);
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -2562,6 +2580,7 @@ Return ONLY JSON:
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      if (t === "response.canceled") setAssistantInputLocked(false);
       stopRecorderAfterTail(rid);
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {

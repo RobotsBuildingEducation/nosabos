@@ -630,6 +630,7 @@ export default function ProficiencyTest() {
   const speechTurnsRef = useRef([]);
   const currentSpeechTurnRef = useRef(null);
   const speechSampleTimerRef = useRef(null);
+  const assistantInputLockedRef = useRef(false);
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -753,6 +754,42 @@ export default function ProficiencyTest() {
     speechSampleTimerRef.current = setInterval(sampleSpeechRms, 120);
   }
 
+  function buildTurnDetectionConfig() {
+    if (assistantInputLockedRef.current) return null;
+    return {
+      type: "server_vad",
+      silence_duration_ms: pauseMs,
+      threshold: 0.35,
+      prefix_padding_ms: 120,
+    };
+  }
+
+  function setLocalMicEnabled(enabled) {
+    try {
+      localRef.current?.getAudioTracks?.().forEach((track) => {
+        track.enabled = enabled;
+      });
+    } catch {}
+  }
+
+  // Keep microphone input closed while the assistant audio is still playing.
+  function setAssistantInputLocked(locked) {
+    assistantInputLockedRef.current = locked;
+    if (locked) setLocalMicEnabled(false);
+    try {
+      if (dcRef.current?.readyState === "open") {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            session: { turn_detection: buildTurnDetectionConfig() },
+          }),
+        );
+      }
+    } catch {}
+    if (!locked) setLocalMicEnabled(true);
+  }
+
   function extractTranscriptConfidence(payload) {
     const candidates = [
       payload?.confidence,
@@ -871,6 +908,7 @@ export default function ProficiencyTest() {
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
       return;
@@ -878,6 +916,7 @@ export default function ProficiencyTest() {
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      setAssistantInputLocked(true);
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
@@ -995,6 +1034,7 @@ export default function ProficiencyTest() {
       t === "response.done" ||
       t === "response.canceled"
     ) {
+      if (t === "response.canceled") setAssistantInputLocked(false);
       isIdleRef.current = true;
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
@@ -1014,6 +1054,7 @@ export default function ProficiencyTest() {
     }
 
     if (t === "input_audio_buffer.speech_started") {
+      if (assistantInputLockedRef.current) return;
       const turn = {
         id: uid(),
         startTs: Date.now(),
@@ -1034,6 +1075,7 @@ export default function ProficiencyTest() {
     }
 
     if (t === "input_audio_buffer.speech_stopped") {
+      if (assistantInputLockedRef.current) return;
       const now = Date.now();
       const turn = currentSpeechTurnRef.current;
       if (turn) {
@@ -1438,6 +1480,8 @@ Return ONLY valid JSON:
         },
       });
       localRef.current = local;
+      assistantInputLockedRef.current = false;
+      setLocalMicEnabled(true);
       local.getTracks().forEach((track) => pc.addTrack(track, local));
 
       if (!audioGraphReadyRef.current) {
@@ -1472,12 +1516,7 @@ Return ONLY valid JSON:
               instructions,
               modalities: ["audio", "text"],
               voice: voiceName,
-              turn_detection: {
-                type: "server_vad",
-                silence_duration_ms: pauseMs,
-                threshold: 0.35,
-                prefix_padding_ms: 120,
-              },
+              turn_detection: buildTurnDetectionConfig(),
               input_audio_transcription: {
                 model: "whisper-1",
                 language: targetLanguageCode,
@@ -1527,6 +1566,8 @@ Return ONLY valid JSON:
 
   function stop() {
     aliveRef.current = false;
+    assistantInputLockedRef.current = false;
+    setLocalMicEnabled(true);
     try {
       if (dcRef.current?.readyState === "open") {
         try {
