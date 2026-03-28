@@ -59,6 +59,8 @@ const personaDefaultFor = (lang) =>
   translations?.en?.onboarding_persona_default_example ||
   "";
 
+const STEPS = ["languages", "voice", "extra"];
+
 export default function Onboarding({
   onComplete,
   userLanguage = "en",
@@ -67,6 +69,7 @@ export default function Onboarding({
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useBreakpointValue({ base: true, md: false });
+  const [step, setStep] = useState(0);
 
   const normalizedUserLang = userLanguage === "es" ? "es" : "en";
   const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
@@ -326,284 +329,329 @@ export default function Onboarding({
                   {ui.onboarding_subtitle}
                 </Text>
               </VStack>
+
+              {/* Step indicator */}
+              <HStack justify="center" spacing={2} mt={4} mb={2}>
+                {STEPS.map((s, i) => (
+                  <Box
+                    key={s}
+                    h="4px"
+                    flex={1}
+                    borderRadius="full"
+                    bg={i <= step ? "teal.400" : "gray.700"}
+                    transition="background 0.2s"
+                  />
+                ))}
+              </HStack>
+              <Text fontSize="xs" opacity={0.6} textAlign="center" mb={4}>
+                {supportLang === "es"
+                  ? `Paso ${step + 1} de ${STEPS.length}`
+                  : `Step ${step + 1} of ${STEPS.length}`}
+              </Text>
             </Box>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={4}>
-                {/* Support Language */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                    {ui.onboarding_support_language_title}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7} mb={3}>
-                    {ui.onboarding_support_language_desc}
-                  </Text>
-                  <Menu
-                    autoSelect={false}
-                    isLazy
-                    onOpen={() => playSound(selectSound)}
-                  >
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      w="100%"
-                      textAlign="left"
-                      padding={5}
-                      onClick={() => playSound(selectSound)}
-                    >
-                      <HStack spacing={2}>
-                        {supportOption.flag}
-                        <Text as="span">{supportOption.label}</Text>
-                      </HStack>
-                    </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
-                      <Box
-                        px={3}
-                        pt={2}
-                        pb={1}
-                        fontSize="xs"
-                        fontWeight="semibold"
-                        color="gray.400"
+                {/* ── Step 1: Languages ── */}
+                {step === 0 && (
+                  <>
+                    {/* Support Language */}
+                    <Box bg="gray.800" p={3} rounded="md">
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_support_language_title}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb={3}>
+                        {ui.onboarding_support_language_desc}
+                      </Text>
+                      <Menu
+                        autoSelect={false}
+                        isLazy
+                        onOpen={() => playSound(selectSound)}
                       >
-                        {ui.onboarding_support_menu_label || "Support:"}
-                      </Box>
-                      <MenuOptionGroup
-                        type="radio"
-                        value={supportLang}
-                        onChange={(value) => {
-                          playSound(selectSound);
-                          setSupportLang(value);
-                        }}
-                      >
-                        <MenuItemOption value="en" padding={5} pl={1}>
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<ChevronDownIcon />}
+                          variant="outline"
+                          size="sm"
+                          borderColor="gray.700"
+                          bg="gray.800"
+                          _hover={{ bg: "gray.750" }}
+                          _active={{ bg: "gray.750" }}
+                          w="100%"
+                          textAlign="left"
+                          padding={5}
+                          onClick={() => playSound(selectSound)}
+                        >
                           <HStack spacing={2}>
-                            {usaFlag()}
-                            <Text as="span">{ui.onboarding_support_en}</Text>
+                            {supportOption.flag}
+                            <Text as="span">{supportOption.label}</Text>
                           </HStack>
-                        </MenuItemOption>
-                        <MenuItemOption value="es" padding={5} pl={1}>
-                          <HStack spacing={2}>
-                            {mexicanFlag()}
-                            <Text as="span">{ui.onboarding_support_es}</Text>
-                          </HStack>
-                        </MenuItemOption>
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
-                </Box>
-
-                {/* Practice Language */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                    {ui.onboarding_practice_language_title}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7} mb={3}>
-                    {ui.onboarding_practice_language_desc}
-                  </Text>
-                  <Menu
-                    autoSelect={false}
-                    isLazy
-                    onOpen={() => playSound(selectSound)}
-                  >
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      w="100%"
-                      textAlign="left"
-                      title={ui.onboarding_practice_label_title}
-                      padding={5}
-                      onClick={() => playSound(selectSound)}
-                    >
-                      <HStack spacing={2}>
-                        {selectedPracticeOption?.flag}
-                        <Text as="span">
-                          {selectedPracticeOption?.label}
-                          {selectedPracticeOption?.beta ? " (beta)" : ""}
-                        </Text>
-                      </HStack>
-                    </MenuButton>
-                    <MenuList
-                      borderColor="gray.700"
-                      bg="gray.900"
-                      maxH="300px"
-                      overflowY="auto"
-                      sx={{
-                        "&::-webkit-scrollbar": {
-                          width: "8px",
-                        },
-                        "&::-webkit-scrollbar-track": {
-                          bg: "gray.800",
-                          borderRadius: "4px",
-                        },
-                        "&::-webkit-scrollbar-thumb": {
-                          bg: "gray.600",
-                          borderRadius: "4px",
-                        },
-                        "&::-webkit-scrollbar-thumb:hover": {
-                          bg: "gray.500",
-                        },
-                      }}
-                    >
-                      <Box
-                        px={3}
-                        pt={2}
-                        pb={1}
-                        fontSize="xs"
-                        fontWeight="semibold"
-                        color="gray.400"
-                      >
-                        {ui.onboarding_practice_menu_label || "Practice:"}
-                      </Box>
-                      <MenuOptionGroup
-                        type="radio"
-                        value={targetLang}
-                        onChange={(value) => {
-                          playSound(selectSound);
-                          setTargetLang(value);
-                        }}
-                      >
-                        {practiceLanguageOptions.map((option) => (
-                          <MenuItemOption
-                            key={option.value}
-                            value={option.value}
-                            padding={5}
-                            pl={1}
+                        </MenuButton>
+                        <MenuList borderColor="gray.700" bg="gray.900">
+                          <Box
+                            px={3}
+                            pt={2}
+                            pb={1}
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            color="gray.400"
                           >
-                            <div style={{ display: "inline-flex" }}>
-                              {option?.flag}&nbsp;
-                              {option.label}
-                              {option.beta ? " (beta)" : ""}
-                            </div>
-                          </MenuItemOption>
-                        ))}
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
-                </Box>
+                            {ui.onboarding_support_menu_label || "Support:"}
+                          </Box>
+                          <MenuOptionGroup
+                            type="radio"
+                            value={supportLang}
+                            onChange={(value) => {
+                              playSound(selectSound);
+                              setSupportLang(value);
+                            }}
+                          >
+                            <MenuItemOption value="en" padding={5} pl={1}>
+                              <HStack spacing={2}>
+                                {usaFlag()}
+                                <Text as="span">
+                                  {ui.onboarding_support_en}
+                                </Text>
+                              </HStack>
+                            </MenuItemOption>
+                            <MenuItemOption value="es" padding={5} pl={1}>
+                              <HStack spacing={2}>
+                                {mexicanFlag()}
+                                <Text as="span">
+                                  {ui.onboarding_support_es}
+                                </Text>
+                              </HStack>
+                            </MenuItemOption>
+                          </MenuOptionGroup>
+                        </MenuList>
+                      </Menu>
+                    </Box>
 
-                {/* Voice Personality */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                    {ui.onboarding_section_voice_persona}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7} mb={3}>
-                    {ui.onboarding_persona_help_text}
-                  </Text>
-                  <Input
-                    value={voicePersona}
-                    onChange={(e) => setVoicePersona(e.target.value)}
-                    bg="gray.700"
-                    placeholder={personaPlaceholder}
-                  />
-                </Box>
-
-                {/* Voice Activity Pause Slider */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                    {ui.onboarding_vad_title}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7} mb={3}>
-                    {ui.onboarding_vad_explanation}
-                  </Text>
-                  <HStack justify="space-between" mb={2}>
-                    <Text fontSize="sm">{VAD_LABEL}</Text>
-                    <Text fontSize="sm" opacity={0.8}>
-                      {pauseSeconds} {secondsLabel}
-                    </Text>
-                  </HStack>
-                  <Slider
-                    aria-label="onboarding-pause-slider"
-                    min={200}
-                    max={4000}
-                    step={100}
-                    value={pauseMs}
-                    onChange={(val) => {
-                      setPauseMs(val);
-                      playSliderTick(val, 200, 4000);
-                    }}
-                  >
-                    <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                      <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
-                    </SliderTrack>
-                    <SliderThumb boxSize={6} />
-                  </Slider>
-                  <Text fontSize="xs" opacity={0.6} mt={2}>
-                    {VAD_HINT}
-                  </Text>
-                </Box>
-
-                {/* Sound Effects toggle */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <HStack justifyContent="space-between">
-                    <Text fontSize="sm">
-                      {ui.sound_effects_label || "Sound effects"}
-                    </Text>
-                    <Switch
-                      id="onboarding-sound-effects-switch"
-                      isChecked={soundEnabled}
-                      onChange={(e) => setSoundEnabled(e.target.checked)}
-                    />
-                  </HStack>
-                  <Text fontSize="xs" opacity={0.6} mt={2}>
-                    {soundEnabled
-                      ? ui.sound_effects_enabled || "Sound effects are enabled."
-                      : ui.sound_effects_disabled || "Sound effects are muted."}
-                  </Text>
-                  {soundEnabled && !isMobile && (
-                    <HStack mt={3} spacing={3} align="center">
-                      <Box w="50%">
-                        <HStack justify="space-between" mb={2}>
-                          <Text fontSize="sm">
-                            {ui.sound_volume_label || "Volume"}
-                          </Text>
-                          <Text fontSize="sm" opacity={0.8}>
-                            {soundVolume}%
-                          </Text>
-                        </HStack>
-                        <Slider
-                          aria-label="onboarding-volume-slider"
-                          min={0}
-                          max={100}
-                          step={5}
-                          value={soundVolume}
-                          onChange={(val) => {
-                            setSoundVolume(val);
-                            setGlobalVolume(val);
-                            playSliderTick(val, 0, 100);
+                    {/* Practice Language */}
+                    <Box bg="gray.800" p={3} rounded="md">
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_practice_language_title}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb={3}>
+                        {ui.onboarding_practice_language_desc}
+                      </Text>
+                      <Menu
+                        autoSelect={false}
+                        isLazy
+                        onOpen={() => playSound(selectSound)}
+                      >
+                        <MenuButton
+                          as={Button}
+                          rightIcon={<ChevronDownIcon />}
+                          variant="outline"
+                          size="sm"
+                          borderColor="gray.700"
+                          bg="gray.800"
+                          _hover={{ bg: "gray.750" }}
+                          _active={{ bg: "gray.750" }}
+                          w="100%"
+                          textAlign="left"
+                          title={ui.onboarding_practice_label_title}
+                          padding={5}
+                          onClick={() => playSound(selectSound)}
+                        >
+                          <HStack spacing={2}>
+                            {selectedPracticeOption?.flag}
+                            <Text as="span">
+                              {selectedPracticeOption?.label}
+                              {selectedPracticeOption?.beta ? " (beta)" : ""}
+                            </Text>
+                          </HStack>
+                        </MenuButton>
+                        <MenuList
+                          borderColor="gray.700"
+                          bg="gray.900"
+                          maxH="300px"
+                          overflowY="auto"
+                          sx={{
+                            "&::-webkit-scrollbar": {
+                              width: "8px",
+                            },
+                            "&::-webkit-scrollbar-track": {
+                              bg: "gray.800",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb": {
+                              bg: "gray.600",
+                              borderRadius: "4px",
+                            },
+                            "&::-webkit-scrollbar-thumb:hover": {
+                              bg: "gray.500",
+                            },
                           }}
                         >
-                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                          </SliderTrack>
-                          <SliderThumb boxSize={6} />
-                        </Slider>
-                      </Box>
-                      <Button
-                        leftIcon={<HiVolumeUp />}
-                        size="sm"
-                        variant="outline"
-                        onClick={() => playSound(submitActionSound)}
+                          <Box
+                            px={3}
+                            pt={2}
+                            pb={1}
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            color="gray.400"
+                          >
+                            {ui.onboarding_practice_menu_label || "Practice:"}
+                          </Box>
+                          <MenuOptionGroup
+                            type="radio"
+                            value={targetLang}
+                            onChange={(value) => {
+                              playSound(selectSound);
+                              setTargetLang(value);
+                            }}
+                          >
+                            {practiceLanguageOptions.map((option) => (
+                              <MenuItemOption
+                                key={option.value}
+                                value={option.value}
+                                padding={5}
+                                pl={1}
+                              >
+                                <div style={{ display: "inline-flex" }}>
+                                  {option?.flag}&nbsp;
+                                  {option.label}
+                                  {option.beta ? " (beta)" : ""}
+                                </div>
+                              </MenuItemOption>
+                            ))}
+                          </MenuOptionGroup>
+                        </MenuList>
+                      </Menu>
+                    </Box>
+                  </>
+                )}
+
+                {/* ── Step 2: Voice ── */}
+                {step === 1 && (
+                  <>
+                    {/* Voice Personality */}
+                    <Box bg="gray.800" p={3} rounded="md">
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_section_voice_persona}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb={3}>
+                        {ui.onboarding_persona_help_text}
+                      </Text>
+                      <Input
+                        value={voicePersona}
+                        onChange={(e) => setVoicePersona(e.target.value)}
+                        bg="gray.700"
+                        placeholder={personaPlaceholder}
+                      />
+                    </Box>
+
+                    {/* Voice Activity Pause Slider */}
+                    <Box bg="gray.800" p={3} rounded="md">
+                      <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                        {ui.onboarding_vad_title}
+                      </Text>
+                      <Text fontSize="xs" opacity={0.7} mb={3}>
+                        {ui.onboarding_vad_explanation}
+                      </Text>
+                      <HStack justify="space-between" mb={2}>
+                        <Text fontSize="sm">{VAD_LABEL}</Text>
+                        <Text fontSize="sm" opacity={0.8}>
+                          {pauseSeconds} {secondsLabel}
+                        </Text>
+                      </HStack>
+                      <Slider
+                        aria-label="onboarding-pause-slider"
+                        min={200}
+                        max={4000}
+                        step={100}
+                        value={pauseMs}
+                        onChange={(val) => {
+                          setPauseMs(val);
+                          playSliderTick(val, 200, 4000);
+                        }}
                       >
-                        {ui.test_sound || "Test sound"}
-                      </Button>
-                    </HStack>
-                  )}
-                </Box>
+                        <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                          <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
+                        </SliderTrack>
+                        <SliderThumb boxSize={6} />
+                      </Slider>
+                      <Text fontSize="xs" opacity={0.6} mt={2}>
+                        {VAD_HINT}
+                      </Text>
+                    </Box>
+                  </>
+                )}
+
+                {/* ── Step 3: Extra ── */}
+                {step === 2 && (
+                  <>
+                    {/* Sound Effects toggle */}
+                    <Box bg="gray.800" p={3} rounded="md">
+                      <HStack justifyContent="space-between">
+                        <Text fontSize="sm">
+                          {ui.sound_effects_label || "Sound effects"}
+                        </Text>
+                        <Switch
+                          id="onboarding-sound-effects-switch"
+                          isChecked={soundEnabled}
+                          onChange={(e) => setSoundEnabled(e.target.checked)}
+                        />
+                      </HStack>
+                      <Text fontSize="xs" opacity={0.6} mt={2}>
+                        {soundEnabled
+                          ? ui.sound_effects_enabled ||
+                            "Sound effects are enabled."
+                          : ui.sound_effects_disabled ||
+                            "Sound effects are muted."}
+                      </Text>
+                      {soundEnabled && (
+                        <HStack mt={3} spacing={3} align="center">
+                          <Box w="50%">
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontSize="sm">
+                                {ui.sound_volume_label || "Volume"}
+                              </Text>
+                              <Text fontSize="sm" opacity={0.8}>
+                                {soundVolume}%
+                              </Text>
+                            </HStack>
+                            <Slider
+                              aria-label="onboarding-volume-slider"
+                              min={0}
+                              max={100}
+                              step={5}
+                              value={soundVolume}
+                              onChange={(val) => {
+                                setSoundVolume(val);
+                                setGlobalVolume(val);
+                                playSliderTick(val, 0, 100);
+                              }}
+                            >
+                              <SliderTrack
+                                bg="gray.700"
+                                h={3}
+                                borderRadius="full"
+                              >
+                                <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                              </SliderTrack>
+                              <SliderThumb boxSize={6} />
+                            </Slider>
+                          </Box>
+                          <Button
+                            leftIcon={<HiVolumeUp />}
+                            size="sm"
+                            variant="outline"
+                            onClick={() => playSound(submitActionSound)}
+                          >
+                            {ui.test_sound || "Test sound"}
+                          </Button>
+                        </HStack>
+                      )}
+                    </Box>
+                  </>
+                )}
               </VStack>
             </Box>
           </DrawerBody>
 
+          {/* Navigation buttons */}
           <Box
             px={6}
             pb={6}
@@ -612,16 +660,45 @@ export default function Onboarding({
             alignItems="center"
           >
             <Box maxW="600px" mx="auto" w="100%">
-              <Button
-                size="lg"
-                colorScheme="teal"
-                onClick={handleStart}
-                isLoading={isSaving}
-                loadingText={ui.common_saving}
-                w="100%"
-              >
-                {ui.onboarding_cta_start}
-              </Button>
+              <HStack spacing={3}>
+                {step > 0 && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => {
+                      playSound(selectSound);
+                      setStep((s) => s - 1);
+                    }}
+                    w="100%"
+                  >
+                    {supportLang === "es" ? "Atrás" : "Back"}
+                  </Button>
+                )}
+                {step < STEPS.length - 1 ? (
+                  <Button
+                    size="lg"
+                    colorScheme="teal"
+                    onClick={() => {
+                      playSound(selectSound);
+                      setStep((s) => s + 1);
+                    }}
+                    w="100%"
+                  >
+                    {supportLang === "es" ? "Siguiente" : "Next"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    colorScheme="teal"
+                    onClick={handleStart}
+                    isLoading={isSaving}
+                    loadingText={ui.common_saving}
+                    w="100%"
+                  >
+                    {ui.onboarding_cta_start}
+                  </Button>
+                )}
+              </HStack>
             </Box>
           </Box>
         </DrawerContent>
