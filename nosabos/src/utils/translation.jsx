@@ -175,13 +175,13 @@ export const translations = {
     onboarding_voice_shimmer: "Shimmer",
     onboarding_voice_verse: "Verse",
     onboarding_title: "Welcome",
-    onboarding_subtitle: "Let's set up your AI experience before you start.",
+    onboarding_subtitle: "Let's set up your experience before you start.",
     onboarding_app_language_title: "Application Language",
     onboarding_app_language_desc:
       "Choose the language for the app interface and instructions.",
     onboarding_support_language_title: "Support Language",
     onboarding_support_language_desc:
-      "The language used for explanations, hints, and AI-generated content to help you learn.",
+      "The language used for explanations, hints, and content to help you learn.",
     onboarding_practice_language_title: "Practice Language",
     onboarding_practice_language_desc:
       "The language you want to learn and practice speaking.",
@@ -189,7 +189,7 @@ export const translations = {
     onboarding_section_voice_persona: "Voice & Personality",
     onboarding_vad_title: "Voice Activity Detection",
     onboarding_vad_explanation:
-      "Voice features will pause before accepting your answer. This gives you time to finish speaking before the AI responds. Adjust the pause duration below.",
+      "Voice features will pause before accepting your answer. This gives you time to finish speaking before your voice assistant responds",
     onboarding_section_first_goal: "First goal",
     onboarding_level_beginner: "Beginner",
     onboarding_level_intermediate: "Intermediate",
@@ -222,7 +222,7 @@ export const translations = {
     onboarding_persona_default_example: "A friendly and helpful assistant",
     onboarding_persona_input_placeholder: "e.g., {example}",
     onboarding_persona_help_text:
-      "This guides tone/style (keep it playful, not hurtful).",
+      "This guides tone and style of your voie assistant.",
     onboarding_translations_toggle: "Show translation to {language}",
     onboarding_step_indicator: "Step {current} of {total}",
     onboarding_step1_title: "Foundations",
@@ -233,7 +233,7 @@ export const translations = {
     onboarding_challenge_label_en: "EN:",
     onboarding_challenge_label_es: "ES:",
     onboarding_cta_next: "Next",
-    onboarding_cta_start: "Start my session",
+    onboarding_cta_start: "Start session",
     onboarding_bitcoin_optional_title: "Optional Bitcoin deposits",
     onboarding_bitcoin_optional_desc:
       "Choose an identity to support with deposits, or skip this step for now.",
@@ -1048,13 +1048,13 @@ export const translations = {
     onboarding_voice_shimmer: "Shimmer",
     onboarding_voice_verse: "Verse",
     onboarding_title: "Bienvenido",
-    onboarding_subtitle: "Configura tu experiencia de IA antes de empezar.",
+    onboarding_subtitle: "Configura tu experiencia antes de empezar.",
     onboarding_app_language_title: "Idioma de la Aplicación",
     onboarding_app_language_desc:
       "Elige el idioma para la interfaz de la app y las instrucciones.",
     onboarding_support_language_title: "Idioma de Apoyo",
     onboarding_support_language_desc:
-      "El idioma usado para explicaciones, pistas y contenido generado por IA para ayudarte a aprender.",
+      "El idioma usado para explicaciones, pistas y contenido para ayudarte a aprender.",
     onboarding_practice_language_title: "Idioma de Práctica",
     onboarding_practice_language_desc:
       "El idioma que quieres aprender y practicar hablando.",
@@ -1062,7 +1062,7 @@ export const translations = {
     onboarding_section_voice_persona: "Voz y personalidad",
     onboarding_vad_title: "Detección de Actividad de Voz",
     onboarding_vad_explanation:
-      "Las funciones de voz harán una pausa antes de aceptar tu respuesta. Esto te da tiempo para terminar de hablar antes de que la IA responda. Ajusta la duración de la pausa abajo.",
+      "Las funciones de voz harán una breve pausa antes de aceptar tu respuesta. Esto te da tiempo para terminar de hablar antes de que tu asistente de voz responda.",
     onboarding_section_first_goal: "Primer objetivo",
     onboarding_level_beginner: "Principiante",
     onboarding_level_intermediate: "Intermedio",
@@ -1096,7 +1096,7 @@ export const translations = {
       "Como una tóxica sarcástica y medio amistosa.",
     onboarding_persona_input_placeholder: "p. ej., {example}",
     onboarding_persona_help_text:
-      "Esto guía el tono/estilo (que sea juguetón, no hiriente).",
+      "Esto guía el tono y estilo de tu asistente de voz.",
     onboarding_step_indicator: "Paso {current} de {total}",
     onboarding_step1_title: "Bases",
     onboarding_step2_title: "Voz y personalidad",
@@ -1106,7 +1106,7 @@ export const translations = {
     onboarding_challenge_label_en: "EN:",
     onboarding_challenge_label_es: "ES:",
     onboarding_cta_next: "Siguiente",
-    onboarding_cta_start: "Iniciar mi sesión",
+    onboarding_cta_start: "Iniciar sesión",
     onboarding_bitcoin_optional_title: "Depósitos opcionales en Bitcoin",
     onboarding_bitcoin_optional_desc:
       "Elige una identidad para apoyar con tus depósitos o sáltate este paso por ahora.",
