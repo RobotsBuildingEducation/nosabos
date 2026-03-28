@@ -42,9 +42,20 @@ function ClockVisual({
   const clockRef = useRef(null);
   const dragState = useRef(null);
 
-  // Circular drag gesture handling
+  // Keep stable refs so the effect doesn't tear down on every render
+  const minutesRef = useRef(minutes);
+  minutesRef.current = minutes;
+  const onMinutesChangeRef = useRef(onMinutesChange);
+  onMinutesChangeRef.current = onMinutesChange;
+  const playSoundRef = useRef(playSound);
+  playSoundRef.current = playSound;
+  const selectSoundSrcRef = useRef(selectSoundSrc);
+  selectSoundSrcRef.current = selectSoundSrc;
+
+  // Circular drag gesture handling — stable effect, runs once on mount
   useEffect(() => {
-    if (!onMinutesChange) return;
+    const el = clockRef.current;
+    if (!el) return;
 
     const onPointerMove = (e) => {
       const state = dragState.current;
@@ -64,24 +75,21 @@ function ClockVisual({
 
       // Convert angular delta to minutes (360° = rotationMinutes)
       const minuteDelta = (delta / 360) * rotationMinutes;
-      const newMinutes = Math.round(
-        Math.max(1, Math.min(maxMinutes, state.currentMinutes + minuteDelta))
-      );
-
       state.currentMinutes = Math.max(
         1,
         Math.min(maxMinutes, state.currentMinutes + minuteDelta)
       );
 
+      const newMinutes = Math.round(state.currentMinutes);
       if (newMinutes !== state.lastEmitted) {
         state.lastEmitted = newMinutes;
-        onMinutesChange(String(newMinutes));
+        onMinutesChangeRef.current?.(String(newMinutes));
       }
     };
 
     const onPointerUp = () => {
       if (dragState.current) {
-        playSound?.(selectSoundSrc);
+        playSoundRef.current?.(selectSoundSrcRef.current);
       }
       dragState.current = null;
       window.removeEventListener("mousemove", onPointerMove);
@@ -91,19 +99,19 @@ function ClockVisual({
     };
 
     const onPointerDown = (e) => {
-      const el = clockRef.current;
-      if (!el) return;
+      if (!onMinutesChangeRef.current) return;
       e.preventDefault();
 
       const rect = el.getBoundingClientRect();
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const current = Math.max(1, Math.min(maxMinutes, Number(minutesRef.current) || 25));
 
       dragState.current = {
         rect,
         lastAngle: getAngleFromCenter(clientX, clientY, rect),
-        currentMinutes: Math.max(1, Math.min(maxMinutes, Number(minutes) || 25)),
-        lastEmitted: Math.max(1, Math.min(maxMinutes, Number(minutes) || 25)),
+        currentMinutes: current,
+        lastEmitted: current,
       };
 
       window.addEventListener("mousemove", onPointerMove, { passive: false });
@@ -111,9 +119,6 @@ function ClockVisual({
       window.addEventListener("touchmove", onPointerMove, { passive: false });
       window.addEventListener("touchend", onPointerUp);
     };
-
-    const el = clockRef.current;
-    if (!el) return;
 
     el.addEventListener("mousedown", onPointerDown);
     el.addEventListener("touchstart", onPointerDown, { passive: false });
@@ -126,7 +131,7 @@ function ClockVisual({
       window.removeEventListener("touchmove", onPointerMove);
       window.removeEventListener("touchend", onPointerUp);
     };
-  }, [onMinutesChange, minutes, rotationMinutes, maxMinutes, playSound, selectSoundSrc]);
+  }, [rotationMinutes, maxMinutes]);
 
   // Calculate how many full rotations and the remainder
   const fullRotations = Math.floor(parsedMinutes / rotationMinutes);
