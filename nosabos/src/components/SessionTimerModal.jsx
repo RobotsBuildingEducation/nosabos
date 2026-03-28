@@ -75,13 +75,12 @@ function ClockVisual({
       // Convert angular delta to minutes (360° = rotationMinutes)
       const minuteDelta = (delta / 360) * rotationMinutes;
       state.accumMinutes = Math.max(
-        STEP,
+        0,
         Math.min(maxMinutes, state.accumMinutes + minuteDelta)
       );
 
       // Snap to nearest STEP
-      const snapped =
-        Math.round(state.accumMinutes / STEP) * STEP || STEP;
+      const snapped = Math.round(state.accumMinutes / STEP) * STEP;
       if (snapped !== state.lastEmitted) {
         state.lastEmitted = snapped;
         onMinutesChangeRef.current?.(String(snapped));
@@ -105,8 +104,8 @@ function ClockVisual({
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const current = Math.max(
-        STEP,
-        Math.min(maxMinutes, Number(minutesRef.current) || 25)
+        0,
+        Math.min(maxMinutes, Number(minutesRef.current) || 0)
       );
 
       dragState.current = {
@@ -430,7 +429,7 @@ export default function SessionTimerModal({
               <FormLabel>{t.timer_modal_minutes_label || "Minutes"}</FormLabel>
               <Input
                 type="number"
-                min={1}
+                min={0}
                 max={240}
                 value={minutes}
                 onChange={(e) => {

@@ -2237,7 +2237,7 @@ export default function App() {
      Session timer
   ----------------------------------- */
   const [timerModalOpen, setTimerModalOpen] = useState(false);
-  const [timerMinutes, setTimerMinutes] = useState("25");
+  const [timerMinutes, setTimerMinutes] = useState("0");
   const [timerRemainingSeconds, setTimerRemainingSeconds] = useState(null);
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
