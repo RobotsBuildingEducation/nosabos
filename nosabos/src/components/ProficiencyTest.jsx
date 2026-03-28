@@ -875,6 +875,56 @@ export default function ProficiencyTest() {
       .trim();
   }
 
+  /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
+  function disableVAD() {
+    if (pcRef.current) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (s.track?.kind === "audio") {
+          s.replaceTrack(null).catch(() => {});
+        }
+      });
+    }
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: null },
+        }),
+      );
+    } catch {}
+  }
+
+  /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
+  function enableVAD() {
+    const micTrack = localRef.current?.getAudioTracks()?.[0];
+    if (pcRef.current && micTrack) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (!s.track || s.track?.kind === "audio") {
+          s.replaceTrack(micTrack).catch(() => {});
+        }
+      });
+    }
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: {
+              type: "server_vad",
+              silence_duration_ms: pauseMs || 800,
+              threshold: 0.35,
+              prefix_padding_ms: 120,
+              interrupt_response: false,
+            },
+          },
+        }),
+      );
+    } catch {}
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -1086,22 +1136,34 @@ export default function ProficiencyTest() {
       currentSpeechTurnRef.current = null;
       stopSpeechSampling();
 
-      // Create placeholder user message so it renders before the AI response
-      const placeholderId = uid();
-      pendingUserMsgRef.current = placeholderId;
-      pushMessage({
-        id: placeholderId,
-        role: "user",
-        lang: targetLang,
-        textFinal: "",
-        textStream: "",
-        done: false,
-        pendingTranscript: true,
-        ts: now,
-      });
+      if (t === "input_audio_buffer.speech_stopped") {
+        const now = Date.now();
+        const turn = currentSpeechTurnRef.current;
+        if (turn) {
+          turn.endTs = now;
+          turn.durationMs = Math.max(0, now - (turn.startTs || now));
+          if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+        }
+        currentSpeechTurnRef.current = null;
+        stopSpeechSampling();
 
-      setUiState("thinking");
-      setMood("thinking");
+        // Create placeholder user message so it renders before the AI response
+        const placeholderId = uid();
+        pendingUserMsgRef.current = placeholderId;
+        pushMessage({
+          id: placeholderId,
+          role: "user",
+          lang: targetLang,
+          textFinal: "",
+          textStream: "",
+          done: false,
+          pendingTranscript: true,
+          ts: now,
+        });
+
+        setUiState("thinking");
+        setMood("thinking");
+      }
       return;
     }
 

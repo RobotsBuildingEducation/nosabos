@@ -1103,6 +1103,58 @@ export default function RealTimeTest({
       dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
     } catch {}
   }
+
+  /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
+  function disableVAD() {
+    // Detach audio track from the WebRTC sender so no audio reaches the server
+    if (pcRef.current) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (s.track?.kind === "audio") {
+          s.replaceTrack(null).catch(() => {});
+        }
+      });
+    }
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: { turn_detection: null },
+        }),
+      );
+    } catch {}
+  }
+
+  /** Re-enable server VAD and reattach mic track after AI finishes speaking. */
+  function enableVAD() {
+    // Reattach the mic audio track to the WebRTC sender
+    const micTrack = localRef.current?.getAudioTracks()?.[0];
+    if (pcRef.current && micTrack) {
+      pcRef.current.getSenders().forEach((s) => {
+        if (!s.track || s.track?.kind === "audio") {
+          s.replaceTrack(micTrack).catch(() => {});
+        }
+      });
+    }
+    if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    try {
+      dcRef.current.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            turn_detection: {
+              type: "server_vad",
+              silence_duration_ms: pauseMsRef.current || 2000,
+              threshold: 0.35,
+              prefix_padding_ms: 120,
+              interrupt_response: false,
+            },
+          },
+        }),
+      );
+    } catch {}
+  }
   async function start() {
     playSound(submitActionSound);
     setErr("");
@@ -2457,6 +2509,15 @@ Return ONLY JSON:
       return;
     }
 
+    // Mute mic as early as possible — before response.created fires
+    if (
+      t === "input_audio_buffer.speech_stopped" ||
+      t === "input_audio_buffer.committed"
+    ) {
+      disableVAD();
+      return;
+    }
+
     if (
       t === "response.output_audio.done" ||
       t === "output_audio.done" ||
@@ -2533,6 +2594,7 @@ Return ONLY JSON:
         t === "response.done" ||
         t === "response.canceled"
       ) {
+        enableVAD();
         stopRecorderAfterTail(rid);
         replayRidSetRef.current.delete(rid);
       }
