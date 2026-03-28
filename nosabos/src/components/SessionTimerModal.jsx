@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef, useEffect } from "react";
 import {
   Box,
   Button,
@@ -21,9 +21,112 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
+// Helper: get angle in degrees (0=12 o'clock, clockwise) from pointer to element center
+function getAngleFromCenter(clientX, clientY, rect) {
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const rad = Math.atan2(clientX - cx, -(clientY - cy)); // 0 = up, clockwise positive
+  return ((rad * 180) / Math.PI + 360) % 360;
+}
+
 // Analog clock component that visualizes the selected duration
-function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
+function ClockVisual({
+  minutes,
+  onMinutesChange,
+  rotationMinutes = 120,
+  maxMinutes = 240,
+  playSound,
+  selectSoundSrc,
+}) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
+  const clockRef = useRef(null);
+  const dragState = useRef(null);
+
+  // Circular drag gesture handling
+  useEffect(() => {
+    if (!onMinutesChange) return;
+
+    const onPointerMove = (e) => {
+      const state = dragState.current;
+      if (!state) return;
+      e.preventDefault();
+
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const currentAngle = getAngleFromCenter(clientX, clientY, state.rect);
+
+      // Calculate shortest angular delta (-180 to 180)
+      let delta = currentAngle - state.lastAngle;
+      if (delta > 180) delta -= 360;
+      if (delta < -180) delta += 360;
+
+      state.lastAngle = currentAngle;
+
+      // Convert angular delta to minutes (360° = rotationMinutes)
+      const minuteDelta = (delta / 360) * rotationMinutes;
+      const newMinutes = Math.round(
+        Math.max(1, Math.min(maxMinutes, state.currentMinutes + minuteDelta))
+      );
+
+      state.currentMinutes = Math.max(
+        1,
+        Math.min(maxMinutes, state.currentMinutes + minuteDelta)
+      );
+
+      if (newMinutes !== state.lastEmitted) {
+        state.lastEmitted = newMinutes;
+        onMinutesChange(String(newMinutes));
+      }
+    };
+
+    const onPointerUp = () => {
+      if (dragState.current) {
+        playSound?.(selectSoundSrc);
+      }
+      dragState.current = null;
+      window.removeEventListener("mousemove", onPointerMove);
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("touchmove", onPointerMove);
+      window.removeEventListener("touchend", onPointerUp);
+    };
+
+    const onPointerDown = (e) => {
+      const el = clockRef.current;
+      if (!el) return;
+      e.preventDefault();
+
+      const rect = el.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+      dragState.current = {
+        rect,
+        lastAngle: getAngleFromCenter(clientX, clientY, rect),
+        currentMinutes: Math.max(1, Math.min(maxMinutes, Number(minutes) || 25)),
+        lastEmitted: Math.max(1, Math.min(maxMinutes, Number(minutes) || 25)),
+      };
+
+      window.addEventListener("mousemove", onPointerMove, { passive: false });
+      window.addEventListener("mouseup", onPointerUp);
+      window.addEventListener("touchmove", onPointerMove, { passive: false });
+      window.addEventListener("touchend", onPointerUp);
+    };
+
+    const el = clockRef.current;
+    if (!el) return;
+
+    el.addEventListener("mousedown", onPointerDown);
+    el.addEventListener("touchstart", onPointerDown, { passive: false });
+
+    return () => {
+      el.removeEventListener("mousedown", onPointerDown);
+      el.removeEventListener("touchstart", onPointerDown);
+      window.removeEventListener("mousemove", onPointerMove);
+      window.removeEventListener("mouseup", onPointerUp);
+      window.removeEventListener("touchmove", onPointerMove);
+      window.removeEventListener("touchend", onPointerUp);
+    };
+  }, [onMinutesChange, minutes, rotationMinutes, maxMinutes, playSound, selectSoundSrc]);
 
   // Calculate how many full rotations and the remainder
   const fullRotations = Math.floor(parsedMinutes / rotationMinutes);
@@ -113,8 +216,9 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
   const handY = 50 + handLength * Math.sin((angle * Math.PI) / 180);
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" py={4}>
       <Box
+        ref={clockRef}
         position="relative"
         width="160px"
         height="160px"
@@ -123,6 +227,9 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
         boxShadow="0 0 30px rgba(56, 178, 172, 0.3), inset 0 0 20px rgba(0,0,0,0.5)"
         border="3px solid"
         borderColor="gray.700"
+        cursor={onMinutesChange ? "grab" : "default"}
+        userSelect="none"
+        _active={onMinutesChange ? { cursor: "grabbing" } : {}}
       >
         <svg
           viewBox="0 0 100 100"
@@ -208,7 +315,9 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
             strokeLinecap="round"
             filter="url(#glow)"
             style={{
-              transition: "all 0.3s ease-out",
+              transition: dragState.current
+                ? "none"
+                : "all 0.3s ease-out",
             }}
           />
 
@@ -220,7 +329,9 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
             fill="#81E6D9"
             filter="url(#glow)"
             style={{
-              transition: "all 0.3s ease-out",
+              transition: dragState.current
+                ? "none"
+                : "all 0.3s ease-out",
             }}
           />
         </svg>
@@ -243,6 +354,11 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
           </Text>
         </Box>
       </Box>
+      {onMinutesChange && (
+        <Text fontSize="xs" color="gray.500" mt={2}>
+          Drag around the clock to set time
+        </Text>
+      )}
     </Box>
   );
 }
@@ -292,8 +408,13 @@ export default function SessionTimerModal({
               {t.timer_modal_description || "Set how long you want to focus."}
             </Text>
 
-            {/* Clock visual */}
-            <ClockVisual minutes={minutes} />
+            {/* Clock visual — drag around the face to adjust time */}
+            <ClockVisual
+              minutes={minutes}
+              onMinutesChange={onMinutesChange}
+              playSound={playSound}
+              selectSoundSrc={selectSound}
+            />
 
             {helper}
 
