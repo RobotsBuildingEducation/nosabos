@@ -57,7 +57,7 @@ const REALTIME_URL = `${
 )}`;
 
 const MAX_EXCHANGES = 10;
-const AUTO_DISCONNECT_MS = 10000;
+const AUTO_DISCONNECT_MS = 15000;
 const MATRIX_PANEL_SX = {
   position: "relative",
   overflow: "hidden",
@@ -978,11 +978,13 @@ export default function ProficiencyTest() {
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
+      if (aliveRef.current) scheduleAutoStop();
       return;
     }
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      clearAutoStopTimer();
       setAssistantInputLocked(true);
       const mid = uid();
       respToMsg.current.set(rid, mid);

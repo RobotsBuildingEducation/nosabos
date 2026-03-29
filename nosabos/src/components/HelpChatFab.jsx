@@ -93,7 +93,7 @@ const REALTIME_URL = `${
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL,
 )}`;
-const AUTO_DISCONNECT_MS = 10000;
+const AUTO_DISCONNECT_MS = 15000;
 
 /**
  * Small Markdown renderer mapped to Chakra components

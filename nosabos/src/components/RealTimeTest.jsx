@@ -65,7 +65,7 @@ const REALTIME_URL = `${
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
-const AUTO_DISCONNECT_MS = 10000;
+const AUTO_DISCONNECT_MS = 15000;
 
 /* ---------------------------
    Utils & helpers
@@ -1176,8 +1176,8 @@ export default function RealTimeTest({
         status: "info",
         description:
           uiLang === "es"
-            ? "La sesión se cerró automáticamente tras 10 segundos."
-            : "The session closed automatically after 10 seconds.",
+            ? "La sesión se cerró automáticamente tras 15 segundos."
+            : "The session closed automatically after 15 seconds.",
         duration: 2500,
         position: "top",
       });
@@ -2560,11 +2560,13 @@ Return ONLY JSON:
       setAssistantInputLocked(false);
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
+      if (aliveRef.current) scheduleAutoStop();
       return;
     }
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      clearAutoStopTimer();
       setAssistantInputLocked(true);
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {

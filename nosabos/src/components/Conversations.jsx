@@ -73,7 +73,7 @@ const REALTIME_URL = `${
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
-const AUTO_DISCONNECT_MS = 10000;
+const AUTO_DISCONNECT_MS = 15000;
 
 /* ---------------------------
    Utils & helpers
@@ -1860,11 +1860,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");
+      if (aliveRef.current) scheduleAutoStop();
       return;
     }
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      clearAutoStopTimer();
       disableVAD();
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
