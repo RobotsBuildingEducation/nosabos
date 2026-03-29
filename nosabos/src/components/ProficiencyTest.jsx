@@ -975,6 +975,7 @@ export default function ProficiencyTest() {
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      enableVAD();
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
       setMood("neutral");

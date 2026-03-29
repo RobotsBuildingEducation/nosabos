@@ -2557,6 +2557,7 @@ Return ONLY JSON:
       t === "output_audio.done" ||
       t === "output_audio_buffer.stopped"
     ) {
+      enableVAD();
       setAssistantInputLocked(false);
       setUiState(aliveRef.current ? "listening" : "idle");
       setMood("neutral");
