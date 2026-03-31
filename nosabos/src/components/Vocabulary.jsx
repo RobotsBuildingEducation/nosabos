@@ -43,6 +43,10 @@ import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
+import {
   callResponses,
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
@@ -5632,7 +5636,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Button>
               )}
               <Button
-                colorScheme={isSpeakRecording ? "red" : isSpeakConnecting ? "yellow" : "teal"}
+                colorScheme={
+                  isSpeakRecording
+                    ? undefined
+                    : isSpeakConnecting
+                      ? "yellow"
+                      : "teal"
+                }
+                bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                color={isSpeakRecording ? "white" : undefined}
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
                 leftIcon={
@@ -5702,6 +5714,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   }
                 }}
                 isDisabled={!supportsSpeak || loadingQSpeak || !sTarget || isSpeakConnecting}
+                _hover={
+                  isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                }
               >
                 {isSpeakConnecting
                   ? userLanguage === "es"
@@ -6264,8 +6279,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
                       },
                     },
-                  }}
-                >
+                }}
+              >
                   <Box
                     fontSize="3xl"
                     color="white"

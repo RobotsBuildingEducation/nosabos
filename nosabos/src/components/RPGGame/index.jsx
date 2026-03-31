@@ -73,6 +73,10 @@ import {
   normalizeSupportLanguage,
 } from "../../constants/languages";
 import { buildGameReviewContext } from "../../utils/gameReviewContext";
+import {
+  SOFT_STOP_BUTTON_SOLID_BG,
+  SOFT_STOP_BUTTON_SOLID_HOVER_BG,
+} from "../../utils/softStopButton";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -6324,7 +6328,14 @@ export default function RPGGame({
                       <IconButton
                         aria-label={isRecording ? ui.micStop : ui.micStart}
                         size="sm"
-                        colorScheme={isRecording ? "red" : "teal"}
+                        colorScheme={isRecording ? undefined : "teal"}
+                        bg={isRecording ? SOFT_STOP_BUTTON_SOLID_BG : undefined}
+                        color={isRecording ? "white" : undefined}
+                        _hover={
+                          isRecording
+                            ? { bg: SOFT_STOP_BUTTON_SOLID_HOVER_BG }
+                            : undefined
+                        }
                         icon={<FaMicrophone />}
                         isLoading={isConnecting}
                         onClick={async () => {

@@ -46,6 +46,10 @@ import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import { WaveBar } from "./WaveBar";
 import {
   collection,
@@ -986,8 +990,10 @@ function LetterCard({
               <Button
                 size="md"
                 colorScheme={
-                  isRecording ? "red" : isConnecting ? "yellow" : "teal"
+                  isRecording ? undefined : isConnecting ? "yellow" : "teal"
                 }
+                bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                color={isRecording ? "white" : undefined}
                 leftIcon={
                   isConnecting ? (
                     <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
@@ -999,7 +1005,10 @@ function LetterCard({
                 }
                 onClick={handleRecord}
                 isDisabled={!supportsSpeech || isConnecting}
-                _hover={{ transform: "scale(1.02)" }}
+                _hover={{
+                  transform: "scale(1.02)",
+                  ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
+                }}
               >
                 {isConnecting
                   ? appLanguage === "es"

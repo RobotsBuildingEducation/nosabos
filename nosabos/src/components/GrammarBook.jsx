@@ -39,6 +39,10 @@ import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
+import {
   callResponses,
   DEFAULT_RESPONSES_MODEL,
   explainAnswer,
@@ -5269,9 +5273,14 @@ Return JSON ONLY:
                 </Button>
               )}
               <Button
-                colorScheme={isSpeakRecording ? "red" : "teal"}
+                colorScheme={isSpeakRecording ? undefined : "teal"}
+                bg={isSpeakRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                color={isSpeakRecording ? "white" : undefined}
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
+                _hover={
+                  isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                }
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();

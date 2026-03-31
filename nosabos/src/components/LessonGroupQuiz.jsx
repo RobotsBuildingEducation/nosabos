@@ -49,6 +49,10 @@ import {
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
@@ -1519,10 +1523,15 @@ YES or NO
                 </Text>
               )}
               <Button
-                colorScheme={isListening ? "red" : "teal"}
+                colorScheme={isListening ? undefined : "teal"}
+                bg={isListening ? SOFT_STOP_BUTTON_BG : undefined}
+                color={isListening ? "white" : undefined}
                 onClick={isListening ? stopListening : startListening}
                 isDisabled={lastOk !== null}
                 size="lg"
+                _hover={
+                  isListening ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                }
               >
                 {isListening
                   ? userLanguage === "es"
