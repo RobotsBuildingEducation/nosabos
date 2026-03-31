@@ -39,6 +39,11 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
 
 // File parsers
@@ -2263,8 +2268,13 @@ export default function JobScript({
                         rounded="full"
                         bg={
                           isRecording
-                            ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                            ? SOFT_STOP_BUTTON_BG
                             : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                        }
+                        boxShadow={
+                          isRecording
+                            ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                            : undefined
                         }
                         color="white"
                         fontWeight="600"
@@ -2272,7 +2282,7 @@ export default function JobScript({
                         leftIcon={<PiMicrophoneStageDuotone />}
                         _hover={{
                           bg: isRecording
-                            ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+                            ? SOFT_STOP_BUTTON_HOVER_BG
                             : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
                           transform: "translateY(-2px)",
                         }}

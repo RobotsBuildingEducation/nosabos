@@ -43,6 +43,10 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
@@ -831,8 +835,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       w="100%"
                       size="md"
                       colorScheme={
-                        isRecording ? "red" : isConnecting ? "yellow" : "teal"
+                        isRecording ? undefined : isConnecting ? "yellow" : "teal"
                       }
+                      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                      color={isRecording ? "white" : undefined}
                       leftIcon={
                         isConnecting ? (
                           <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
@@ -844,6 +850,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }
                       onClick={handleRecord}
                       isDisabled={!supportsSpeech || isConnecting}
+                      _hover={
+                        isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                      }
                     >
                       {isConnecting
                         ? userLanguage === "es"

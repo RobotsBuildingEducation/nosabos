@@ -1,5 +1,5 @@
 // components/RealtimeAgent.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -44,9 +44,20 @@ import { logEvent } from "firebase/analytics";
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
 import { translations } from "../utils/translation";
+import {
+  ArchiveTextAnimation,
+  getChatLogButtonHighlightProps,
+  getRealtimeOrbVisualState,
+  useArchiveTextStream,
+} from "./realtimeArchiveStream";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_GLOW,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -302,6 +313,10 @@ function AlignedBubble({
   replayLabel,
   canTranslate,
   onTranslate,
+  containerRef,
+  primaryTextRef,
+  contentOpacity = 1,
+  contentTransform = "translateY(0px) scale(1)",
 }) {
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
@@ -330,6 +345,7 @@ function AlignedBubble({
 
   return (
     <Box
+      ref={containerRef}
       bg="transparent"
       p={3}
       rounded="2xl"
@@ -339,87 +355,106 @@ function AlignedBubble({
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
     >
-      <HStack align="flex-start" spacing={2}>
-        {canReplay && (
-          <IconButton
-            size="xs"
-            variant="ghost"
-            colorScheme="cyan"
-            icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
-            onClick={onReplay}
-            isDisabled={isReplaying}
-            aria-label={replayLabel || "Replay"}
-            mt="2px"
-          />
-        )}
-        <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX} flex="1">
-          {primaryNodes}
-        </Box>
-      </HStack>
-
-      {showSecondary && !!secondaryText && (
-        <Box
-          as="p"
-          fontSize="sm"
-          mt={1}
-          lineHeight="1.55"
-          sx={MOBILE_TEXT_SX}
-          transition="opacity 120ms ease-out"
-          opacity={1}
-        >
-          {secondaryNodes}
-        </Box>
-      )}
-
-      {!!pairs?.length && showSecondary && (
-        <Wrap spacing={3} mt={3} shouldWrapChildren>
-          {pairs.slice(0, 8).map((p, i) => {
-            const color = colorFor(i);
-            return (
-              <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
-                <Box
-                  px={3}
-                  py={2.5}
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor={hexToRgba(color, 0.6)}
-                  background="#0b1220"
-                  boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
-                  color="whiteAlpha.900"
-                  minW="0"
-                  maxW="260px"
-                >
-                  <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
-                    {p.lhs}
-                  </Text>
-                  <Text
-                    fontSize="xs"
-                    color="whiteAlpha.800"
-                    mt={1}
-                    lineHeight="1.35"
-                  >
-                    {p.rhs}
-                  </Text>
-                </Box>
-              </WrapItem>
-            );
-          })}
-        </Wrap>
-      )}
-
-      {canTranslate && (
-        <HStack justify="flex-end" mt={2}>
-          <IconButton
-            size="xs"
-            variant="ghost"
-            colorScheme="cyan"
-            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
-            onClick={onTranslate}
-            isDisabled={isTranslating}
-            aria-label="Translate message"
-          />
+      <Box
+        opacity={contentOpacity}
+        transform={contentTransform}
+        transition="opacity 180ms ease, transform 180ms ease"
+        willChange="opacity, transform"
+        pointerEvents={contentOpacity < 0.5 ? "none" : "auto"}
+      >
+        <HStack align="flex-start" spacing={2}>
+          {canReplay && (
+            <IconButton
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              icon={
+                isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />
+              }
+              onClick={onReplay}
+              isDisabled={isReplaying}
+              aria-label={replayLabel || "Replay"}
+              mt="2px"
+            />
+          )}
+          <Box
+            ref={primaryTextRef}
+            as="p"
+            fontSize="md"
+            lineHeight="1.6"
+            sx={MOBILE_TEXT_SX}
+            flex="1"
+          >
+            {primaryNodes}
+          </Box>
         </HStack>
-      )}
+
+        {showSecondary && !!secondaryText && (
+          <Box
+            as="p"
+            fontSize="sm"
+            mt={1}
+            lineHeight="1.55"
+            sx={MOBILE_TEXT_SX}
+            transition="opacity 120ms ease-out"
+            opacity={1}
+          >
+            {secondaryNodes}
+          </Box>
+        )}
+
+        {!!pairs?.length && showSecondary && (
+          <Wrap spacing={3} mt={3} shouldWrapChildren>
+            {pairs.slice(0, 8).map((p, i) => {
+              const color = colorFor(i);
+              return (
+                <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
+                  <Box
+                    px={3}
+                    py={2.5}
+                    borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor={hexToRgba(color, 0.6)}
+                    background="#0b1220"
+                    boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
+                    color="whiteAlpha.900"
+                    minW="0"
+                    maxW="260px"
+                  >
+                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                      {p.lhs}
+                    </Text>
+                    <Text
+                      fontSize="xs"
+                      color="whiteAlpha.800"
+                      mt={1}
+                      lineHeight="1.35"
+                    >
+                      {p.rhs}
+                    </Text>
+                  </Box>
+                </WrapItem>
+              );
+            })}
+          </Wrap>
+        )}
+
+        {canTranslate && (
+          <HStack justify="flex-end" mt={2}>
+            <IconButton
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              icon={
+                isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />
+              }
+              onClick={onTranslate}
+              isDisabled={isTranslating}
+              aria-label="Translate message"
+            />
+          </HStack>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -2961,6 +2996,33 @@ Do not return the whole sentence as a single chunk.`;
     () => timeline.find((m) => m.role === "assistant") || null,
     [timeline],
   );
+  const latestAssistantText = `${latestAssistantMessage?.textFinal || ""}${
+    latestAssistantMessage?.textStream || ""
+  }`;
+  const getAssistantMessageTextById = useCallback(
+    (messageId) => {
+      const message = timeline.find((entry) => entry.id === messageId);
+      return `${message?.textFinal || ""}${message?.textStream || ""}`;
+    },
+    [timeline],
+  );
+  const {
+    archiveAnimation,
+    chatLogButtonRef,
+    isChatLogHighlighted,
+    liveBubbleSurfaceRef,
+    liveBubbleTextRef,
+    contentOpacity: liveBubbleContentOpacity,
+    contentTransform: liveBubbleContentTransform,
+  } = useArchiveTextStream({
+    latestMessageId: latestAssistantMessage?.id,
+    latestMessageText: latestAssistantText,
+    getOutgoingTextById: getAssistantMessageTextById,
+    measureDeps: [showTranslations, replayingId, translatingMessageId],
+  });
+  const chatLogButtonHighlightProps =
+    getChatLogButtonHighlightProps(isChatLogHighlighted);
+  const orbUiState = getRealtimeOrbVisualState(uiState);
 
   const liveStateLabel = uiStateLabel(uiState, uiLang === "es");
 
@@ -3045,7 +3107,14 @@ Do not return the whole sentence as a single chunk.`;
                     <IconButton
                       icon={
                         isGeneratingGoal ? (
-                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                          <VoiceOrb
+                            state={getRealtimeOrbVisualState(
+                              ["idle", "listening", "speaking"][
+                                Math.floor(Math.random() * 3)
+                              ],
+                            )}
+                            size={16}
+                          />
                         ) : (
                           <FaDice />
                         )
@@ -3075,18 +3144,18 @@ Do not return the whole sentence as a single chunk.`;
                         : goalTitleForUI(currentGoal) || "—"}
                     </Text>
                   </HStack>
-                  <Button
-                    leftIcon={<FaRegCommentDots size={12} />}
+                  <IconButton
+                    ref={chatLogButtonRef}
+                    icon={<FaRegCommentDots size={14} />}
                     size="xs"
                     variant="ghost"
                     colorScheme="cyan"
-                    opacity={0.8}
+                    {...chatLogButtonHighlightProps}
                     _hover={{ opacity: 1 }}
                     onClick={() => setShowChatLog(true)}
                     isDisabled={!timeline.length}
-                  >
-                    {uiLang === "es" ? "Historial" : "Chat log"}
-                  </Button>
+                    aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                  />
                 </HStack>
                 {!!currentGoal && !isGeneratingGoal && (
                   <Text fontSize="xs" opacity={0.8}>
@@ -3117,7 +3186,7 @@ Do not return the whole sentence as a single chunk.`;
 
             <VStack spacing={0.5} align="center">
               <Box width="132px" opacity={0.95} flexShrink={0}>
-                <VoiceOrb state={uiState} />
+                <VoiceOrb state={orbUiState} />
               </Box>
               {!!liveStateLabel && (
                 <Text fontSize="xs" color="whiteAlpha.800">
@@ -3133,6 +3202,10 @@ Do not return the whole sentence as a single chunk.`;
             <Center>
               <Box w="100%" maxW="720px">
                 <AlignedBubble
+                  containerRef={liveBubbleSurfaceRef}
+                  primaryTextRef={liveBubbleTextRef}
+                  contentOpacity={liveBubbleContentOpacity}
+                  contentTransform={liveBubbleContentTransform}
                   primaryLabel={languageNameFor(
                     latestAssistantMessage.lang || targetLang || "es",
                   )}
@@ -3203,7 +3276,16 @@ Do not return the whole sentence as a single chunk.`;
               height="64px"
               px={{ base: 8, md: 12 }}
               rounded="full"
-              colorScheme={status === "connected" ? "red" : "cyan"}
+              colorScheme={status === "connected" ? undefined : "cyan"}
+              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              boxShadow={
+                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+              }
+              _hover={
+                status === "connected"
+                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : undefined
+              }
               color="white"
               textShadow="0px 0px 20px black"
               mb={20}
@@ -3290,6 +3372,8 @@ Do not return the whole sentence as a single chunk.`;
             </ModalBody>
           </ModalContent>
         </Modal>
+
+        <ArchiveTextAnimation animation={archiveAnimation} />
 
         {err && (
           <Box px={4} pt={2}>

@@ -40,8 +40,19 @@ import useUserStore from "../hooks/useUserStore";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
+import {
+  ArchiveTextAnimation,
+  getChatLogButtonHighlightProps,
+  getRealtimeOrbVisualState,
+  useArchiveTextStream,
+} from "./realtimeArchiveStream";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_GLOW,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -485,10 +496,18 @@ function UserBubble({ label, text }) {
   );
 }
 
-function AssistantBubble({ label, text }) {
+function AssistantBubble({
+  label,
+  text,
+  containerRef,
+  primaryTextRef,
+  contentOpacity = 1,
+  contentTransform = "translateY(0px) scale(1)",
+}) {
   if (!text) return null;
   return (
     <Box
+      ref={containerRef}
       bg="transparent"
       p={3}
       rounded="2xl"
@@ -498,15 +517,24 @@ function AssistantBubble({ label, text }) {
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
     >
-      <Text fontSize="2xs" opacity={0.6} mb={1}>
-        {label}
-      </Text>
-      <Text
-        fontSize="sm"
-        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+      <Box
+        opacity={contentOpacity}
+        transform={contentTransform}
+        transition="opacity 180ms ease, transform 180ms ease"
+        willChange="opacity, transform"
+        pointerEvents={contentOpacity < 0.5 ? "none" : "auto"}
       >
-        {text}
-      </Text>
+        <Text fontSize="2xs" opacity={0.6} mb={1}>
+          {label}
+        </Text>
+        <Text
+          ref={primaryTextRef}
+          fontSize="sm"
+          sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+        >
+          {text}
+        </Text>
+      </Box>
     </Box>
   );
 }
@@ -1766,8 +1794,34 @@ Return ONLY valid JSON:
       ) || null,
     [timeline],
   );
+  const latestAssistantText = `${latestAssistantMessage?.textFinal || ""}${
+    latestAssistantMessage?.textStream || ""
+  }`;
+  const getAssistantMessageTextById = useCallback(
+    (messageId) => {
+      const message = timeline.find((entry) => entry.id === messageId);
+      return `${message?.textFinal || ""}${message?.textStream || ""}`;
+    },
+    [timeline],
+  );
+  const {
+    archiveAnimation,
+    chatLogButtonRef,
+    isChatLogHighlighted,
+    liveBubbleSurfaceRef,
+    liveBubbleTextRef,
+    contentOpacity: liveBubbleContentOpacity,
+    contentTransform: liveBubbleContentTransform,
+  } = useArchiveTextStream({
+    latestMessageId: latestAssistantMessage?.id,
+    latestMessageText: latestAssistantText,
+    getOutgoingTextById: getAssistantMessageTextById,
+  });
+  const chatLogButtonHighlightProps =
+    getChatLogButtonHighlightProps(isChatLogHighlighted);
   const liveUiState =
     status === "connected" && uiState === "idle" ? "listening" : uiState;
+  const orbUiState = getRealtimeOrbVisualState(liveUiState);
 
   /* ---- Render ---- */
   const levelInfo = assessedLevel ? CEFR_LEVEL_INFO[assessedLevel] : null;
@@ -1881,19 +1935,20 @@ Return ONLY valid JSON:
             position="relative"
             sx={MATRIX_PANEL_SX}
           >
-            <Button
+            <IconButton
+              ref={chatLogButtonRef}
+              icon={<FaRegCommentDots size={14} />}
               size="xs"
               variant="ghost"
               colorScheme="cyan"
-              leftIcon={<FaRegCommentDots size={12} />}
+              {...chatLogButtonHighlightProps}
               onClick={() => setShowChatLog(true)}
               isDisabled={!timeline.length}
               position="absolute"
               top={2}
               right={2}
-            >
-              {isEs ? "Historial" : "Chat log"}
-            </Button>
+              aria-label={isEs ? "Historial" : "Chat log"}
+            />
 
             <VStack align="center" spacing={2} width="100%">
               <Text
@@ -1952,7 +2007,7 @@ Return ONLY valid JSON:
 
         <VStack spacing={0.5} align="center" mt={2}>
           <Box width="132px" opacity={0.95}>
-            <VoiceOrb state={liveUiState} />
+            <VoiceOrb state={orbUiState} />
           </Box>
           {uiStateLabel(liveUiState, isEs) && (
             <Text fontSize="xs" color="whiteAlpha.800">
@@ -1965,18 +2020,13 @@ Return ONLY valid JSON:
         <VStack align="stretch" spacing={3} px={4} mt={3}>
           {isEvaluating && (
             <VStack spacing={0} py={6}>
-              {/* Robot — outside and above the card */}
-              <Box mb={0} zIndex={1}>
-                <VoiceOrb state="idle" />
-              </Box>
-
               {/* Card with loading text */}
               <Box
                 bg="linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,70,0.95) 50%, rgba(15,23,42,0.95) 100%)"
                 border="1px solid"
                 borderColor="whiteAlpha.200"
                 rounded="2xl"
-                pt={10}
+                pt={6}
                 pb={5}
                 px={6}
                 w="100%"
@@ -2003,6 +2053,10 @@ Return ONLY valid JSON:
             <Center>
               <Box w="100%" maxW="680px">
                 <AssistantBubble
+                  containerRef={liveBubbleSurfaceRef}
+                  primaryTextRef={liveBubbleTextRef}
+                  contentOpacity={liveBubbleContentOpacity}
+                  contentTransform={liveBubbleContentTransform}
                   label={isEs ? "Evaluador" : "Assessor"}
                   text={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
@@ -2029,7 +2083,16 @@ Return ONLY valid JSON:
               height="64px"
               px={{ base: 8, md: 12 }}
               rounded="full"
-              colorScheme={status === "connected" ? "red" : "cyan"}
+              colorScheme={status === "connected" ? undefined : "cyan"}
+              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              boxShadow={
+                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+              }
+              _hover={
+                status === "connected"
+                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : undefined
+              }
               color="white"
               textShadow="0px 0px 20px black"
               mb={3}
@@ -2071,8 +2134,9 @@ Return ONLY valid JSON:
           </Box>
         )}
 
-        {/* Remote live audio sink */}
-        <audio ref={audioRef} />
+      {/* Remote live audio sink */}
+      <audio ref={audioRef} />
+      <ArchiveTextAnimation animation={archiveAnimation} />
       </Box>
 
       <Modal

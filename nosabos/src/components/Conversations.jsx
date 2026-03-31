@@ -1,5 +1,11 @@
 // components/Conversations.jsx
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 import {
   Badge,
   Box,
@@ -22,8 +28,10 @@ import {
   VStack,
   Wrap,
   Spinner,
-  WrapItem, useDisclosure,
+  WrapItem,
+  useDisclosure,
 } from "@chakra-ui/react";
+import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import {
   FaStop,
@@ -47,10 +55,20 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
+import {
+  CHAT_LOG_HIGHLIGHT_DURATION_MS,
+  getChatLogButtonHighlightProps,
+  getRealtimeOrbVisualState,
+} from "./realtimeArchiveStream";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_GLOW,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
@@ -67,13 +85,21 @@ const REALTIME_MODEL =
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
+  REALTIME_MODEL,
 )}`;
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 const AUTO_DISCONNECT_MS = 15000;
+const ARCHIVE_GLYPH_DURATION_MS = 680;
+const ARCHIVE_GLYPH_DURATION_VARIANCE_MS = 150;
+const ARCHIVE_ANIMATION_BUFFER_MS = 180;
+const ARCHIVE_GLYPH_STREAM_SPREAD_MS = 180;
+const ARCHIVE_GLYPH_STREAM_JITTER_MS = 22;
+const ARCHIVE_INCOMING_HOLD_MS = 170;
+const archiveLayoutCache = new Map();
+let archiveMeasureContext = null;
 
 /* ---------------------------
    Utils & helpers
@@ -118,6 +144,137 @@ const isoNow = () => {
   }
 };
 
+function rectToSnapshot(rect) {
+  if (!rect) return null;
+  return {
+    left: rect.left,
+    top: rect.top,
+    right: rect.right,
+    bottom: rect.bottom,
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+function parsePx(value, fallback) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function buildCanvasFont(styles) {
+  if (!styles) {
+    return '400 16px "Helvetica Neue", Helvetica, Arial, sans-serif';
+  }
+  const fontStyle = styles.fontStyle || "normal";
+  const fontVariant = styles.fontVariant || "normal";
+  const fontWeight = styles.fontWeight || "400";
+  const fontStretch = styles.fontStretch || "normal";
+  const fontSize = styles.fontSize || "16px";
+  const rawFamily =
+    styles.fontFamily || '"Helvetica Neue", Helvetica, Arial, sans-serif';
+  const fontFamily = /system-ui/i.test(rawFamily)
+    ? '"Helvetica Neue", Helvetica, Arial, sans-serif'
+    : rawFamily;
+  return [
+    fontStyle,
+    fontVariant,
+    fontWeight,
+    fontStretch,
+    fontSize,
+    fontFamily,
+  ].join(" ");
+}
+
+function getArchiveLines(text, font, maxWidth, lineHeight) {
+  const normalizedText = String(text || "");
+  const safeWidth = Math.max(72, Math.ceil(maxWidth || 0));
+  const safeLineHeight = Math.max(18, Math.round(lineHeight || 0));
+  if (!normalizedText.trim()) return [];
+
+  const cacheKey = `${font}__${safeWidth}__${safeLineHeight}__${normalizedText}`;
+  const cached = archiveLayoutCache.get(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const prepared = prepareWithSegments(normalizedText, font, {
+      whiteSpace: "pre-wrap",
+    });
+    const { lines } = layoutWithLines(prepared, safeWidth, safeLineHeight);
+    const normalizedLines = lines
+      .map((line) => ({
+        text: line.text.replace(/\s+$/g, "") || line.text,
+        width: Math.max(1, line.width),
+      }))
+      .filter((line) => line.text.length > 0);
+    archiveLayoutCache.set(cacheKey, normalizedLines);
+    return normalizedLines;
+  } catch {
+    const fallback = normalizedText
+      .split("\n")
+      .map((line) => ({ text: line, width: safeWidth }))
+      .filter((line) => line.text.trim().length > 0);
+    archiveLayoutCache.set(cacheKey, fallback);
+    return fallback;
+  }
+}
+
+function getArchiveMeasureContext() {
+  if (typeof document === "undefined") return null;
+  if (archiveMeasureContext) return archiveMeasureContext;
+  const canvas = document.createElement("canvas");
+  archiveMeasureContext = canvas.getContext("2d");
+  return archiveMeasureContext;
+}
+
+function getArchiveGlyphs(text, font, maxWidth, lineHeight) {
+  const cacheKey = `glyphs__${font}__${Math.ceil(maxWidth || 0)}__${Math.round(
+    lineHeight || 0,
+  )}__${String(text || "")}`;
+  const cached = archiveLayoutCache.get(cacheKey);
+  if (cached) return cached;
+
+  const lines = getArchiveLines(text, font, maxWidth, lineHeight);
+  const ctx = getArchiveMeasureContext();
+  if (ctx) ctx.font = font;
+
+  let glyphIndex = 0;
+  const glyphs = lines.flatMap((line, lineIndex) => {
+    const parts = line.text.split(/(\s+)/).filter(Boolean);
+    let cursor = "";
+
+    return parts.flatMap((part) => {
+      const startX = ctx ? ctx.measureText(cursor).width : cursor.length * 8;
+      cursor += part;
+      const endX = ctx ? ctx.measureText(cursor).width : cursor.length * 8;
+      if (!part.trim()) return [];
+
+      const currentGlyph = {
+        id: `${lineIndex}-${glyphIndex}`,
+        glyph: part,
+        index: glyphIndex,
+        lineIndex,
+        x: startX,
+        y: lineIndex * lineHeight,
+        width: Math.max(1, endX - startX),
+      };
+      glyphIndex += 1;
+      return [currentGlyph];
+    });
+  });
+
+  const result = {
+    glyphs,
+    height: Math.max(lines.length * lineHeight, lineHeight),
+  };
+  archiveLayoutCache.set(cacheKey, result);
+  return result;
+}
+
+function archiveNoise(seed) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453123;
+  return x - Math.floor(x);
+}
+
 function strongNpub(user) {
   return (
     user?.id ||
@@ -155,7 +312,7 @@ async function ensureUserDoc(npub, defaults = {}) {
           },
           ...defaults,
         },
-        { merge: true }
+        { merge: true },
       );
     }
     return true;
@@ -271,7 +428,7 @@ function wrapFirst(text, phrase, tokenId) {
 function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
   if (!pairs?.length || !text) return [text];
   const sorted = [...pairs].sort(
-    (a, b) => (b?.[side]?.length || 0) - (a?.[side]?.length || 0)
+    (a, b) => (b?.[side]?.length || 0) - (a?.[side]?.length || 0),
   );
   let nodes = [text];
   sorted.forEach((pair, i) => {
@@ -301,6 +458,10 @@ function AlignedBubble({
   onReplay,
   isReplaying,
   replayLabel,
+  containerRef,
+  primaryTextRef,
+  contentOpacity = 1,
+  contentTransform = "translateY(0px) scale(1)",
 }) {
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
@@ -324,11 +485,12 @@ function AlignedBubble({
   }
   const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
   const secondaryNodes = decorate(
-    buildAlignedNodes(secondaryText, pairs, "rhs")
+    buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
 
   return (
     <Box
+      ref={containerRef}
       bg="transparent"
       p={3}
       rounded="2xl"
@@ -338,89 +500,110 @@ function AlignedBubble({
       borderBottomLeftRadius="0px"
       sx={MATRIX_PANEL_SX}
     >
-      <HStack align="flex-start" spacing={2}>
-        {canReplay && (
-          <IconButton
-            size="xs"
-            variant="ghost"
-            colorScheme="cyan"
-            icon={
-              isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />
-            }
-            onClick={onReplay}
-            isDisabled={isReplaying}
-            aria-label={replayLabel || "Replay"}
-            mt="2px"
-          />
-        )}
-        <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX} flex="1">
-          {primaryNodes}
-        </Box>
-      </HStack>
-
-      {showSecondary && !!secondaryText && (
-        <Box
-          as="p"
-          fontSize="xs"
-          mt={1}
-          lineHeight="1.55"
-          sx={MOBILE_TEXT_SX}
-          transition="opacity 120ms ease-out"
-          opacity={1}
-        >
-          {secondaryNodes}
-        </Box>
-      )}
-
-      {!!pairs?.length && showSecondary && (
-        <Wrap spacing={3} mt={3} shouldWrapChildren>
-          {pairs.slice(0, 8).map((p, i) => {
-            const color = colorFor(i);
-            return (
-              <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
-                <Box
-                  px={3}
-                  py={2.5}
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor={hexToRgba(color, 0.6)}
-                  background="#0b1220"
-                  boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
-                  color="whiteAlpha.900"
-                  minW="0"
-                  maxW="260px"
-                >
-                  <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
-                    {p.lhs}
-                  </Text>
-                  <Text
-                    fontSize="2xs"
-                    color="whiteAlpha.800"
-                    mt={1}
-                    lineHeight="1.35"
-                  >
-                    {p.rhs}
-                  </Text>
-                </Box>
-              </WrapItem>
-            );
-          })}
-        </Wrap>
-      )}
-
-      {canTranslate && (
-        <HStack justify="flex-end" mt={2}>
-          <IconButton
-            size="xs"
-            variant="ghost"
-            colorScheme="cyan"
-            icon={isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />}
-            onClick={onTranslate}
-            isDisabled={isTranslating}
-            aria-label="Translate message"
-          />
+      <Box
+        opacity={contentOpacity}
+        transform={contentTransform}
+        transition="opacity 180ms ease, transform 180ms ease"
+        willChange="opacity, transform"
+        pointerEvents={contentOpacity < 0.5 ? "none" : "auto"}
+      >
+        <HStack align="flex-start" spacing={2}>
+          {canReplay && (
+            <IconButton
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              icon={
+                isReplaying ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <RiVolumeUpLine size={14} />
+                )
+              }
+              onClick={onReplay}
+              isDisabled={isReplaying}
+              aria-label={replayLabel || "Replay"}
+              mt="2px"
+            />
+          )}
+          <Box
+            ref={primaryTextRef}
+            as="p"
+            fontSize="md"
+            lineHeight="1.6"
+            sx={MOBILE_TEXT_SX}
+            flex="1"
+          >
+            {primaryNodes}
+          </Box>
         </HStack>
-      )}
+
+        {showSecondary && !!secondaryText && (
+          <Box
+            as="p"
+            fontSize="xs"
+            mt={1}
+            lineHeight="1.55"
+            sx={MOBILE_TEXT_SX}
+            transition="opacity 120ms ease-out"
+            opacity={1}
+          >
+            {secondaryNodes}
+          </Box>
+        )}
+
+        {!!pairs?.length && showSecondary && (
+          <Wrap spacing={3} mt={3} shouldWrapChildren>
+            {pairs.slice(0, 8).map((p, i) => {
+              const color = colorFor(i);
+              return (
+                <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
+                  <Box
+                    px={3}
+                    py={2.5}
+                    borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor={hexToRgba(color, 0.6)}
+                    background="#0b1220"
+                    boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
+                    color="whiteAlpha.900"
+                    minW="0"
+                    maxW="260px"
+                  >
+                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                      {p.lhs}
+                    </Text>
+                    <Text
+                      fontSize="2xs"
+                      color="whiteAlpha.800"
+                      mt={1}
+                      lineHeight="1.35"
+                    >
+                      {p.rhs}
+                    </Text>
+                  </Box>
+                </WrapItem>
+              );
+            })}
+          </Wrap>
+        )}
+
+        {canTranslate && (
+          <HStack justify="flex-end" mt={2}>
+            <IconButton
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              icon={
+                isTranslating ? <Spinner size="xs" /> : <MdOutlineTranslate />
+              }
+              onClick={onTranslate}
+              isDisabled={isTranslating}
+              aria-label="Translate message"
+            />
+          </HStack>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -459,12 +642,174 @@ function UserBubble({ label, text }) {
   );
 }
 
+function ArchiveTextAnimation({ animation }) {
+  if (!animation) return null;
+
+  const { id, fromRect, targetRect, glyphs, font, lineHeight, color, height } =
+    animation;
+  const glyphCount = glyphs.length;
+  const targetCenterX = targetRect.left + targetRect.width / 2;
+  const targetCenterY = targetRect.top + targetRect.height / 2;
+  const textCenterX = fromRect.left + fromRect.width / 2;
+  const textCenterY = fromRect.top + height / 2;
+  const flowDx = targetCenterX - textCenterX;
+  const flowDy = targetCenterY - textCenterY;
+  const flowDistance = Math.hypot(flowDx, flowDy) || 1;
+  const flowUnitX = flowDx / flowDistance;
+  const flowUnitY = flowDy / flowDistance;
+  const flowPerpX = -flowUnitY;
+  const flowPerpY = flowUnitX;
+  const maxDistance =
+    glyphs.reduce((largest, glyph) => {
+      const glyphCenterX = fromRect.left + glyph.x + glyph.width / 2;
+      const glyphCenterY = fromRect.top + glyph.y + lineHeight / 2;
+      const distance = Math.hypot(
+        targetCenterX - glyphCenterX,
+        targetCenterY - glyphCenterY,
+      );
+      return Math.max(largest, distance);
+    }, 0) || 1;
+
+  return (
+    <Box
+      position="fixed"
+      inset={0}
+      pointerEvents="none"
+      zIndex={40}
+      sx={{
+        "@keyframes conversationArchiveGlyph": {
+          "0%": {
+            opacity: 1,
+            offsetDistance: "0%",
+            transform: "scale(1)",
+            filter: "blur(0px)",
+          },
+          "100%": {
+            opacity: 0,
+            offsetDistance: "100%",
+            transform: "scale(0.12, 0.22)",
+            filter: "blur(6px)",
+          },
+        },
+        "@keyframes conversationArchiveGlow": {
+          "0%": {
+            opacity: 0.35,
+            transform: "scale(0.98)",
+          },
+          "100%": {
+            opacity: 0,
+            transform: "scale(0.52)",
+          },
+        },
+      }}
+    >
+      <Box
+        position="absolute"
+        left={`${fromRect.left}px`}
+        top={`${fromRect.top}px`}
+        width={`${Math.max(fromRect.width, 1)}px`}
+        height={`${Math.max(height, 1)}px`}
+      >
+        <Box
+          position="absolute"
+          inset={0}
+          borderRadius="20px"
+          bg="linear-gradient(135deg, rgba(103,232,249,0.22), rgba(56,189,248,0.06))"
+          filter="blur(16px)"
+          transformOrigin="center"
+          animation={`conversationArchiveGlow ${
+            ARCHIVE_GLYPH_DURATION_MS + 120
+          }ms ease-out forwards`}
+        />
+        {glyphs.map((glyph) => {
+          const glyphCenterX = fromRect.left + glyph.x + glyph.width / 2;
+          const glyphCenterY = fromRect.top + glyph.y + lineHeight / 2;
+          const endX = targetCenterX - glyphCenterX;
+          const endY = targetCenterY - glyphCenterY;
+          const distance = Math.hypot(endX, endY);
+          const normalizedDistance = distance / maxDistance;
+          const streamOrder =
+            glyphCount > 1 ? glyph.index / (glyphCount - 1) : 0;
+          const noiseA = archiveNoise(glyph.index + glyph.lineIndex * 31 + 1);
+          const noiseB = archiveNoise(glyph.index * 1.37 + 17);
+          const ribbonWidth = Math.min(fromRect.width * 0.16, 34);
+          const ribbonOffset =
+            (streamOrder - 0.5) * ribbonWidth + (noiseA - 0.5) * 8;
+          const mergeWorldX =
+            textCenterX + flowDx * 0.18 + flowPerpX * ribbonOffset * 0.55;
+          const mergeWorldY =
+            textCenterY +
+            flowDy * 0.18 +
+            flowPerpY * ribbonOffset * 0.22 -
+            8 +
+            (noiseB - 0.5) * 4;
+          const pullWorldX =
+            textCenterX + flowDx * 0.66 + flowPerpX * ribbonOffset * 0.18;
+          const pullWorldY =
+            textCenterY + flowDy * 0.66 + flowPerpY * ribbonOffset * 0.1 - 2;
+          const cp1X = mergeWorldX - glyphCenterX;
+          const cp1Y = mergeWorldY - glyphCenterY;
+          const cp2X = pullWorldX - glyphCenterX;
+          const cp2Y = pullWorldY - glyphCenterY;
+          const duration = Math.round(
+            ARCHIVE_GLYPH_DURATION_MS +
+              normalizedDistance * ARCHIVE_GLYPH_DURATION_VARIANCE_MS,
+          );
+          const streamDelay = Math.max(
+            0,
+            Math.round(
+              streamOrder * ARCHIVE_GLYPH_STREAM_SPREAD_MS +
+                (noiseA - 0.5) * ARCHIVE_GLYPH_STREAM_JITTER_MS,
+            ),
+          );
+          const motionPath = `path("M 0 0 C ${cp1X.toFixed(2)} ${cp1Y.toFixed(
+            2,
+          )}, ${cp2X.toFixed(2)} ${cp2Y.toFixed(2)}, ${endX.toFixed(
+            2,
+          )} ${endY.toFixed(2)}")`;
+
+          return (
+            <Box
+              key={`${id}-${glyph.id}-${glyph.glyph}`}
+              as="span"
+              position="absolute"
+              left={`${glyph.x}px`}
+              top={`${glyph.y}px`}
+              display="block"
+              whiteSpace="pre"
+              transformOrigin="center"
+              letterSpacing="0.01em"
+              color={color}
+              textShadow="0 0 18px rgba(34,211,238,0.32)"
+              style={{
+                font,
+                lineHeight: `${lineHeight}px`,
+                offsetPath: motionPath,
+                WebkitOffsetPath: motionPath,
+                offsetRotate: "0deg",
+                WebkitOffsetRotate: "0deg",
+                offsetDistance: "0%",
+                WebkitOffsetDistance: "0%",
+              }}
+              sx={{
+                animation: `conversationArchiveGlyph ${duration}ms cubic-bezier(0.12, 0.86, 0.24, 1) ${streamDelay}ms both`,
+                willChange: "offset-distance, transform, opacity, filter",
+              }}
+            >
+              {glyph.glyph}
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+}
+
 function uiStateLabel(uiState, uiLang) {
   if (uiState === "speaking") return uiLang === "es" ? "Hablando" : "Speaking";
   if (uiState === "listening")
     return uiLang === "es" ? "Escuchando" : "Listening";
-  if (uiState === "thinking")
-    return uiLang === "es" ? "Pensando" : "Thinking";
+  if (uiState === "thinking") return uiLang === "es" ? "Pensando" : "Thinking";
   return "";
 }
 
@@ -582,10 +927,10 @@ export default function Conversations({
   const [voice, setVoice] = useState(user?.progress?.voice || "alloy");
   const [voicePersona, setVoicePersona] = useState(
     user?.progress?.voicePersona ||
-      translations.en.onboarding_persona_default_example
+      translations.en.onboarding_persona_default_example,
   );
   const [showTranslations, setShowTranslations] = useState(
-    user?.progress?.showTranslations !== false
+    user?.progress?.showTranslations !== false,
   );
 
   // Conversation settings state
@@ -677,7 +1022,7 @@ export default function Conversations({
         shouldRegenerateGoalRef.current = true;
       }
     },
-    [currentNpub]
+    [currentNpub],
   );
 
   // Regenerate goal when settings drawer closes (if settings changed)
@@ -735,23 +1080,23 @@ export default function Conversations({
       const skillTreeTopics = getRandomSkillTreeTopics(
         selectedLevel,
         targetLang,
-        15
+        15,
       );
 
       const levelDescription =
         selectedLevel === "Pre-A1"
           ? "foundations - use only the most basic words and single-word responses"
           : selectedLevel === "A1"
-          ? "absolute beginner - use very simple vocabulary and short sentences"
-          : selectedLevel === "A2"
-          ? "elementary - use simple everyday topics and basic sentences"
-          : selectedLevel === "B1"
-          ? "intermediate - discuss experiences, opinions, and plans"
-          : selectedLevel === "B2"
-          ? "upper intermediate - handle complex and abstract topics"
-          : selectedLevel === "C1"
-          ? "advanced - use sophisticated vocabulary concisely"
-          : "mastery - use nuanced vocabulary concisely";
+            ? "absolute beginner - use very simple vocabulary and short sentences"
+            : selectedLevel === "A2"
+              ? "elementary - use simple everyday topics and basic sentences"
+              : selectedLevel === "B1"
+                ? "intermediate - discuss experiences, opinions, and plans"
+                : selectedLevel === "B2"
+                  ? "upper intermediate - handle complex and abstract topics"
+                  : selectedLevel === "C1"
+                    ? "advanced - use sophisticated vocabulary concisely"
+                    : "mastery - use nuanced vocabulary concisely";
 
       // Build custom subjects prompt if user has defined subjects
       const customSubjectsPrompt = customSubjects
@@ -888,14 +1233,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
   const liveUiState =
-    status === "connected" &&
-    uiState !== "speaking" &&
-    uiState !== "thinking"
+    status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
+  const displayOrbState = getRealtimeOrbVisualState(displayRobotState);
+  const previousOrbState = getRealtimeOrbVisualState(previousRobotState);
 
   useEffect(() => {
     if (liveUiState === displayRobotState) return;
@@ -922,26 +1267,163 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     const text = `${m.textFinal || ""}${m.textStream || ""}`.trim();
     return Boolean(text);
   });
-  const [fadingAssistantMessage, setFadingAssistantMessage] = useState(null);
   const previousAssistantIdRef = useRef(null);
+  const liveBubbleSurfaceRef = useRef(null);
+  const liveBubbleTextRef = useRef(null);
+  const liveBubbleSnapshotRef = useRef(null);
+  const chatLogButtonRef = useRef(null);
+  const incomingRevealTimerRef = useRef(null);
+  const chatLogHighlightTimerRef = useRef(null);
+  const [archiveAnimation, setArchiveAnimation] = useState(null);
+  const [isChatLogHighlighted, setIsChatLogHighlighted] = useState(false);
+  const [hiddenIncomingMessageId, setHiddenIncomingMessageId] = useState(null);
+  const chatLogButtonHighlightProps =
+    getChatLogButtonHighlightProps(isChatLogHighlighted);
+  const shouldMuteIncomingBubble =
+    hiddenIncomingMessageId != null &&
+    latestAssistantMessage?.id === hiddenIncomingMessageId;
 
-  useEffect(() => {
+  const captureLiveBubbleSnapshot = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const surfaceNode = liveBubbleSurfaceRef.current;
+    const textNode = liveBubbleTextRef.current;
+    if (
+      !(surfaceNode instanceof HTMLElement) ||
+      !(textNode instanceof HTMLElement)
+    )
+      return;
+
+    const surfaceRect = rectToSnapshot(surfaceNode.getBoundingClientRect());
+    const textRect = rectToSnapshot(textNode.getBoundingClientRect());
+    if (!surfaceRect?.width || !surfaceRect?.height) return;
+    if (!textRect?.width || !textRect?.height) return;
+
+    const styles = window.getComputedStyle(textNode);
+    const fallbackLineHeight = parsePx(styles.fontSize, 16) * 1.6;
+    liveBubbleSnapshotRef.current = {
+      surfaceRect,
+      textRect,
+      font: buildCanvasFont(styles),
+      lineHeight: parsePx(styles.lineHeight, fallbackLineHeight),
+      color: styles.color || "#F7FAFC",
+    };
+  }, []);
+
+  useLayoutEffect(() => {
     if (!latestAssistantMessage?.id) return;
     const nextId = latestAssistantMessage.id;
     const prevId = previousAssistantIdRef.current;
     previousAssistantIdRef.current = nextId;
-    if (
-      prevId &&
-      prevId !== nextId
-    ) {
-      const previousMessage = timeline.find((m) => m.id === prevId);
-      if (previousMessage) {
-        setFadingAssistantMessage(previousMessage);
-        const timer = setTimeout(() => setFadingAssistantMessage(null), 450);
-        return () => clearTimeout(timer);
-      }
+    if (!prevId || prevId === nextId) return;
+
+    const previousMessage = messages.find((m) => m.id === prevId);
+    const snapshot = liveBubbleSnapshotRef.current;
+    const targetNode = chatLogButtonRef.current;
+    const outgoingText = `${previousMessage?.textFinal || ""}${
+      previousMessage?.textStream || ""
+    }`.trim();
+
+    if (!previousMessage || !snapshot || !outgoingText) return;
+    if (!(targetNode instanceof HTMLElement)) return;
+
+    const targetRect = rectToSnapshot(targetNode.getBoundingClientRect());
+    if (!targetRect?.width || !targetRect?.height) return;
+
+    const { glyphs, height } = getArchiveGlyphs(
+      outgoingText,
+      snapshot.font,
+      snapshot.textRect.width,
+      snapshot.lineHeight,
+    );
+    if (!glyphs.length) return;
+
+    const animationId = uid();
+    setHiddenIncomingMessageId(nextId);
+    if (incomingRevealTimerRef.current) {
+      window.clearTimeout(incomingRevealTimerRef.current);
+      incomingRevealTimerRef.current = null;
     }
-  }, [latestAssistantMessage?.id, timeline]);
+    incomingRevealTimerRef.current = window.setTimeout(() => {
+      setHiddenIncomingMessageId((current) =>
+        current === nextId ? null : current,
+      );
+      incomingRevealTimerRef.current = null;
+    }, ARCHIVE_INCOMING_HOLD_MS);
+    setArchiveAnimation({
+      id: animationId,
+      fromRect: snapshot.textRect,
+      targetRect,
+      glyphs,
+      height,
+      font: snapshot.font,
+      lineHeight: snapshot.lineHeight,
+      color: snapshot.color,
+    });
+
+    const totalDuration =
+      ARCHIVE_GLYPH_DURATION_MS +
+      ARCHIVE_GLYPH_DURATION_VARIANCE_MS +
+      ARCHIVE_GLYPH_STREAM_SPREAD_MS +
+      ARCHIVE_GLYPH_STREAM_JITTER_MS +
+      ARCHIVE_ANIMATION_BUFFER_MS;
+    setIsChatLogHighlighted(true);
+    if (chatLogHighlightTimerRef.current) {
+      window.clearTimeout(chatLogHighlightTimerRef.current);
+      chatLogHighlightTimerRef.current = null;
+    }
+    chatLogHighlightTimerRef.current = window.setTimeout(
+      () => {
+        setIsChatLogHighlighted(false);
+        chatLogHighlightTimerRef.current = null;
+      },
+      Math.max(totalDuration, CHAT_LOG_HIGHLIGHT_DURATION_MS),
+    );
+    const timer = window.setTimeout(() => {
+      setArchiveAnimation((current) =>
+        current?.id === animationId ? null : current,
+      );
+    }, totalDuration);
+
+    return () => window.clearTimeout(timer);
+  }, [latestAssistantMessage?.id, messages]);
+
+  useLayoutEffect(() => {
+    captureLiveBubbleSnapshot();
+  }, [
+    captureLiveBubbleSnapshot,
+    latestAssistantMessage?.id,
+    latestAssistantMessage?.textFinal,
+    latestAssistantMessage?.textStream,
+    showTranslations,
+    replayingId,
+    translatingMessageId,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleViewportChange = () => captureLiveBubbleSnapshot();
+
+    handleViewportChange();
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, { passive: true });
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange);
+    };
+  }, [captureLiveBubbleSnapshot]);
+
+  useEffect(
+    () => () => {
+      if (incomingRevealTimerRef.current) {
+        window.clearTimeout(incomingRevealTimerRef.current);
+      }
+      if (chatLogHighlightTimerRef.current) {
+        window.clearTimeout(chatLogHighlightTimerRef.current);
+      }
+    },
+    [],
+  );
 
   /* ---------------------------
      Replay playback helpers
@@ -1034,7 +1516,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   function stopRecorderAfterTail(
     rid,
-    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 }
+    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 },
   ) {
     if (recTailRef.current.has(rid)) return;
     const { quietMs, maxMs, armThresh, minActiveMs } = opts;
@@ -1113,7 +1595,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     () => () => {
       stopReplayAudio();
     },
-    []
+    [],
   );
 
   // Scroll to top on mount
@@ -1227,13 +1709,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     try {
       if (dcRef.current?.readyState === "open") {
         dcRef.current.send(
-          JSON.stringify({ type: "input_audio_buffer.clear" })
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
         );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
             session: { turn_detection: null },
-          })
+          }),
         );
       }
     } catch {}
@@ -1369,7 +1851,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
     // Proficiency level guidance
     const levelGuidance = {
-      "Pre-A1": "CRITICAL: User is at foundations level (Pre-A1). Use ONLY the most basic words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Use 1-3 word phrases ONLY. Speak extremely slowly. Use single words when possible. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
+      "Pre-A1":
+        "CRITICAL: User is at foundations level (Pre-A1). Use ONLY the most basic words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Use 1-3 word phrases ONLY. Speak extremely slowly. Use single words when possible. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
       A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
       A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
@@ -1430,12 +1913,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (locked) setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
-        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
+        );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
             session: { turn_detection: buildTurnDetectionConfig() },
-          })
+          }),
         );
       }
     } catch {}
@@ -1460,7 +1945,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             input_audio_transcription: { model: "whisper-1" },
             output_audio_format: "pcm16",
           },
-        })
+        }),
       );
     } catch {}
   }
@@ -1553,30 +2038,30 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         tLang === "es"
           ? "Spanish"
           : tLang === "pt"
-          ? "Portuguese"
-          : tLang === "fr"
-          ? "French"
-          : tLang === "it"
-          ? "Italian"
-          : tLang === "nl"
-          ? "Dutch"
-          : tLang === "nah"
-          ? "Eastern Huasteca Nahuatl"
-          : tLang === "ja"
-          ? "Japanese"
-          : tLang === "ru"
-          ? "Russian"
-          : tLang === "de"
-          ? "German"
-          : tLang === "el"
-          ? "Greek"
-          : tLang === "pl"
-          ? "Polish"
-          : tLang === "ga"
-          ? "Irish"
-          : tLang === "yua"
-          ? "Yucatec Maya"
-          : "English";
+            ? "Portuguese"
+            : tLang === "fr"
+              ? "French"
+              : tLang === "it"
+                ? "Italian"
+                : tLang === "nl"
+                  ? "Dutch"
+                  : tLang === "nah"
+                    ? "Eastern Huasteca Nahuatl"
+                    : tLang === "ja"
+                      ? "Japanese"
+                      : tLang === "ru"
+                        ? "Russian"
+                        : tLang === "de"
+                          ? "German"
+                          : tLang === "el"
+                            ? "Greek"
+                            : tLang === "pl"
+                              ? "Polish"
+                              : tLang === "ga"
+                                ? "Irish"
+                                : tLang === "yua"
+                                  ? "Yucatec Maya"
+                                  : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
@@ -1634,7 +2119,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         (Array.isArray(payload?.output) &&
           payload.output
             .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
             )
             .join(" ")
             .trim()) ||
@@ -1681,7 +2166,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
       const recentMessages = messagesRef.current
         .slice(-6)
         .map(
-          (m) => `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`
+          (m) => `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`,
         )
         .join("\n");
 
@@ -1702,16 +2187,16 @@ The goal should be appropriate for ${selectedLevel} level (${
         selectedLevel === "Pre-A1"
           ? "foundations - single words and basic phrases only"
           : selectedLevel === "A1"
-          ? "beginner - simple tasks"
-          : selectedLevel === "A2"
-          ? "elementary - everyday topics"
-          : selectedLevel === "B1"
-          ? "intermediate - opinions and experiences"
-          : selectedLevel === "B2"
-          ? "upper intermediate - complex discussions"
-          : selectedLevel === "C1"
-          ? "advanced - nuanced but concise"
-          : "mastery - sophisticated but concise"
+            ? "beginner - simple tasks"
+            : selectedLevel === "A2"
+              ? "elementary - everyday topics"
+              : selectedLevel === "B1"
+                ? "intermediate - opinions and experiences"
+                : selectedLevel === "B2"
+                  ? "upper intermediate - complex discussions"
+                  : selectedLevel === "C1"
+                    ? "advanced - nuanced but concise"
+                    : "mastery - sophisticated but concise"
       }).
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
@@ -1750,7 +2235,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         (Array.isArray(payload?.output) &&
           payload.output
             .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
+              (it?.content || []).map((seg) => seg?.text || "").join(""),
             )
             .join(" ")
             .trim()) ||
@@ -2123,7 +2608,7 @@ Do not return the whole sentence as a single chunk.`;
       (Array.isArray(payload?.output) &&
         payload.output
           .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
+            (it?.content || []).map((seg) => seg?.text || "").join(""),
           )
           .join(" ")
           .trim()) ||
@@ -2186,18 +2671,18 @@ Do not return the whole sentence as a single chunk.`;
                 >
                   {uiLang === "es" ? "Configuración" : "Conversation settings"}
                 </Button>
-                <Button
-                  leftIcon={<FaRegCommentDots size={12} />}
+                <IconButton
+                  ref={chatLogButtonRef}
+                  icon={<FaRegCommentDots size={14} />}
                   size="xs"
                   variant="ghost"
                   colorScheme="cyan"
+                  {...chatLogButtonHighlightProps}
                   onClick={openTranscript}
-                  opacity={0.8}
                   _hover={{ opacity: 1 }}
                   isDisabled={!timeline.length}
-                >
-                  {uiLang === "es" ? "Historial" : "Chat log"}
-                </Button>
+                  aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                />
               </HStack>
 
               {/* Goal Text with Checkmark or Loader */}
@@ -2210,7 +2695,14 @@ Do not return the whole sentence as a single chunk.`;
                 >
                   {isGeneratingGoal ? (
                     <>
-                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                      <VoiceOrb
+                        state={getRealtimeOrbVisualState(
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ],
+                        )}
+                        size={24}
+                      />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"
@@ -2288,7 +2780,9 @@ Do not return the whole sentence as a single chunk.`;
                                 maxW="320px"
                               >
                                 <PopoverArrow bg="red.900" />
-                                <PopoverBody fontSize="xs">{goalFeedback}</PopoverBody>
+                                <PopoverBody fontSize="xs">
+                                  {goalFeedback}
+                                </PopoverBody>
                               </PopoverContent>
                             </Popover>
                           )}
@@ -2306,20 +2800,20 @@ Do not return the whole sentence as a single chunk.`;
 
                 {/* Goal Feedback */}
                 {goalFeedback && !isGeneratingGoal && currentGoal.completed && (
-                    <Text
-                      fontSize="xs"
-                      textAlign="center"
-                      px={3}
-                      py={1.5}
-                      borderRadius="md"
-                      bg="green.900"
-                      color="green.200"
-                      border="1px solid"
-                      borderColor="green.600"
-                      maxW="90%"
-                    >
-                      {goalFeedback}
-                    </Text>
+                  <Text
+                    fontSize="xs"
+                    textAlign="center"
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    bg="green.900"
+                    color="green.200"
+                    border="1px solid"
+                    borderColor="green.600"
+                    maxW="90%"
+                  >
+                    {goalFeedback}
+                  </Text>
                 )}
               </VStack>
 
@@ -2339,7 +2833,12 @@ Do not return the whole sentence as a single chunk.`;
           </Box>
 
           <VStack spacing={0.5} align="center">
-            <Box width="132px" opacity={0.95} flexShrink={0} position="relative">
+            <Box
+              width="132px"
+              opacity={0.95}
+              flexShrink={0}
+              position="relative"
+            >
               {previousRobotState && (
                 <Box
                   position="absolute"
@@ -2347,11 +2846,11 @@ Do not return the whole sentence as a single chunk.`;
                   opacity={isRobotTransitioning ? 0 : 1}
                   transition="opacity 0.5s ease"
                 >
-                  <VoiceOrb state={previousRobotState} />
+                  <VoiceOrb state={previousOrbState} />
                 </Box>
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
-                <VoiceOrb state={displayRobotState} />
+                <VoiceOrb state={displayOrbState} />
               </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
@@ -2374,36 +2873,16 @@ Do not return the whole sentence as a single chunk.`;
                 justifyContent="flex-start"
                 position="relative"
               >
-                {fadingAssistantMessage && (
-                  <Box
-                    w="100%"
-                    opacity={0}
-                    transform="translateY(44px) scale(0.96)"
-                    transition="all 0.45s ease-out"
-                    pointerEvents="none"
-                    position="absolute"
-                    top="0"
-                    left="0"
-                  >
-                    <AlignedBubble
-                      primaryText={`${fadingAssistantMessage.textFinal || ""}${
-                        fadingAssistantMessage.textStream || ""
-                      }`}
-                      secondaryText={
-                        showTranslations
-                          ? fadingAssistantMessage.translation || ""
-                          : ""
-                      }
-                      pairs={fadingAssistantMessage.pairs || []}
-                      showSecondary={showTranslations}
-                      isTranslating={false}
-                      canTranslate={false}
-                      canReplay={false}
-                    />
-                  </Box>
-                )}
                 <Box w="100%" position="relative" zIndex={1}>
                   <AlignedBubble
+                    containerRef={liveBubbleSurfaceRef}
+                    primaryTextRef={liveBubbleTextRef}
+                    contentOpacity={shouldMuteIncomingBubble ? 0 : 1}
+                    contentTransform={
+                      shouldMuteIncomingBubble
+                        ? "translateY(10px) scale(0.985)"
+                        : "translateY(0px) scale(1)"
+                    }
                     primaryText={`${latestAssistantMessage.textFinal || ""}${
                       latestAssistantMessage.textStream || ""
                     }`}
@@ -2418,7 +2897,9 @@ Do not return the whole sentence as a single chunk.`;
                       translatingMessageId === latestAssistantMessage.id
                     }
                     canTranslate={showTranslations}
-                    onTranslate={() => handleManualTranslate(latestAssistantMessage.id)}
+                    onTranslate={() =>
+                      handleManualTranslate(latestAssistantMessage.id)
+                    }
                     canReplay={
                       !!latestAssistantMessage.hasAudio ||
                       audioCacheIndexRef.current.has(latestAssistantMessage.id)
@@ -2449,7 +2930,16 @@ Do not return the whole sentence as a single chunk.`;
               height="64px"
               px={{ base: 8, md: 12 }}
               rounded="full"
-              colorScheme={status === "connected" ? "red" : "cyan"}
+              colorScheme={status === "connected" ? undefined : "cyan"}
+              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              boxShadow={
+                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+              }
+              _hover={
+                status === "connected"
+                  ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : undefined
+              }
               color="white"
               textShadow="0px 0px 20px black"
               mb={20}
@@ -2494,6 +2984,8 @@ Do not return the whole sentence as a single chunk.`;
         <audio ref={audioRef} />
       </Box>
 
+      <ArchiveTextAnimation animation={archiveAnimation} />
+
       {/* Conversation Settings Drawer */}
       <ConversationSettingsDrawer
         isOpen={isSettingsOpen}
@@ -2536,7 +3028,9 @@ Do not return the whole sentence as a single chunk.`;
                       isTranslating={translatingMessageId === m.id}
                       canTranslate={showTranslations}
                       onTranslate={() => handleManualTranslate(m.id)}
-                      canReplay={!!m.hasAudio || audioCacheIndexRef.current.has(m.id)}
+                      canReplay={
+                        !!m.hasAudio || audioCacheIndexRef.current.has(m.id)
+                      }
                       onReplay={() => playSavedClip(m.id)}
                       isReplaying={replayingId === m.id}
                       replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}

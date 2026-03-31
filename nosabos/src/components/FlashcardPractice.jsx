@@ -45,6 +45,11 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_GLOW,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
@@ -794,7 +799,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     <Button
                       w="100%"
                       size="lg"
-                      colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
+                      colorScheme={
+                        isRecording ? undefined : isConnecting ? "yellow" : "teal"
+                      }
+                      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                      color={isRecording ? "white" : undefined}
+                      boxShadow={isRecording ? SOFT_STOP_BUTTON_GLOW : undefined}
                       leftIcon={
                         isConnecting ? (
                           <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
@@ -808,7 +818,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       isDisabled={!supportsSpeech || isConnecting}
                       _hover={{
                         transform: "translateY(-2px)",
-                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                        boxShadow: isRecording
+                          ? SOFT_STOP_BUTTON_GLOW
+                          : `0 8px 20px ${cefrColor.primary}40`,
+                        ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
                       }}
                       padding={9}
                       _active={{ transform: "translateY(0)" }}

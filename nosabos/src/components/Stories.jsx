@@ -47,6 +47,11 @@ import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
+import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
   getTTSPlayer,
@@ -2028,14 +2033,14 @@ export default function StoryMode({
                           rounded="full"
                           bg={
                             isRecording
-                              ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                              ? SOFT_STOP_BUTTON_BG
                               : isConnecting
                                 ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
                                 : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
                           }
                           boxShadow={
                             isRecording
-                              ? "0px 4px 0px #ef4444"
+                              ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
                               : isConnecting
                                 ? "0px 4px 0px #eab308"
                                 : "0px 4px 0px rgb(0, 157, 255)"
@@ -2064,7 +2069,7 @@ export default function StoryMode({
                           }
                           _hover={{
                             bg: isRecording
-                              ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+                              ? SOFT_STOP_BUTTON_HOVER_BG
                               : isConnecting
                                 ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
                                 : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
