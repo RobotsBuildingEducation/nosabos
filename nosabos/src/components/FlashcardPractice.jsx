@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Box,
@@ -1004,127 +1004,104 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           </Text>
                         </HStack>
 
-                        {/* SRS Quality Rating Buttons */}
-                        <VStack spacing={2} w="100%">
-                          <Text fontSize="xs" color="whiteAlpha.600" textAlign="center">
-                            {getTranslation("srs_how_was_it")}
-                          </Text>
-                          <HStack spacing={2} w="100%">
-                            <Button
-                              flex={1}
-                              size="md"
-                              bg="rgba(239, 68, 68, 0.2)"
-                              border="1px solid"
-                              borderColor="rgba(239, 68, 68, 0.4)"
-                              color="red.300"
-                              onClick={() => handleQualityRating(1)}
-                              _hover={{ bg: "rgba(239, 68, 68, 0.3)" }}
-                            >
-                              <VStack spacing={0}>
-                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_again")}</Text>
-                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.again}</Text>
-                              </VStack>
-                            </Button>
-                            <Button
-                              flex={1}
-                              size="md"
-                              bg="rgba(251, 191, 36, 0.2)"
-                              border="1px solid"
-                              borderColor="rgba(251, 191, 36, 0.4)"
-                              color="yellow.300"
-                              onClick={() => handleQualityRating(2)}
-                              _hover={{ bg: "rgba(251, 191, 36, 0.3)" }}
-                            >
-                              <VStack spacing={0}>
-                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_hard")}</Text>
-                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.hard}</Text>
-                              </VStack>
-                            </Button>
-                            <Button
-                              flex={1}
-                              size="md"
-                              bg="rgba(34, 197, 94, 0.2)"
-                              border="1px solid"
-                              borderColor="rgba(34, 197, 94, 0.4)"
-                              color="green.300"
-                              onClick={() => handleQualityRating(3)}
-                              _hover={{ bg: "rgba(34, 197, 94, 0.3)" }}
-                            >
-                              <VStack spacing={0}>
-                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_good")}</Text>
-                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.good}</Text>
-                              </VStack>
-                            </Button>
-                            <Button
-                              flex={1}
-                              size="md"
-                              bg="rgba(56, 189, 248, 0.2)"
-                              border="1px solid"
-                              borderColor="rgba(56, 189, 248, 0.4)"
-                              color="blue.300"
-                              onClick={() => handleQualityRating(4)}
-                              _hover={{ bg: "rgba(56, 189, 248, 0.3)" }}
-                            >
-                              <VStack spacing={0}>
-                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_easy")}</Text>
-                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.easy}</Text>
-                              </VStack>
-                            </Button>
-                          </HStack>
-                        </VStack>
-                      </VStack>
-                    ) : (
-                      <VStack w="100%" spacing={3} mt={2}>
-                        {/* Incorrect: show Again (SRS reset) + Try Again + Explain */}
-                        <HStack spacing={2} w="100%">
+                        {/* SRS: How did it feel? — 3 simple options */}
+                        <HStack spacing={3} w="100%">
                           <Button
                             flex={1}
                             size="lg"
-                            bg="rgba(239, 68, 68, 0.2)"
+                            bg="rgba(251, 191, 36, 0.15)"
                             border="1px solid"
-                            borderColor="rgba(239, 68, 68, 0.4)"
-                            color="red.300"
-                            onClick={() => handleQualityRating(1)}
-                            _hover={{ bg: "rgba(239, 68, 68, 0.3)" }}
+                            borderColor="rgba(251, 191, 36, 0.35)"
+                            color="yellow.300"
+                            onClick={() => handleQualityRating(2)}
+                            _hover={{ bg: "rgba(251, 191, 36, 0.25)" }}
+                            py={6}
                           >
                             <VStack spacing={0}>
-                              <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_again")}</Text>
-                              <Text fontSize="xs" opacity={0.7}>{intervalPreviews.again}</Text>
+                              <Text fontSize="md" fontWeight="bold">{getTranslation("srs_hard")}</Text>
+                              <Text fontSize="xs" opacity={0.6}>{intervalPreviews.hard}</Text>
                             </VStack>
                           </Button>
                           <Button
                             flex={1}
                             size="lg"
-                            bg="teal"
-                            colorScheme="teal"
-                            onClick={handleTryAgain}
+                            bg="rgba(34, 197, 94, 0.15)"
+                            border="1px solid"
+                            borderColor="rgba(34, 197, 94, 0.35)"
+                            color="green.300"
+                            onClick={() => handleQualityRating(3)}
+                            _hover={{ bg: "rgba(34, 197, 94, 0.25)" }}
+                            py={6}
                           >
-                            {getTranslation("flashcard_try_again")}
+                            <VStack spacing={0}>
+                              <Text fontSize="md" fontWeight="bold">{getTranslation("srs_good")}</Text>
+                              <Text fontSize="xs" opacity={0.6}>{intervalPreviews.good}</Text>
+                            </VStack>
+                          </Button>
+                          <Button
+                            flex={1}
+                            size="lg"
+                            bg="rgba(56, 189, 248, 0.15)"
+                            border="1px solid"
+                            borderColor="rgba(56, 189, 248, 0.35)"
+                            color="blue.300"
+                            onClick={() => handleQualityRating(4)}
+                            _hover={{ bg: "rgba(56, 189, 248, 0.25)" }}
+                            py={6}
+                          >
+                            <VStack spacing={0}>
+                              <Text fontSize="md" fontWeight="bold">{getTranslation("srs_easy")}</Text>
+                              <Text fontSize="xs" opacity={0.6}>{intervalPreviews.easy}</Text>
+                            </VStack>
                           </Button>
                         </HStack>
-
+                      </VStack>
+                    ) : (
+                      <VStack w="100%" spacing={3} mt={2}>
                         <Button
                           size="lg"
-                          colorScheme="pink"
-                          variant="solid"
-                          onClick={handleExplainAnswer}
-                          isDisabled={
-                            isLoadingExplanation ||
-                            !!explanationText ||
-                            isGrading
-                          }
-                          leftIcon={
-                            isLoadingExplanation ? (
-                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
-                            ) : (
-                              <FiHelpCircle />
-                            )
-                          }
+                          bg="teal"
+                          colorScheme="teal"
+                          onClick={handleTryAgain}
                           w="100%"
                         >
-                          {getTranslation("flashcard_explain_answer") ||
-                            "Explain my answer"}
+                          {getTranslation("flashcard_try_again")}
                         </Button>
+
+                        <HStack spacing={2} w="100%">
+                          <Button
+                            flex={1}
+                            size="md"
+                            variant="ghost"
+                            color="gray.400"
+                            onClick={() => handleQualityRating(1)}
+                            _hover={{ bg: "whiteAlpha.100", color: "white" }}
+                          >
+                            {getTranslation("srs_skip_for_now")}
+                          </Button>
+                          <Button
+                            flex={1}
+                            size="md"
+                            colorScheme="pink"
+                            variant="solid"
+                            onClick={handleExplainAnswer}
+                            isDisabled={
+                              isLoadingExplanation ||
+                              !!explanationText ||
+                              isGrading
+                            }
+                            leftIcon={
+                              isLoadingExplanation ? (
+                                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                              ) : (
+                                <FiHelpCircle />
+                              )
+                            }
+                          >
+                            {getTranslation("flashcard_explain_answer") ||
+                              "Explain my answer"}
+                          </Button>
+                        </HStack>
                       </VStack>
                     )}
 

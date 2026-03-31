@@ -586,6 +586,8 @@ export const translations = {
     srs_hard: "Hard",
     srs_good: "Good",
     srs_easy: "Easy",
+    srs_skip_for_now: "Move on",
+    srs_reviewed_label: "Done",
     cefr_level_completed: "Level Completed!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulary",
@@ -1266,6 +1268,8 @@ export const translations = {
     srs_hard: "Difícil",
     srs_good: "Bien",
     srs_easy: "Fácil",
+    srs_skip_for_now: "Continuar",
+    srs_reviewed_label: "Listo",
     cefr_level_completed: "¡Nivel Completado!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulario",
