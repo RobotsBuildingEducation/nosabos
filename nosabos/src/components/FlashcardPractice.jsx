@@ -37,6 +37,11 @@ import {
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import {
+  calculateNextReview,
+  getNextIntervalPreview,
+  getDefaultSRSData,
+} from "../utils/spacedRepetition";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
@@ -145,10 +150,13 @@ export default function FlashcardPractice({
   isOpen,
   onClose,
   onComplete,
+  onIncorrectComplete,
   targetLang = "es",
   supportLang = "en",
   pauseMs = 2000,
   languageXp = 0,
+  srsData = {},
+  cardType = "new",
 }) {
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
@@ -242,13 +250,7 @@ export default function FlashcardPractice({
       // Play feedback sound
       playSound(isYes ? deliciousSound : clickSound);
 
-      // If correct, award XP and mark complete after a delay
-      if (isYes) {
-        setTimeout(() => {
-          onComplete({ ...card, xpReward: xp });
-          handleClose();
-        }, 2000);
-      }
+      // Don't auto-complete - wait for quality rating buttons
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
@@ -281,6 +283,29 @@ export default function FlashcardPractice({
     setExplanationText("");
     setIsLoadingExplanation(false);
   };
+
+  // SRS quality rating handler
+  const handleQualityRating = (quality) => {
+    const currentSRS = { ...getDefaultSRSData(), ...srsData };
+    const nextSRS = calculateNextReview(currentSRS, quality);
+
+    if (quality === 1) {
+      // "Again" - incorrect/failed recall
+      if (onIncorrectComplete) {
+        onIncorrectComplete({ ...card, xpReward: 0, srsData: nextSRS });
+      }
+    } else {
+      // Correct with varying difficulty
+      onComplete({ ...card, xpReward: xpAwarded, srsData: nextSRS });
+    }
+    handleClose();
+  };
+
+  // Preview intervals for quality buttons
+  const intervalPreviews = useMemo(
+    () => getNextIntervalPreview({ ...getDefaultSRSData(), ...srsData }),
+    [srsData]
+  );
 
   const handleClose = () => {
     setTextAnswer("");
@@ -971,24 +996,112 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     </HStack>
 
                     {isCorrect ? (
-                      <HStack spacing={2} color="yellow.400">
-                        <RiStarLine size={20} />
-                        <Text fontSize="lg" fontWeight="bold">
-                          +{xpAwarded} XP
-                        </Text>
-                      </HStack>
+                      <VStack spacing={4} w="100%">
+                        <HStack spacing={2} color="yellow.400">
+                          <RiStarLine size={20} />
+                          <Text fontSize="lg" fontWeight="bold">
+                            +{xpAwarded} XP
+                          </Text>
+                        </HStack>
+
+                        {/* SRS Quality Rating Buttons */}
+                        <VStack spacing={2} w="100%">
+                          <Text fontSize="xs" color="whiteAlpha.600" textAlign="center">
+                            {getTranslation("srs_how_was_it")}
+                          </Text>
+                          <HStack spacing={2} w="100%">
+                            <Button
+                              flex={1}
+                              size="md"
+                              bg="rgba(239, 68, 68, 0.2)"
+                              border="1px solid"
+                              borderColor="rgba(239, 68, 68, 0.4)"
+                              color="red.300"
+                              onClick={() => handleQualityRating(1)}
+                              _hover={{ bg: "rgba(239, 68, 68, 0.3)" }}
+                            >
+                              <VStack spacing={0}>
+                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_again")}</Text>
+                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.again}</Text>
+                              </VStack>
+                            </Button>
+                            <Button
+                              flex={1}
+                              size="md"
+                              bg="rgba(251, 191, 36, 0.2)"
+                              border="1px solid"
+                              borderColor="rgba(251, 191, 36, 0.4)"
+                              color="yellow.300"
+                              onClick={() => handleQualityRating(2)}
+                              _hover={{ bg: "rgba(251, 191, 36, 0.3)" }}
+                            >
+                              <VStack spacing={0}>
+                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_hard")}</Text>
+                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.hard}</Text>
+                              </VStack>
+                            </Button>
+                            <Button
+                              flex={1}
+                              size="md"
+                              bg="rgba(34, 197, 94, 0.2)"
+                              border="1px solid"
+                              borderColor="rgba(34, 197, 94, 0.4)"
+                              color="green.300"
+                              onClick={() => handleQualityRating(3)}
+                              _hover={{ bg: "rgba(34, 197, 94, 0.3)" }}
+                            >
+                              <VStack spacing={0}>
+                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_good")}</Text>
+                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.good}</Text>
+                              </VStack>
+                            </Button>
+                            <Button
+                              flex={1}
+                              size="md"
+                              bg="rgba(56, 189, 248, 0.2)"
+                              border="1px solid"
+                              borderColor="rgba(56, 189, 248, 0.4)"
+                              color="blue.300"
+                              onClick={() => handleQualityRating(4)}
+                              _hover={{ bg: "rgba(56, 189, 248, 0.3)" }}
+                            >
+                              <VStack spacing={0}>
+                                <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_easy")}</Text>
+                                <Text fontSize="xs" opacity={0.7}>{intervalPreviews.easy}</Text>
+                              </VStack>
+                            </Button>
+                          </HStack>
+                        </VStack>
+                      </VStack>
                     ) : (
                       <VStack w="100%" spacing={3} mt={2}>
-                        <Button
-                          size="lg"
-                          // colorScheme="teal"
-                          bg="teal"
-                          colorScheme="teal"
-                          onClick={handleTryAgain}
-                          w="100%"
-                        >
-                          {getTranslation("flashcard_try_again")}
-                        </Button>
+                        {/* Incorrect: show Again (SRS reset) + Try Again + Explain */}
+                        <HStack spacing={2} w="100%">
+                          <Button
+                            flex={1}
+                            size="lg"
+                            bg="rgba(239, 68, 68, 0.2)"
+                            border="1px solid"
+                            borderColor="rgba(239, 68, 68, 0.4)"
+                            color="red.300"
+                            onClick={() => handleQualityRating(1)}
+                            _hover={{ bg: "rgba(239, 68, 68, 0.3)" }}
+                          >
+                            <VStack spacing={0}>
+                              <Text fontSize="sm" fontWeight="bold">{getTranslation("srs_again")}</Text>
+                              <Text fontSize="xs" opacity={0.7}>{intervalPreviews.again}</Text>
+                            </VStack>
+                          </Button>
+                          <Button
+                            flex={1}
+                            size="lg"
+                            bg="teal"
+                            colorScheme="teal"
+                            onClick={handleTryAgain}
+                          >
+                            {getTranslation("flashcard_try_again")}
+                          </Button>
+                        </HStack>
 
                         <Button
                           size="lg"
