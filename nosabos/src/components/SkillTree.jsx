@@ -2004,7 +2004,8 @@ export default function SkillTree({
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
   onCompleteFlashcard, // Callback for flashcard completion with XP
-  onRandomPracticeFlashcard, // Callback for random practice (awards XP, resets card)
+  onRandomPracticeFlashcard, // Callback for completed-card review wins
+  onFlashcardAttempt, // Callback for incorrect attempts / review pressure
   pauseMs = 2000,
   showMultipleLevels = true, // New prop to show multiple levels
   levels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels
@@ -2154,6 +2155,12 @@ export default function SkillTree({
   const handleRandomPractice = (card) => {
     if (onRandomPracticeFlashcard) {
       onRandomPracticeFlashcard(card);
+    }
+  };
+
+  const handleFlashcardAttempt = (card) => {
+    if (onFlashcardAttempt) {
+      onFlashcardAttempt(card);
     }
   };
 
@@ -2439,6 +2446,7 @@ export default function SkillTree({
               userProgress={userProgress}
               onStartFlashcard={handleFlashcardComplete}
               onRandomPractice={handleRandomPractice}
+              onFlashcardAttempt={handleFlashcardAttempt}
               targetLang={targetLang}
               supportLang={supportLang}
               activeCEFRLevel={effectiveActiveLevel}

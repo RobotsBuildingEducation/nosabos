@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Box,
@@ -53,7 +53,6 @@ import {
 import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 
@@ -145,10 +144,14 @@ export default function FlashcardPractice({
   isOpen,
   onClose,
   onComplete,
+  onAttempt,
   targetLang = "es",
   supportLang = "en",
   pauseMs = 2000,
   languageXp = 0,
+  sessionLabel = "",
+  sessionIndex = 0,
+  sessionTotal = 1,
 }) {
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
@@ -168,6 +171,7 @@ export default function FlashcardPractice({
   const streamingRef = useRef(false);
   const explanationStreamingRef = useRef(false);
   const audioRef = useRef(null);
+  const previousCardIdRef = useRef(card?.id);
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
 
@@ -187,7 +191,7 @@ export default function FlashcardPractice({
     useSpeechPractice({
       targetText: "answer", // Placeholder - we use AI grading instead of strict matching
       targetLang: targetLang,
-      onResult: ({ recognizedText, evaluation, error }) => {
+      onResult: ({ recognizedText, error }) => {
         if (error) {
           toast({
             title: getTranslation("flashcard_eval_error_title"),
@@ -206,6 +210,41 @@ export default function FlashcardPractice({
       },
       timeoutMs: pauseMs,
     });
+
+  const resetPracticeState = useCallback(() => {
+    setTextAnswer("");
+    setRecognizedText("");
+    setShowResult(false);
+    setIsCorrect(false);
+    setXpAwarded(0);
+    setIsGrading(false);
+    setIsFlipped(false);
+    setStreamedAnswer("");
+    setIsStreaming(false);
+    setIsPlayingAudio(false);
+    setLoadingTts(false);
+    setIsCreatingNote(false);
+    setNoteCreated(false);
+    explanationStreamingRef.current = false;
+    setExplanationText("");
+    setIsLoadingExplanation(false);
+    streamingRef.current = false;
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    if (isRecording) {
+      stopRecording();
+    }
+  }, [isRecording, stopRecording]);
+
+  useEffect(() => {
+    if (previousCardIdRef.current === card?.id) return;
+    previousCardIdRef.current = card?.id;
+    resetPracticeState();
+  }, [card?.id, resetPracticeState]);
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -245,9 +284,20 @@ export default function FlashcardPractice({
       // If correct, award XP and mark complete after a delay
       if (isYes) {
         setTimeout(() => {
-          onComplete({ ...card, xpReward: xp });
-          handleClose();
+          onComplete?.({
+            ...card,
+            xpReward: xp,
+            outcome: "correct",
+            userAnswer: answer,
+          });
         }, 2000);
+      } else {
+        onAttempt?.({
+          ...card,
+          xpReward: 0,
+          outcome: "incorrect",
+          userAnswer: answer,
+        });
       }
     } catch (error) {
       console.error("AI grading error:", error);
@@ -283,29 +333,7 @@ export default function FlashcardPractice({
   };
 
   const handleClose = () => {
-    setTextAnswer("");
-    setRecognizedText("");
-    setShowResult(false);
-    setIsCorrect(false);
-    setXpAwarded(0);
-    setIsFlipped(false);
-    setStreamedAnswer("");
-    setIsStreaming(false);
-    setIsPlayingAudio(false);
-    setLoadingTts(false);
-    setIsCreatingNote(false);
-    setNoteCreated(false);
-    explanationStreamingRef.current = false;
-    setExplanationText("");
-    setIsLoadingExplanation(false);
-    streamingRef.current = false;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    if (isRecording) {
-      stopRecording();
-    }
+    resetPracticeState();
     onClose();
   };
 
@@ -629,6 +657,28 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           zIndex={1}
         >
           <VStack spacing={6} align="stretch">
+            {(sessionTotal > 1 || sessionLabel) && (
+              <HStack justify="space-between" align="center">
+                <Badge
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                  bg="whiteAlpha.200"
+                  color="white"
+                  textTransform="none"
+                  fontSize="xs"
+                  letterSpacing="0.02em"
+                >
+                  {sessionLabel || getTranslation("flashcard_session_default")}
+                </Badge>
+                <Text fontSize="sm" color="whiteAlpha.800" fontWeight="medium">
+                  {getTranslation("flashcard_session_progress", {
+                    current: sessionIndex + 1,
+                    total: sessionTotal,
+                  })}
+                </Text>
+              </HStack>
+            )}
 
             {/* Flip Card */}
             <Box

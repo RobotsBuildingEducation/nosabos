@@ -5,19 +5,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   RiStarLine,
   RiCheckLine,
-  RiArrowDownLine,
   RiLockLine,
-  RiShuffleLine,
+  RiArrowRightLine,
+  RiFireLine,
+  RiHistoryLine,
+  RiPlantLine,
+  RiTrophyLine,
 } from "react-icons/ri";
 import {
   FLASHCARD_DATA,
   loadRelevantFlashcards,
-  getUserProgressLevel,
 } from "../data/flashcardData";
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
+import {
+  FLASHCARD_SESSION_LIMITS,
+  buildFlashcardSession,
+  createFlashcardReviewUpdate,
+  getFlashcardReviewBuckets,
+} from "../utils/flashcardScheduler";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 
@@ -55,6 +63,13 @@ const getEffectiveCardLanguage = (supportLang) => {
 };
 
 const MotionBox = motion(Box);
+const EMPTY_SESSION = {
+  mode: null,
+  label: "",
+  description: "",
+  queue: [],
+  index: 0,
+};
 
 const FlashcardCard = React.memo(function FlashcardCard({
   card,
@@ -256,23 +271,22 @@ const FlashcardCard = React.memo(function FlashcardCard({
 export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
-  onRandomPractice, // Callback for random practice completion (awards XP, resets card)
+  onRandomPractice, // Callback for review completion on already completed cards
+  onFlashcardAttempt,
   targetLang = "es",
   supportLang = "en",
   activeCEFRLevel = null, // Filter flashcards by CEFR level
   pauseMs = 2000,
 }) {
-  const [practiceCard, setPracticeCard] = useState(null);
-  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
-  const [isRandomPractice, setIsRandomPractice] = useState(false);
-  const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
+  const [sessionState, setSessionState] = useState(EMPTY_SESSION);
+  const [localProgressOverrides, setLocalProgressOverrides] = useState({});
   // Initialize with filtered data to prevent flicker
   const [flashcardData, setFlashcardData] = useState(() =>
     activeCEFRLevel
       ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
       : FLASHCARD_DATA
   );
-  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
+  const [, setIsLoadingFlashcards] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   // Sound settings
@@ -291,9 +305,10 @@ export default function FlashcardSkillTree({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Reset local completed cards when language changes
+  // Reset local review state when language changes
   useEffect(() => {
-    setLocalCompletedCards(new Set());
+    setLocalProgressOverrides({});
+    setSessionState(EMPTY_SESSION);
   }, [targetLang]);
 
   // Load relevant flashcards based on user progress (lazy loading)
@@ -364,38 +379,27 @@ export default function FlashcardSkillTree({
     };
   }, [userProgress, activeCEFRLevel]);
 
+  const mergedFlashcardProgress = useMemo(
+    () => ({
+      ...(userProgress.flashcards || {}),
+      ...localProgressOverrides,
+    }),
+    [userProgress.flashcards, localProgressOverrides]
+  );
+
   // Memoized completion status map for O(1) lookups
   const completionMap = useMemo(() => {
     const map = new Map();
     flashcardData.forEach((card) => {
-      const isCompleted =
-        userProgress.flashcards?.[card.id]?.completed ||
-        localCompletedCards.has(card.id);
-      map.set(card.id, isCompleted);
+      map.set(card.id, mergedFlashcardProgress?.[card.id]?.completed === true);
     });
     return map;
-  }, [userProgress.flashcards, localCompletedCards, flashcardData]);
-
-  // Memoized card index map for O(1) lookups
-  const cardIndexMap = useMemo(() => {
-    const map = new Map();
-    flashcardData.forEach((card, index) => {
-      map.set(card.id, index);
-    });
-    return map;
-  }, [flashcardData]);
+  }, [mergedFlashcardProgress, flashcardData]);
 
   // Find first uncompleted card (memoized)
   const firstUncompletedCard = useMemo(() => {
     return flashcardData.find((card) => !completionMap.get(card.id));
   }, [completionMap, flashcardData]);
-
-  // Memoized first uncompleted index
-  const firstUncompletedIndex = useMemo(() => {
-    return firstUncompletedCard
-      ? cardIndexMap.get(firstUncompletedCard.id)
-      : -1;
-  }, [firstUncompletedCard, cardIndexMap]);
 
   // Separate completed and upcoming cards (memoized)
   const completedCards = useMemo(() => {
@@ -406,109 +410,398 @@ export default function FlashcardSkillTree({
     return flashcardData.filter((card) => !completionMap.get(card.id));
   }, [completionMap, flashcardData]);
 
-  // Memoized card status lookup
-  const cardStatusMap = useMemo(() => {
-    const statusMap = new Map();
-    flashcardData.forEach((card) => {
-      if (completionMap.get(card.id)) {
-        statusMap.set(card.id, "completed");
-      } else if (card.id === firstUncompletedCard?.id) {
-        statusMap.set(card.id, "active");
-      } else {
-        const cardIndex = cardIndexMap.get(card.id);
-        if (cardIndex > firstUncompletedIndex && firstUncompletedIndex !== -1) {
-          statusMap.set(card.id, "locked");
-        } else {
-          statusMap.set(card.id, "upcoming");
-        }
-      }
-    });
-    return statusMap;
-  }, [
-    completionMap,
-    firstUncompletedCard,
-    cardIndexMap,
-    firstUncompletedIndex,
-    flashcardData,
-  ]);
+  const reviewBuckets = useMemo(
+    () =>
+      getFlashcardReviewBuckets({
+        flashcardData,
+        progressMap: mergedFlashcardProgress,
+      }),
+    [flashcardData, mergedFlashcardProgress]
+  );
 
   // Get card status - now just a lookup
   const getCardStatus = useCallback(
     (card) => {
-      return cardStatusMap.get(card.id) || "upcoming";
+      if (completionMap.get(card.id)) return "completed";
+      if (card.id === firstUncompletedCard?.id) return "active";
+      return "locked";
     },
-    [cardStatusMap]
+    [completionMap, firstUncompletedCard]
   );
 
-  const handleCardClick = useCallback((card, status) => {
-    if (status === "active") {
+  const practiceCard = sessionState.queue?.[sessionState.index] || null;
+
+  const sessionCopy = useMemo(
+    () => ({
+      smart: {
+        title: getTranslation("flashcard_session_smart_title"),
+        description: getTranslation("flashcard_session_smart_desc"),
+        cta: getTranslation("flashcard_session_smart_cta"),
+        icon: RiHistoryLine,
+        color: "cyan.300",
+        accent: "rgba(34, 211, 238, 0.22)",
+        count: reviewBuckets.dueCards.length,
+        helper:
+          reviewBuckets.dueCards.length > 0
+            ? getTranslation("flashcard_session_due_count", {
+                count: reviewBuckets.dueCards.length,
+              })
+            : getTranslation("flashcard_session_due_empty"),
+      },
+      challenge: {
+        title: getTranslation("flashcard_session_challenge_title"),
+        description: getTranslation("flashcard_session_challenge_desc"),
+        cta: getTranslation("flashcard_session_challenge_cta"),
+        icon: RiFireLine,
+        color: "orange.300",
+        accent: "rgba(249, 115, 22, 0.22)",
+        count: reviewBuckets.weakCards.length,
+        helper:
+          reviewBuckets.weakCards.length > 0
+            ? getTranslation("flashcard_session_weak_count", {
+                count: reviewBuckets.weakCards.length,
+              })
+            : getTranslation("flashcard_session_weak_empty"),
+      },
+      learn: {
+        title: getTranslation("flashcard_session_learn_title"),
+        description: getTranslation("flashcard_session_learn_desc"),
+        cta: getTranslation("flashcard_session_learn_cta"),
+        icon: RiPlantLine,
+        color: "green.300",
+        accent: "rgba(74, 222, 128, 0.22)",
+        count: upcomingCards.length,
+        helper:
+          upcomingCards.length > 0
+            ? getTranslation("flashcard_session_new_count", {
+                count: upcomingCards.length,
+              })
+            : getTranslation("flashcard_session_new_empty"),
+      },
+    }),
+    [reviewBuckets.dueCards.length, reviewBuckets.weakCards.length, upcomingCards.length]
+  );
+
+  const previewCards = useMemo(
+    () => upcomingCards.slice(0, FLASHCARD_SESSION_LIMITS.preview),
+    [upcomingCards]
+  );
+
+  const recentCompletedCards = useMemo(
+    () => reviewBuckets.completedCards.slice(0, 5),
+    [reviewBuckets.completedCards]
+  );
+
+  const openSession = useCallback(
+    (mode, queueOverride = null) => {
+      const session = queueOverride
+        ? {
+            mode,
+            label: getTranslation("flashcard_session_single_title"),
+            description: getTranslation("flashcard_session_single_desc"),
+            queue: queueOverride,
+          }
+        : buildFlashcardSession({
+            flashcardData,
+            progressMap: mergedFlashcardProgress,
+            mode,
+          });
+
+      if (!session.queue.length) return;
+
       playSound(selectSound);
-      setPracticeCard(card);
-      setIsPracticeOpen(true);
-    }
-  }, [playSound]);
+      setSessionState({
+        mode,
+        label:
+          mode === "single"
+            ? getTranslation("flashcard_session_single_title")
+            : sessionCopy[mode]?.title || session.label,
+        description:
+          mode === "single"
+            ? getTranslation("flashcard_session_single_desc")
+            : sessionCopy[mode]?.description || session.description,
+        queue: session.queue,
+        index: 0,
+      });
+    },
+    [
+      flashcardData,
+      mergedFlashcardProgress,
+      playSound,
+      sessionCopy,
+    ]
+  );
+
+  const closeSession = useCallback(() => {
+    setSessionState(EMPTY_SESSION);
+  }, []);
+
+  const applyReviewOutcome = useCallback(
+    (card, outcome) => {
+      const existingProgress = mergedFlashcardProgress?.[card.id] || {};
+      const reviewPatch = createFlashcardReviewUpdate({
+        previousProgress: existingProgress,
+        outcome,
+      });
+
+      const nextProgress = {
+        ...existingProgress,
+        ...reviewPatch,
+      };
+
+      setLocalProgressOverrides((prev) => ({
+        ...prev,
+        [card.id]: nextProgress,
+      }));
+
+      return {
+        ...card,
+        reviewPatch,
+      };
+    },
+    [mergedFlashcardProgress]
+  );
+
+  const handleAttempt = useCallback(
+    (card) => {
+      const payload = applyReviewOutcome(card, "incorrect");
+      onFlashcardAttempt?.(payload);
+    },
+    [applyReviewOutcome, onFlashcardAttempt]
+  );
 
   const handleComplete = useCallback(
     (card) => {
-      if (isRandomPractice) {
-        // Random practice: remove from local completed to add back to deck
-        setLocalCompletedCards((prev) => {
-          const next = new Set(prev);
-          next.delete(card.id);
-          return next;
-        });
+      const alreadyCompleted =
+        mergedFlashcardProgress?.[card.id]?.completed === true;
+      const payload = applyReviewOutcome(card, "correct");
 
-        // Call random practice callback (awards XP, resets card in DB)
-        if (onRandomPractice) {
-          onRandomPractice(card);
-        }
+      if (alreadyCompleted) {
+        onRandomPractice?.(payload);
       } else {
-        // Normal practice: add to local completed cards immediately for instant UI update
-        setLocalCompletedCards((prev) => new Set([...prev, card.id]));
-
-        // Call parent callback if provided
-        if (onStartFlashcard) {
-          onStartFlashcard(card);
-        }
+        onStartFlashcard?.(payload);
       }
 
-      setIsPracticeOpen(false);
-      setPracticeCard(null);
-      setIsRandomPractice(false);
+      setSessionState((prev) => {
+        const nextIndex = prev.index + 1;
+        if (nextIndex >= prev.queue.length) {
+          return EMPTY_SESSION;
+        }
+
+        return {
+          ...prev,
+          index: nextIndex,
+        };
+      });
     },
-    [onStartFlashcard, onRandomPractice, isRandomPractice]
+    [
+      applyReviewOutcome,
+      mergedFlashcardProgress,
+      onRandomPractice,
+      onStartFlashcard,
+    ]
   );
 
-  const handleRandomPracticeClick = useCallback(() => {
-    if (completedCards.length === 0) return;
-
-    // Select a random card from the completed cards
-    const randomIndex = Math.floor(Math.random() * completedCards.length);
-    const randomCard = completedCards[randomIndex];
-
-    setIsRandomPractice(true);
-    setPracticeCard(randomCard);
-    setIsPracticeOpen(true);
-  }, [completedCards]);
-
-  const handleClosePractice = useCallback(() => {
-    setIsPracticeOpen(false);
-    setPracticeCard(null);
-    setIsRandomPractice(false);
-  }, []);
+  const handleCardClick = useCallback(
+    (card, status) => {
+      if (status !== "active") return;
+      openSession("single", [card]);
+    },
+    [openSession]
+  );
 
   return (
-    <Box
-      w="100%"
-      minH="500px"
-      position="relative"
-    >
-      {/* Main container with vertical layout */}
+    <Box w="100%" minH="500px" position="relative">
       <VStack spacing={8} align="stretch">
-        {/* Top: Active/Upcoming Cards */}
-        <Box w="100%">
-          {/* Upcoming cards in horizontal scrollable row */}
-          {upcomingCards.length > 0 ? (
+        <Box
+          p={{ base: 5, md: 7 }}
+          borderRadius="3xl"
+          border="1px solid"
+          borderColor="whiteAlpha.200"
+          bg="#091a36"
+          position="relative"
+          overflow="hidden"
+          sx={{
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              background:
+                "radial-gradient(circle at 15% 20%, rgba(59,130,246,0.24), transparent 32%), radial-gradient(circle at 85% 10%, rgba(45,212,191,0.16), transparent 28%), radial-gradient(circle at 50% 100%, rgba(16,185,129,0.18), transparent 45%)",
+              pointerEvents: "none",
+            },
+          }}
+        >
+          <VStack spacing={6} align="stretch" position="relative" zIndex={1}>
+            <HStack justify="space-between" align="start" flexWrap="wrap" gap={4}>
+              <VStack align="start" spacing={2} maxW="560px">
+                <Badge
+                  px={3}
+                  py={1}
+                  borderRadius="full"
+                  bg="whiteAlpha.200"
+                  color="white"
+                  textTransform="none"
+                  fontSize="xs"
+                >
+                  {activeCEFRLevel || firstUncompletedCard?.cefrLevel || "CEFR"}
+                </Badge>
+                <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="black" color="white">
+                  {getTranslation("flashcard_training_title")}
+                </Text>
+                <Text color="whiteAlpha.800" fontSize="md" lineHeight="1.6">
+                  {getTranslation("flashcard_training_subtitle")}
+                </Text>
+              </VStack>
+
+              <HStack spacing={3} flexWrap="wrap" justify="flex-end">
+                <Badge
+                  px={3}
+                  py={2}
+                  borderRadius="xl"
+                  bg="rgba(34,211,238,0.16)"
+                  color="cyan.100"
+                  textTransform="none"
+                >
+                  {getTranslation("flashcard_due_now_stat", {
+                    count: reviewBuckets.dueCards.length,
+                  })}
+                </Badge>
+                <Badge
+                  px={3}
+                  py={2}
+                  borderRadius="xl"
+                  bg="rgba(249,115,22,0.18)"
+                  color="orange.100"
+                  textTransform="none"
+                >
+                  {getTranslation("flashcard_weak_stat", {
+                    count: reviewBuckets.weakCards.length,
+                  })}
+                </Badge>
+                <Badge
+                  px={3}
+                  py={2}
+                  borderRadius="xl"
+                  bg="rgba(74,222,128,0.16)"
+                  color="green.100"
+                  textTransform="none"
+                >
+                  {getTranslation("flashcard_new_stat", {
+                    count: upcomingCards.length,
+                  })}
+                </Badge>
+              </HStack>
+            </HStack>
+
+            <Box
+              display="grid"
+              gridTemplateColumns={{ base: "1fr", md: "repeat(3, minmax(0, 1fr))" }}
+              gap={4}
+            >
+              {Object.entries(sessionCopy).map(([mode, config]) => {
+                const Icon = config.icon;
+
+                return (
+                  <MotionBox
+                    key={mode}
+                    initial={isReady ? { opacity: 0, y: 12 } : false}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.24, ease: "easeOut" }}
+                  >
+                    <Box
+                      h="100%"
+                      p={5}
+                      borderRadius="2xl"
+                      bg="rgba(5, 16, 36, 0.78)"
+                      border="1px solid"
+                      borderColor="whiteAlpha.200"
+                      boxShadow="0 18px 40px rgba(0, 0, 0, 0.24)"
+                    >
+                      <VStack align="stretch" spacing={4} h="100%">
+                        <HStack justify="space-between" align="start">
+                          <Box
+                            w="44px"
+                            h="44px"
+                            borderRadius="xl"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            bg={config.accent}
+                            color={config.color}
+                          >
+                            <Icon size={22} />
+                          </Box>
+                          <Badge
+                            px={3}
+                            py={1}
+                            borderRadius="full"
+                            bg="whiteAlpha.100"
+                            color="white"
+                            textTransform="none"
+                          >
+                            {config.count}
+                          </Badge>
+                        </HStack>
+
+                        <VStack align="start" spacing={2} flex={1}>
+                          <Text fontSize="xl" fontWeight="bold" color="white">
+                            {config.title}
+                          </Text>
+                          <Text color="whiteAlpha.800" lineHeight="1.6">
+                            {config.description}
+                          </Text>
+                          <Text fontSize="sm" color={config.color}>
+                            {config.helper}
+                          </Text>
+                        </VStack>
+
+                        <Button
+                          onClick={() => openSession(mode)}
+                          leftIcon={<Icon />}
+                          rightIcon={<RiArrowRightLine />}
+                          isDisabled={config.count === 0 && mode !== "learn"}
+                          bg="white"
+                          color="black"
+                          _hover={{ transform: "translateY(-2px)" }}
+                          _active={{ transform: "translateY(0)" }}
+                        >
+                          {config.cta}
+                        </Button>
+                      </VStack>
+                    </Box>
+                  </MotionBox>
+                );
+              })}
+            </Box>
+          </VStack>
+        </Box>
+
+        {upcomingCards.length > 0 ? (
+          <Box w="100%">
+            <HStack justify="space-between" align="end" mb={3} px={1}>
+              <VStack align="start" spacing={1}>
+                <Text fontSize="xl" fontWeight="bold" color="white">
+                  {getTranslation("flashcard_continue_title")}
+                </Text>
+                <Text fontSize="sm" color="gray.400">
+                  {getTranslation("flashcard_continue_desc")}
+                </Text>
+              </VStack>
+              <Badge
+                px={3}
+                py={1}
+                borderRadius="full"
+                bg="whiteAlpha.100"
+                color="white"
+                textTransform="none"
+              >
+                {getTranslation("flashcard_remaining_count", {
+                  count: upcomingCards.length,
+                })}
+              </Badge>
+            </HStack>
+
             <Box
               overflowX="auto"
               overflowY="hidden"
@@ -524,7 +817,7 @@ export default function FlashcardSkillTree({
             >
               <HStack spacing={6} px={4} minW="min-content" padding={6}>
                 <AnimatePresence initial={false}>
-                  {upcomingCards.map((card) => (
+                  {previewCards.map((card) => (
                     <FlashcardCard
                       key={card.id}
                       card={card}
@@ -537,70 +830,62 @@ export default function FlashcardSkillTree({
                 </AnimatePresence>
               </HStack>
             </Box>
-          ) : (
-            <MotionBox
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <VStack
-                spacing={4}
-                p={12}
-                borderRadius="2xl"
-                bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-                border="2px solid"
-                borderColor="whiteAlpha.200"
-                backdropFilter="blur(10px)"
-              >
-                <RiCheckLine size={64} color="#22C55E" />
-                <Text fontSize="2xl" fontWeight="black" color="white">
-                  {getTranslation("flashcard_all_done")}
-                </Text>
-                <Text fontSize="md" color="gray.400" textAlign="center">
-                  {getTranslation("flashcard_all_completed")}
-                </Text>
-              </VStack>
-            </MotionBox>
-          )}
-        </Box>
-
-        {/* Arrow indicator */}
-        {completedCards.length > 0 && (
-          <Box textAlign="center" py={2}>
-            <RiArrowDownLine size={32} color="rgba(255, 255, 255, 0.2)" />
           </Box>
+        ) : (
+          <MotionBox
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <VStack
+              spacing={4}
+              p={12}
+              borderRadius="2xl"
+              bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
+              border="2px solid"
+              borderColor="whiteAlpha.200"
+              backdropFilter="blur(10px)"
+            >
+              <RiCheckLine size={64} color="#22C55E" />
+              <Text fontSize="2xl" fontWeight="black" color="white">
+                {getTranslation("flashcard_all_done")}
+              </Text>
+              <Text fontSize="md" color="gray.400" textAlign="center">
+                {getTranslation("flashcard_all_completed")}
+              </Text>
+            </VStack>
+          </MotionBox>
         )}
 
-        {/* Bottom: Completed Cards Stack */}
         {completedCards.length > 0 && (
-          <Box w="100%" mt={"-6"}>
-            {/* Stacked cards - centered */}
-            {/* Practice Random Card Button */}
-            <Box textAlign="center" mb={4}>
-              <Button
-                onClick={handleRandomPracticeClick}
-                leftIcon={<RiShuffleLine />}
-                size="lg"
-                borderColor="blue.300"
-                bg="transparent"
+          <Box w="100%">
+            <HStack justify="space-between" align="end" mb={3} px={1}>
+              <VStack align="start" spacing={1}>
+                <Text fontSize="xl" fontWeight="bold" color="white">
+                  {getTranslation("flashcard_mastered_title")}
+                </Text>
+                <Text fontSize="sm" color="gray.400">
+                  {getTranslation("flashcard_mastered_desc")}
+                </Text>
+              </VStack>
+              <Badge
+                px={3}
+                py={1}
+                borderRadius="full"
+                bg="whiteAlpha.100"
                 color="white"
-                _hover={{
-                  borderColor: "blue.400",
-                }}
+                textTransform="none"
               >
-                {getTranslation("flashcard_practice_random")}
-              </Button>
-            </Box>
-            <Box
-              position="relative"
-              w="100%"
-              h="300px"
-              display="flex"
-              justifyContent={"center"}
-            >
+                {getTranslation("flashcard_scheduled_count", {
+                  count: reviewBuckets.scheduledCards.length,
+                })}
+              </Badge>
+            </HStack>
+
+            <Box position="relative" w="100%" h="300px" display="flex" justifyContent="center">
               <Box position="relative" w="220px" h="280px">
                 <AnimatePresence initial={false}>
-                  {completedCards.slice(-5).map((card, index) => (
+                  {recentCompletedCards.map((card, index) => (
                     <FlashcardCard
                       key={card.id}
                       card={card}
@@ -613,6 +898,44 @@ export default function FlashcardSkillTree({
                 </AnimatePresence>
               </Box>
             </Box>
+
+            <HStack
+              mt={2}
+              spacing={3}
+              justify="center"
+              flexWrap="wrap"
+            >
+              <Badge
+                px={3}
+                py={1}
+                borderRadius="full"
+                bg="rgba(16,185,129,0.16)"
+                color="green.100"
+                textTransform="none"
+              >
+                <HStack spacing={2}>
+                  <RiTrophyLine />
+                  <Text>{getTranslation("flashcard_mastered_badge")}</Text>
+                </HStack>
+              </Badge>
+              <Badge
+                px={3}
+                py={1}
+                borderRadius="full"
+                bg="rgba(59,130,246,0.16)"
+                color="blue.100"
+                textTransform="none"
+              >
+                <HStack spacing={2}>
+                  <RiStarLine />
+                  <Text>
+                    {getTranslation("flashcard_xp_level_badge", {
+                      level: Math.floor(languageXp / 100) + 1,
+                    })}
+                  </Text>
+                </HStack>
+              </Badge>
+            </HStack>
           </Box>
         )}
       </VStack>
@@ -621,13 +944,17 @@ export default function FlashcardSkillTree({
       {practiceCard && (
         <FlashcardPractice
           card={practiceCard}
-          isOpen={isPracticeOpen}
-          onClose={handleClosePractice}
+          isOpen={Boolean(practiceCard)}
+          onClose={closeSession}
           onComplete={handleComplete}
+          onAttempt={handleAttempt}
           targetLang={targetLang}
           supportLang={supportLang}
           pauseMs={pauseMs}
           languageXp={languageXp}
+          sessionLabel={sessionState.label}
+          sessionIndex={sessionState.index}
+          sessionTotal={sessionState.queue.length}
         />
       )}
     </Box>

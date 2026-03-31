@@ -3050,17 +3050,8 @@ export default function App() {
     }
   };
 
-  // Handle flashcard completion and award XP
-  const handleCompleteFlashcard = async (card) => {
-    const npub = resolveNpub();
-    if (!npub || !card) return;
-
-    try {
-      // Award XP (card.xpReward is set by the FlashcardPractice component)
-      const xpAmount = card.xpReward || 5;
-      await awardXp(npub, xpAmount, resolvedTargetLang);
-
-      // Update flashcard progress in Firestore (language-specific)
+  const persistFlashcardReviewState = useCallback(
+    async (npub, card, reviewPatch = {}) => {
       const userRef = doc(database, "users", npub);
       const flashcardProgressRef = doc(
         database,
@@ -3069,14 +3060,14 @@ export default function App() {
         "languageFlashcards",
         `${resolvedTargetLang}_${card.id}`,
       );
-      const completedAt = new Date().toISOString();
+      const updatedAt = reviewPatch.updatedAt || new Date().toISOString();
 
       await Promise.all([
         setDoc(
           userRef,
           {
-            updatedAt: completedAt,
-            "progress.lastActiveAt": completedAt,
+            updatedAt,
+            "progress.lastActiveAt": updatedAt,
           },
           { merge: true },
         ),
@@ -3085,17 +3076,26 @@ export default function App() {
           {
             targetLang: resolvedTargetLang,
             cardId: card.id,
-            completed: true,
-            completedAt,
-            updatedAt: completedAt,
+            ...reviewPatch,
+            updatedAt,
           },
           { merge: true },
         ),
       ]);
+    },
+    [resolvedTargetLang],
+  );
 
-      // Refresh user data to get updated progress
-      const fresh = await loadUserObjectFromDB(database, npub);
-      if (fresh) setUser?.(fresh);
+  // Handle first-time flashcard completion and award XP
+  const handleCompleteFlashcard = async (card) => {
+    const npub = resolveNpub();
+    if (!npub || !card) return;
+
+    try {
+      const xpAmount = card.xpReward || 5;
+      const reviewPatch = card.reviewPatch || {};
+      await awardXp(npub, xpAmount, resolvedTargetLang);
+      await persistFlashcardReviewState(npub, card, reviewPatch);
 
       console.log(
         "[FlashcardComplete] Awarded",
@@ -3117,61 +3117,25 @@ export default function App() {
     }
   };
 
-  // Handle random practice flashcard - awards XP and resets card to be practiced again
+  // Handle completed-card review wins and award XP without resetting mastery.
   const handleRandomPracticeFlashcard = async (card) => {
     const npub = resolveNpub();
     if (!npub || !card) return;
 
     try {
-      // Award XP (card.xpReward is set by the FlashcardPractice component, 4-7 XP)
       const xpAmount = card.xpReward || 5;
+      const reviewPatch = card.reviewPatch || {};
       await awardXp(npub, xpAmount, resolvedTargetLang);
-
-      // Remove the card from completed status (add it back to the active deck)
-      const userRef = doc(database, "users", npub);
-      const flashcardProgressRef = doc(
-        database,
-        "users",
-        npub,
-        "languageFlashcards",
-        `${resolvedTargetLang}_${card.id}`,
-      );
-      const updatedAt = new Date().toISOString();
-
-      await Promise.all([
-        setDoc(
-          userRef,
-          {
-            updatedAt,
-            "progress.lastActiveAt": updatedAt,
-          },
-          { merge: true },
-        ),
-        setDoc(
-          flashcardProgressRef,
-          {
-            targetLang: resolvedTargetLang,
-            cardId: card.id,
-            completed: false,
-            completedAt: null,
-            updatedAt,
-          },
-          { merge: true },
-        ),
-      ]);
-
-      // Refresh user data to get updated progress
-      const fresh = await loadUserObjectFromDB(database, npub);
-      if (fresh) setUser?.(fresh);
+      await persistFlashcardReviewState(npub, card, reviewPatch);
 
       console.log(
-        "[RandomPractice] Awarded",
+        "[FlashcardReview] Awarded",
         xpAmount,
-        "XP and reset flashcard:",
+        "XP for reviewed flashcard:",
         card.id,
       );
     } catch (error) {
-      console.error("Failed to complete random practice:", error);
+      console.error("Failed to complete flashcard review:", error);
       toast({
         title: appLanguage === "es" ? "Error" : "Error",
         description:
@@ -3181,6 +3145,17 @@ export default function App() {
         status: "error",
         duration: 3000,
       });
+    }
+  };
+
+  const handleFlashcardAttempt = async (card) => {
+    const npub = resolveNpub();
+    if (!npub || !card) return;
+
+    try {
+      await persistFlashcardReviewState(npub, card, card.reviewPatch || {});
+    } catch (error) {
+      console.error("Failed to save flashcard attempt:", error);
     }
   };
 
@@ -5008,6 +4983,7 @@ export default function App() {
               onStartLesson={handleStartLesson}
               onCompleteFlashcard={handleCompleteFlashcard}
               onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
+              onFlashcardAttempt={handleFlashcardAttempt}
               pauseMs={user?.progress?.pauseMs}
               showMultipleLevels={true}
               levels={relevantLevels}
