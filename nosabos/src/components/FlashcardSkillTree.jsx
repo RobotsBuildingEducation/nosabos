@@ -8,6 +8,10 @@ import {
   RiArrowDownLine,
   RiLockLine,
   RiShuffleLine,
+  RiFlashlightLine,
+  RiTimeLine,
+  RiAddLine,
+  RiBookOpenLine,
 } from "react-icons/ri";
 import {
   FLASHCARD_DATA,
@@ -20,6 +24,11 @@ import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
+import {
+  buildStudyQueue,
+  getDefaultSRSData,
+  isCardDue,
+} from "../utils/spacedRepetition";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -41,35 +50,25 @@ const getTranslation = (key, params = {}) => {
 };
 
 // Get effective language for flashcard content display
-// supportLang (from conversation settings) takes precedence if explicitly set
-// Otherwise fall back to appLanguage (from account settings)
 const getEffectiveCardLanguage = (supportLang) => {
   const appLang = getAppLanguage();
-  // If supportLang is set to something other than default "en", use it
-  // This means user explicitly chose a support language in conversation settings
   if (supportLang && supportLang !== "en") {
     return supportLang;
   }
-  // Otherwise use the app language preference
   return appLang;
 };
 
 const MotionBox = motion(Box);
 
+// --- Visual flashcard (keeps the original card aesthetic) ---
 const FlashcardCard = React.memo(function FlashcardCard({
   card,
-  status,
   onClick,
-  stackPosition,
   supportLang,
+  isActive,
   skipInitialAnimation = false,
 }) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
-  const isCompleted = status === "completed";
-  const isActive = status === "active";
-  const isLocked = status === "locked";
-  const isStacked = stackPosition !== undefined;
-
   const glowColor = `${cefrColor.primary}90`;
   const softGlowColor = `${cefrColor.primary}66`;
 
@@ -89,26 +88,10 @@ const FlashcardCard = React.memo(function FlashcardCard({
     [glowColor, softGlowColor]
   );
 
-  // Stacking offset for completed cards
-  const stackOffset = isStacked ? stackPosition * 2 : 0;
-
-  // Use simpler animations during initial render
-  const animateProps = skipInitialAnimation
-    ? {
-        opacity: isLocked ? 0.4 : 1,
-        scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
-        y: isStacked ? stackOffset : 0,
-      }
-    : {
-        opacity: isLocked ? 0.4 : 1,
-        scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
-        y: isStacked ? stackOffset : 0,
-      };
-
   return (
     <MotionBox
       initial={skipInitialAnimation ? false : { opacity: 0.8, scale: 0.95 }}
-      animate={animateProps}
+      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={
         skipInitialAnimation
@@ -116,42 +99,27 @@ const FlashcardCard = React.memo(function FlashcardCard({
           : { duration: 0.2, ease: "easeOut" }
       }
       onClick={onClick}
-      cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
-      position={isStacked ? "absolute" : "relative"}
-      top={isStacked ? 0 : "auto"}
+      cursor="pointer"
       w="220px"
       h="280px"
       flexShrink={0}
-      zIndex={isStacked ? 100 - stackPosition : 1}
-      filter={isLocked ? "grayscale(100%)" : "none"}
       style={{ willChange: "transform, opacity" }}
     >
       <Box
         w="100%"
         h="100%"
         bg={isActive ? "#08142b" : undefined}
-        bgGradient={
-          isActive
-            ? undefined
-            : isCompleted
-            ? "linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-            : cefrColor.gradient
-        }
+        bgGradient={isActive ? undefined : cefrColor.gradient}
         borderRadius="2xl"
         border="2px solid"
-        borderColor={isCompleted ? "whiteAlpha.200" : isActive ? "rgba(56,189,248,0.3)" : `${cefrColor.primary}80`}
-        boxShadow={
-          isActive
-            ? "0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(0,0,0,0)"
-            : "0 8px 24px rgba(0, 0, 0, 0.28)"
-        }
+        borderColor={isActive ? "rgba(56,189,248,0.3)" : `${cefrColor.primary}80`}
+        boxShadow="0 12px 32px rgba(0, 0, 0, 0.28)"
         animation={
           isActive ? `${activeGlow} 2s ease-in-out infinite` : undefined
         }
         backdropFilter="blur(10px)"
         position="relative"
         overflow="hidden"
-        opacity={isCompleted ? 0.6 : 1}
         sx={isActive ? {
           "&::before": {
             content: '""',
@@ -182,46 +150,18 @@ const FlashcardCard = React.memo(function FlashcardCard({
           },
         } : undefined}
       >
-        {/* Decorative gradient overlay */}
         {!isActive && (
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          h="50%"
-          bgGradient="linear(to-b, whiteAlpha.200, transparent)"
-          pointerEvents="none"
-        />
-        )}
-
-        {/* Sparkle effect for completed cards */}
-        {isCompleted && (
           <Box
             position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            opacity={0.3}
-          >
-            <RiCheckLine size={120} color="white" />
-          </Box>
+            top="0"
+            left="0"
+            right="0"
+            h="50%"
+            bgGradient="linear(to-b, whiteAlpha.200, transparent)"
+            pointerEvents="none"
+          />
         )}
 
-        {/* Lock icon for locked cards */}
-        {isLocked && (
-          <Box
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            opacity={0.5}
-          >
-            <RiLockLine size={80} color="white" />
-          </Box>
-        )}
-
-        {/* Card content */}
         <VStack
           h="100%"
           justify="space-between"
@@ -229,9 +169,6 @@ const FlashcardCard = React.memo(function FlashcardCard({
           position="relative"
           zIndex={2}
         >
-          {/* CEFR Badge */}
-
-          {/* Concept (centered) */}
           <VStack spacing={4} flex={1} justify="center">
             <Text
               fontSize="3xl"
@@ -244,8 +181,6 @@ const FlashcardCard = React.memo(function FlashcardCard({
               {getConceptText(card, getEffectiveCardLanguage(supportLang))}
             </Text>
           </VStack>
-
-          {/* Empty spacer for layout balance */}
           <Box h="40px" />
         </VStack>
       </Box>
@@ -253,20 +188,39 @@ const FlashcardCard = React.memo(function FlashcardCard({
   );
 });
 
+// --- Compact count indicator ---
+const CountPill = ({ count, label, color }) => (
+  <HStack
+    spacing={1.5}
+    px={3}
+    py={1.5}
+    borderRadius="full"
+    bg={`${color}15`}
+    border="1px solid"
+    borderColor={`${color}30`}
+  >
+    <Text fontSize="sm" fontWeight="bold" color={color}>
+      {count}
+    </Text>
+    <Text fontSize="xs" color="gray.400">
+      {label}
+    </Text>
+  </HStack>
+);
+
 export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
-  onRandomPractice, // Callback for random practice completion (awards XP, resets card)
+  onRandomPractice,
   targetLang = "es",
   supportLang = "en",
-  activeCEFRLevel = null, // Filter flashcards by CEFR level
+  activeCEFRLevel = null,
   pauseMs = 2000,
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
-  const [isRandomPractice, setIsRandomPractice] = useState(false);
-  const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
-  // Initialize with filtered data to prevent flicker
+  const [currentCardType, setCurrentCardType] = useState("new");
+  const [localSRSUpdates, setLocalSRSUpdates] = useState({});
   const [flashcardData, setFlashcardData] = useState(() =>
     activeCEFRLevel
       ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
@@ -274,8 +228,8 @@ export default function FlashcardSkillTree({
   );
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [sessionStats, setSessionStats] = useState({ reviewed: 0, correct: 0 });
 
-  // Sound settings
   const playSound = useSoundSettings((s) => s.playSound);
 
   const languageXp = useMemo(
@@ -283,337 +237,223 @@ export default function FlashcardSkillTree({
     [userProgress, targetLang]
   );
 
-  // Enable animations after first render (single RAF is sufficient)
   useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setIsReady(true);
-    });
+    const frame = requestAnimationFrame(() => setIsReady(true));
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Reset local completed cards when language changes
   useEffect(() => {
-    setLocalCompletedCards(new Set());
+    setLocalSRSUpdates({});
+    setSessionStats({ reviewed: 0, correct: 0 });
   }, [targetLang]);
 
-  // Load relevant flashcards based on user progress (lazy loading)
+  // Load relevant flashcards
   useEffect(() => {
     let isMounted = true;
 
     async function loadFlashcards() {
       setIsLoadingFlashcards(true);
       try {
-        // For better performance, load only relevant flashcards
-        // Fall back to all flashcards if loading fails
         const relevantFlashcards = await loadRelevantFlashcards(userProgress);
-
         if (isMounted && relevantFlashcards.length > 0) {
-          // Filter by active CEFR level if specified
-          const filteredFlashcards = activeCEFRLevel
-            ? relevantFlashcards.filter(
-                (card) => card.cefrLevel === activeCEFRLevel
-              )
+          const filtered = activeCEFRLevel
+            ? relevantFlashcards.filter((c) => c.cefrLevel === activeCEFRLevel)
             : relevantFlashcards;
-
-          // If filtering produced empty results, fall back to full dataset
-          if (filteredFlashcards.length === 0 && activeCEFRLevel) {
-            const fallbackFlashcards = FLASHCARD_DATA.filter(
-              (card) => card.cefrLevel === activeCEFRLevel
+          if (filtered.length === 0 && activeCEFRLevel) {
+            setFlashcardData(
+              FLASHCARD_DATA.filter((c) => c.cefrLevel === activeCEFRLevel)
             );
-            setFlashcardData(fallbackFlashcards);
           } else {
-            setFlashcardData(filteredFlashcards);
+            setFlashcardData(filtered);
           }
         } else if (isMounted) {
-          // If no relevant flashcards loaded, use all data (filtered by level)
-          const filteredFlashcards = activeCEFRLevel
-            ? FLASHCARD_DATA.filter(
-                (card) => card.cefrLevel === activeCEFRLevel
-              )
-            : FLASHCARD_DATA;
-
-          setFlashcardData(filteredFlashcards);
+          setFlashcardData(
+            activeCEFRLevel
+              ? FLASHCARD_DATA.filter((c) => c.cefrLevel === activeCEFRLevel)
+              : FLASHCARD_DATA
+          );
         }
       } catch (error) {
         console.error("Error loading flashcards:", error);
         if (isMounted) {
-          // Fall back to full dataset on error (filtered by level)
-          const filteredFlashcards = activeCEFRLevel
-            ? FLASHCARD_DATA.filter(
-                (card) => card.cefrLevel === activeCEFRLevel
-              )
-            : FLASHCARD_DATA;
-
-          setFlashcardData(filteredFlashcards);
+          setFlashcardData(
+            activeCEFRLevel
+              ? FLASHCARD_DATA.filter((c) => c.cefrLevel === activeCEFRLevel)
+              : FLASHCARD_DATA
+          );
         }
       } finally {
-        if (isMounted) {
-          setIsLoadingFlashcards(false);
-        }
+        if (isMounted) setIsLoadingFlashcards(false);
       }
     }
 
-    // Only use lazy loading if we have split data available
-    // Otherwise fall back to the full FLASHCARD_DATA
-    if (loadRelevantFlashcards) {
-      loadFlashcards();
-    }
-
-    return () => {
-      isMounted = false;
-    };
+    if (loadRelevantFlashcards) loadFlashcards();
+    return () => { isMounted = false; };
   }, [userProgress, activeCEFRLevel]);
 
-  // Memoized completion status map for O(1) lookups
-  const completionMap = useMemo(() => {
-    const map = new Map();
-    flashcardData.forEach((card) => {
-      const isCompleted =
-        userProgress.flashcards?.[card.id]?.completed ||
-        localCompletedCards.has(card.id);
-      map.set(card.id, isCompleted);
-    });
+  // Build progress map merging Firestore data + local SRS updates
+  const progressMap = useMemo(() => {
+    const map = {};
+    const flashcards = userProgress.flashcards || {};
+    for (const [id, data] of Object.entries(flashcards)) {
+      map[id] = { ...data };
+    }
+    for (const [id, data] of Object.entries(localSRSUpdates)) {
+      map[id] = { ...map[id], ...data };
+    }
     return map;
-  }, [userProgress.flashcards, localCompletedCards, flashcardData]);
+  }, [userProgress.flashcards, localSRSUpdates]);
 
-  // Memoized card index map for O(1) lookups
-  const cardIndexMap = useMemo(() => {
-    const map = new Map();
-    flashcardData.forEach((card, index) => {
-      map.set(card.id, index);
-    });
-    return map;
-  }, [flashcardData]);
-
-  // Find first uncompleted card (memoized)
-  const firstUncompletedCard = useMemo(() => {
-    return flashcardData.find((card) => !completionMap.get(card.id));
-  }, [completionMap, flashcardData]);
-
-  // Memoized first uncompleted index
-  const firstUncompletedIndex = useMemo(() => {
-    return firstUncompletedCard
-      ? cardIndexMap.get(firstUncompletedCard.id)
-      : -1;
-  }, [firstUncompletedCard, cardIndexMap]);
-
-  // Separate completed and upcoming cards (memoized)
-  const completedCards = useMemo(() => {
-    return flashcardData.filter((card) => completionMap.get(card.id));
-  }, [completionMap, flashcardData]);
-
-  const upcomingCards = useMemo(() => {
-    return flashcardData.filter((card) => !completionMap.get(card.id));
-  }, [completionMap, flashcardData]);
-
-  // Memoized card status lookup
-  const cardStatusMap = useMemo(() => {
-    const statusMap = new Map();
-    flashcardData.forEach((card) => {
-      if (completionMap.get(card.id)) {
-        statusMap.set(card.id, "completed");
-      } else if (card.id === firstUncompletedCard?.id) {
-        statusMap.set(card.id, "active");
-      } else {
-        const cardIndex = cardIndexMap.get(card.id);
-        if (cardIndex > firstUncompletedIndex && firstUncompletedIndex !== -1) {
-          statusMap.set(card.id, "locked");
-        } else {
-          statusMap.set(card.id, "upcoming");
-        }
-      }
-    });
-    return statusMap;
-  }, [
-    completionMap,
-    firstUncompletedCard,
-    cardIndexMap,
-    firstUncompletedIndex,
-    flashcardData,
-  ]);
-
-  // Get card status - now just a lookup
-  const getCardStatus = useCallback(
-    (card) => {
-      return cardStatusMap.get(card.id) || "upcoming";
-    },
-    [cardStatusMap]
+  // Build the SRS study queue
+  const { studyQueue, counts } = useMemo(
+    () => buildStudyQueue(flashcardData, progressMap, 10),
+    [flashcardData, progressMap]
   );
 
-  const handleCardClick = useCallback((card, status) => {
-    if (status === "active") {
+  const getCardType = useCallback(
+    (card) => {
+      const p = progressMap[card.id];
+      if (!p || !p.dueDate) return "new";
+      if (p.state === "learning") return "learning";
+      return "due";
+    },
+    [progressMap]
+  );
+
+  const handleCardClick = useCallback(
+    (card) => {
       playSound(selectSound);
+      setCurrentCardType(getCardType(card));
       setPracticeCard(card);
       setIsPracticeOpen(true);
-    }
-  }, [playSound]);
+    },
+    [playSound, getCardType]
+  );
 
   const handleComplete = useCallback(
     (card) => {
-      if (isRandomPractice) {
-        // Random practice: remove from local completed to add back to deck
-        setLocalCompletedCards((prev) => {
-          const next = new Set(prev);
-          next.delete(card.id);
-          return next;
-        });
+      const srsData = card.srsData || {};
 
-        // Call random practice callback (awards XP, resets card in DB)
-        if (onRandomPractice) {
-          onRandomPractice(card);
-        }
-      } else {
-        // Normal practice: add to local completed cards immediately for instant UI update
-        setLocalCompletedCards((prev) => new Set([...prev, card.id]));
+      setLocalSRSUpdates((prev) => ({
+        ...prev,
+        [card.id]: { ...srsData, completed: true },
+      }));
 
-        // Call parent callback if provided
-        if (onStartFlashcard) {
-          onStartFlashcard(card);
-        }
-      }
+      setSessionStats((prev) => ({
+        reviewed: prev.reviewed + 1,
+        correct: prev.correct + 1,
+      }));
+
+      if (onStartFlashcard) onStartFlashcard(card);
 
       setIsPracticeOpen(false);
       setPracticeCard(null);
-      setIsRandomPractice(false);
     },
-    [onStartFlashcard, onRandomPractice, isRandomPractice]
+    [onStartFlashcard]
   );
 
-  const handleRandomPracticeClick = useCallback(() => {
-    if (completedCards.length === 0) return;
+  const handleIncorrectComplete = useCallback(
+    (card) => {
+      const srsData = card.srsData || {};
 
-    // Select a random card from the completed cards
-    const randomIndex = Math.floor(Math.random() * completedCards.length);
-    const randomCard = completedCards[randomIndex];
+      setLocalSRSUpdates((prev) => ({
+        ...prev,
+        [card.id]: { ...srsData, completed: true },
+      }));
 
-    setIsRandomPractice(true);
-    setPracticeCard(randomCard);
-    setIsPracticeOpen(true);
-  }, [completedCards]);
+      setSessionStats((prev) => ({
+        reviewed: prev.reviewed + 1,
+        correct: prev.correct,
+      }));
+
+      if (onStartFlashcard) onStartFlashcard(card);
+
+      setIsPracticeOpen(false);
+      setPracticeCard(null);
+    },
+    [onStartFlashcard]
+  );
 
   const handleClosePractice = useCallback(() => {
     setIsPracticeOpen(false);
     setPracticeCard(null);
-    setIsRandomPractice(false);
   }, []);
 
+  const hasCards = studyQueue.length > 0;
+
   return (
-    <Box
-      w="100%"
-      minH="500px"
-      position="relative"
-    >
-      {/* Main container with vertical layout */}
-      <VStack spacing={8} align="stretch">
-        {/* Top: Active/Upcoming Cards */}
-        <Box w="100%">
-          {/* Upcoming cards in horizontal scrollable row */}
-          {upcomingCards.length > 0 ? (
-            <Box
-              overflowX="auto"
-              overflowY="hidden"
-              w="100%"
-              pb={4}
-              sx={{
-                "&::-webkit-scrollbar": {
-                  display: "none",
-                },
-                msOverflowStyle: "none",
-                scrollbarWidth: "none",
-              }}
-            >
-              <HStack spacing={6} px={4} minW="min-content" padding={6}>
-                <AnimatePresence initial={false}>
-                  {upcomingCards.map((card) => (
-                    <FlashcardCard
-                      key={card.id}
-                      card={card}
-                      status={getCardStatus(card)}
-                      onClick={() => handleCardClick(card, getCardStatus(card))}
-                      supportLang={supportLang}
-                      skipInitialAnimation={!isReady}
-                    />
-                  ))}
-                </AnimatePresence>
-              </HStack>
-            </Box>
-          ) : (
-            <MotionBox
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <VStack
-                spacing={4}
-                p={12}
-                borderRadius="2xl"
-                bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-                border="2px solid"
-                borderColor="whiteAlpha.200"
-                backdropFilter="blur(10px)"
-              >
-                <RiCheckLine size={64} color="#22C55E" />
-                <Text fontSize="2xl" fontWeight="black" color="white">
-                  {getTranslation("flashcard_all_done")}
-                </Text>
-                <Text fontSize="md" color="gray.400" textAlign="center">
-                  {getTranslation("flashcard_all_completed")}
-                </Text>
-              </VStack>
-            </MotionBox>
+    <Box w="100%" minH="500px" position="relative">
+      <VStack spacing={6} align="stretch">
+        {/* Compact stats bar */}
+        <HStack spacing={2} justify="center" flexWrap="wrap">
+          {counts.due > 0 && (
+            <CountPill count={counts.due} label={getTranslation("srs_due_label")} color="#EF4444" />
           )}
-        </Box>
+          {counts.learning > 0 && (
+            <CountPill count={counts.learning} label={getTranslation("srs_learning_label")} color="#FBBF24" />
+          )}
+          <CountPill count={counts.new} label={getTranslation("srs_new_label")} color="#38BDF8" />
+          {sessionStats.reviewed > 0 && (
+            <CountPill
+              count={sessionStats.reviewed}
+              label={getTranslation("srs_reviewed_label")}
+              color="#22C55E"
+            />
+          )}
+        </HStack>
 
-        {/* Arrow indicator */}
-        {completedCards.length > 0 && (
-          <Box textAlign="center" py={2}>
-            <RiArrowDownLine size={32} color="rgba(255, 255, 255, 0.2)" />
+        {/* Card carousel - horizontal scroll, just like original */}
+        {hasCards ? (
+          <Box
+            overflowX="auto"
+            overflowY="hidden"
+            w="100%"
+            pb={4}
+            sx={{
+              "&::-webkit-scrollbar": { display: "none" },
+              msOverflowStyle: "none",
+              scrollbarWidth: "none",
+            }}
+          >
+            <HStack spacing={6} px={4} minW="min-content" padding={6}>
+              <AnimatePresence initial={false}>
+                {studyQueue.map((card, idx) => (
+                  <FlashcardCard
+                    key={card.id}
+                    card={card}
+                    isActive={idx === 0}
+                    onClick={() => handleCardClick(card)}
+                    supportLang={supportLang}
+                    skipInitialAnimation={!isReady}
+                  />
+                ))}
+              </AnimatePresence>
+            </HStack>
           </Box>
-        )}
-
-        {/* Bottom: Completed Cards Stack */}
-        {completedCards.length > 0 && (
-          <Box w="100%" mt={"-6"}>
-            {/* Stacked cards - centered */}
-            {/* Practice Random Card Button */}
-            <Box textAlign="center" mb={4}>
-              <Button
-                onClick={handleRandomPracticeClick}
-                leftIcon={<RiShuffleLine />}
-                size="lg"
-                borderColor="blue.300"
-                bg="transparent"
-                color="white"
-                _hover={{
-                  borderColor: "blue.400",
-                }}
-              >
-                {getTranslation("flashcard_practice_random")}
-              </Button>
-            </Box>
-            <Box
-              position="relative"
-              w="100%"
-              h="300px"
-              display="flex"
-              justifyContent={"center"}
+        ) : (
+          <MotionBox
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <VStack
+              spacing={4}
+              p={12}
+              borderRadius="2xl"
+              bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
+              border="2px solid"
+              borderColor="whiteAlpha.200"
+              backdropFilter="blur(10px)"
             >
-              <Box position="relative" w="220px" h="280px">
-                <AnimatePresence initial={false}>
-                  {completedCards.slice(-5).map((card, index) => (
-                    <FlashcardCard
-                      key={card.id}
-                      card={card}
-                      status="completed"
-                      stackPosition={index}
-                      supportLang={supportLang}
-                      skipInitialAnimation={!isReady}
-                    />
-                  ))}
-                </AnimatePresence>
-              </Box>
-            </Box>
-          </Box>
+              <RiCheckLine size={64} color="#22C55E" />
+              <Text fontSize="2xl" fontWeight="black" color="white">
+                {getTranslation("srs_all_caught_up")}
+              </Text>
+              <Text fontSize="md" color="gray.400" textAlign="center">
+                {getTranslation("srs_come_back_later")}
+              </Text>
+            </VStack>
+          </MotionBox>
         )}
       </VStack>
 
@@ -624,10 +464,13 @@ export default function FlashcardSkillTree({
           isOpen={isPracticeOpen}
           onClose={handleClosePractice}
           onComplete={handleComplete}
+          onIncorrectComplete={handleIncorrectComplete}
           targetLang={targetLang}
           supportLang={supportLang}
           pauseMs={pauseMs}
           languageXp={languageXp}
+          srsData={progressMap[practiceCard?.id] || {}}
+          cardType={currentCardType}
         />
       )}
     </Box>

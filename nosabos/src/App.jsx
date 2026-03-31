@@ -3050,7 +3050,7 @@ export default function App() {
     }
   };
 
-  // Handle flashcard completion and award XP
+  // Handle flashcard completion and award XP (with SRS data)
   const handleCompleteFlashcard = async (card) => {
     const npub = resolveNpub();
     if (!npub || !card) return;
@@ -3058,9 +3058,12 @@ export default function App() {
     try {
       // Award XP (card.xpReward is set by the FlashcardPractice component)
       const xpAmount = card.xpReward || 5;
-      await awardXp(npub, xpAmount, resolvedTargetLang);
+      if (xpAmount > 0) {
+        await awardXp(npub, xpAmount, resolvedTargetLang);
+      }
 
       // Update flashcard progress in Firestore (language-specific)
+      // Now includes SRS scheduling data
       const userRef = doc(database, "users", npub);
       const flashcardProgressRef = doc(
         database,
@@ -3069,14 +3072,28 @@ export default function App() {
         "languageFlashcards",
         `${resolvedTargetLang}_${card.id}`,
       );
-      const completedAt = new Date().toISOString();
+      const now = new Date().toISOString();
+
+      // Build SRS fields from card.srsData (set by quality rating buttons)
+      const srsFields = card.srsData
+        ? {
+            interval: card.srsData.interval,
+            easeFactor: card.srsData.easeFactor,
+            reviewCount: card.srsData.reviewCount,
+            streak: card.srsData.streak,
+            dueDate: card.srsData.dueDate,
+            lastReviewDate: card.srsData.lastReviewDate,
+            state: card.srsData.state,
+            learningStep: card.srsData.learningStep,
+          }
+        : {};
 
       await Promise.all([
         setDoc(
           userRef,
           {
-            updatedAt: completedAt,
-            "progress.lastActiveAt": completedAt,
+            updatedAt: now,
+            "progress.lastActiveAt": now,
           },
           { merge: true },
         ),
@@ -3086,8 +3103,9 @@ export default function App() {
             targetLang: resolvedTargetLang,
             cardId: card.id,
             completed: true,
-            completedAt,
-            updatedAt: completedAt,
+            completedAt: now,
+            updatedAt: now,
+            ...srsFields,
           },
           { merge: true },
         ),
@@ -3102,6 +3120,8 @@ export default function App() {
         xpAmount,
         "XP for flashcard:",
         card.id,
+        "| Next review:",
+        card.srsData?.dueDate || "N/A",
       );
     } catch (error) {
       console.error("Failed to complete flashcard:", error);
@@ -3117,17 +3137,19 @@ export default function App() {
     }
   };
 
-  // Handle random practice flashcard - awards XP and resets card to be practiced again
+  // Handle random practice / incorrect flashcard - saves SRS data (card goes back to learning)
   const handleRandomPracticeFlashcard = async (card) => {
     const npub = resolveNpub();
     if (!npub || !card) return;
 
     try {
-      // Award XP (card.xpReward is set by the FlashcardPractice component, 4-7 XP)
-      const xpAmount = card.xpReward || 5;
-      await awardXp(npub, xpAmount, resolvedTargetLang);
+      // Award XP if any (incorrect answers may have 0 XP)
+      const xpAmount = card.xpReward || 0;
+      if (xpAmount > 0) {
+        await awardXp(npub, xpAmount, resolvedTargetLang);
+      }
 
-      // Remove the card from completed status (add it back to the active deck)
+      // Save SRS data - card stays completed but with updated scheduling
       const userRef = doc(database, "users", npub);
       const flashcardProgressRef = doc(
         database,
@@ -3137,6 +3159,20 @@ export default function App() {
         `${resolvedTargetLang}_${card.id}`,
       );
       const updatedAt = new Date().toISOString();
+
+      // Build SRS fields
+      const srsFields = card.srsData
+        ? {
+            interval: card.srsData.interval,
+            easeFactor: card.srsData.easeFactor,
+            reviewCount: card.srsData.reviewCount,
+            streak: card.srsData.streak,
+            dueDate: card.srsData.dueDate,
+            lastReviewDate: card.srsData.lastReviewDate,
+            state: card.srsData.state,
+            learningStep: card.srsData.learningStep,
+          }
+        : {};
 
       await Promise.all([
         setDoc(
@@ -3152,9 +3188,9 @@ export default function App() {
           {
             targetLang: resolvedTargetLang,
             cardId: card.id,
-            completed: false,
-            completedAt: null,
+            completed: true,
             updatedAt,
+            ...srsFields,
           },
           { merge: true },
         ),
@@ -3165,13 +3201,15 @@ export default function App() {
       if (fresh) setUser?.(fresh);
 
       console.log(
-        "[RandomPractice] Awarded",
-        xpAmount,
-        "XP and reset flashcard:",
+        "[FlashcardSRS] Updated SRS for flashcard:",
         card.id,
+        "| State:",
+        card.srsData?.state || "N/A",
+        "| Next review:",
+        card.srsData?.dueDate || "N/A",
       );
     } catch (error) {
-      console.error("Failed to complete random practice:", error);
+      console.error("Failed to save flashcard SRS data:", error);
       toast({
         title: appLanguage === "es" ? "Error" : "Error",
         description:
