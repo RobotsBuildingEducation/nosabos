@@ -13,7 +13,8 @@ import {
   Button,
   HStack,
   IconButton,
-  Input, Text,
+  Input,
+  Text,
   Tooltip,
   VStack,
   useDisclosure,
@@ -1538,7 +1539,14 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                                  <VoiceOrb
+                                    state={
+                                      ["idle", "listening", "speaking"][
+                                        Math.floor(Math.random() * 3)
+                                      ]
+                                    }
+                                    size={24}
+                                  />
                                 ) : (
                                   <FaMicrophone />
                                 )
@@ -1631,6 +1639,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
+                                boxShadow="0px 4px 0px darkgray"
                                 isDisabled={
                                   !input.trim() ||
                                   realtimeStatus === "connected"
@@ -1696,7 +1705,14 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                     }
                                     icon={
                                       replayLoadingId === m.id ? (
-                                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                                        <VoiceOrb
+                                          state={
+                                            ["idle", "listening", "speaking"][
+                                              Math.floor(Math.random() * 3)
+                                            ]
+                                          }
+                                          size={16}
+                                        />
                                       ) : (
                                         <RiVolumeUpLine size={14} />
                                       )
@@ -1713,7 +1729,14 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   />
                                   <Box flex="1">
                                     {!m.done && (
-                                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                                      <VoiceOrb
+                                        state={
+                                          ["idle", "listening", "speaking"][
+                                            Math.floor(Math.random() * 3)
+                                          ]
+                                        }
+                                        size={16}
+                                      />
                                     )}
                                     <Markdown>{main}</Markdown>
                                     {!!gloss && (
@@ -1767,7 +1790,14 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                                  <VoiceOrb
+                                    state={
+                                      ["idle", "listening", "speaking"][
+                                        Math.floor(Math.random() * 3)
+                                      ]
+                                    }
+                                    size={24}
+                                  />
                                 ) : (
                                   <FaMicrophone />
                                 )
@@ -1860,6 +1890,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
+                                boxShadow="0px 4px 0px darkgray"
                                 isDisabled={
                                   !input.trim() ||
                                   realtimeStatus === "connected"

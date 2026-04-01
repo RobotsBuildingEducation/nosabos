@@ -17,7 +17,9 @@ import {
   Flex,
   Box,
   Button,
-  IconButton, useToast,
+  IconButton,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
@@ -338,6 +340,7 @@ function LetterCard({
   );
   const [correctCount, setCorrectCount] = useState(initialCorrectCount);
   const wordPlayerRef = useRef(null);
+  const wordPlaybackRequestRef = useRef(0);
   const toast = useToast();
 
   useEffect(() => {
@@ -563,20 +566,27 @@ function LetterCard({
     }
   };
 
+  const stopWordPlayback = useCallback(() => {
+    wordPlaybackRequestRef.current += 1;
+    try {
+      wordPlayerRef.current?.audio?.pause?.();
+    } catch {}
+    wordPlayerRef.current?.cleanup?.();
+    wordPlayerRef.current = null;
+    setIsPlayingWord(false);
+    setIsLoadingTts(false);
+  }, []);
+
   const handlePlayWord = async () => {
     if (!practiceWord) return;
 
     if (isPlayingWord || isLoadingTts) {
-      try {
-        wordPlayerRef.current?.audio?.pause?.();
-      } catch {}
-      wordPlayerRef.current?.cleanup?.();
-      setIsPlayingWord(false);
-      setIsLoadingTts(false);
+      stopWordPlayback();
       return;
     }
 
-    // Show loading spinner immediately
+    stopWordPlayback();
+    const requestId = wordPlaybackRequestRef.current;
     setIsLoadingTts(true);
 
     try {
@@ -584,66 +594,40 @@ function LetterCard({
         text: practiceWord,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
       });
+
+      if (requestId !== wordPlaybackRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+
       wordPlayerRef.current = player;
 
       await player.ready;
-      // TTS is ready - stop loading spinner, show playing state
+
+      if (requestId !== wordPlaybackRequestRef.current) {
+        player.cleanup?.();
+        wordPlayerRef.current = null;
+        return;
+      }
+
+      const finishPlayback = () => {
+        if (requestId !== wordPlaybackRequestRef.current) return;
+        setIsPlayingWord(false);
+        setIsLoadingTts(false);
+        wordPlayerRef.current = null;
+        player.cleanup?.();
+      };
+
+      player.audio.onended = finishPlayback;
+      player.audio.onerror = finishPlayback;
+
       setIsLoadingTts(false);
       setIsPlayingWord(true);
       await player.audio.play();
-
-      // Poll audio currentTime to detect when playback actually stops
-      // (more accurate than finalize which uses estimated duration)
-      const audio = player.audio;
-      await new Promise((resolve) => {
-        let lastTime = 0;
-        let stableFrames = 0;
-        let hasStarted = false;
-
-        const checkEnded = () => {
-          // Check if audio was stopped externally
-          if (!wordPlayerRef.current || audio.paused) {
-            resolve();
-            return;
-          }
-
-          const currentTime = audio.currentTime;
-
-          // Wait for audio to actually start (currentTime > 0)
-          if (currentTime > 0) {
-            hasStarted = true;
-          }
-
-          // Once started, check if currentTime stopped advancing
-          if (hasStarted && currentTime === lastTime && currentTime > 0) {
-            stableFrames++;
-            // If no change for ~10 frames (~167ms at 60fps), audio has ended
-            if (stableFrames > 10) {
-              resolve();
-              return;
-            }
-          } else {
-            stableFrames = 0;
-            lastTime = currentTime;
-          }
-
-          requestAnimationFrame(checkEnded);
-        };
-
-        // Start polling after a brief delay to let audio initialize
-        setTimeout(() => requestAnimationFrame(checkEnded), 100);
-
-        // Fallback timeout in case polling fails (shorter than finalize)
-        const fallbackMs = Math.max(1500, practiceWord.length * 50 + 500);
-        setTimeout(resolve, fallbackMs);
-      });
-
-      setIsPlayingWord(false);
-      player.cleanup?.();
     } catch (err) {
+      if (requestId !== wordPlaybackRequestRef.current) return;
       console.error("TTS error:", err);
-      setIsPlayingWord(false);
-      setIsLoadingTts(false);
+      stopWordPlayback();
     }
   };
 
@@ -724,12 +708,9 @@ function LetterCard({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      try {
-        wordPlayerRef.current?.audio?.pause?.();
-      } catch {}
-      wordPlayerRef.current?.cleanup?.();
+      stopWordPlayback();
     };
-  }, []);
+  }, [stopWordPlayback]);
 
   return (
     <Box
@@ -821,10 +802,8 @@ function LetterCard({
                   color={isLoading || isPlaying ? "teal.200" : "white"}
                   onClick={() => onPlay(letter)}
                 >
-                  {isLoading ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
-                  ) : isPlaying ? (
-                    <RiStopCircleLine size={18} />
+                  {isLoading || isPlaying ? (
+                    <Spinner size={"xs"} />
                   ) : (
                     <FiVolume2 />
                   )}
@@ -905,10 +884,8 @@ function LetterCard({
             <IconButton
               aria-label="Play word"
               icon={
-                isLoadingTts ? (
-                  <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-                ) : isPlayingWord ? (
-                  <RiStopCircleLine />
+                isLoadingTts || isPlayingWord ? (
+                  <Spinner size="xs" />
                 ) : (
                   <FiVolume2 />
                 )
@@ -931,7 +908,14 @@ function LetterCard({
           {/* Recording / Result Area */}
           {isGrading ? (
             <VStack spacing={2} py={2}>
-              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={32}
+              />
               <Text fontSize="xs" color="whiteAlpha.700">
                 {appLanguage === "es" ? "Evaluando..." : "Grading..."}
               </Text>
@@ -993,10 +977,11 @@ function LetterCard({
                   isRecording ? undefined : isConnecting ? "yellow" : "teal"
                 }
                 bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                boxShadow={isRecording ? "0px 4px 0px #e03767" : undefined}
                 color={isRecording ? "white" : undefined}
                 leftIcon={
                   isConnecting ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                    <Spinner size="xs" />
                   ) : isRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -1067,6 +1052,7 @@ export default function AlphabetBootcamp({
 }) {
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
+  const playbackRequestRef = useRef(0);
   const playSound = useSoundSettings((s) => s.playSound);
   const [playingId, setPlayingId] = useState(null);
   const [loadingId, setLoadingId] = useState(null);
@@ -1141,6 +1127,79 @@ export default function AlphabetBootcamp({
       [letterId]: (prev[letterId] || 0) + 1,
     }));
   }, []);
+
+  const stopLetterPlayback = useCallback(() => {
+    playbackRequestRef.current += 1;
+    try {
+      playerRef.current?.audio?.pause?.();
+    } catch {}
+    playerRef.current?.cleanup?.();
+    playerRef.current = null;
+    setPlayingId(null);
+    setLoadingId(null);
+  }, []);
+
+  const handlePlayLetterAudio = useCallback(
+    async (data) => {
+      const text = (data?.tts || data?.letter || "").toString().trim();
+      if (!text) return;
+
+      const isSameCardActive = playingId === data.id || loadingId === data.id;
+      const isPlaybackActuallyActive =
+        loadingId === data.id ||
+        Boolean(playerRef.current?.audio && !playerRef.current.audio.paused);
+
+      if (isSameCardActive && isPlaybackActuallyActive) {
+        stopLetterPlayback();
+        return;
+      }
+
+      try {
+        stopLetterPlayback();
+        const requestId = playbackRequestRef.current;
+        setLoadingId(data.id);
+
+        const player = await getTTSPlayer({
+          text,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        });
+
+        if (requestId !== playbackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+
+        playerRef.current = player;
+        await player.ready;
+
+        if (requestId !== playbackRequestRef.current) {
+          player.cleanup?.();
+          playerRef.current = null;
+          return;
+        }
+
+        const finishPlayback = () => {
+          if (requestId !== playbackRequestRef.current) return;
+          setPlayingId(null);
+          setLoadingId(null);
+          playerRef.current = null;
+          player.cleanup?.();
+        };
+
+        const audio = player.audio;
+        audio.onended = finishPlayback;
+        audio.onerror = finishPlayback;
+
+        setLoadingId(null);
+        setPlayingId(data.id);
+        await audio.play();
+      } catch (err) {
+        console.error("AlphabetBootcamp TTS failed", err);
+        stopLetterPlayback();
+      }
+    },
+    [loadingId, playingId, stopLetterPlayback, targetLang],
+  );
 
   useEffect(() => {
     setSavedPracticeWords({});
@@ -1224,12 +1283,9 @@ export default function AlphabetBootcamp({
 
   useEffect(() => {
     return () => {
-      try {
-        playerRef.current?.audio?.pause?.();
-      } catch {}
-      playerRef.current?.cleanup?.();
+      stopLetterPlayback();
     };
-  }, []);
+  }, [stopLetterPlayback]);
 
   return (
     <VStack align="stretch" spacing={4} w="100%" color="white" px={6}>
@@ -1269,7 +1325,12 @@ export default function AlphabetBootcamp({
 
       {!isInitialized ? (
         <Flex align="center" justify="center" py={12}>
-          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
+          <VoiceOrb
+            state={
+              ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+            }
+            size={48}
+          />
         </Flex>
       ) : hasLetters ? (
         <VStack spacing={8} w="100%" zIndex={10}>
@@ -1322,95 +1383,7 @@ export default function AlphabetBootcamp({
                     onCardCollected={handleCardCollected}
                     isPlaying={playingId === deck[0].id}
                     isLoading={loadingId === deck[0].id}
-                    onPlay={async (data) => {
-                      const text = (data?.tts || data?.letter || "")
-                        .toString()
-                        .trim();
-                      if (!text) return;
-
-                      // If already playing this card, stop it
-                      if (playingId === data.id || loadingId === data.id) {
-                        try {
-                          playerRef.current?.audio?.pause?.();
-                        } catch {}
-                        playerRef.current?.cleanup?.();
-                        setPlayingId(null);
-                        setLoadingId(null);
-                        return;
-                      }
-
-                      // Show loading spinner immediately
-                      setLoadingId(data.id);
-                      setPlayingId(null);
-
-                      try {
-                        playerRef.current?.audio?.pause?.();
-                      } catch {}
-                      playerRef.current?.cleanup?.();
-
-                      try {
-                        const player = await getTTSPlayer({
-                          text,
-                          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-                        });
-                        playerRef.current = player;
-
-                        await player.ready;
-                        // Loading done - switch to playing state (stop icon)
-                        setLoadingId(null);
-                        setPlayingId(data.id);
-
-                        const audio = player.audio;
-                        await audio.play();
-
-                        // Poll to detect when audio actually stops
-                        await new Promise((resolve) => {
-                          let lastTime = 0;
-                          let stableFrames = 0;
-                          let hasStarted = false;
-
-                          const checkEnded = () => {
-                            if (!playerRef.current || audio.paused) {
-                              resolve();
-                              return;
-                            }
-                            const currentTime = audio.currentTime;
-                            if (currentTime > 0) hasStarted = true;
-                            if (
-                              hasStarted &&
-                              currentTime === lastTime &&
-                              currentTime > 0
-                            ) {
-                              stableFrames++;
-                              if (stableFrames > 10) {
-                                resolve();
-                                return;
-                              }
-                            } else {
-                              stableFrames = 0;
-                              lastTime = currentTime;
-                            }
-                            requestAnimationFrame(checkEnded);
-                          };
-                          setTimeout(
-                            () => requestAnimationFrame(checkEnded),
-                            100,
-                          );
-                          const fallbackMs = Math.max(
-                            1500,
-                            text.length * 50 + 500,
-                          );
-                          setTimeout(resolve, fallbackMs);
-                        });
-
-                        setPlayingId(null);
-                        player.cleanup?.();
-                      } catch (err) {
-                        console.error("AlphabetBootcamp TTS failed", err);
-                        setPlayingId(null);
-                        setLoadingId(null);
-                      }
-                    }}
+                    onPlay={handlePlayLetterAudio}
                   />
                 </Box>
 
@@ -1504,95 +1477,7 @@ export default function AlphabetBootcamp({
                     onPracticeWordUpdated={handlePracticeWordUpdated}
                     isPlaying={playingId === item.id}
                     isLoading={loadingId === item.id}
-                    onPlay={async (data) => {
-                      const text = (data?.tts || data?.letter || "")
-                        .toString()
-                        .trim();
-                      if (!text) return;
-
-                      // If already playing this card, stop it
-                      if (playingId === data.id || loadingId === data.id) {
-                        try {
-                          playerRef.current?.audio?.pause?.();
-                        } catch {}
-                        playerRef.current?.cleanup?.();
-                        setPlayingId(null);
-                        setLoadingId(null);
-                        return;
-                      }
-
-                      // Show loading spinner immediately
-                      setLoadingId(data.id);
-                      setPlayingId(null);
-
-                      try {
-                        playerRef.current?.audio?.pause?.();
-                      } catch {}
-                      playerRef.current?.cleanup?.();
-
-                      try {
-                        const player = await getTTSPlayer({
-                          text,
-                          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-                        });
-                        playerRef.current = player;
-
-                        await player.ready;
-                        // Loading done - switch to playing state (stop icon)
-                        setLoadingId(null);
-                        setPlayingId(data.id);
-
-                        const audio = player.audio;
-                        await audio.play();
-
-                        // Poll to detect when audio actually stops
-                        await new Promise((resolve) => {
-                          let lastTime = 0;
-                          let stableFrames = 0;
-                          let hasStarted = false;
-
-                          const checkEnded = () => {
-                            if (!playerRef.current || audio.paused) {
-                              resolve();
-                              return;
-                            }
-                            const currentTime = audio.currentTime;
-                            if (currentTime > 0) hasStarted = true;
-                            if (
-                              hasStarted &&
-                              currentTime === lastTime &&
-                              currentTime > 0
-                            ) {
-                              stableFrames++;
-                              if (stableFrames > 10) {
-                                resolve();
-                                return;
-                              }
-                            } else {
-                              stableFrames = 0;
-                              lastTime = currentTime;
-                            }
-                            requestAnimationFrame(checkEnded);
-                          };
-                          setTimeout(
-                            () => requestAnimationFrame(checkEnded),
-                            100,
-                          );
-                          const fallbackMs = Math.max(
-                            1500,
-                            text.length * 50 + 500,
-                          );
-                          setTimeout(resolve, fallbackMs);
-                        });
-
-                        setPlayingId(null);
-                        player.cleanup?.();
-                      } catch (err) {
-                        console.error("AlphabetBootcamp TTS failed", err);
-                        setPlayingId(null);
-                        setLoadingId(null);
-                      }
-                    }}
+                    onPlay={handlePlayLetterAudio}
                   />
                 ))}
               </SimpleGrid>

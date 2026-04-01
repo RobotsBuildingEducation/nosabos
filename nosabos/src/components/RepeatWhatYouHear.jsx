@@ -189,6 +189,27 @@ export default function RepeatWhatYouHear({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit, playSound]);
 
+  const createWarmAudio = useCallback(async () => {
+    try {
+      const warm = new Audio();
+      warm.playsInline = true;
+      warm.muted = true;
+      warm.volume = 0;
+      warm.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      await warm.play();
+      warm.pause();
+      try {
+        warm.currentTime = 0;
+      } catch {}
+      warm.muted = false;
+      warm.volume = 1;
+      return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
       return;
@@ -230,6 +251,14 @@ export default function RepeatWhatYouHear({
   const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
   const nextLabel =
     userLanguage === "es" ? "Siguiente pregunta" : "Next question";
+
+  const handleManualPlay = useCallback(async () => {
+    // Claim playback immediately so the mount auto-play effect can't fire a
+    // second competing TTS request right after the user's first click.
+    hasPlayedRef.current = true;
+    const warmAudio = await createWarmAudio();
+    onPlayTTS(sourceSentence, { warmAudio });
+  }, [createWarmAudio, onPlayTTS, sourceSentence]);
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -312,7 +341,7 @@ export default function RepeatWhatYouHear({
                         size="md"
                         fontSize="xl"
                         variant="ghost"
-                        onClick={() => onPlayTTS(sourceSentence)}
+                        onClick={handleManualPlay}
                         isRound
                       />
                       {selectedWords.length === 0 &&

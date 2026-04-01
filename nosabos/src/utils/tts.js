@@ -423,9 +423,9 @@ async function getRealtimePlayer({
     }
     if (playbackMonitorTimer || finalizeResolved) return;
 
-    const pollMs = 150;
-    const stagnantThreshold = 20;
-    const maxMonitorMs = Math.max(12000, text.length * 140 + 4000);
+    const pollMs = 120;
+    const stagnantThreshold = 5;
+    const maxMonitorMs = Math.max(7000, text.length * 100 + 2500);
     const startedAt = Date.now();
     let lastTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
     let sawPlaybackProgress = lastTime > 0.01 || audioStarted;
@@ -458,7 +458,7 @@ async function getRealtimePlayer({
 
       if (
         Date.now() - startedAt >= maxMonitorMs ||
-        (!sawPlaybackProgress && audio.paused && Date.now() - startedAt >= 5000)
+        (!sawPlaybackProgress && audio.paused && Date.now() - startedAt >= 1500)
       ) {
         finishFinalize();
         return;
@@ -567,7 +567,7 @@ async function getRealtimePlayer({
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
-        schedulePlaybackCompletionWatch(1200);
+        schedulePlaybackCompletionWatch(180);
       }
     } catch {}
   };

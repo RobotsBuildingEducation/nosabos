@@ -12,7 +12,8 @@ import {
   Button,
   Flex,
   HStack,
-  Input, Text,
+  Input,
+  Text,
   VStack,
   Radio,
   RadioGroup,
@@ -1632,12 +1633,14 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const questionAudioRef = useRef(null);
   const questionAudioUrlRef = useRef(null);
   const questionTextRef = useRef("");
+  const questionPlaybackRequestRef = useRef(0);
 
   // Match word TTS state
   const [matchWordSynthesizing, setMatchWordSynthesizing] = useState(null); // index of word being synthesized
   const matchWordAudioRef = useRef(null);
 
   const stopModuleTTS = useCallback(() => {
+    questionPlaybackRequestRef.current += 1;
     stopAllTTSPlayback();
     speakAudioRef.current = null;
     questionAudioRef.current = null;
@@ -1730,25 +1733,26 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       const order = repeatOnlyQuestions
         ? [generateRepeatTranslate]
         : isFinalQuiz
-        ? [ // no flashcard in quiz
-            generateFill,
-            generateMC,
-            generateMA,
-            generateSpeak,
-            generateMatch,
-            generateTranslate,
-            generateRepeatTranslate,
-          ]
-        : [
-            generateFill,
-            generateMC,
-            generateMA,
-            generateSpeak,
-            generateMatch,
-            generateTranslate,
-            generateRepeatTranslate,
-            generateFlashcard,
-          ];
+          ? [
+              // no flashcard in quiz
+              generateFill,
+              generateMC,
+              generateMA,
+              generateSpeak,
+              generateMatch,
+              generateTranslate,
+              generateRepeatTranslate,
+            ]
+          : [
+              generateFill,
+              generateMC,
+              generateMA,
+              generateSpeak,
+              generateMatch,
+              generateTranslate,
+              generateRepeatTranslate,
+              generateFlashcard,
+            ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
@@ -3950,7 +3954,12 @@ Return JSON ONLY:
         aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
         icon={
           isLoadingAssistantSupport ? (
-            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={16}
+            />
           ) : (
             <MdOutlineSupportAgent />
           )
@@ -3986,7 +3995,14 @@ Return JSON ONLY:
           <Text fontWeight="semibold" color="blue.300">
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
-          {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
+          {isLoadingAssistantSupport && (
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={16}
+            />
+          )}
         </HStack>
         <Box
           fontSize="md"
@@ -4034,17 +4050,38 @@ Return JSON ONLY:
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
 
+  const createWarmAudio = useCallback(async () => {
+    try {
+      const warm = new Audio();
+      warm.playsInline = true;
+      warm.muted = true;
+      warm.volume = 0;
+      warm.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      await warm.play();
+      warm.pause();
+      try {
+        warm.currentTime = 0;
+      } catch {}
+      warm.muted = false;
+      warm.volume = 1;
+      return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
     if (!text) return;
 
-    if (isSpeakPlaying && speakAudioRef.current) {
-      stopModuleTTS();
-      return;
-    }
+    stopModuleTTS();
+    const requestId = questionPlaybackRequestRef.current;
 
     try {
-      stopModuleTTS();
+      const warmAudio = await createWarmAudio();
+      if (requestId !== questionPlaybackRequestRef.current) return;
+
       setIsSpeakSynthesizing(true);
       setIsSpeakPlaying(true);
 
@@ -4052,42 +4089,65 @@ Return JSON ONLY:
         text,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        warmAudio,
       });
+
+      if (requestId !== questionPlaybackRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+
       speakAudioUrlRef.current = player.audioUrl;
 
       const audio = player.audio;
       speakAudioRef.current = audio;
       audio.onended = () => {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
         player.cleanup?.();
       };
       audio.onerror = () => {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
         player.cleanup?.();
       };
       await player.ready;
+      if (requestId !== questionPlaybackRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
       setIsSpeakSynthesizing(false);
       await audio.play();
+      if (requestId !== questionPlaybackRequestRef.current) return;
+      setIsSpeakPlaying(false);
     } catch (err) {
+      if (requestId !== questionPlaybackRequestRef.current) return;
       console.error("Grammar speak playback failed", err);
       stopModuleTTS();
     }
-  }, [isSpeakPlaying, sTarget, stopModuleTTS, toast, userLanguage]);
+  }, [
+    createWarmAudio,
+    sTarget,
+    stopModuleTTS,
+    toast,
+    userLanguage,
+    targetLang,
+  ]);
 
   const handlePlayQuestionTTS = useCallback(
-    async (text, langOverride = null) => {
+    async (text, langOverride = null, options = {}) => {
       const ttsText = (text || "").trim().replace(/___/g, " … ");
       if (!ttsText) return;
+      const { warmAudio: providedWarmAudio = null } = options;
 
-      if (isQuestionPlaying && questionTextRef.current === ttsText) {
-        stopModuleTTS();
-        return;
-      }
+      stopModuleTTS();
+      const requestId = questionPlaybackRequestRef.current;
 
       try {
-        stopModuleTTS();
+        const warmAudio = providedWarmAudio || (await createWarmAudio());
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsQuestionSynthesizing(true);
         questionTextRef.current = ttsText;
 
@@ -4096,31 +4156,44 @@ Return JSON ONLY:
           text: ttsText,
           langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
+          warmAudio,
         });
+
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
 
         questionAudioUrlRef.current = player.audioUrl;
         const audio = player.audio;
         questionAudioRef.current = audio;
         audio.onended = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
           player.cleanup?.();
         };
         audio.onerror = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
           player.cleanup?.();
         };
         await player.ready;
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(true);
         await audio.play();
       } catch (err) {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         console.error("Grammar question playback failed", err);
         stopModuleTTS();
       }
     },
-    [isQuestionPlaying, stopModuleTTS, targetLang, toast, userLanguage],
+    [createWarmAudio, stopModuleTTS, targetLang, toast, userLanguage],
   );
 
   // Handler for playing TTS on individual match words
@@ -4134,46 +4207,80 @@ Return JSON ONLY:
         try {
           matchWordAudioRef.current?.pause?.();
         } catch {}
+        matchWordAudioRef.current?.srcObject
+          ?.getAudioTracks?.()
+          ?.forEach((track) => track.stop?.());
         matchWordAudioRef.current = null;
         setMatchWordSynthesizing(null);
         return;
       }
 
-      try {
-        setMatchWordSynthesizing(index);
+      stopModuleTTS();
+      const requestId = questionPlaybackRequestRef.current;
 
-        // Stop any existing playback
-        try {
-          matchWordAudioRef.current?.pause?.();
-        } catch {}
-        matchWordAudioRef.current = null;
+      try {
+        const warmAudio = await createWarmAudio();
+        if (requestId !== questionPlaybackRequestRef.current) return;
+        setMatchWordSynthesizing(index);
 
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
+          warmAudio,
         });
 
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+
         const audio = player.audio;
+        const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
+        const handleTrackMute = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          setMatchWordSynthesizing(null);
+        };
+        audioTracks.forEach((track) => {
+          if (track.muted) {
+            handleTrackMute();
+          } else {
+            track.addEventListener("mute", handleTrackMute, { once: true });
+          }
+        });
         matchWordAudioRef.current = audio;
         audio.onended = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          audioTracks.forEach((track) =>
+            track.removeEventListener("mute", handleTrackMute),
+          );
           setMatchWordSynthesizing(null);
           matchWordAudioRef.current = null;
           player.cleanup?.();
         };
         audio.onerror = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          audioTracks.forEach((track) =>
+            track.removeEventListener("mute", handleTrackMute),
+          );
           setMatchWordSynthesizing(null);
           matchWordAudioRef.current = null;
           player.cleanup?.();
         };
         await player.ready;
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+        setMatchWordSynthesizing(null);
         await audio.play();
       } catch (err) {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         console.error("Match word playback failed", err);
         setMatchWordSynthesizing(null);
       }
     },
-    [matchWordSynthesizing, targetLang],
+    [createWarmAudio, matchWordSynthesizing, targetLang],
   );
 
   const renderMcPrompt = () => {
@@ -4604,7 +4711,18 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
+                {loadingG ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("grammar_submit")
+                )}
               </Button>
             </Stack>
 
@@ -4883,7 +5001,18 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMCG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
+                {loadingMCG ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("grammar_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5170,7 +5299,18 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMAG ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
+                {loadingMAG ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("grammar_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5224,17 +5364,14 @@ Return JSON ONLY:
                     aria-label={speakListenLabel}
                     icon={renderSpeakerIcon(isSpeakSynthesizing)}
                     size="sm"
-                    variant="solid"
-                    colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                    variant="ghost"
                     position="absolute"
                     top="3"
                     right="3"
                     onClick={handleToggleSpeakPlayback}
                     isDisabled={!sTarget}
                   />
-                  <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
-                    {speakVariantLabel}
-                  </Badge>
+
                   <Text fontSize="3xl" fontWeight="700">
                     {sTarget || "…"}
                   </Text>
@@ -5279,7 +5416,9 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
                 _hover={
-                  isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                  isSpeakRecording
+                    ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                    : undefined
                 }
                 onClick={async () => {
                   if (isSpeakRecording) {
@@ -5433,7 +5572,14 @@ Return JSON ONLY:
                   }
                   icon={
                     isLoadingAssistantSupport ? (
-                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                      <VoiceOrb
+                        state={
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ]
+                        }
+                        size={16}
+                      />
                     ) : (
                       <MdOutlineSupportAgent />
                     )
@@ -5746,7 +5892,18 @@ Return JSON ONLY:
                 px={{ base: 8, md: 14 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("grammar_submit")}
+                {loadingMJ ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("grammar_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5786,7 +5943,9 @@ Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onPlayTTS={(text, options) =>
+                handlePlayQuestionTTS(text, questionTTsLang, options)
+              }
               onAskAssistant={handleAskAssistant}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -5882,7 +6041,6 @@ Return JSON ONLY:
             onSkip={canSkip ? handleSkip : undefined}
           />
         ) : null}
-
       </VStack>
 
       {/* Flashcard Deck Review Overlay */}

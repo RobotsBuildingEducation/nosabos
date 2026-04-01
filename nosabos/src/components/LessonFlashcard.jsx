@@ -11,7 +11,9 @@ import {
   Input,
   Button,
   IconButton,
-  Badge, useToast,
+  Badge,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,7 +22,6 @@ import {
   RiStarLine,
   RiEyeLine,
   RiVolumeUpLine,
-  RiStopLine,
   RiKeyboardLine,
   RiMicLine,
   RiStopCircleLine,
@@ -409,10 +410,6 @@ export default function LessonFlashcard({
 
   const handleListenToAnswer = async (e) => {
     e?.stopPropagation?.();
-    if (isPlayingAudio) {
-      stopAnswerAudio();
-      return;
-    }
     if (!answer || loadingTts) return;
     stopAnswerAudio();
     setLoadingTts(true);
@@ -425,9 +422,23 @@ export default function LessonFlashcard({
       });
       audioRef.current = player.audio;
       let cleanedUp = false;
+      const audioTracks = player.audio.srcObject?.getAudioTracks?.() || [];
+      const handleTrackMute = () => {
+        setIsPlayingAudio(false);
+      };
+      audioTracks.forEach((track) => {
+        if (track.muted) {
+          handleTrackMute();
+        } else {
+          track.addEventListener("mute", handleTrackMute, { once: true });
+        }
+      });
       const cleanup = () => {
         if (cleanedUp) return;
         cleanedUp = true;
+        audioTracks.forEach((track) =>
+          track.removeEventListener("mute", handleTrackMute),
+        );
         player.cleanup?.();
         stopAnswerAudio();
       };
@@ -435,8 +446,8 @@ export default function LessonFlashcard({
       player.audio.onerror = cleanup;
       await player.ready;
       setLoadingTts(false);
-      setIsPlayingAudio(true);
       await player.audio.play();
+      setIsPlayingAudio(false);
     } catch {
       stopAnswerAudio();
     }
@@ -602,7 +613,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             position="relative"
             zIndex={1}
           >
-            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={32}
+            />
             <Text color="whiteAlpha.800" fontSize="sm">
               {userLanguage === "es"
                 ? "Generando tarjeta..."
@@ -713,7 +729,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     boxShadow="0 4px 0 blue"
                     rounded="xl"
                     _hover={{ bg: "gray.50" }}
-                    onClick={handleFlip}
                     zIndex={2}
                   />
                   <Text
@@ -768,31 +783,22 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   <Box>
                     {answer && (
                       <IconButton
-                        aria-label={
-                          loadingTts
-                            ? "Loading"
-                            : isPlayingAudio
-                              ? "Stop"
-                              : "Listen"
-                        }
+                        aria-label={loadingTts ? "Loading" : "Listen"}
                         position="absolute"
                         bottom={2}
                         left={2}
                         size="sm"
-                        variant="solid"
-                        colorScheme="purple"
+                        variant="ghost"
+                        // colorScheme="purple"
                         color="white"
                         icon={
                           loadingTts ? (
-                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-                          ) : isPlayingAudio ? (
-                            <RiStopLine size={14} />
+                            <Spinner size="xs" />
                           ) : (
                             <RiVolumeUpLine size={14} />
                           )
                         }
                         onClick={handleListenToAnswer}
-                        isDisabled={loadingTts}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
                       />
@@ -803,6 +809,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       right={2}
                       fontSize="xs"
                       color="white"
+                      onClick={handleFlip}
                     >
                       {t("tap_to_flip")}
                     </Text>
@@ -823,7 +830,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     minH="140px"
                     justify="center"
                   >
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={32}
+                    />
                     <Text color="whiteAlpha.700" fontSize="sm">
                       {t("grading")}
                     </Text>
@@ -835,13 +849,24 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       w="100%"
                       size="md"
                       colorScheme={
-                        isRecording ? undefined : isConnecting ? "yellow" : "teal"
+                        isRecording
+                          ? undefined
+                          : isConnecting
+                            ? "yellow"
+                            : "teal"
                       }
                       bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
                       color={isRecording ? "white" : undefined}
                       leftIcon={
                         isConnecting ? (
-                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                          <VoiceOrb
+                            state={
+                              ["idle", "listening", "speaking"][
+                                Math.floor(Math.random() * 3)
+                              ]
+                            }
+                            size={16}
+                          />
                         ) : isRecording ? (
                           <RiStopCircleLine size={16} />
                         ) : (
@@ -851,7 +876,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       onClick={handleRecord}
                       isDisabled={!supportsSpeech || isConnecting}
                       _hover={
-                        isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                        isRecording
+                          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                          : undefined
                       }
                     >
                       {isConnecting
@@ -1037,7 +1064,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           }
                           leftIcon={
                             isLoadingExplanation ? (
-                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                              <VoiceOrb
+                                state={
+                                  ["idle", "listening", "speaking"][
+                                    Math.floor(Math.random() * 3)
+                                  ]
+                                }
+                                size={16}
+                              />
                             ) : (
                               <FiHelpCircle size={14} />
                             )
@@ -1164,7 +1198,6 @@ export function FlashcardDeckReview({
             w="100%"
             h="180px"
             sx={{ perspective: "1000px" }}
-            cursor="pointer"
             onClick={() => setIsFlipped(!isFlipped)}
           >
             <MotionBox

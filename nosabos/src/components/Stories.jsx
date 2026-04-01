@@ -2049,18 +2049,7 @@ export default function StoryMode({
                           fontWeight="600"
                           fontSize="lg"
                           leftIcon={
-                            isConnecting ? (
-                              <VoiceOrb
-                                state={
-                                  ["idle", "listening", "speaking"][
-                                    Math.floor(Math.random() * 3)
-                                  ]
-                                }
-                                size={24}
-                              />
-                            ) : (
-                              <PiMicrophoneStageDuotone />
-                            )
+                            isConnecting ? null : <PiMicrophoneStageDuotone />
                           }
                           isDisabled={
                             !supportsSpeak ||

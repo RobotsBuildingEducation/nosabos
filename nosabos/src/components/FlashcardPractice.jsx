@@ -13,7 +13,9 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
-  Badge, useToast,
+  Badge,
+  useToast,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -25,13 +27,13 @@ import {
   RiKeyboardLine,
   RiEyeLine,
   RiVolumeUpLine,
-  RiStopLine,
 } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import {
   LOW_LATENCY_TTS_FORMAT,
   getRandomVoice,
   getTTSPlayer,
+  stopTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
@@ -74,7 +76,7 @@ const getTranslation = (key, params = {}) => {
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
-    params[k] != null ? String(params[k]) : `{${k}}`
+    params[k] != null ? String(params[k]) : `{${k}}`,
   );
 };
 
@@ -183,29 +185,34 @@ export default function FlashcardPractice({
   const nextLevelProgressPct = updatedTotalXp % 100;
 
   // Speech practice hook
-  const { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech } =
-    useSpeechPractice({
-      targetText: "answer", // Placeholder - we use AI grading instead of strict matching
-      targetLang: targetLang,
-      onResult: ({ recognizedText, evaluation, error }) => {
-        if (error) {
-          toast({
-            title: getTranslation("flashcard_eval_error_title"),
-            description: getTranslation("flashcard_eval_error_desc"),
-            status: "error",
-            duration: 2500,
-          });
-          return;
-        }
+  const {
+    startRecording,
+    stopRecording,
+    isRecording,
+    isConnecting,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: "answer", // Placeholder - we use AI grading instead of strict matching
+    targetLang: targetLang,
+    onResult: ({ recognizedText, evaluation, error }) => {
+      if (error) {
+        toast({
+          title: getTranslation("flashcard_eval_error_title"),
+          description: getTranslation("flashcard_eval_error_desc"),
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
 
-        const text = recognizedText || "";
-        setRecognizedText(text);
-        if (text && text.trim()) {
-          checkAnswerWithAI(text);
-        }
-      },
-      timeoutMs: pauseMs,
-    });
+      const text = recognizedText || "";
+      setRecognizedText(text);
+      if (text && text.trim()) {
+        checkAnswerWithAI(text);
+      }
+    },
+    timeoutMs: pauseMs,
+  });
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -318,7 +325,7 @@ export default function FlashcardPractice({
     try {
       const concept = getConceptText(
         card,
-        getEffectiveCardLanguage(supportLang)
+        getEffectiveCardLanguage(supportLang),
       );
       const userAnswer = textAnswer || recognizedText;
 
@@ -413,10 +420,10 @@ export default function FlashcardPractice({
 
     const sourceText = getConceptText(
       card,
-      getEffectiveCardLanguage(supportLang)
+      getEffectiveCardLanguage(supportLang),
     );
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(
-      targetLang
+      targetLang,
     )}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
 
     try {
@@ -456,9 +463,9 @@ export default function FlashcardPractice({
 
     const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
     const prompt = `You are a helpful language tutor for ${LANG_NAME(
-      targetLang
+      targetLang,
     )}. A student tried to translate a prompt from ${LANG_NAME(
-      supportLang
+      supportLang,
     )} to ${LANG_NAME(targetLang)}.
 
 Prompt (${LANG_NAME(supportLang)}): ${concept}
@@ -467,7 +474,7 @@ Student translation attempt (${LANG_NAME(targetLang)}): ${userAnswer}
 Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 1) Correct translation: the best translation into ${LANG_NAME(targetLang)}
 2) Explanation: 2-3 concise sentences in ${LANG_NAME(
-      supportLang
+      supportLang,
     )} explaining how the student's answer could be improved.`;
 
     setIsLoadingExplanation(true);
@@ -525,23 +532,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
   const handleListenToAnswer = async (e) => {
     e.stopPropagation(); // Prevent card flip when clicking listen button
 
-    // If already playing, stop it
-    if (isPlayingAudio) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-      setIsPlayingAudio(false);
-      return;
-    }
-
     if (!streamedAnswer || loadingTts) return;
 
     // Stop any currently playing audio
     if (audioRef.current) {
-      audioRef.current.pause();
+      stopTTSPlayback(audioRef.current);
       audioRef.current = null;
     }
+    setIsPlayingAudio(false);
 
     setLoadingTts(true);
 
@@ -556,9 +554,24 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       audioRef.current = player.audio;
 
       let cleanedUp = false;
+      const audioTracks = player.audio.srcObject?.getAudioTracks?.() || [];
+      const handleTrackMute = () => {
+        setIsPlayingAudio(false);
+      };
+      audioTracks.forEach((track) => {
+        if (track.muted) {
+          handleTrackMute();
+        } else {
+          track.addEventListener("mute", handleTrackMute, { once: true });
+        }
+      });
       const cleanup = () => {
         if (cleanedUp) return; // Prevent double cleanup
         cleanedUp = true;
+        audioTracks.forEach((track) =>
+          track.removeEventListener("mute", handleTrackMute),
+        );
+        setLoadingTts(false);
         setIsPlayingAudio(false);
         audioRef.current = null;
         player.cleanup?.();
@@ -571,8 +584,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
       await player.ready;
       setLoadingTts(false);
-      setIsPlayingAudio(true);
       await player.audio.play();
+      setIsPlayingAudio(false);
     } catch (error) {
       console.error("TTS error:", error);
       setLoadingTts(false);
@@ -623,13 +636,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           },
         }}
       >
-        <ModalBody
-          p={8}
-          position="relative"
-          zIndex={1}
-        >
+        <ModalBody p={8} position="relative" zIndex={1}>
           <VStack spacing={6} align="stretch">
-
             {/* Flip Card */}
             <Box
               position="relative"
@@ -676,7 +684,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   >
                     {getConceptText(
                       card,
-                      getEffectiveCardLanguage(supportLang)
+                      getEffectiveCardLanguage(supportLang),
                     )}
                   </Text>
                   <IconButton
@@ -710,8 +718,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
                   }}
-                  cursor="pointer"
-                  onClick={handleFlipBack}
                 >
                   <Text
                     fontSize="xs"
@@ -723,7 +729,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     {getTranslation("flashcard_answer_label")}
                   </Text>
                   {isStreaming && !streamedAnswer ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={32}
+                    />
                   ) : (
                     <Text
                       fontSize="3xl"
@@ -742,28 +755,22 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         aria-label={
                           loadingTts
                             ? getTranslation("flashcard_loading") || "Loading"
-                            : isPlayingAudio
-                            ? getTranslation("flashcard_stop") || "Stop"
                             : getTranslation("flashcard_listen")
                         }
                         position="absolute"
                         bottom={3}
                         left={3}
                         size="sm"
-                        variant="solid"
-                        colorScheme="purple"
+                        variant="ghost"
                         color="white"
                         icon={
                           loadingTts ? (
-                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-                          ) : isPlayingAudio ? (
-                            <RiStopLine size={14} />
+                            <Spinner size="xs" />
                           ) : (
                             <RiVolumeUpLine size={14} />
                           )
                         }
                         onClick={handleListenToAnswer}
-                        isDisabled={loadingTts}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
                       />
@@ -774,6 +781,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       right={3}
                       fontSize="xs"
                       color="white"
+                      onClick={handleFlipBack}
                     >
                       {getTranslation("flashcard_tap_to_flip")}
                     </Text>
@@ -788,7 +796,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 {/* Grading State */}
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={48}
+                    />
                     <Text color="gray.400">
                       {getTranslation("flashcard_grading")}
                     </Text>
@@ -800,14 +815,27 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       w="100%"
                       size="lg"
                       colorScheme={
-                        isRecording ? undefined : isConnecting ? "yellow" : "teal"
+                        isRecording
+                          ? undefined
+                          : isConnecting
+                            ? "yellow"
+                            : "teal"
                       }
                       bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
                       color={isRecording ? "white" : undefined}
-                      boxShadow={isRecording ? SOFT_STOP_BUTTON_GLOW : undefined}
+                      boxShadow={
+                        isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
+                      }
                       leftIcon={
                         isConnecting ? (
-                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                          <VoiceOrb
+                            state={
+                              ["idle", "listening", "speaking"][
+                                Math.floor(Math.random() * 3)
+                              ]
+                            }
+                            size={24}
+                          />
                         ) : isRecording ? (
                           <RiStopCircleLine size={20} />
                         ) : (
@@ -821,7 +849,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         boxShadow: isRecording
                           ? SOFT_STOP_BUTTON_GLOW
                           : `0 8px 20px ${cefrColor.primary}40`,
-                        ...(isRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : {}),
+                        ...(isRecording
+                          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                          : {}),
                       }}
                       padding={9}
                       _active={{ transform: "translateY(0)" }}
@@ -831,8 +861,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           ? "Conectando..."
                           : "Connecting..."
                         : isRecording
-                        ? getTranslation("flashcard_stop_recording")
-                        : getTranslation("flashcard_record_answer")}
+                          ? getTranslation("flashcard_stop_recording")
+                          : getTranslation("flashcard_record_answer")}
                     </Button>
 
                     {/* Recognized speech text */}
@@ -862,7 +892,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         onChange={(e) => setTextAnswer(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder={getTranslation(
-                          "flashcard_type_placeholder"
+                          "flashcard_type_placeholder",
                         )}
                         size="lg"
                         fontSize="16px"
@@ -949,7 +979,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       <IconButton
                         icon={
                           isCreatingNote ? (
-                            <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                            <VoiceOrb
+                              state={
+                                ["idle", "listening", "speaking"][
+                                  Math.floor(Math.random() * 3)
+                                ]
+                              }
+                              size={16}
+                            />
                           ) : (
                             <RiBookmarkLine size={18} />
                           )
@@ -1002,7 +1039,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           }
                           leftIcon={
                             isLoadingExplanation ? (
-                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                              <VoiceOrb
+                                state={
+                                  ["idle", "listening", "speaking"][
+                                    Math.floor(Math.random() * 3)
+                                  ]
+                                }
+                                size={24}
+                              />
                             ) : (
                               <FiHelpCircle />
                             )

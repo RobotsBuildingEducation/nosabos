@@ -528,7 +528,7 @@ export const translations = {
     skill_tree_passing_score: "Passing Score",
     skill_tree_game_reward: "Game Reward",
     skill_tree_tutorial_goal: "Goal",
-    skill_tree_tutorial_activities: "Complete the 5 learning activities",
+    skill_tree_tutorial_activities: "Complete the 6 learning activities",
     // Flashcard Practice translations
     flashcard_translate_to: "Translate to {language}:",
     flashcard_show_answer: "Show answer",
@@ -1185,7 +1185,7 @@ export const translations = {
     skill_tree_passing_score: "Puntuación Requerida",
     skill_tree_game_reward: "Recompensa del Juego",
     skill_tree_tutorial_goal: "Meta",
-    skill_tree_tutorial_activities: "Completa las 5 actividades de aprendizaje",
+    skill_tree_tutorial_activities: "Completa las 6 actividades de aprendizaje",
     // Flashcard Practice translations
     flashcard_translate_to: "Traduce al {language}:",
     flashcard_show_answer: "Mostrar respuesta",

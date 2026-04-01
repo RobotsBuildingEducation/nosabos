@@ -13,7 +13,8 @@ import {
   Flex,
   HStack,
   VStack,
-  Text, Divider,
+  Text,
+  Divider,
   IconButton,
   Center,
   Stack,
@@ -61,6 +62,11 @@ import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import {
+  SOFT_STOP_BUTTON_BG,
+  SOFT_STOP_BUTTON_EDGE,
+  SOFT_STOP_BUTTON_HOVER_BG,
+} from "../utils/softStopButton";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -1817,7 +1823,7 @@ Return ONLY valid JSON:
     stopListening();
   }, [activeId]); // eslint-disable-line
 
-  // Default to question format when a lecture is ready
+  // Default to read-aloud format when a lecture is ready.
   useEffect(() => {
     if (
       activeLecture?.target &&
@@ -1825,14 +1831,14 @@ Return ONLY valid JSON:
       !isGenerating &&
       reviewFormat === null
     ) {
-      setReviewFormat("question");
+      setReviewFormat("speech");
     }
   }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
-  // Auto-generate review question when format is "question"
+  // Generate the review question as soon as the lecture is ready so it is
+  // already waiting if the learner switches back from read-aloud mode.
   useEffect(() => {
     if (
-      reviewFormat === "question" &&
       activeLecture?.target &&
       !draftLecture &&
       !isGenerating &&
@@ -1841,12 +1847,13 @@ Return ONLY valid JSON:
     ) {
       generateReviewQuestion();
     }
-  }, [reviewFormat, activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
       ? ` — ${activeLecture.xpReason}`
       : "";
+  const isStopReadActive = isReadingTarget || isSynthesizingTarget;
 
   // Award XP for current lecture and move to next module
   function finishReadingAndNext() {
@@ -1922,14 +1929,28 @@ Return ONLY valid JSON:
           >
             {isLoading ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={48}
+                />
                 <Text fontSize="lg" opacity={0.9}>
                   {t("reading_loading") || "Loading settings..."}
                 </Text>
               </VStack>
             ) : isGenerating && !draftLecture ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
-                <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={48} />
+                <VoiceOrb
+                  state={
+                    ["idle", "listening", "speaking"][
+                      Math.floor(Math.random() * 3)
+                    ]
+                  }
+                  size={48}
+                />
                 <Text fontSize="lg" opacity={0.9}>
                   {t("reading_generating") || "Creating lecture..."}
                 </Text>
@@ -1951,7 +1972,14 @@ Return ONLY valid JSON:
                     <IconButton
                       icon={
                         isSynthesizingTarget ? (
-                          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                          <VoiceOrb
+                            state={
+                              ["idle", "listening", "speaking"][
+                                Math.floor(Math.random() * 3)
+                              ]
+                            }
+                            size={24}
+                          />
                         ) : (
                           <PiLightningDuotone size="20px" />
                         )
@@ -1980,8 +2008,28 @@ Return ONLY valid JSON:
                       }}
                       aria-label="Stop"
                       size="sm"
-                      variant="ghost"
-                      isDisabled={!isReadingTarget && !isSynthesizingTarget}
+                      variant={isStopReadActive ? "solid" : "ghost"}
+                      bg={isStopReadActive ? SOFT_STOP_BUTTON_BG : undefined}
+                      color={isStopReadActive ? "white" : undefined}
+                      boxShadow={
+                        isStopReadActive
+                          ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
+                          : undefined
+                      }
+                      _hover={
+                        isStopReadActive
+                          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                          : undefined
+                      }
+                      _active={
+                        isStopReadActive
+                          ? {
+                              transform: "translateY(2px)",
+                              boxShadow: "none",
+                            }
+                          : undefined
+                      }
+                      isDisabled={!isStopReadActive}
                     />
                     <Text fontSize="xs" opacity={0.6}>
                       {t("history_stop")}
@@ -2236,9 +2284,9 @@ Return ONLY valid JSON:
                     {/* Speech format */}
                     {reviewFormat === "speech" ? (
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="600" fontSize="sm">
+                        {/* <Text fontWeight="600" fontSize="sm">
                           {t("history_speech_heading")}
-                        </Text>
+                        </Text> */}
 
                         {!speechSubmitted && (
                           <>
@@ -2259,12 +2307,19 @@ Return ONLY valid JSON:
                               ) : (
                                 <>
                                   <Button
-                                    size="sm"
-                                    colorScheme="red"
+                                    size="md"
+                                    bg={SOFT_STOP_BUTTON_BG}
+                                    color="white"
+                                    boxShadow={`0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`}
                                     leftIcon={<PiStopDuotone />}
                                     onClick={() => {
                                       playSound(selectSound);
                                       stopListening();
+                                    }}
+                                    _hover={{ bg: SOFT_STOP_BUTTON_HOVER_BG }}
+                                    _active={{
+                                      transform: "translateY(2px)",
+                                      boxShadow: "none",
                                     }}
                                   >
                                     {t("history_speech_stop_mic")}
@@ -2284,11 +2339,26 @@ Return ONLY valid JSON:
                               )}
                             </HStack>
 
+                            {isListening && (
+                              <VStack spacing={1} align="center">
+                                <VoiceOrb state="listening" size={75} />
+                                <Text
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                  letterSpacing="0.04em"
+                                  opacity={0.8}
+                                >
+                                  Listening...
+                                </Text>
+                              </VStack>
+                            )}
+
                             {speechTranscript && (
                               <Text
-                                fontSize="sm"
+                                fontSize="xs"
                                 lineHeight="1.8"
                                 opacity={0.9}
+                                fontStyle="italic"
                               >
                                 {speechTranscript}
                               </Text>
@@ -2608,17 +2678,28 @@ Return ONLY valid JSON:
                         )}
                       </VStack>
                     ) : isGeneratingQuestion ? (
-                      <HStack justify="center" py={4}>
-                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
-                        <Text fontSize="sm" opacity={0.7}>
-                          {t("history_generating_question")}
-                        </Text>
-                      </HStack>
+                      <Center w="100%" minH="140px" py={4}>
+                        <HStack spacing={3} align="center">
+                          <Box flexShrink={0} lineHeight="0">
+                            <VoiceOrb
+                              state={
+                                ["idle", "listening", "speaking"][
+                                  Math.floor(Math.random() * 3)
+                                ]
+                              }
+                              size={24}
+                            />
+                          </Box>
+                          <Text fontSize="sm" opacity={0.7} textAlign="center">
+                            {t("history_generating_question")}
+                          </Text>
+                        </HStack>
+                      </Center>
                     ) : reviewQuestion ? (
                       <VStack align="stretch" spacing={3}>
-                        <Text fontWeight="600" fontSize="sm">
+                        {/* <Text fontWeight="600" fontSize="sm">
                           {t("history_review_heading")}
-                        </Text>
+                        </Text> */}
 
                         <Text fontSize="sm" lineHeight="1.6">
                           {reviewQuestion.question}
@@ -2862,7 +2943,14 @@ Return ONLY valid JSON:
                                   <Button
                                     leftIcon={
                                       isLoadingExplanation ? (
-                                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                                        <VoiceOrb
+                                          state={
+                                            ["idle", "listening", "speaking"][
+                                              Math.floor(Math.random() * 3)
+                                            ]
+                                          }
+                                          size={24}
+                                        />
                                       ) : (
                                         <FiHelpCircle />
                                       )

@@ -190,11 +190,15 @@ export default function CEFRLevelNavigator({
               px={4}
               py={2}
               borderRadius="16px"
-              bgGradient={levelInfo.gradient}
+              bg="rgba(10, 14, 28, 0.82)"
+              bgGradient={`linear(135deg, ${levelInfo.color}20, ${levelInfo.color}10)`}
+              backdropFilter="blur(10px)"
+              border="2px solid"
+              borderColor={`${levelInfo.color}55`}
               color="white"
               fontSize="md"
               fontWeight="black"
-              boxShadow={`0 4px 14px ${levelInfo.color}40`}
+              boxShadow={`0 8px 24px ${levelInfo.color}22, 0 4px 12px rgba(0, 0, 0, 0.28)`}
             >
               {levelInfo.displayLabel || activeCEFRLevel}
             </Badge>

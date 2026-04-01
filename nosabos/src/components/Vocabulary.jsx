@@ -12,7 +12,8 @@ import {
   Button,
   Flex,
   HStack,
-  Input, Text,
+  Input,
+  Text,
   VStack,
   Radio,
   RadioGroup,
@@ -157,7 +158,7 @@ function useT(uiLang = "en") {
     const raw = (dict[key] ?? enDict[key] ?? key) + "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
-      k in params ? String(params[k]) : `{${k}}`
+      k in params ? String(params[k]) : `{${k}}`,
     );
   };
 }
@@ -185,7 +186,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
-  }[code] || code);
+  })[code] || code;
 
 const strongNpub = (user) =>
   (
@@ -274,8 +275,8 @@ const resolveSupportLang = (supportLang, appUILang) =>
       ? "es"
       : "en"
     : supportLang === "es"
-    ? "es"
-    : "en";
+      ? "es"
+      : "en";
 
 /* ---------------------------
    Anti-repetition helper
@@ -291,20 +292,20 @@ function buildVarietyLines(lessonContent, recentGood) {
   if (lessonContent?.focusPoints?.length) {
     lines.push(
       `- Rotate through ALL of these vocabulary words across questions: ${JSON.stringify(
-        lessonContent.focusPoints
-      )}. Pick a DIFFERENT word each time — do not fixate on one or two words.`
+        lessonContent.focusPoints,
+      )}. Pick a DIFFERENT word each time — do not fixate on one or two words.`,
     );
   }
   if (recentGood?.length > 0) {
     lines.push(
       `- AVOID these recently tested words/answers: ${JSON.stringify(
-        recentGood.slice(-5)
-      )}. Choose a different word from the topic.`
+        recentGood.slice(-5),
+      )}. Choose a different word from the topic.`,
     );
   }
   if (lessonContent?.topic) {
     lines.push(
-      `- VARIETY: Use diverse sentence patterns. Do NOT repeatedly use "This is my..." / "Esta es mi..." or similar formulaic patterns. Instead vary with questions ("Who is...?"), descriptions ("My ___ is tall"), actions ("___ cooks dinner"), possessives, and other natural contexts.`
+      `- VARIETY: Use diverse sentence patterns. Do NOT repeatedly use "This is my..." / "Esta es mi..." or similar formulaic patterns. Instead vary with questions ("Who is...?"), descriptions ("My ___ is tall"), actions ("___ cooks dinner"), possessives, and other natural contexts.`,
     );
   }
   return lines.length > 0 ? "\n" + lines.join("\n") : "";
@@ -342,14 +343,15 @@ function buildFillVocabStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Use ONLY greetings in ${TARGET}. The word being tested MUST be a basic greeting in ${TARGET}. The full sentence MUST be greeting-only (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
-    ? (lessonContent.words
-      ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
-          lessonContent.words
-        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? (lessonContent.words
+          ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
+              lessonContent.words,
+            )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+          : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
+        varietyLines
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -411,14 +413,15 @@ function buildMCVocabStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? (lessonContent.words
-      ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
-          lessonContent.words
-        )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? (lessonContent.words
+          ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
+              lessonContent.words,
+            )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
+          : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
+        varietyLines
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -480,14 +483,15 @@ function buildMAVocabStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words in ${TARGET}. Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? (lessonContent.words
-      ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
-          lessonContent.words
-        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? (lessonContent.words
+          ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
+              lessonContent.words,
+            )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+          : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
+        varietyLines
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -556,14 +560,15 @@ function buildSpeakVocabStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking practice about basic greetings only. The word/phrase MUST be a greeting like "hello", "hola", "hi", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? (lessonContent.words
-      ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
-          lessonContent.words
-        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
-    : `- Consider learner recent successes: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? (lessonContent.words
+          ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
+              lessonContent.words,
+            )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+          : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
+        varietyLines
+      : `- Consider learner recent successes: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   return [
     `Create ONE ${TARGET} speaking drill (difficulty: ${
@@ -618,14 +623,15 @@ function buildMatchVocabStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE matching exercise about basic greetings only. The left column MUST contain ONLY greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye", etc. Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
-    ? (lessonContent.words
-      ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
-          lessonContent.words
-        )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? (lessonContent.words
+          ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
+              lessonContent.words,
+            )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
+          : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) +
+        varietyLines
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   return [
     `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${
@@ -764,7 +770,7 @@ function buildMatchVocabJudgePrompt({ stem, left, right, userPairs, hint }) {
     userPairs
       .map(
         ([li, ri]) =>
-          `L${li + 1} -> R${ri + 1}  (${left[li]} -> ${right[ri] || "(none)"})`
+          `L${li + 1} -> R${ri + 1}  (${left[li]} -> ${right[ri] || "(none)"})`,
       )
       .join("\n") || "(none)";
 
@@ -821,21 +827,21 @@ function buildVocabTranslateStreamPrompt({
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE greeting-only sentence. It MUST include a basic greeting like "hello", "hi", "good morning", "good afternoon", "good evening", "goodbye", or "bye". Use ONLY greetings (no colors, animals, objects, or unrelated nouns). Keep it 2–4 words and absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
-    ? [
-        lessonContent.words
-          ? `- STRICT REQUIREMENT: Use words from this list: ${JSON.stringify(
-              lessonContent.words
-            )}. This is lesson-specific vocabulary.`
-          : null,
-        lessonContent.topic
-          ? `- STRICT REQUIREMENT: Focus on vocabulary topic: ${lessonContent.topic}.`
-          : null,
-      ]
-        .filter(Boolean)
-        .join("\n") + varietyLines
-    : `- Consider learner recent corrects: ${JSON.stringify(
-        recentGood.slice(-3)
-      )}`;
+      ? [
+          lessonContent.words
+            ? `- STRICT REQUIREMENT: Use words from this list: ${JSON.stringify(
+                lessonContent.words,
+              )}. This is lesson-specific vocabulary.`
+            : null,
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus on vocabulary topic: ${lessonContent.topic}.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n") + varietyLines
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3),
+        )}`;
 
   const languageGuard = [
     `- LANGUAGE RULES (MANDATORY):`,
@@ -977,7 +983,7 @@ function ensureAnswersInChoices(choices, answers) {
       const nonAnswerIdx = newChoices.findIndex(
         (c) =>
           !validAnswers.some((a) => norm(a) === norm(c)) &&
-          !answers.some((a) => norm(a) === norm(c))
+          !answers.some((a) => norm(a) === norm(c)),
       );
       if (nonAnswerIdx !== -1) {
         newChoices[nonAnswerIdx] = String(ans);
@@ -1035,7 +1041,7 @@ export default function Vocabulary({
 
   const quizStorageKey = useMemo(
     () => (lesson?.id ? `quiz-progress:${lesson.id}` : null),
-    [lesson?.id]
+    [lesson?.id],
   );
 
   useEffect(() => {
@@ -1172,7 +1178,7 @@ export default function Vocabulary({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
-    }[code] || code);
+    })[code] || code;
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
@@ -1210,7 +1216,8 @@ export default function Vocabulary({
 
   // inline assistant support feature (replaces modal)
   const [assistantSupportText, setAssistantSupportText] = useState("");
-  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
+  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] =
+    useState(false);
 
   function showCopyToast() {
     toast({
@@ -1232,7 +1239,7 @@ export default function Vocabulary({
       lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
     if (tr?.trim())
       lines.push(
-        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim()
+        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim(),
       );
     return lines.join("\n");
   }
@@ -1263,7 +1270,8 @@ export default function Vocabulary({
 
   // Inline assistant support - streams response directly in the UI
   async function handleAskAssistant(questionContext) {
-    if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
+    if (!questionContext || isLoadingAssistantSupport || assistantSupportText)
+      return;
 
     playSound(submitSound);
     setIsLoadingAssistantSupport(true);
@@ -1275,8 +1283,8 @@ export default function Vocabulary({
         level === "beginner"
           ? "Use short, simple sentences."
           : level === "intermediate"
-          ? "Be concise and natural."
-          : "Be succinct and native-like.";
+            ? "Be concise and natural."
+            : "Be succinct and native-like.";
 
       const instruction = [
         "You are a helpful language study buddy for quick questions.",
@@ -1322,7 +1330,7 @@ export default function Vocabulary({
           response ||
             (userLanguage === "es"
               ? "No se pudo generar una respuesta en este momento."
-              : "Could not generate a response at this time.")
+              : "Could not generate a response at this time."),
         );
       }
     } catch (error) {
@@ -1330,7 +1338,7 @@ export default function Vocabulary({
       setAssistantSupportText(
         userLanguage === "es"
           ? "No se pudo generar una respuesta en este momento."
-          : "Could not generate a response at this time."
+          : "Could not generate a response at this time.",
       );
     } finally {
       setIsLoadingAssistantSupport(false);
@@ -1584,7 +1592,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           explanation ||
             (userLanguage === "es"
               ? "No se pudo generar una explicación en este momento."
-              : "Could not generate an explanation at this time.")
+              : "Could not generate an explanation at this time."),
         );
       }
     } catch (error) {
@@ -1592,7 +1600,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       setExplanationText(
         userLanguage === "es"
           ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time."
+          : "Could not generate an explanation at this time.",
       );
     } finally {
       setIsLoadingExplanation(false);
@@ -1811,12 +1819,14 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const questionAudioRef = useRef(null);
   const questionAudioUrlRef = useRef(null);
   const questionTextRef = useRef("");
+  const questionPlaybackRequestRef = useRef(0);
 
   // Match word TTS state
   const [matchWordSynthesizing, setMatchWordSynthesizing] = useState(null); // index of word being synthesized
   const matchWordAudioRef = useRef(null);
 
   const stopModuleTTS = useCallback(() => {
+    questionPlaybackRequestRef.current += 1;
     stopAllTTSPlayback();
     speakAudioRef.current = null;
     questionAudioRef.current = null;
@@ -1899,8 +1909,17 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const types = repeatOnlyQuestions
     ? ["repeat"]
     : isFinalQuiz
-    ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
-    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat", "flashcard"];
+      ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
+      : [
+          "fill",
+          "mc",
+          "ma",
+          "speak",
+          "match",
+          "translate",
+          "repeat",
+          "flashcard",
+        ];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1999,7 +2018,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const useDrag = shouldUseDragVariant(
       qMC,
       choicesMC,
-      [answerMC].filter(Boolean)
+      [answerMC].filter(Boolean),
     );
     setMcLayout(useDrag ? "drag" : "buttons");
     setMcSlotIndex(null);
@@ -2079,7 +2098,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         setPickMC("");
       }
     },
-    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
+    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC],
   );
 
   const handleMaDragEnd = useCallback(
@@ -2150,7 +2169,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         });
       }
     },
-    [maLayout, maBankOrder, maSlots]
+    [maLayout, maBankOrder, maSlots],
   );
 
   // Auto-drag handlers for click-to-place functionality
@@ -2171,7 +2190,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       setMcSlotIndex(choiceIdx);
       setPickMC(choicesMC[choiceIdx] || "");
     },
-    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
+    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC],
   );
 
   const handleMaAnswerClick = useCallback(
@@ -2198,7 +2217,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return next;
       });
     },
-    [maLayout, maBankOrder, maSlots]
+    [maLayout, maBankOrder, maSlots],
   );
 
   useEffect(() => {
@@ -2308,7 +2327,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
                   setTrFill(obj.translation);
                 gotSomething = true;
               }
-            })
+            }),
           );
       }
 
@@ -2319,11 +2338,11 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         model: MODEL,
         input: `
 Create ONE short ${LANG_NAME(
-          targetLang
+          targetLang,
         )} VOCAB sentence with a single blank "___" (not grammar), ≤120 chars.
 Return EXACTLY:
 <sentence> ||| <hint in ${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )}> ||| <${showTranslations ? "translation" : '""'}>
 `.trim(),
       });
@@ -2339,7 +2358,7 @@ Return EXACTLY:
         setTrFill(
           showTranslations && supportCode === "es"
             ? "Completa: Sintió un profundo ___ tras su error."
-            : ""
+            : "",
         );
       }
     } finally {
@@ -2504,7 +2523,7 @@ Return EXACTLY:
               if (pendingAnswer) {
                 const { choices, answer } = ensureAnswerInChoices(
                   rawChoices,
-                  pendingAnswer
+                  pendingAnswer,
                 );
                 setChoicesMC(choices);
                 setAnswerMC(answer);
@@ -2520,7 +2539,7 @@ Return EXACTLY:
                 if (Array.isArray(choicesMC) && choicesMC.length) {
                   const { choices, answer } = ensureAnswerInChoices(
                     choicesMC,
-                    pendingAnswer
+                    pendingAnswer,
                   );
                   setChoicesMC(choices);
                   setAnswerMC(answer);
@@ -2566,7 +2585,7 @@ Return EXACTLY:
                 if (pendingAnswer) {
                   const { choices, answer } = ensureAnswerInChoices(
                     rawChoices,
-                    pendingAnswer
+                    pendingAnswer,
                   );
                   setChoicesMC(choices);
                   setAnswerMC(answer);
@@ -2583,7 +2602,7 @@ Return EXACTLY:
                   if (Array.isArray(choicesMC) && choicesMC.length) {
                     const { choices, answer } = ensureAnswerInChoices(
                       choicesMC,
-                      pendingAnswer
+                      pendingAnswer,
                     );
                     setChoicesMC(choices);
                     setAnswerMC(answer);
@@ -2591,14 +2610,14 @@ Return EXACTLY:
                 }
                 got = true;
               }
-            })
+            }),
           );
       }
 
       if (tempChoices.length && pendingAnswer) {
         const { choices, answer } = ensureAnswerInChoices(
           tempChoices,
-          pendingAnswer
+          pendingAnswer,
         );
         setChoicesMC(choices);
         setAnswerMC(answer);
@@ -2618,11 +2637,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 {
   "question":"<stem>",
   "hint":"<hint in ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )}>",
   "choices":["<choice1>","<choice2>","<choice3>","<choice4>"],
   "notes":"Replace <choiceN> placeholders with actual ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )} options.",
   "answer":"<exact correct choice>",
   "translation":"${showTranslations ? "<translation>" : ""}"
@@ -2641,7 +2660,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         // Ensure the correct answer is always in choices
         const { choices, answer } = ensureAnswerInChoices(
           rawChoices,
-          parsed.answer
+          parsed.answer,
         );
         setQMC(String(parsed.question));
         setHMC(String(parsed.hint || ""));
@@ -2657,7 +2676,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         setTrMC(
           showTranslations && supportCode === "es"
             ? "Elige el mejor sinónimo de “quick”."
-            : ""
+            : "",
         );
       }
     } finally {
@@ -2847,7 +2866,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
               if (pendingAnswers?.length) {
                 const { choices, answers } = ensureAnswersInChoices(
                   rawChoices,
-                  pendingAnswers
+                  pendingAnswers,
                 );
                 setChoicesMA(choices);
                 if (answers.length >= 2) setAnswersMA(answers);
@@ -2863,7 +2882,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 if (Array.isArray(choicesMA) && choicesMA.length) {
                   const { choices, answers } = ensureAnswersInChoices(
                     choicesMA,
-                    pendingAnswers
+                    pendingAnswers,
                   );
                   setChoicesMA(choices);
                   if (answers.length >= 2) setAnswersMA(answers);
@@ -2909,7 +2928,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 if (pendingAnswers?.length) {
                   const { choices, answers } = ensureAnswersInChoices(
                     rawChoices,
-                    pendingAnswers
+                    pendingAnswers,
                   );
                   setChoicesMA(choices);
                   if (answers.length >= 2) setAnswersMA(answers);
@@ -2926,7 +2945,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                   if (Array.isArray(choicesMA) && choicesMA.length) {
                     const { choices, answers } = ensureAnswersInChoices(
                       choicesMA,
-                      pendingAnswers
+                      pendingAnswers,
                     );
                     setChoicesMA(choices);
                     if (answers.length >= 2) setAnswersMA(answers);
@@ -2934,14 +2953,14 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 }
                 got = true;
               }
-            })
+            }),
           );
       }
 
       if (tempChoices.length && pendingAnswers.length) {
         const { choices, answers } = ensureAnswersInChoices(
           tempChoices,
-          pendingAnswers
+          pendingAnswers,
         );
         setChoicesMA(choices);
         if (answers.length >= 2) setAnswersMA(answers);
@@ -2966,7 +2985,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 {
   "question":"<stem>",
   "hint":"<hint in ${LANG_NAME(
-    resolveSupportLang(supportLang, userLanguage)
+    resolveSupportLang(supportLang, userLanguage),
   )}>",
   "choices":["...","...","...","...","..."],
   "answers":["<correct>","<correct>"],
@@ -2991,7 +3010,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
         setTrMA(
           showTranslations && supportCode === "es"
             ? "Selecciona todos los sinónimos de “angry”."
-            : ""
+            : "",
         );
       }
     } finally {
@@ -3164,7 +3183,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
                   setSTranslation(obj.translation);
                 got = true;
               }
-            })
+            }),
           );
       }
 
@@ -3174,18 +3193,18 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
         model: MODEL,
         input: `
 Create ONE ${LANG_NAME(
-          targetLang
+          targetLang,
         )} speaking drill. Randomly choose VARIANT from:
 - repeat: show the ${LANG_NAME(
-          targetLang
+          targetLang,
         )} word/phrase and have them repeat it aloud.
 - translate: show a ${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )} word and have them speak the ${LANG_NAME(
-          targetLang
+          targetLang,
         )} translation aloud.
 - complete: show a ${LANG_NAME(
-          targetLang
+          targetLang,
         )} sentence with ___ and have them speak the completed sentence aloud.
 
 Return JSON ONLY:
@@ -3198,7 +3217,7 @@ Return JSON ONLY:
   "translation":"${
     showTranslations
       ? `<${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )} translation or context>`
       : ""
   }"
@@ -3228,83 +3247,87 @@ Return JSON ONLY:
             targetLang === "es"
               ? "bosque"
               : targetLang === "nah"
-              ? "kwawitl"
-              : "forest"
+                ? "kwawitl"
+                : "forest",
           );
           setSPrompt(
             targetLang === "es"
               ? `Traduce en voz alta: ${supportWord}.`
               : targetLang === "nah"
-              ? `Kijtoa tlen nechicoliz: ${supportWord}.`
-              : `Translate aloud: ${supportWord}.`
+                ? `Kijtoa tlen nechicoliz: ${supportWord}.`
+                : `Translate aloud: ${supportWord}.`,
           );
           setSHint(
             supportCode === "es"
               ? "Di la versión en español"
-              : "Say it in the target language"
+              : "Say it in the target language",
           );
           setSTranslation(
-            showTranslations ? (supportCode === "es" ? "bosque" : "forest") : ""
+            showTranslations
+              ? supportCode === "es"
+                ? "bosque"
+                : "forest"
+              : "",
           );
         } else if (fallbackVariant === "complete") {
           const cloze =
             targetLang === "es"
               ? "Completa: La niña ___ una canción."
               : targetLang === "nah"
-              ? "Tlatzotzona: Pilli ___ tlahkuiloa."
-              : "Complete: The child ___ a song.";
+                ? "Tlatzotzona: Pilli ___ tlahkuiloa."
+                : "Complete: The child ___ a song.";
           const completed =
             targetLang === "es"
               ? "La niña canta una canción."
               : targetLang === "nah"
-              ? "Pilli tlahkuiloa tlatzotzontli."
-              : "The child sings a song.";
+                ? "Pilli tlahkuiloa tlatzotzontli."
+                : "The child sings a song.";
           setSStimulus(cloze);
           setSTarget(completed);
           setSPrompt(
             targetLang === "es"
               ? "Di la oración completa con la palabra que falta."
               : targetLang === "nah"
-              ? "Kijtoa nochi tlahtolli tlen mokpano."
-              : "Say the full sentence with the missing word."
+                ? "Kijtoa nochi tlahtolli tlen mokpano."
+                : "Say the full sentence with the missing word.",
           );
           setSHint(
             supportCode === "es"
               ? "El verbo es 'cantar'"
-              : "The verb is 'to sing'"
+              : "The verb is 'to sing'",
           );
           setSTranslation(
             showTranslations
               ? supportCode === "es"
                 ? "La niña canta una canción."
                 : "The girl sings a song."
-              : ""
+              : "",
           );
         } else {
           const repeatWord =
             targetLang === "es"
               ? "sonrisa"
               : targetLang === "nah"
-              ? "yolpaki"
-              : "harmony";
+                ? "yolpaki"
+                : "harmony";
           setSStimulus(repeatWord);
           setSTarget(repeatWord);
           setSPrompt(
             targetLang === "es"
               ? "Di la palabra claramente: sonrisa."
               : targetLang === "nah"
-              ? "Pronuncia la palabra con calma: yolpaki."
-              : "Say this word out loud: harmony."
+                ? "Pronuncia la palabra con calma: yolpaki."
+                : "Say this word out loud: harmony.",
           );
           setSHint(
-            supportCode === "es" ? "significa felicidad" : "means happiness"
+            supportCode === "es" ? "significa felicidad" : "means happiness",
           );
           setSTranslation(
             showTranslations
               ? supportCode === "es"
                 ? "sonrisa"
                 : "harmony"
-              : ""
+              : "",
           );
         }
       }
@@ -3424,7 +3447,7 @@ Return JSON ONLY:
                 setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
                 okPayload = true;
               }
-            })
+            }),
           );
       }
 
@@ -3436,9 +3459,9 @@ Return JSON ONLY:
         input: `
 Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 {"stem":"<stem>","left":["<word>","..."],"right":["<short ${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )} definition>","..."],"hint":"<${LANG_NAME(
-          resolveSupportLang(supportLang, userLanguage)
+          resolveSupportLang(supportLang, userLanguage),
         )} hint>"}
 `.trim(),
       });
@@ -3498,8 +3521,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
-        ? "target-tts-support-bank"
-        : "support-tts-target-bank"
+          ? "target-tts-support-bank"
+          : "support-tts-target-bank"
       : null;
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
@@ -3510,11 +3533,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
-        ? "target-to-support"
-        : "support-to-target"
+          ? "target-to-support"
+          : "support-to-target"
       : Math.random() < 0.5
-      ? "target-to-support"
-      : "support-to-target";
+        ? "target-to-support"
+        : "support-to-target";
 
     setQuestionTTsLang(
       repeatVariant
@@ -3522,8 +3545,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? targetLang
           : supportCode
         : direction === "target-to-support"
-        ? targetLang
-        : supportCode
+          ? targetLang
+          : supportCode,
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -3638,7 +3661,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ) {
                 setTHint(String(obj.hint).trim());
               }
-            })
+            }),
           );
       }
 
@@ -3673,7 +3696,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
           setTWordBank(
-            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"]),
           );
           setTHint("Colors and animals vocabulary");
         } else {
@@ -3682,7 +3705,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
           setTWordBank(
-            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]),
           );
           setTHint("Colors and animals vocabulary");
         }
@@ -3693,7 +3716,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
           setTWordBank(
-            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]),
           );
           setTHint("Vocabulario de colores y animales");
         } else {
@@ -3702,7 +3725,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
           setTWordBank(
-            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"]),
           );
           setTHint("Vocabulario de colores y animales");
         }
@@ -4071,7 +4094,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       targetName,
       toast,
       userLanguage,
-    ]
+    ],
   );
 
   const {
@@ -4190,7 +4213,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
-  }, [mHint, mLeft, mRight, mStem, isLoadingAssistantSupport, assistantSupportText, userLanguage]);
+  }, [
+    mHint,
+    mLeft,
+    mRight,
+    mStem,
+    isLoadingAssistantSupport,
+    assistantSupportText,
+    userLanguage,
+  ]);
 
   const sendSpeakHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
@@ -4201,8 +4232,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
           : "Say it aloud (translate). Provide the target language translation for the given word."
         : isSpanishUI
-        ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
-        : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
+          ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
+          : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
 
     const details = [
       sPrompt
@@ -4302,7 +4333,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     return (
       <IconButton
         aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
-        icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
+        icon={
+          isLoadingAssistantSupport ? (
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={16}
+            />
+          ) : (
+            <MdOutlineSupportAgent />
+          )
+        }
         size="sm"
         fontSize="lg"
         rounded="xl"
@@ -4334,7 +4376,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           <Text fontWeight="semibold" color="blue.300">
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
-          {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
+          {isLoadingAssistantSupport && (
+            <VoiceOrb
+              state={
+                ["idle", "listening", "speaking"][Math.floor(Math.random() * 3)]
+              }
+              size={16}
+            />
+          )}
         </HStack>
         <Box
           fontSize="md"
@@ -4378,12 +4427,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const nodes = [];
     segments.forEach((segment, idx) => {
       nodes.push(
-        <React.Fragment key={`mc-segment-${idx}`}>{segment}</React.Fragment>
+        <React.Fragment key={`mc-segment-${idx}`}>{segment}</React.Fragment>,
       );
       if (idx < segments.length - 1) {
         if (blankPlaced) {
           nodes.push(
-            <React.Fragment key={`mc-gap-${idx}`}>___</React.Fragment>
+            <React.Fragment key={`mc-gap-${idx}`}>___</React.Fragment>,
           );
           return;
         }
@@ -4469,7 +4518,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Box>
               </Box>
             )}
-          </Droppable>
+          </Droppable>,
         );
       }
     });
@@ -4486,14 +4535,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const nodes = [];
     segments.forEach((segment, idx) => {
       nodes.push(
-        <React.Fragment key={`ma-segment-${idx}`}>{segment}</React.Fragment>
+        <React.Fragment key={`ma-segment-${idx}`}>{segment}</React.Fragment>,
       );
       if (idx < segments.length - 1) {
         const currentSlot = slotNumber;
         slotNumber += 1;
         if (currentSlot >= maSlots.length) {
           nodes.push(
-            <React.Fragment key={`ma-gap-${idx}`}>___</React.Fragment>
+            <React.Fragment key={`ma-gap-${idx}`}>___</React.Fragment>,
           );
           return;
         }
@@ -4583,7 +4632,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Box>
               </Box>
             )}
-          </Droppable>
+          </Droppable>,
         );
       }
     });
@@ -4608,17 +4657,38 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
 
+  const createWarmAudio = useCallback(async () => {
+    try {
+      const warm = new Audio();
+      warm.playsInline = true;
+      warm.muted = true;
+      warm.volume = 0;
+      warm.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      await warm.play();
+      warm.pause();
+      try {
+        warm.currentTime = 0;
+      } catch {}
+      warm.muted = false;
+      warm.volume = 1;
+      return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
     if (!text) return;
 
-    if (isSpeakPlaying && speakAudioRef.current) {
-      stopModuleTTS();
-      return;
-    }
+    stopModuleTTS();
+    const requestId = questionPlaybackRequestRef.current;
 
     try {
-      stopModuleTTS();
+      const warmAudio = await createWarmAudio();
+      if (requestId !== questionPlaybackRequestRef.current) return;
+
       setIsSpeakSynthesizing(true);
       setIsSpeakPlaying(true);
 
@@ -4626,41 +4696,65 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         text,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        warmAudio,
       });
+
+      if (requestId !== questionPlaybackRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
+
       speakAudioUrlRef.current = player.audioUrl;
 
       const audio = player.audio;
       speakAudioRef.current = audio;
       audio.onended = () => {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
         player.cleanup?.();
       };
       audio.onerror = () => {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
         player.cleanup?.();
       };
       await player.ready;
+      if (requestId !== questionPlaybackRequestRef.current) {
+        player.cleanup?.();
+        return;
+      }
       setIsSpeakSynthesizing(false);
       await audio.play();
+      if (requestId !== questionPlaybackRequestRef.current) return;
+      setIsSpeakPlaying(false);
     } catch (err) {
+      if (requestId !== questionPlaybackRequestRef.current) return;
       console.error("Vocabulary speak playback failed", err);
       stopModuleTTS();
     }
-  }, [isSpeakPlaying, sTarget, stopModuleTTS, toast, userLanguage]);
+  }, [
+    createWarmAudio,
+    sTarget,
+    stopModuleTTS,
+    toast,
+    userLanguage,
+    targetLang,
+  ]);
 
   const handlePlayQuestionTTS = useCallback(
-    async (text, langOverride = null) => {
+    async (text, langOverride = null, options = {}) => {
       const ttsText = (text || "").trim().replace(/___/g, " … ");
       if (!ttsText) return;
-      if (isQuestionPlaying && questionTextRef.current === ttsText) {
-        stopModuleTTS();
-        return;
-      }
+      const { warmAudio: providedWarmAudio = null } = options;
+
+      stopModuleTTS();
+      const requestId = questionPlaybackRequestRef.current;
 
       try {
-        stopModuleTTS();
+        const warmAudio = providedWarmAudio || (await createWarmAudio());
+        if (requestId !== questionPlaybackRequestRef.current) return;
         setIsQuestionSynthesizing(true);
         questionTextRef.current = ttsText;
 
@@ -4669,31 +4763,44 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           text: ttsText,
           langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
+          warmAudio,
         });
+
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
 
         questionAudioUrlRef.current = player.audioUrl;
         const audio = player.audio;
         questionAudioRef.current = audio;
         audio.onended = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
           player.cleanup?.();
         };
         audio.onerror = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
           player.cleanup?.();
         };
         await player.ready;
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(true);
         await audio.play();
       } catch (err) {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         console.error("Vocabulary question playback failed", err);
         stopModuleTTS();
       }
     },
-    [isQuestionPlaying, stopModuleTTS, targetLang, toast, userLanguage]
+    [createWarmAudio, stopModuleTTS, targetLang, toast, userLanguage],
   );
 
   // Handler for playing TTS on individual match words
@@ -4707,46 +4814,80 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         try {
           matchWordAudioRef.current?.pause?.();
         } catch {}
+        matchWordAudioRef.current?.srcObject
+          ?.getAudioTracks?.()
+          ?.forEach((track) => track.stop?.());
         matchWordAudioRef.current = null;
         setMatchWordSynthesizing(null);
         return;
       }
 
-      try {
-        setMatchWordSynthesizing(index);
+      stopModuleTTS();
+      const requestId = questionPlaybackRequestRef.current;
 
-        // Stop any existing playback
-        try {
-          matchWordAudioRef.current?.pause?.();
-        } catch {}
-        matchWordAudioRef.current = null;
+      try {
+        const warmAudio = await createWarmAudio();
+        if (requestId !== questionPlaybackRequestRef.current) return;
+        setMatchWordSynthesizing(index);
 
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
+          warmAudio,
         });
 
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+
         const audio = player.audio;
+        const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
+        const handleTrackMute = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          setMatchWordSynthesizing(null);
+        };
+        audioTracks.forEach((track) => {
+          if (track.muted) {
+            handleTrackMute();
+          } else {
+            track.addEventListener("mute", handleTrackMute, { once: true });
+          }
+        });
         matchWordAudioRef.current = audio;
         audio.onended = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          audioTracks.forEach((track) =>
+            track.removeEventListener("mute", handleTrackMute),
+          );
           setMatchWordSynthesizing(null);
           matchWordAudioRef.current = null;
           player.cleanup?.();
         };
         audio.onerror = () => {
+          if (requestId !== questionPlaybackRequestRef.current) return;
+          audioTracks.forEach((track) =>
+            track.removeEventListener("mute", handleTrackMute),
+          );
           setMatchWordSynthesizing(null);
           matchWordAudioRef.current = null;
           player.cleanup?.();
         };
         await player.ready;
+        if (requestId !== questionPlaybackRequestRef.current) {
+          player.cleanup?.();
+          return;
+        }
+        setMatchWordSynthesizing(null);
         await audio.play();
       } catch (err) {
+        if (requestId !== questionPlaybackRequestRef.current) return;
         console.error("Match word playback failed", err);
         setMatchWordSynthesizing(null);
       }
     },
-    [matchWordSynthesizing, targetLang]
+    [createWarmAudio, matchWordSynthesizing, targetLang],
   );
 
   const maReady =
@@ -4795,8 +4936,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             !hasAnswer
                               ? "gray.700"
                               : isCorrect
-                              ? "blue.400"
-                              : "red.400"
+                                ? "blue.400"
+                                : "red.400"
                           }
                           borderRadius="sm"
                           position="relative"
@@ -4836,7 +4977,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           }
                         />
                       );
-                    }
+                    },
                   )}
                 </HStack>
 
@@ -4943,8 +5084,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Cerrar teclado"
                       : "Close keyboard"
                     : userLanguage === "es"
-                    ? "Abrir teclado"
-                    : "Open keyboard"}
+                      ? "Abrir teclado"
+                      : "Open keyboard"}
                 </Button>
               )}
               {canSkip && (
@@ -4970,7 +5111,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGFill ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
+                {loadingGFill ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("vocab_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5133,8 +5285,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   {(choicesMC.length
                     ? choicesMC
                     : loadingQMC
-                    ? ["…", "…", "…", "…"]
-                    : []
+                      ? ["…", "…", "…", "…"]
+                      : []
                   ).map((c, i) => (
                     <Box
                       key={i}
@@ -5239,7 +5391,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMC ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
+                {loadingGMC ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("vocab_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5402,8 +5565,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   {(choicesMA.length
                     ? choicesMA
                     : loadingQMA
-                    ? ["…", "…", "…", "…", "…"]
-                    : []
+                      ? ["…", "…", "…", "…", "…"]
+                      : []
                   ).map((c, i) => {
                     const isSelected = picksMA.includes(c);
                     return (
@@ -5517,7 +5680,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMA ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
+                {loadingGMA ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("vocab_submit")
+                )}
               </Button>
             </Stack>
 
@@ -5547,12 +5721,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
                 {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
               </Text>
-              {(sVariant === "translate" || sVariant === "complete") ? (
+              {sVariant === "translate" || sVariant === "complete" ? (
                 <IconButton
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
+                  icon={
+                    isLoadingAssistantSupport ? (
+                      <VoiceOrb
+                        state={
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ]
+                        }
+                        size={16}
+                      />
+                    ) : (
+                      <MdOutlineSupportAgent />
+                    )
+                  }
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -5560,7 +5747,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   color="blue"
                   boxShadow="0 4px 0 blue"
                   onClick={sendSpeakHelp}
-                  isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+                  isDisabled={
+                    isLoadingAssistantSupport || !!assistantSupportText
+                  }
                 />
               ) : null}
             </HStack>
@@ -5587,17 +5776,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     aria-label={speakListenLabel}
                     icon={renderSpeakerIcon(isSpeakSynthesizing)}
                     size="sm"
-                    variant="solid"
-                    colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                    variant="ghost"
                     position="absolute"
                     top="3"
                     right="3"
                     onClick={handleToggleSpeakPlayback}
                     isDisabled={!sTarget}
                   />
-                  <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
-                    {speakVariantLabel}
-                  </Badge>
+
                   <Text fontSize="3xl" fontWeight="700">
                     {sStimulus || sTarget || "…"}
                   </Text>
@@ -5649,7 +5835,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 py={{ base: 3, md: 4 }}
                 leftIcon={
                   isSpeakConnecting ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={24}
+                    />
                   ) : isSpeakRecording ? (
                     <RiStopCircleLine />
                   ) : (
@@ -5713,9 +5906,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     }
                   }
                 }}
-                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget || isSpeakConnecting}
+                isDisabled={
+                  !supportsSpeak ||
+                  loadingQSpeak ||
+                  !sTarget ||
+                  isSpeakConnecting
+                }
                 _hover={
-                  isSpeakRecording ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
+                  isSpeakRecording
+                    ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                    : undefined
                 }
               >
                 {isSpeakConnecting
@@ -5723,10 +5923,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     ? "Conectando..."
                     : "Connecting..."
                   : isSpeakRecording
-                  ? t("vocab_speak_stop") ||
-                    (userLanguage === "es" ? "Detener" : "Stop")
-                  : t("vocab_speak_record") ||
-                    (userLanguage === "es" ? "Grabar" : "Record")}
+                    ? t("vocab_speak_stop") ||
+                      (userLanguage === "es" ? "Detener" : "Stop")
+                    : t("vocab_speak_record") ||
+                      (userLanguage === "es" ? "Grabar" : "Record")}
               </Button>
             </Stack>
 
@@ -5805,7 +6005,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={isLoadingAssistantSupport ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} /> : <MdOutlineSupportAgent />}
+                  icon={
+                    isLoadingAssistantSupport ? (
+                      <VoiceOrb
+                        state={
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ]
+                        }
+                        size={16}
+                      />
+                    ) : (
+                      <MdOutlineSupportAgent />
+                    )
+                  }
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -5813,143 +6026,161 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   color="blue"
                   boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
-                  isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+                  isDisabled={
+                    isLoadingAssistantSupport || !!assistantSupportText
+                  }
                 />
               </HStack>
 
               <DragDropContext onDragEnd={onDragEnd}>
                 <VStack align="stretch" spacing={3}>
-                  {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
-                    (lhs, i) => (
+                  {(mLeft.length
+                    ? mLeft
+                    : loadingMG
+                      ? ["…", "…", "…"]
+                      : []
+                  ).map((lhs, i) => (
+                    <HStack
+                      key={i}
+                      align="center"
+                      spacing={3}
+                      bg="rgba(255,255,255,0.025)"
+                      rounded="xl"
+                      px={3}
+                      py={2}
+                      border="1px solid rgba(255,255,255,0.05)"
+                    >
+                      {/* Left word */}
                       <HStack
-                        key={i}
-                        align="center"
-                        spacing={3}
-                        bg="rgba(255,255,255,0.025)"
-                        rounded="xl"
-                        px={3}
-                        py={2}
-                        border="1px solid rgba(255,255,255,0.05)"
+                        minW={{ base: "120px", md: "180px" }}
+                        spacing={1}
+                        flexShrink={0}
                       >
-                        {/* Left word */}
-                        <HStack minW={{ base: "120px", md: "180px" }} spacing={1} flexShrink={0}>
-                          <IconButton
-                            aria-label={
-                              userLanguage === "es"
-                                ? "Escuchar palabra"
-                                : "Listen to word"
+                        <IconButton
+                          aria-label={
+                            userLanguage === "es"
+                              ? "Escuchar palabra"
+                              : "Listen to word"
+                          }
+                          icon={renderSpeakerIcon(matchWordSynthesizing === i)}
+                          size="xs"
+                          fontSize="md"
+                          variant="ghost"
+                          color="cyan.300"
+                          onClick={() => handlePlayMatchWordTTS(lhs, i)}
+                          isDisabled={!lhs || lhs === "…"}
+                        />
+                        <Text fontWeight="semibold" color="white">
+                          {lhs}
+                        </Text>
+                      </HStack>
+
+                      {/* Arrow */}
+                      <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>
+                        →
+                      </Text>
+
+                      {/* Drop slot */}
+                      <Droppable
+                        droppableId={`slot-${i}`}
+                        direction="horizontal"
+                      >
+                        {(provided) => (
+                          <HStack
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            minH="42px"
+                            px={3}
+                            border={
+                              mSlots[i] !== null && mRight[mSlots[i]] != null
+                                ? "1px solid rgba(128,90,213,0.4)"
+                                : "1px dashed rgba(255,255,255,0.15)"
                             }
-                            icon={renderSpeakerIcon(matchWordSynthesizing === i)}
-                            size="xs"
-                            fontSize="md"
-                            variant="ghost"
-                            color="cyan.300"
-                            onClick={() => handlePlayMatchWordTTS(lhs, i)}
-                            isDisabled={!lhs || lhs === "…"}
-                          />
-                          <Text fontWeight="semibold" color="white">{lhs}</Text>
-                        </HStack>
-
-                        {/* Arrow */}
-                        <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>→</Text>
-
-                        {/* Drop slot */}
-                        <Droppable
-                          droppableId={`slot-${i}`}
-                          direction="horizontal"
-                        >
-                          {(provided) => (
-                            <HStack
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              minH="42px"
-                              px={3}
-                              border={
-                                mSlots[i] !== null && mRight[mSlots[i]] != null
-                                  ? "1px solid rgba(128,90,213,0.4)"
-                                  : "1px dashed rgba(255,255,255,0.15)"
-                              }
-                              bg={
-                                mSlots[i] !== null && mRight[mSlots[i]] != null
-                                  ? "rgba(128,90,213,0.1)"
-                                  : "rgba(255,255,255,0.02)"
-                              }
-                              rounded="lg"
-                              w="100%"
-                              transition="all 0.2s ease"
-                            >
-                              {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
-                                <Draggable
-                                  draggableId={`r-${mSlots[i]}`}
-                                  index={0}
-                                >
-                                  {(dragProvided) => (
-                                    <Box
-                                      ref={dragProvided.innerRef}
-                                      {...dragProvided.draggableProps}
-                                      {...dragProvided.dragHandleProps}
-                                      onClick={() => {
+                            bg={
+                              mSlots[i] !== null && mRight[mSlots[i]] != null
+                                ? "rgba(128,90,213,0.1)"
+                                : "rgba(255,255,255,0.02)"
+                            }
+                            rounded="lg"
+                            w="100%"
+                            transition="all 0.2s ease"
+                          >
+                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                              <Draggable
+                                draggableId={`r-${mSlots[i]}`}
+                                index={0}
+                              >
+                                {(dragProvided) => (
+                                  <Box
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    onClick={() => {
+                                      playSound(selectSound);
+                                      handleMatchAutoMove(
+                                        mSlots[i],
+                                        `slot-${i}`,
+                                      );
+                                    }}
+                                    onKeyDown={(event) => {
+                                      if (
+                                        event.key === "Enter" ||
+                                        event.key === " "
+                                      ) {
+                                        event.preventDefault();
                                         playSound(selectSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
-                                          `slot-${i}`
+                                          `slot-${i}`,
                                         );
-                                      }}
-                                      onKeyDown={(event) => {
-                                        if (
-                                          event.key === "Enter" ||
-                                          event.key === " "
-                                        ) {
-                                          event.preventDefault();
-                                          playSound(selectSound);
-                                          handleMatchAutoMove(
-                                            mSlots[i],
-                                            `slot-${i}`
-                                          );
-                                        }
-                                      }}
-                                      role="button"
-                                      tabIndex={0}
-                                      style={{
-                                        cursor: "pointer",
-                                        transition:
-                                          "transform 0.18s ease, box-shadow 0.18s ease",
-                                        ...(dragProvided.draggableProps.style ||
-                                          {}),
-                                      }}
-                                      _hover={{
-                                        transform: "translateY(-2px)",
-                                        boxShadow: "0 4px 12px rgba(128,90,213,0.3)",
-                                      }}
-                                      _focusVisible={{
-                                        boxShadow:
-                                          "0 0 0 2px rgba(128,90,213,0.5)",
-                                        transform: "translateY(-2px)",
-                                      }}
-                                      px={3}
-                                      py={1.5}
-                                      rounded="lg"
-                                      bg="rgba(128,90,213,0.15)"
-                                      border="1px solid rgba(128,90,213,0.35)"
-                                      color="white"
-                                      fontSize="sm"
-                                    >
-                                      {mRight[mSlots[i]]}
-                                    </Box>
-                                  )}
-                                </Draggable>
-                              ) : (
-                                <Text opacity={0.4} fontSize="sm" fontStyle="italic">
-                                  {t("vocab_dnd_drop_here")}
-                                </Text>
-                              )}
-                              {provided.placeholder}
-                            </HStack>
-                          )}
-                        </Droppable>
-                      </HStack>
-                    )
-                  )}
+                                      }
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
+                                    style={{
+                                      cursor: "pointer",
+                                      transition:
+                                        "transform 0.18s ease, box-shadow 0.18s ease",
+                                      ...(dragProvided.draggableProps.style ||
+                                        {}),
+                                    }}
+                                    _hover={{
+                                      transform: "translateY(-2px)",
+                                      boxShadow:
+                                        "0 4px 12px rgba(128,90,213,0.3)",
+                                    }}
+                                    _focusVisible={{
+                                      boxShadow:
+                                        "0 0 0 2px rgba(128,90,213,0.5)",
+                                      transform: "translateY(-2px)",
+                                    }}
+                                    px={3}
+                                    py={1.5}
+                                    rounded="lg"
+                                    bg="rgba(128,90,213,0.15)"
+                                    border="1px solid rgba(128,90,213,0.35)"
+                                    color="white"
+                                    fontSize="sm"
+                                  >
+                                    {mRight[mSlots[i]]}
+                                  </Box>
+                                )}
+                              </Draggable>
+                            ) : (
+                              <Text
+                                opacity={0.4}
+                                fontSize="sm"
+                                fontStyle="italic"
+                              >
+                                {t("vocab_dnd_drop_here")}
+                              </Text>
+                            )}
+                            {provided.placeholder}
+                          </HStack>
+                        )}
+                      </Droppable>
+                    </HStack>
+                  ))}
                 </VStack>
 
                 {/* Bank */}
@@ -5983,75 +6214,79 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         rounded="lg"
                         bg="rgba(255,255,255,0.015)"
                       >
-                        {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
-                          (ri, index) =>
-                            mRight[ri] != null ? (
-                              <Draggable
-                                key={`r-${ri}`}
-                                draggableId={`r-${ri}`}
-                                index={index}
-                              >
-                                {(dragProvided) => (
-                                  <Box
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                    onClick={() => {
+                        {(mBank.length
+                          ? mBank
+                          : loadingMG
+                            ? [0, 1, 2]
+                            : []
+                        ).map((ri, index) =>
+                          mRight[ri] != null ? (
+                            <Draggable
+                              key={`r-${ri}`}
+                              draggableId={`r-${ri}`}
+                              index={index}
+                            >
+                              {(dragProvided) => (
+                                <Box
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  onClick={() => {
+                                    playSound(selectSound);
+                                    handleMatchAutoMove(ri, "bank");
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (
+                                      event.key === "Enter" ||
+                                      event.key === " "
+                                    ) {
+                                      event.preventDefault();
                                       playSound(selectSound);
                                       handleMatchAutoMove(ri, "bank");
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (
-                                        event.key === "Enter" ||
-                                        event.key === " "
-                                      ) {
-                                        event.preventDefault();
-                                        playSound(selectSound);
-                                        handleMatchAutoMove(ri, "bank");
-                                      }
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    style={{
-                                      cursor: "pointer",
-                                      transition:
-                                        "transform 0.18s ease, box-shadow 0.18s ease",
-                                      ...(dragProvided.draggableProps.style ||
-                                        {}),
-                                    }}
-                                    _hover={{
-                                      transform: "translateY(-2px)",
-                                      boxShadow: "0 4px 12px rgba(128,90,213,0.25)",
-                                    }}
-                                    _focusVisible={{
-                                      boxShadow:
-                                        "0 0 0 2px rgba(128,90,213,0.5)",
-                                      transform: "translateY(-2px)",
-                                    }}
-                                    px={3}
-                                    py={1.5}
-                                    rounded="lg"
-                                    bg="rgba(128,90,213,0.12)"
-                                    border="1px solid rgba(128,90,213,0.3)"
-                                    color="white"
-                                    fontSize="sm"
-                                  >
-                                    {mRight[ri]}
-                                  </Box>
-                                )}
-                              </Draggable>
-                            ) : (
-                              <Box
-                                key={`placeholder-${index}`}
-                                px={3}
-                                py={1.5}
-                                rounded="lg"
-                                border="1px dashed rgba(255,255,255,0.12)"
-                                opacity={0.4}
-                              >
-                                …
-                              </Box>
-                            )
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
+                                  style={{
+                                    cursor: "pointer",
+                                    transition:
+                                      "transform 0.18s ease, box-shadow 0.18s ease",
+                                    ...(dragProvided.draggableProps.style ||
+                                      {}),
+                                  }}
+                                  _hover={{
+                                    transform: "translateY(-2px)",
+                                    boxShadow:
+                                      "0 4px 12px rgba(128,90,213,0.25)",
+                                  }}
+                                  _focusVisible={{
+                                    boxShadow: "0 0 0 2px rgba(128,90,213,0.5)",
+                                    transform: "translateY(-2px)",
+                                  }}
+                                  px={3}
+                                  py={1.5}
+                                  rounded="lg"
+                                  bg="rgba(128,90,213,0.12)"
+                                  border="1px solid rgba(128,90,213,0.3)"
+                                  color="white"
+                                  fontSize="sm"
+                                >
+                                  {mRight[ri]}
+                                </Box>
+                              )}
+                            </Draggable>
+                          ) : (
+                            <Box
+                              key={`placeholder-${index}`}
+                              px={3}
+                              py={1.5}
+                              rounded="lg"
+                              border="1px dashed rgba(255,255,255,0.12)"
+                              opacity={0.4}
+                            >
+                              …
+                            </Box>
+                          ),
                         )}
                         {provided.placeholder}
                       </HStack>
@@ -6092,7 +6327,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : t("vocab_submit")}
+                {loadingMJ ? (
+                  <VoiceOrb
+                    state={
+                      ["idle", "listening", "speaking"][
+                        Math.floor(Math.random() * 3)
+                      ]
+                    }
+                    size={24}
+                  />
+                ) : (
+                  t("vocab_submit")
+                )}
               </Button>
             </Stack>
 
@@ -6129,7 +6375,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onPlayTTS={(text, options) =>
+                handlePlayQuestionTTS(text, questionTTsLang, options)
+              }
               onAskAssistant={handleAskAssistant}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}
@@ -6219,7 +6467,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             onSkip={canSkip ? handleSkip : undefined}
           />
         ) : null}
-
       </VStack>
 
       {/* Flashcard Deck Review Overlay */}
@@ -6279,8 +6526,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
                       },
                     },
-                }}
-              >
+                  }}
+                >
                   <Box
                     fontSize="3xl"
                     color="white"
