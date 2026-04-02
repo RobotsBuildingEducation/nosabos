@@ -237,7 +237,7 @@ class SoundManager {
         release: 0.3,
       },
       VOL.SOFT,
-      600
+      600,
     );
 
     const now = Tone.now();
@@ -357,7 +357,7 @@ class SoundManager {
           sustain: 0,
           release: 0.04,
         },
-        VOL.QUIET
+        VOL.QUIET,
       );
       setTimeout(() => harm.triggerAttackRelease("D5", "64n"), 20);
       this.releaseSynth(synth, 200);
@@ -400,7 +400,7 @@ class SoundManager {
       // Soft descending
       const synth = this.createDisposableSynth(
         { type: "sine", attack: 0.01, decay: 0.1, sustain: 0, release: 0.08 },
-        VOL.SOFT
+        VOL.SOFT,
       );
       synth.triggerAttackRelease("E4", "16n");
       synth.frequency.exponentialRampTo("C4", 0.08);
@@ -434,7 +434,7 @@ class SoundManager {
           release: 0.3,
         },
         VOL.NORMAL,
-        800
+        800,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("G4", "16n", now);
@@ -460,7 +460,7 @@ class SoundManager {
       // Rising fifth
       const synth = this.createDisposableSynth(
         { type: "sine", attack: 0.01, decay: 0.15, sustain: 0, release: 0.2 },
-        VOL.PROMINENT
+        VOL.PROMINENT,
       );
       synth.triggerAttackRelease("C5", "16n");
       setTimeout(() => synth.triggerAttackRelease("G5", "8n"), 100);
@@ -477,7 +477,7 @@ class SoundManager {
           release: 0.8,
         },
         VOL.PROMINENT,
-        2000
+        2000,
       );
 
       const now = Tone.now();
@@ -516,7 +516,7 @@ class SoundManager {
           release: 0.1,
         },
         VOL.SOFT,
-        350
+        350,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("D5", "32n", now);
@@ -549,7 +549,7 @@ class SoundManager {
           release: 0.35,
         },
         VOL.PROMINENT,
-        1200
+        1200,
       );
       const now = Tone.now();
       ["C5", "E5", "G5", "C6", "E6"].forEach((note, i) => {
@@ -568,7 +568,7 @@ class SoundManager {
           release: 0.2,
         },
         VOL.NORMAL,
-        500
+        500,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("E4", "16n", now);
@@ -595,7 +595,7 @@ class SoundManager {
             sustain: 0,
             release: 0.06,
           },
-          VOL.QUIET
+          VOL.QUIET,
         );
         synth2.triggerAttackRelease("E5", "64n");
       }, 50);
@@ -613,7 +613,7 @@ class SoundManager {
           release: 0.15,
         },
         VOL.NORMAL,
-        400
+        400,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("C5", "32n", now);
@@ -647,7 +647,7 @@ class SoundManager {
           release: 0.25,
         },
         VOL.PROMINENT,
-        600
+        600,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("E5", "16n", now);
@@ -666,7 +666,7 @@ class SoundManager {
           release: 0.1,
         },
         VOL.NORMAL,
-        800
+        800,
       );
       const notes = ["G5", "C6", "E6", "G6", "C7"];
       const now = Tone.now();
@@ -686,7 +686,7 @@ class SoundManager {
           release: 0.15,
         },
         VOL.SOFT,
-        400
+        400,
       );
       const now = Tone.now();
       synth.triggerAttackRelease("C4", "32n", now);
@@ -704,7 +704,7 @@ class SoundManager {
           release: 0.5,
         },
         VOL.PROMINENT,
-        1500
+        1500,
       );
       const now = Tone.now();
       // Triumphant C major fanfare

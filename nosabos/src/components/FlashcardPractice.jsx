@@ -249,12 +249,10 @@ export default function FlashcardPractice({
       // Play feedback sound
       playSound(isYes ? deliciousSound : clickSound);
 
-      // If correct, award XP and mark complete after a delay
+      // If correct, award XP and mark complete immediately so downstream
+      // celebrations (like the daily goal modal) do not feel delayed.
       if (isYes) {
-        setTimeout(() => {
-          onComplete({ ...card, xpReward: xp });
-          handleClose();
-        }, 2000);
+        await Promise.resolve(onComplete({ ...card, xpReward: xp }));
       }
     } catch (error) {
       console.error("AI grading error:", error);

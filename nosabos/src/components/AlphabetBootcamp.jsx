@@ -65,6 +65,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import VoiceOrb from "./VoiceOrb";
@@ -510,12 +511,14 @@ function LetterCard({
   };
 
   const handlePracticeClick = () => {
+    playSound(selectSound);
     setIsPracticeMode(true);
     setIsFlipped(true);
     setShowResult(false);
   };
 
   const handleFlipBack = () => {
+    playSound(selectSound);
     setIsFlipped(false);
     setTimeout(() => {
       setIsPracticeMode(false);
@@ -632,6 +635,7 @@ function LetterCard({
   };
 
   const handleTryAgain = () => {
+    playSound(selectSound);
     setShowResult(false);
     setIsCorrect(false);
   };
@@ -1074,6 +1078,11 @@ export default function AlphabetBootcamp({
     setCurrentXp((prev) => prev + xp);
   };
 
+  const handleStartSkillTreeClick = useCallback(() => {
+    playSound(selectSound);
+    onStartSkillTree?.();
+  }, [onStartSkillTree, playSound]);
+
   const targetLanguage =
     appLanguage === "es"
       ? LANGUAGE_NAMES_ES[targetLang]
@@ -1433,7 +1442,11 @@ export default function AlphabetBootcamp({
                 </VStack>
               </Flex>
               {isComplete && (
-                <Button colorScheme="teal" size="lg" onClick={onStartSkillTree}>
+                <Button
+                  colorScheme="teal"
+                  size="lg"
+                  onClick={handleStartSkillTreeClick}
+                >
                   {appLanguage === "es"
                     ? "Iniciar árbol de habilidades"
                     : "Start skill tree"}

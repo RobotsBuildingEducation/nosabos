@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Divider,
   FormControl,
   FormLabel,
   HStack,
@@ -23,21 +22,20 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { doc, setDoc } from "firebase/firestore";
-import { FiTarget, FiZap, FiClock, FiCalendar } from "react-icons/fi";
+import { FaCalendarAlt } from "react-icons/fa";
 import { database } from "../firebaseResources/firebaseResources";
 import {
   translations as allTranslations,
   t as translate,
 } from "../utils/translation.jsx";
-import { WaveBar } from "./WaveBar.jsx";
-import GoalCalendar from "./GoalCalendar.jsx";
-import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
+import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
-const PRESETS = [75, 100, 150, 200, 300];
+const PRESETS = [100, 150, 200, 300];
 
 export default function DailyGoalModal({
   isOpen,
@@ -47,8 +45,9 @@ export default function DailyGoalModal({
   defaultGoal = 100,
   t,
   ui = {},
-  completedGoalDates = [],
-  startDate,
+  petHealth,
+  petLastOutcome,
+  petLastDelta,
 }) {
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
@@ -79,7 +78,7 @@ export default function DailyGoalModal({
       resetsIn: (when) =>
         getLabel("daily_goal_resets_in", `Resets in 24h · ${when}`, { when }),
       save: getLabel("daily_goal_save", "Save"),
-      title: getLabel("daily_goal_title", "Daily XP goal"),
+      title: getLabel("daily_goal_title", "Goal Manager"),
       subtitle: getLabel(
         "daily_goal_subtitle",
         "Each level = 100 XP. How many XP do you want to earn per day?",
@@ -91,36 +90,18 @@ export default function DailyGoalModal({
         "Please sign in again.",
       ),
       errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
-      calendarTitle: getLabel("daily_goal_calendar_title", "Your progress"),
     }),
     [getLabel],
   );
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
 
-  // Calendar month navigation state
-  const [calendarYear, setCalendarYear] = useState(() =>
-    new Date().getFullYear(),
-  );
-  const [calendarMonth, setCalendarMonth] = useState(() =>
-    new Date().getMonth(),
-  );
-
   // Reset field when modal re-opens or default changes
   useEffect(() => {
     if (isOpen) {
       setGoal(String(defaultGoal));
-      // Reset calendar to current month when modal opens
-      const now = new Date();
-      setCalendarYear(now.getFullYear());
-      setCalendarMonth(now.getMonth());
     }
   }, [isOpen, defaultGoal]);
-
-  const handleMonthChange = useCallback((year, month) => {
-    setCalendarYear(year);
-    setCalendarMonth(month);
-  }, []);
 
   // Clamp + parse
   const parsed = useMemo(
@@ -153,13 +134,16 @@ export default function DailyGoalModal({
     try {
       playSound(submitActionSound);
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
-      setDoc(
+      await setDoc(
         doc(database, "users", npub),
         {
           dailyGoalXp: parsed,
           dailyXp: 0,
           dailyResetAt: resetAt,
           dailyHasCelebrated: false,
+          dailyGoalPetHealth: getDailyGoalPetHealth({
+            dailyGoalPetHealth: petHealth,
+          }),
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -194,10 +178,10 @@ export default function DailyGoalModal({
         rounded="2xl"
         shadow="xl"
         overflow="hidden"
-        maxH="100vh"
+        maxH={{ base: "92vh", md: "880px" }}
         sx={{
           "@supports (height: 100dvh)": {
-            maxHeight: "100dvh",
+            maxHeight: "92dvh",
           },
         }}
       >
@@ -211,30 +195,36 @@ export default function DailyGoalModal({
           py={5}
         >
           <HStack spacing={3} align="center">
-            <Box
-              as={FaCalendarAlt}
-              aria-hidden
-              fontSize="22px"
-              opacity={0.95}
-            />
-            <VStack align="start" spacing={0}>
-              <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">
-                {ui.title || L.title}
-              </Text>
-              <Text fontSize="sm" opacity={0.95}>
-                {ui.subtitle || L.subtitle}
-              </Text>
-            </VStack>
+            <Box as={FaCalendarAlt} aria-hidden fontSize="22px" opacity={0.95} />
+            <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">
+              {ui.title || L.title}
+            </Text>
           </HStack>
         </Box>
         {/* Body */}
-        <ModalBody px={{ base: 4, md: 6 }} py={5} overflowY="auto" maxH="60vh">
+        <ModalBody
+          px={{ base: 4, md: 6 }}
+          py={5}
+          overflowY="auto"
+          maxH={{ base: "72vh", md: "720px" }}
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "72dvh",
+            },
+          }}
+        >
           <VStack align="stretch" spacing={5}>
+            <DailyGoalPetPanel
+              lang={resolvedLang}
+              health={petHealth}
+              lastOutcome={petLastOutcome}
+              lastDelta={petLastDelta}
+              variant="setup"
+              showPreview={true}
+            />
+
             {/* Quick presets */}
             <Box>
-              <Text fontSize="sm" mb={2} opacity={0.85}>
-                {L.quickPicks}
-              </Text>
               <HStack spacing={2} wrap="wrap">
                 {PRESETS.map((v) => {
                   const active = parsed === v;
@@ -279,42 +269,6 @@ export default function DailyGoalModal({
                 {L.levelExplainer(levelPct, approxLevels)}
               </Text>
             </FormControl>
-
-            <Divider borderColor="gray.700" />
-
-            {/* Preview */}
-
-            {/* Goal Calendar */}
-            <Box>
-              <HStack spacing={2} mb={3}>
-                <Box
-                  as={FiCalendar}
-                  aria-hidden
-                  fontSize="18px"
-                  color="teal.300"
-                />
-                <Text fontWeight="semibold">{L.calendarTitle}</Text>
-              </HStack>
-              <Box
-                bg="gray.800"
-                borderRadius="lg"
-                p={4}
-                border="1px solid"
-                borderColor="gray.700"
-              >
-                <GoalCalendar
-                  completedDates={completedGoalDates}
-                  lang={resolvedLang}
-                  year={calendarYear}
-                  month={calendarMonth}
-                  onMonthChange={handleMonthChange}
-                  showNavigation={true}
-                  highlightToday={true}
-                  size="md"
-                  startDate={startDate}
-                />
-              </Box>
-            </Box>
           </VStack>
         </ModalBody>
         {/* Footer */}
