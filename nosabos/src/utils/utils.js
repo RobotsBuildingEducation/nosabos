@@ -1,6 +1,13 @@
 // src/utils/xp.js
 import { doc, runTransaction, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
+import {
+  DAILY_GOAL_PET_HEALTH_GAIN,
+  applyDailyGoalPetDelta,
+  buildDailyGoalResetFields,
+  getDailyGoalPetHealth,
+  hasDailyGoalResetExpired,
+} from "./dailyGoalPet";
 
 export async function awardXp(npub, amount, targetLang = "es") {
   if (!npub || !amount) return;
@@ -8,6 +15,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
   let shouldCelebrateGoal = false;
+  let celebrationPetHealth = null;
 
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(ref);
@@ -22,21 +30,20 @@ export async function awardXp(npub, amount, targetLang = "es") {
     const existingLangXp = existingProgress?.languageXp?.[langKey] || 0;
 
     // Daily window check/reset
-    const resetAtMs = Date.parse(data.dailyResetAt || 0) || 0;
-    const needsReset = !resetAtMs || now.getTime() >= resetAtMs;
-    const nextReset = new Date(
-      now.getTime() + 24 * 60 * 60 * 1000
-    ).toISOString();
+    const needsReset = hasDailyGoalResetExpired(data.dailyResetAt, now);
 
     const base = {};
     if (needsReset) {
-      base.dailyXp = 0;
-      base.dailyHasCelebrated = false;
-      base.dailyResetAt = nextReset;
-      base.dailyStartedAt = now.toISOString();
+      Object.assign(base, buildDailyGoalResetFields(data, now));
     }
 
-    const nextDaily = (needsReset ? 0 : data.dailyXp || 0) + delta;
+    const currentDailyXp = Number(base.dailyXp ?? data.dailyXp ?? 0) || 0;
+    const currentPetHealth = getDailyGoalPetHealth({ ...data, ...base });
+    const currentHasCelebrated = Boolean(
+      base.dailyHasCelebrated ?? data.dailyHasCelebrated
+    );
+
+    const nextDaily = currentDailyXp + delta;
     const nextTotal = (data.xp || 0) + delta;
     const nextProgress = {
       ...existingProgress,
@@ -49,8 +56,14 @@ export async function awardXp(npub, amount, targetLang = "es") {
 
     // Celebrate once per day upon reaching goal
     const goal = data.dailyGoalXp || 0;
-    const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
-    if (reached) shouldCelebrateGoal = true;
+    const reached = goal > 0 && nextDaily >= goal && !currentHasCelebrated;
+    const nextPetHealth = reached
+      ? applyDailyGoalPetDelta(currentPetHealth, DAILY_GOAL_PET_HEALTH_GAIN)
+      : currentPetHealth;
+    if (reached) {
+      shouldCelebrateGoal = true;
+      celebrationPetHealth = nextPetHealth;
+    }
 
     // Format today's date as YYYY-MM-DD for calendar tracking
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -63,11 +76,15 @@ export async function awardXp(npub, amount, targetLang = "es") {
         dailyXp: nextDaily,
         updatedAt: now.toISOString(),
         progress: nextProgress,
+        dailyGoalPetHealth: nextPetHealth,
         ...(reached
           ? {
               dailyHasCelebrated: true,
               lastDailyGoalHitAt: serverTimestamp(),
               completedGoalDates: arrayUnion(todayKey),
+              dailyGoalPetLastOutcome: "achieved",
+              dailyGoalPetLastDelta: DAILY_GOAL_PET_HEALTH_GAIN,
+              dailyGoalPetLastUpdatedAt: now.toISOString(),
             }
           : {}),
       },
@@ -81,7 +98,14 @@ export async function awardXp(npub, amount, targetLang = "es") {
       new CustomEvent("xp:awarded", { detail: { amount: delta } })
     );
     if (shouldCelebrateGoal) {
-      window.dispatchEvent(new CustomEvent("daily:goalAchieved"));
+      window.dispatchEvent(
+        new CustomEvent("daily:goalAchieved", {
+          detail: {
+            petHealth: celebrationPetHealth,
+            petDelta: DAILY_GOAL_PET_HEALTH_GAIN,
+          },
+        })
+      );
     }
   }
 }

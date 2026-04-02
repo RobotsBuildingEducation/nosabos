@@ -56,11 +56,6 @@ import {
   Tooltip,
   useDisclosure,
   useBreakpointValue,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -106,6 +101,7 @@ import {
   setDoc,
   updateDoc,
   onSnapshot,
+  runTransaction,
 } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
@@ -131,7 +127,7 @@ import RPGGame from "./components/RPGGame/index.jsx";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
-import GoalCalendar from "./components/GoalCalendar";
+import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
@@ -178,6 +174,12 @@ import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
 import modeSwitcherSound from "./assets/modeswitcher.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
+import {
+  DAILY_GOAL_PET_HEALTH_GAIN,
+  buildDailyGoalResetFields,
+  getDailyGoalPetHealth,
+  hasDailyGoalResetExpired,
+} from "./utils/dailyGoalPet";
 import {
   brazilianFlag,
   frenchFlag,
@@ -907,17 +909,28 @@ function TopBar({
         ? data.completedGoalDates
         : [];
 
-      const now = Date.now();
-      const expired = !resetISO || now >= new Date(resetISO).getTime();
+      const expired = hasDailyGoalResetExpired(resetISO);
       if (expired && goal > 0) {
-        const next = new Date(now + MS_24H).toISOString();
-        await setDoc(
-          ref,
-          { dailyXp: 0, dailyHasCelebrated: false, dailyResetAt: next },
-          { merge: true },
-        );
+        try {
+          await runTransaction(database, async (tx) => {
+            const latestSnap = await tx.get(ref);
+            const latestData = latestSnap.exists() ? latestSnap.data() : {};
+            if (!hasDailyGoalResetExpired(latestData?.dailyResetAt)) return;
+
+            tx.set(
+              ref,
+              {
+                ...buildDailyGoalResetFields(latestData, new Date()),
+                updatedAt: new Date().toISOString(),
+              },
+              { merge: true },
+            );
+          });
+        } catch (error) {
+          console.warn("Failed to apply daily goal reset:", error);
+        }
         dxp = 0;
-        resetISO = next;
+        resetISO = data?.dailyResetAt || resetISO;
       }
 
       setDailyGoalXp(goal);
@@ -1604,6 +1617,11 @@ export default function App() {
     return Number.isFinite(parsed) ? parsed : 0;
   }, [user]);
 
+  const dailyGoalPetHealth = useMemo(
+    () => getDailyGoalPetHealth(user || {}),
+    [user],
+  );
+
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
   //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
@@ -2212,6 +2230,11 @@ export default function App() {
   ----------------------------------- */
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
+  const [dailyGoalCelebrationPet, setDailyGoalCelebrationPet] = useState(null);
+  const celebrationPetHealth =
+    dailyGoalCelebrationPet?.health ?? dailyGoalPetHealth;
+  const celebrationPetDelta =
+    dailyGoalCelebrationPet?.delta ?? DAILY_GOAL_PET_HEALTH_GAIN;
   const dailyGoalModalJustOpenedRef = useRef(false);
   const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
     useState(false);
@@ -2237,7 +2260,7 @@ export default function App() {
      Session timer
   ----------------------------------- */
   const [timerModalOpen, setTimerModalOpen] = useState(false);
-  const [timerMinutes, setTimerMinutes] = useState("0");
+  const [timerMinutes, setTimerMinutes] = useState("20");
   const [timerRemainingSeconds, setTimerRemainingSeconds] = useState(null);
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -2462,8 +2485,12 @@ export default function App() {
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
-    const onHit = () => {
+    const onHit = (event) => {
       setCelebrateOpen(true);
+      setDailyGoalCelebrationPet({
+        health: event?.detail?.petHealth ?? null,
+        delta: event?.detail?.petDelta ?? DAILY_GOAL_PET_HEALTH_GAIN,
+      });
       dailyGoalModalJustOpenedRef.current = true;
     };
     window.addEventListener("daily:goalAchieved", onHit);
@@ -3398,6 +3425,7 @@ export default function App() {
   // Handle closing the daily goal celebration modal
   const handleCloseDailyGoalModal = () => {
     setCelebrateOpen(false);
+    setDailyGoalCelebrationPet(null);
     dailyGoalModalJustOpenedRef.current = false;
 
     // Show pending lesson completion modal if it exists
@@ -3937,6 +3965,14 @@ export default function App() {
       if (typeof data?.dailyXp === "number") patch.dailyXp = data.dailyXp;
       if (typeof data?.dailyGoalXp === "number")
         patch.dailyGoalXp = data.dailyGoalXp;
+      if (typeof data?.dailyGoalPetHealth === "number")
+        patch.dailyGoalPetHealth = data.dailyGoalPetHealth;
+      if (typeof data?.dailyGoalPetLastDelta === "number")
+        patch.dailyGoalPetLastDelta = data.dailyGoalPetLastDelta;
+      if (typeof data?.dailyGoalPetLastOutcome === "string")
+        patch.dailyGoalPetLastOutcome = data.dailyGoalPetLastOutcome;
+      if (data?.dailyGoalPetLastUpdatedAt)
+        patch.dailyGoalPetLastUpdatedAt = data.dailyGoalPetLastUpdatedAt;
       if (data?.stats) patch.stats = data.stats;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
@@ -5251,9 +5287,11 @@ export default function App() {
         onClose={handleDailyGoalClose}
         npub={activeNpub}
         lang={appLanguage}
+        defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
         t={t}
-        completedGoalDates={user?.completedGoalDates || []}
-        startDate={user?.createdAt}
+        petHealth={dailyGoalPetHealth}
+        petLastOutcome={user?.dailyGoalPetLastOutcome || null}
+        petLastDelta={user?.dailyGoalPetLastDelta ?? null}
       />
 
       <SessionTimerModal
@@ -5365,20 +5403,15 @@ export default function App() {
           boxShadow="2xl"
           maxW={{ base: "90%", sm: "md" }}
         >
-          <ModalBody py={12} px={8}>
-            <VStack spacing={6} textAlign="center">
-              <CelebrationOrb
-                accentGradient="linear(135deg, teal.200, teal.400, green.400)"
-                particleColor="teal.100"
-              />
-
+          <ModalBody py={{ base: 8, md: 10 }} px={{ base: 6, md: 8 }}>
+            <VStack spacing={{ base: 4, md: 5 }} textAlign="center">
               <VStack spacing={2}>
-                <Text fontSize="3xl" fontWeight="bold">
+                <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
                   {appLanguage === "es"
                     ? "¡Meta diaria alcanzada!"
                     : "Daily Goal Complete!"}
                 </Text>
-                <Text fontSize="lg" opacity={0.9}>
+                <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
                   {appLanguage === "es"
                     ? "Alcanzaste tu objetivo de XP de hoy."
                     : "You hit today’s XP target."}
@@ -5388,24 +5421,14 @@ export default function App() {
               <Box
                 bg="whiteAlpha.200"
                 borderRadius="xl"
-                py={6}
-                px={8}
+                py={{ base: 4, md: 6 }}
+                px={{ base: 5, md: 8 }}
                 width="100%"
                 border="2px solid"
                 borderColor="whiteAlpha.400"
               >
                 <VStack spacing={3}>
-                  <Text
-                    fontSize="sm"
-                    textTransform="uppercase"
-                    letterSpacing="wide"
-                    opacity={0.8}
-                  >
-                    {appLanguage === "es"
-                      ? "Progreso diario"
-                      : "Daily progress"}
-                  </Text>
-                  <HStack spacing={6} justify="center" flexWrap="wrap">
+                  <HStack spacing={6} justify="center">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
                         {appLanguage === "es" ? "Meta" : "Goal"}
@@ -5423,62 +5446,23 @@ export default function App() {
                 </VStack>
               </Box>
 
-              {/* Calendar showing completed days including today */}
-              <Accordion allowToggle width="100%">
-                <AccordionItem
-                  bg="whiteAlpha.150"
-                  borderRadius="xl"
-                  border="1px solid"
-                  borderColor="whiteAlpha.300"
-                >
-                  <AccordionButton
-                    py={3}
-                    px={4}
-                    _hover={{ bg: "whiteAlpha.200" }}
-                    borderRadius="xl"
-                  >
-                    <Box flex="1" textAlign="left" fontWeight="medium">
-                      {appLanguage === "es"
-                        ? "Ver calendario de progreso"
-                        : "View progress calendar"}
-                    </Box>
-                    <AccordionIcon />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} px={4}>
-                    <GoalCalendar
-                      completedDates={(() => {
-                        // Include today's date in the completed dates for the celebration
-                        const today = new Date();
-                        const todayKey = `${today.getFullYear()}-${String(
-                          today.getMonth() + 1,
-                        ).padStart(2, "0")}-${String(today.getDate()).padStart(
-                          2,
-                          "0",
-                        )}`;
-                        const existingDates = user?.completedGoalDates || [];
-                        return existingDates.includes(todayKey)
-                          ? existingDates
-                          : [...existingDates, todayKey];
-                      })()}
-                      lang={appLanguage}
-                      showNavigation={false}
-                      highlightToday={true}
-                      size="sm"
-                      variant="light"
-                      startDate={user?.createdAt}
-                    />
-                  </AccordionPanel>
-                </AccordionItem>
-              </Accordion>
+              <DailyGoalPetPanel
+                lang={appLanguage}
+                health={celebrationPetHealth}
+                lastOutcome="achieved"
+                lastDelta={celebrationPetDelta}
+                variant="celebration"
+                showPreview={false}
+              />
 
               <Button
-                size="lg"
+                size={{ base: "md", md: "lg" }}
                 width="100%"
                 colorScheme="teal"
                 onClick={handleCloseDailyGoalModal}
                 fontWeight="bold"
-                fontSize="lg"
-                py={6}
+                fontSize={{ base: "md", md: "lg" }}
+                py={{ base: 5, md: 6 }}
               >
                 {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
               </Button>

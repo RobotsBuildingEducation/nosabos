@@ -18,7 +18,7 @@ export const translations = {
   en: {
     correct: "Correct!",
     dailyGoalProgress: "Goal",
-    daily_goal_title: "Daily Experience (XP) Goal",
+    daily_goal_title: "Goal Manager",
     daily_goal_subtitle: "How many XP do you want to earn per day?",
     daily_goal_input_label: "XP per day",
     daily_goal_save: "Save",
@@ -668,7 +668,7 @@ export const translations = {
   es: {
     correct: "¡Correcto!",
     dailyGoalProgress: "Meta",
-    daily_goal_title: "Meta diaria de experiencia (XP)",
+    daily_goal_title: "Gestor de metas",
     daily_goal_subtitle: "¿Cuántos XP quieres ganar al día?",
     daily_goal_input_label: "XP por día",
     daily_goal_save: "Guardar",
