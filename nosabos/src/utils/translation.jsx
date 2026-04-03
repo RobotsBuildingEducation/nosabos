@@ -564,6 +564,70 @@ export const translations = {
     flashcard_listening: "Playing...",
     flashcard_practice_random: "Practice Random Card",
     flashcard_random_xp_toast: "+{xp} XP for practice!",
+    flashcard_due_now: "Due now",
+    flashcard_new_card: "New card",
+    flashcard_review_now: "Review now",
+    flashcard_learning_card: "Learning",
+    flashcard_scheduled_card: "Scheduled",
+    flashcard_mastery_stage: "Stage {stage}",
+    flashcard_next_review: "Next review {time}",
+    flashcard_next_review_label: "Next review",
+    flashcard_recall_hint:
+      "Try active recall before revealing the answer. Due cards come first, then new cards.",
+    flashcard_memory_saved:
+      "Nice retrieval. This card has been rescheduled so you see it again right before the memory fades.",
+    flashcard_memory_retry:
+      "That friction is useful. Try again or review the answer, then bring it back soon.",
+    flashcard_continue: "Continue",
+    flashcard_rate_recall: "Rate your recall",
+    flashcard_ai_suggests: "AI suggests {rating}",
+    flashcard_self_grade_prompt:
+      "Choose how well you knew it. This is what will schedule the next review.",
+    flashcard_rating_help_aria: "What these review buttons mean",
+    flashcard_rating_help_title: "What each button means",
+    flashcard_button_again: "Need help",
+    flashcard_button_again_help:
+      "Use this when you missed it or needed to see the answer.",
+    flashcard_button_hard: "Still learning",
+    flashcard_button_hard_help:
+      "Use this when it felt familiar, but you could not recall it confidently.",
+    flashcard_button_good: "Know it",
+    flashcard_button_good_help:
+      "Use this when you remembered it correctly, even if it took some effort.",
+    flashcard_button_easy: "Mastered",
+    flashcard_button_easy_help:
+      "Use this when the answer came quickly and felt easy.",
+    flashcard_session_title: "Flashcard Flow",
+    flashcard_session_subtitle:
+      "A steadier rhythm: review what is due, then add just enough new material.",
+    flashcard_review_first:
+      "Science-backed practice works best when overdue cards get cleared before fresh ones.",
+    flashcard_reviews_due: "Due reviews",
+    flashcard_new_queue: "New cards",
+    flashcard_mastered_cards: "Learned cards",
+    flashcard_streak: "Study streak",
+    flashcard_daily_target: "Daily target",
+    flashcard_cards_done_today: "{count}/{target} cards finished today",
+    flashcard_caught_up:
+      "Daily target hit. If you want more, review a weak card or let tomorrow's reviews stack up naturally.",
+    flashcard_start_reviews: "Start reviews",
+    flashcard_learn_next: "Learn next card",
+    flashcard_strengthen_weak: "Review weak cards",
+    flashcard_session_loading: "Preparing your review queue...",
+    flashcard_due_subtitle:
+      "These are ready right now. Clearing them first builds spacing and protects old memories.",
+    flashcard_new_subtitle:
+      "Only the next unseen card is actionable. The rest stay locked so the deck does not overwhelm the learner.",
+    flashcard_weak_queue: "Weak cards",
+    flashcard_weak_subtitle:
+      "These are learned cards that are not due yet, but are most likely to slip without a little extra reinforcement.",
+    flashcard_weak_reason_lapses: "Recent lapses",
+    flashcard_weak_reason_mastery: "Low mastery",
+    flashcard_weak_reason_slipping: "Keeps slipping",
+    flashcard_scheduled_queue: "Scheduled later",
+    flashcard_scheduled_subtitle:
+      "These cards are already learned and waiting for their next ideal review window.",
+    flashcard_next_up: "Next up",
     cefr_level_completed: "Level Completed!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulary",
@@ -1222,6 +1286,70 @@ export const translations = {
     flashcard_listening: "Reproduciendo...",
     flashcard_practice_random: "Practicar Tarjeta Aleatoria",
     flashcard_random_xp_toast: "+{xp} XP por práctica!",
+    flashcard_due_now: "Toca repasar",
+    flashcard_new_card: "Tarjeta nueva",
+    flashcard_review_now: "Repasar ahora",
+    flashcard_learning_card: "Aprendiendo",
+    flashcard_scheduled_card: "Programada",
+    flashcard_mastery_stage: "Etapa {stage}",
+    flashcard_next_review: "Siguiente repaso {time}",
+    flashcard_next_review_label: "Siguiente repaso",
+    flashcard_recall_hint:
+      "Intenta recordar activamente antes de mostrar la respuesta. Primero van los repasos y luego las tarjetas nuevas.",
+    flashcard_memory_saved:
+      "Buen recuerdo. Esta tarjeta ya quedó reprogramada para verla otra vez justo antes de que se debilite la memoria.",
+    flashcard_memory_retry:
+      "Esa fricción ayuda a aprender. Inténtalo otra vez o revisa la respuesta y vuelve pronto a esta tarjeta.",
+    flashcard_continue: "Continuar",
+    flashcard_rate_recall: "Califica tu recuerdo",
+    flashcard_ai_suggests: "La IA sugiere {rating}",
+    flashcard_self_grade_prompt:
+      "Elige qué tan bien la sabías. Esto programará el siguiente repaso.",
+    flashcard_rating_help_aria: "Qué significan estos botones de repaso",
+    flashcard_rating_help_title: "Qué significa cada botón",
+    flashcard_button_again: "Necesito ayuda",
+    flashcard_button_again_help:
+      "Úsalo si no lo recordaste o necesitaste ver la respuesta.",
+    flashcard_button_hard: "Aún aprendiendo",
+    flashcard_button_hard_help:
+      "Úsalo si te sonaba familiar, pero todavía no lo recuerdas con seguridad.",
+    flashcard_button_good: "Lo sé",
+    flashcard_button_good_help:
+      "Úsalo si lo recordaste bien, aunque te tomó algo de esfuerzo.",
+    flashcard_button_easy: "Dominado",
+    flashcard_button_easy_help:
+      "Úsalo si la respuesta te salió rápido y se sintió fácil.",
+    flashcard_session_title: "Flujo de Tarjetas",
+    flashcard_session_subtitle:
+      "Un ritmo más estable: repasa lo pendiente y luego agrega solo el material nuevo necesario.",
+    flashcard_review_first:
+      "La práctica basada en la memoria funciona mejor cuando primero vacías los repasos pendientes y después agregas contenido nuevo.",
+    flashcard_reviews_due: "Repasos pendientes",
+    flashcard_new_queue: "Tarjetas nuevas",
+    flashcard_mastered_cards: "Tarjetas aprendidas",
+    flashcard_streak: "Racha de estudio",
+    flashcard_daily_target: "Meta diaria",
+    flashcard_cards_done_today: "{count}/{target} tarjetas terminadas hoy",
+    flashcard_caught_up:
+      "Ya cumpliste la meta diaria. Si quieres más, repasa una tarjeta débil o deja que los repasos de mañana lleguen a tiempo.",
+    flashcard_start_reviews: "Iniciar repasos",
+    flashcard_learn_next: "Aprender siguiente tarjeta",
+    flashcard_strengthen_weak: "Repasar tarjetas débiles",
+    flashcard_session_loading: "Preparando tu cola de repaso...",
+    flashcard_due_subtitle:
+      "Estas tarjetas ya están listas para repasar. Resolverlas primero fortalece el espaciado y protege recuerdos anteriores.",
+    flashcard_new_subtitle:
+      "Solo la siguiente tarjeta no vista está activa. Las demás siguen bloqueadas para no saturar al estudiante.",
+    flashcard_weak_queue: "Tarjetas débiles",
+    flashcard_weak_subtitle:
+      "Estas tarjetas ya fueron aprendidas y aún no les toca repaso, pero son las que tienen más riesgo de olvidarse sin un refuerzo extra.",
+    flashcard_weak_reason_lapses: "Falló recientemente",
+    flashcard_weak_reason_mastery: "Dominio bajo",
+    flashcard_weak_reason_slipping: "Sigue costando",
+    flashcard_scheduled_queue: "Programadas para después",
+    flashcard_scheduled_subtitle:
+      "Estas tarjetas ya están aprendidas y esperan su siguiente ventana ideal de repaso.",
+    flashcard_next_up: "Sigue esta",
     cefr_level_completed: "¡Nivel Completado!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulario",
