@@ -1767,6 +1767,16 @@ export default function RPGGame({
     () => cefrDialogueRule.en || cefrDialogueRule.es || "",
     [cefrDialogueRule],
   );
+  const objectExamineCefrPromptRule = useMemo(() => {
+    const rules = {
+      "Pre-A1":
+        "Object examine rule for Pre-A1: use one tiny object-first line. Keep it to a very short noun phrase or simple sentence about the object itself, like 'A big table' or 'It is a table.' No greetings, no roleplay, no people unless the object is a picture of a person.",
+      A1: "Object examine rule for A1: use one short, simple sentence about the object itself. Focus on what it is, what it looks like, or what it is for. No greetings, no roleplay, and no unrelated lesson words.",
+      A2: "Object examine rule for A2: use one brief, natural observation about the object itself. Keep it concrete and easy to picture.",
+      B1: "Object examine rule for B1: use one natural, concrete line about the object itself. Keep it grounded in the environment.",
+    };
+    return rules[cefrLevel] || "Write one brief, natural line about the object itself.";
+  }, [cefrLevel]);
   const strictTargetLanguageGuard = useMemo(
     () =>
       [
@@ -1811,6 +1821,29 @@ export default function RPGGame({
         .filter(Boolean)
         .join("\n"),
     [cefrLevel, reviewContext],
+  );
+  const objectExaminePromptContext = useMemo(
+    () =>
+      [
+        reviewContext?.unitTitle
+          ? `Current chapter/unit: ${reviewContext.unitTitle}.`
+          : "",
+        reviewContext?.lessonTitles?.length
+          ? `Nearby lesson context: ${reviewContext.lessonTitles
+              .slice(0, 4)
+              .join(", ")}.`
+          : "",
+        reviewContext?.reviewTerms?.length
+          ? `Optional vocabulary flavor only when it fits the object naturally: ${reviewContext.reviewTerms
+              .slice(0, 12)
+              .join(", ")}.`
+          : "",
+        "These examine lines are ambient world flavor, not dialogue and not a quiz.",
+        "Use the lesson context lightly. Do not force lesson words into every object description.",
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    [reviewContext],
   );
   const buildCharacterRosterPrompt = useCallback(() => {
     const assignedNames = normalizeCharacterNameList(
@@ -1905,20 +1938,24 @@ export default function RPGGame({
           ? map.name
           : map.name?.[targetLang] || map.name?.en || map.name?.es || "Area";
       const prompt = [
-        cefrPromptRule,
-        reviewPromptContext,
+        objectExamineCefrPromptRule,
+        objectExaminePromptContext,
         `Target language: ${targetLangName} (code: ${targetLang}).`,
         `Support language: ${supportLangName} (code: ${supportLang}). Use it ONLY for the supportName and supportText fields.`,
         "You write short 'examine' descriptions for environmental objects in a language-learning RPG.",
         `For each object, write "name" and "text" in ${targetLangName}.`,
         `For each object, write "supportName" as the direct translation of the object name in ${supportLangName}.`,
-        `For each object, write "supportText" as the direct translation of the context sentence in ${supportLangName}.`,
-        "The text sentence should sound like the player quietly examining the object.",
+        `For each object, write "supportText" as the direct translation of the object examine sentence in ${supportLangName}.`,
+        "The text sentence should sound like the player quietly noticing the object in the world.",
+        "The line must stay about the object itself: what it is, what it looks like, what it is for, or where it sits.",
+        "The object should remain the subject of the line. If unsure, write a plain object-first observation.",
         "Keep the object name short and clear.",
         "A little dry or playful humor is welcome, but keep it brief and readable.",
-        "Do not mention quests, tasks, controls, objectives, or NPCs.",
+        "Do not mention quests, tasks, controls, objectives, NPCs, greetings, or family-role words unless the object itself directly shows them.",
+        "Bad shape: a greeting, a random unit phrase, or a sentence unrelated to the object.",
+        "Good shape: a short observation that still makes sense even if the player only sees the object name and the object sprite.",
         ["Pre-A1", "A1"].includes(cefrLevel || "")
-          ? "For beginner levels, use very short, high-frequency sentences only."
+          ? "For beginner levels, it is better to be simple and literal than thematic. A direct line like 'It is a table' is better than a clever but off-topic phrase."
           : "",
         `Current area: ${mapName}.`,
         map?.environment?.summary?.en
@@ -1929,6 +1966,7 @@ export default function RPGGame({
           uncachedObjects.map((object) => ({
             key: getObjectExamineKey(map, object),
             type: object.type,
+            typeLabel: humanizeObjectType(object.type),
             x: object.tx,
             y: object.ty,
           })),
@@ -2016,13 +2054,13 @@ export default function RPGGame({
     [
       cefrLevel,
       getObjectExamineKey,
-      reviewPromptContext,
       scenario?.id,
       supportLang,
       supportLangName,
       targetLang,
       targetLangName,
-      cefrPromptRule,
+      objectExamineCefrPromptRule,
+      objectExaminePromptContext,
     ],
   );
 
@@ -6268,12 +6306,20 @@ export default function RPGGame({
 
                   {dialogue.node?.responseMode === "choice" &&
                     (generatingChoices ? (
-                      <HStack justify="center" py={4}>
-                        <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
-                        <Text fontSize="sm" color="gray.500">
+                      <VStack align="center" spacing={2} py={4}>
+                        <Box
+                          width="24px"
+                          height="24px"
+                          display="grid"
+                          placeItems="center"
+                          flexShrink={0}
+                        >
+                          <VoiceOrb state="idle" size={24} />
+                        </Box>
+                        <Text fontSize="sm" color="gray.500" textAlign="center">
                           {targetLang === "es" ? "Pensando..." : "Thinking..."}
                         </Text>
-                      </HStack>
+                      </VStack>
                     ) : (
                       <VStack spacing={2}>
                         {(dialogue.node?.choices || []).map((optRaw, idx) => {

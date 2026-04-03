@@ -3078,75 +3078,78 @@ export default function App() {
     }
   };
 
-  const persistFlashcardReview = useCallback(async (card) => {
-    const npub = resolveNpub();
-    if (!npub || !card) return;
+  const persistFlashcardReview = useCallback(
+    async (card) => {
+      const npub = resolveNpub();
+      if (!npub || !card) return;
 
-    try {
-      const xpAmount = card.xpReward || 5;
-      const reviewPatch =
-        card.reviewPatch ||
-        buildFlashcardReviewUpdate(
-          card.reviewProgress || {},
-          card.reviewOutcome || "good",
+      try {
+        const xpAmount = card.xpReward || 5;
+        const reviewPatch =
+          card.reviewPatch ||
+          buildFlashcardReviewUpdate(
+            card.reviewProgress || {},
+            card.reviewOutcome || "good",
+          );
+        const updatedAt = reviewPatch.updatedAt || new Date().toISOString();
+
+        await awardXp(npub, xpAmount, resolvedTargetLang);
+
+        const userRef = doc(database, "users", npub);
+        const flashcardProgressRef = doc(
+          database,
+          "users",
+          npub,
+          "languageFlashcards",
+          `${resolvedTargetLang}_${card.id}`,
         );
-      const updatedAt = reviewPatch.updatedAt || new Date().toISOString();
 
-      await awardXp(npub, xpAmount, resolvedTargetLang);
+        await Promise.all([
+          setDoc(
+            userRef,
+            {
+              updatedAt,
+              "progress.lastActiveAt": updatedAt,
+            },
+            { merge: true },
+          ),
+          setDoc(
+            flashcardProgressRef,
+            {
+              targetLang: resolvedTargetLang,
+              cardId: card.id,
+              ...reviewPatch,
+              updatedAt,
+            },
+            { merge: true },
+          ),
+        ]);
 
-      const userRef = doc(database, "users", npub);
-      const flashcardProgressRef = doc(
-        database,
-        "users",
-        npub,
-        "languageFlashcards",
-        `${resolvedTargetLang}_${card.id}`,
-      );
+        // Refresh user data to get updated progress
+        const fresh = await loadUserObjectFromDB(database, npub);
+        if (fresh) setUser?.(fresh);
 
-      await Promise.all([
-        setDoc(
-          userRef,
-          {
-            updatedAt,
-            "progress.lastActiveAt": updatedAt,
-          },
-          { merge: true },
-        ),
-        setDoc(
-          flashcardProgressRef,
-          {
-            targetLang: resolvedTargetLang,
-            cardId: card.id,
-            ...reviewPatch,
-            updatedAt,
-          },
-          { merge: true },
-        ),
-      ]);
-
-      // Refresh user data to get updated progress
-      const fresh = await loadUserObjectFromDB(database, npub);
-      if (fresh) setUser?.(fresh);
-
-      console.log(
-        "[FlashcardReview] Awarded",
-        xpAmount,
-        "XP for flashcard review:",
-        card.id,
-      );
-    } catch (error) {
-      console.error("Failed to save flashcard review:", error);
-      toast({
-        title: appLanguage === "es" ? "Error" : "Error",
-        description:
-          appLanguage === "es"
-            ? "No se pudo guardar el progreso"
-            : "Failed to save progress",
-        status: "error",
-        duration: 3000,
-      });
-    }
-  }, [appLanguage, resolvedTargetLang, resolveNpub, setUser, toast]);
+        console.log(
+          "[FlashcardReview] Awarded",
+          xpAmount,
+          "XP for flashcard review:",
+          card.id,
+        );
+      } catch (error) {
+        console.error("Failed to save flashcard review:", error);
+        toast({
+          title: appLanguage === "es" ? "Error" : "Error",
+          description:
+            appLanguage === "es"
+              ? "No se pudo guardar el progreso"
+              : "Failed to save progress",
+          status: "error",
+          duration: 3000,
+        });
+      }
+    },
+    [appLanguage, resolvedTargetLang, resolveNpub, setUser, toast],
+  );
 
   // Handle flashcard completion and award XP
   const handleCompleteFlashcard = async (card) => {
