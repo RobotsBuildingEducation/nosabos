@@ -273,23 +273,57 @@ const HelpChatFab = forwardRef(
     const realtimeAliveRef = useRef(false);
     const realtimeAutoStopTimerRef = useRef(null);
     const stopRealtimeRef = useRef(() => {});
-    // Track current assistant message being built (to prevent splitting)
     const currentAssistantIdRef = useRef(null);
-    // Track the most recent assistant message (even after it's marked done)
-    const latestAssistantRef = useRef({ id: null, createdAt: 0 });
-    // Track when we last inserted a realtime user message to avoid reordering old turns
-    const lastUserInsertAtRef = useRef(0);
+    const messageSortOrderRef = useRef(0);
+    const realtimeTurnQueueRef = useRef([]);
+    const realtimeResponseToMessageRef = useRef(new Map());
 
     // -- helpers ---------------------------------------------------------------
 
-    const pushMessage = (m) =>
+    const getOrderedMessages = (list = []) =>
+      list
+        .map((message, index) => ({
+          message,
+          index,
+          sortOrder: Number.isFinite(message?.sortOrder)
+            ? message.sortOrder
+            : index,
+        }))
+        .sort((a, b) => {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+          const aCreatedAt = Number.isFinite(a.message?.createdAt)
+            ? a.message.createdAt
+            : 0;
+          const bCreatedAt = Number.isFinite(b.message?.createdAt)
+            ? b.message.createdAt
+            : 0;
+          if (aCreatedAt !== bCreatedAt) return aCreatedAt - bCreatedAt;
+          return a.index - b.index;
+        })
+        .map(({ message }) => message);
+
+    const pushMessage = (m) => {
+      const nextSortOrder = Number.isFinite(m?.sortOrder)
+        ? m.sortOrder
+        : messageSortOrderRef.current++;
       setMessages((prev) => [
         ...prev,
         {
           createdAt: Date.now(),
+          sortOrder: nextSortOrder,
           ...m,
         },
       ]);
+    };
+
+    const updateMessageById = (id, updater) =>
+      setMessages((prev) => {
+        const idx = prev.findIndex((message) => message.id === id);
+        if (idx < 0) return prev;
+        const updated = [...prev];
+        updated[idx] = updater(updated[idx]);
+        return updated;
+      });
 
     const patchLastAssistant = (updater) =>
       setMessages((prev) => {
@@ -302,6 +336,93 @@ const HelpChatFab = forwardRef(
         }
         return next;
       });
+
+    const reserveRealtimeTurn = () => {
+      const userSortOrder = messageSortOrderRef.current++;
+      const assistantSortOrder = messageSortOrderRef.current++;
+      const turn = {
+        id: crypto.randomUUID?.() || `turn-${Date.now()}`,
+        userSortOrder,
+        assistantSortOrder,
+        userMessageId: null,
+        assistantMessageId: null,
+        responseId: null,
+        userDone: false,
+        assistantDone: false,
+      };
+      realtimeTurnQueueRef.current.push(turn);
+      return turn;
+    };
+
+    const ensurePendingRealtimeTurn = () => {
+      const queue = realtimeTurnQueueRef.current;
+      for (let i = queue.length - 1; i >= 0; i -= 1) {
+        if (!queue[i].responseId) return queue[i];
+      }
+      return reserveRealtimeTurn();
+    };
+
+    const findRealtimeTurnAwaitingTranscript = () =>
+      realtimeTurnQueueRef.current.find((turn) => !turn.userDone) ||
+      ensurePendingRealtimeTurn();
+
+    const findRealtimeTurnForResponse = (responseId) => {
+      if (responseId) {
+        const existing = realtimeTurnQueueRef.current.find(
+          (turn) => turn.responseId === responseId,
+        );
+        if (existing) return existing;
+      }
+
+      const turn =
+        realtimeTurnQueueRef.current.find((candidate) => !candidate.responseId) ||
+        reserveRealtimeTurn();
+
+      if (responseId) {
+        turn.responseId = responseId;
+      }
+      return turn;
+    };
+
+    const pruneCompletedRealtimeTurns = () => {
+      while (realtimeTurnQueueRef.current.length > 0) {
+        const firstTurn = realtimeTurnQueueRef.current[0];
+        if (!firstTurn.userDone || !firstTurn.assistantDone) break;
+        if (firstTurn.responseId) {
+          realtimeResponseToMessageRef.current.delete(firstTurn.responseId);
+        }
+        realtimeTurnQueueRef.current.shift();
+      }
+    };
+
+    const ensureRealtimeAssistantMessage = (turn, responseId) => {
+      if (turn.assistantMessageId) {
+        if (responseId) {
+          realtimeResponseToMessageRef.current.set(
+            responseId,
+            turn.assistantMessageId,
+          );
+        }
+        return turn.assistantMessageId;
+      }
+
+      const assistantId = crypto.randomUUID?.() || String(Date.now());
+      turn.assistantMessageId = assistantId;
+      if (responseId) {
+        turn.responseId = responseId;
+        realtimeResponseToMessageRef.current.set(responseId, assistantId);
+      }
+
+      pushMessage({
+        id: assistantId,
+        role: "assistant",
+        text: "",
+        done: false,
+        sortOrder: turn.assistantSortOrder,
+      });
+
+      return assistantId;
+    };
 
     const hasMorphemeSection = (text) =>
       /(^|\n)\s*\*\*[^*\n]+\*\*\s*=\s*.+\+/m.test(String(text || ""));
@@ -364,12 +485,13 @@ const HelpChatFab = forwardRef(
         return;
       }
 
+      const ordered = getOrderedMessages(messages);
       const newChat = {
         id: crypto.randomUUID?.() || String(Date.now()),
         title:
-          messages.find((m) => m.role === "user")?.text?.slice(0, 50) ||
+          ordered.find((m) => m.role === "user")?.text?.slice(0, 50) ||
           (appLanguage === "es" ? "Chat guardado" : "Saved chat"),
-        messages: [...messages],
+        messages: ordered,
         savedAt: Date.now(),
         targetLang: progress?.targetLang || "es",
       };
@@ -391,7 +513,18 @@ const HelpChatFab = forwardRef(
 
     const loadSavedChat = useCallback(
       (chat) => {
-        setMessages(chat.messages);
+        const loadedMessages = Array.isArray(chat?.messages) ? chat.messages : [];
+        setMessages(
+          loadedMessages.map((message, index) => ({
+            ...message,
+            sortOrder: Number.isFinite(message?.sortOrder)
+              ? message.sortOrder
+              : index,
+          })),
+        );
+        currentAssistantIdRef.current = null;
+        realtimeTurnQueueRef.current = [];
+        realtimeResponseToMessageRef.current.clear();
         drawerDisclosure.onClose();
       },
       [drawerDisclosure],
@@ -417,6 +550,10 @@ const HelpChatFab = forwardRef(
     );
 
     const startNewChat = useCallback(() => {
+      currentAssistantIdRef.current = null;
+      messageSortOrderRef.current = 0;
+      realtimeTurnQueueRef.current = [];
+      realtimeResponseToMessageRef.current.clear();
       setMessages([]);
       setInput("");
       drawerDisclosure.onClose();
@@ -554,9 +691,22 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       resizeTextarea();
     }, [input, resizeTextarea]);
 
+    useEffect(() => {
+      const maxSortOrder = messages.reduce((maxOrder, message, index) => {
+        const order = Number.isFinite(message?.sortOrder)
+          ? message.sortOrder
+          : index;
+        return Math.max(maxOrder, order);
+      }, -1);
+      messageSortOrderRef.current = Math.max(
+        messageSortOrderRef.current,
+        maxSortOrder + 1,
+      );
+    }, [messages]);
+
     // Build a simple text history block (last ~6 messages) so we still have some context
     const buildHistoryBlock = useCallback(() => {
-      const last = messages.slice(-6);
+      const last = getOrderedMessages(messages).slice(-6);
       if (!last.length) return "";
       const lines = last.map((m) =>
         m.role === "user" ? `User: ${m.text}` : `Assistant: ${m.text}`,
@@ -735,15 +885,21 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
     const stopTtsPlayback = useCallback(() => {
       try {
         ttsAudioRef.current?.pause();
-      } catch {}
+      } catch {
+        // Ignore playback pause failures during cleanup.
+      }
       if (ttsAudioRef.current) {
         try {
           ttsAudioRef.current.srcObject = null;
-        } catch {}
+        } catch {
+          // Ignore audio source cleanup failures.
+        }
       }
       try {
         ttsPcRef.current?.close();
-      } catch {}
+      } catch {
+        // Ignore peer connection close failures during cleanup.
+      }
       ttsAudioRef.current = null;
       ttsPcRef.current = null;
       setReplayingId(null);
@@ -863,135 +1019,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         .join(" ");
     }, [progress]);
 
-    const handleRealtimeEvent = useCallback((evt) => {
-      try {
-        const data = JSON.parse(evt.data);
-
-        // Handle transcription of user speech
-        if (
-          data.type === "conversation.item.input_audio_transcription.completed"
-        ) {
-          const text = data.transcript?.trim();
-          if (text) {
-            const userId = crypto.randomUUID?.() || String(Date.now());
-            const now = Date.now();
-            const newUserMsg = {
-              id: userId,
-              role: "user",
-              text,
-              done: true,
-              createdAt: now,
-            };
-
-            setMessages((prev) => {
-              // If there's an assistant message being built, insert user message BEFORE it
-              // This ensures proper chat order: user message -> AI response
-              const candidateAssistantId =
-                currentAssistantIdRef.current ||
-                (latestAssistantRef.current.createdAt >
-                lastUserInsertAtRef.current
-                  ? latestAssistantRef.current.id
-                  : null);
-
-              if (candidateAssistantId) {
-                const assistantIdx = prev.findIndex(
-                  (m) => m.id === candidateAssistantId,
-                );
-                if (assistantIdx >= 0) {
-                  const updated = [...prev];
-                  updated.splice(assistantIdx, 0, newUserMsg);
-                  return updated;
-                }
-              }
-
-              // Fallback: if the last message is a recent assistant reply, still place
-              // the user message ahead of it to preserve natural order.
-              const lastAssistantIdx = (() => {
-                for (let i = prev.length - 1; i >= 0; i--) {
-                  if (prev[i].role === "assistant") return i;
-                }
-                return -1;
-              })();
-
-              if (
-                lastAssistantIdx >= 0 &&
-                (prev[lastAssistantIdx].createdAt || 0) >
-                  lastUserInsertAtRef.current
-              ) {
-                const updated = [...prev];
-                updated.splice(lastAssistantIdx, 0, newUserMsg);
-                return updated;
-              }
-
-              // Otherwise just append
-              return [...prev, newUserMsg];
-            });
-
-            lastUserInsertAtRef.current = now;
-          }
-        }
-
-        // Handle assistant response transcript
-        if (data.type === "response.audio_transcript.delta") {
-          const delta = data.delta || "";
-          setMessages((prev) => {
-            // If we have a current assistant message being built, always append to it
-            // (even if user messages were inserted after it)
-            if (currentAssistantIdRef.current) {
-              const idx = prev.findIndex(
-                (m) => m.id === currentAssistantIdRef.current,
-              );
-              if (idx >= 0 && !prev[idx].done) {
-                const updated = [...prev];
-                updated[idx] = {
-                  ...updated[idx],
-                  text: updated[idx].text + delta,
-                };
-                return updated;
-              }
-            }
-
-            // Start new assistant message
-            const assistantId = crypto.randomUUID?.() || String(Date.now());
-            const createdAt = Date.now();
-            currentAssistantIdRef.current = assistantId;
-            latestAssistantRef.current = { id: assistantId, createdAt };
-            return [
-              ...prev,
-              {
-                id: assistantId,
-                role: "assistant",
-                text: delta,
-                done: false,
-                createdAt,
-              },
-            ];
-          });
-        }
-
-        if (data.type === "response.audio_transcript.done") {
-          setMessages((prev) => {
-            // Mark the current assistant message as done
-            if (currentAssistantIdRef.current) {
-              const idx = prev.findIndex(
-                (m) => m.id === currentAssistantIdRef.current,
-              );
-              if (idx >= 0) {
-                const updated = [...prev];
-                updated[idx] = { ...updated[idx], done: true };
-                currentAssistantIdRef.current = null;
-                return updated;
-              }
-            }
-            currentAssistantIdRef.current = null;
-            return prev;
-          });
-        }
-      } catch (e) {
-        console.warn("Realtime event parse error:", e);
-      }
-    }, []);
-
     const clearRealtimeAutoStopTimer = useCallback(() => {
       if (realtimeAutoStopTimerRef.current) {
         clearTimeout(realtimeAutoStopTimerRef.current);
@@ -1007,8 +1034,239 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       }, AUTO_DISCONNECT_MS);
     }, [clearRealtimeAutoStopTimer]);
 
+    const buildRealtimeTurnDetection = useCallback(
+      () => ({
+        type: "server_vad",
+        silence_duration_ms: 2000,
+        threshold: 0.35,
+        prefix_padding_ms: 120,
+        interrupt_response: false,
+      }),
+      [],
+    );
+
+    const disableRealtimeVAD = useCallback(() => {
+      try {
+        pcRef.current?.getSenders?.().forEach((sender) => {
+          if (sender.track?.kind === "audio") {
+            sender.replaceTrack(null).catch(() => {});
+          }
+        });
+      } catch {
+        // Ignore sender sync failures while muting the mic.
+      }
+
+      try {
+        localRef.current?.getAudioTracks?.().forEach((track) => {
+          track.enabled = false;
+        });
+      } catch {
+        // Ignore local track toggling failures.
+      }
+
+      if (!dcRef.current || dcRef.current.readyState !== "open") return;
+      try {
+        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            session: { turn_detection: null },
+          }),
+        );
+      } catch {
+        // Ignore transient data channel update failures.
+      }
+    }, []);
+
+    const enableRealtimeVAD = useCallback(() => {
+      try {
+        localRef.current?.getAudioTracks?.().forEach((track) => {
+          track.enabled = true;
+        });
+      } catch {
+        // Ignore local track toggling failures.
+      }
+
+      const micTrack = localRef.current?.getAudioTracks?.()[0];
+      if (pcRef.current && micTrack) {
+        pcRef.current.getSenders().forEach((sender) => {
+          if (!sender.track || sender.track?.kind === "audio") {
+            sender.replaceTrack(micTrack).catch(() => {});
+          }
+        });
+      }
+
+      if (!dcRef.current || dcRef.current.readyState !== "open") return;
+      try {
+        dcRef.current.send(
+          JSON.stringify({
+            type: "session.update",
+            session: { turn_detection: buildRealtimeTurnDetection() },
+          }),
+        );
+      } catch {
+        // Ignore transient data channel update failures.
+      }
+    }, [buildRealtimeTurnDetection]);
+
+    const handleRealtimeEvent = useCallback(
+      (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+          const eventType = data.type;
+          const responseId =
+            data.response_id || data.response?.id || data.id || null;
+
+          if (eventType === "input_audio_buffer.speech_started") {
+            clearRealtimeAutoStopTimer();
+            return;
+          }
+
+          if (
+            eventType === "input_audio_buffer.speech_stopped" ||
+            eventType === "input_audio_buffer.committed"
+          ) {
+            clearRealtimeAutoStopTimer();
+            ensurePendingRealtimeTurn();
+            disableRealtimeVAD();
+            return;
+          }
+
+          if (eventType === "response.created") {
+            clearRealtimeAutoStopTimer();
+            const turn = findRealtimeTurnForResponse(responseId);
+            currentAssistantIdRef.current = ensureRealtimeAssistantMessage(
+              turn,
+              responseId,
+            );
+            disableRealtimeVAD();
+            return;
+          }
+
+          if (
+            eventType === "response.output_audio.done" ||
+            eventType === "output_audio.done" ||
+            eventType === "output_audio_buffer.stopped" ||
+            eventType === "response.canceled"
+          ) {
+            enableRealtimeVAD();
+            if (realtimeAliveRef.current) scheduleRealtimeAutoStop();
+            return;
+          }
+
+          // Handle transcription of user speech
+          if (
+            eventType ===
+              "conversation.item.input_audio_transcription.completed" ||
+            eventType === "input_audio_transcription.completed"
+          ) {
+            const text = data.transcript?.trim();
+            if (text) {
+              const turn = findRealtimeTurnAwaitingTranscript();
+              turn.userDone = true;
+
+              if (turn.userMessageId) {
+                updateMessageById(turn.userMessageId, (message) => ({
+                  ...message,
+                  text,
+                  done: true,
+                }));
+              } else {
+                const userId = crypto.randomUUID?.() || String(Date.now());
+                turn.userMessageId = userId;
+                pushMessage({
+                  id: userId,
+                  role: "user",
+                  text,
+                  done: true,
+                  sortOrder: turn.userSortOrder,
+                });
+              }
+
+              pruneCompletedRealtimeTurns();
+            }
+            return;
+          }
+
+          // Handle assistant response transcript
+          if (eventType === "response.audio_transcript.delta") {
+            const delta = data.delta || "";
+            const turn = findRealtimeTurnForResponse(responseId);
+            const assistantMessageId =
+              realtimeResponseToMessageRef.current.get(responseId) ||
+              ensureRealtimeAssistantMessage(turn, responseId);
+
+            currentAssistantIdRef.current = assistantMessageId;
+            updateMessageById(assistantMessageId, (message) => ({
+              ...message,
+              text: `${message.text || ""}${delta}`,
+              done: false,
+            }));
+            return;
+          }
+
+          if (eventType === "response.audio_transcript.done") {
+            const turn = responseId
+              ? realtimeTurnQueueRef.current.find(
+                  (candidate) => candidate.responseId === responseId,
+                )
+              : null;
+            const assistantMessageId =
+              realtimeResponseToMessageRef.current.get(responseId) ||
+              currentAssistantIdRef.current;
+
+            if (assistantMessageId) {
+              updateMessageById(assistantMessageId, (message) => ({
+                ...message,
+                done: true,
+              }));
+            }
+
+            if (turn) {
+              turn.assistantDone = true;
+            }
+            currentAssistantIdRef.current = null;
+            pruneCompletedRealtimeTurns();
+            return;
+          }
+
+          if (
+            eventType === "response.done" ||
+            eventType === "response.completed" ||
+            eventType === "response.canceled"
+          ) {
+            const turn = responseId
+              ? realtimeTurnQueueRef.current.find(
+                  (candidate) => candidate.responseId === responseId,
+                )
+              : null;
+            if (turn) {
+              turn.assistantDone = true;
+            }
+            currentAssistantIdRef.current = null;
+            pruneCompletedRealtimeTurns();
+          }
+        } catch (e) {
+          console.warn("Realtime event parse error:", e);
+        }
+      },
+      [
+        clearRealtimeAutoStopTimer,
+        disableRealtimeVAD,
+        enableRealtimeVAD,
+        ensurePendingRealtimeTurn,
+        ensureRealtimeAssistantMessage,
+        findRealtimeTurnAwaitingTranscript,
+        findRealtimeTurnForResponse,
+        scheduleRealtimeAutoStop,
+      ],
+    );
+
     const startRealtime = useCallback(async () => {
       clearRealtimeAutoStopTimer();
+      currentAssistantIdRef.current = null;
+      realtimeTurnQueueRef.current = [];
+      realtimeResponseToMessageRef.current.clear();
       setRealtimeStatus("connecting");
       try {
         const pc = new RTCPeerConnection();
@@ -1050,12 +1308,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 instructions,
                 modalities: ["audio", "text"],
                 voice: voiceName,
-                turn_detection: {
-                  type: "server_vad",
-                  silence_duration_ms: 2000,
-                  threshold: 0.35,
-                  prefix_padding_ms: 120,
-                },
+                turn_detection: buildRealtimeTurnDetection(),
                 input_audio_transcription: { model: "whisper-1" },
                 output_audio_format: "pcm16",
               },
@@ -1093,6 +1346,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       }
     }, [
       appLanguage,
+      buildRealtimeTurnDetection,
       buildRealtimeInstructions,
       clearRealtimeAutoStopTimer,
       handleRealtimeEvent,
@@ -1104,26 +1358,36 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       clearRealtimeAutoStopTimer();
       realtimeAliveRef.current = false;
       currentAssistantIdRef.current = null;
+      realtimeTurnQueueRef.current = [];
+      realtimeResponseToMessageRef.current.clear();
 
       try {
         const a = audioRef.current;
         if (a) {
           try {
             a.pause();
-          } catch {}
+          } catch {
+            // Ignore playback pause failures during disconnect.
+          }
           const s = a.srcObject;
           if (s) {
             try {
               s.getTracks().forEach((t) => t.stop());
-            } catch {}
+            } catch {
+              // Ignore remote track cleanup failures during disconnect.
+            }
           }
           a.srcObject = null;
         }
-      } catch {}
+      } catch {
+        // Ignore audio element cleanup failures during disconnect.
+      }
 
       try {
         localRef.current?.getTracks().forEach((t) => t.stop());
-      } catch {}
+      } catch {
+        // Ignore local track cleanup failures during disconnect.
+      }
       localRef.current = null;
 
       try {
@@ -1131,15 +1395,21 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         pcRef.current
           ?.getReceivers?.()
           .forEach((r) => r.track && r.track.stop());
-      } catch {}
+      } catch {
+        // Ignore peer track cleanup failures during disconnect.
+      }
 
       try {
         dcRef.current?.close();
-      } catch {}
+      } catch {
+        // Ignore data channel close failures during disconnect.
+      }
       dcRef.current = null;
       try {
         pcRef.current?.close();
-      } catch {}
+      } catch {
+        // Ignore peer connection close failures during disconnect.
+      }
       pcRef.current = null;
 
       setRealtimeStatus("disconnected");
@@ -1238,7 +1508,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
     // Responsive: detect if desktop (md and up)
     const isDesktop = useBreakpointValue({ base: false, md: true });
-    const hasMessages = messages.length > 0;
+    const orderedMessages = getOrderedMessages(messages);
+    const hasMessages = orderedMessages.length > 0;
 
     // Sidebar content - shared between desktop sidebar and mobile drawer
     const SidebarContent = (
@@ -1673,7 +1944,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         maxW="768px"
                         mx="auto"
                       >
-                        {messages.map((m) => {
+                        {orderedMessages.map((m) => {
                           const { main, gloss } = splitMainAndGloss(m.text);
                           return m.role === "user" ? (
                             <Flex key={m.id} justify="flex-end">
