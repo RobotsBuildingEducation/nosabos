@@ -1,10 +1,9 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import {
   Box,
   VStack,
   HStack,
-  Flex,
   Text,
   Input,
   Button,
@@ -13,7 +12,12 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
-  Badge,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverBody,
+  Portal,
   useToast,
   Spinner,
 } from "@chakra-ui/react";
@@ -54,10 +58,16 @@ import {
 } from "../utils/softStopButton";
 import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
+import selectSound from "../assets/select.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import {
+  buildFlashcardReviewUpdate,
+  FLASHCARD_REVIEW_STATES,
+  getSchedulerRatingOptions,
+  mapXpToReviewOutcome,
+} from "../utils/flashcardReview";
 
 const MotionBox = motion(Box);
 
@@ -142,6 +152,46 @@ Where <xp_amount> is 4-7 based on:
 `.trim();
 }
 
+function getFlashcardModalTrimTheme(card, cefrColor) {
+  const practiceStatus =
+    card?.practiceStatus ||
+    (card?.reviewState === FLASHCARD_REVIEW_STATES.DUE
+      ? "due"
+      : card?.reviewState === FLASHCARD_REVIEW_STATES.LEARNING
+        ? "learning"
+        : card?.reviewState === FLASHCARD_REVIEW_STATES.SCHEDULED
+          ? "scheduled"
+          : "active");
+
+  switch (practiceStatus) {
+    case "due":
+      return {
+        borderColor: "rgba(251, 191, 36, 0.55)",
+        ringColor: "rgba(251, 191, 36, 0.22)",
+      };
+    case "weak":
+      return {
+        borderColor: "rgba(244, 114, 182, 0.36)",
+        ringColor: "rgba(244, 114, 182, 0.18)",
+      };
+    case "learning":
+      return {
+        borderColor: "rgba(45, 212, 191, 0.34)",
+        ringColor: "rgba(45, 212, 191, 0.18)",
+      };
+    case "scheduled":
+      return {
+        borderColor: "rgba(255, 255, 255, 0.22)",
+        ringColor: "rgba(255, 255, 255, 0.12)",
+      };
+    default:
+      return {
+        borderColor: `${cefrColor.primary}80`,
+        ringColor: `${cefrColor.primary}26`,
+      };
+  }
+}
+
 export default function FlashcardPractice({
   card,
   isOpen,
@@ -161,12 +211,15 @@ export default function FlashcardPractice({
   const [isFlipped, setIsFlipped] = useState(false);
   const [streamedAnswer, setStreamedAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [, setIsPlayingAudio] = useState(false);
   const [loadingTts, setLoadingTts] = useState(false);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [noteCreated, setNoteCreated] = useState(false);
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanationText, setExplanationText] = useState("");
+  const [aiSuggestedRating, setAiSuggestedRating] = useState(null);
+  const [assessmentMode, setAssessmentMode] = useState(null);
+  const [isSavingReview, setIsSavingReview] = useState(false);
   const streamingRef = useRef(false);
   const explanationStreamingRef = useRef(false);
   const audioRef = useRef(null);
@@ -179,10 +232,137 @@ export default function FlashcardPractice({
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
+  const modalTrimTheme = useMemo(
+    () => getFlashcardModalTrimTheme(card, cefrColor),
+    [card, cefrColor],
+  );
   const currentLanguageXp = Number(languageXp) || 0;
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
+  const ratingOptions = useMemo(
+    () => getSchedulerRatingOptions(card.reviewProgress || {}),
+    [card.reviewProgress],
+  );
+  const ratingLabel = (rating) =>
+    getTranslation(`flashcard_button_${rating}`) || rating;
+  const ratingDescription = (rating) =>
+    getTranslation(`flashcard_button_${rating}_help`);
+  const reviewHelpItems = ratingOptions.map((option) => ({
+    rating: option.rating,
+    label: ratingLabel(option.rating),
+    description: ratingDescription(option.rating),
+  }));
+  const defaultModalShell = {
+    bg: "#08142b",
+    background:
+      "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+      "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+      "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+      "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+  };
+  const resultTheme =
+    assessmentMode === "self"
+      ? {
+          title: getTranslation("flashcard_rate_recall"),
+          icon: <RiEyeLine size={30} color="#93C5FD" />,
+          shellBg: "#10233d",
+          shellBorderColor: "rgba(96, 165, 250, 0.38)",
+          shellRingColor: "rgba(96, 165, 250, 0.2)",
+          shellBackground:
+            "radial-gradient(circle at 20% 15%, rgba(125,211,252,0.14) 0%, transparent 42%), " +
+            "radial-gradient(circle at 82% 22%, rgba(96,165,250,0.16) 0%, transparent 38%), " +
+            "radial-gradient(circle at 50% 100%, rgba(37,99,235,0.24) 0%, transparent 60%), " +
+            "linear-gradient(180deg, rgba(18,44,84,0.95) 0%, rgba(10,26,54,0.98) 100%)",
+        }
+      : isCorrect
+        ? {
+            title: getTranslation("flashcard_correct"),
+            icon: <RiCheckLine size={32} color="#22C55E" />,
+            shellBg: "#1c6668",
+            shellBorderColor: "rgba(74, 222, 128, 0.42)",
+            shellRingColor: "rgba(45, 212, 191, 0.2)",
+            shellBackground:
+              "radial-gradient(circle at 20% 15%, rgba(74,222,128,0.14) 0%, transparent 40%), " +
+              "radial-gradient(circle at 82% 20%, rgba(45,212,191,0.18) 0%, transparent 38%), " +
+              "radial-gradient(circle at 50% 100%, rgba(34,197,94,0.16) 0%, transparent 60%), " +
+              "linear-gradient(180deg, rgba(58,155,155,0.95) 0%, rgba(49,140,140,0.98) 100%)",
+          }
+        : {
+            title: getTranslation("flashcard_incorrect"),
+            icon: <RiCloseLine size={32} color="#EF4444" />,
+            shellBg: "#6b1d25",
+            shellBorderColor: "rgba(248, 113, 113, 0.5)",
+            shellRingColor: "rgba(239, 68, 68, 0.24)",
+            shellBackground:
+              "radial-gradient(circle at 20% 15%, rgba(251,113,133,0.12) 0%, transparent 40%), " +
+              "radial-gradient(circle at 82% 20%, rgba(248,113,113,0.18) 0%, transparent 36%), " +
+              "radial-gradient(circle at 50% 100%, rgba(127,29,29,0.22) 0%, transparent 60%), " +
+              "linear-gradient(180deg, rgba(112,28,39,0.96) 0%, rgba(96,22,32,0.98) 100%)",
+          };
+  const modalShellTheme = showResult
+    ? {
+        ...modalTrimTheme,
+        bg: resultTheme.shellBg,
+        background: resultTheme.shellBackground,
+      }
+    : {
+        ...defaultModalShell,
+        ...modalTrimTheme,
+      };
+  const shouldCenterModalContent = !(
+    showResult &&
+    assessmentMode === "ai" &&
+    !isCorrect &&
+    explanationText
+  );
+  const playReviewRatingSound = (rating) => {
+    if (rating === "easy") {
+      playSound(deliciousSound);
+      return;
+    }
+
+    if (rating === "good" || rating === "hard") {
+      playSound(nextButtonSound);
+      return;
+    }
+
+    playSound(selectSound);
+  };
+  const reviewButtonThemes = {
+    again: {
+      bg: "#d45b88",
+      hoverBg: "#dc7098",
+      activeBg: "#c54d79",
+      borderColor: "rgba(255, 227, 237, 0.38)",
+      shadow: "0px 4px 0px #8f2950",
+      activeShadow: "0px 2px 0px #8f2950",
+    },
+    hard: {
+      bg: "#d4951f",
+      hoverBg: "#deA637",
+      activeBg: "#c78612",
+      borderColor: "rgba(255, 239, 204, 0.38)",
+      shadow: "0px 4px 0px #8a5300",
+      activeShadow: "0px 2px 0px #8a5300",
+    },
+    good: {
+      bg: "#27c1a5",
+      hoverBg: "#38ceb3",
+      activeBg: "#19b197",
+      borderColor: "rgba(213, 255, 247, 0.34)",
+      shadow: "0px 4px 0px #0c7a6d",
+      activeShadow: "0px 2px 0px #0c7a6d",
+    },
+    easy: {
+      bg: "#62b0ff",
+      hoverBg: "#77bcff",
+      activeBg: "#4ea4fa",
+      borderColor: "rgba(226, 242, 255, 0.36)",
+      shadow: "0px 4px 0px #2f6fda",
+      activeShadow: "0px 2px 0px #2f6fda",
+    },
+  };
 
   // Speech practice hook
   const {
@@ -194,7 +374,7 @@ export default function FlashcardPractice({
   } = useSpeechPractice({
     targetText: "answer", // Placeholder - we use AI grading instead of strict matching
     targetLang: targetLang,
-    onResult: ({ recognizedText, evaluation, error }) => {
+    onResult: ({ recognizedText, error }) => {
       if (error) {
         toast({
           title: getTranslation("flashcard_eval_error_title"),
@@ -243,17 +423,13 @@ export default function FlashcardPractice({
       }
 
       setIsCorrect(isYes);
-      setXpAwarded(xp);
+      setXpAwarded(isYes ? xp : 0);
+      setAiSuggestedRating(isYes ? mapXpToReviewOutcome(xp) : "again");
+      setAssessmentMode("ai");
       setShowResult(true);
 
       // Play feedback sound
-      playSound(isYes ? deliciousSound : clickSound);
-
-      // If correct, award XP and mark complete immediately so downstream
-      // celebrations (like the daily goal modal) do not feel delayed.
-      if (isYes) {
-        await Promise.resolve(onComplete({ ...card, xpReward: xp }));
-      }
+      playSound(isYes ? deliciousSound : selectSound);
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
@@ -276,15 +452,51 @@ export default function FlashcardPractice({
   };
 
   const handleTryAgain = () => {
+    playSound(selectSound);
     setTextAnswer("");
     setRecognizedText("");
     setShowResult(false);
     setIsCorrect(false);
     setXpAwarded(0);
+    setIsFlipped(false);
+    setStreamedAnswer("");
+    setIsStreaming(false);
+    streamingRef.current = false;
     setNoteCreated(false);
+    setAiSuggestedRating(null);
+    setAssessmentMode(null);
+    setIsSavingReview(false);
     explanationStreamingRef.current = false;
     setExplanationText("");
     setIsLoadingExplanation(false);
+  };
+
+  const handleReviewRating = async (rating) => {
+    if (isSavingReview) return;
+
+    playReviewRatingSound(rating);
+    setIsSavingReview(true);
+    try {
+      const selectedOption = ratingOptions.find(
+        (option) => option.rating === rating,
+      );
+      const reviewPatch =
+        selectedOption?.patch ||
+        buildFlashcardReviewUpdate(card.reviewProgress || {}, rating);
+      const earnedXp =
+        rating === "again" ? 0 : assessmentMode === "ai" && isCorrect ? xpAwarded : 0;
+
+      await Promise.resolve(
+        onComplete({
+          ...card,
+          xpReward: earnedXp,
+          reviewOutcome: rating,
+          reviewPatch,
+        }),
+      );
+    } finally {
+      setIsSavingReview(false);
+    }
   };
 
   const handleClose = () => {
@@ -300,6 +512,9 @@ export default function FlashcardPractice({
     setLoadingTts(false);
     setIsCreatingNote(false);
     setNoteCreated(false);
+    setAiSuggestedRating(null);
+    setAssessmentMode(null);
+    setIsSavingReview(false);
     explanationStreamingRef.current = false;
     setExplanationText("");
     setIsLoadingExplanation(false);
@@ -314,9 +529,15 @@ export default function FlashcardPractice({
     onClose();
   };
 
+  const handleCancel = () => {
+    playSound(selectSound);
+    handleClose();
+  };
+
   const handleCreateNote = async () => {
     if (isCreatingNote || noteCreated) return;
 
+    playSound(selectSound);
     setIsCreatingNote(true);
     setNotesLoading(true);
 
@@ -373,6 +594,7 @@ export default function FlashcardPractice({
 
   const handleRecord = async () => {
     if (isRecording) {
+      playSound(selectSound);
       stopRecording();
       return;
     }
@@ -382,6 +604,9 @@ export default function FlashcardPractice({
     setRecognizedText("");
     setIsCorrect(false);
     setXpAwarded(0);
+    setAiSuggestedRating(null);
+    setAssessmentMode(null);
+    setIsSavingReview(false);
     setExplanationText("");
     setIsLoadingExplanation(false);
     playSound(submitActionSound);
@@ -408,12 +633,26 @@ export default function FlashcardPractice({
     }
   };
 
-  const handleShowAnswer = async () => {
-    if (isFlipped || isStreaming) return;
+  const revealAnswer = async (enterSelfAssessment = false) => {
+    if (isStreaming) return;
+
+    if (isFlipped && streamedAnswer) {
+      if (enterSelfAssessment) {
+        setAssessmentMode("self");
+        setAiSuggestedRating("again");
+        setShowResult(true);
+      }
+      return;
+    }
 
     setIsFlipped(true);
     setIsStreaming(true);
     setStreamedAnswer("");
+    if (enterSelfAssessment) {
+      setIsCorrect(false);
+      setXpAwarded(0);
+      setAiSuggestedRating(null);
+    }
     streamingRef.current = true;
 
     const sourceText = getConceptText(
@@ -443,7 +682,17 @@ export default function FlashcardPractice({
     } finally {
       setIsStreaming(false);
       streamingRef.current = false;
+      if (enterSelfAssessment) {
+        setAssessmentMode("self");
+        setAiSuggestedRating("again");
+        setShowResult(true);
+      }
     }
+  };
+
+  const handleShowAnswer = async () => {
+    playSound(selectSound);
+    await revealAnswer(false);
   };
 
   const handleFlipBack = () => {
@@ -451,6 +700,11 @@ export default function FlashcardPractice({
     setIsFlipped(false);
     setStreamedAnswer("");
     setIsStreaming(false);
+    if (assessmentMode === "self") {
+      setShowResult(false);
+      setAiSuggestedRating(null);
+      setAssessmentMode(null);
+    }
   };
 
   const handleExplainAnswer = async () => {
@@ -458,6 +712,8 @@ export default function FlashcardPractice({
 
     const userAnswer = textAnswer || recognizedText;
     if (!userAnswer) return;
+
+    playSound(selectSound);
 
     const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
     const prompt = `You are a helpful language tutor for ${LANG_NAME(
@@ -532,6 +788,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
     if (!streamedAnswer || loadingTts) return;
 
+    playSound(selectSound);
+
     // Stop any currently playing audio
     if (audioRef.current) {
       stopTTSPlayback(audioRef.current);
@@ -595,23 +853,24 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
     <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.700" />
       <ModalContent
-        bg="#08142b"
+        bg={modalShellTheme.bg}
         borderRadius="2xl"
         overflow="hidden"
-        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(56,189,248,0.2)`}
+        mx={{ base: "1%", md: 0 }}
+        h={{ base: "calc(100vh - 2rem)", md: "620px" }}
+        maxH="calc(100vh - 2rem)"
+        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px ${modalShellTheme.ringColor}`}
         border="2px solid"
-        borderColor="rgba(56,189,248,0.3)"
+        borderColor={modalShellTheme.borderColor}
         position="relative"
+        display="flex"
+        flexDirection="column"
         sx={{
           "&::before": {
             content: '""',
             position: "absolute",
             inset: 0,
-            background:
-              "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
-              "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
-              "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
-              "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+            background: modalShellTheme.background,
             animation: "matrixGlowShift 10s ease-in-out infinite",
             zIndex: 0,
             borderRadius: "2xl",
@@ -634,509 +893,640 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
           },
         }}
       >
-        <ModalBody p={8} position="relative" zIndex={1}>
-          <VStack spacing={6} align="stretch">
-            {/* Flip Card */}
+        <ModalBody
+          p={8}
+          position="relative"
+          zIndex={1}
+          flex="1"
+          overflowY="auto"
+          display="flex"
+          alignItems="stretch"
+        >
+          <VStack spacing={0} align="stretch" minH="100%" w="100%" flex="1">
             <Box
-              position="relative"
-              w="100%"
-              h="140px"
-              sx={{ perspective: "1000px" }}
+              flex="1"
+              display="flex"
+              flexDirection="column"
+              justifyContent={shouldCenterModalContent ? "center" : "flex-start"}
             >
-              <MotionBox
-                position="absolute"
-                w="100%"
-                h="100%"
-                style={{ transformStyle: "preserve-3d" }}
-                animate={{ rotateY: isFlipped ? 180 : 0 }}
-                transition={{ duration: 0.6, ease: "easeInOut" }}
-              >
-                {/* Front Side */}
-                <Box
-                  position="absolute"
-                  w="100%"
-                  h="100%"
-                  p={4}
-                  display="flex"
-                  flexDirection="column"
-                  justifyContent="center"
-                  alignItems="center"
-                  sx={{ backfaceVisibility: "hidden" }}
-                >
-                  <Text
-                    fontSize="xs"
-                    color="whiteAlpha.800"
-                    fontWeight="medium"
-                    mb={1}
+              <VStack spacing={6} align="stretch">
+                {!showResult && !isGrading && (
+                  <Box
+                    position="relative"
+                    w="100%"
+                    h="140px"
+                    sx={{ perspective: "1000px" }}
                   >
-                    {getTranslation("flashcard_translate_to", {
-                      language: LANG_NAME(targetLang),
-                    })}
-                  </Text>
-                  <Text
-                    fontSize="3xl"
-                    fontWeight="black"
-                    color="white"
-                    textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.2)"
-                  >
-                    {getConceptText(
-                      card,
-                      getEffectiveCardLanguage(supportLang),
-                    )}
-                  </Text>
-                  <IconButton
-                    aria-label={getTranslation("flashcard_show_answer")}
-                    position="absolute"
-                    top={3}
-                    left={3}
-                    size="sm"
-                    variant="solid"
-                    bg="white"
-                    color="blue"
-                    boxShadow="0 4px 0 blue"
-                    icon={<MdOutlineSupportAgent size={18} />}
-                    onClick={handleShowAnswer}
-                    _hover={{ bg: "gray.50" }}
-                    rounded="xl"
-                  />
-                </Box>
-
-                {/* Back Side */}
-                <Box
-                  position="absolute"
-                  w="100%"
-                  h="100%"
-                  p={4}
-                  display="flex"
-                  flexDirection="column"
-                  justifyContent="center"
-                  alignItems="center"
-                  sx={{
-                    backfaceVisibility: "hidden",
-                    transform: "rotateY(180deg)",
-                  }}
-                >
-                  <Text
-                    fontSize="xs"
-                    // color="blue.200"
-                    colorr="white"
-                    fontWeight="medium"
-                    mb={1}
-                  >
-                    {getTranslation("flashcard_answer_label")}
-                  </Text>
-                  {isStreaming && !streamedAnswer ? (
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={32}
-                    />
-                  ) : (
-                    <Text
-                      fontSize="3xl"
-                      fontWeight="black"
-                      color="white"
-                      textAlign="center"
-                      textShadow="0 2px 4px rgba(0,0,0,0.3)"
-                    >
-                      {streamedAnswer || "..."}
-                    </Text>
-                  )}
-                  {/* Listen Button */}
-                  <Box mt={6}>
-                    {streamedAnswer && !isStreaming && (
-                      <IconButton
-                        aria-label={
-                          loadingTts
-                            ? getTranslation("flashcard_loading") || "Loading"
-                            : getTranslation("flashcard_listen")
-                        }
-                        position="absolute"
-                        bottom={3}
-                        left={3}
-                        size="sm"
-                        variant="ghost"
-                        color="white"
-                        icon={
-                          loadingTts ? (
-                            <Spinner size="xs" />
-                          ) : (
-                            <RiVolumeUpLine size={14} />
-                          )
-                        }
-                        onClick={handleListenToAnswer}
-                        _hover={{ bg: "whiteAlpha.300" }}
-                        fontSize="xs"
-                      />
-                    )}
-                    <Text
+                    <MotionBox
                       position="absolute"
-                      bottom={3}
-                      right={3}
-                      fontSize="xs"
-                      color="white"
-                      onClick={handleFlipBack}
-                    >
-                      {getTranslation("flashcard_tap_to_flip")}
-                    </Text>
-                  </Box>
-                </Box>
-              </MotionBox>
-            </Box>
-
-            {/* Unified Input - Show both text and speech */}
-            {!showResult && (
-              <VStack spacing={4}>
-                {/* Grading State */}
-                {isGrading ? (
-                  <VStack spacing={3} py={4}>
-                    <VoiceOrb
-                      state={
-                        ["idle", "listening", "speaking"][
-                          Math.floor(Math.random() * 3)
-                        ]
-                      }
-                      size={48}
-                    />
-                    <Text color="gray.400">
-                      {getTranslation("flashcard_grading")}
-                    </Text>
-                  </VStack>
-                ) : (
-                  <VStack spacing={4} w="100%">
-                    {/* Record Button - Top */}
-                    <Button
                       w="100%"
-                      size="lg"
-                      colorScheme={
-                        isRecording
-                          ? undefined
-                          : isConnecting
-                            ? "yellow"
-                            : "teal"
-                      }
-                      bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                      color={isRecording ? "white" : undefined}
-                      boxShadow={
-                        isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
-                      }
-                      leftIcon={
-                        isConnecting ? (
+                      h="100%"
+                      style={{ transformStyle: "preserve-3d" }}
+                      animate={{ rotateY: isFlipped ? 180 : 0 }}
+                      transition={{ duration: 0.6, ease: "easeInOut" }}
+                    >
+                      <Box
+                        position="absolute"
+                        w="100%"
+                        h="100%"
+                        p={4}
+                        display="flex"
+                        flexDirection="column"
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{ backfaceVisibility: "hidden" }}
+                      >
+                        <Text
+                          fontSize="xs"
+                          color="whiteAlpha.800"
+                          fontWeight="medium"
+                          mb={1}
+                        >
+                          {getTranslation("flashcard_translate_to", {
+                            language: LANG_NAME(targetLang),
+                          })}
+                        </Text>
+                        <Text
+                          fontSize="3xl"
+                          fontWeight="black"
+                          color="white"
+                          textAlign="center"
+                          textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                        >
+                          {getConceptText(
+                            card,
+                            getEffectiveCardLanguage(supportLang),
+                          )}
+                        </Text>
+                        <IconButton
+                          aria-label={getTranslation("flashcard_show_answer")}
+                          position="absolute"
+                          top={3}
+                          left={3}
+                          size="sm"
+                          variant="solid"
+                          bg="white"
+                          color="blue"
+                          boxShadow="0 4px 0 blue"
+                          icon={<MdOutlineSupportAgent size={18} />}
+                          onClick={handleShowAnswer}
+                          _hover={{ bg: "gray.50" }}
+                          rounded="xl"
+                        />
+                      </Box>
+
+                      {/* Back Side */}
+                      <Box
+                        position="absolute"
+                        w="100%"
+                        h="100%"
+                        p={4}
+                        display="flex"
+                        flexDirection="column"
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{
+                          backfaceVisibility: "hidden",
+                          transform: "rotateY(180deg)",
+                        }}
+                      >
+                        <Text
+                          fontSize="xs"
+                          color="white"
+                          fontWeight="medium"
+                          mb={1}
+                        >
+                          {getTranslation("flashcard_answer_label")}
+                        </Text>
+                        {isStreaming && !streamedAnswer ? (
                           <VoiceOrb
                             state={
                               ["idle", "listening", "speaking"][
                                 Math.floor(Math.random() * 3)
                               ]
                             }
-                            size={24}
+                            size={32}
                           />
-                        ) : isRecording ? (
-                          <RiStopCircleLine size={20} />
                         ) : (
-                          <RiMicLine size={20} />
-                        )
-                      }
-                      onClick={handleRecord}
-                      isDisabled={!supportsSpeech || isConnecting}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: isRecording
-                          ? SOFT_STOP_BUTTON_GLOW
-                          : `0 8px 20px ${cefrColor.primary}40`,
-                        ...(isRecording
-                          ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
-                          : {}),
-                      }}
-                      padding={9}
-                      _active={{ transform: "translateY(0)" }}
-                    >
-                      {isConnecting
-                        ? getAppLanguage() === "es"
-                          ? "Conectando..."
-                          : "Connecting..."
-                        : isRecording
-                          ? getTranslation("flashcard_stop_recording")
-                          : getTranslation("flashcard_record_answer")}
-                    </Button>
-
-                    {/* Recognized speech text */}
-                    {recognizedText && (
-                      <Box
-                        p={4}
-                        borderRadius="lg"
-                        bg="whiteAlpha.100"
-                        border="1px solid"
-                        borderColor="whiteAlpha.200"
-                        w="100%"
-                      >
-                        <Text fontSize="sm" color="gray.400" mb={1}>
-                          {getTranslation("flashcard_recognized")}
-                        </Text>
-                        <Text fontSize="lg" color="teal.200">
-                          {recognizedText}
-                        </Text>
-                      </Box>
-                    )}
-
-                    {/* Text Input and Submit Group */}
-                    <VStack spacing={3} w="100%" pt={6}>
-                      {/* Text Input */}
-                      <Input
-                        value={textAnswer}
-                        onChange={(e) => setTextAnswer(e.target.value)}
-                        onKeyPress={handleKeyPress}
-                        placeholder={getTranslation(
-                          "flashcard_type_placeholder",
+                          <Text
+                            fontSize="3xl"
+                            fontWeight="black"
+                            color="white"
+                            textAlign="center"
+                            textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                          >
+                            {streamedAnswer || "..."}
+                          </Text>
                         )}
-                        size="lg"
-                        fontSize="16px"
-                        textAlign="center"
-                        bg="#f4f5ffff"
-                        border="2px solid"
-                        borderColor="whiteAlpha.200"
-                        color="black"
-                        _placeholder={{ color: "gray.500" }}
-                        _focus={{
-                          borderColor: cefrColor.primary,
-                          boxShadow: `0 0 0 1px ${cefrColor.primary}`,
-                        }}
-                      />
-
-                      {/* Submit Button */}
-                      <Button
-                        w="100%"
-                        size="lg"
-                        color="white"
-                        onClick={handleTextSubmit}
-                        isDisabled={!textAnswer.trim()}
-                        leftIcon={<RiKeyboardLine size={20} />}
-                        _hover={{
-                          transform: "translateY(-2px)",
-                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                        }}
-                        padding={9}
-                        _active={{ transform: "translateY(0)" }}
-                      >
-                        {getTranslation("flashcard_submit")}
-                      </Button>
-                    </VStack>
-
-                    {/* Cancel button */}
-                    <Button
-                      w="100%"
-                      size="md"
-                      variant="ghost"
-                      color="white"
-                      onClick={handleClose}
-                      _hover={{ bg: "whiteAlpha.100" }}
-                    >
-                      {getTranslation("flashcard_cancel")}
-                    </Button>
-                  </VStack>
-                )}
-              </VStack>
-            )}
-
-            {/* Result */}
-            {showResult && (
-              <AnimatePresence>
-                <MotionBox
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <VStack
-                    spacing={4}
-                    p={6}
-                    borderRadius="xl"
-                    bg={isCorrect ? "teal.500" : "red.900"}
-                    border="2px solid"
-                    borderColor={isCorrect ? "green.500" : "red.500"}
-                  >
-                    <HStack spacing={3} w="100%">
-                      {isCorrect ? (
-                        <RiCheckLine size={32} color="#22C55E" />
-                      ) : (
-                        <RiCloseLine size={32} color="#EF4444" />
-                      )}
-                      <Text
-                        fontSize="2xl"
-                        fontWeight="bold"
-                        color="white"
-                        flex="1"
-                      >
-                        {isCorrect
-                          ? getTranslation("flashcard_correct")
-                          : getTranslation("flashcard_incorrect")}
-                      </Text>
-                      {/* Create Note Button - icon only */}
-                      <IconButton
-                        icon={
-                          isCreatingNote ? (
-                            <VoiceOrb
-                              state={
-                                ["idle", "listening", "speaking"][
-                                  Math.floor(Math.random() * 3)
-                                ]
+                        {/* Listen Button */}
+                        <Box mt={6}>
+                          {streamedAnswer && !isStreaming && (
+                            <IconButton
+                              aria-label={
+                                loadingTts
+                                  ? getTranslation("flashcard_loading") || "Loading"
+                                  : getTranslation("flashcard_listen")
                               }
-                              size={16}
+                              position="absolute"
+                              bottom={3}
+                              left={3}
+                              size="sm"
+                              variant="ghost"
+                              color="white"
+                              icon={
+                                loadingTts ? (
+                                  <Spinner size="xs" />
+                                ) : (
+                                  <RiVolumeUpLine size={14} />
+                                )
+                              }
+                              onClick={handleListenToAnswer}
+                              _hover={{ bg: "whiteAlpha.300" }}
+                              fontSize="xs"
                             />
-                          ) : (
-                            <RiBookmarkLine size={18} />
-                          )
-                        }
-                        aria-label={
-                          noteCreated
-                            ? getTranslation("flashcard_note_saved") ||
-                              "Note saved!"
-                            : getTranslation("flashcard_create_note") ||
-                              "Create note"
-                        }
-                        colorScheme={noteCreated ? "green" : "gray"}
-                        variant={noteCreated ? "solid" : "ghost"}
-                        onClick={handleCreateNote}
-                        isDisabled={isCreatingNote || noteCreated}
-                        size="sm"
-                        flexShrink={0}
-                      />
-                    </HStack>
-
-                    {isCorrect ? (
-                      <HStack spacing={2} color="yellow.400">
-                        <RiStarLine size={20} />
-                        <Text fontSize="lg" fontWeight="bold">
-                          +{xpAwarded} XP
-                        </Text>
-                      </HStack>
-                    ) : (
-                      <VStack w="100%" spacing={3} mt={2}>
-                        <Button
-                          size="lg"
-                          // colorScheme="teal"
-                          bg="teal"
-                          colorScheme="teal"
-                          onClick={handleTryAgain}
-                          w="100%"
-                        >
-                          {getTranslation("flashcard_try_again")}
-                        </Button>
-
-                        <Button
-                          size="lg"
-                          colorScheme="pink"
-                          variant="solid"
-                          onClick={handleExplainAnswer}
-                          isDisabled={
-                            isLoadingExplanation ||
-                            !!explanationText ||
-                            isGrading
-                          }
-                          leftIcon={
-                            isLoadingExplanation ? (
-                              <VoiceOrb
-                                state={
-                                  ["idle", "listening", "speaking"][
-                                    Math.floor(Math.random() * 3)
-                                  ]
-                                }
-                                size={24}
-                              />
-                            ) : (
-                              <FiHelpCircle />
-                            )
-                          }
-                          w="100%"
-                        >
-                          {getTranslation("flashcard_explain_answer") ||
-                            "Explain my answer"}
-                        </Button>
-                      </VStack>
-                    )}
-
-                    {!isCorrect && explanationText && (
-                      <Box
-                        w="100%"
-                        p={4}
-                        borderRadius="md"
-                        bg="rgba(244, 114, 182, 0.08)"
-                        border="1px solid"
-                        borderColor="pink.400"
-                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-                      >
-                        <Text
-                          fontSize="sm"
-                          fontWeight="semibold"
-                          color="pink.200"
-                          mb={2}
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                        >
-                          <RiEyeLine />
-                          {getTranslation("flashcard_explanation_heading") ||
-                            "Explanation"}
-                        </Text>
-                        <Box
-                          color="white"
-                          fontSize="sm"
-                          lineHeight="1.6"
-                          sx={{
-                            "& p": { mb: 2 },
-                            "& p:last-child": { mb: 0 },
-                            "& strong": {
-                              fontWeight: "bold",
-                              color: "pink.100",
-                            },
-                            "& em": { fontStyle: "italic" },
-                            "& ul, & ol": { pl: 4, mb: 2 },
-                            "& li": { mb: 1 },
-                            "& code": {
-                              bg: "rgba(0,0,0,0.3)",
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: "sm",
-                              fontFamily: "mono",
-                            },
-                          }}
-                        >
-                          <ReactMarkdown>{explanationText}</ReactMarkdown>
+                          )}
+                          <Text
+                            position="absolute"
+                            bottom={3}
+                            right={3}
+                            fontSize="xs"
+                            color="white"
+                            onClick={handleFlipBack}
+                          >
+                            {getTranslation("flashcard_tap_to_flip")}
+                          </Text>
                         </Box>
                       </Box>
-                    )}
+                    </MotionBox>
+                  </Box>
+                )}
 
-                    {isCorrect && (
-                      <VStack align="stretch" spacing={3} w="100%" p={4}>
-                        <HStack justify="space-between" w="100%">
-                          <Badge
-                            colorScheme="cyan"
-                            variant="subtle"
-                            fontSize="10px"
-                          >
-                            Level {xpLevelNumber}
-                          </Badge>
-                          <Badge
-                            colorScheme="teal"
-                            variant="subtle"
-                            fontSize="10px"
-                          >
-                            Total XP {updatedTotalXp}
-                          </Badge>
-                        </HStack>
+                {/* Unified Input - Show both text and speech */}
+                {!showResult && (
+                  <VStack spacing={4}>
+                    {/* Grading State */}
+                    {isGrading ? (
+                      <VStack spacing={3} py={4}>
+                        <VoiceOrb
+                          state={
+                            ["idle", "listening", "speaking"][
+                              Math.floor(Math.random() * 3)
+                            ]
+                          }
+                          size={48}
+                        />
+                        <Text color="gray.400">
+                          {getTranslation("flashcard_grading")}
+                        </Text>
+                      </VStack>
+                    ) : (
+                      <VStack spacing={4} w="100%">
+                        {/* Record Button - Top */}
+                        <Button
+                          w="100%"
+                          size="lg"
+                          colorScheme={
+                            isRecording
+                              ? undefined
+                              : isConnecting
+                                ? "yellow"
+                                : "teal"
+                          }
+                          bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
+                          color={isRecording ? "white" : undefined}
+                          boxShadow={
+                            isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
+                          }
+                          leftIcon={
+                            isConnecting ? (
+                              <Spinner size="xs" thickness="3px" />
+                            ) : isRecording ? (
+                              <RiStopCircleLine size={20} />
+                            ) : (
+                              <RiMicLine size={20} />
+                            )
+                          }
+                          onClick={handleRecord}
+                          isDisabled={!supportsSpeech || isConnecting}
+                          _hover={{
+                            transform: "translateY(-2px)",
+                            boxShadow: isRecording
+                              ? SOFT_STOP_BUTTON_GLOW
+                              : `0 8px 20px ${cefrColor.primary}40`,
+                            ...(isRecording
+                              ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                              : {}),
+                          }}
+                          padding={9}
+                          _active={{ transform: "translateY(0)" }}
+                        >
+                          {isConnecting
+                            ? getAppLanguage() === "es"
+                              ? "Conectando..."
+                              : "Connecting..."
+                            : isRecording
+                              ? getTranslation("flashcard_stop_recording")
+                              : getTranslation("flashcard_record_answer")}
+                        </Button>
 
-                        <WaveBar value={nextLevelProgressPct} />
+                        {/* Recognized speech text */}
+                        {recognizedText && (
+                          <Box
+                            p={4}
+                            borderRadius="lg"
+                            bg="whiteAlpha.100"
+                            border="1px solid"
+                            borderColor="whiteAlpha.200"
+                            w="100%"
+                          >
+                            <Text fontSize="sm" color="gray.400" mb={1}>
+                              {getTranslation("flashcard_recognized")}
+                            </Text>
+                            <Text fontSize="lg" color="teal.200">
+                              {recognizedText}
+                            </Text>
+                          </Box>
+                        )}
+
+                        {/* Text Input and Submit Group */}
+                        <VStack spacing={3} w="100%" pt={6}>
+                          {/* Text Input */}
+                          <Input
+                            value={textAnswer}
+                            onChange={(e) => setTextAnswer(e.target.value)}
+                            onKeyPress={handleKeyPress}
+                            placeholder={getTranslation(
+                              "flashcard_type_placeholder",
+                            )}
+                            size="lg"
+                            fontSize="16px"
+                            textAlign="center"
+                            bg="#f4f5ffff"
+                            border="2px solid"
+                            borderColor="whiteAlpha.200"
+                            color="black"
+                            _placeholder={{ color: "gray.500" }}
+                            _focus={{
+                              borderColor: cefrColor.primary,
+                              boxShadow: `0 0 0 1px ${cefrColor.primary}`,
+                            }}
+                          />
+
+                          {/* Submit Button */}
+                          <Button
+                            w="100%"
+                            size="lg"
+                            color="white"
+                            onClick={handleTextSubmit}
+                            isDisabled={!textAnswer.trim()}
+                            leftIcon={<RiKeyboardLine size={20} />}
+                            _hover={{
+                              transform: "translateY(-2px)",
+                              boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                            }}
+                            padding={9}
+                            _active={{ transform: "translateY(0)" }}
+                          >
+                            {getTranslation("flashcard_submit")}
+                          </Button>
+                        </VStack>
+
+                        {/* Cancel button */}
+                        <Button
+                          w="100%"
+                          size="md"
+                          variant="ghost"
+                          color="white"
+                          onClick={handleCancel}
+                          _hover={{ bg: "whiteAlpha.100" }}
+                        >
+                          {getTranslation("flashcard_cancel")}
+                        </Button>
                       </VStack>
                     )}
                   </VStack>
-                  <Box mt="-2" paddingBottom={6}>
-                    <RandomCharacter />
-                  </Box>
-                </MotionBox>
-              </AnimatePresence>
-            )}
+                )}
+
+                {/* Result */}
+                {showResult && (
+                  <AnimatePresence>
+                    <MotionBox
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <VStack spacing={4} align="stretch" w="100%">
+                        <HStack spacing={3} w="100%">
+                          {resultTheme.icon}
+                          <Text
+                            fontSize="2xl"
+                            fontWeight="bold"
+                            color="white"
+                            flex="1"
+                          >
+                            {resultTheme.title}
+                          </Text>
+                          {/* Create Note Button - icon only */}
+                          {assessmentMode === "ai" ? (
+                            <IconButton
+                              icon={
+                                isCreatingNote ? (
+                                  <Spinner size="xs" thickness="3px" />
+                                ) : (
+                                  <RiBookmarkLine size={18} />
+                                )
+                              }
+                              aria-label={
+                                noteCreated
+                                  ? getTranslation("flashcard_note_saved") ||
+                                    "Note saved!"
+                                  : getTranslation("flashcard_create_note") ||
+                                    "Create note"
+                              }
+                              colorScheme={noteCreated ? "green" : "gray"}
+                              variant={noteCreated ? "solid" : "ghost"}
+                              onClick={handleCreateNote}
+                              isDisabled={isCreatingNote || noteCreated}
+                              size="sm"
+                              flexShrink={0}
+                            />
+                          ) : null}
+                        </HStack>
+
+                        {assessmentMode === "ai" && isCorrect ? (
+                          <HStack spacing={2} color="yellow.400">
+                            <RiStarLine size={20} />
+                            <Text fontSize="lg" fontWeight="bold">
+                              +{xpAwarded} XP
+                            </Text>
+                          </HStack>
+                        ) : assessmentMode === "ai" && !isCorrect ? (
+                          <VStack w="100%" spacing={3} mt={2}>
+                            <Button
+                              size="lg"
+                              bg="teal"
+                              colorScheme="teal"
+                              onClick={handleTryAgain}
+                              w="100%"
+                            >
+                              {getTranslation("flashcard_try_again")}
+                            </Button>
+
+                            <Button
+                              size="lg"
+                              colorScheme="pink"
+                              variant="solid"
+                              onClick={handleExplainAnswer}
+                              isDisabled={
+                                isLoadingExplanation ||
+                                !!explanationText ||
+                                isGrading
+                              }
+                              leftIcon={
+                                isLoadingExplanation ? (
+                                  <Spinner size="xs" thickness="3px" />
+                                ) : (
+                                  <FiHelpCircle />
+                                )
+                              }
+                              w="100%"
+                            >
+                              {getTranslation("flashcard_explain_answer") ||
+                                "Explain my answer"}
+                            </Button>
+                          </VStack>
+                        ) : null}
+
+                        <VStack
+                          spacing={3}
+                          align="stretch"
+                          w="100%"
+                          p={4}
+                          borderRadius="lg"
+                          bg="whiteAlpha.100"
+                          border="1px solid"
+                          borderColor="whiteAlpha.200"
+                        >
+                          <HStack justify="flex-end" mb={-1}>
+                            <Popover trigger="click" placement="top-end" isLazy>
+                              <PopoverTrigger>
+                                <IconButton
+                                  aria-label={getTranslation(
+                                    "flashcard_rating_help_aria",
+                                  )}
+                                  icon={<FiHelpCircle />}
+                                  size="sm"
+                                  variant="ghost"
+                                  color="whiteAlpha.900"
+                                  onClick={() => playSound(selectSound)}
+                                  _hover={{ bg: "whiteAlpha.200" }}
+                                  _active={{ bg: "whiteAlpha.300" }}
+                                />
+                              </PopoverTrigger>
+                              <Portal>
+                                <PopoverContent
+                                  bg="rgba(15, 23, 42, 0.98)"
+                                  borderColor="whiteAlpha.300"
+                                  color="white"
+                                  maxW="280px"
+                                  zIndex={1600}
+                                >
+                                  <PopoverArrow bg="rgba(15, 23, 42, 0.98)" />
+                                  <PopoverBody py={4}>
+                                    <VStack align="stretch" spacing={3}>
+                                      <Text fontSize="sm" fontWeight="bold">
+                                        {getTranslation("flashcard_rating_help_title")}
+                                      </Text>
+                                      {reviewHelpItems.map((item) => (
+                                        <Box key={item.rating}>
+                                          <Text
+                                            fontSize="sm"
+                                            fontWeight="semibold"
+                                            color="whiteAlpha.900"
+                                          >
+                                            {item.label}
+                                          </Text>
+                                          <Text
+                                            fontSize="xs"
+                                            color="whiteAlpha.800"
+                                            lineHeight="1.5"
+                                          >
+                                            {item.description}
+                                          </Text>
+                                        </Box>
+                                      ))}
+                                    </VStack>
+                                  </PopoverBody>
+                                </PopoverContent>
+                              </Portal>
+                            </Popover>
+                          </HStack>
+
+                          <Box
+                            display="grid"
+                            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+                            gap={3}
+                          >
+                            {ratingOptions.map((option) => {
+                              const buttonTheme =
+                                reviewButtonThemes[option.rating] ||
+                                reviewButtonThemes.good;
+                              const isSuggested =
+                                aiSuggestedRating === option.rating;
+
+                              return (
+                                <Button
+                                  key={option.rating}
+                                  size="md"
+                                  h="auto"
+                                  minH="84px"
+                                  px={4}
+                                  py={3}
+                                  whiteSpace="normal"
+                                  textAlign="left"
+                                  justifyContent="flex-start"
+                                  color="white"
+                                  bg={buttonTheme.bg}
+                                  border="1px solid"
+                                  borderColor={
+                                    isSuggested
+                                      ? "rgba(255, 255, 255, 0.78)"
+                                      : buttonTheme.borderColor
+                                  }
+                                  boxShadow={buttonTheme.shadow}
+                                  transition="background-color 0.18s ease, transform 0.12s ease"
+                                  _hover={{
+                                    bg: buttonTheme.hoverBg,
+                                    transform: "translateY(-1px)",
+                                    boxShadow: buttonTheme.shadow,
+                                  }}
+                                  _active={{
+                                    bg: buttonTheme.activeBg,
+                                    transform: "translateY(2px)",
+                                    boxShadow:
+                                      buttonTheme.activeShadow ||
+                                      buttonTheme.shadow,
+                                  }}
+                                  _disabled={{
+                                    opacity: 1,
+                                    cursor: "progress",
+                                  }}
+                                  onClick={() =>
+                                    handleReviewRating(option.rating)
+                                  }
+                                  isLoading={isSavingReview}
+                                >
+                                  <VStack
+                                    align="start"
+                                    spacing={1}
+                                    w="100%"
+                                    pointerEvents="none"
+                                  >
+                                    <Text
+                                      fontSize="sm"
+                                      fontWeight="semibold"
+                                      textShadow="0 1px 2px rgba(0,0,0,0.18)"
+                                    >
+                                      {ratingLabel(option.rating)}
+                                    </Text>
+                                    <Text
+                                      fontSize="xs"
+                                      color="whiteAlpha.900"
+                                      textShadow="0 1px 2px rgba(0,0,0,0.16)"
+                                    >
+                                      {option.delayLabel}
+                                    </Text>
+                                  </VStack>
+                                </Button>
+                              );
+                            })}
+                          </Box>
+                        </VStack>
+
+                        {assessmentMode === "ai" &&
+                        !isCorrect &&
+                        explanationText ? (
+                          <Box
+                            w="100%"
+                            p={4}
+                            borderRadius="md"
+                            bg="rgba(244, 114, 182, 0.08)"
+                            border="1px solid"
+                            borderColor="pink.400"
+                            boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                          >
+                            <Text
+                              fontSize="sm"
+                              fontWeight="semibold"
+                              color="pink.200"
+                              mb={2}
+                              display="flex"
+                              alignItems="center"
+                              gap={2}
+                            >
+                              <RiEyeLine />
+                              {getTranslation("flashcard_explanation_heading") ||
+                                "Explanation"}
+                            </Text>
+                            <Box
+                              color="white"
+                              fontSize="sm"
+                              lineHeight="1.6"
+                              sx={{
+                                "& p": { mb: 2 },
+                                "& p:last-child": { mb: 0 },
+                                "& strong": {
+                                  fontWeight: "bold",
+                                  color: "pink.100",
+                                },
+                                "& em": { fontStyle: "italic" },
+                                "& ul, & ol": { pl: 4, mb: 2 },
+                                "& li": { mb: 1 },
+                                "& code": {
+                                  bg: "rgba(0,0,0,0.3)",
+                                  px: 1,
+                                  py: 0.5,
+                                  borderRadius: "sm",
+                                  fontFamily: "mono",
+                                },
+                              }}
+                            >
+                              <ReactMarkdown>{explanationText}</ReactMarkdown>
+                            </Box>
+                          </Box>
+                        ) : null}
+
+                        {assessmentMode === "ai" && isCorrect ? (
+                          <VStack align="stretch" spacing={3} w="100%" p={4}>
+                            <Text
+                              fontSize="xs"
+                              color="whiteAlpha.800"
+                              textAlign="center"
+                            >
+                              {`Level ${xpLevelNumber} • Total XP ${updatedTotalXp}`}
+                            </Text>
+
+                            <WaveBar value={nextLevelProgressPct} />
+                          </VStack>
+                        ) : null}
+                      </VStack>
+                    </MotionBox>
+                  </AnimatePresence>
+                )}
+              </VStack>
+            </Box>
+            <Box
+              minH={showResult && shouldCenterModalContent ? "72px" : "0"}
+              display="flex"
+              alignItems="flex-end"
+              pl={{ base: 3, md: 1 }}
+              pb={{ base: 2, md: 0 }}
+              pointerEvents="none"
+            >
+              {showResult && shouldCenterModalContent ? (
+                <RandomCharacter />
+              ) : null}
+            </Box>
           </VStack>
         </ModalBody>
       </ModalContent>
