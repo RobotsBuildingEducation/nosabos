@@ -235,7 +235,7 @@ function ClockVisual({
         borderColor="gray.700"
         cursor={onMinutesChange ? "grab" : "default"}
         userSelect="none"
-        sx={onMinutesChange ? { touchAction: "none" } : {}}
+        style={onMinutesChange ? { touchAction: "none" } : undefined}
         _active={onMinutesChange ? { cursor: "grabbing" } : {}}
       >
         <svg

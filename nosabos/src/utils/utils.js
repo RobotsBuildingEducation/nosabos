@@ -67,6 +67,10 @@ export async function awardXp(npub, amount, targetLang = "es") {
 
     // Format today's date as YYYY-MM-DD for calendar tracking
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const existingDailyXpHistory =
+      data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+        ? data.dailyXpHistory
+        : {};
 
     tx.set(
       ref,
@@ -77,6 +81,10 @@ export async function awardXp(npub, amount, targetLang = "es") {
         updatedAt: now.toISOString(),
         progress: nextProgress,
         dailyGoalPetHealth: nextPetHealth,
+        dailyXpHistory: {
+          ...existingDailyXpHistory,
+          [todayKey]: nextDaily,
+        },
         ...(reached
           ? {
               dailyHasCelebrated: true,

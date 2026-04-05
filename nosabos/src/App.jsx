@@ -98,6 +98,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   setDoc,
   updateDoc,
   onSnapshot,
@@ -145,7 +146,10 @@ import {
   getLanguageXp,
 } from "./utils/progressTracking";
 import { awardXp } from "./utils/utils";
-import { buildFlashcardReviewUpdate } from "./utils/flashcardReview";
+import {
+  buildFlashcardReviewUpdate,
+  getLocalDayKey,
+} from "./utils/flashcardReview";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
@@ -870,6 +874,7 @@ function TopBar({
   const [dailyXp, setDailyXp] = useState(0);
   const [dailyResetAt, setDailyResetAt] = useState(null);
   const [completedGoalDates, setCompletedGoalDates] = useState([]);
+  const [dailyXpHistory, setDailyXpHistory] = useState({});
 
   // Keep a local draft for settings input
   const [goalDraft, setGoalDraft] = useState(0);
@@ -909,6 +914,10 @@ function TopBar({
       const completedDates = Array.isArray(data?.completedGoalDates)
         ? data.completedGoalDates
         : [];
+      const xpHistory =
+        data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
+          ? data.dailyXpHistory
+          : {};
 
       const expired = hasDailyGoalResetExpired(resetISO);
       if (expired && goal > 0) {
@@ -939,6 +948,7 @@ function TopBar({
       setDailyXp(dxp);
       setDailyResetAt(resetISO);
       setCompletedGoalDates(completedDates);
+      setDailyXpHistory(xpHistory);
     });
     return () => unsub();
   }, [activeNpub]);
@@ -1617,6 +1627,20 @@ export default function App() {
     const parsed = Number(rawXp);
     return Number.isFinite(parsed) ? parsed : 0;
   }, [user]);
+
+  const dailyGoalCompletedDates = useMemo(
+    () =>
+      Array.isArray(user?.completedGoalDates) ? user.completedGoalDates : [],
+    [user?.completedGoalDates],
+  );
+
+  const dailyGoalXpHistory = useMemo(
+    () =>
+      user?.dailyXpHistory && typeof user.dailyXpHistory === "object"
+        ? user.dailyXpHistory
+        : {},
+    [user?.dailyXpHistory],
+  );
 
   const dailyGoalPetHealth = useMemo(
     () => getDailyGoalPetHealth(user || {}),
@@ -3092,6 +3116,12 @@ export default function App() {
             card.reviewOutcome || "good",
           );
         const updatedAt = reviewPatch.updatedAt || new Date().toISOString();
+        const flashcardActivityKey =
+          getLocalDayKey(reviewPatch.lastReviewedAt || updatedAt) ||
+          getLocalDayKey(updatedAt);
+        const activityLanguageKey = String(
+          resolvedTargetLang || "es",
+        ).toLowerCase();
 
         await awardXp(npub, xpAmount, resolvedTargetLang);
 
@@ -3109,7 +3139,18 @@ export default function App() {
             userRef,
             {
               updatedAt,
-              "progress.lastActiveAt": updatedAt,
+              progress: {
+                lastActiveAt: updatedAt,
+                ...(flashcardActivityKey
+                  ? {
+                      flashcardDailyActivity: {
+                        [activityLanguageKey]: {
+                          [flashcardActivityKey]: increment(1),
+                        },
+                      },
+                    }
+                  : {}),
+              },
             },
             { merge: true },
           ),
@@ -3923,6 +3964,10 @@ export default function App() {
         patch.dailyGoalPetLastOutcome = data.dailyGoalPetLastOutcome;
       if (data?.dailyGoalPetLastUpdatedAt)
         patch.dailyGoalPetLastUpdatedAt = data.dailyGoalPetLastUpdatedAt;
+      if (Array.isArray(data?.completedGoalDates))
+        patch.completedGoalDates = data.completedGoalDates;
+      if (data?.dailyXpHistory && typeof data.dailyXpHistory === "object")
+        patch.dailyXpHistory = data.dailyXpHistory;
       if (data?.stats) patch.stats = data.stats;
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
@@ -4151,12 +4196,17 @@ export default function App() {
 
   // Compute userProgress - must be before any conditional returns to maintain hook order
   const userProgress = useMemo(() => {
+    const progressLanguageKey = String(
+      resolvedTargetLang || "es",
+    ).toLowerCase();
     const languageXpMap = user?.progress?.languageXp || {};
     const languageLessons = user?.progress?.languageLessons;
     const hasLanguageLessons =
       languageLessons && typeof languageLessons === "object";
     const lessonsForLanguage = hasLanguageLessons
-      ? languageLessons?.[resolvedTargetLang] || {}
+      ? languageLessons?.[progressLanguageKey] ||
+        languageLessons?.[resolvedTargetLang] ||
+        {}
       : user?.progress?.lessons || {};
 
     // Get language-specific flashcards
@@ -4164,8 +4214,18 @@ export default function App() {
     const hasLanguageFlashcards =
       languageFlashcards && typeof languageFlashcards === "object";
     const flashcardsForLanguage = hasLanguageFlashcards
-      ? languageFlashcards?.[resolvedTargetLang] || {}
+      ? languageFlashcards?.[progressLanguageKey] ||
+        languageFlashcards?.[resolvedTargetLang] ||
+        {}
       : user?.progress?.flashcards || {};
+    const flashcardDailyActivity = user?.progress?.flashcardDailyActivity;
+    const hasFlashcardDailyActivity =
+      flashcardDailyActivity && typeof flashcardDailyActivity === "object";
+    const flashcardActivityForLanguage = hasFlashcardDailyActivity
+      ? flashcardDailyActivity?.[progressLanguageKey] ||
+        flashcardDailyActivity?.[resolvedTargetLang] ||
+        {}
+      : {};
 
     const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
     return {
@@ -4175,6 +4235,7 @@ export default function App() {
       languageLessons: hasLanguageLessons ? languageLessons : undefined,
       targetLang: resolvedTargetLang,
       flashcards: flashcardsForLanguage,
+      flashcardActivity: flashcardActivityForLanguage,
     };
   }, [user?.progress, resolvedTargetLang]);
 
@@ -5242,6 +5303,10 @@ export default function App() {
         petHealth={dailyGoalPetHealth}
         petLastOutcome={user?.dailyGoalPetLastOutcome || null}
         petLastDelta={user?.dailyGoalPetLastDelta ?? null}
+        completedGoalDates={dailyGoalCompletedDates}
+        dailyXpHistory={dailyGoalXpHistory}
+        currentDailyXp={dailyXpToday}
+        currentGoalXp={dailyGoalTarget}
       />
 
       <SessionTimerModal

@@ -37,6 +37,300 @@ import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
 
+function getLocalDayKey(value) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language = "en", now = new Date()) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const currentYear = today.getFullYear();
+  const yearStart = new Date(currentYear, 0, 1);
+  const yearEnd = new Date(currentYear, 11, 31);
+  const firstWeekPadding = yearStart.getDay();
+  const totalDaysInYear =
+    Math.round((yearEnd.getTime() - yearStart.getTime()) / MS_24H) + 1;
+  const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
+  const completedDatesSet = new Set(completedGoalDates);
+  const monthFormatter = new Intl.DateTimeFormat(
+    language === "es" ? "es-MX" : "en-US",
+    { month: "short" },
+  );
+
+  return Array.from({ length: totalWeeks }, (_, weekIndex) => {
+    let monthLabel = "";
+    const days = Array.from({ length: 7 }, (_, dayIndex) => {
+      const cellIndex = weekIndex * 7 + dayIndex;
+      const dayOffset = cellIndex - firstWeekPadding;
+
+      if (dayOffset < 0 || dayOffset >= totalDaysInYear) {
+        return {
+          key: `blank-${weekIndex}-${dayIndex}`,
+          isBlank: true,
+        };
+      }
+
+      const date = new Date(yearStart);
+      date.setDate(yearStart.getDate() + dayOffset);
+      const dayKey = getLocalDayKey(date);
+      const xp = Math.max(0, Number(xpHistory?.[dayKey]) || 0);
+      const isGoalReached = completedDatesSet.has(dayKey);
+      const isFuture = date.getTime() > today.getTime();
+
+      if (!monthLabel && date.getDate() === 1) {
+        monthLabel = monthFormatter.format(date);
+      }
+
+      return {
+        key: dayKey,
+        date,
+        xp,
+        isBlank: false,
+        isFuture,
+        isToday: dayKey === getLocalDayKey(today),
+        level: isGoalReached ? "goal" : xp > 0 ? "some" : "empty",
+      };
+    });
+
+    return {
+      key: `goal-week-${currentYear}-${weekIndex}`,
+      monthLabel,
+      days,
+    };
+  });
+}
+
+function formatHeatmapDate(date, language) {
+  return new Intl.DateTimeFormat(language === "es" ? "es-MX" : "en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+function DailyGoalHeatmap({
+  lang = "en",
+  completedGoalDates = [],
+  dailyXpHistory = {},
+  currentDailyXp = 0,
+  currentGoalXp = 0,
+  labels,
+}) {
+  const effectiveHistory = useMemo(() => {
+    const todayKey = getLocalDayKey(new Date());
+    if (!todayKey) return dailyXpHistory;
+
+    return {
+      ...dailyXpHistory,
+      [todayKey]: Math.max(
+        Number(dailyXpHistory?.[todayKey]) || 0,
+        Number(currentDailyXp) || 0,
+      ),
+    };
+  }, [currentDailyXp, dailyXpHistory]);
+
+  const effectiveCompletedDates = useMemo(() => {
+    const todayKey = getLocalDayKey(new Date());
+    const completedSet = new Set(completedGoalDates);
+
+    if (
+      todayKey &&
+      Number(currentGoalXp) > 0 &&
+      Number(currentDailyXp) >= Number(currentGoalXp)
+    ) {
+      completedSet.add(todayKey);
+    }
+
+    return Array.from(completedSet);
+  }, [completedGoalDates, currentDailyXp, currentGoalXp]);
+
+  const weeks = useMemo(
+    () =>
+      buildGoalHeatmapWeeks(
+        effectiveHistory,
+        effectiveCompletedDates,
+        lang,
+      ),
+    [effectiveCompletedDates, effectiveHistory, lang],
+  );
+
+  const renderDayCell = (day) => {
+    if (day.isBlank) {
+      return (
+        <Box
+          key={day.key}
+          w="100%"
+          aspectRatio="1 / 1"
+          borderRadius={{ base: "2px", md: "3px" }}
+          bg="transparent"
+        />
+      );
+    }
+
+    const sharedProps = {
+      w: "100%",
+      aspectRatio: "1 / 1",
+      borderRadius: { base: "2px", md: "3px" },
+      border: "1px solid",
+      transition: "transform 0.16s ease, opacity 0.16s ease",
+      title: `${formatHeatmapDate(day.date, lang)} - ${day.xp} XP`,
+      opacity: day.isFuture ? 0.28 : 1,
+      transform: day.isToday ? "scale(1.04)" : "none",
+    };
+
+    if (day.level === "goal") {
+      return (
+        <Box
+          key={day.key}
+          {...sharedProps}
+          bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+          borderColor="rgba(167, 243, 208, 0.55)"
+          boxShadow={{
+            base: "none",
+            md: "0 0 0 1px rgba(45, 212, 191, 0.14), 0 6px 12px rgba(14, 165, 233, 0.16)",
+          }}
+        />
+      );
+    }
+
+    if (day.level === "some") {
+      return (
+        <Box
+          key={day.key}
+          {...sharedProps}
+          bg="rgba(45, 212, 191, 0.42)"
+          borderColor="rgba(94, 234, 212, 0.28)"
+        />
+      );
+    }
+
+    return (
+      <Box
+        key={day.key}
+        {...sharedProps}
+        bg={day.isFuture ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)"}
+        borderColor={
+          day.isToday
+            ? "rgba(255,255,255,0.45)"
+            : "rgba(255,255,255,0.08)"
+        }
+      />
+    );
+  };
+
+  return (
+    <Box
+      p={4}
+      borderRadius="xl"
+      bg="gray.800"
+      border="1px solid"
+      borderColor="gray.700"
+    >
+      <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
+        <Text fontSize="xs" fontWeight="bold" color="gray.300" textTransform="uppercase" letterSpacing="0.08em">
+          {labels.title}
+        </Text>
+        <Text fontSize="xs" color="gray.500">
+          {labels.subtitle}
+        </Text>
+      </HStack>
+
+      <Box
+        overflowX="auto"
+        overflowY="hidden"
+        w="100%"
+        pb={2}
+        sx={{
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+        }}
+      >
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: `repeat(${weeks.length}, 11px)`,
+            sm: `repeat(${weeks.length}, 12px)`,
+            md: `repeat(${weeks.length}, 12px)`,
+            lg: `repeat(${weeks.length}, minmax(12px, 1fr))`,
+          }}
+          columnGap={{ base: "2px", lg: "4px" }}
+          w={{ base: "max-content", lg: "100%" }}
+          minW={{ base: "max-content", lg: "100%" }}
+        >
+          {weeks.map((week) => (
+            <Box key={week.key} minW={0}>
+              <Text
+                minH={{ base: "10px", md: "12px" }}
+                fontSize={{ base: "7px", md: "8px" }}
+                lineHeight="1"
+                color="gray.500"
+                textTransform="uppercase"
+                whiteSpace="nowrap"
+                textAlign="left"
+              >
+                {week.monthLabel}
+              </Text>
+              <Box display="grid" rowGap="2px">
+                {week.days.map((day) => renderDayCell(day))}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      <HStack spacing={4} mt={4} flexWrap="wrap">
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bg="rgba(255,255,255,0.08)"
+            border="1px solid"
+            borderColor="rgba(255,255,255,0.08)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {labels.empty}
+          </Text>
+        </HStack>
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bg="rgba(45, 212, 191, 0.42)"
+            border="1px solid"
+            borderColor="rgba(94, 234, 212, 0.28)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {labels.some}
+          </Text>
+        </HStack>
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+            border="1px solid"
+            borderColor="rgba(167, 243, 208, 0.55)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {labels.goal}
+          </Text>
+        </HStack>
+      </HStack>
+    </Box>
+  );
+}
+
 export default function DailyGoalModal({
   isOpen,
   onClose,
@@ -48,6 +342,10 @@ export default function DailyGoalModal({
   petHealth,
   petLastOutcome,
   petLastDelta,
+  completedGoalDates = [],
+  dailyXpHistory = {},
+  currentDailyXp = 0,
+  currentGoalXp = 0,
 }) {
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
@@ -82,6 +380,14 @@ export default function DailyGoalModal({
       subtitle: getLabel(
         "daily_goal_subtitle",
         "Each level = 100 XP. How many XP do you want to earn per day?",
+      ),
+      activityTitle: getLabel("daily_goal_activity_title", "XP activity"),
+      activitySubtitle: getLabel("daily_goal_activity_subtitle", "This year"),
+      activityEmpty: getLabel("daily_goal_activity_empty", "No XP"),
+      activitySome: getLabel("daily_goal_activity_some", "Some XP"),
+      activityGoal: getLabel(
+        "daily_goal_activity_goal",
+        "Daily goal reached",
       ),
       inputLabel: getLabel("daily_goal_input_label", "XP per day"),
       errNoUserTitle: getLabel("daily_goal_error_no_user", "No user ID"),
@@ -134,6 +440,7 @@ export default function DailyGoalModal({
     try {
       playSound(submitActionSound);
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
+      const todayKey = getLocalDayKey(new Date());
       await setDoc(
         doc(database, "users", npub),
         {
@@ -144,6 +451,14 @@ export default function DailyGoalModal({
           dailyGoalPetHealth: getDailyGoalPetHealth({
             dailyGoalPetHealth: petHealth,
           }),
+          ...(todayKey
+            ? {
+                dailyXpHistory: {
+                  ...(dailyXpHistory || {}),
+                  [todayKey]: 0,
+                },
+              }
+            : {}),
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -269,6 +584,21 @@ export default function DailyGoalModal({
                 {L.levelExplainer(levelPct, approxLevels)}
               </Text>
             </FormControl>
+
+            <DailyGoalHeatmap
+              lang={resolvedLang}
+              completedGoalDates={completedGoalDates}
+              dailyXpHistory={dailyXpHistory}
+              currentDailyXp={currentDailyXp}
+              currentGoalXp={currentGoalXp}
+              labels={{
+                title: L.activityTitle,
+                subtitle: L.activitySubtitle,
+                empty: L.activityEmpty,
+                some: L.activitySome,
+                goal: L.activityGoal,
+              }}
+            />
           </VStack>
         </ModalBody>
         {/* Footer */}
