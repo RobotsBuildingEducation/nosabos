@@ -235,7 +235,50 @@ function LinkCard({
   onLaunchSound,
   onLaunchEvent,
   launchAppText,
+  secondaryAction,
 }) {
+  const secondaryActionColor = secondaryAction?.color || "#4da3ff";
+
+  const primaryActionProps = onLaunch
+    ? {
+        as: "button",
+        onClick: () => {
+          onLaunchSound?.();
+          onLaunchEvent?.();
+          onLaunch?.();
+        },
+      }
+    : {
+        as: "a",
+        href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        onClick: () => {
+          onLaunchSound?.();
+          onLaunchEvent?.();
+        },
+      };
+
+  const secondaryActionProps = secondaryAction?.onClick
+    ? {
+        as: "button",
+        onClick: () => {
+          onLaunchSound?.();
+          secondaryAction.onEvent?.();
+          secondaryAction.onClick?.();
+        },
+      }
+    : {
+        as: "a",
+        href: secondaryAction?.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+        onClick: () => {
+          onLaunchSound?.();
+          secondaryAction?.onEvent?.();
+        },
+      };
+
   return (
     <Box
       w="100%"
@@ -282,44 +325,70 @@ function LinkCard({
           >
             {description}
           </Text>
-          <Button
-            as={onLaunch ? "button" : "a"}
-            onClick={() => {
-              onLaunchSound?.();
-              onLaunchEvent?.();
-              onLaunch?.();
-            }}
-            href={onLaunch ? undefined : href}
-            target={onLaunch ? undefined : "_blank"}
-            rel={onLaunch ? undefined : "noopener noreferrer"}
-            variant="outline"
-            borderColor="#00ffff"
-            color="#00ffff"
-            fontFamily="monospace"
-            size="sm"
-            px={6}
-            py={4}
-            minH="44px"
-            _hover={{
-              bg: "transparent",
-              borderColor: "#00ffff",
-              color: "#00ffff",
-              textDecoration: "none",
-              opacity: 0.8,
-            }}
-            _active={{
-              bg: "transparent",
-              color: "#00ffff",
-            }}
-            _focus={{
-              boxShadow: "none",
-            }}
-            sx={{
-              "&:visited": { color: "#00ffff" },
-            }}
-          >
-            {launchAppText || "Launch app"}
-          </Button>
+          <HStack spacing={3} align="center" justify="center" flexWrap="wrap">
+            <Button
+              {...primaryActionProps}
+              variant="outline"
+              borderColor="#00ffff"
+              color="#00ffff"
+              fontFamily="monospace"
+              size="sm"
+              px={6}
+              py={4}
+              minH="44px"
+              _hover={{
+                bg: "transparent",
+                borderColor: "#00ffff",
+                color: "#00ffff",
+                textDecoration: "none",
+                opacity: 0.8,
+              }}
+              _active={{
+                bg: "transparent",
+                color: "#00ffff",
+              }}
+              _focus={{
+                boxShadow: "none",
+              }}
+              sx={{
+                "&:visited": { color: "#00ffff" },
+              }}
+            >
+              {launchAppText || "Launch app"}
+            </Button>
+            {secondaryAction ? (
+              <Button
+                {...secondaryActionProps}
+                variant="outline"
+                borderColor={secondaryActionColor}
+                color={secondaryActionColor}
+                fontFamily="monospace"
+                size="sm"
+                px={6}
+                py={4}
+                minH="44px"
+                _hover={{
+                  bg: "transparent",
+                  borderColor: secondaryActionColor,
+                  color: secondaryActionColor,
+                  textDecoration: "none",
+                  opacity: 0.8,
+                }}
+                _active={{
+                  bg: "transparent",
+                  color: secondaryActionColor,
+                }}
+                _focus={{
+                  boxShadow: "none",
+                }}
+                sx={{
+                  "&:visited": { color: secondaryActionColor },
+                }}
+              >
+                {secondaryAction.label}
+              </Button>
+            ) : null}
+          </HStack>
         </VStack>
       </Stack>
     </Box>
@@ -609,6 +678,11 @@ export default function LinksPage() {
         </Box>
       ),
       launchAppText: translations.subscribe,
+      secondaryAction: {
+        label: translations.buyApps,
+        href: "https://www.patreon.com/posts/146522893?forSale=true",
+        color: "#4da3ff",
+      },
     },
   ];
 

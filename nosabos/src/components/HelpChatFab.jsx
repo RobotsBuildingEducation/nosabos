@@ -38,6 +38,7 @@ import {
   useBreakpointValue,
   Flex,
   Textarea,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   FaPaperPlane,
@@ -375,8 +376,9 @@ const HelpChatFab = forwardRef(
       }
 
       const turn =
-        realtimeTurnQueueRef.current.find((candidate) => !candidate.responseId) ||
-        reserveRealtimeTurn();
+        realtimeTurnQueueRef.current.find(
+          (candidate) => !candidate.responseId,
+        ) || reserveRealtimeTurn();
 
       if (responseId) {
         turn.responseId = responseId;
@@ -513,7 +515,9 @@ const HelpChatFab = forwardRef(
 
     const loadSavedChat = useCallback(
       (chat) => {
-        const loadedMessages = Array.isArray(chat?.messages) ? chat.messages : [];
+        const loadedMessages = Array.isArray(chat?.messages)
+          ? chat.messages
+          : [];
         setMessages(
           loadedMessages.map((message, index) => ({
             ...message,
@@ -1066,7 +1070,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
       if (!dcRef.current || dcRef.current.readyState !== "open") return;
       try {
-        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
+        );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
@@ -1810,14 +1816,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 realtimeStatus === "connected" ? (
                                   <FaStop />
                                 ) : realtimeStatus === "connecting" ? (
-                                  <VoiceOrb
-                                    state={
-                                      ["idle", "listening", "speaking"][
-                                        Math.floor(Math.random() * 3)
-                                      ]
-                                    }
-                                    size={24}
-                                  />
+                                  <Spinner size="xs" />
                                 ) : (
                                   <FaMicrophone />
                                 )

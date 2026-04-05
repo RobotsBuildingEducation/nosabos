@@ -83,6 +83,7 @@ export const linksPageTranslations = {
     nextLink: "Next link",
     launchApp: "Launch app",
     subscribe: "Subscribe",
+    buyApps: "Buy apps",
 
     // Link cards
     noSabosTitle: "No Sabos",
@@ -93,7 +94,7 @@ export const linksPageTranslations = {
       "Your personal coding tutor. Learn the foundations of software engineering quickly so you can start to leverage AI coding tools to build your ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Pay once to own the apps or subscribe to unlock additional content on tutoring support, software engineering, finance and other updates",
+      "Pay once to own the apps or subscribe to unlock additional content on software engineering, business, finance and other updates.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -275,17 +276,18 @@ export const linksPageTranslations = {
     nextLink: "Siguiente enlace",
     launchApp: "Abrir app",
     subscribe: "Suscribirse",
+    buyApps: "Comprar apps",
 
     // Link cards
     noSabosTitle: "No Sabos",
     noSabosDescription:
       "Tu tutor personal de idiomas. Aprende y explora nuevos idiomas usando herramientas inteligentes que te ayudan a practicar.",
-    rbeTitle: "Robots Building Education (gratis)",
+    rbeTitle: "Robots Building Education",
     rbeDescription:
-      "Tu tutor personal de programación. 100% gratis. Aprende los fundamentos de la ingeniería de software en ~100 preguntas para que puedas empezar a aprovechar herramientas de programación con IA y construir tus ideas.",
+      "Tu tutor personal de programación. Aprende rápidamente los fundamentos de la ingeniería de software para que puedas empezar a aprovechar las herramientas de programación con IA y construir tus ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Suscríbete por $1 (y, si pagas anual, 50% de descuento adicional!) para desbloquear contenido de tecnología, mercados y acceso completo a la app de aprendizaje de idiomas.",
+      "Paga una vez para tener las apps o suscríbete para desbloquear contenido adicional sobre ingeniería de software, negocios, finanzas y otras novedades.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
