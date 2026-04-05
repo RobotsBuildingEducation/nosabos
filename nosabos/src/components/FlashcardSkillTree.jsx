@@ -26,9 +26,8 @@ import {
   FLASHCARD_REVIEW_STATES,
   FLASHCARD_SCHEDULER_STATES,
   formatAbsoluteReviewTime,
-  getCardsReviewedTodayCount,
   getFlashcardReviewSnapshot,
-  getFlashcardStudyStreak,
+  getLocalDayKey,
 } from "../utils/flashcardReview";
 
 const MotionBox = motion(Box);
@@ -58,6 +57,138 @@ const getEffectiveCardLanguage = (supportLang) => {
   }
   return appLang;
 };
+
+function normalizeActivityMap(activityMap = {}) {
+  return Object.entries(activityMap).reduce((accumulator, [dayKey, count]) => {
+    if (!dayKey) return accumulator;
+
+    const normalizedCount = Math.max(0, Number(count) || 0);
+    if (normalizedCount > 0) {
+      accumulator[dayKey] = normalizedCount;
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function getProgressTimestamp(progress = {}) {
+  const rawValue =
+    progress?.updatedAt || progress?.lastReviewedAt || progress?.completedAt;
+  if (!rawValue) return 0;
+
+  const timestamp = new Date(rawValue).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function buildFallbackActivityMap(progressMap = {}) {
+  return Object.values(progressMap).reduce((accumulator, progress) => {
+    const dayKey = getLocalDayKey(
+      progress?.lastReviewedAt || progress?.completedAt,
+    );
+    if (!dayKey) return accumulator;
+
+    accumulator[dayKey] = (accumulator[dayKey] || 0) + 1;
+    return accumulator;
+  }, {});
+}
+
+function buildOptimisticActivityMap(localProgressOverrides = {}, baseProgressMap = {}) {
+  return Object.entries(localProgressOverrides).reduce(
+    (accumulator, [cardId, progress]) => {
+      const dayKey = getLocalDayKey(
+        progress?.lastReviewedAt || progress?.completedAt,
+      );
+      if (!dayKey) return accumulator;
+
+      const overrideTimestamp = getProgressTimestamp(progress);
+      const baseTimestamp = getProgressTimestamp(baseProgressMap?.[cardId]);
+
+      if (overrideTimestamp && overrideTimestamp <= baseTimestamp) {
+        return accumulator;
+      }
+
+      accumulator[dayKey] = (accumulator[dayKey] || 0) + 1;
+      return accumulator;
+    },
+    {},
+  );
+}
+
+function buildHeatmapWeeks(activityMap, language, now = new Date()) {
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const currentYear = today.getFullYear();
+  const yearStart = new Date(currentYear, 0, 1);
+  const yearEnd = new Date(currentYear, 11, 31);
+  const firstWeekPadding = yearStart.getDay();
+  const totalDaysInYear =
+    Math.round((yearEnd.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000)) +
+    1;
+  const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
+
+  const monthFormatter = new Intl.DateTimeFormat(
+    language === "es" ? "es-MX" : "en-US",
+    { month: "short" },
+  );
+
+  return Array.from({ length: totalWeeks }, (_, weekIndex) => {
+    let monthLabel = "";
+    const days = Array.from({ length: 7 }, (_, dayIndex) => {
+      const cellIndex = weekIndex * 7 + dayIndex;
+      const dayOffset = cellIndex - firstWeekPadding;
+
+      if (dayOffset < 0 || dayOffset >= totalDaysInYear) {
+        return {
+          count: 0,
+          dayKey: `blank-${weekIndex}-${dayIndex}`,
+          date: null,
+          isFuture: false,
+          isToday: false,
+          isBlank: true,
+          level: "blank",
+        };
+      }
+
+      const date = new Date(yearStart);
+      date.setDate(yearStart.getDate() + dayOffset);
+      const dayKey = getLocalDayKey(date);
+      const count = Number(activityMap?.[dayKey]) || 0;
+      const isFuture = date.getTime() > today.getTime();
+
+      if (!monthLabel && date.getDate() === 1) {
+        monthLabel = monthFormatter.format(date);
+      }
+
+      return {
+        count,
+        dayKey,
+        date,
+        isFuture,
+        isToday: dayKey === getLocalDayKey(today),
+        isBlank: false,
+        level:
+          count >= FLASHCARD_DAILY_TARGET
+            ? "complete"
+            : count > 0
+              ? "partial"
+              : "empty",
+      };
+    });
+
+    return {
+      key: `week-${currentYear}-${weekIndex}`,
+      monthLabel,
+      days,
+    };
+  });
+}
+
+function formatActivityDate(date, language) {
+  return new Intl.DateTimeFormat(language === "es" ? "es-MX" : "en-US", {
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
 
 function getCardDecor(status, cefrColor) {
   switch (status) {
@@ -355,6 +486,202 @@ function DashboardStat({ label, value }) {
   );
 }
 
+function ActivityHeatmap({ activityMap, appLanguage }) {
+  const weeks = useMemo(
+    () => buildHeatmapWeeks(activityMap, appLanguage),
+    [activityMap, appLanguage],
+  );
+
+  const renderDayCell = (day) => {
+    if (day.isBlank) {
+      return (
+        <Box
+          key={day.dayKey}
+          w="100%"
+          aspectRatio="1 / 1"
+          borderRadius={{ base: "1px", sm: "2px", md: "3px", lg: "4px" }}
+          bg="transparent"
+        />
+      );
+    }
+
+    const title = `${formatActivityDate(day.date, appLanguage)} - ${
+      day.count
+    }/${FLASHCARD_DAILY_TARGET}`;
+    const baseProps = {
+      w: "100%",
+      aspectRatio: "1 / 1",
+      borderRadius: { base: "2px", sm: "3px", md: "3px", lg: "4px" },
+      borderStyle: "solid",
+      borderWidth: "1px",
+      transition: "transform 0.16s ease, opacity 0.16s ease",
+    };
+
+    if (day.level === "complete") {
+      return (
+        <Box
+          key={day.dayKey}
+          {...baseProps}
+          title={title}
+          bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+          borderColor="rgba(167, 243, 208, 0.55)"
+          boxShadow={{
+            base: "none",
+            md: "0 0 0 1px rgba(45, 212, 191, 0.14), 0 6px 12px rgba(14, 165, 233, 0.16)",
+          }}
+          opacity={day.isFuture ? 0.28 : 1}
+          transform={day.isToday ? "scale(1.04)" : "none"}
+        />
+      );
+    }
+
+    if (day.level === "partial") {
+      return (
+        <Box
+          key={day.dayKey}
+          {...baseProps}
+          title={title}
+          bg="rgba(45, 212, 191, 0.42)"
+          borderColor="rgba(94, 234, 212, 0.28)"
+          opacity={day.isFuture ? 0.28 : 1}
+          transform={day.isToday ? "scale(1.04)" : "none"}
+        />
+      );
+    }
+
+    return (
+      <Box
+        key={day.dayKey}
+        {...baseProps}
+        title={title}
+        bg={day.isFuture ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)"}
+        borderColor={
+          day.isToday
+            ? "rgba(255,255,255,0.45)"
+            : "rgba(255,255,255,0.08)"
+        }
+        opacity={day.isFuture ? 0.35 : 1}
+        transform={day.isToday ? "scale(1.04)" : "none"}
+      />
+    );
+  };
+
+  return (
+    <Box
+      p={{ base: 3, md: 4 }}
+      borderRadius="2xl"
+      bg="whiteAlpha.100"
+      border="1px solid"
+      borderColor="whiteAlpha.200"
+      backdropFilter="blur(12px)"
+    >
+      <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
+        <Text
+          fontSize="xs"
+          color="gray.400"
+          textTransform="uppercase"
+          letterSpacing="0.08em"
+        >
+          {getTranslation("flashcard_activity")}
+        </Text>
+        <Text fontSize="xs" color="gray.500">
+          {getTranslation("flashcard_activity_subtitle")}
+        </Text>
+      </HStack>
+
+      <Box
+        overflowX="auto"
+        overflowY="hidden"
+        w="100%"
+        pb={2}
+        sx={{
+          "&::-webkit-scrollbar": {
+            display: "none",
+          },
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
+        }}
+      >
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            base: `repeat(${weeks.length}, 12px)`,
+            sm: `repeat(${weeks.length}, 13px)`,
+            md: `repeat(${weeks.length}, 13px)`,
+            lg: `repeat(${weeks.length}, minmax(14px, 1fr))`,
+          }}
+          columnGap={{ base: "2px", md: "2px", lg: "4px" }}
+          rowGap="0px"
+          alignItems="start"
+          w={{ base: "max-content", lg: "100%" }}
+          minW={{ base: "max-content", lg: "100%" }}
+        >
+          {weeks.map((week) => (
+            <Box key={week.key} minW={0}>
+              <Text
+                minH={{ base: "10px", sm: "11px", md: "12px", lg: "14px" }}
+                fontSize={{ base: "7px", sm: "7px", md: "8px", lg: "9px" }}
+                lineHeight="1"
+                color="gray.500"
+                textTransform="uppercase"
+                whiteSpace="nowrap"
+                textAlign="left"
+              >
+                {week.monthLabel}
+              </Text>
+              <Box display="grid" rowGap={{ base: "2px", md: "2px" }}>
+                {week.days.map((day) => renderDayCell(day))}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+
+      <HStack spacing={4} mt={4} flexWrap="wrap">
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bg="rgba(255,255,255,0.08)"
+            border="1px solid"
+            borderColor="rgba(255,255,255,0.08)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {getTranslation("flashcard_activity_empty")}
+          </Text>
+        </HStack>
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bg="rgba(45, 212, 191, 0.42)"
+            border="1px solid"
+            borderColor="rgba(94, 234, 212, 0.28)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {getTranslation("flashcard_activity_some")}
+          </Text>
+        </HStack>
+        <HStack spacing={2}>
+          <Box
+            w="10px"
+            h="10px"
+            borderRadius="3px"
+            bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+            border="1px solid"
+            borderColor="rgba(167, 243, 208, 0.55)"
+          />
+          <Text fontSize="xs" color="gray.400">
+            {getTranslation("flashcard_activity_goal")}
+          </Text>
+        </HStack>
+      </HStack>
+    </Box>
+  );
+}
+
 function DeckSection({
   title,
   subtitle,
@@ -544,24 +871,6 @@ export default function FlashcardSkillTree({
     return map;
   }, [flashcardData, localProgressOverrides, userProgress.flashcards]);
 
-  const languageProgressMap = useMemo(() => {
-    const map = {};
-    const progressEntries = userProgress.flashcards || {};
-    const cardIds = new Set([
-      ...Object.keys(progressEntries),
-      ...Object.keys(localProgressOverrides),
-    ]);
-
-    cardIds.forEach((cardId) => {
-      map[cardId] = {
-        ...(progressEntries[cardId] || EMPTY_PROGRESS),
-        ...(localProgressOverrides[cardId] || EMPTY_PROGRESS),
-      };
-    });
-
-    return map;
-  }, [localProgressOverrides, userProgress.flashcards]);
-
   const reviewSnapshotMap = useMemo(() => {
     const map = new Map();
     flashcardData.forEach((card) => {
@@ -659,14 +968,48 @@ export default function FlashcardSkillTree({
     return weakCards[0] || null;
   }, [weakCards]);
 
-  const reviewedTodayCount = useMemo(
-    () => getCardsReviewedTodayCount(effectiveProgressMap),
-    [effectiveProgressMap],
+  const fallbackActivityMap = useMemo(
+    () => buildFallbackActivityMap(userProgress.flashcards || EMPTY_PROGRESS),
+    [userProgress.flashcards],
   );
 
-  const studyStreak = useMemo(
-    () => getFlashcardStudyStreak(languageProgressMap),
-    [languageProgressMap],
+  const optimisticActivityMap = useMemo(
+    () =>
+      buildOptimisticActivityMap(
+        localProgressOverrides,
+        userProgress.flashcards || EMPTY_PROGRESS,
+      ),
+    [localProgressOverrides, userProgress.flashcards],
+  );
+
+  const dailyActivityMap = useMemo(() => {
+    const storedActivityMap = normalizeActivityMap(
+      userProgress.flashcardActivity || EMPTY_PROGRESS,
+    );
+    const mergedActivityMap = { ...storedActivityMap };
+
+    Object.entries(fallbackActivityMap).forEach(([dayKey, count]) => {
+      mergedActivityMap[dayKey] = Math.max(
+        Number(mergedActivityMap[dayKey]) || 0,
+        count,
+      );
+    });
+
+    Object.entries(optimisticActivityMap).forEach(([dayKey, count]) => {
+      mergedActivityMap[dayKey] =
+        (Number(mergedActivityMap[dayKey]) || 0) + count;
+    });
+
+    return mergedActivityMap;
+  }, [
+    fallbackActivityMap,
+    optimisticActivityMap,
+    userProgress.flashcardActivity,
+  ]);
+
+  const reviewedTodayCount = useMemo(
+    () => Number(dailyActivityMap[getLocalDayKey(new Date())]) || 0,
+    [dailyActivityMap],
   );
 
   const dailyProgressPct = Math.min(
@@ -881,11 +1224,12 @@ export default function FlashcardSkillTree({
                 label={getTranslation("flashcard_mastered_cards")}
                 value={completedCards.length}
               />
-              <DashboardStat
-                label={getTranslation("flashcard_streak")}
-                value={`${studyStreak}${appLanguage === "es" ? " dias" : " days"}`}
-              />
             </HStack>
+
+            <ActivityHeatmap
+              activityMap={dailyActivityMap}
+              appLanguage={appLanguage}
+            />
 
             <Box
               p={4}
