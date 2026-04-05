@@ -83,6 +83,8 @@ const theme = {
   },
 };
 
+const HERO_VOICE_ORB_STATES = ["idle", "listening", "speaking"];
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRANSLATIONS
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -992,6 +994,10 @@ const LandingPage = ({ onAuthenticated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(null);
   const [hasExtension, setHasExtension] = useState(false);
+  const [heroVoiceOrbState] = useState(() => {
+    const randomIndex = Math.floor(Math.random() * HERO_VOICE_ORB_STATES.length);
+    return HERO_VOICE_ORB_STATES[randomIndex];
+  });
 
   const copy = translations[lang];
 
@@ -1212,7 +1218,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.2 }}
             style={{ marginBottom: "16px" }}
           >
-            <VoiceOrb state="idle" />
+            <VoiceOrb state={heroVoiceOrbState} />
           </motion.div>
 
           {/* Title */}

@@ -88,12 +88,12 @@ export const linksPageTranslations = {
     noSabosTitle: "No Sabos",
     noSabosDescription:
       "Your personal language tutor. Learn and explore new languages using intelligent tools to help you practice.",
-    rbeTitle: "Robots Building Education (free)",
+    rbeTitle: "Robots Building Education",
     rbeDescription:
-      "Your personal coding tutor. 100% free. Learn the foundations of software engineering in ~100 questions so you can start to leverage AI coding tools to build your ideas.",
+      "Your personal coding tutor. Learn the foundations of software engineering quickly so you can start to leverage AI coding tools to build your ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Subscribe for $1 (and an additional 50% off for annual subscriptions!) to unlock content for tech, markets and full access to the language learning app.",
+      "Pay once to own the apps or subscribe to unlock additional content on tutoring support, software engineering, finance and other updates",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",

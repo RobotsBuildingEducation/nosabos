@@ -19,7 +19,6 @@ float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 
 float noise(vec2 p){
   vec2 i=floor(p), f=fract(p);
-  // quintic interpolation — eliminates the grid artifacts
   f = f*f*f*(f*(f*6.0-15.0)+10.0);
   return mix(
     mix(hash(i),           hash(i+vec2(1,0)), f.x),
@@ -30,7 +29,6 @@ float noise(vec2 p){
 
 float fbm(vec2 p){
   float v=0.0, a=0.5;
-  // 6 octaves for smooth, detailed clouds
   for(int i=0;i<6;i++){
     v += a * noise(p);
     p = p * 2.2 + vec2(1.7, 9.2);
@@ -39,7 +37,6 @@ float fbm(vec2 p){
   return v;
 }
 
-// secondary fbm at different frequency for layered detail
 float fbm2(vec2 p){
   float v=0.0, a=0.5;
   for(int i=0;i<5;i++){
@@ -99,7 +96,14 @@ void main(){
   float wListen = smoothstep(0.0, 1.0, u_mode) * smoothstep(2.0, 1.0, u_mode);
   float wSpeak  = smoothstep(1.0, 2.0, u_mode);
 
-  float ripple = sin(r * 8.0 - t * 3.5) * 0.09 * wListen * u_energy;
+  // --- enhanced listening ripple ---
+  // primary ripple: higher amplitude & tighter rings
+  float ripple1 = sin(r * 12.0 - t * 4.0) * 0.18;
+  // secondary harmonic for texture
+  float ripple2 = sin(r * 20.0 - t * 6.5 + 1.2) * 0.08;
+  // noise-modulated wobble so ripples aren't perfectly concentric
+  float rippleNoise = noise(uv * 5.0 + t * 0.8) * 0.06;
+  float ripple = (ripple1 + ripple2 + rippleNoise) * wListen * u_energy;
   vec2 dpListen = dp + normalize(uv + 0.001) * ripple;
 
   float spiralAngle = r * 6.0 * wSpeak * u_energy;

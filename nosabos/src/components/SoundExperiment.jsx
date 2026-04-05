@@ -35,6 +35,7 @@ import {
   PiCursorClickDuotone,
 } from "react-icons/pi";
 import { soundManager } from "../utils/SoundManager";
+import VoiceOrb from "./VoiceOrb";
 
 // Color palette matching the SoundManager's color chords
 const COLOR_PALETTE = [
@@ -176,7 +177,7 @@ export default function SoundExperiment() {
       soundManager.play(soundId);
       setTimeout(() => setActiveSound(null), 300);
     },
-    [isInitialized, toast]
+    [isInitialized, toast],
   );
 
   const playHoverSound = useCallback(
@@ -184,7 +185,7 @@ export default function SoundExperiment() {
       if (!isInitialized) return;
       soundManager.playHover(value / 100);
     },
-    [isInitialized]
+    [isInitialized],
   );
 
   const playBrushSizeSound = useCallback(
@@ -192,7 +193,7 @@ export default function SoundExperiment() {
       if (!isInitialized) return;
       soundManager.playBrushSize(size, 10);
     },
-    [isInitialized]
+    [isInitialized],
   );
 
   const playColorChord = useCallback(
@@ -200,7 +201,7 @@ export default function SoundExperiment() {
       if (!isInitialized) return;
       soundManager.playColorSwitch(index, COLOR_PALETTE.length);
     },
-    [isInitialized]
+    [isInitialized],
   );
 
   // Show start screen if not initialized
@@ -217,6 +218,9 @@ export default function SoundExperiment() {
         p={8}
         textAlign="center"
       >
+        <VoiceOrb size={260} state="speaking" />
+        <br />
+        <br /> <br /> <br /> <br />
         <VStack spacing={8}>
           <VStack spacing={2}>
             <Heading size="2xl" fontWeight="bold">

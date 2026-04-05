@@ -20,7 +20,8 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Stack, Switch,
+  Stack,
+  Switch,
   Text,
   IconButton,
   useDisclosure,
@@ -37,7 +38,6 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
-
 import VoiceOrb from "./VoiceOrb";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
@@ -79,6 +79,11 @@ const drift = keyframes`
   50% { transform: translateY(-10px) translateX(5px); }
   100% { transform: translateY(0) translateX(0); }
 `;
+
+const VOICE_ORB_STATES = ["idle", "listening", "speaking"];
+
+const pickRandomVoiceOrbState = () =>
+  VOICE_ORB_STATES[Math.floor(Math.random() * VOICE_ORB_STATES.length)];
 
 const roleCycle = [
   "sphere",
@@ -322,7 +327,7 @@ function LinkCard({
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
+  const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
     useDecentralizedIdentity();
 
   // Language state
@@ -339,6 +344,7 @@ export default function LinksPage() {
   const [randomCharacterKey] = useState(
     () => Math.floor(Math.random() * 21) + 20,
   ); // Random between 20-40
+  const [noSabosOrbState] = useState(pickRandomVoiceOrbState);
   const [roleIndex, setRoleIndex] = useState(0);
 
   // Wallet state
@@ -406,6 +412,14 @@ export default function LinksPage() {
     };
   }, [walletInit, initWallet]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoleIndex((prev) => (prev + 1) % roleCycle.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   // Initialize language based on timezone detection
   useEffect(() => {
     initLanguage();
@@ -433,14 +447,6 @@ export default function LinksPage() {
         setProfilePicture(storedProfilePictureUrl);
       }
     }
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setRoleIndex((prev) => (prev + 1) % roleCycle.length);
-    }, 3000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const rbeUrl = "https://robotsbuildingeducation.com";
@@ -518,7 +524,9 @@ export default function LinksPage() {
         isClosable: true,
         position: "top",
       });
-    } catch {}
+    } catch {
+      // Ignore clipboard write failures here; the user can retry.
+    }
   };
 
   const links = [
@@ -535,7 +543,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <VoiceOrb state="idle" />
+          <VoiceOrb state={noSabosOrbState} />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -561,24 +569,24 @@ export default function LinksPage() {
       ),
       launchAppText: translations.launchApp,
     },
-    {
-      title: translations.roadmapCashTitle,
-      description: translations.roadmapCashDescription,
-      href: "https://roadmap.cash",
-      analyticsName: "roadmap_cash",
-      visual: (
-        <Box
-          w={{ base: "140px", md: "140px" }}
-          h={{ base: "140px", md: "140px" }}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          <AnimatedLogo showWordmark={false} size={140} />
-        </Box>
-      ),
-      launchAppText: translations.launchApp,
-    },
+    // {
+    //   title: translations.roadmapCashTitle,
+    //   description: translations.roadmapCashDescription,
+    //   href: "https://roadmap.cash",
+    //   analyticsName: "roadmap_cash",
+    //   visual: (
+    //     <Box
+    //       w={{ base: "140px", md: "140px" }}
+    //       h={{ base: "140px", md: "140px" }}
+    //       display="flex"
+    //       alignItems="center"
+    //       justifyContent="center"
+    //     >
+    //       <AnimatedLogo showWordmark={false} size={140} />
+    //     </Box>
+    //   ),
+    //   launchAppText: translations.launchApp,
+    // },
     {
       title: translations.patreonTitle,
       description: translations.patreonDescription,
@@ -717,7 +725,7 @@ export default function LinksPage() {
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch {
       toast({
         title: translations.error,
         description: translations.failedCopy,
@@ -1363,7 +1371,14 @@ export default function LinksPage() {
                 {/* Loading/hydration spinner */}
                 {walletHydrating && !cashuWallet && (
                   <HStack py={2}>
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={24}
+                    />
                     <Text fontSize="sm" color="gray.400">
                       {translations.loadingWallet}
                     </Text>
