@@ -91,6 +91,7 @@ const GAME_SPEECH_VAD_MS = 850;
 const GAME_SPEECH_STOP_DELAY_MS = 250;
 const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
 const RPG_MUSIC_VOLUME = 0.02;
+const RPG_MUSIC_PREF_VERSION = 2;
 const OBJECT_SEARCH_TEST_COPY = {
   en: {
     intro: (itemName) =>
@@ -1333,7 +1334,7 @@ function MusicToggleIcon({ size = 28, isEnabled = true }) {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, w, h);
     };
-    const noteColor = isEnabled ? "#f2c14e" : "#b3adb8";
+    const noteColor = "#111111";
 
     // Single-shape eighth note
     rect(11, 18, 5, 1, noteColor);
@@ -1827,7 +1828,7 @@ export default function RPGGame({
   const [objectExamine, setObjectExamine] = useState(null);
   const [pickupBanner, setPickupBanner] = useState(null);
   const [inventory, setInventory] = useState([]);
-  const [musicEnabled, setMusicEnabled] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(false);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const [startedObjectSearchStepKey, setStartedObjectSearchStepKey] =
@@ -1851,6 +1852,9 @@ export default function RPGGame({
   const preWarmedAudioRef = useRef(null);
   const backgroundMusicRef = useRef(null);
   const backgroundMusicLoadPromiseRef = useRef(null);
+  const backgroundMusicContextRef = useRef(null);
+  const backgroundMusicSourceRef = useRef(null);
+  const backgroundMusicGainRef = useRef(null);
   const seededMusicPreferenceRef = useRef(false);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
@@ -1886,8 +1890,49 @@ export default function RPGGame({
   }, [user?.id, user?.local_npub]);
 
   useEffect(() => {
-    setMusicEnabled(user?.rpgMusicEnabled !== false);
+    setMusicEnabled(user?.rpgMusicEnabled === true);
   }, [user?.rpgMusicEnabled]);
+
+  const syncBackgroundMusicVolume = useCallback(async (audio = null) => {
+    const nextAudio = audio || backgroundMusicRef.current;
+    if (!nextAudio) return;
+
+    // Desktop/browser fallback.
+    nextAudio.volume = RPG_MUSIC_VOLUME;
+
+    if (typeof window === "undefined") return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      let audioContext = backgroundMusicContextRef.current;
+      if (!audioContext) {
+        audioContext = new AudioCtx();
+        backgroundMusicContextRef.current = audioContext;
+      }
+
+      if (!backgroundMusicGainRef.current) {
+        const sourceNode = audioContext.createMediaElementSource(nextAudio);
+        const gainNode = audioContext.createGain();
+        sourceNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        backgroundMusicSourceRef.current = sourceNode;
+        backgroundMusicGainRef.current = gainNode;
+      }
+
+      backgroundMusicGainRef.current.gain.value = RPG_MUSIC_VOLUME;
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume().catch(() => {});
+      }
+
+      // Mobile Safari can ignore HTMLMediaElement.volume, so use full element
+      // volume once the GainNode is controlling the level.
+      nextAudio.volume = 1;
+    } catch (error) {
+      console.warn("Failed to route RPG music through gain node:", error);
+    }
+  }, []);
 
   const pauseBackgroundMusic = useCallback((reset = false) => {
     const audio = backgroundMusicRef.current;
@@ -1928,15 +1973,25 @@ export default function RPGGame({
   useEffect(() => {
     return () => {
       const audio = backgroundMusicRef.current;
-      if (!audio) return;
-      try {
-        audio.pause();
-      } catch {
-        /* ignore */
+      if (audio) {
+        try {
+          audio.pause();
+        } catch {
+          /* ignore */
+        }
+        audio.src = "";
       }
-      audio.src = "";
+      backgroundMusicSourceRef.current?.disconnect?.();
+      backgroundMusicGainRef.current?.disconnect?.();
+      const audioContext = backgroundMusicContextRef.current;
+      if (audioContext?.close) {
+        audioContext.close().catch(() => {});
+      }
       backgroundMusicRef.current = null;
       backgroundMusicLoadPromiseRef.current = null;
+      backgroundMusicSourceRef.current = null;
+      backgroundMusicGainRef.current = null;
+      backgroundMusicContextRef.current = null;
     };
   }, []);
 
@@ -1948,7 +2003,7 @@ export default function RPGGame({
 
     audio.loop = true;
     audio.preload = "auto";
-    audio.volume = RPG_MUSIC_VOLUME;
+    await syncBackgroundMusicVolume(audio);
     audio.muted = false;
 
     try {
@@ -1956,7 +2011,14 @@ export default function RPGGame({
     } catch {
       // Autoplay can be blocked until the next user gesture.
     }
-  }, [gameComplete, loadBackgroundMusic, musicEnabled, scenario, scenarioId]);
+  }, [
+    gameComplete,
+    loadBackgroundMusic,
+    musicEnabled,
+    scenario,
+    scenarioId,
+    syncBackgroundMusicVolume,
+  ]);
 
   useEffect(() => {
     if (!musicEnabled || !scenario || !scenarioId || gameComplete) {
@@ -1975,7 +2037,13 @@ export default function RPGGame({
   ]);
 
   useEffect(() => {
-    if (!user || typeof user.rpgMusicEnabled === "boolean") {
+    if (!user) {
+      return;
+    }
+    if (
+      user?.rpgMusicPreferenceVersion === RPG_MUSIC_PREF_VERSION &&
+      typeof user.rpgMusicEnabled === "boolean"
+    ) {
       return;
     }
     if (seededMusicPreferenceRef.current) return;
@@ -1989,13 +2057,18 @@ export default function RPGGame({
       doc(database, "users", id),
       {
         local_npub: id,
-        rpgMusicEnabled: true,
+        rpgMusicEnabled: false,
+        rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
         updatedAt,
       },
       { merge: true },
     )
       .then(() => {
-        patchUser?.({ rpgMusicEnabled: true, updatedAt });
+        patchUser?.({
+          rpgMusicEnabled: false,
+          rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+          updatedAt,
+        });
       })
       .catch((error) => {
         seededMusicPreferenceRef.current = false;
@@ -2015,12 +2088,17 @@ export default function RPGGame({
           {
             local_npub: id,
             rpgMusicEnabled: enabled,
+            rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
             updatedAt,
           },
           { merge: true },
         );
         if (user) {
-          patchUser?.({ rpgMusicEnabled: enabled, updatedAt });
+          patchUser?.({
+            rpgMusicEnabled: enabled,
+            rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+            updatedAt,
+          });
         }
       } catch (error) {
         console.warn("Failed to save RPG music preference:", error);
