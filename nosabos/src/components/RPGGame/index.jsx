@@ -27,13 +27,15 @@ import {
   useDisclosure,
   Tooltip,
   Image,
-  SimpleGrid, } from "@chakra-ui/react";
+  SimpleGrid,
+} from "@chakra-ui/react";
 import { ArrowBackIcon, CloseIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineSupportAgent, MdUndo } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import * as Tone from "tone";
 import * as THREE from "three";
+import { doc, setDoc } from "firebase/firestore";
 import {
   MAP_CHOICES,
   REVIEW_WORLD_ID,
@@ -57,8 +59,12 @@ import {
   getCharacterPersonality,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
-import { simplemodel } from "../../firebaseResources/firebaseResources";
+import {
+  database,
+  simplemodel,
+} from "../../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../../hooks/useSpeechPractice";
+import { useUserStore } from "../../hooks/useUserStore";
 import HelpChatFab from "../HelpChatFab";
 import VoiceOrb from "../VoiceOrb";
 import LoadingMiniGame from "../LoadingMiniGame";
@@ -84,6 +90,8 @@ const GATHER_SPRITE_GRID = 16;
 const GAME_SPEECH_VAD_MS = 850;
 const GAME_SPEECH_STOP_DELAY_MS = 250;
 const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
+const RPG_MUSIC_VOLUME = 0.02;
+const RPG_MUSIC_PREF_VERSION = 2;
 const OBJECT_SEARCH_TEST_COPY = {
   en: {
     intro: (itemName) =>
@@ -102,7 +110,8 @@ const OBJECT_SEARCH_TEST_COPY = {
       `Necesito ${itemName}. Revisa los objetos en cualquier cuarto de este mapa. Cada uno esconde un objeto. Traeme el correcto.`,
     wrongItem: (wrongName, correctName) =>
       `Eso es ${wrongName}. Todavia necesito ${correctName}. Sigue revisando los objetos.`,
-    success: (itemName) => `Perfecto. ${itemName} es exactamente lo que necesitaba.`,
+    success: (itemName) =>
+      `Perfecto. ${itemName} es exactamente lo que necesitaba.`,
     chooseItem: "Elige un objeto para entregar:",
     foundItem: (itemName) => `Encontraste: ${itemName}`,
     alreadyChecked: "Ya revisaste este objeto.",
@@ -123,8 +132,7 @@ const QUEST_LOG_COPY = {
       `Talk to ${npcName} to start the search for ${itemName}.`,
     searchObjects: (itemName) =>
       `Search the examinable objects in any room for ${itemName}. Each object hides one item.`,
-    returnItem: (itemName, npcName) =>
-      `Bring ${itemName} back to ${npcName}.`,
+    returnItem: (itemName, npcName) => `Bring ${itemName} back to ${npcName}.`,
     gatherSearch: (itemName) => `Search the area for ${itemName}.`,
     gatherHint: (hint) => `Hint: ${hint}`,
     choiceTask: (npcName) => `Talk to ${npcName} and choose a response.`,
@@ -1204,7 +1212,6 @@ function QuestLogIcon({ size = 28 }) {
       ctx.fillStyle = color;
       ctx.fillRect(x, y, w, h);
     };
-
     // Folded treasure-map silhouette
     rect(6, 7, 5, 16, "#ead7a6");
     rect(11, 5, 5, 20, "#f6e8be");
@@ -1289,6 +1296,100 @@ function QuestLogIcon({ size = 28 }) {
   );
 }
 
+function MusicToggleIcon({ size = 28, isEnabled = true }) {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const RES = 64;
+    canvas.width = RES;
+    canvas.height = RES;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: false,
+      alpha: true,
+    });
+    renderer.setSize(RES, RES);
+    renderer.setClearColor(0x000000, 0);
+
+    const scene = new THREE.Scene();
+    const half = RES / 2;
+    const camera = new THREE.OrthographicCamera(
+      -half,
+      half,
+      half,
+      -half,
+      0.1,
+      100,
+    );
+    camera.position.z = 10;
+
+    const texCanvas = document.createElement("canvas");
+    texCanvas.width = 32;
+    texCanvas.height = 32;
+    const ctx = texCanvas.getContext("2d");
+    const rect = (x, y, w, h, color) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w, h);
+    };
+    const noteColor = "#111111";
+
+    // Single-shape eighth note
+    rect(11, 18, 5, 1, noteColor);
+    rect(9, 19, 9, 1, noteColor);
+    rect(8, 20, 10, 3, noteColor);
+    rect(9, 23, 8, 1, noteColor);
+    rect(10, 24, 5, 1, noteColor);
+
+    rect(16, 9, 3, 12, noteColor);
+    rect(16, 9, 8, 2, noteColor);
+    rect(20, 11, 3, 1, noteColor);
+
+    if (!isEnabled) {
+      rect(8, 9, 4, 2, "#cf4f4a");
+      rect(11, 11, 4, 2, "#cf4f4a");
+      rect(14, 13, 4, 2, "#cf4f4a");
+      rect(17, 15, 4, 2, "#cf4f4a");
+      rect(20, 17, 4, 2, "#cf4f4a");
+      rect(23, 19, 2, 2, "#cf4f4a");
+    }
+
+    const texture = new THREE.CanvasTexture(texCanvas);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    const geo = new THREE.PlaneGeometry(RES, RES);
+    const mat = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    renderer.render(scene, camera);
+
+    return () => {
+      geo.dispose();
+      mat.dispose();
+      texture.dispose();
+      renderer.dispose();
+    };
+  }, [isEnabled]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        width: size,
+        height: size,
+        imageRendering: "pixelated",
+        display: "block",
+      }}
+    />
+  );
+}
+
 const NPC_SPRITE_ROWS = [
   { id: "hamster", rowIndex: 0, name: "Sheilfer" },
   { id: "frog", rowIndex: 1, name: "Jiraiya" },
@@ -1324,6 +1425,10 @@ const UI_TEXT = {
     skip: "Skip",
     loadingTutorialScene: "Loading tutorial scene...",
     loadingGeneratingGame: "Generating your game...",
+    enableMusic: "Turn music on",
+    disableMusic: "Turn music off",
+    musicOn: "Music on",
+    musicOff: "Music off",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -1351,6 +1456,10 @@ const UI_TEXT = {
     skip: "Saltar",
     loadingTutorialScene: "Cargando escena tutorial...",
     loadingGeneratingGame: "Generando tu juego...",
+    enableMusic: "Activar música",
+    disableMusic: "Apagar música",
+    musicOn: "Música activada",
+    musicOff: "Música apagada",
   },
 };
 
@@ -1576,11 +1685,7 @@ function applyNameMappingDeep(value, nameMap = null) {
 
 function normalizeCharacterNameList(names = []) {
   return Array.from(
-    new Set(
-      names
-        .map((name) => String(name || "").trim())
-        .filter(Boolean),
-    ),
+    new Set(names.map((name) => String(name || "").trim()).filter(Boolean)),
   );
 }
 
@@ -1630,6 +1735,8 @@ export default function RPGGame({
 }) {
   const canvasRef = useRef(null);
   const navigate = useNavigate();
+  const user = useUserStore((state) => state.user);
+  const patchUser = useUserStore((state) => state.patchUser);
   const reviewContext = useMemo(
     () =>
       lessonContext?.gameReviewContext ||
@@ -1721,6 +1828,7 @@ export default function RPGGame({
   const [objectExamine, setObjectExamine] = useState(null);
   const [pickupBanner, setPickupBanner] = useState(null);
   const [inventory, setInventory] = useState([]);
+  const [musicEnabled, setMusicEnabled] = useState(false);
   const [selectedInvItem, setSelectedInvItem] = useState(null);
   const [gatherUnlocked, setGatherUnlocked] = useState(false);
   const [startedObjectSearchStepKey, setStartedObjectSearchStepKey] =
@@ -1742,6 +1850,12 @@ export default function RPGGame({
   const ttsPlayerRef = useRef(null);
   const pendingSpeechReplyTokenRef = useRef(0);
   const preWarmedAudioRef = useRef(null);
+  const backgroundMusicRef = useRef(null);
+  const backgroundMusicLoadPromiseRef = useRef(null);
+  const backgroundMusicContextRef = useRef(null);
+  const backgroundMusicSourceRef = useRef(null);
+  const backgroundMusicGainRef = useRef(null);
+  const seededMusicPreferenceRef = useRef(false);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
   const transitionCooldownUntilRef = useRef(0);
@@ -1759,6 +1873,239 @@ export default function RPGGame({
     () => getLanguagePromptName(supportLang) || supportLang,
     [supportLang],
   );
+  const resolveUserDocId = useCallback(() => {
+    const localNpub =
+      typeof window !== "undefined"
+        ? localStorage.getItem("local_npub") || ""
+        : "";
+    const candidates = [user?.id, user?.local_npub, localNpub];
+    const match = candidates.find(
+      (value) =>
+        typeof value === "string" &&
+        value.trim() &&
+        value.trim() !== "null" &&
+        value.trim() !== "undefined",
+    );
+    return (match || "").trim();
+  }, [user?.id, user?.local_npub]);
+
+  useEffect(() => {
+    setMusicEnabled(user?.rpgMusicEnabled === true);
+  }, [user?.rpgMusicEnabled]);
+
+  const syncBackgroundMusicVolume = useCallback(async (audio = null) => {
+    const nextAudio = audio || backgroundMusicRef.current;
+    if (!nextAudio) return;
+
+    // Desktop/browser fallback.
+    nextAudio.volume = RPG_MUSIC_VOLUME;
+
+    if (typeof window === "undefined") return;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+
+    try {
+      let audioContext = backgroundMusicContextRef.current;
+      if (!audioContext) {
+        audioContext = new AudioCtx();
+        backgroundMusicContextRef.current = audioContext;
+      }
+
+      if (!backgroundMusicGainRef.current) {
+        const sourceNode = audioContext.createMediaElementSource(nextAudio);
+        const gainNode = audioContext.createGain();
+        sourceNode.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        backgroundMusicSourceRef.current = sourceNode;
+        backgroundMusicGainRef.current = gainNode;
+      }
+
+      backgroundMusicGainRef.current.gain.value = RPG_MUSIC_VOLUME;
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume().catch(() => {});
+      }
+
+      // Mobile Safari can ignore HTMLMediaElement.volume, so use full element
+      // volume once the GainNode is controlling the level.
+      nextAudio.volume = 1;
+    } catch (error) {
+      console.warn("Failed to route RPG music through gain node:", error);
+    }
+  }, []);
+
+  const pauseBackgroundMusic = useCallback((reset = false) => {
+    const audio = backgroundMusicRef.current;
+    if (!audio) return;
+    try {
+      audio.pause();
+      if (reset) audio.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const loadBackgroundMusic = useCallback(async () => {
+    if (typeof Audio === "undefined") return null;
+    if (backgroundMusicRef.current) return backgroundMusicRef.current;
+
+    if (!backgroundMusicLoadPromiseRef.current) {
+      backgroundMusicLoadPromiseRef.current = import("../../assets/awalk.mp3")
+        .then(({ default: trackUrl }) => {
+          const audio = new Audio(trackUrl);
+          audio.loop = true;
+          audio.preload = "none";
+          audio.volume = RPG_MUSIC_VOLUME;
+          audio.playsInline = true;
+          backgroundMusicRef.current = audio;
+          return audio;
+        })
+        .catch((error) => {
+          backgroundMusicLoadPromiseRef.current = null;
+          console.warn("Failed to load RPG music track:", error);
+          return null;
+        });
+    }
+
+    return backgroundMusicLoadPromiseRef.current;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const audio = backgroundMusicRef.current;
+      if (audio) {
+        try {
+          audio.pause();
+        } catch {
+          /* ignore */
+        }
+        audio.src = "";
+      }
+      backgroundMusicSourceRef.current?.disconnect?.();
+      backgroundMusicGainRef.current?.disconnect?.();
+      const audioContext = backgroundMusicContextRef.current;
+      if (audioContext?.close) {
+        audioContext.close().catch(() => {});
+      }
+      backgroundMusicRef.current = null;
+      backgroundMusicLoadPromiseRef.current = null;
+      backgroundMusicSourceRef.current = null;
+      backgroundMusicGainRef.current = null;
+      backgroundMusicContextRef.current = null;
+    };
+  }, []);
+
+  const ensureBackgroundMusicPlayback = useCallback(async () => {
+    const audio = await loadBackgroundMusic();
+    if (!audio || !musicEnabled || !scenario || !scenarioId || gameComplete) {
+      return;
+    }
+
+    audio.loop = true;
+    audio.preload = "auto";
+    await syncBackgroundMusicVolume(audio);
+    audio.muted = false;
+
+    try {
+      await audio.play();
+    } catch {
+      // Autoplay can be blocked until the next user gesture.
+    }
+  }, [
+    gameComplete,
+    loadBackgroundMusic,
+    musicEnabled,
+    scenario,
+    scenarioId,
+    syncBackgroundMusicVolume,
+  ]);
+
+  useEffect(() => {
+    if (!musicEnabled || !scenario || !scenarioId || gameComplete) {
+      pauseBackgroundMusic(!musicEnabled || gameComplete || !scenarioId);
+      return;
+    }
+
+    void ensureBackgroundMusicPlayback();
+  }, [
+    ensureBackgroundMusicPlayback,
+    gameComplete,
+    musicEnabled,
+    pauseBackgroundMusic,
+    scenario,
+    scenarioId,
+  ]);
+
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    if (
+      user?.rpgMusicPreferenceVersion === RPG_MUSIC_PREF_VERSION &&
+      typeof user.rpgMusicEnabled === "boolean"
+    ) {
+      return;
+    }
+    if (seededMusicPreferenceRef.current) return;
+
+    const id = resolveUserDocId();
+    if (!id) return;
+
+    seededMusicPreferenceRef.current = true;
+    const updatedAt = new Date().toISOString();
+    setDoc(
+      doc(database, "users", id),
+      {
+        local_npub: id,
+        rpgMusicEnabled: false,
+        rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+        updatedAt,
+      },
+      { merge: true },
+    )
+      .then(() => {
+        patchUser?.({
+          rpgMusicEnabled: false,
+          rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+          updatedAt,
+        });
+      })
+      .catch((error) => {
+        seededMusicPreferenceRef.current = false;
+        console.warn("Failed to seed RPG music preference:", error);
+      });
+  }, [patchUser, resolveUserDocId, user]);
+
+  const persistMusicPreference = useCallback(
+    async (enabled) => {
+      const id = resolveUserDocId();
+      if (!id) return;
+
+      const updatedAt = new Date().toISOString();
+      try {
+        await setDoc(
+          doc(database, "users", id),
+          {
+            local_npub: id,
+            rpgMusicEnabled: enabled,
+            rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+            updatedAt,
+          },
+          { merge: true },
+        );
+        if (user) {
+          patchUser?.({
+            rpgMusicEnabled: enabled,
+            rpgMusicPreferenceVersion: RPG_MUSIC_PREF_VERSION,
+            updatedAt,
+          });
+        }
+      } catch (error) {
+        console.warn("Failed to save RPG music preference:", error);
+      }
+    },
+    [patchUser, resolveUserDocId, user],
+  );
   const targetLangName = useMemo(
     () => getLanguagePromptName(targetLang) || targetLang,
     [targetLang],
@@ -1775,7 +2122,10 @@ export default function RPGGame({
       A2: "Object examine rule for A2: use one brief, natural observation about the object itself. Keep it concrete and easy to picture.",
       B1: "Object examine rule for B1: use one natural, concrete line about the object itself. Keep it grounded in the environment.",
     };
-    return rules[cefrLevel] || "Write one brief, natural line about the object itself.";
+    return (
+      rules[cefrLevel] ||
+      "Write one brief, natural line about the object itself."
+    );
   }, [cefrLevel]);
   const strictTargetLanguageGuard = useMemo(
     () =>
@@ -2119,7 +2469,8 @@ export default function RPGGame({
 
   const resolvePreferredPlayerStart = useCallback(
     (map, options = {}) => {
-      const fallback = map?.playerStart || scenario?.playerStart || { x: 2, y: 2 };
+      const fallback = map?.playerStart ||
+        scenario?.playerStart || { x: 2, y: 2 };
       if (!shouldCenterLessonSpawn || !map) return fallback;
 
       const mapWidth = Number(map?.mapWidth || scenario?.mapWidth || 0);
@@ -2352,7 +2703,9 @@ export default function RPGGame({
 
     const syncTranslations = () => {
       setLineTranslations(dialogueTextLines.length ? [...nextLines] : null);
-      setChoiceTranslations(dialogueChoiceTexts.length ? [...nextChoices] : null);
+      setChoiceTranslations(
+        dialogueChoiceTexts.length ? [...nextChoices] : null,
+      );
       setActionTranslations(
         dialogueActionTargets.length ? { ...nextActions } : null,
       );
@@ -2390,7 +2743,9 @@ export default function RPGGame({
         "No numbering, labels, markdown, or commentary.",
         "",
         "Entries:",
-        ...translationTargets.map((entry, index) => `${index + 1}. ${entry.text}`),
+        ...translationTargets.map(
+          (entry, index) => `${index + 1}. ${entry.text}`,
+        ),
       ].join("\n");
 
       if (simplemodel) {
@@ -2799,7 +3154,9 @@ export default function RPGGame({
       ? quest.gatherData.correct.filter(Boolean)
       : allItems.filter((item) => item?.isCorrect);
     const targetItem =
-      correctItems[questProgress.currentStepIdx % Math.max(correctItems.length, 1)] ||
+      correctItems[
+        questProgress.currentStepIdx % Math.max(correctItems.length, 1)
+      ] ||
       allItems[0] ||
       null;
     if (!targetItem) return null;
@@ -2807,17 +3164,16 @@ export default function RPGGame({
     const stepKey = `${scenario.id || "scenario"}:object-search:${
       questProgress.currentStepIdx
     }`;
-    const orderedObjects = [...searchableObjects]
-      .sort((a, b) => {
-        if ((a.map?.id || "") !== (b.map?.id || "")) {
-          return String(a.map?.id || "").localeCompare(String(b.map?.id || ""));
-        }
-        if (a.object.ty !== b.object.ty) return a.object.ty - b.object.ty;
-        if (a.object.tx !== b.object.tx) return a.object.tx - b.object.tx;
-        return String(a.object.type || "").localeCompare(
-          String(b.object.type || ""),
-        );
-      });
+    const orderedObjects = [...searchableObjects].sort((a, b) => {
+      if ((a.map?.id || "") !== (b.map?.id || "")) {
+        return String(a.map?.id || "").localeCompare(String(b.map?.id || ""));
+      }
+      if (a.object.ty !== b.object.ty) return a.object.ty - b.object.ty;
+      if (a.object.tx !== b.object.tx) return a.object.tx - b.object.tx;
+      return String(a.object.type || "").localeCompare(
+        String(b.object.type || ""),
+      );
+    });
     if (!orderedObjects.length) return null;
 
     const decoys = allItems.filter((item) => item?.name !== targetItem.name);
@@ -3018,16 +3374,39 @@ export default function RPGGame({
     [playSound, warmupAudio],
   );
 
+  const handleAudioGesture = useCallback(() => {
+    Tone.start();
+    void warmupAudio();
+    void ensureBackgroundMusicPlayback();
+  }, [ensureBackgroundMusicPlayback, warmupAudio]);
+
+  const toggleMusic = useCallback(async () => {
+    playGameSound("select");
+    const next = !musicEnabled;
+    setMusicEnabled(next);
+
+    if (next) {
+      await ensureBackgroundMusicPlayback();
+    } else {
+      pauseBackgroundMusic();
+    }
+
+    await persistMusicPreference(next);
+  }, [
+    ensureBackgroundMusicPlayback,
+    musicEnabled,
+    pauseBackgroundMusic,
+    persistMusicPreference,
+    playGameSound,
+  ]);
+
   // Show a quick toast when picking up an item
-  const showPickupToast = useCallback(
-    (itemName) => {
-      setPickupBanner({
-        itemName,
-        openedAt: Date.now(),
-      });
-    },
-    [],
-  );
+  const showPickupToast = useCallback((itemName) => {
+    setPickupBanner({
+      itemName,
+      openedAt: Date.now(),
+    });
+  }, []);
 
   const examineScenarioObject = useCallback(
     (object) => {
@@ -3036,13 +3415,12 @@ export default function RPGGame({
       const cachedEntry = objectExamineCacheRef.current.get(key);
       let lootText = "";
 
-      if (
-        isObjectSearchQuestStarted
-      ) {
+      if (isObjectSearchQuestStarted) {
         const assignedItem = currentObjectSearchQuest.assignments.get(key);
-        const alreadyCollected = !!collectedObjectSearchKeys?.[
-          currentObjectSearchQuest.stepKey
-        ]?.[key];
+        const alreadyCollected =
+          !!collectedObjectSearchKeys?.[currentObjectSearchQuest.stepKey]?.[
+            key
+          ];
 
         if (assignedItem && !alreadyCollected) {
           setCollectedObjectSearchKeys((prev) => ({
@@ -3055,7 +3433,8 @@ export default function RPGGame({
           setInventory((prev) => {
             const alreadyInInventory = prev.some(
               (item) =>
-                item?.objectSearchStepKey === currentObjectSearchQuest.stepKey &&
+                item?.objectSearchStepKey ===
+                  currentObjectSearchQuest.stepKey &&
                 item?.sourceObjectKey === key,
             );
             if (alreadyInInventory) return prev;
@@ -3408,7 +3787,8 @@ export default function RPGGame({
     };
   }, [stopNPCSpeech]);
 
-  const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+  const loadingMessages =
+    GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
 
   useEffect(() => {
     if (!loadingScenarioId) return;
@@ -3509,7 +3889,8 @@ export default function RPGGame({
       return tileDef ? tileDef.solid : true;
     };
     const canStandOnTile = (x, y) =>
-      !isSolid(x, y) && !currentMapNpcs.some((npc) => npc.tx === x && npc.ty === y);
+      !isSolid(x, y) &&
+      !currentMapNpcs.some((npc) => npc.tx === x && npc.ty === y);
 
     const resolvedEntrySpawn =
       queuedMapEntrySpawn ||
@@ -3616,7 +3997,9 @@ export default function RPGGame({
     );
     camera.position.set(
       resolvedEntrySpawn.x * TILE + TILE / 2,
-      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
+      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE +
+        TILE / 2 +
+        playerVerticalOffset,
       100,
     );
     cameraRef.current = camera;
@@ -3849,7 +4232,9 @@ export default function RPGGame({
     const playerSprite = new THREE.Mesh(playerGeo, playerMat);
     playerSprite.position.set(
       resolvedEntrySpawn.x * TILE + TILE / 2,
-      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE + TILE / 2 + playerVerticalOffset,
+      (MAP_H - 1 - resolvedEntrySpawn.y) * TILE +
+        TILE / 2 +
+        playerVerticalOffset,
       5,
     );
     scene.add(playerSprite);
@@ -4745,7 +5130,8 @@ export default function RPGGame({
       });
       setInventory((prev) =>
         prev.filter(
-          (item) => item?.objectSearchStepKey !== currentObjectSearchQuest.stepKey,
+          (item) =>
+            item?.objectSearchStepKey !== currentObjectSearchQuest.stepKey,
         ),
       );
     }
@@ -4803,7 +5189,10 @@ export default function RPGGame({
           return callResponses({ input: npcGreetPrompt });
         })
         .then((result) => {
-          const text = applyNameMappingToText((result || "").trim(), npcNameMap);
+          const text = applyNameMappingToText(
+            (result || "").trim(),
+            npcNameMap,
+          );
           if (text.length > 0 && text.length < 300) {
             pendingNpcGreetingRef.current = text;
           }
@@ -5405,14 +5794,8 @@ export default function RPGGame({
         justifyContent="center"
         borderRadius={isEmbedded ? "xl" : undefined}
         pt={isEmbedded ? 6 : undefined}
-        onPointerDownCapture={() => {
-          Tone.start();
-          void warmupAudio();
-        }}
-        onTouchStartCapture={() => {
-          Tone.start();
-          void warmupAudio();
-        }}
+        onPointerDownCapture={handleAudioGesture}
+        onTouchStartCapture={handleAudioGesture}
       >
         <VStack spacing={6} maxW="560px" mx={4}>
           {!isEmbedded && (
@@ -5517,8 +5900,16 @@ export default function RPGGame({
   if (!scenario) {
     return (
       <Box
-        w={isEmbedded ? "100%" : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }}
-        h={isEmbedded ? "80vh" : { base: "100vh", md: isTutorialGame ? "100vh" : "50vh" }}
+        w={
+          isEmbedded
+            ? "100%"
+            : { base: "100vw", md: isTutorialGame ? "100vw" : "800px" }
+        }
+        h={
+          isEmbedded
+            ? "80vh"
+            : { base: "100vh", md: isTutorialGame ? "100vh" : "50vh" }
+        }
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
         bg={isEmbedded ? "transparent" : "#1a1a2e"}
@@ -5530,27 +5921,36 @@ export default function RPGGame({
         pt={0}
         mt={isEmbedded ? -2 : 0}
         overflow="hidden"
-        onPointerDownCapture={() => {
-          Tone.start();
-          void warmupAudio();
-        }}
-        onTouchStartCapture={() => {
-          Tone.start();
-          void warmupAudio();
-        }}
+        onPointerDownCapture={handleAudioGesture}
+        onTouchStartCapture={handleAudioGesture}
       >
         {!isTutorialGame && (
-          <Text fontSize="md" color="purple.200" textAlign="center" minH="20px" py={0} mb={0}>
+          <Text
+            fontSize="md"
+            color="purple.200"
+            textAlign="center"
+            minH="20px"
+            py={0}
+            mb={0}
+          >
             {loadingMessages[loadingMsgIdx]}
           </Text>
         )}
         {!isTutorialGame && (
-          <Button size="sm" onClick={goToScenarioSelect} mb={0}>{ui.back}</Button>
+          <Button size="sm" onClick={goToScenarioSelect} mb={0}>
+            {ui.back}
+          </Button>
         )}
         <Box
           w={isEmbedded ? "100%" : { base: "95vw", md: "100%" }}
           maxW={isTutorialGame ? undefined : "800px"}
-          h={isTutorialGame ? "100%" : isEmbedded ? "70%" : { base: "60vh", md: "85%" }}
+          h={
+            isTutorialGame
+              ? "100%"
+              : isEmbedded
+                ? "70%"
+                : { base: "60vh", md: "85%" }
+          }
           flex={isTutorialGame ? "1" : undefined}
           borderRadius={isTutorialGame ? undefined : "xl"}
           overflow="hidden"
@@ -5600,14 +6000,8 @@ export default function RPGGame({
       bg="#1a1a2e"
       overflow="hidden"
       userSelect="none"
-      onPointerDownCapture={() => {
-        Tone.start();
-        void warmupAudio();
-      }}
-      onTouchStartCapture={() => {
-        Tone.start();
-        void warmupAudio();
-      }}
+      onPointerDownCapture={handleAudioGesture}
+      onTouchStartCapture={handleAudioGesture}
     >
       {/* Three.js canvas */}
       <Box
@@ -5740,6 +6134,34 @@ export default function RPGGame({
             _focusVisible={{ boxShadow: "none", outline: "none" }}
             onClick={questLogModal.onOpen}
           />
+          <Tooltip
+            label={musicEnabled ? ui.musicOn : ui.musicOff}
+            placement="left"
+          >
+            <IconButton
+              aria-label={musicEnabled ? ui.disableMusic : ui.enableMusic}
+              title={musicEnabled ? ui.musicOn : ui.musicOff}
+              icon={<MusicToggleIcon size={22} isEnabled={musicEnabled} />}
+              size="md"
+              variant="ghost"
+              bg="transparent"
+              border="none"
+              outline="none"
+              boxShadow="none"
+              _hover={{ bg: "transparent", border: "none", boxShadow: "none" }}
+              _active={{
+                bg: "transparent",
+                border: "none",
+                boxShadow: "none",
+                transform: "translateY(1px)",
+              }}
+              _focus={{ boxShadow: "none", outline: "none" }}
+              _focusVisible={{ boxShadow: "none", outline: "none" }}
+              onClick={() => {
+                void toggleMusic();
+              }}
+            />
+          </Tooltip>
         </VStack>
       )}
 
@@ -5980,7 +6402,14 @@ export default function RPGGame({
                       </Text>
                     ) : null}
                     <HStack spacing={2}>
-                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                      <VoiceOrb
+                        state={
+                          ["idle", "listening", "speaking"][
+                            Math.floor(Math.random() * 3)
+                          ]
+                        }
+                        size={16}
+                      />
                       <Text fontSize="sm" color="gray.700">
                         ...
                       </Text>
@@ -6210,7 +6639,9 @@ export default function RPGGame({
                       size="xs"
                       rounded="md"
                       bg="white"
-                      color={hasDialogueTranslations ? "orange.500" : "blue.600"}
+                      color={
+                        hasDialogueTranslations ? "orange.500" : "blue.600"
+                      }
                       boxShadow={
                         hasDialogueTranslations
                           ? "0 1px 0 #c05621"
@@ -6377,6 +6808,7 @@ export default function RPGGame({
                         colorScheme={isRecording ? undefined : "teal"}
                         bg={isRecording ? SOFT_STOP_BUTTON_SOLID_BG : undefined}
                         color={isRecording ? "white" : undefined}
+                        boxShadow={isRecording ? "red" : undefined}
                         _hover={
                           isRecording
                             ? { bg: SOFT_STOP_BUTTON_SOLID_HOVER_BG }
@@ -6527,7 +6959,9 @@ export default function RPGGame({
                       py={2}
                     >
                       <VStack align="stretch" spacing={0}>
-                        <Text m={0}>{dialogueActionLabelMap.continue || ui.continue}</Text>
+                        <Text m={0}>
+                          {dialogueActionLabelMap.continue || ui.continue}
+                        </Text>
                         {actionTranslations?.continue ? (
                           <Text
                             color="blue.700"
