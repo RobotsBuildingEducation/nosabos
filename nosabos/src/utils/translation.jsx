@@ -1,6 +1,6 @@
 // src/utils/translation.jsx
 
-import { Button } from "@chakra-ui/react";
+import { Button, HStack } from "@chakra-ui/react";
 
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
@@ -329,45 +329,45 @@ export const translations = {
             </li>
           </ol>
           <br />
-          <Button
-            onMouseDown={() => {
-              window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
-                "_blank",
-              );
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+          <HStack>
+            <Button
+              onMouseDown={() => {
                 window.open(
                   "https://www.patreon.com/NotesAndOtherStuff",
                   "_blank",
                 );
-              }
-            }}
-            colorScheme="blue"
-          >
-            View subscription platform
-          </Button>
-          <br />
-          <br />
-          <Button
-            onMouseDown={() => {
-              window.open(
-                "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
-                "_blank",
-              );
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  window.open(
+                    "https://www.patreon.com/NotesAndOtherStuff",
+                    "_blank",
+                  );
+                }
+              }}
+              colorScheme="blue"
+            >
+              Subscribe
+            </Button>
+            <Button
+              onMouseDown={() => {
                 window.open(
-                  "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
+                  "https://www.patreon.com/posts/146522893?forSale=true",
                   "_blank",
                 );
-              }
-            }}
-          >
-            Subscribe or pay once
-          </Button>{" "}
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  window.open(
+                    "https://www.patreon.com/posts/146522893?forSale=true",
+                    "_blank",
+                  );
+                }
+              }}
+            >
+              Pay once
+            </Button>{" "}
+          </HStack>
         </div>
       </div>
     ),
