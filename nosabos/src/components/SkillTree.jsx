@@ -2024,6 +2024,13 @@ export default function SkillTree({
   levelCompletionStatus = {}, // Status of all levels (unlocked/locked, progress, etc.)
   // Conversations props
   activeNpub = "", // User's npub for conversations
+  activeNsec = "",
+  auth,
+  onSwitchedAccount,
+  onSelectIdentity,
+  isIdentitySaving = false,
+  postNostrContent,
+  settingsControllerRef,
   // Path mode props (controlled by parent)
   pathMode = "path",
   onPathModeChange,
@@ -2449,10 +2456,17 @@ export default function SkillTree({
           <Box>
             <Conversations
               activeNpub={activeNpub}
+              activeNsec={activeNsec}
               targetLang={targetLang}
               supportLang={supportLang}
               pauseMs={pauseMs}
               maxProficiencyLevel={maxProficiencyLevel}
+              auth={auth}
+              onSwitchedAccount={onSwitchedAccount}
+              onSelectIdentity={onSelectIdentity}
+              isIdentitySaving={isIdentitySaving}
+              postNostrContent={postNostrContent}
+              settingsControllerRef={settingsControllerRef}
             />
           </Box>
         )}

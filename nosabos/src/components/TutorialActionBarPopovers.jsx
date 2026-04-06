@@ -25,7 +25,7 @@ import { PiPath, PiUsersBold } from "react-icons/pi";
 import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
-import { FaBitcoin, FaKey } from "react-icons/fa";
+import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -67,8 +67,8 @@ const BUTTON_EXPLANATIONS = [
     icon: SettingsIcon,
     label: { en: "Settings", es: "Configuración" },
     description: {
-      en: "Customize your learning experience, voice, and preferences",
-      es: "Personaliza tu experiencia de aprendizaje, voz y preferencias",
+      en: "Open settings and account tabs for your learning preferences, voice, and account details",
+      es: "Abre las pestañas de configuración y cuenta para tus preferencias, voz y detalles de cuenta",
     },
     position: 2,
   },
@@ -82,17 +82,6 @@ const BUTTON_EXPLANATIONS = [
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
     },
     position: 3,
-  },
-  {
-    id: "identity",
-    tutorialId: "identity",
-    icon: FaBitcoin,
-    label: { en: "Account", es: "Cuenta" },
-    description: {
-      en: "Access your account info to install the app and access your password",
-      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
-    },
-    position: 4,
   },
   {
     id: "help",

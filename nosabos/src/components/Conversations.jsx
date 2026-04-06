@@ -43,7 +43,7 @@ import {
 import { MdOutlineTranslate } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
-import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
+import ConversationAccountDrawer from "./ConversationAccountDrawer";
 
 import { doc, setDoc, getDoc, increment, updateDoc } from "firebase/firestore";
 import {
@@ -865,10 +865,17 @@ async function idbGetClip(id) {
 --------------------------- */
 export default function Conversations({
   activeNpub = "",
+  activeNsec = "",
   targetLang = "es",
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
+  auth,
+  onSwitchedAccount,
+  onSelectIdentity,
+  isIdentitySaving = false,
+  postNostrContent,
+  settingsControllerRef,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -947,6 +954,7 @@ export default function Conversations({
     onOpen: openSettings,
     onClose: closeSettings,
   } = useDisclosure();
+  const [settingsTabIndex, setSettingsTabIndex] = useState(0);
   const {
     isOpen: isTranscriptOpen,
     onOpen: openTranscript,
@@ -954,6 +962,12 @@ export default function Conversations({
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
     playSound(selectSound);
+    setSettingsTabIndex(0);
+    openSettings();
+  }, [openSettings, playSound]);
+  const handleAccountOpen = useCallback(() => {
+    playSound(selectSound);
+    setSettingsTabIndex(1);
     openSettings();
   }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
@@ -1037,6 +1051,21 @@ export default function Conversations({
       }, 150);
     }
   }, [closeSettings, scrollConversationToTop]);
+
+  useEffect(() => {
+    if (!settingsControllerRef) return undefined;
+
+    settingsControllerRef.current = {
+      openConversationSettings: handleSettingsOpen,
+      openAccountSettings: handleAccountOpen,
+    };
+
+    return () => {
+      if (settingsControllerRef.current) {
+        settingsControllerRef.current = null;
+      }
+    };
+  }, [handleAccountOpen, handleSettingsOpen, settingsControllerRef]);
 
   // XP
   const [xp, setXp] = useState(0);
@@ -2986,13 +3015,28 @@ Do not return the whole sentence as a single chunk.`;
 
       <ArchiveTextAnimation animation={archiveAnimation} />
 
-      {/* Conversation Settings Drawer */}
-      <ConversationSettingsDrawer
+      {/* Conversation + Account Drawer */}
+      <ConversationAccountDrawer
         isOpen={isSettingsOpen}
         onClose={handleSettingsClose}
+        tabIndex={settingsTabIndex}
+        onTabChange={setSettingsTabIndex}
+        appLanguage={uiLang}
         settings={conversationSettings}
         onSettingsChange={handleSettingsChange}
         supportLang={supportLang}
+        identityProps={{
+          t: ui,
+          appLanguage: uiLang,
+          activeNpub: currentNpub,
+          activeNsec,
+          auth,
+          onSwitchedAccount,
+          user,
+          onSelectIdentity,
+          isIdentitySaving,
+          postNostrContent,
+        }}
       />
 
       <Modal isOpen={isTranscriptOpen} onClose={closeTranscript} size="xl">
