@@ -421,11 +421,15 @@ export default function Onboarding({
 
               <Box
                 flex="1"
-                minH={{ base: "320px", md: "360px" }}
+                minH={{ base: "240px", md: "280px" }}
+                display="flex"
+                flexDirection="column"
+                justifyContent="center"
+                mb={{ base: 4, md: 5 }}
                 animation={`${stepContentReveal} 0.28s ease`}
                 key={`${supportLang}-${step}`}
               >
-                <VStack align="stretch" spacing={4}>
+                <VStack align="stretch" spacing={4} w="100%">
                   {/* ── Step 1: Languages ── */}
                   {step === 0 && (
                     <>
@@ -725,8 +729,6 @@ export default function Onboarding({
             display="flex"
             justifyContent="flex-end"
             alignItems="center"
-            borderTop="1px solid"
-            borderColor="whiteAlpha.120"
           >
             <Box maxW="600px" mx="auto" w="100%">
               <HStack spacing={3}>

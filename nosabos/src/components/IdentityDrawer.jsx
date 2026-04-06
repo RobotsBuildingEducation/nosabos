@@ -57,8 +57,7 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 
-export default function IdentityDrawer({
-  isOpen,
+export function IdentityPanel({
   onClose,
   t,
   appLanguage = "en",
@@ -75,12 +74,10 @@ export default function IdentityDrawer({
   onSelectIdentity,
   isIdentitySaving = false,
   postNostrContent,
+  showHeader = true,
+  showSignOutButton = true,
 }) {
   const toast = useToast();
-  const swipeDismiss = useBottomDrawerSwipeDismiss({
-    isOpen,
-    onClose,
-  });
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
@@ -307,367 +304,332 @@ export default function IdentityDrawer({
 
   return (
     <>
-      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-        <DrawerOverlay
-          {...swipeDismiss.overlayProps}
-          bg="blackAlpha.600"
-        />
-        <DrawerContent
-          {...swipeDismiss.drawerContentProps}
-          bg="gray.900"
-          color="gray.100"
-          borderTopRadius="24px"
-          maxH="80vh"
-          display="flex"
-          flexDirection="column"
-        >
-          <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
-          <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
-            <DrawerHeader>
-              {displayName
-                ? appLanguage === "es"
-                  ? `Cuenta de ${displayName}`
-                  : `${displayName}'s Account`
-                : t?.app_account_title || "Account"}
-            </DrawerHeader>
-            <VStack align="stretch" spacing={3} flex={1}>
-              {/* Copy ID + Secret Key */}
-              <HStack spacing={3} justify="center" flexWrap="wrap">
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    copy(currentId, t?.toast_id_copied || "ID copied")
-                  }
-                  isDisabled={!currentId}
-                  colorScheme="teal"
-                  px={6}
-                  py={5}
-                >
-                  {t?.app_copy_id || "Copy User ID"}
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme="orange"
-                  onClick={() =>
-                    copy(
-                      currentSecret,
-                      t?.toast_secret_copied || "Secret copied",
-                    )
-                  }
-                  isDisabled={!currentSecret}
-                  px={6}
-                  py={5}
-                >
-                  {t?.app_copy_secret || "Copy Secret Key"}
-                </Button>
-              </HStack>
+      {showHeader ? (
+        <DrawerHeader>
+          {displayName
+            ? appLanguage === "es"
+              ? `Cuenta de ${displayName}`
+              : `${displayName}'s Account`
+            : t?.app_account_title || "Account"}
+        </DrawerHeader>
+      ) : null}
+      <VStack align="stretch" spacing={3} flex={1}>
+        {/* Copy ID + Secret Key */}
+        <HStack spacing={3} justify="center" flexWrap="wrap">
+          <Button
+            size="sm"
+            onClick={() => copy(currentId, t?.toast_id_copied || "ID copied")}
+            isDisabled={!currentId}
+            colorScheme="teal"
+            px={6}
+            py={5}
+          >
+            {t?.app_copy_id || "Copy User ID"}
+          </Button>
+          <Button
+            size="sm"
+            colorScheme="orange"
+            onClick={() =>
+              copy(currentSecret, t?.toast_secret_copied || "Secret copied")
+            }
+            isDisabled={!currentSecret}
+            px={6}
+            py={5}
+          >
+            {t?.app_copy_secret || "Copy Secret Key"}
+          </Button>
+        </HStack>
 
-              {/* Patreon Support Link */}
-              <Box
-                p={4}
-                bg="gray.800"
-                rounded="lg"
-                maxW="600px"
-                w="100%"
-                mx="auto"
-              >
-                <HStack spacing={3} align="center">
-                  <Box
-                    p={2}
-                    bg="black"
-                    rounded="lg"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    <SiPatreon size={20} color="white" />
-                  </Box>
-                  <VStack align="start" spacing={0} flex={1}>
-                    <Text fontWeight="semibold" fontSize="sm">
-                      {appLanguage === "es"
-                        ? "Apóyanos en Patreon"
-                        : "Join us on Patreon"}
-                    </Text>
-                    <Text fontSize="xs" color="gray.400">
-                      {appLanguage === "es"
-                        ? "Accede a más apps educativas y contenido"
-                        : "Access more education apps and content"}
-                    </Text>
-                  </VStack>
-                  <Button
-                    size="sm"
-                    bg="black"
-                    boxShadow="0px 0px 4px gray"
-                    onClick={() =>
-                      window.open(
-                        "https://www.patreon.com/NotesAndOtherStuff",
-                        "_blank",
-                      )
-                    }
-                  >
-                    {appLanguage === "es" ? "Unirse" : "Join"}
-                  </Button>
-                </HStack>
-              </Box>
-
-              {/* Display Name + Switch Account Accordions */}
-              <Accordion
-                allowMultiple
-                bg="gray.800"
-                rounded="md"
-                maxW="600px"
-                w="100%"
-                mx="auto"
-              >
-                {/* Display Name */}
-                <AccordionItem border="none">
-                  <AccordionButton px={4} py={3}>
-                    <Flex flex="1" textAlign="left" align="center">
-                      <Text fontWeight="semibold" fontSize="sm">
-                        {displayName
-                          ? appLanguage === "es"
-                            ? "Cambiar nombre de usuario"
-                            : "Change display name"
-                          : appLanguage === "es"
-                            ? "Crear nombre de usuario"
-                            : "Create display name"}
-                      </Text>
-                    </Flex>
-                    <AccordionIcon />
-                  </AccordionButton>
-                  <AccordionPanel pb={4}>
-                    <Input
-                      value={displayNameInput}
-                      onChange={(e) => setDisplayNameInput(e.target.value)}
-                      placeholder={
-                        appLanguage === "es"
-                          ? "Ingresa tu nombre"
-                          : "Enter a display name"
-                      }
-                      bg="gray.700"
-                      mb={2}
-                    />
-                    <HStack justify="flex-end">
-                      <Button
-                        size="sm"
-                        colorScheme="teal"
-                        onClick={handleSaveDisplayName}
-                        isLoading={isSavingDisplayName}
-                        loadingText={
-                          appLanguage === "es" ? "Guardando…" : "Saving…"
-                        }
-                      >
-                        {appLanguage === "es" ? "Guardar" : "Save"}
-                      </Button>
-                    </HStack>
-                  </AccordionPanel>
-                </AccordionItem>
-
-                {/* Switch Account */}
-              </Accordion>
-              <Accordion
-                allowMultiple
-                bg="gray.800"
-                rounded="md"
-                maxW="600px"
-                w="100%"
-                mx="auto"
-              >
-                <AccordionItem border="none">
-                  <AccordionButton px={4} py={3}>
-                    <Flex flex="1" textAlign="left" align="center">
-                      <Text fontWeight="semibold" fontSize="sm">
-                        {t?.app_switch_account || "Switch account"}
-                      </Text>
-                    </Flex>
-                    <AccordionIcon />
-                  </AccordionButton>
-                  <AccordionPanel pb={4}>
-                    <Text fontSize="xs" opacity={0.75} mb={2}>
-                      {t?.app_switch_note ||
-                        "We'll derive your public key (npub) from the secret and switch safely."}
-                    </Text>
-                    <Input
-                      value={switchNsec}
-                      onChange={(e) => setSwitchNsec(e.target.value)}
-                      bg="gray.700"
-                      placeholder={
-                        t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                      }
-                    />
-                    <HStack mt={2} justify="flex-end">
-                      <Button
-                        isLoading={isSwitching}
-                        loadingText={t?.app_switching || "Switching…"}
-                        onClick={switchAccountWithNsec}
-                        colorScheme="teal"
-                      >
-                        {t?.app_switch || "Switch"}
-                      </Button>
-                    </HStack>
-                  </AccordionPanel>
-                </AccordionItem>
-              </Accordion>
-
-              {/* Bitcoin Wallet Section (Accordion) */}
-              {enableWallet && (
-                <Accordion
-                  allowMultiple
-                  index={isWalletOpen ? [0] : []}
-                  onChange={(index) => {
-                    if (Array.isArray(index)) {
-                      setIsWalletOpen(index.includes(0));
-                    } else {
-                      setIsWalletOpen(index === 0);
-                    }
-                  }}
-                  bg="gray.800"
-                  rounded="md"
-                  maxW="600px"
-                  w="100%"
-                  mx="auto"
-                >
-                  <AccordionItem border="none">
-                    <AccordionButton px={4} py={3}>
-                      <Flex flex="1" textAlign="left" align="center" gap={3}>
-                        <Text
-                          fontWeight="semibold"
-                          textShadow="0px 0px 24px black"
-                        >
-                          {appLanguage === "es"
-                            ? "Billetera Bitcoin (experimental)"
-                            : "Bitcoin wallet (experimental)"}
-                        </Text>
-                      </Flex>
-                      <AccordionIcon />
-                    </AccordionButton>
-                    <AccordionPanel px={0} pb={4} pt={0}>
-                      <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
-                        <BitcoinWalletSection
-                          userLanguage={appLanguage}
-                          identity={user?.identity || ""}
-                          onSelectIdentity={onSelectIdentity}
-                          isIdentitySaving={isIdentitySaving}
-                        />
-                      </Box>
-                    </AccordionPanel>
-                  </AccordionItem>
-                </Accordion>
-              )}
-
-              {/* Install App Section (Always Visible - NOT an accordion) */}
-              <Box display="flex" justifyContent={"center"} mt={6}>
-                <Box maxW="600px">
-                  <Text fontWeight="semibold" mb={3}>
-                    {t?.app_install_title || "Install as app"}
-                  </Text>
-                  <Box bg="gray.900" p={3} rounded="md">
-                    {installSteps.map((step, idx) => (
-                      <Box key={step.id} py={2}>
-                        <Flex
-                          align="center"
-                          gap={3}
-                          justify="space-between"
-                          flexWrap="wrap"
-                        >
-                          <HStack align="center" gap={3}>
-                            <Box color="teal.200">{step.icon}</Box>
-                            <Text fontSize="sm">{step.text}</Text>
-                          </HStack>
-                          {step.action ? <Box>{step.action}</Box> : null}
-                        </Flex>
-                        {step.subText ? (
-                          <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
-                            {step.subText}
-                          </Text>
-                        ) : null}
-                        {idx < installSteps.length - 1 && (
-                          <Divider my={3} borderColor="gray.700" />
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                </Box>
-              </Box>
-
-              {/* CEFR insight - Commented out for future development */}
-              {/*
-            <Box bg="gray.800" p={3} rounded="md">
-              <HStack justify="space-between" align="flex-start" mb={2}>
-                <VStack align="flex-start" spacing={0} flex="1">
-                  <Text fontSize="sm" fontWeight="semibold">
-                    {t?.app_cefr_heading || "CEFR insight"}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.75}>
-                    {t?.app_cefr_subtitle ||
-                      "Ask the AI to review your progress and assign a CEFR level."}
-                  </Text>
-                </VStack>
-                {cefrResult?.level ? (
-                  <Badge colorScheme="purple" fontSize="0.75rem">
-                    {t?.app_cefr_level_label
-                      ? t.app_cefr_level_label.replace(
-                          "{level}",
-                          cefrResult.level
-                        )
-                      : `Level ${cefrResult.level}`}
-                  </Badge>
-                ) : null}
-              </HStack>
-
-              <Text fontSize="sm" whiteSpace="pre-wrap">
-                {cefrResult?.explanation
-                  ? cefrResult.explanation
-                  : t?.app_cefr_empty ||
-                    "No analysis yet. Run the evaluator to see your level."}
-              </Text>
-
-              {cefrTimestamp ? (
-                <Text fontSize="xs" opacity={0.65} mt={2}>
-                  {t?.app_cefr_updated
-                    ? t.app_cefr_updated.replace("{timestamp}", cefrTimestamp)
-                    : `Last analyzed ${cefrTimestamp}`}
-                </Text>
-              ) : null}
-
-              {cefrError ? (
-                <Text fontSize="xs" color="red.300" mt={2}>
-                  {cefrError}
-                </Text>
-              ) : null}
-
-              <Button
-                mt={3}
-                size="sm"
-                variant="outline"
-                colorScheme="purple"
-                onClick={onRunCefrAnalysis}
-                isLoading={cefrLoading}
-                loadingText={t?.app_cefr_loading || "Analyzing…"}
-                isDisabled={cefrLoading}
-              >
-                {t?.app_cefr_run || "Analyze level"}
-              </Button>
+        {/* Patreon Support Link */}
+        <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
+          <HStack spacing={3} align="center">
+            <Box
+              p={2}
+              bg="black"
+              rounded="lg"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <SiPatreon size={20} color="white" />
             </Box>
-            */}
+            <VStack align="start" spacing={0} flex={1}>
+              <Text fontWeight="semibold" fontSize="sm">
+                {appLanguage === "es"
+                  ? "Apóyanos en Patreon"
+                  : "Join us on Patreon"}
+              </Text>
+              <Text fontSize="xs" color="gray.400">
+                {appLanguage === "es"
+                  ? "Accede a más apps educativas y contenido"
+                  : "Access more education apps and content"}
+              </Text>
             </VStack>
+            <Button
+              size="sm"
+              bg="black"
+              boxShadow="0px 0px 4px gray"
+              onClick={() =>
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                )
+              }
+            >
+              {appLanguage === "es" ? "Unirse" : "Join"}
+            </Button>
+          </HStack>
+        </Box>
 
-            <Flex mt="auto" justify="flex-end">
-              <Button
-                mt={6}
-                leftIcon={<LuDoorOpen size={18} />}
-                onClick={() => setIsSignOutOpen(true)}
-                padding={6}
-                borderRadius="lg"
-                colorScheme="gray"
-                border="1px solid orange"
-              >
-                {t?.app_sign_out || "Sign out"}
-              </Button>
-            </Flex>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+        {/* Display Name + Switch Account Accordions */}
+        <Accordion
+          allowMultiple
+          bg="gray.800"
+          rounded="md"
+          maxW="600px"
+          w="100%"
+          mx="auto"
+        >
+          {/* Display Name */}
+          <AccordionItem border="none">
+            <AccordionButton px={4} py={3}>
+              <Flex flex="1" textAlign="left" align="center">
+                <Text fontWeight="semibold" fontSize="sm">
+                  {displayName
+                    ? appLanguage === "es"
+                      ? "Cambiar nombre de usuario"
+                      : "Change display name"
+                    : appLanguage === "es"
+                      ? "Crear nombre de usuario"
+                      : "Create display name"}
+                </Text>
+              </Flex>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel pb={4}>
+              <Input
+                value={displayNameInput}
+                onChange={(e) => setDisplayNameInput(e.target.value)}
+                placeholder={
+                  appLanguage === "es"
+                    ? "Ingresa tu nombre"
+                    : "Enter a display name"
+                }
+                bg="gray.700"
+                mb={2}
+              />
+              <HStack justify="flex-end">
+                <Button
+                  size="sm"
+                  colorScheme="teal"
+                  onClick={handleSaveDisplayName}
+                  isLoading={isSavingDisplayName}
+                  loadingText={appLanguage === "es" ? "Guardando…" : "Saving…"}
+                >
+                  {appLanguage === "es" ? "Guardar" : "Save"}
+                </Button>
+              </HStack>
+            </AccordionPanel>
+          </AccordionItem>
+
+          {/* Switch Account */}
+        </Accordion>
+        <Accordion
+          allowMultiple
+          bg="gray.800"
+          rounded="md"
+          maxW="600px"
+          w="100%"
+          mx="auto"
+        >
+          <AccordionItem border="none">
+            <AccordionButton px={4} py={3}>
+              <Flex flex="1" textAlign="left" align="center">
+                <Text fontWeight="semibold" fontSize="sm">
+                  {t?.app_switch_account || "Switch account"}
+                </Text>
+              </Flex>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel pb={4}>
+              <Text fontSize="xs" opacity={0.75} mb={2}>
+                {t?.app_switch_note ||
+                  "We'll derive your public key (npub) from the secret and switch safely."}
+              </Text>
+              <Input
+                value={switchNsec}
+                onChange={(e) => setSwitchNsec(e.target.value)}
+                bg="gray.700"
+                placeholder={
+                  t?.app_nsec_placeholder || "Paste an nsec key to switch"
+                }
+              />
+              <HStack mt={2} justify="flex-end">
+                <Button
+                  isLoading={isSwitching}
+                  loadingText={t?.app_switching || "Switching…"}
+                  onClick={switchAccountWithNsec}
+                  colorScheme="teal"
+                >
+                  {t?.app_switch || "Switch"}
+                </Button>
+              </HStack>
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
+
+        {/* Bitcoin Wallet Section (Accordion) */}
+        {enableWallet && (
+          <Accordion
+            allowMultiple
+            index={isWalletOpen ? [0] : []}
+            onChange={(index) => {
+              if (Array.isArray(index)) {
+                setIsWalletOpen(index.includes(0));
+              } else {
+                setIsWalletOpen(index === 0);
+              }
+            }}
+            bg="gray.800"
+            rounded="md"
+            maxW="600px"
+            w="100%"
+            mx="auto"
+          >
+            <AccordionItem border="none">
+              <AccordionButton px={4} py={3}>
+                <Flex flex="1" textAlign="left" align="center" gap={3}>
+                  <Text fontWeight="semibold" textShadow="0px 0px 24px black">
+                    {appLanguage === "es"
+                      ? "Billetera Bitcoin (experimental)"
+                      : "Bitcoin wallet (experimental)"}
+                  </Text>
+                </Flex>
+                <AccordionIcon />
+              </AccordionButton>
+              <AccordionPanel px={0} pb={4} pt={0}>
+                <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
+                  <BitcoinWalletSection
+                    userLanguage={appLanguage}
+                    identity={user?.identity || ""}
+                    onSelectIdentity={onSelectIdentity}
+                    isIdentitySaving={isIdentitySaving}
+                  />
+                </Box>
+              </AccordionPanel>
+            </AccordionItem>
+          </Accordion>
+        )}
+
+        {/* Install App Section (Always Visible - NOT an accordion) */}
+        <Box display="flex" justifyContent={"center"} mt={6}>
+          <Box maxW="600px">
+            <Text fontWeight="semibold" mb={3}>
+              {t?.app_install_title || "Install as app"}
+            </Text>
+            <Box bg="gray.900" p={3} rounded="md">
+              {installSteps.map((step, idx) => (
+                <Box key={step.id} py={2}>
+                  <Flex
+                    align="center"
+                    gap={3}
+                    justify="space-between"
+                    flexWrap="wrap"
+                  >
+                    <HStack align="center" gap={3}>
+                      <Box color="teal.200">{step.icon}</Box>
+                      <Text fontSize="sm">{step.text}</Text>
+                    </HStack>
+                    {step.action ? <Box>{step.action}</Box> : null}
+                  </Flex>
+                  {step.subText ? (
+                    <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                      {step.subText}
+                    </Text>
+                  ) : null}
+                  {idx < installSteps.length - 1 && (
+                    <Divider my={3} borderColor="gray.700" />
+                  )}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* CEFR insight - Commented out for future development */}
+        {/*
+      <Box bg="gray.800" p={3} rounded="md">
+        <HStack justify="space-between" align="flex-start" mb={2}>
+          <VStack align="flex-start" spacing={0} flex="1">
+            <Text fontSize="sm" fontWeight="semibold">
+              {t?.app_cefr_heading || "CEFR insight"}
+            </Text>
+            <Text fontSize="xs" opacity={0.75}>
+              {t?.app_cefr_subtitle ||
+                "Ask the AI to review your progress and assign a CEFR level."}
+            </Text>
+          </VStack>
+          {cefrResult?.level ? (
+            <Badge colorScheme="purple" fontSize="0.75rem">
+              {t?.app_cefr_level_label
+                ? t.app_cefr_level_label.replace("{level}", cefrResult.level)
+                : `Level ${cefrResult.level}`}
+            </Badge>
+          ) : null}
+        </HStack>
+
+        <Text fontSize="sm" whiteSpace="pre-wrap">
+          {cefrResult?.explanation
+            ? cefrResult.explanation
+            : t?.app_cefr_empty ||
+              "No analysis yet. Run the evaluator to see your level."}
+        </Text>
+
+        {cefrTimestamp ? (
+          <Text fontSize="xs" opacity={0.65} mt={2}>
+            {t?.app_cefr_updated
+              ? t.app_cefr_updated.replace("{timestamp}", cefrTimestamp)
+              : `Last analyzed ${cefrTimestamp}`}
+          </Text>
+        ) : null}
+
+        {cefrError ? (
+          <Text fontSize="xs" color="red.300" mt={2}>
+            {cefrError}
+          </Text>
+        ) : null}
+
+        <Button
+          mt={3}
+          size="sm"
+          variant="outline"
+          colorScheme="purple"
+          onClick={onRunCefrAnalysis}
+          isLoading={cefrLoading}
+          loadingText={t?.app_cefr_loading || "Analyzing…"}
+          isDisabled={cefrLoading}
+        >
+          {t?.app_cefr_run || "Analyze level"}
+        </Button>
+      </Box>
+      */}
+      </VStack>
+
+      {showSignOutButton ? (
+        <Flex mt="auto" justify="flex-end">
+          <Button
+            mt={6}
+            leftIcon={<LuDoorOpen size={18} />}
+            onClick={() => setIsSignOutOpen(true)}
+            padding={6}
+            borderRadius="lg"
+            colorScheme="gray"
+            border="1px solid orange"
+          >
+            {t?.app_sign_out || "Sign out"}
+          </Button>
+        </Flex>
+      ) : null}
 
       <AlertDialog
         isOpen={isSignOutOpen}
@@ -704,6 +666,33 @@ export default function IdentityDrawer({
         </AlertDialogOverlay>
       </AlertDialog>
     </>
+  );
+}
+
+export default function IdentityDrawer({ isOpen, onClose, ...panelProps }) {
+  const swipeDismiss = useBottomDrawerSwipeDismiss({
+    isOpen,
+    onClose,
+  });
+
+  return (
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+      <DrawerOverlay {...swipeDismiss.overlayProps} bg="blackAlpha.600" />
+      <DrawerContent
+        {...swipeDismiss.drawerContentProps}
+        bg="gray.900"
+        color="gray.100"
+        borderTopRadius="24px"
+        maxH="80vh"
+        display="flex"
+        flexDirection="column"
+      >
+        <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
+        <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+          <IdentityPanel onClose={onClose} {...panelProps} />
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
   );
 }
 

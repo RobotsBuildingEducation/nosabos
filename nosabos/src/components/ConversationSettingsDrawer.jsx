@@ -1,5 +1,5 @@
 // src/components/ConversationSettingsDrawer.jsx
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   Box,
   Drawer,
@@ -94,45 +94,8 @@ const CEFR_LEVELS = [
   },
 ];
 
-export default function ConversationSettingsDrawer({
-  isOpen,
-  onClose,
-  settings,
-  onSettingsChange,
-  supportLang = "en",
-}) {
-  const lang = supportLang === "es" ? "es" : "en";
-  const playSound = useSoundSettings((s) => s.playSound);
-
-  const currentLevel =
-    CEFR_LEVELS.find((l) => l.level === settings.proficiencyLevel) ||
-    CEFR_LEVELS[0];
-
-  const handleLevelChange = (level) => {
-    playSound(selectSound);
-    onSettingsChange({ ...settings, proficiencyLevel: level });
-  };
-
-  const handlePronunciationChange = (checked) => {
-    playSound(selectSound);
-    onSettingsChange({ ...settings, practicePronunciation: checked });
-  };
-
-  const handleSubjectChange = (e) => {
-    onSettingsChange({ ...settings, conversationSubjects: e.target.value });
-  };
-
-  const handleSave = useCallback(() => {
-    playSound(submitActionSound);
-    onClose?.();
-  }, [onClose, playSound]);
-
-  const handleClose = useCallback(() => {
-    playSound(selectSound);
-    onClose?.();
-  }, [onClose, playSound]);
-
-  const ui = {
+function getConversationSettingsUi(lang) {
+  return {
     en: {
       title: "Conversation Settings",
       proficiencyLabel: "Proficiency Level",
@@ -162,9 +125,215 @@ export default function ConversationSettingsDrawer({
       save: "Guardar",
       close: "Cerrar",
     },
+  }[lang];
+}
+
+export function ConversationSettingsPanel({
+  settings,
+  onSettingsChange,
+  supportLang = "en",
+  onClose,
+  onSave,
+  showActions = true,
+}) {
+  const lang = supportLang === "es" ? "es" : "en";
+  const playSound = useSoundSettings((s) => s.playSound);
+
+  const currentLevel =
+    CEFR_LEVELS.find((l) => l.level === settings.proficiencyLevel) ||
+    CEFR_LEVELS[0];
+
+  const handleLevelChange = (level) => {
+    playSound(selectSound);
+    onSettingsChange({ ...settings, proficiencyLevel: level });
   };
 
-  const t = ui[lang];
+  const handlePronunciationChange = (checked) => {
+    playSound(selectSound);
+    onSettingsChange({ ...settings, practicePronunciation: checked });
+  };
+
+  const handleSubjectChange = (e) => {
+    onSettingsChange({ ...settings, conversationSubjects: e.target.value });
+  };
+
+  const handleSave = useCallback(() => {
+    playSound(submitActionSound);
+    onSave?.();
+  }, [onSave, playSound]);
+
+  const handleClose = useCallback(() => {
+    playSound(selectSound);
+    onClose?.();
+  }, [onClose, playSound]);
+
+  const t = useMemo(() => getConversationSettingsUi(lang), [lang]);
+
+  return (
+    <VStack align="stretch" spacing={5} flex={1}>
+      {/* Proficiency Level Dropdown */}
+      <FormControl>
+        <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
+          {t.proficiencyLabel}
+        </FormLabel>
+        <Text fontSize="xs" color="gray.400" mb={3}>
+          {t.proficiencyHint}
+        </Text>
+        <Menu matchWidth onOpen={() => playSound(selectSound)}>
+          <MenuButton
+            as={Button}
+            rightIcon={<FiChevronDown />}
+            w="100%"
+            bg="gray.800"
+            boxShadow="0 4px 0px black"
+            _active={{ bg: "gray.700" }}
+            textAlign="left"
+            fontWeight="normal"
+            h="auto"
+            py={3}
+            px={3}
+            whiteSpace="normal"
+            onClick={() => playSound(selectSound)}
+          >
+            <HStack spacing={2} align="center" flex={1} minW={0}>
+              <Badge
+                px={2}
+                py={1}
+                borderRadius="md"
+                bg={currentLevel.color}
+                color="white"
+                fontSize="sm"
+                fontWeight="bold"
+                flexShrink={0}
+              >
+                {currentLevel.level === "Pre-A1" ? "A0" : currentLevel.level}
+              </Badge>
+              <Box minW={0} flex={1}>
+                <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                  {currentLevel.name[lang]}
+                </Text>
+                <Text fontSize="xs" color="gray.400" noOfLines={1}>
+                  {currentLevel.description[lang]}
+                </Text>
+              </Box>
+            </HStack>
+          </MenuButton>
+          <MenuList
+            bg="gray.800"
+            borderColor="gray.700"
+            maxH="300px"
+            overflowY="auto"
+          >
+            {CEFR_LEVELS.map((level) => (
+              <MenuItem
+                key={level.level}
+                onClick={() => handleLevelChange(level.level)}
+                bg={
+                  settings.proficiencyLevel === level.level
+                    ? "gray.700"
+                    : "transparent"
+                }
+                _hover={{ bg: "gray.700" }}
+                py={3}
+              >
+                <HStack spacing={2} w="100%" align="center">
+                  <Badge
+                    px={2}
+                    py={1}
+                    borderRadius="md"
+                    bg={level.color}
+                    color="white"
+                    fontSize="sm"
+                    fontWeight="bold"
+                    flexShrink={0}
+                  >
+                    {level.level === "Pre-A1" ? "A0" : level.level}
+                  </Badge>
+                  <Box minW={0} flex={1}>
+                    <Text fontSize="sm" fontWeight="medium">
+                      {level.name[lang]}
+                    </Text>
+                    <Text fontSize="xs" color="gray.400">
+                      {level.description[lang]}
+                    </Text>
+                  </Box>
+                </HStack>
+              </MenuItem>
+            ))}
+          </MenuList>
+        </Menu>
+      </FormControl>
+
+      {/* Pronunciation Practice Switch */}
+      <FormControl>
+        <HStack justify="space-between" align="center">
+          <Box>
+            <FormLabel fontSize="sm" fontWeight="semibold" mb={0}>
+              {t.pronunciationLabel}
+            </FormLabel>
+            <Text fontSize="xs" color="gray.400" mt={1}>
+              {t.pronunciationHint}
+            </Text>
+          </Box>
+          <Switch
+            colorScheme="cyan"
+            isChecked={settings.practicePronunciation}
+            onChange={(e) => handlePronunciationChange(e.target.checked)}
+          />
+        </HStack>
+      </FormControl>
+
+      {/* Subject Selector */}
+      <FormControl>
+        <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
+          {t.subjectLabel}
+        </FormLabel>
+        <Text fontSize="xs" color="gray.400" mb={3}>
+          {t.subjectHint}
+        </Text>
+        <Textarea
+          value={settings.conversationSubjects || ""}
+          onChange={handleSubjectChange}
+          placeholder={t.subjectPlaceholder}
+          bg="gray.800"
+          borderColor="gray.700"
+          _hover={{ borderColor: "gray.600" }}
+          _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
+          resize="vertical"
+          minH="120px"
+          fontSize="16px"
+        />
+      </FormControl>
+
+      {showActions ? (
+        <HStack spacing={3} mt="auto">
+          <Button
+            variant="outline"
+            colorScheme="gray"
+            onClick={handleClose}
+            size="lg"
+            flex={1}
+          >
+            {t.close}
+          </Button>
+          <Button colorScheme="cyan" onClick={handleSave} size="lg" flex={1}>
+            {t.save}
+          </Button>
+        </HStack>
+      ) : null}
+    </VStack>
+  );
+}
+
+export default function ConversationSettingsDrawer({
+  isOpen,
+  onClose,
+  settings,
+  onSettingsChange,
+  supportLang = "en",
+}) {
+  const lang = supportLang === "es" ? "es" : "en";
+  const t = useMemo(() => getConversationSettingsUi(lang), [lang]);
 
   return (
     <Drawer
@@ -199,162 +368,13 @@ export default function ConversationSettingsDrawer({
           {t.title}
         </DrawerHeader>
         <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
-          <VStack align="stretch" spacing={5} flex={1}>
-            {/* Proficiency Level Dropdown */}
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
-                {t.proficiencyLabel}
-              </FormLabel>
-              <Text fontSize="xs" color="gray.400" mb={3}>
-                {t.proficiencyHint}
-              </Text>
-              <Menu matchWidth onOpen={() => playSound(selectSound)}>
-                <MenuButton
-                  as={Button}
-                  rightIcon={<FiChevronDown />}
-                  w="100%"
-                  bg="gray.800"
-                  boxShadow="0 4px 0px black"
-                  _active={{ bg: "gray.700" }}
-                  textAlign="left"
-                  fontWeight="normal"
-                  h="auto"
-                  py={3}
-                  px={3}
-                  whiteSpace="normal"
-                  onClick={() => playSound(selectSound)}
-                >
-                  <HStack spacing={2} align="center" flex={1} minW={0}>
-                    <Badge
-                      px={2}
-                      py={1}
-                      borderRadius="md"
-                      bg={currentLevel.color}
-                      color="white"
-                      fontSize="sm"
-                      fontWeight="bold"
-                      flexShrink={0}
-                    >
-                      {currentLevel.level === "Pre-A1" ? "A0" : currentLevel.level}
-                    </Badge>
-                    <Box minW={0} flex={1}>
-                      <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                        {currentLevel.name[lang]}
-                      </Text>
-                      <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                        {currentLevel.description[lang]}
-                      </Text>
-                    </Box>
-                  </HStack>
-                </MenuButton>
-                <MenuList
-                  bg="gray.800"
-                  borderColor="gray.700"
-                  maxH="300px"
-                  overflowY="auto"
-                >
-                  {CEFR_LEVELS.map((level) => (
-                    <MenuItem
-                      key={level.level}
-                      onClick={() => handleLevelChange(level.level)}
-                      bg={
-                        settings.proficiencyLevel === level.level
-                          ? "gray.700"
-                          : "transparent"
-                      }
-                      _hover={{ bg: "gray.700" }}
-                      py={3}
-                    >
-                      <HStack spacing={2} w="100%" align="center">
-                        <Badge
-                          px={2}
-                          py={1}
-                          borderRadius="md"
-                          bg={level.color}
-                          color="white"
-                          fontSize="sm"
-                          fontWeight="bold"
-                          flexShrink={0}
-                        >
-                          {level.level === "Pre-A1" ? "A0" : level.level}
-                        </Badge>
-                        <Box minW={0} flex={1}>
-                          <Text fontSize="sm" fontWeight="medium">
-                            {level.name[lang]}
-                          </Text>
-                          <Text fontSize="xs" color="gray.400">
-                            {level.description[lang]}
-                          </Text>
-                        </Box>
-                      </HStack>
-                    </MenuItem>
-                  ))}
-                </MenuList>
-              </Menu>
-            </FormControl>
-
-            {/* Pronunciation Practice Switch */}
-            <FormControl>
-              <HStack justify="space-between" align="center">
-                <Box>
-                  <FormLabel fontSize="sm" fontWeight="semibold" mb={0}>
-                    {t.pronunciationLabel}
-                  </FormLabel>
-                  <Text fontSize="xs" color="gray.400" mt={1}>
-                    {t.pronunciationHint}
-                  </Text>
-                </Box>
-                <Switch
-                  colorScheme="cyan"
-                  isChecked={settings.practicePronunciation}
-                  onChange={(e) => handlePronunciationChange(e.target.checked)}
-                />
-              </HStack>
-            </FormControl>
-
-            {/* Subject Selector */}
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
-                {t.subjectLabel}
-              </FormLabel>
-              <Text fontSize="xs" color="gray.400" mb={3}>
-                {t.subjectHint}
-              </Text>
-              <Textarea
-                value={settings.conversationSubjects || ""}
-                onChange={handleSubjectChange}
-                placeholder={t.subjectPlaceholder}
-                bg="gray.800"
-                borderColor="gray.700"
-                _hover={{ borderColor: "gray.600" }}
-                _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
-                resize="vertical"
-                minH="120px"
-                fontSize="16px"
-              />
-            </FormControl>
-
-            {/* Save/Close Buttons */}
-            <HStack spacing={3} mt="auto">
-              <Button
-                variant="outline"
-                colorScheme="gray"
-                onClick={handleClose}
-                size="lg"
-                flex={1}
-              >
-                {t.close}
-              </Button>
-              <Button
-                colorScheme="cyan"
-                onClick={handleSave}
-                size="lg"
-                flex={1}
-              >
-                {t.save}
-              </Button>
-            </HStack>
-          </VStack>
+          <ConversationSettingsPanel
+            settings={settings}
+            onSettingsChange={onSettingsChange}
+            supportLang={supportLang}
+            onClose={onClose}
+            onSave={onClose}
+          />
         </DrawerBody>
       </DrawerContent>
     </Drawer>

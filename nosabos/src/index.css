@@ -79,6 +79,16 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+button[role="tab"],
+button[role="tab"]:hover,
+button[role="tab"]:focus,
+button[role="tab"]:focus-visible {
+  border-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
 /* LiquidGlass bottom action bar: allow menu popups */
 .bottombar-glass {
   overflow: visible !important;
