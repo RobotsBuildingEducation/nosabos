@@ -77,18 +77,16 @@ Lessons are binary: completed or not. If a user finishes 60% of a multi-mode les
 
 **Recommendation:** Increase default to 20 and let users configure (10/20/30/50). Show projected vocabulary growth ("At this pace, you'll know 500 words in 25 days").
 
-### 8. Pet Dies With No Recovery Path
-**File:** `nosabos/src/components/DailyGoalPetPanel.jsx`
+### 8. Pet Recovery From Death Is a Long Climb
+**File:** `nosabos/src/utils/dailyGoalPet.js` (lines 3-5), `nosabos/src/components/DailyGoalPetPanel.jsx`
 
-When pet health reaches 0, the pet stays dead permanently. Health gains are +5-10% per day but losses are also -5%, meaning one missed day takes ~2 successful days to recover.
+Health gain is +15% per goal hit, loss is -10% per miss — the ratio favors the user, which is good. However, once health reaches 0% (dead state), recovery requires **7 consecutive successful days** to reach 100%. There's no special "revive" mechanic — just the same +15% drip.
 
-**Problems:**
-- Permanent pet death creates guilt, not motivation
-- Asymmetric recovery punishes inconsistency too harshly
+**Problem:**
+- A user who goes on vacation for a week returns to a dead pet and faces a week-long grind to recover, which can feel demoralizing rather than motivating
 
 **Recommendation:**
-- Add a "revive pet" mechanic (e.g., complete 3 lessons to revive)
-- Make recovery slightly faster than loss (encourage comeback behavior)
+- Add a quick "revive" action (e.g., complete 3 lessons in one session to jump to 25%)
 - Show real-time pet reactions when goals are met (immediate positive feedback)
 
 ---
@@ -203,7 +201,7 @@ The app has a Patreon passcode (`VITE_PATREON_PASSCODE`) but no clear free vs. p
 | P1 | Fix silent AI failures + loading states | Medium UX impact | Low |
 | P2 | Timezone-aware daily resets | Medium UX impact | Low |
 | P2 | Increase flashcard daily target + make configurable | Medium learning impact | Low |
-| P2 | Pet revival mechanic | Medium engagement impact | Low |
+| P2 | Pet quick-revive mechanic | Medium engagement impact | Low |
 | P2 | Vocabulary progress dashboard | Medium motivation impact | Medium |
 | P3 | Offline TTS fallback | Low impact (most users online) | Low |
 | P3 | Accessibility improvements | Important but lower urgency | Medium |
