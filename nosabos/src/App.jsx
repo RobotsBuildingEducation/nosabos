@@ -165,11 +165,7 @@ import {
   buildGameReviewContext,
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
-import {
-  FaCalendarAlt,
-  FaCalendarCheck,
-  FaKey,
-} from "react-icons/fa";
+import { FaCalendarAlt, FaCalendarCheck, FaKey } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
 import { TbLanguage } from "react-icons/tb";
@@ -1023,7 +1019,13 @@ function TopBar({
             top={4}
             right={4}
           />
-          <DrawerBody pb={6} display="flex" flexDirection="column" flex={1} minH={0}>
+          <DrawerBody
+            pb={6}
+            display="flex"
+            flexDirection="column"
+            flex={1}
+            minH={0}
+          >
             <Tabs
               index={settingsTabIndex}
               onChange={setSettingsTabIndex}
@@ -1306,7 +1308,9 @@ function TopBar({
                                 {selectedPracticeOption?.flag}
                                 <Text as="span">
                                   {selectedPracticeOption?.label}
-                                  {selectedPracticeOption?.beta ? " (beta)" : ""}
+                                  {selectedPracticeOption?.beta
+                                    ? " (beta)"
+                                    : ""}
                                 </Text>
                               </HStack>
                             </MenuButton>
@@ -1341,7 +1345,8 @@ function TopBar({
                                 color="gray.400"
                               >
                                 {translations[appLanguage]
-                                  .onboarding_practice_menu_label || "Practice:"}
+                                  .onboarding_practice_menu_label ||
+                                  "Practice:"}
                               </Box>
                               <MenuOptionGroup
                                 type="radio"
