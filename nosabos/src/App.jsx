@@ -154,6 +154,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
+import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import { getLearningPath } from "./data/skillTreeData";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
@@ -1823,7 +1824,7 @@ export default function App() {
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
   const [cefrError, setCefrError] = useState("");
-  const [isIdentitySaving, setIsIdentitySaving] = useState(false);
+  const [isIdentitySaving] = useState(false);
 
   useEffect(() => {
     // Default to true if user.allowPosts is not explicitly set
@@ -1969,6 +1970,11 @@ export default function App() {
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
+  const [showTutorialBitcoinModal, setShowTutorialBitcoinModal] =
+    useState(false);
+  const [pendingTutorialBitcoinModal, setPendingTutorialBitcoinModal] =
+    useState(false);
+  const pendingTutorialBitcoinModalRef = useRef(false);
 
   // Play sparkle sound when lesson completion modal opens
   useEffect(() => {
@@ -2020,6 +2026,24 @@ export default function App() {
     },
     [getShownCelebrations],
   );
+
+  const markTutorialBitcoinModalShown = useCallback(async () => {
+    if (!activeNpub || user?.tutorialBitcoinModalShown) return;
+
+    try {
+      await setDoc(
+        doc(database, "users", activeNpub),
+        {
+          tutorialBitcoinModalShown: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true },
+      );
+      patchUser?.({ tutorialBitcoinModalShown: true });
+    } catch (error) {
+      console.warn("Failed to persist tutorial Bitcoin modal state:", error);
+    }
+  }, [activeNpub, patchUser, user?.tutorialBitcoinModalShown]);
 
   // Check if skill tree tutorial was completed
   const hasCompletedSkillTreeTutorial = useMemo(() => {
@@ -3337,6 +3361,9 @@ export default function App() {
         };
         setCompletedLessonData(lessonData);
         pendingLessonCompletionRef.current = lessonData;
+        if (activeLesson.isTutorial && !user?.tutorialBitcoinModalShown) {
+          pendingTutorialBitcoinModalRef.current = true;
+        }
 
         handleReturnToSkillTree();
 
@@ -3365,6 +3392,7 @@ export default function App() {
       resolveNpub,
       resolvedTargetLang,
       setUser,
+      user?.tutorialBitcoinModalShown,
     ],
   );
 
@@ -3461,13 +3489,24 @@ export default function App() {
   ]);
 
   // Handle closing the completion modal and returning to skill tree
-  const handleCloseCompletionModal = () => {
+  const handleCloseCompletionModal = useCallback(() => {
     setShowCompletionModal(false);
     setCompletedLessonData(null);
 
     // Return to skill tree
     handleReturnToSkillTree();
-  };
+    if (pendingTutorialBitcoinModalRef.current) {
+      setPendingTutorialBitcoinModal(true);
+      pendingTutorialBitcoinModalRef.current = false;
+    }
+  }, [handleReturnToSkillTree]);
+
+  const handleCloseTutorialBitcoinModal = useCallback(() => {
+    setShowTutorialBitcoinModal(false);
+    setPendingTutorialBitcoinModal(false);
+    pendingTutorialBitcoinModalRef.current = false;
+    void markTutorialBitcoinModalShown();
+  }, [markTutorialBitcoinModalShown]);
 
   // Handle closing the proficiency completion modal and navigating to next level
   const handleCloseProficiencyCompletionModal = useCallback(() => {
@@ -3503,6 +3542,25 @@ export default function App() {
       pendingLessonCompletionRef.current = null;
     }
   };
+
+  useEffect(() => {
+    if (!pendingTutorialBitcoinModal) return;
+    if (
+      celebrateOpen ||
+      showCompletionModal ||
+      showProficiencyCompletionModal
+    ) {
+      return;
+    }
+
+    setShowTutorialBitcoinModal(true);
+    setPendingTutorialBitcoinModal(false);
+  }, [
+    celebrateOpen,
+    pendingTutorialBitcoinModal,
+    showCompletionModal,
+    showProficiencyCompletionModal,
+  ]);
 
   // When the user switches practice languages, return them to the skill tree
   useEffect(() => {
@@ -3677,29 +3735,16 @@ export default function App() {
   const lastLocalXpEventRef = useRef(0);
 
   const handleIdentitySelection = useCallback(
-    async (npub) => {
-      if (!npub) {
-        throw new Error("Identity selection is required.");
-      }
-      if (!activeNpub) {
-        throw new Error("No active account available.");
-      }
-      if (user?.identity === npub) {
-        return;
-      }
+    (npub) => {
+      if (!npub || !activeNpub || user?.identity === npub) return;
 
-      setIsIdentitySaving(true);
-      try {
-        await updateDoc(doc(database, "users", activeNpub), {
-          identity: npub,
-        });
-        patchUser?.({ identity: npub });
-      } catch (error) {
+      patchUser?.({ identity: npub });
+
+      updateDoc(doc(database, "users", activeNpub), {
+        identity: npub,
+      }).catch((error) => {
         console.error("Failed to persist identity selection", error);
-        throw error;
-      } finally {
-        setIsIdentitySaving(false);
-      }
+      });
     },
     [activeNpub, patchUser, user?.identity],
   );
@@ -5428,6 +5473,15 @@ export default function App() {
         onStartTutorial={handleGettingStartedStart}
         secretKey={activeNsec}
         lang={appLanguage}
+      />
+
+      <BitcoinSupportModal
+        isOpen={showTutorialBitcoinModal}
+        onClose={handleCloseTutorialBitcoinModal}
+        userLanguage={appLanguage}
+        identity={user?.identity || ""}
+        onSelectIdentity={handleIdentitySelection}
+        isIdentitySaving={isIdentitySaving}
       />
 
       <Modal

@@ -242,6 +242,13 @@ export const translations = {
     onboarding_bitcoin_optional_desc:
       "Choose an identity to support with deposits, or skip this step for now.",
     bitcoin_modal_title: "Support with Bitcoin",
+    tutorial_bitcoin_modal_title: "Create Scholarships",
+    tutorial_bitcoin_modal_subtitle:
+      "Send Bitcoin to educators any time you gain XP",
+    tutorial_bitcoin_modal_body:
+      "This can be done later in your settings.",
+    tutorial_bitcoin_modal_skip: "Maybe later",
+    tutorial_bitcoin_modal_done: "Done",
     bitcoin_modal_reload_note:
       "Once your deposit is confirmed we'll reload the app to update your balance.",
     bitcoin_modal_scholarship_note:
@@ -1189,6 +1196,13 @@ export const translations = {
     onboarding_bitcoin_optional_desc:
       "Elige una identidad para apoyar con tus depósitos o sáltate este paso por ahora.",
     bitcoin_modal_title: "Apoya con Bitcoin",
+    tutorial_bitcoin_modal_title: "Crea becas con aprendizaje",
+    tutorial_bitcoin_modal_subtitle:
+      "Envía Bitcoin a educadores cada vez que ganes XP",
+    tutorial_bitcoin_modal_body:
+      "Esto se puede hacer después en tus ajustes.",
+    tutorial_bitcoin_modal_skip: "Tal vez después",
+    tutorial_bitcoin_modal_done: "Listo",
     bitcoin_modal_reload_note:
       "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo.",
     bitcoin_modal_scholarship_note:

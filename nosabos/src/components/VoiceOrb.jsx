@@ -171,8 +171,13 @@ function compile(gl, type, src) {
  * Props:
  *   state  — "idle" | "listening" | "speaking"  (default: "idle")
  *   size   — canvas display size in px           (default: 300)
+ *   centered — whether the canvas auto-centers itself (default: true)
  */
-export default function VoiceOrb({ state = "idle", size = 75 }) {
+export default function VoiceOrb({
+  state = "idle",
+  size = 75,
+  centered = true,
+}) {
   const canvasRef = useRef(null);
   const stateRef = useRef({
     energy: 0,
@@ -262,7 +267,7 @@ export default function VoiceOrb({ state = "idle", size = 75 }) {
         width: size,
         height: size,
         display: "block",
-        margin: "0 auto",
+        margin: centered ? "0 auto" : 0,
       }}
     />
   );
