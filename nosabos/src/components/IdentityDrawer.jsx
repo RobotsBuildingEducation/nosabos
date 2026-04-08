@@ -713,6 +713,7 @@ export function BitcoinWalletSection({
   showIdentitySelector = true,
   compactCardMobile = false,
   compactCardDesktop = false,
+  hydrateWalletOnMount = true,
 }) {
   const toast = useToast();
   const shouldCenterContent =
@@ -750,6 +751,7 @@ export function BitcoinWalletSection({
   const initiateDeposit = useNostrWalletStore((s) => s.initiateDeposit);
   const invoice = useNostrWalletStore((s) => s.invoice);
   const isCreatingWallet = useNostrWalletStore((s) => s.isCreatingWallet);
+  const errorMessage = useNostrWalletStore((s) => s.errorMessage);
 
   // → New: hydrate on mount so refresh picks up your existing wallet
   const init = useNostrWalletStore((s) => s.init);
@@ -767,6 +769,11 @@ export function BitcoinWalletSection({
     localStorage.getItem("nip07_signer") === "true";
 
   useEffect(() => {
+    if (!hydrateWalletOnMount) {
+      setHydrating(false);
+      return undefined;
+    }
+
     let alive = true;
     (async () => {
       try {
@@ -787,11 +794,14 @@ export function BitcoinWalletSection({
     return () => {
       alive = false;
     };
-  }, [init, initWallet]);
+  }, [hydrateWalletOnMount, init, initWallet]);
 
   useEffect(() => {
     setSelectedIdentity(identity || "");
   }, [identity]);
+
+  const effectiveSelectedIdentity =
+    showIdentitySelector ? selectedIdentity : identity || selectedIdentity;
 
   // walletBalance is now a clean number from the store
   const totalBalance = useMemo(() => {
@@ -847,6 +857,30 @@ export function BitcoinWalletSection({
     return (userLanguage === "es" ? es : en)[key] ?? key;
   };
 
+  const ensureWalletConnection = useCallback(async () => {
+    const store = useNostrWalletStore.getState();
+    if (store?.ndkInstance && store?.signer) {
+      return true;
+    }
+
+    const connected = await init();
+    if (connected) {
+      return true;
+    }
+
+    toast({
+      title: userLanguage === "es" ? "Billetera no lista" : "Wallet not ready",
+      description:
+        userLanguage === "es"
+          ? "Intenta de nuevo en un momento."
+          : "Please try again in a moment.",
+      status: "error",
+      duration: 2500,
+      isClosable: true,
+    });
+    return false;
+  }, [init, toast, userLanguage]);
+
   const handleCreateWallet = async () => {
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
@@ -880,6 +914,8 @@ export function BitcoinWalletSection({
     }
 
     try {
+      if (!(await ensureWalletConnection())) return;
+
       const id = localStorage.getItem("local_npub");
       if (id)
         await updateDoc(doc(database, "users", id), { createdWallet: true });
@@ -887,7 +923,23 @@ export function BitcoinWalletSection({
       // Pass the nsec to createNewWallet if we're in NIP-07 mode
       const nsecToUse =
         isNip07Mode && nsecForWallet.trim() ? nsecForWallet.trim() : null;
-      await createNewWallet(nsecToUse);
+      const wallet = await createNewWallet(nsecToUse);
+      if (!wallet) {
+        const latestError = useNostrWalletStore.getState().errorMessage;
+        toast({
+          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create wallet",
+          description:
+            latestError ||
+            errorMessage ||
+            (userLanguage === "es"
+              ? "Intenta de nuevo en un momento."
+              : "Please try again in a moment."),
+          status: "error",
+          duration: 2800,
+          isClosable: true,
+        });
+        return;
+      }
 
       // Clear the nsec input after successful wallet creation
       setNsecForWallet("");
@@ -905,7 +957,7 @@ export function BitcoinWalletSection({
   };
 
   const ensureIdentitySelected = () => {
-    if (!selectedIdentity) {
+    if (!effectiveSelectedIdentity) {
       const title =
         userLanguage === "es"
           ? "Selecciona una identidad"
@@ -928,7 +980,22 @@ export function BitcoinWalletSection({
   const handleInitiateDeposit = async () => {
     if (!ensureIdentitySelected()) return;
     try {
-      await initiateDeposit(100); // example amount
+      const paymentRequest = await initiateDeposit(100); // example amount
+      if (!paymentRequest) {
+        const latestError = useNostrWalletStore.getState().errorMessage;
+        toast({
+          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create invoice",
+          description:
+            latestError ||
+            errorMessage ||
+            (userLanguage === "es"
+              ? "Intenta de nuevo en un momento."
+              : "Please try again in a moment."),
+          status: "error",
+          duration: 2800,
+          isClosable: true,
+        });
+      }
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
@@ -944,7 +1011,22 @@ export function BitcoinWalletSection({
   const generateNewQR = async () => {
     if (!ensureIdentitySelected()) return;
     try {
-      await initiateDeposit(100);
+      const paymentRequest = await initiateDeposit(100);
+      if (!paymentRequest) {
+        const latestError = useNostrWalletStore.getState().errorMessage;
+        toast({
+          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create invoice",
+          description:
+            latestError ||
+            errorMessage ||
+            (userLanguage === "es"
+              ? "Intenta de nuevo en un momento."
+              : "Please try again in a moment."),
+          status: "error",
+          duration: 2800,
+          isClosable: true,
+        });
+      }
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
@@ -1237,7 +1319,7 @@ export function BitcoinWalletSection({
               <Button
                 mt={3}
                 onClick={handleInitiateDeposit}
-                isDisabled={!selectedIdentity || isIdentitySaving}
+                isDisabled={!effectiveSelectedIdentity || isIdentitySaving}
                 variant="outline"
                 borderColor="whiteAlpha.400"
                 color="gray.100"
@@ -1307,7 +1389,7 @@ export function BitcoinWalletSection({
               <Button
                 mt={2}
                 onClick={generateNewQR}
-                isDisabled={!selectedIdentity || isIdentitySaving}
+                isDisabled={!effectiveSelectedIdentity || isIdentitySaving}
                 leftIcon={<BsQrCode />}
                 variant="outline"
                 borderColor="whiteAlpha.400"

@@ -380,7 +380,7 @@ export default function SessionTimerModal({
   helper,
   t = {},
 }) {
-  const presets = [10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
+  const presets = [20, 30, 45, 60, 90, 120, 150, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const handleClose = useCallback(() => {

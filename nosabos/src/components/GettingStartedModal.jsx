@@ -112,17 +112,17 @@ export default function GettingStartedModal({
         {/* Header gradient */}
         <Box bgGradient="linear(to-r, #6366F1, #8B5CF6)" px={6} py={6}>
           <VStack spacing={3} align="center">
-            <RandomCharacter notSoRandomCharacter={"39"} width="75px" />
+            <RandomCharacter notSoRandomCharacter={"39"} width="64px" />
             <Text
               fontWeight="bold"
-              fontSize="xl"
+              fontSize="lg"
               textAlign="center"
               color="white"
             >
               {isEs ? "Instalar como app" : "Install as app"}
             </Text>
             <Text
-              fontSize="2xs"
+              fontSize="10px"
               opacity={0.85}
               textAlign="center"
               lineHeight="1.6"
@@ -147,7 +147,7 @@ export default function GettingStartedModal({
                     justify="center"
                   >
                     <Box color="teal.200">{step.icon}</Box>
-                    <Text fontSize="xs">
+                    <Text fontSize="2xs">
                       {idx + 1}. {step.text}
                     </Text>
                   </VStack>
@@ -171,7 +171,7 @@ export default function GettingStartedModal({
                     <Box color="teal.200">
                       <LuKeyRound size={28} />
                     </Box>
-                    <Text fontSize="xs">
+                    <Text fontSize="2xs">
                       6.{" "}
                       {isEs
                         ? "Copia la llave secreta para iniciar sesión."
