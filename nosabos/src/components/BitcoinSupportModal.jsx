@@ -104,6 +104,8 @@ export default function BitcoinSupportModal({
               height="auto"
               isDisabled={isIdentitySaving}
               onClick={() => handleRecipientSelect(recipient.npub)}
+              _focus={{ boxShadow: "none", outline: "none" }}
+              _focusVisible={{ boxShadow: "none", outline: "none" }}
             >
               <HStack
                 spacing={2}
