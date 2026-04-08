@@ -112,12 +112,7 @@ export default function BitcoinSupportModal({
                 px={{ base: 3, md: 4 }}
                 py={{ base: 2.5, md: 3 }}
                 borderRadius="xl"
-                border="1px solid"
-                borderColor={isSelected ? "teal.200" : "whiteAlpha.300"}
                 bg={isSelected ? "whiteAlpha.200" : "whiteAlpha.100"}
-                boxShadow={
-                  isSelected ? "0 0 0 1px rgba(129, 230, 217, 0.3)" : "none"
-                }
                 transition="background 0.18s ease, border-color 0.18s ease"
               >
                 <Box
