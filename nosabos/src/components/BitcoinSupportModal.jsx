@@ -193,9 +193,8 @@ export default function BitcoinSupportModal({
       returnFocusOnClose={false}
       trapFocus={false}
       autoFocus={false}
-      blockScrollOnMount={false}
     >
-      <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+      <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" zIndex={10000} />
       <ModalContent
         bg="#171923"
         color="gray.100"
@@ -209,6 +208,8 @@ export default function BitcoinSupportModal({
         maxH={{ base: "calc(100vh - 2.5rem)", md: "calc(100vh - 4rem)" }}
         display="flex"
         flexDirection="column"
+        zIndex={10001}
+        position="relative"
         sx={{
           WebkitTapHighlightColor: "transparent",
           touchAction: "manipulation",
