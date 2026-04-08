@@ -1809,6 +1809,7 @@ export default function RPGGame({
     initialScenario?.startMapId || initialScenario?.id || null,
   );
   const [loadingScenarioId, setLoadingScenarioId] = useState(null);
+  const scenarioLoadTokenRef = useRef(0);
   const [npcNameMap, setNpcNameMap] = useState(null);
   const shouldCenterLessonSpawn = !!lessonContext && !!initialScenario;
 
@@ -3721,6 +3722,8 @@ export default function RPGGame({
 
   const handleSelectScenario = useCallback(
     async (mapId) => {
+      const requestToken = scenarioLoadTokenRef.current + 1;
+      scenarioLoadTokenRef.current = requestToken;
       playGameSound("select");
       stopNPCSpeech();
       setLoadingScenarioId(mapId);
@@ -3751,23 +3754,29 @@ export default function RPGGame({
         gameContent?.unitTitle,
       ].filter(Boolean);
 
-      const generated = await generateScenarioWithAI(
-        mapId,
-        targetLang,
-        supportLang,
-        overrideTerms.length ? overrideTerms : null,
-        reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
-        reviewContext,
-      );
-      setScenario(generated);
-      setActiveMapId(generated?.startMapId || generated?.id || null);
-      if (typeof onScenarioReady === "function" && generated) {
-        onScenarioReady(generated);
+      try {
+        const generated = await generateScenarioWithAI(
+          mapId,
+          targetLang,
+          supportLang,
+          overrideTerms.length ? overrideTerms : null,
+          reviewContext?.cefrLevel || gameContent?.cefrLevel || null,
+          reviewContext,
+        );
+        if (requestToken !== scenarioLoadTokenRef.current) return;
+        setScenario(generated);
+        setActiveMapId(generated?.startMapId || generated?.id || null);
+        if (typeof onScenarioReady === "function" && generated) {
+          onScenarioReady(generated);
+        }
+        setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
+        levelCompleteSoundPlayedRef.current = false;
+        tutorialCompletionHandledRef.current = false;
+      } finally {
+        if (requestToken === scenarioLoadTokenRef.current) {
+          setLoadingScenarioId(null);
+        }
       }
-      setQuestProgress({ currentStepIdx: 0, currentNodeId: null });
-      setLoadingScenarioId(null);
-      levelCompleteSoundPlayedRef.current = false;
-      tutorialCompletionHandledRef.current = false;
     },
     [
       lessonContext,
@@ -5693,6 +5702,7 @@ export default function RPGGame({
   const goToScenarioSelect = () => {
     playGameSound("submitAction");
     stopNPCSpeech();
+    scenarioLoadTokenRef.current += 1;
 
     // If launched with a pre-generated scenario, exit back to skill tree
     if (initialScenario && onComplete) {
@@ -5774,6 +5784,17 @@ export default function RPGGame({
   }, [gameComplete, isTutorialGame, onSkip]);
 
   const handleSkipStep = useCallback(() => {
+    if (typeof onSkip === "function") {
+      onSkip();
+      return;
+    }
+    goToScenarioSelect();
+  }, [goToScenarioSelect, onSkip]);
+
+  const handleSkipLoadingScenario = useCallback(() => {
+    scenarioLoadTokenRef.current += 1;
+    setLoadingScenarioId(null);
+    setLoadingMsgIdx(0);
     if (typeof onSkip === "function") {
       onSkip();
       return;
@@ -5968,22 +5989,36 @@ export default function RPGGame({
               py={{ base: 3, md: 4 }}
               bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
             >
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color="blue.100"
-                minH="24px"
-                key={loadingMsgIdx}
-                fontFamily="monospace"
-                sx={{
-                  animation: "fadeIn 0.4s ease-in-out",
-                  "@keyframes fadeIn": {
-                    "0%": { opacity: 0, transform: "translateY(-4px)" },
-                    "100%": { opacity: 1, transform: "translateY(0)" },
-                  },
-                }}
-              >
-                {loadingMessages[loadingMsgIdx]}
-              </Text>
+              <HStack align="center" justify="space-between" spacing={3}>
+                <Text
+                  flex="1"
+                  fontSize={{ base: "sm", md: "md" }}
+                  color="blue.100"
+                  minH="24px"
+                  key={loadingMsgIdx}
+                  fontFamily="monospace"
+                  sx={{
+                    animation: "fadeIn 0.4s ease-in-out",
+                    "@keyframes fadeIn": {
+                      "0%": { opacity: 0, transform: "translateY(-4px)" },
+                      "100%": { opacity: 1, transform: "translateY(0)" },
+                    },
+                  }}
+                >
+                  {loadingMessages[loadingMsgIdx]}
+                </Text>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  color="whiteAlpha.900"
+                  onClick={handleSkipLoadingScenario}
+                  flexShrink={0}
+                  _hover={{ bg: "whiteAlpha.200" }}
+                  _active={{ bg: "whiteAlpha.300" }}
+                >
+                  {ui.skip}
+                </Button>
+              </HStack>
             </Box>
           )}
         </Box>

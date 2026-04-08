@@ -32,8 +32,10 @@ import {
   Input,
   Link,
   Radio,
-  RadioGroup, Text,
+  RadioGroup,
+  Text,
   VStack,
+  useBreakpointValue,
   useToast,
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
@@ -277,9 +279,7 @@ export function IdentityPanel({
       {
         id: "step6",
         icon: <LuKeyRound size={24} />,
-        text:
-          t?.account_final_step_title ||
-          "Copy secret key to sign in.",
+        text: t?.account_final_step_title || "Copy secret key to sign in.",
         subText:
           t?.account_final_step_description ||
           "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
@@ -501,8 +501,8 @@ export function IdentityPanel({
                 <Flex flex="1" textAlign="left" align="center" gap={3}>
                   <Text fontWeight="semibold" textShadow="0px 0px 24px black">
                     {appLanguage === "es"
-                      ? "Billetera Bitcoin (experimental)"
-                      : "Bitcoin wallet (experimental)"}
+                      ? "Billetera Bitcoin"
+                      : "Bitcoin wallet"}
                   </Text>
                 </Flex>
                 <AccordionIcon />
@@ -702,8 +702,46 @@ export function BitcoinWalletSection({
   identity = "",
   onSelectIdentity,
   isIdentitySaving = false,
+  showSectionTitle = true,
+  showScholarshipNote = true,
+  containerProps = {},
+  sectionBg = "gray.900",
+  identitySelectorPlacement = "top",
+  contentMaxW = null,
+  centerContent = false,
+  centerContentDesktop = false,
+  showIdentitySelector = true,
+  compactCardMobile = false,
+  compactCardDesktop = false,
 }) {
   const toast = useToast();
+  const shouldCenterContent =
+    centerContent ||
+    (useBreakpointValue({
+      base: false,
+      md: centerContentDesktop,
+    }) ??
+      false);
+  const cardSizeVariant =
+    useBreakpointValue({
+      base: compactCardMobile ? "soft" : "default",
+      md: compactCardDesktop
+        ? "compact"
+        : compactCardMobile
+          ? "soft"
+          : "default",
+    }) ?? "default";
+  const cardMaxWidth =
+    cardSizeVariant === "compact"
+      ? "260px"
+      : cardSizeVariant === "soft"
+        ? "256px"
+        : "400px";
+  const qrCodeSize =
+    useBreakpointValue({
+      base: compactCardMobile ? 140 : 184,
+      md: compactCardDesktop ? 136 : compactCardMobile ? 156 : 192,
+    }) ?? 184;
 
   // Select each field independently (avoid new-object snapshots)
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
@@ -771,9 +809,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copiar dirección",
       ps: "Usa una billetera Lightning compatible para pagar la factura.",
       activeWalletTitle: "Tu billetera está activa",
-      activeWalletBody:
-        "Tu saldo aparece abajo. Puedes usarlo dentro de la app.",
-      activeWalletLink: "Conoce más",
+      verifyTransactions: "Verifica tus transacciones",
       generateNew: "Generar nuevo QR",
       balanceLabel: "Saldo",
       cardNameLabel: "Billetera",
@@ -795,8 +831,7 @@ export function BitcoinWalletSection({
       copyAddress: "Copy address",
       ps: "Use a compatible Lightning wallet to pay the invoice.",
       activeWalletTitle: "Your wallet is active",
-      activeWalletBody: "Your balance is below. You can use it inside the app.",
-      activeWalletLink: "Learn more",
+      verifyTransactions: "Verify your transactions",
       generateNew: "Generate New Address",
       balanceLabel: "Balance",
       cardNameLabel: "Wallet",
@@ -939,112 +974,143 @@ export function BitcoinWalletSection({
     } catch {}
   };
 
-  const handleIdentitySelect = async (nextIdentity) => {
-    const previousIdentity = selectedIdentity;
-    if (!nextIdentity || nextIdentity === previousIdentity) {
+  const handleIdentitySelect = (nextIdentity) => {
+    if (!nextIdentity || nextIdentity === selectedIdentity) {
       setSelectedIdentity(nextIdentity || "");
       return;
     }
 
-    try {
-      await Promise.resolve(onSelectIdentity?.(nextIdentity));
-      setSelectedIdentity(nextIdentity);
-      toast({
-        title:
-          userLanguage === "es" ? "Identidad actualizada" : "Identity updated",
-        status: "success",
-        duration: 1600,
-      });
-    } catch (error) {
-      console.error("Failed to set identity", error);
-      setSelectedIdentity(previousIdentity || "");
-      toast({
-        title:
-          userLanguage === "es"
-            ? "No se pudo actualizar"
-            : "Could not update identity",
-        description: error?.message || String(error),
-        status: "error",
-        duration: 2600,
-      });
-    }
+    setSelectedIdentity(nextIdentity);
+    onSelectIdentity?.(nextIdentity);
   };
+
+  const identitySelector = (
+    <Box
+      bg={sectionBg}
+      p={3}
+      rounded="md"
+      mb={3}
+      w={shouldCenterContent ? "fit-content" : "100%"}
+      maxW="100%"
+      mx={shouldCenterContent ? "auto" : undefined}
+    >
+      <Text
+        fontSize="sm"
+        mb={2}
+        textAlign={shouldCenterContent ? "center" : "left"}
+      >
+        {userLanguage === "es"
+          ? "Elige a quién apoyar con tus depósitos:"
+          : "Choose a recipient"}
+      </Text>
+      <RadioGroup
+        value={selectedIdentity}
+        onChange={handleIdentitySelect}
+        isDisabled={isIdentitySaving}
+      >
+        <VStack
+          align="start"
+          spacing={2}
+          width={shouldCenterContent ? "fit-content" : "100%"}
+          mx={shouldCenterContent ? "auto" : undefined}
+        >
+          {BITCOIN_RECIPIENTS.map((recipient) => {
+            const isSelected = selectedIdentity === recipient.npub;
+            return (
+              <HStack key={recipient.npub} align="center" spacing={3}>
+                <Radio
+                  colorScheme="purple"
+                  value={recipient.npub}
+                  isDisabled={isIdentitySaving}
+                  size="sm"
+                  sx={{
+                    ".chakra-radio__label": {
+                      fontSize: "sm",
+                    },
+                  }}
+                >
+                  {recipient.label}
+                </Radio>
+                {isSelected && recipient.identityUrl ? (
+                  <Link
+                    href={recipient.identityUrl}
+                    isExternal
+                    fontSize="xs"
+                    color="teal.200"
+                    lineHeight="1"
+                  >
+                    {userLanguage === "es" ? "Ver sitio" : "View site"}
+                  </Link>
+                ) : null}
+              </HStack>
+            );
+          })}
+        </VStack>
+      </RadioGroup>
+      {!selectedIdentity && (
+        <Text
+          fontSize="xs"
+          mt={2}
+          color="orange.200"
+          textAlign={shouldCenterContent ? "center" : "left"}
+        >
+          {userLanguage === "es"
+            ? "Selecciona una opción para habilitar los depósitos."
+            : "Select an option to enable deposits."}
+        </Text>
+      )}
+    </Box>
+  );
 
   // ---------- Renders ----------
   return (
-    <Box bg="gray.800" rounded="md" p={3} mx={1}>
-      <Text mb={2} fontSize="sm" fontWeight="bold">
-        {userLanguage === "es"
-          ? "Billetera Bitcoin (experimental)"
-          : "Bitcoin wallet (experimental)"}
-      </Text>
-
-      <Text fontSize="xs" color="teal.100" mb={3}>
-        {W("scholarshipNote")}{" "}
-        <Link
-          href="https://robotsbuildingeducation.com"
-          isExternal
-          textDecoration="underline"
-        >
-          RobotsBuildingEducation.com
-        </Link>
-      </Text>
-
-      <Box bg="gray.900" p={3} rounded="md" mb={3}>
-        <Text fontSize="sm" mb={2}>
-          {userLanguage === "es"
-            ? "Elige a quién apoyar con tus depósitos:"
-            : "Choose who you’d like to support with your deposits:"}
+    <Box
+      bg="gray.800"
+      rounded="md"
+      p={3}
+      mx={1}
+      w="100%"
+      maxW={contentMaxW || undefined}
+      display="flex"
+      flexDirection="column"
+      alignItems="stretch"
+      {...containerProps}
+    >
+      {showSectionTitle ? (
+        <Text mb={2} fontSize="sm" fontWeight="bold">
+          {userLanguage === "es" ? "Billetera Bitcoin" : "Bitcoin wallet"}
         </Text>
-        <RadioGroup
-          value={selectedIdentity}
-          onChange={handleIdentitySelect}
-          isDisabled={isIdentitySaving}
-        >
-          <VStack align="start" spacing={2} width="100%">
-            {BITCOIN_RECIPIENTS.map((recipient) => {
-              const isSelected = selectedIdentity === recipient.npub;
-              return (
-                <Box key={recipient.npub}>
-                  <Radio
-                    colorScheme="purple"
-                    value={recipient.npub}
-                    isDisabled={isIdentitySaving}
-                  >
-                    {recipient.label}
-                  </Radio>
-                  {isSelected && recipient.identityUrl ? (
-                    <Link
-                      href={recipient.identityUrl}
-                      isExternal
-                      fontSize="xs"
-                      color="teal.200"
-                      ml={6}
-                      display="inline-block"
-                      mt={1}
-                    >
-                      {userLanguage === "es" ? "Ver sitio" : "View site"}
-                    </Link>
-                  ) : null}
-                </Box>
-              );
-            })}
-          </VStack>
-        </RadioGroup>
-        {!selectedIdentity && (
-          <Text fontSize="xs" mt={2} color="orange.200">
-            {userLanguage === "es"
-              ? "Selecciona una opción para habilitar los depósitos."
-              : "Select an option to enable deposits."}
-          </Text>
-        )}
-      </Box>
+      ) : null}
+
+      {showScholarshipNote ? (
+        <Text fontSize="xs" color="teal.100" mb={3}>
+          {W("scholarshipNote")}{" "}
+          <Link
+            href="https://robotsbuildingeducation.com"
+            isExternal
+            textDecoration="underline"
+          >
+            RobotsBuildingEducation.com
+          </Link>
+        </Text>
+      ) : null}
+
+      {showIdentitySelector && identitySelectorPlacement !== "bottom"
+        ? identitySelector
+        : null}
 
       {/* Loading/hydration spinner (only after refresh / first mount) */}
       {hydrating && !cashuWallet && (
-        <HStack py={2}>
-          <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} />
-          <Text fontSize="sm">
+        <HStack
+          py={6}
+          spacing={3}
+          justify="center"
+          align="center"
+          width="fit-content"
+          mx="auto"
+        >
+          <VoiceOrb state="listening" size={24} centered={false} />
+          <Text fontSize="sm" lineHeight="1">
             {userLanguage === "es" ? "Cargando billetera…" : "Loading wallet…"}
           </Text>
         </HStack>
@@ -1080,46 +1146,60 @@ export function BitcoinWalletSection({
               </Text>
             </Box>
           )}
-          <Button
-            onClick={handleCreateWallet}
-            isLoading={isCreatingWallet}
-            loadingText={W("loadingWallet")}
-            boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
-            isDisabled={isNip07Mode && noWalletFound && !nsecForWallet.trim()}
-          >
-            {W("createWallet")}
-          </Button>
+          <Box display="flex" justifyContent="center" width="100%">
+            <Button
+              onClick={handleCreateWallet}
+              isLoading={isCreatingWallet}
+              loadingText={W("loadingWallet")}
+              variant="outline"
+              borderColor="whiteAlpha.400"
+              color="gray.100"
+              _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
+              _active={{ bg: "whiteAlpha.200" }}
+              isDisabled={isNip07Mode && noWalletFound && !nsecForWallet.trim()}
+              minW="160px"
+            >
+              {W("createWallet")}
+            </Button>
+          </Box>
         </Box>
       )}
 
       {/* 2) Wallet exists, balance > 0 → show card */}
       {cashuWallet && totalBalance > 0 && (
         <>
-          <Text mb={2} fontSize="sm">
-            {W("activeWalletBody")}{" "}
-            <Link
-              href="https://nutlife.lol"
-              target="_blank"
-              textDecoration="underline"
-            >
-              {W("activeWalletLink")}
-            </Link>
-          </Text>
-          <IdentityCard
-            number={cashuWallet.walletId}
-            name={
-              <div>
-                {W("cardNameLabel")}
+          <Box width="100%" maxW={cardMaxWidth} mx="auto">
+            <IdentityCard
+              number={cashuWallet.walletId}
+              name={
                 <div>
-                  {W("balanceLabel")}: {totalBalance || 0} sats
+                  {W("balanceLabel")}:{" "}
+                  <span
+                    style={{ display: "inline-block", marginRight: "0.08em" }}
+                  >
+                    ₿
+                  </span>
+                  {totalBalance || 0}
                 </div>
-              </div>
-            }
-            theme="nostr"
-            animateOnChange={false}
-            realValue={cashuWallet.walletId}
-            totalBalance={totalBalance || 0}
-          />
+              }
+              theme="nostr"
+              animateOnChange={false}
+              realValue={cashuWallet.walletId}
+              totalBalance={totalBalance || 0}
+              sizeVariant={cardSizeVariant}
+            />
+          </Box>
+          <Link
+            href="https://nutlife.lol"
+            target="_blank"
+            textDecoration="underline"
+            fontSize="sm"
+            textAlign="center"
+            mx="auto"
+            mt={2}
+          >
+            {W("verifyTransactions")}
+          </Link>
         </>
       )}
 
@@ -1127,29 +1207,46 @@ export function BitcoinWalletSection({
       {cashuWallet && totalBalance <= 0 && (
         <>
           {!invoice && (
-            <Box display="flex" flexDirection={"column"} alignItems={"center"}>
+            <Box
+              display="flex"
+              flexDirection={"column"}
+              alignItems={"center"}
+              width="100%"
+              maxW={cardMaxWidth}
+              mx="auto"
+            >
               <IdentityCard
                 number={cashuWallet.walletId}
                 name={
                   <div>
-                    {W("cardNameLabel")}
-                    <div>
-                      {W("balanceLabel")}: {totalBalance || 0} sats
-                    </div>
+                    {W("balanceLabel")}:{" "}
+                    <span
+                      style={{ display: "inline-block", marginRight: "0.08em" }}
+                    >
+                      ₿
+                    </span>
+                    {totalBalance || 0}
                   </div>
                 }
                 theme="BTC"
                 animateOnChange={false}
                 realValue={cashuWallet.walletId}
                 totalBalance={totalBalance || 0}
+                sizeVariant={cardSizeVariant}
               />
               <Button
                 mt={3}
                 onClick={handleInitiateDeposit}
                 isDisabled={!selectedIdentity || isIdentitySaving}
+                variant="outline"
+                borderColor="whiteAlpha.400"
+                color="gray.100"
+                _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
+                _active={{ bg: "whiteAlpha.200" }}
                 width="100%"
-                maxWidth="400px"
-                p={6}
+                maxWidth={cardMaxWidth}
+                py={5}
+                px={6}
               >
                 {W("deposit")}
               </Button>
@@ -1157,18 +1254,37 @@ export function BitcoinWalletSection({
           )}
 
           {invoice && (
-            <VStack mt={2}>
-              <QRCodeSVG value={invoice} size={256} style={{ zIndex: 10 }} />
-              <Box mt={2}>
-                {W("or")} &nbsp;
+            <VStack
+              mt={2}
+              spacing={3}
+              width="100%"
+              maxW={cardMaxWidth}
+              mx="auto"
+            >
+              <QRCodeSVG
+                value={invoice}
+                size={qrCodeSize}
+                style={{ zIndex: 10 }}
+              />
+              <HStack spacing={3} justify="center" flexWrap="wrap" width="100%">
+                <Text fontSize="sm">{W("or")}</Text>
                 <Button
                   onClick={handleCopyInvoice}
-                  boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
+                  variant="outline"
+                  size="sm"
+                  borderColor="whiteAlpha.400"
+                  color="gray.100"
+                  _hover={{
+                    bg: "whiteAlpha.100",
+                    borderColor: "whiteAlpha.500",
+                  }}
+                  _active={{ bg: "whiteAlpha.200" }}
+                  leftIcon={<LuKeyRound size={14} />}
+                  whiteSpace="nowrap"
                 >
-                  🔑 {W("copyAddress")}
+                  {W("copyAddress")}
                 </Button>
-              </Box>
-              <br />
+              </HStack>
               <Text fontSize="sm" opacity={0.8} textAlign={"center"}>
                 {W("ps")}
                 <br />
@@ -1188,13 +1304,16 @@ export function BitcoinWalletSection({
                   <Text>Cash App</Text>
                 </Link>
               </Text>
-              <br />
               <Button
                 mt={2}
                 onClick={generateNewQR}
                 isDisabled={!selectedIdentity || isIdentitySaving}
                 leftIcon={<BsQrCode />}
-                boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
+                variant="outline"
+                borderColor="whiteAlpha.400"
+                color="gray.100"
+                _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
+                _active={{ bg: "whiteAlpha.200" }}
               >
                 {W("generateNew")}
               </Button>
@@ -1202,6 +1321,10 @@ export function BitcoinWalletSection({
           )}
         </>
       )}
+
+      {showIdentitySelector && identitySelectorPlacement === "bottom"
+        ? identitySelector
+        : null}
     </Box>
   );
 }

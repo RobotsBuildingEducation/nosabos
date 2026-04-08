@@ -21,16 +21,59 @@ const numberChange = keyframes`
   100% { transform: scale(1); }
 `;
 
+const getCardMetric = (sizeVariant, metric) => {
+  const presets = {
+    default: {
+      maxWidth: "400px",
+      height: "250px",
+      flipHeight: "525px",
+      padding: "20px",
+      numberSize: "1.2em",
+      letterSpacing: "2px",
+      holderSize: "0.8em",
+      chipPadding: 24,
+    },
+    soft: {
+      maxWidth: "256px",
+      height: "168px",
+      flipHeight: "344px",
+      padding: "12px",
+      numberSize: "0.83em",
+      letterSpacing: "1px",
+      holderSize: "0.6em",
+      chipPadding: 14,
+      chipHeight: "16px",
+      chipFontSize: "0.75em",
+    },
+    compact: {
+      maxWidth: "260px",
+      height: "170px",
+      flipHeight: "340px",
+      padding: "12px",
+      numberSize: "0.84em",
+      letterSpacing: "1px",
+      holderSize: "0.62em",
+      chipPadding: 13,
+      chipHeight: "16px",
+      chipFontSize: "0.76em",
+    },
+  };
+
+  return presets[sizeVariant]?.[metric] ?? presets.default[metric];
+};
+
 // Create a CardContainer styled component with conditional styles based on theme
 const CardContainer = styled.div`
   text-shadow: 0px 0.25px 0px black;
   width: 100%;
-  max-width: 400px;
-  height: ${({ flip }) => (flip ? "525px" : "200px")};
+  max-width: ${({ $sizeVariant }) => getCardMetric($sizeVariant, "maxWidth")};
+  height: ${({ flip, $sizeVariant }) =>
+    flip
+      ? getCardMetric($sizeVariant, "flipHeight")
+      : getCardMetric($sizeVariant, "height")};
   border-radius: 16px;
   perspective: 1000px;
   transition: 0.65s all ease-in-out;
-  height: 250px;
 `;
 
 const CardInner = styled.div`
@@ -100,7 +143,7 @@ const CardFace = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 20px;
+  padding: ${({ $sizeVariant }) => getCardMetric($sizeVariant, "padding")};
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
 
@@ -115,8 +158,9 @@ const CardBack = styled(CardFace)`
 `;
 
 const CardNumber = styled.div`
-  font-size: 1.2em;
-  letter-spacing: 2px;
+  font-size: ${({ $sizeVariant }) => getCardMetric($sizeVariant, "numberSize")};
+  letter-spacing: ${({ $sizeVariant }) =>
+    getCardMetric($sizeVariant, "letterSpacing")};
   animation: ${({ animate }) =>
     animate
       ? css`
@@ -126,8 +170,9 @@ const CardNumber = styled.div`
 `;
 
 const CardHolder = styled.div`
-  font-size: 0.8em;
+  font-size: ${({ $sizeVariant }) => getCardMetric($sizeVariant, "holderSize")};
   font-family: Avenir;
+  line-height: 1.25;
 `;
 
 const CopyButton = styled.button`
@@ -161,6 +206,7 @@ export const IdentityCard = ({
   animateOnChange = false,
   realValue = null,
   totalBalance,
+  sizeVariant = "default",
 }) => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -277,9 +323,9 @@ export const IdentityCard = ({
   );
 
   return (
-    <CardContainer flip={isFlipped}>
+    <CardContainer flip={isFlipped} $sizeVariant={sizeVariant}>
       <CardInner flip={isFlipped}>
-        <CardFace theme={theme}>
+        <CardFace theme={theme} $sizeVariant={sizeVariant}>
           <div
             style={{
               display: "flex",
@@ -287,7 +333,9 @@ export const IdentityCard = ({
               justifyContent: "space-between",
             }}
           >
-            <CardNumber animate={animate}>{number}</CardNumber>
+            <CardNumber animate={animate} $sizeVariant={sizeVariant}>
+              {number}
+            </CardNumber>
             {/* <CopyButton
               onMouseDown={() => handleCopy(theme)}
               theme={theme}
@@ -320,14 +368,14 @@ export const IdentityCard = ({
             }}
           >
             <div>
-              <CardHolder>
+              <CardHolder $sizeVariant={sizeVariant}>
                 <b>{name}</b>
               </CardHolder>
             </div>
             <div>
               <div
                 style={{
-                  height: "20px",
+                  height: getCardMetric(sizeVariant, "chipHeight") || "20px",
                   backgroundColor:
                     theme === "web5"
                       ? "black"
@@ -344,13 +392,15 @@ export const IdentityCard = ({
                   justifyContent: "center",
 
                   fontFamily: "Avenir",
+                  fontSize:
+                    getCardMetric(sizeVariant, "chipFontSize") || "1em",
                   color:
                     theme === "web5"
                       ? "cyan"
                       : theme === "nostr"
                       ? "white"
                       : "black",
-                  padding: 24,
+                  padding: getCardMetric(sizeVariant, "chipPadding"),
                   cursor: "inherit",
                 }}
                 // onMouseDown={() => setIsFlipped(true)}

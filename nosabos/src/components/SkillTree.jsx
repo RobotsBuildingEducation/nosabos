@@ -1596,6 +1596,7 @@ function LessonDetailModal({
   const lessonWithReviewContext = reviewContext
     ? { ...lesson, gameReviewContext: reviewContext }
     : lesson;
+  const showTutorialGameSkip = !!lesson?.isTutorial && !!lesson?.isGame;
 
   const handleStartGame = async () => {
     captureModalSize();
@@ -1725,22 +1726,38 @@ function LessonDetailModal({
               py={{ base: 3, md: 4 }}
               bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
             >
-              <Text
-                fontSize={{ base: "sm", md: "md" }}
-                color="blue.100"
-                minH="24px"
-                key={loadingMsgIdx}
-                fontFamily="monospace"
-                sx={{
-                  animation: "fadeIn 0.4s ease-in-out",
-                  "@keyframes fadeIn": {
-                    "0%": { opacity: 0, transform: "translateY(-4px)" },
-                    "100%": { opacity: 1, transform: "translateY(0)" },
-                  },
-                }}
-              >
-                {loadingMessages[loadingMsgIdx]}
-              </Text>
+              <Flex align="center" justify="space-between" gap={3}>
+                <Text
+                  flex="1"
+                  fontSize={{ base: "sm", md: "md" }}
+                  color="blue.100"
+                  minH="24px"
+                  key={loadingMsgIdx}
+                  fontFamily="monospace"
+                  sx={{
+                    animation: "fadeIn 0.4s ease-in-out",
+                    "@keyframes fadeIn": {
+                      "0%": { opacity: 0, transform: "translateY(-4px)" },
+                      "100%": { opacity: 1, transform: "translateY(0)" },
+                    },
+                  }}
+                >
+                  {loadingMessages[loadingMsgIdx]}
+                </Text>
+                {showTutorialGameSkip ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    color="whiteAlpha.900"
+                    onClick={handleCancelGameLoading}
+                    flexShrink={0}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    _active={{ bg: "whiteAlpha.300" }}
+                  >
+                    {getTranslation("practice_skip_question")}
+                  </Button>
+                ) : null}
+              </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
               <LoadingMiniGame supportLang={supportLang} />
