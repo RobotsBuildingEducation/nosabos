@@ -372,7 +372,7 @@ export default function BitcoinSupportModal({
               <Button variant="ghost" onClick={onClose}>
                 {skipLabel}
               </Button>
-              <Button colorScheme="teal" onClick={handleConfirm}>
+              <Button variant="outline" colorScheme="teal" onClick={handleConfirm}>
                 {closeLabel}
               </Button>
             </Box>
