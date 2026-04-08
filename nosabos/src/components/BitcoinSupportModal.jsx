@@ -204,6 +204,9 @@ export default function BitcoinSupportModal({
       closeOnOverlayClick={false}
       scrollBehavior="inside"
       returnFocusOnClose={false}
+      trapFocus={false}
+      autoFocus={false}
+      blockScrollOnMount={false}
     >
       <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
       <ModalContent
