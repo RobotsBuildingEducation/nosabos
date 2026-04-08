@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   HStack,
+  Icon,
   Link,
   Modal,
   ModalBody,
@@ -15,8 +16,6 @@ import {
   ModalContent,
   ModalFooter,
   ModalOverlay,
-  Radio,
-  RadioGroup,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -89,101 +88,84 @@ export default function BitcoinSupportModal({
 
   const recipientSelectorContent = (
     <>
-      <RadioGroup value={selectedIdentity} onChange={handleRecipientSelect}>
-        <VStack
-          align="stretch"
-          spacing={2}
-          width={{ base: "100%", md: "fit-content" }}
-        >
-          {BITCOIN_RECIPIENTS.map((recipient) => {
-            const isSelected = selectedIdentity === recipient.npub;
-            return (
-              <Box
-                key={recipient.npub}
-                width={{ base: "100%", md: "fit-content" }}
-                maxW="100%"
+      <VStack
+        align="stretch"
+        spacing={2}
+        width="100%"
+      >
+        {BITCOIN_RECIPIENTS.map((recipient) => {
+          const isSelected = selectedIdentity === recipient.npub;
+          return (
+            <Button
+              key={recipient.npub}
+              variant="unstyled"
+              display="flex"
+              width="100%"
+              height="auto"
+              isDisabled={isIdentitySaving}
+              onClick={() => handleRecipientSelect(recipient.npub)}
+            >
+              <HStack
+                spacing={2}
+                align="center"
+                width="100%"
+                px={{ base: 3, md: 4 }}
+                py={{ base: 2.5, md: 3 }}
+                borderRadius="xl"
+                border="1px solid"
+                borderColor={isSelected ? "teal.200" : "whiteAlpha.300"}
+                bg={isSelected ? "whiteAlpha.200" : "whiteAlpha.100"}
+                boxShadow={
+                  isSelected ? "0 0 0 1px rgba(129, 230, 217, 0.3)" : "none"
+                }
+                transition="background 0.18s ease, border-color 0.18s ease"
               >
-                <HStack
-                  role="radio"
-                  aria-checked={isSelected}
-                  tabIndex={isIdentitySaving ? -1 : 0}
-                  spacing={2}
-                  align="center"
-                  width="100%"
-                  px={{ base: 3, md: 4 }}
-                  py={{ base: 2.5, md: 3 }}
-                  borderRadius="xl"
-                  border="1px solid"
-                  borderColor={isSelected ? "teal.200" : "whiteAlpha.300"}
-                  bg={isSelected ? "whiteAlpha.200" : "whiteAlpha.100"}
-                  boxShadow={
-                    isSelected ? "0 0 0 1px rgba(129, 230, 217, 0.3)" : "none"
-                  }
-                  cursor={isIdentitySaving ? "not-allowed" : "pointer"}
-                  transition="background 0.18s ease, border-color 0.18s ease, transform 0.18s ease"
-                  _hover={{
-                    bg: isSelected ? "whiteAlpha.250" : "whiteAlpha.150",
-                    borderColor: isSelected ? "teal.100" : "whiteAlpha.400",
-                  }}
-                  _active={{
-                    transform: isIdentitySaving ? "none" : "scale(0.98)",
-                  }}
-                  onClick={() => {
-                    if (!isIdentitySaving) {
-                      handleRecipientSelect(recipient.npub);
-                    }
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      !isIdentitySaving &&
-                      (event.key === "Enter" || event.key === " ")
-                    ) {
-                      event.preventDefault();
-                      handleRecipientSelect(recipient.npub);
-                    }
-                  }}
+                <Box
+                  w="16px"
+                  h="16px"
+                  borderRadius="full"
+                  border="2px solid"
+                  borderColor={isSelected ? "teal.200" : "whiteAlpha.400"}
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  flexShrink={0}
                 >
-                  <Radio
-                    colorScheme="purple"
-                    value={recipient.npub}
-                    size="sm"
-                    isDisabled={isIdentitySaving}
-                    pointerEvents="none"
-                    flex="1"
-                    minW={0}
-                    sx={{
-                      ".chakra-radio__label": {
-                        fontSize: "xs",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        lineHeight: "1.2",
-                      },
-                    }}
-                  >
-                    {recipient.label}
-                  </Radio>
-                  {recipient.identityUrl ? (
-                    <Link
-                      href={recipient.identityUrl}
-                      isExternal
-                      fontSize="xs"
-                      color="teal.200"
-                      lineHeight="1"
-                      ml="auto"
-                      whiteSpace="nowrap"
-                      flexShrink={0}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      {lang === "es" ? "Ver sitio" : "View site"}
-                    </Link>
+                  {isSelected ? (
+                    <Box w="8px" h="8px" borderRadius="full" bg="teal.200" />
                   ) : null}
-                </HStack>
-              </Box>
-            );
-          })}
-        </VStack>
-      </RadioGroup>
+                </Box>
+                <Text
+                  fontSize="xs"
+                  whiteSpace="nowrap"
+                  overflow="hidden"
+                  textOverflow="ellipsis"
+                  lineHeight="1.2"
+                  flex="1"
+                  textAlign="left"
+                >
+                  {recipient.label}
+                </Text>
+                {recipient.identityUrl ? (
+                  <Link
+                    href={recipient.identityUrl}
+                    isExternal
+                    fontSize="xs"
+                    color="teal.200"
+                    lineHeight="1"
+                    ml="auto"
+                    whiteSpace="nowrap"
+                    flexShrink={0}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    {lang === "es" ? "Ver sitio" : "View site"}
+                  </Link>
+                ) : null}
+              </HStack>
+            </Button>
+          );
+        })}
+      </VStack>
       {!selectedIdentity ? (
         <Text fontSize="xs" mt={2} color="orange.200" textAlign="left">
           {lang === "es"
