@@ -1976,6 +1976,7 @@ export default function App() {
   const [pendingTutorialBitcoinModal, setPendingTutorialBitcoinModal] =
     useState(false);
   const pendingTutorialBitcoinModalRef = useRef(false);
+  const tutorialBitcoinOpenTimeoutRef = useRef(null);
 
   // Play sparkle sound when lesson completion modal opens
   useEffect(() => {
@@ -3503,6 +3504,13 @@ export default function App() {
   }, [handleReturnToSkillTree]);
 
   const handleCloseTutorialBitcoinModal = useCallback(() => {
+    if (
+      typeof window !== "undefined" &&
+      tutorialBitcoinOpenTimeoutRef.current !== null
+    ) {
+      window.clearTimeout(tutorialBitcoinOpenTimeoutRef.current);
+      tutorialBitcoinOpenTimeoutRef.current = null;
+    }
     setShowTutorialBitcoinModal(false);
     setPendingTutorialBitcoinModal(false);
     pendingTutorialBitcoinModalRef.current = false;
@@ -3554,14 +3562,44 @@ export default function App() {
       return;
     }
 
-    setShowTutorialBitcoinModal(true);
-    setPendingTutorialBitcoinModal(false);
+    if (typeof window === "undefined") {
+      setShowTutorialBitcoinModal(true);
+      setPendingTutorialBitcoinModal(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      tutorialBitcoinOpenTimeoutRef.current = null;
+      setShowTutorialBitcoinModal(true);
+      setPendingTutorialBitcoinModal(false);
+    }, 280);
+
+    tutorialBitcoinOpenTimeoutRef.current = timeoutId;
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      if (tutorialBitcoinOpenTimeoutRef.current === timeoutId) {
+        tutorialBitcoinOpenTimeoutRef.current = null;
+      }
+    };
   }, [
     celebrateOpen,
     pendingTutorialBitcoinModal,
     showCompletionModal,
     showProficiencyCompletionModal,
   ]);
+
+  useEffect(
+    () => () => {
+      if (
+        typeof window !== "undefined" &&
+        tutorialBitcoinOpenTimeoutRef.current !== null
+      ) {
+        window.clearTimeout(tutorialBitcoinOpenTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   // When the user switches practice languages, return them to the skill tree
   useEffect(() => {

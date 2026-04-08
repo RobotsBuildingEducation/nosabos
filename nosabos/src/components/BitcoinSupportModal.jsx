@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -71,10 +71,20 @@ export default function BitcoinSupportModal({
   const closeLabel =
     ui.tutorial_bitcoin_modal_done || (lang === "es" ? "Listo" : "Done");
 
-  const handleRecipientSelect = (nextIdentity) => {
+  const handleRecipientSelect = useCallback((nextIdentity) => {
     setSelectedIdentity(nextIdentity || "");
-    onSelectIdentity?.(nextIdentity);
-  };
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (
+      selectedIdentity &&
+      selectedIdentity !== identity &&
+      typeof onSelectIdentity === "function"
+    ) {
+      onSelectIdentity(selectedIdentity);
+    }
+    onClose?.();
+  }, [identity, onClose, onSelectIdentity, selectedIdentity]);
 
   const recipientSelectorContent = (
     <>
@@ -87,36 +97,81 @@ export default function BitcoinSupportModal({
           {BITCOIN_RECIPIENTS.map((recipient) => {
             const isSelected = selectedIdentity === recipient.npub;
             return (
-              <HStack
+              <Box
                 key={recipient.npub}
-                align="center"
-                spacing={3}
                 width={{ base: "100%", md: "fit-content" }}
+                maxW="100%"
               >
-                <Radio
-                  colorScheme="purple"
-                  value={recipient.npub}
-                  size="sm"
-                  sx={{
-                    ".chakra-radio__label": {
-                      fontSize: "sm",
-                    },
+                <HStack
+                  role="radio"
+                  aria-checked={isSelected}
+                  tabIndex={isIdentitySaving ? -1 : 0}
+                  spacing={3}
+                  align="center"
+                  width="100%"
+                  px={4}
+                  py={3}
+                  borderRadius="xl"
+                  border="1px solid"
+                  borderColor={isSelected ? "teal.200" : "whiteAlpha.300"}
+                  bg={isSelected ? "whiteAlpha.200" : "whiteAlpha.100"}
+                  boxShadow={
+                    isSelected ? "0 0 0 1px rgba(129, 230, 217, 0.3)" : "none"
+                  }
+                  cursor={isIdentitySaving ? "not-allowed" : "pointer"}
+                  transition="background 0.18s ease, border-color 0.18s ease, transform 0.18s ease"
+                  _hover={{
+                    bg: isSelected ? "whiteAlpha.250" : "whiteAlpha.150",
+                    borderColor: isSelected ? "teal.100" : "whiteAlpha.400",
+                  }}
+                  _active={{
+                    transform: isIdentitySaving ? "none" : "scale(0.98)",
+                  }}
+                  onClick={() => {
+                    if (!isIdentitySaving) {
+                      handleRecipientSelect(recipient.npub);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      !isIdentitySaving &&
+                      (event.key === "Enter" || event.key === " ")
+                    ) {
+                      event.preventDefault();
+                      handleRecipientSelect(recipient.npub);
+                    }
                   }}
                 >
-                  {recipient.label}
-                </Radio>
-                {isSelected && recipient.identityUrl ? (
-                  <Link
-                    href={recipient.identityUrl}
-                    isExternal
-                    fontSize="xs"
-                    color="teal.200"
-                    lineHeight="1"
+                  <Radio
+                    colorScheme="purple"
+                    value={recipient.npub}
+                    size="md"
+                    isDisabled={isIdentitySaving}
+                    pointerEvents="none"
+                    sx={{
+                      ".chakra-radio__label": {
+                        fontSize: "sm",
+                      },
+                    }}
                   >
-                    {lang === "es" ? "Ver sitio" : "View site"}
-                  </Link>
-                ) : null}
-              </HStack>
+                    {recipient.label}
+                  </Radio>
+                  {recipient.identityUrl ? (
+                    <Link
+                      href={recipient.identityUrl}
+                      isExternal
+                      fontSize="xs"
+                      color="teal.200"
+                      lineHeight="1"
+                      ml="auto"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                    >
+                      {lang === "es" ? "Ver sitio" : "View site"}
+                    </Link>
+                  ) : null}
+                </HStack>
+              </Box>
             );
           })}
         </VStack>
@@ -308,7 +363,7 @@ export default function BitcoinSupportModal({
               <Button variant="ghost" onClick={onClose}>
                 {skipLabel}
               </Button>
-              <Button colorScheme="teal" onClick={onClose}>
+              <Button colorScheme="teal" onClick={handleConfirm}>
                 {closeLabel}
               </Button>
             </Box>
