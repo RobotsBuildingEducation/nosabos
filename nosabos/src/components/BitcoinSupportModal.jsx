@@ -104,8 +104,16 @@ export default function BitcoinSupportModal({
               height="auto"
               isDisabled={isIdentitySaving}
               onClick={() => handleRecipientSelect(recipient.npub)}
-              _focus={{ boxShadow: "none", outline: "none" }}
-              _focusVisible={{ boxShadow: "none", outline: "none" }}
+              outline="none !important"
+              boxShadow="none !important"
+              border="none !important"
+              _focus={{ boxShadow: "none !important", outline: "none !important" }}
+              _focusVisible={{ boxShadow: "none !important", outline: "none !important" }}
+              sx={{
+                "&:focus": { boxShadow: "none !important", outline: "none !important", border: "none !important" },
+                "&:focus-visible": { boxShadow: "none !important", outline: "none !important", border: "none !important" },
+                "&:active": { boxShadow: "none !important", outline: "none !important" },
+              }}
             >
               <HStack
                 spacing={2}
