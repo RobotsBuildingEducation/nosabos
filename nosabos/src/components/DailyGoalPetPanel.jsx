@@ -183,7 +183,7 @@ function getPetStage(health, copy) {
     palette: DOG,
     colorScheme: "green",
     label: copy.happy,
-    background: "rgba(74, 222, 128, 0.24)",
+    background: "rgba(29, 251, 192, 0.54)",
     waveStart: "#86EFAC",
     waveEnd: "#22C55E",
     face: "healthy",

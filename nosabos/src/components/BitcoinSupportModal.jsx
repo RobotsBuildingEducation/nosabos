@@ -46,15 +46,15 @@ export default function BitcoinSupportModal({
 
   const selectedRecipient = useMemo(
     () =>
-      BITCOIN_RECIPIENTS.find((recipient) => recipient.npub === selectedIdentity),
-    [selectedIdentity]
+      BITCOIN_RECIPIENTS.find(
+        (recipient) => recipient.npub === selectedIdentity,
+      ),
+    [selectedIdentity],
   );
 
   const title =
     ui.tutorial_bitcoin_modal_title ||
-    (lang === "es"
-      ? "Crea becas con aprendizaje"
-      : "Create Scholarships");
+    (lang === "es" ? "Crea becas con aprendizaje" : "Create Scholarships");
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
     (lang === "es"
@@ -78,10 +78,7 @@ export default function BitcoinSupportModal({
 
   const recipientSelectorContent = (
     <>
-      <RadioGroup
-        value={selectedIdentity}
-        onChange={handleRecipientSelect}
-      >
+      <RadioGroup value={selectedIdentity} onChange={handleRecipientSelect}>
         <VStack
           align="stretch"
           spacing={2}
@@ -125,12 +122,7 @@ export default function BitcoinSupportModal({
         </VStack>
       </RadioGroup>
       {!selectedIdentity ? (
-        <Text
-          fontSize="xs"
-          mt={2}
-          color="orange.200"
-          textAlign="left"
-        >
+        <Text fontSize="xs" mt={2} color="orange.200" textAlign="left">
           {lang === "es"
             ? "Selecciona una opción para habilitar los depósitos."
             : "Select an option to enable deposits."}
@@ -191,7 +183,7 @@ export default function BitcoinSupportModal({
           borderColor="rgba(0, 0, 0, 0.18)"
         >
           <VStack spacing={3} align="center" textAlign="center">
-            <RandomCharacter width="82px" />
+            <RandomCharacter width="82px" notSoRandomCharacter={"40"} />
             <Text
               fontWeight="bold"
               fontSize={{ base: "xl", md: "2xl" }}
@@ -246,12 +238,7 @@ export default function BitcoinSupportModal({
               compactCardMobile
               compactCardDesktop
             />
-            <Box
-              w="100%"
-              maxW="420px"
-              mx="auto"
-              pt={2}
-            >
+            <Box w="100%" maxW="420px" mx="auto" pt={2}>
               {cashuWallet ? (
                 <Accordion allowToggle width="100%">
                   <AccordionItem border="0">
@@ -311,7 +298,11 @@ export default function BitcoinSupportModal({
             </Box>
           </VStack>
         </ModalBody>
-        <ModalFooter px={{ base: 4, md: 5 }} py={{ base: 3, md: 4 }} bg="#171923">
+        <ModalFooter
+          px={{ base: 4, md: 5 }}
+          py={{ base: 3, md: 4 }}
+          bg="#171923"
+        >
           <VStack spacing={2} width="100%">
             <Box display="flex" justifyContent="flex-end" width="100%" gap={3}>
               <Button variant="ghost" onClick={onClose}>

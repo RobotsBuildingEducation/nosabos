@@ -155,6 +155,7 @@ import SessionTimerModal from "./components/SessionTimerModal";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
+import RandomCharacter from "./components/RandomCharacter";
 import { getLearningPath } from "./data/skillTreeData";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
@@ -5648,7 +5649,22 @@ export default function App() {
         >
           <ModalBody py={12} px={8}>
             <VStack spacing={6} textAlign="center">
-              <CelebrationOrb />
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="full"
+                p={4}
+                border="2px solid"
+                borderColor="whiteAlpha.300"
+                boxShadow="0 20px 40px rgba(0, 0, 0, 0.18)"
+              >
+                <RandomCharacter
+                  key={`${completedLessonData?.lessonId || "lesson"}-${
+                    showCompletionModal ? "open" : "closed"
+                  }`}
+                  width="96px"
+                  notSoRandomCharacter={"27"}
+                />
+              </Box>
 
               {/* Title */}
               <VStack spacing={2}>
