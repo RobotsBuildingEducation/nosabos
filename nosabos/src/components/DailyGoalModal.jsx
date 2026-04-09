@@ -36,6 +36,55 @@ import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
 
+// Precomputed static styles for heatmap cells — plain DOM nodes are ~10x
+// faster to mount/reconcile than Chakra <Box> for hundreds of cells.
+const DAY_CELL_BASE_STYLE = {
+  width: "100%",
+  aspectRatio: "1 / 1",
+  borderRadius: "3px",
+  border: "1px solid transparent",
+  boxSizing: "border-box",
+};
+
+const DAY_CELL_BLANK_STYLE = {
+  ...DAY_CELL_BASE_STYLE,
+  background: "transparent",
+};
+
+const WEEK_COLUMN_STYLE = { minWidth: 0 };
+const WEEK_LABEL_STYLE = {
+  minHeight: "12px",
+  fontSize: "8px",
+  lineHeight: 1,
+  color: "#6b7280",
+  textTransform: "uppercase",
+  whiteSpace: "nowrap",
+  textAlign: "left",
+};
+const WEEK_DAYS_STYLE = { display: "grid", rowGap: "2px" };
+
+function buildDayStyle(level, isFuture, isToday) {
+  const style = { ...DAY_CELL_BASE_STYLE };
+  if (level === "goal") {
+    style.background =
+      "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 100%)";
+    style.borderColor = "rgba(167, 243, 208, 0.55)";
+  } else if (level === "some") {
+    style.background = "rgba(45, 212, 191, 0.42)";
+    style.borderColor = "rgba(94, 234, 212, 0.28)";
+  } else {
+    style.background = isFuture
+      ? "rgba(255,255,255,0.03)"
+      : "rgba(255,255,255,0.08)";
+    style.borderColor = isToday
+      ? "rgba(255,255,255,0.45)"
+      : "rgba(255,255,255,0.08)";
+  }
+  if (isFuture) style.opacity = 0.28;
+  if (isToday) style.transform = "scale(1.04)";
+  return style;
+}
+
 function getLocalDayKey(value) {
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) return null;
@@ -57,10 +106,14 @@ function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language
     Math.round((yearEnd.getTime() - yearStart.getTime()) / MS_24H) + 1;
   const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
   const completedDatesSet = new Set(completedGoalDates);
-  const monthFormatter = new Intl.DateTimeFormat(
-    language === "es" ? "es-MX" : "en-US",
-    { month: "short" },
-  );
+  const locale = language === "es" ? "es-MX" : "en-US";
+  // Build formatters once per heatmap — not once per cell.
+  const monthFormatter = new Intl.DateTimeFormat(locale, { month: "short" });
+  const dateFormatter = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    day: "numeric",
+  });
+  const todayKey = getLocalDayKey(today);
 
   return Array.from({ length: totalWeeks }, (_, weekIndex) => {
     let monthLabel = "";
@@ -81,6 +134,8 @@ function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language
       const xp = Math.max(0, Number(xpHistory?.[dayKey]) || 0);
       const isGoalReached = completedDatesSet.has(dayKey);
       const isFuture = date.getTime() > today.getTime();
+      const isToday = dayKey === todayKey;
+      const level = isGoalReached ? "goal" : xp > 0 ? "some" : "empty";
 
       if (!monthLabel && date.getDate() === 1) {
         monthLabel = monthFormatter.format(date);
@@ -88,12 +143,9 @@ function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language
 
       return {
         key: dayKey,
-        date,
-        xp,
         isBlank: false,
-        isFuture,
-        isToday: dayKey === getLocalDayKey(today),
-        level: isGoalReached ? "goal" : xp > 0 ? "some" : "empty",
+        title: `${dateFormatter.format(date)} - ${xp} XP`,
+        style: buildDayStyle(level, isFuture, isToday),
       };
     });
 
@@ -105,14 +157,7 @@ function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language
   });
 }
 
-function formatHeatmapDate(date, language) {
-  return new Intl.DateTimeFormat(language === "es" ? "es-MX" : "en-US", {
-    month: "short",
-    day: "numeric",
-  }).format(date);
-}
-
-function DailyGoalHeatmap({
+const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
   lang = "en",
   completedGoalDates = [],
   dailyXpHistory = {},
@@ -158,70 +203,6 @@ function DailyGoalHeatmap({
     [effectiveCompletedDates, effectiveHistory, lang],
   );
 
-  const renderDayCell = (day) => {
-    if (day.isBlank) {
-      return (
-        <Box
-          key={day.key}
-          w="100%"
-          aspectRatio="1 / 1"
-          borderRadius={{ base: "2px", md: "3px" }}
-          bg="transparent"
-        />
-      );
-    }
-
-    const sharedProps = {
-      w: "100%",
-      aspectRatio: "1 / 1",
-      borderRadius: { base: "2px", md: "3px" },
-      border: "1px solid",
-      transition: "transform 0.16s ease, opacity 0.16s ease",
-      title: `${formatHeatmapDate(day.date, lang)} - ${day.xp} XP`,
-      opacity: day.isFuture ? 0.28 : 1,
-      transform: day.isToday ? "scale(1.04)" : "none",
-    };
-
-    if (day.level === "goal") {
-      return (
-        <Box
-          key={day.key}
-          {...sharedProps}
-          bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
-          borderColor="rgba(167, 243, 208, 0.55)"
-          boxShadow={{
-            base: "none",
-            md: "0 0 0 1px rgba(45, 212, 191, 0.14), 0 6px 12px rgba(14, 165, 233, 0.16)",
-          }}
-        />
-      );
-    }
-
-    if (day.level === "some") {
-      return (
-        <Box
-          key={day.key}
-          {...sharedProps}
-          bg="rgba(45, 212, 191, 0.42)"
-          borderColor="rgba(94, 234, 212, 0.28)"
-        />
-      );
-    }
-
-    return (
-      <Box
-        key={day.key}
-        {...sharedProps}
-        bg={day.isFuture ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)"}
-        borderColor={
-          day.isToday
-            ? "rgba(255,255,255,0.45)"
-            : "rgba(255,255,255,0.08)"
-        }
-      />
-    );
-  };
-
   return (
     <Box
       p={4}
@@ -265,22 +246,22 @@ function DailyGoalHeatmap({
           minW={{ base: "max-content", lg: "100%" }}
         >
           {weeks.map((week) => (
-            <Box key={week.key} minW={0}>
-              <Text
-                minH={{ base: "10px", md: "12px" }}
-                fontSize={{ base: "7px", md: "8px" }}
-                lineHeight="1"
-                color="gray.500"
-                textTransform="uppercase"
-                whiteSpace="nowrap"
-                textAlign="left"
-              >
-                {week.monthLabel}
-              </Text>
-              <Box display="grid" rowGap="2px">
-                {week.days.map((day) => renderDayCell(day))}
-              </Box>
-            </Box>
+            <div key={week.key} style={WEEK_COLUMN_STYLE}>
+              <div style={WEEK_LABEL_STYLE}>{week.monthLabel}</div>
+              <div style={WEEK_DAYS_STYLE}>
+                {week.days.map((day) =>
+                  day.isBlank ? (
+                    <div key={day.key} style={DAY_CELL_BLANK_STYLE} />
+                  ) : (
+                    <div
+                      key={day.key}
+                      style={day.style}
+                      title={day.title}
+                    />
+                  ),
+                )}
+              </div>
+            </div>
           ))}
         </Box>
       </Box>
@@ -328,7 +309,7 @@ function DailyGoalHeatmap({
       </HStack>
     </Box>
   );
-}
+});
 
 export default function DailyGoalModal({
   isOpen,
@@ -399,6 +380,19 @@ export default function DailyGoalModal({
     }),
     [getLabel],
   );
+  // Stable labels object for DailyGoalHeatmap — prevents re-renders of the
+  // heavy heatmap tree on every keystroke of the goal input.
+  const heatmapLabels = useMemo(
+    () => ({
+      title: L.activityTitle,
+      subtitle: L.activitySubtitle,
+      empty: L.activityEmpty,
+      some: L.activitySome,
+      goal: L.activityGoal,
+    }),
+    [L],
+  );
+
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
 
@@ -599,13 +593,7 @@ export default function DailyGoalModal({
               dailyXpHistory={dailyXpHistory}
               currentDailyXp={currentDailyXp}
               currentGoalXp={currentGoalXp}
-              labels={{
-                title: L.activityTitle,
-                subtitle: L.activitySubtitle,
-                empty: L.activityEmpty,
-                some: L.activitySome,
-                goal: L.activityGoal,
-              }}
+              labels={heatmapLabels}
             />
           </VStack>
         </ModalBody>

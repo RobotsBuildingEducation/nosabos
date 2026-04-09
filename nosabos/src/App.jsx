@@ -3940,13 +3940,11 @@ export default function App() {
         dailyGoalPetHealth,
       });
 
-      flushSync(() => {
-        setDailyGoalOpen(false);
-        if (shouldShowTimerAfterGoal) {
-          setShouldShowTimerAfterGoal(false);
-          setTimerModalOpen(true);
-        }
-      });
+      setDailyGoalOpen(false);
+      if (shouldShowTimerAfterGoal) {
+        setShouldShowTimerAfterGoal(false);
+        setTimerModalOpen(true);
+      }
 
       const commitDailyGoal = () => {
         patchUser?.({
