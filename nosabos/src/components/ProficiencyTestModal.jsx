@@ -44,7 +44,7 @@ export default function ProficiencyTestModal({
       size="lg"
       closeOnOverlayClick={false}
       closeOnEsc={true}
-      motionPreset="slideInBottom"
+      motionPreset="none"
     >
       <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
       <ModalContent

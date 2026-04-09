@@ -1538,11 +1538,14 @@ function LessonDetailModal({
   targetLang,
 }) {
   const [gameLoading, setGameLoading] = useState(false);
+  const [lessonLoading, setLessonLoading] = useState(false);
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const [loadingModalSize, setLoadingModalSize] = useState(null);
   const isDesktop = useBreakpointValue({ base: false, md: true }) ?? false;
   const modalContentRef = useRef(null);
   const generationTokenRef = useRef(0);
+  const isTransitioningToLesson = gameLoading || lessonLoading;
+  const blockModalClose = useCallback(() => undefined, []);
 
   const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
 
@@ -1570,6 +1573,7 @@ function LessonDetailModal({
     if (!isOpen) {
       generationTokenRef.current += 1;
       setGameLoading(false);
+      setLessonLoading(false);
       setLoadingMsgIdx(0);
       setLoadingModalSize(null);
     }
@@ -1598,7 +1602,25 @@ function LessonDetailModal({
     : lesson;
   const showTutorialGameSkip = !!lesson?.isTutorial && !!lesson?.isGame;
 
+  const handleStartStandardLesson = async () => {
+    if (lessonLoading || gameLoading) return;
+
+    setLessonLoading(true);
+
+    try {
+      const didStartLesson = await onStartLesson?.(lessonWithReviewContext);
+      if (!didStartLesson) {
+        setLessonLoading(false);
+      }
+    } catch (error) {
+      console.error("Failed to start lesson from modal:", error);
+      setLessonLoading(false);
+    }
+  };
+
   const handleStartGame = async () => {
+    if (gameLoading || lessonLoading) return;
+
     captureModalSize();
     const requestToken = generationTokenRef.current + 1;
     generationTokenRef.current = requestToken;
@@ -1627,17 +1649,29 @@ function LessonDetailModal({
 
       if (requestToken !== generationTokenRef.current) return;
 
-      // Pass both lesson and pre-generated scenario to parent
-      onStartLesson(lessonWithReviewContext, scenario);
-      onClose();
+      const didStartLesson = await onStartLesson?.(
+        lessonWithReviewContext,
+        scenario,
+      );
+
+      if (requestToken !== generationTokenRef.current) return;
+      if (!didStartLesson) {
+        setGameLoading(false);
+      }
     } catch (e) {
       if (requestToken !== generationTokenRef.current) return;
       console.error("Failed to generate game scenario:", e);
-      // Fall back to normal lesson start
-      onStartLesson(lessonWithReviewContext);
-      onClose();
-    } finally {
-      if (requestToken === generationTokenRef.current) {
+
+      try {
+        const didStartLesson = await onStartLesson?.(lessonWithReviewContext);
+
+        if (requestToken !== generationTokenRef.current) return;
+        if (!didStartLesson) {
+          setGameLoading(false);
+        }
+      } catch (startError) {
+        if (requestToken !== generationTokenRef.current) return;
+        console.error("Failed to start fallback lesson from modal:", startError);
         setGameLoading(false);
       }
     }
@@ -1646,11 +1680,17 @@ function LessonDetailModal({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={gameLoading ? handleCancelGameLoading : onClose}
+      onClose={
+        gameLoading
+          ? handleCancelGameLoading
+          : lessonLoading
+            ? blockModalClose
+            : onClose
+      }
       size={gameLoading && !isDesktop ? "full" : "xl"}
       isCentered
-      closeOnOverlayClick={!gameLoading}
-      closeOnEsc={!gameLoading}
+      closeOnOverlayClick={!isTransitioningToLesson}
+      closeOnEsc={!isTransitioningToLesson}
     >
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
       <ModalContent
@@ -1807,6 +1847,7 @@ function LessonDetailModal({
               borderRadius="lg"
               top={4}
               right={4}
+              isDisabled={lessonLoading}
             />
             <ModalBody pb={6} pt={6} position="relative">
               <VStack align="stretch" spacing={6}>
@@ -1980,10 +2021,11 @@ function LessonDetailModal({
                     if (lesson.isGame) {
                       handleStartGame();
                     } else {
-                      onStartLesson(lessonWithReviewContext);
-                      onClose();
+                      handleStartStandardLesson();
                     }
                   }}
+                  isLoading={lessonLoading}
+                  loadingText={getTranslation("generic_loading")}
                   bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
                   color="white"
                   fontSize="lg"
@@ -2159,11 +2201,13 @@ export default function SkillTree({
     }
   };
 
-  const handleStartLesson = (lesson, preGeneratedScenario) => {
+  const handleStartLesson = async (lesson, preGeneratedScenario) => {
     playSound(modeSwitcherSound);
     if (onStartLesson) {
-      onStartLesson(lesson, preGeneratedScenario);
+      const startResult = await onStartLesson(lesson, preGeneratedScenario);
+      return startResult !== false;
     }
+    return false;
   };
 
   // Separate handler for flashcard completion - doesn't trigger lesson logic

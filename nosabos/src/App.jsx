@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   Box,
   Drawer,
@@ -180,6 +181,7 @@ import {
   DAILY_GOAL_PET_HEALTH_GAIN,
   buildDailyGoalResetFields,
   getDailyGoalPetHealth,
+  getNextDailyGoalResetAt,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
 import {
@@ -241,6 +243,7 @@ const TARGET_LANGUAGE_LABELS = {
   ga: "Irish",
   yua: "Yucatec Maya",
 };
+const SESSION_TIMER_STORAGE_KEY = "sessionTimerState";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
@@ -2393,9 +2396,14 @@ export default function App() {
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
+  const [timerEndsAt, setTimerEndsAt] = useState(null);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
   const timerIntervalRef = useRef(null);
-  const timerRemainingRef = useRef(null);
+  const timerHydratedRef = useRef(false);
+  const sessionTimerStorageKey = useMemo(
+    () => `${SESSION_TIMER_STORAGE_KEY}:${activeNpub || "anonymous"}`,
+    [activeNpub],
+  );
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
 
@@ -2408,7 +2416,6 @@ export default function App() {
     if (dailyGoalOpen || timerModalOpen) return;
 
     let cancelled = false;
-    let timeoutId;
 
     const checkProficiencyDecision = async () => {
       try {
@@ -2422,9 +2429,7 @@ export default function App() {
         proficiencyCheckDoneRef.current = true;
 
         if (!hasDecision && !cancelled) {
-          timeoutId = setTimeout(() => {
-            if (!cancelled) setProficiencyTestOpen(true);
-          }, 800);
+          setProficiencyTestOpen(true);
         }
       } catch (error) {
         console.warn("Failed to check proficiency decision flag:", error);
@@ -2436,9 +2441,7 @@ export default function App() {
         proficiencyCheckDoneRef.current = true;
 
         if (!fallbackHasDecision && !cancelled) {
-          timeoutId = setTimeout(() => {
-            if (!cancelled) setProficiencyTestOpen(true);
-          }, 800);
+          setProficiencyTestOpen(true);
         }
       }
     };
@@ -2447,7 +2450,6 @@ export default function App() {
 
     return () => {
       cancelled = true;
-      if (timeoutId) clearTimeout(timeoutId);
     };
   }, [
     isLoadingApp,
@@ -2501,8 +2503,107 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    timerRemainingRef.current = timerRemainingSeconds;
-  }, [timerRemainingSeconds]);
+    timerHydratedRef.current = false;
+
+    if (typeof window === "undefined") {
+      timerHydratedRef.current = true;
+      return;
+    }
+
+    try {
+      const raw = window.sessionStorage.getItem(sessionTimerStorageKey);
+      if (!raw) {
+        setTimerMinutes("20");
+        setTimerRemainingSeconds(null);
+        setTimerDurationSeconds(null);
+        setTimerActive(false);
+        setTimerPaused(false);
+        setTimerEndsAt(null);
+        setTimeUpOpen(false);
+        return;
+      }
+
+      const stored = JSON.parse(raw);
+      const storedMinutes = String(stored?.minutes || "20");
+      const storedDuration = Number(stored?.durationSeconds);
+      const storedRemaining = Number(stored?.remainingSeconds);
+      const storedEndsAt = Number(stored?.endsAt);
+      const storedActive = stored?.active === true;
+      const storedPaused = stored?.paused === true;
+
+      setTimerMinutes(storedMinutes);
+
+      if (Number.isFinite(storedDuration) && storedDuration > 0) {
+        setTimerDurationSeconds(storedDuration);
+      }
+
+      if (
+        storedPaused &&
+        Number.isFinite(storedRemaining) &&
+        storedRemaining > 0
+      ) {
+        setTimerRemainingSeconds(storedRemaining);
+        setTimerActive(true);
+        setTimerPaused(true);
+        setTimerEndsAt(null);
+        setTimeUpOpen(false);
+        return;
+      }
+
+      if (storedActive && Number.isFinite(storedEndsAt)) {
+        const nextRemaining = Math.max(
+          0,
+          Math.ceil((storedEndsAt - Date.now()) / 1000),
+        );
+
+        if (nextRemaining > 0) {
+          setTimerRemainingSeconds(nextRemaining);
+          setTimerActive(true);
+          setTimerPaused(false);
+          setTimerEndsAt(storedEndsAt);
+          setTimeUpOpen(false);
+        } else {
+          setTimerRemainingSeconds(0);
+          setTimerActive(false);
+          setTimerPaused(false);
+          setTimerEndsAt(null);
+          setTimeUpOpen(true);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to restore session timer:", error);
+    } finally {
+      timerHydratedRef.current = true;
+    }
+  }, [sessionTimerStorageKey]);
+
+  useEffect(() => {
+    if (!timerHydratedRef.current || typeof window === "undefined") return;
+
+    try {
+      window.sessionStorage.setItem(
+        sessionTimerStorageKey,
+        JSON.stringify({
+          minutes: timerMinutes,
+          remainingSeconds: timerRemainingSeconds,
+          durationSeconds: timerDurationSeconds,
+          active: timerActive,
+          paused: timerPaused,
+          endsAt: timerEndsAt,
+        }),
+      );
+    } catch (error) {
+      console.warn("Failed to persist session timer:", error);
+    }
+  }, [
+    timerMinutes,
+    timerRemainingSeconds,
+    timerDurationSeconds,
+    timerActive,
+    timerPaused,
+    timerEndsAt,
+    sessionTimerStorageKey,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -2536,6 +2637,7 @@ export default function App() {
     setTimerPaused(false);
     setTimerRemainingSeconds(null);
     setTimerDurationSeconds(null);
+    setTimerEndsAt(null);
     setTimeUpOpen(false);
   }, []);
 
@@ -2543,10 +2645,12 @@ export default function App() {
     const parsedMinutes = Math.max(1, Math.round(Number(timerMinutes) || 0));
     handleResetTimer();
     const seconds = parsedMinutes * 60;
+    const endsAt = Date.now() + seconds * 1000;
     setTimerDurationSeconds(seconds);
     setTimerRemainingSeconds(seconds);
     setTimerActive(true);
     setTimerPaused(false);
+    setTimerEndsAt(endsAt);
     setTimeUpOpen(false);
     setTimerModalOpen(false);
     if (shouldShowProficiencyAfterTimer) {
@@ -2561,6 +2665,7 @@ export default function App() {
     setTimerDurationSeconds(null);
     setTimerActive(false);
     setTimerPaused(false);
+    setTimerEndsAt(null);
   }, []);
 
   const timerHelper = useMemo(() => {
@@ -2569,28 +2674,30 @@ export default function App() {
   }, [formatTimer, timerActive, timerRemainingSeconds]);
 
   useEffect(() => {
-    if (
-      !timerActive ||
-      timerPaused ||
-      timerRemainingRef.current === null ||
-      timerRemainingRef.current <= 0
-    )
-      return;
+    if (!timerActive || timerPaused || !Number.isFinite(timerEndsAt)) return;
 
-    const id = setInterval(() => {
-      setTimerRemainingSeconds((prev) => {
-        if (prev === null) return prev;
-        if (prev <= 1) {
-          clearInterval(id);
+    const syncTimer = () => {
+      const nextRemaining = Math.max(
+        0,
+        Math.ceil((timerEndsAt - Date.now()) / 1000),
+      );
+      setTimerRemainingSeconds(nextRemaining);
+
+      if (nextRemaining <= 0) {
+        if (timerIntervalRef.current) {
+          clearInterval(timerIntervalRef.current);
           timerIntervalRef.current = null;
-          setTimerActive(false);
-          setTimerPaused(false);
-          setTimeUpOpen(true);
-          return 0;
         }
-        return prev - 1;
-      });
-    }, 1000);
+        setTimerActive(false);
+        setTimerPaused(false);
+        setTimerEndsAt(null);
+        setTimeUpOpen(true);
+      }
+    };
+
+    syncTimer();
+
+    const id = setInterval(syncTimer, 1000);
 
     timerIntervalRef.current = id;
 
@@ -2598,7 +2705,7 @@ export default function App() {
       clearInterval(id);
       timerIntervalRef.current = null;
     };
-  }, [timerActive, timerPaused, timerRemainingSeconds]);
+  }, [timerActive, timerPaused, timerEndsAt]);
 
   const handleTogglePauseTimer = useCallback(() => {
     if (!timerActive || timerRemainingSeconds === null) return;
@@ -2608,8 +2715,15 @@ export default function App() {
       timerIntervalRef.current = null;
     }
 
-    setTimerPaused((prev) => !prev);
-  }, [timerActive, timerRemainingSeconds]);
+    if (timerPaused) {
+      setTimerEndsAt(Date.now() + timerRemainingSeconds * 1000);
+      setTimerPaused(false);
+      return;
+    }
+
+    setTimerEndsAt(null);
+    setTimerPaused(true);
+  }, [timerActive, timerPaused, timerRemainingSeconds]);
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
@@ -3086,7 +3200,7 @@ export default function App() {
 
   // Handle starting a lesson from the skill tree
   const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
-    if (!lesson) return;
+    if (!lesson) return false;
     const enrichedLesson = enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons
@@ -3191,6 +3305,8 @@ export default function App() {
       } else {
         setIsTutorialMode(false);
       }
+
+      return true;
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
@@ -3202,6 +3318,7 @@ export default function App() {
         status: "error",
         duration: 3000,
       });
+      return false;
     }
   };
 
@@ -3573,8 +3690,9 @@ export default function App() {
       const activeModalContainers = document.querySelectorAll(
         ".chakra-modal__content-container",
       ).length;
-      const activeModalOverlays =
-        document.querySelectorAll(".chakra-modal__overlay").length;
+      const activeModalOverlays = document.querySelectorAll(
+        ".chakra-modal__overlay",
+      ).length;
       const modalStackStillClosing =
         activeModalContainers > 0 || activeModalOverlays > 0;
 
@@ -3803,21 +3921,120 @@ export default function App() {
     }
   }, [shouldShowTimerAfterGoal]);
 
+  const handleDailyGoalSave = useCallback(
+    (goalValue) => {
+      const parsedGoal = Math.max(
+        1,
+        Math.min(1000, Math.round(Number(goalValue) || 0)),
+      );
+      const now = new Date();
+      const resetAt = getNextDailyGoalResetAt(now);
+      const todayKey = getLocalDayKey(now);
+      const nextDailyGoalHistory = todayKey
+        ? {
+            ...(dailyGoalXpHistory || {}),
+            [todayKey]: 0,
+          }
+        : dailyGoalXpHistory || {};
+      const nextPetHealth = getDailyGoalPetHealth({
+        dailyGoalPetHealth,
+      });
+
+      flushSync(() => {
+        setDailyGoalOpen(false);
+        if (shouldShowTimerAfterGoal) {
+          setShouldShowTimerAfterGoal(false);
+          setTimerModalOpen(true);
+        }
+      });
+
+      const commitDailyGoal = () => {
+        patchUser?.({
+          dailyGoalXp: parsedGoal,
+          dailyXp: 0,
+          dailyResetAt: resetAt,
+          dailyHasCelebrated: false,
+          dailyGoalPetHealth: nextPetHealth,
+          ...(todayKey
+            ? {
+                dailyXpHistory: nextDailyGoalHistory,
+              }
+            : {}),
+        });
+
+        if (!activeNpub) {
+          toast({
+            status: "error",
+            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+            description:
+              appLanguage === "es"
+                ? "No se encontró el usuario actual."
+                : "Couldn't find the current user.",
+          });
+          return;
+        }
+
+        void setDoc(
+          doc(database, "users", activeNpub),
+          {
+            dailyGoalXp: parsedGoal,
+            dailyXp: 0,
+            dailyResetAt: resetAt,
+            dailyHasCelebrated: false,
+            dailyGoalPetHealth: nextPetHealth,
+            ...(todayKey
+              ? {
+                  dailyXpHistory: nextDailyGoalHistory,
+                }
+              : {}),
+            updatedAt: now.toISOString(),
+          },
+          { merge: true },
+        ).catch((error) => {
+          console.error("Failed to save daily goal:", error);
+          toast({
+            status: "error",
+            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+            description: String(error?.message || error),
+          });
+        });
+      };
+
+      if (typeof window !== "undefined") {
+        window.setTimeout(commitDailyGoal, 0);
+      } else {
+        commitDailyGoal();
+      }
+    },
+    [
+      activeNpub,
+      appLanguage,
+      dailyGoalPetHealth,
+      dailyGoalXpHistory,
+      patchUser,
+      shouldShowTimerAfterGoal,
+      toast,
+    ],
+  );
+
   const handleTimerModalClose = useCallback(() => {
-    setTimerModalOpen(false);
-    if (shouldShowProficiencyAfterTimer) {
-      setShouldShowProficiencyAfterTimer(false);
-      setProficiencyTestOpen(true);
-    }
+    flushSync(() => {
+      setTimerModalOpen(false);
+      if (shouldShowProficiencyAfterTimer) {
+        setShouldShowProficiencyAfterTimer(false);
+        setProficiencyTestOpen(true);
+      }
+    });
   }, [shouldShowProficiencyAfterTimer]);
 
   const handleProficiencySkip = useCallback(async () => {
-    setProficiencyTestOpen(false);
-    // Chain to Getting Started modal immediately
-    if (shouldShowGettingStartedAfterProficiency) {
-      setShouldShowGettingStartedAfterProficiency(false);
-      setGettingStartedOpen(true);
-    }
+    flushSync(() => {
+      setProficiencyTestOpen(false);
+      if (shouldShowGettingStartedAfterProficiency) {
+        setShouldShowGettingStartedAfterProficiency(false);
+        setGettingStartedOpen(true);
+      }
+    });
     // Persist skip so the modal doesn't reappear every session.
     // "skipped" is a sentinel — treated as falsy by the placement check
     // but truthy enough to prevent the modal from re-opening.
@@ -3878,13 +4095,21 @@ export default function App() {
   }, [resolveNpub, patchUser]);
 
   const handleGettingStartedSkip = useCallback(() => {
-    setGettingStartedOpen(false);
-    markGettingStartedShown();
+    flushSync(() => {
+      setGettingStartedOpen(false);
+    });
+    window.setTimeout(() => {
+      markGettingStartedShown();
+    }, 0);
   }, [markGettingStartedShown]);
 
   const handleGettingStartedStart = useCallback(() => {
-    setGettingStartedOpen(false);
-    markGettingStartedShown();
+    flushSync(() => {
+      setGettingStartedOpen(false);
+    });
+    window.setTimeout(() => {
+      markGettingStartedShown();
+    }, 0);
 
     // Find the tutorial lesson from the Pre-A1 learning path and launch it directly
     const units = getLearningPath(resolvedTargetLang, "Pre-A1");
@@ -5478,6 +5703,7 @@ export default function App() {
       <DailyGoalModal
         isOpen={dailyGoalOpen}
         onClose={handleDailyGoalClose}
+        onSaveGoal={handleDailyGoalSave}
         npub={activeNpub}
         lang={appLanguage}
         defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
@@ -5550,11 +5776,21 @@ export default function App() {
           <ModalCloseButton color="white" />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
             <VStack spacing={5} textAlign="center">
-              <CelebrationOrb
-                size={120}
-                accentGradient="linear(135deg, #c084fc, #7c3aed, #22d3ee)"
-                particleColor="cyan.100"
-              />
+              <Box
+                px={6}
+                py={4}
+                borderRadius="2xl"
+                bg="whiteAlpha.180"
+                boxShadow="0 20px 50px rgba(91, 33, 182, 0.24)"
+                border="1px solid"
+                borderColor="whiteAlpha.300"
+              >
+                <RandomCharacter
+                  key={`${timeUpOpen}-${timerDurationSeconds || 0}`}
+                  width="112px"
+                  notSoRandomCharacter={"32"}
+                />
+              </Box>
               <VStack spacing={2}>
                 <Text fontSize="lg" fontWeight="semibold">
                   {t.timer_times_up_subtitle || "Focus session complete"}
