@@ -31,7 +31,6 @@ import {
 import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
 import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
@@ -334,6 +333,7 @@ function DailyGoalHeatmap({
 export default function DailyGoalModal({
   isOpen,
   onClose,
+  onSaveGoal,
   npub,
   lang = "en",
   defaultGoal = 100,
@@ -433,12 +433,18 @@ export default function DailyGoalModal({
   const approxLevels = (parsed / 100).toFixed(parsed % 100 === 0 ? 0 : 1);
 
   const save = async () => {
+    if (onSaveGoal) {
+      onSaveGoal(parsed);
+      void playSound(selectSound);
+      return;
+    }
+
     if (!npub) {
       console.warn(L.errNoUserTitle, L.errNoUserDesc);
       return;
     }
+
     try {
-      playSound(submitActionSound);
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
       const todayKey = getLocalDayKey(new Date());
       await setDoc(
@@ -464,6 +470,7 @@ export default function DailyGoalModal({
         { merge: true },
       );
       onClose?.();
+      void playSound(selectSound);
     } catch (e) {
       console.error(L.errSaveTitle, e);
     }
@@ -481,7 +488,8 @@ export default function DailyGoalModal({
       size="lg"
       closeOnOverlayClick={false}
       closeOnEsc={true}
-      motionPreset="slideInBottom"
+      motionPreset="none"
+      returnFocusOnClose={false}
     >
       <ModalOverlay bg="blackAlpha.700" />
 

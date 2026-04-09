@@ -245,8 +245,7 @@ export const translations = {
     tutorial_bitcoin_modal_title: "Create Scholarships",
     tutorial_bitcoin_modal_subtitle:
       "Send Bitcoin to educators any time you gain XP",
-    tutorial_bitcoin_modal_body:
-      "This can be done later in your settings.",
+    tutorial_bitcoin_modal_body: "This can be done later in your settings.",
     tutorial_bitcoin_modal_skip: "Maybe later",
     tutorial_bitcoin_modal_done: "Done",
     bitcoin_modal_reload_note:
@@ -669,7 +668,7 @@ export const translations = {
     timer_times_up_title: "Time's up!",
     timer_times_up_subtitle: "Focus session complete",
     timer_times_up_duration: "You stayed on task for {minutes} minutes.",
-    timer_times_up_no_duration: "Nice work wrapping up your timer.",
+    timer_times_up_no_duration: "Nice work wrapping up your timer. Good job!",
     timer_times_up_close: "Close",
     timer_times_up_restart: "Start another timer",
     teams_drawer_title: "Teams & Community",
@@ -1199,8 +1198,7 @@ export const translations = {
     tutorial_bitcoin_modal_title: "Crea becas con aprendizaje",
     tutorial_bitcoin_modal_subtitle:
       "Envía Bitcoin a educadores cada vez que ganes XP",
-    tutorial_bitcoin_modal_body:
-      "Esto se puede hacer después en tus ajustes.",
+    tutorial_bitcoin_modal_body: "Esto se puede hacer después en tus ajustes.",
     tutorial_bitcoin_modal_skip: "Tal vez después",
     tutorial_bitcoin_modal_done: "Listo",
     bitcoin_modal_reload_note:

@@ -2,6 +2,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useLayoutEffect,
   useRef,
   useMemo,
 } from "react";
@@ -30,11 +31,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
-// Pulse animation for the popover
-const pulseKeyframes = keyframes`
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1);  }
+// Keep the tutorial card lively without scaling the layout box.
+const glowKeyframes = keyframes`
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.58; }
 `;
 
 // Button explanations configuration - ordered left to right as they appear on skill tree
@@ -124,7 +124,7 @@ export default function TutorialActionBarPopovers({
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
-  const [arrowLeft, setArrowLeft] = useState("50%");
+  const [arrowOffset, setArrowOffset] = useState(null);
   const popoverRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
 
@@ -146,7 +146,12 @@ export default function TutorialActionBarPopovers({
         20,
         Math.min(popoverRect.width - 20, arrowOffset),
       );
-      setArrowLeft(`${clamped}px`);
+      setArrowOffset((prev) => {
+        if (typeof prev === "number" && Math.abs(prev - clamped) < 0.5) {
+          return prev;
+        }
+        return clamped;
+      });
     },
     [activeExplanations],
   );
@@ -155,19 +160,21 @@ export default function TutorialActionBarPopovers({
     if (!isActive) {
       setCurrentStep(0);
       setIsVisible(false);
-      setArrowLeft("50%");
+      setArrowOffset(null);
       return;
     }
     setIsVisible(true);
   }, [isActive]);
 
-  // Measure arrow after render when step changes or on resize
-  useEffect(() => {
+  // Measure before paint so the arrow does not visibly "catch up" to each step.
+  useLayoutEffect(() => {
     if (!isActive || !isVisible) return;
-    // Use rAF to ensure popoverRef is measured after layout
+    measureArrow(currentStep);
     const frame = requestAnimationFrame(() => measureArrow(currentStep));
 
-    const handleResize = () => measureArrow(currentStep);
+    const handleResize = () => {
+      requestAnimationFrame(() => measureArrow(currentStep));
+    };
     window.addEventListener("resize", handleResize);
     return () => {
       cancelAnimationFrame(frame);
@@ -220,13 +227,27 @@ export default function TutorialActionBarPopovers({
     >
       <Fade in={isVisible}>
         <Box
+          position="relative"
           bg="linear-gradient(135deg, rgba(95, 51, 189, 0.95) 0%, rgba(131, 61, 244, 0.95) 100%)"
           borderRadius="2xl"
           p={5}
           boxShadow="0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255,255,255,0.1)"
           backdropFilter="blur(12px)"
-          animation={`${pulseKeyframes} 2s ease-in-out infinite`}
           border="1px solid cyan"
+          isolation="isolate"
+          _before={{
+            content: '""',
+            position: "absolute",
+            inset: "-4px",
+            borderRadius: "inherit",
+            background:
+              "linear-gradient(135deg, rgba(34, 211, 238, 0.35) 0%, rgba(167, 139, 250, 0.28) 100%)",
+            filter: "blur(16px)",
+            opacity: 0.32,
+            zIndex: -1,
+            pointerEvents: "none",
+            animation: `${glowKeyframes} 2.4s ease-in-out infinite`,
+          }}
         >
           <VStack spacing={3} align="center">
             {/* Icon and Label */}
@@ -322,14 +343,19 @@ export default function TutorialActionBarPopovers({
           <Box
             position="absolute"
             bottom="-10px"
-            left={arrowLeft}
-            transform="translateX(-50%)"
+            left={arrowOffset == null ? "50%" : "0"}
+            transform={
+              arrowOffset == null
+                ? "translateX(-12px)"
+                : `translateX(${arrowOffset - 12}px)`
+            }
             w={0}
             h={0}
             borderLeft="12px solid transparent"
             borderRight="12px solid transparent"
             borderTop="12px solid rgba(139, 92, 246, 0.95)"
-            transition="left 0.3s ease"
+            transition="transform 0.22s ease"
+            willChange="transform"
           />
         </Box>
       </Fade>
