@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { CloseIcon } from "@chakra-ui/icons";
 import {
   Accordion,
   AccordionButton,
@@ -7,11 +14,8 @@ import {
   AccordionPanel,
   Box,
   Button,
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerOverlay,
   HStack,
+  IconButton,
   Link,
   Radio,
   RadioGroup,
@@ -20,11 +24,9 @@ import {
 } from "@chakra-ui/react";
 
 import { BitcoinWalletSection } from "./IdentityDrawer";
-import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import RandomCharacter from "./RandomCharacter";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
-import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import { translations } from "../utils/translation";
 
 export default function BitcoinSupportModal({
@@ -38,15 +40,75 @@ export default function BitcoinSupportModal({
   const lang = userLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
+  const shellRef = useRef(null);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
-  const swipeDismiss = useBottomDrawerSwipeDismiss({
-    isOpen,
-    onClose,
-  });
 
   useEffect(() => {
     setSelectedIdentity(identity || "");
   }, [identity]);
+
+  useEffect(() => {
+    if (
+      !isOpen ||
+      typeof window === "undefined" ||
+      typeof document === "undefined"
+    ) {
+      return undefined;
+    }
+
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    body.style.overscrollBehavior = "none";
+
+    let rafOne = null;
+    let rafTwo = null;
+
+    // Force a compositor refresh on open. The installed iOS PWA seems to
+    // keep stale hit-testing until the page scrolls; nudging the fixed shell
+    // is a lightweight way to trigger the same refresh without user input.
+    rafOne = window.requestAnimationFrame(() => {
+      const node = shellRef.current;
+      if (!node) return;
+      node.style.transform = "translate3d(0, 0.5px, 0)";
+      void node.getBoundingClientRect();
+      rafTwo = window.requestAnimationFrame(() => {
+        if (shellRef.current) {
+          shellRef.current.style.transform = "translate3d(0, 0, 0)";
+        }
+      });
+    });
+
+    return () => {
+      if (rafOne !== null) window.cancelAnimationFrame(rafOne);
+      if (rafTwo !== null) window.cancelAnimationFrame(rafTwo);
+      html.style.overflow = previousHtmlOverflow;
+      body.style.overflow = previousBodyOverflow;
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || typeof window === "undefined") return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        onClose?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
 
   const selectedRecipient = useMemo(
     () =>
@@ -75,17 +137,20 @@ export default function BitcoinSupportModal({
   const closeLabel =
     ui.tutorial_bitcoin_modal_done || (lang === "es" ? "Listo" : "Done");
 
-  const handleRecipientSelect = useCallback((nextIdentity) => {
-    const nextValue = nextIdentity || "";
-    setSelectedIdentity(nextValue);
-    if (
-      nextValue &&
-      nextValue !== identity &&
-      typeof onSelectIdentity === "function"
-    ) {
-      onSelectIdentity(nextValue);
-    }
-  }, [identity, onSelectIdentity]);
+  const handleRecipientSelect = useCallback(
+    (nextIdentity) => {
+      const nextValue = nextIdentity || "";
+      setSelectedIdentity(nextValue);
+      if (
+        nextValue &&
+        nextValue !== identity &&
+        typeof onSelectIdentity === "function"
+      ) {
+        onSelectIdentity(nextValue);
+      }
+    },
+    [identity, onSelectIdentity],
+  );
 
   const handleConfirm = useCallback(() => {
     onClose?.();
@@ -110,7 +175,6 @@ export default function BitcoinSupportModal({
                 <HStack
                   role="radio"
                   aria-checked={isSelected}
-                  data-drawer-swipe-ignore="true"
                   tabIndex={isIdentitySaving ? -1 : 0}
                   spacing={2}
                   align="center"
@@ -132,11 +196,6 @@ export default function BitcoinSupportModal({
                   }}
                   _active={{
                     transform: isIdentitySaving ? "none" : "scale(0.98)",
-                  }}
-                  userSelect="none"
-                  sx={{
-                    WebkitUserSelect: "none",
-                    WebkitTouchCallout: "none",
                   }}
                   onClick={() => {
                     if (!isIdentitySaving) {
@@ -205,197 +264,234 @@ export default function BitcoinSupportModal({
     </>
   );
 
+  if (!isOpen) return null;
+
   return (
-    <Drawer
-      isOpen={isOpen}
-      placement="bottom"
-      onClose={onClose}
-      closeOnOverlayClick={false}
-      returnFocusOnClose={false}
+    <Box
+      position="fixed"
+      inset={0}
+      zIndex={1600}
+      bg="rgba(0, 0, 0, 0.72)"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      px={{ base: 4, md: 6 }}
+      py={{ base: 4, md: 6 }}
+      touchAction="none"
+      overscrollBehavior="none"
+      onMouseDown={(event) => event.stopPropagation()}
+      onTouchStart={(event) => event.stopPropagation()}
+      onTouchMove={(event) => {
+        if (event.target === event.currentTarget) {
+          event.preventDefault();
+        }
+      }}
     >
-      <DrawerOverlay
-        {...swipeDismiss.overlayProps}
-        bg="blackAlpha.700"
-        backdropFilter="blur(4px)"
-      />
-      <DrawerContent
-        {...swipeDismiss.drawerContentProps}
+      <Box
+        ref={shellRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         bg="#171923"
         color="gray.100"
-        borderTopWidth="1px"
+        border="1px solid"
         borderColor="#2a2f3a"
-        borderTopRadius="24px"
+        borderRadius="2xl"
+        boxShadow="xl"
+        overflow="hidden"
+        pointerEvents="auto"
+        position="relative"
+        width="100%"
+        maxW={{ base: "92vw", md: "720px" }}
+        h={{ base: "min(80vh, 720px)", md: "min(78vh, 760px)" }}
+        maxH={{ base: "calc(100vh - 2.5rem)", md: "calc(100vh - 4rem)" }}
         display="flex"
         flexDirection="column"
-        overflow="hidden"
-        maxH={{ base: "86vh", md: "82vh" }}
+        onMouseDown={(event) => event.stopPropagation()}
+        onTouchStart={(event) => event.stopPropagation()}
+        sx={{
+          isolation: "isolate",
+          transform: "translate3d(0, 0, 0)",
+          WebkitTransform: "translate3d(0, 0, 0)",
+          willChange: "transform",
+          "@supports (height: 100dvh)": {
+            height: {
+              base: "min(80dvh, 720px)",
+              md: "min(78dvh, 760px)",
+            },
+            maxHeight: {
+              base: "calc(100dvh - 2.5rem)",
+              md: "calc(100dvh - 4rem)",
+            },
+          },
+        }}
       >
-        <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
-        <DrawerBody px={0} pb={0} display="flex" flexDirection="column" flex={1} minH={0}>
-          <Box
-            position="relative"
-            bgGradient="linear(to-r, #f7931a, #ffb347)"
-            px={{ base: 5, md: 7 }}
-            py={{ base: 4, md: 5 }}
-            borderBottom="1px solid"
-            borderColor="rgba(0, 0, 0, 0.18)"
-            userSelect="none"
-            sx={{
-              WebkitUserSelect: "none",
-              WebkitTouchCallout: "none",
-            }}
-          >
-            <VStack spacing={3} align="center" textAlign="center">
-              <RandomCharacter width="82px" notSoRandomCharacter={"40"} />
-              <Text
-                fontWeight="bold"
-                fontSize={{ base: "xl", md: "2xl" }}
-                lineHeight="1.2"
-                color="white"
-              >
-                {title}
-              </Text>
-              <Text
-                fontSize={{ base: "xs", md: "sm" }}
-                maxW="560px"
-                lineHeight="1.45"
-                color="whiteAlpha.900"
-              >
-                {subtitle}
-              </Text>
-            </VStack>
-          </Box>
+        <IconButton
+          aria-label={lang === "es" ? "Cerrar" : "Close"}
+          icon={<CloseIcon boxSize={3} />}
+          variant="ghost"
+          color="white"
+          _hover={{ color: "whiteAlpha.900", bg: "blackAlpha.200" }}
+          position="absolute"
+          top={4}
+          right={4}
+          zIndex={1}
+          onClick={onClose}
+        />
 
-          <Box
-            px={{ base: 4, md: 5 }}
-            py={{ base: 4, md: 5 }}
-            bg="#171923"
-            overflowY="auto"
-            flex="1"
-            minH={0}
-            data-drawer-swipe-ignore="true"
-            sx={{
-              WebkitOverflowScrolling: "touch",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              "&::-webkit-scrollbar": {
-                display: "none",
-              },
-            }}
-          >
-            <VStack align="stretch" spacing={4} width="100%">
-              <BitcoinWalletSection
-                userLanguage={lang}
-                identity={selectedIdentity}
-                onSelectIdentity={onSelectIdentity}
-                isIdentitySaving={isIdentitySaving}
-                showSectionTitle={false}
-                showScholarshipNote={false}
-                containerProps={{
-                  bg: "#171923",
-                  rounded: "xl",
-                  p: 0,
-                  mx: { base: 0, md: "auto" },
-                }}
-                sectionBg="#171923"
-                identitySelectorPlacement="bottom"
-                contentMaxW="420px"
-                showIdentitySelector={false}
-                compactCardMobile
-                compactCardDesktop
-                hydrateWalletOnMount={false}
-              />
-              <Box w="100%" maxW="420px" mx="auto" pt={2}>
-                {cashuWallet ? (
-                  <Accordion allowToggle width="100%">
-                    <AccordionItem border="0">
-                      <AccordionButton
-                        px={0}
-                        py={2}
-                        border="0"
-                        borderRadius="0"
-                        boxShadow="none"
-                        outline="none"
-                        _hover={{ bg: "transparent" }}
-                        _expanded={{ bg: "transparent" }}
-                        _active={{ bg: "transparent" }}
-                        _focus={{ boxShadow: "none", outline: "none" }}
-                        _focusVisible={{ boxShadow: "none", outline: "none" }}
-                        userSelect="none"
-                        sx={{
-                          WebkitUserSelect: "none",
-                          WebkitTouchCallout: "none",
-                          WebkitTapHighlightColor: "transparent",
-                          "&[data-focus]": {
-                            boxShadow: "none",
-                            outline: "none",
-                          },
-                          "&[data-focus-visible]": {
-                            boxShadow: "none",
-                            outline: "none",
-                          },
-                        }}
-                      >
-                        <Box flex="1" textAlign="left">
-                          <Text fontSize="sm">
-                            {lang === "es"
-                              ? "Elige un destinatario"
-                              : "Choose a recipient"}
+        <Box
+          bgGradient="linear(to-r, #f7931a, #ffb347)"
+          px={{ base: 5, md: 7 }}
+          py={{ base: 4, md: 5 }}
+          borderBottom="1px solid"
+          borderColor="rgba(0, 0, 0, 0.18)"
+        >
+          <VStack spacing={3} align="center" textAlign="center">
+            <RandomCharacter width="82px" notSoRandomCharacter={"40"} />
+            <Text
+              fontWeight="bold"
+              fontSize={{ base: "xl", md: "2xl" }}
+              lineHeight="1.2"
+              color="white"
+            >
+              {title}
+            </Text>
+            <Text
+              fontSize={{ base: "xs", md: "sm" }}
+              maxW="560px"
+              lineHeight="1.45"
+              color="whiteAlpha.900"
+            >
+              {subtitle}
+            </Text>
+          </VStack>
+        </Box>
+
+        <Box
+          px={{ base: 4, md: 5 }}
+          py={{ base: 4, md: 5 }}
+          bg="#171923"
+          overflowY="auto"
+          flex="1"
+          minH={0}
+          overscrollBehavior="contain"
+          touchAction="pan-y"
+          onTouchMove={(event) => event.stopPropagation()}
+          sx={{
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            "&::-webkit-scrollbar": {
+              display: "none",
+            },
+          }}
+        >
+          <VStack align="stretch" spacing={4} width="100%">
+            <BitcoinWalletSection
+              userLanguage={lang}
+              identity={selectedIdentity}
+              onSelectIdentity={onSelectIdentity}
+              isIdentitySaving={isIdentitySaving}
+              showSectionTitle={false}
+              showScholarshipNote={false}
+              containerProps={{
+                bg: "#171923",
+                rounded: "xl",
+                p: 0,
+                mx: { base: 0, md: "auto" },
+              }}
+              sectionBg="#171923"
+              identitySelectorPlacement="bottom"
+              contentMaxW="420px"
+              showIdentitySelector={false}
+              compactCardMobile
+              compactCardDesktop
+              hydrateWalletOnMount={false}
+            />
+
+            <Box w="100%" maxW="420px" mx="auto" pt={2}>
+              {cashuWallet ? (
+                <Accordion allowToggle width="100%">
+                  <AccordionItem border="0">
+                    <AccordionButton
+                      px={0}
+                      py={2}
+                      border="0"
+                      borderRadius="0"
+                      boxShadow="none"
+                      outline="none"
+                      _hover={{ bg: "transparent" }}
+                      _expanded={{ bg: "transparent" }}
+                      _active={{ bg: "transparent" }}
+                      _focus={{ boxShadow: "none", outline: "none" }}
+                      _focusVisible={{ boxShadow: "none", outline: "none" }}
+                      sx={{
+                        WebkitTapHighlightColor: "transparent",
+                        "&[data-focus]": {
+                          boxShadow: "none",
+                          outline: "none",
+                        },
+                        "&[data-focus-visible]": {
+                          boxShadow: "none",
+                          outline: "none",
+                        },
+                      }}
+                    >
+                      <Box flex="1" textAlign="left">
+                        <Text fontSize="sm">
+                          {lang === "es"
+                            ? "Elige un destinatario"
+                            : "Choose a recipient"}
+                        </Text>
+                        {selectedRecipient ? (
+                          <Text fontSize="xs" color="gray.400" mt={1}>
+                            {selectedRecipient.label}
                           </Text>
-                          {selectedRecipient ? (
-                            <Text fontSize="xs" color="gray.400" mt={1}>
-                              {selectedRecipient.label}
-                            </Text>
-                          ) : null}
-                        </Box>
-                        <AccordionIcon />
-                      </AccordionButton>
-                      <AccordionPanel px={0} pt={2} pb={0}>
-                        {recipientSelectorContent}
-                      </AccordionPanel>
-                    </AccordionItem>
-                  </Accordion>
-                ) : (
-                  <>
-                    <Text fontSize="sm" mb={2} textAlign="left">
-                      {lang === "es"
-                        ? "Elige un destinatario"
-                        : "Choose a recipient"}
-                    </Text>
-                    {recipientSelectorContent}
-                  </>
-                )}
-              </Box>
-            </VStack>
-          </Box>
+                        ) : null}
+                      </Box>
+                      <AccordionIcon />
+                    </AccordionButton>
+                    <AccordionPanel px={0} pt={2} pb={0}>
+                      {recipientSelectorContent}
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              ) : (
+                <>
+                  <Text fontSize="sm" mb={2} textAlign="left">
+                    {lang === "es"
+                      ? "Elige un destinatario"
+                      : "Choose a recipient"}
+                  </Text>
+                  {recipientSelectorContent}
+                </>
+              )}
+            </Box>
+          </VStack>
+        </Box>
 
-          <Box
-            px={{ base: 4, md: 5 }}
-            py={{ base: 3, md: 4 }}
-            bg="#171923"
-            data-drawer-swipe-ignore="true"
-            userSelect="none"
-            sx={{
-              WebkitUserSelect: "none",
-              WebkitTouchCallout: "none",
-            }}
-          >
-            <VStack spacing={2} width="100%">
-              <Box display="flex" justifyContent="flex-end" width="100%" gap={3}>
-                <Button variant="ghost" onClick={onClose}>
-                  {skipLabel}
-                </Button>
-                <Button colorScheme="teal" onClick={handleConfirm}>
-                  {closeLabel}
-                </Button>
-              </Box>
-              <Text fontSize="xs" color="gray.400" textAlign="center">
-                {footerNote}
-              </Text>
-            </VStack>
-          </Box>
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
+        <Box
+          px={{ base: 4, md: 5 }}
+          py={{ base: 3, md: 4 }}
+          bg="#171923"
+          borderTop="1px solid"
+          borderColor="whiteAlpha.100"
+        >
+          <VStack spacing={2} width="100%">
+            <Box display="flex" justifyContent="flex-end" width="100%" gap={3}>
+              <Button variant="ghost" onClick={onClose}>
+                {skipLabel}
+              </Button>
+              <Button colorScheme="teal" onClick={handleConfirm}>
+                {closeLabel}
+              </Button>
+            </Box>
+            <Text fontSize="xs" color="gray.400" textAlign="center">
+              {footerNote}
+            </Text>
+          </VStack>
+        </Box>
+      </Box>
+    </Box>
   );
 }

@@ -3494,6 +3494,13 @@ export default function App() {
     setShowCompletionModal(false);
     setCompletedLessonData(null);
 
+    if (pendingTutorialBitcoinModalRef.current) {
+      // Queue the Bitcoin modal and let the effect below wait until the
+      // previous Chakra modal overlay is fully gone before opening it.
+      setPendingTutorialBitcoinModal(true);
+      pendingTutorialBitcoinModalRef.current = false;
+    }
+
     // Return to skill tree
     handleReturnToSkillTree();
   }, [handleReturnToSkillTree]);
@@ -3504,13 +3511,6 @@ export default function App() {
     pendingTutorialBitcoinModalRef.current = false;
     void markTutorialBitcoinModalShown();
   }, [markTutorialBitcoinModalShown]);
-
-  const handleCompletionModalCloseComplete = useCallback(() => {
-    if (pendingTutorialBitcoinModalRef.current) {
-      setPendingTutorialBitcoinModal(true);
-      pendingTutorialBitcoinModalRef.current = false;
-    }
-  }, []);
 
   // Handle closing the proficiency completion modal and navigating to next level
   const handleCloseProficiencyCompletionModal = useCallback(() => {
@@ -3556,9 +3556,51 @@ export default function App() {
     ) {
       return;
     }
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      setShowTutorialBitcoinModal(true);
+      setPendingTutorialBitcoinModal(false);
+      return;
+    }
 
-    setShowTutorialBitcoinModal(true);
-    setPendingTutorialBitcoinModal(false);
+    let cancelled = false;
+    let timeoutId = null;
+    let rafId = null;
+    let attempts = 0;
+
+    const tryOpen = () => {
+      if (cancelled) return;
+
+      const activeModalContainers = document.querySelectorAll(
+        ".chakra-modal__content-container",
+      ).length;
+      const activeModalOverlays =
+        document.querySelectorAll(".chakra-modal__overlay").length;
+      const modalStackStillClosing =
+        activeModalContainers > 0 || activeModalOverlays > 0;
+
+      if (!modalStackStillClosing || attempts >= 12) {
+        setShowTutorialBitcoinModal(true);
+        setPendingTutorialBitcoinModal(false);
+        return;
+      }
+
+      attempts += 1;
+      timeoutId = window.setTimeout(tryOpen, 60);
+    };
+
+    rafId = window.requestAnimationFrame(() => {
+      timeoutId = window.setTimeout(tryOpen, 0);
+    });
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [
     celebrateOpen,
     pendingTutorialBitcoinModal,
@@ -5639,7 +5681,6 @@ export default function App() {
       <Modal
         isOpen={showCompletionModal}
         onClose={handleCloseCompletionModal}
-        onCloseComplete={handleCompletionModalCloseComplete}
         returnFocusOnClose={false}
         isCentered
         size="lg"
