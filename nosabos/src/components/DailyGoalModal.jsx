@@ -396,6 +396,33 @@ export default function DailyGoalModal({
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
 
+  // Lazy-mount the XP-activity heatmap AFTER the modal shell paints.
+  // The heatmap is still ~371 DOM nodes + a scrollable grid; rendering
+  // it on the same tick the modal opens is the last remaining cause of
+  // perceptible lag. Deferring to the next frame lets the modal appear
+  // instantly, and the heatmap fills in immediately afterwards.
+  const [heatmapReady, setHeatmapReady] = useState(false);
+  useEffect(() => {
+    if (!isOpen) {
+      setHeatmapReady(false);
+      return undefined;
+    }
+    if (typeof window === "undefined") {
+      setHeatmapReady(true);
+      return undefined;
+    }
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        setHeatmapReady(true);
+      });
+    });
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) window.cancelAnimationFrame(secondFrame);
+    };
+  }, [isOpen]);
+
   // Reset field when modal re-opens or default changes
   useEffect(() => {
     if (isOpen) {
@@ -587,14 +614,25 @@ export default function DailyGoalModal({
               </Text>
             </FormControl>
 
-            <DailyGoalHeatmap
-              lang={resolvedLang}
-              completedGoalDates={completedGoalDates}
-              dailyXpHistory={dailyXpHistory}
-              currentDailyXp={currentDailyXp}
-              currentGoalXp={currentGoalXp}
-              labels={heatmapLabels}
-            />
+            {heatmapReady ? (
+              <DailyGoalHeatmap
+                lang={resolvedLang}
+                completedGoalDates={completedGoalDates}
+                dailyXpHistory={dailyXpHistory}
+                currentDailyXp={currentDailyXp}
+                currentGoalXp={currentGoalXp}
+                labels={heatmapLabels}
+              />
+            ) : (
+              <Box
+                p={4}
+                borderRadius="xl"
+                bg="gray.800"
+                border="1px solid"
+                borderColor="gray.700"
+                minH={{ base: "150px", md: "170px" }}
+              />
+            )}
           </VStack>
         </ModalBody>
         {/* Footer */}
