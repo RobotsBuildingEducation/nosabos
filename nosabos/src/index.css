@@ -9,6 +9,14 @@ body {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  --window-scrollbar-track: rgba(3, 8, 20, 0.98);
+  --window-scrollbar-track-edge: rgba(30, 64, 175, 0.2);
+  --window-scrollbar-thumb-start: #0284c7;
+  --window-scrollbar-thumb-mid: #1d4ed8;
+  --window-scrollbar-thumb-end: #312e81;
+  --window-scrollbar-thumb-hover-start: #0ea5e9;
+  --window-scrollbar-thumb-hover-mid: #2563eb;
+  --window-scrollbar-thumb-hover-end: #3730a3;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -42,6 +50,64 @@ body {
   min-height: 100vh;
   min-height: 100dvh;
   overflow-x: hidden;
+}
+
+@media (min-width: 768px) and (hover: hover) and (pointer: fine) {
+  html,
+  body,
+  #root,
+  * {
+    scrollbar-color: var(--window-scrollbar-thumb-mid)
+      var(--window-scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(56, 189, 248, 0.08),
+        rgba(139, 92, 246, 0.08)
+      ),
+      var(--window-scrollbar-track);
+    border-left: 1px solid var(--window-scrollbar-track-edge);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+      180deg,
+      var(--window-scrollbar-thumb-start) 0%,
+      var(--window-scrollbar-thumb-mid) 48%,
+      var(--window-scrollbar-thumb-end) 100%
+    );
+    border-radius: 999px;
+    border: 0;
+    background-clip: border-box;
+    min-height: 96px;
+    box-shadow:
+      0 0 0 1px rgba(129, 140, 248, 0.18),
+      0 0 18px rgba(99, 102, 241, 0.24);
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+      180deg,
+      var(--window-scrollbar-thumb-hover-start) 0%,
+      var(--window-scrollbar-thumb-hover-mid) 48%,
+      var(--window-scrollbar-thumb-hover-end) 100%
+    );
+    box-shadow:
+      0 0 0 1px rgba(167, 139, 250, 0.28),
+      0 0 22px rgba(99, 102, 241, 0.34);
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: var(--window-scrollbar-track);
+  }
 }
 
 /* Hide scrollbars that Chakra adds to modal bodies so the dialogs stay clean */
