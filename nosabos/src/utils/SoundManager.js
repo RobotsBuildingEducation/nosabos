@@ -621,6 +621,54 @@ class SoundManager {
       synth.triggerAttackRelease("G5", "32n", now + 0.08);
     },
 
+    // Lesson start - cute, rounded launch cue for starting a lesson
+    lessonStart: () => {
+      const body = this.createDisposableSynth(
+        {
+          type: "triangle",
+          attack: 0.012,
+          decay: 0.16,
+          sustain: 0.04,
+          release: 0.18,
+        },
+        VOL.QUIET - 1,
+      );
+
+      const lead = this.getSynth({
+        type: "triangle",
+        attack: 0.008,
+        decay: 0.12,
+        sustain: 0.03,
+        release: 0.14,
+      });
+      lead.volume.value = VOL.SOFT;
+
+      const shimmer = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.02,
+          decay: 0.16,
+          sustain: 0.04,
+          release: 0.2,
+        },
+        VOL.QUIET,
+        800,
+      );
+
+      const now = Tone.now();
+      body.triggerAttackRelease("C3", "8n", now);
+      body.triggerAttackRelease("G3", "8n", now + 0.1);
+
+      ["C4", "E4", "G4"].forEach((note, i) => {
+        lead.triggerAttackRelease(note, "16n", now + i * 0.06);
+      });
+
+      shimmer.triggerAttackRelease("G4", "16n", now + 0.08);
+      shimmer.triggerAttackRelease("C5", "8n", now + 0.16);
+
+      this.releaseSynth(lead, 520);
+    },
+
     // Next/skip button - forward progression (replaces nextbutton.mp3)
     next: () => {
       const synth = this.getSynth({

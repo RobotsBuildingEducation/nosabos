@@ -27,6 +27,9 @@ import { BitcoinWalletSection } from "./IdentityDrawer";
 import RandomCharacter from "./RandomCharacter";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 import { translations } from "../utils/translation";
 
 export default function BitcoinSupportModal({
@@ -42,6 +45,7 @@ export default function BitcoinSupportModal({
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   const shellRef = useRef(null);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   useEffect(() => {
     setSelectedIdentity(identity || "");
@@ -96,19 +100,24 @@ export default function BitcoinSupportModal({
     };
   }, [isOpen]);
 
+  const handleDismiss = useCallback(() => {
+    playSound(selectSound);
+    onClose?.();
+  }, [onClose, playSound]);
+
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return undefined;
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
         event.stopPropagation();
-        onClose?.();
+        handleDismiss();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [handleDismiss, isOpen]);
 
   const selectedRecipient = useMemo(
     () =>
@@ -140,6 +149,7 @@ export default function BitcoinSupportModal({
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
       const nextValue = nextIdentity || "";
+      playSound(selectSound);
       setSelectedIdentity(nextValue);
       if (
         nextValue &&
@@ -149,12 +159,13 @@ export default function BitcoinSupportModal({
         onSelectIdentity(nextValue);
       }
     },
-    [identity, onSelectIdentity],
+    [identity, onSelectIdentity, playSound],
   );
 
   const handleConfirm = useCallback(() => {
+    playSound(submitActionSound);
     onClose?.();
-  }, [onClose]);
+  }, [onClose, playSound]);
 
   const recipientSelectorContent = (
     <>
@@ -336,7 +347,7 @@ export default function BitcoinSupportModal({
           top={4}
           right={4}
           zIndex={1}
-          onClick={onClose}
+          onClick={handleDismiss}
         />
 
         <Box
@@ -398,7 +409,7 @@ export default function BitcoinSupportModal({
                 bg: "#171923",
                 rounded: "xl",
                 p: 0,
-                mx: { base: 0, md: "auto" },
+                mx: "auto",
               }}
               sectionBg="#171923"
               identitySelectorPlacement="bottom"
@@ -436,6 +447,7 @@ export default function BitcoinSupportModal({
                           outline: "none",
                         },
                       }}
+                      onClick={() => playSound(selectSound)}
                     >
                       <Box flex="1" textAlign="left">
                         <Text fontSize="sm">
@@ -479,7 +491,7 @@ export default function BitcoinSupportModal({
         >
           <VStack spacing={2} width="100%">
             <Box display="flex" justifyContent="flex-end" width="100%" gap={3}>
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="ghost" onClick={handleDismiss}>
                 {skipLabel}
               </Button>
               <Button colorScheme="teal" onClick={handleConfirm}>

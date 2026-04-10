@@ -31,6 +31,7 @@ import {
 import DailyGoalPetPanel from "./DailyGoalPetPanel.jsx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
@@ -456,7 +457,7 @@ export default function DailyGoalModal({
   const save = async () => {
     if (onSaveGoal) {
       onSaveGoal(parsed);
-      void playSound(selectSound);
+      void playSound(submitActionSound);
       return;
     }
 
@@ -491,7 +492,7 @@ export default function DailyGoalModal({
         { merge: true },
       );
       onClose?.();
-      void playSound(selectSound);
+      void playSound(submitActionSound);
     } catch (e) {
       console.error(L.errSaveTitle, e);
     }

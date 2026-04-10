@@ -19,6 +19,7 @@ import {
 import { FiClock } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Helper: get angle in degrees (0=12 o'clock, clockwise) from pointer to element center
 function getAngleFromCenter(clientX, clientY, rect) {
@@ -388,7 +389,7 @@ export default function SessionTimerModal({
   }, [onClose, playSound]);
   const handleStart = useCallback(() => {
     onStart?.();
-    void playSound(selectSound);
+    void playSound(submitActionSound);
   }, [onStart, playSound]);
 
   return (

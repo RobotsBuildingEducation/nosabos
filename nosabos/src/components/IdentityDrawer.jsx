@@ -52,6 +52,9 @@ import { doc, updateDoc } from "firebase/firestore";
 
 import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
@@ -716,6 +719,7 @@ export function BitcoinWalletSection({
   hydrateWalletOnMount = true,
 }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
   const shouldCenterContent =
     centerContent ||
     (useBreakpointValue({
@@ -882,6 +886,8 @@ export function BitcoinWalletSection({
   }, [init, toast, userLanguage]);
 
   const handleCreateWallet = async () => {
+    playSound(submitActionSound);
+
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
@@ -978,6 +984,7 @@ export function BitcoinWalletSection({
   };
 
   const handleInitiateDeposit = async () => {
+    playSound(submitActionSound);
     if (!ensureIdentitySelected()) return;
     try {
       const paymentRequest = await initiateDeposit(100); // example amount
@@ -1009,6 +1016,7 @@ export function BitcoinWalletSection({
   };
 
   const generateNewQR = async () => {
+    playSound(submitActionSound);
     if (!ensureIdentitySelected()) return;
     try {
       const paymentRequest = await initiateDeposit(100);
@@ -1040,6 +1048,7 @@ export function BitcoinWalletSection({
   };
 
   const handleCopyInvoice = async () => {
+    playSound(selectSound);
     try {
       await navigator.clipboard.writeText(invoice || "");
       toast({
@@ -1057,6 +1066,7 @@ export function BitcoinWalletSection({
   };
 
   const handleIdentitySelect = (nextIdentity) => {
+    playSound(selectSound);
     if (!nextIdentity || nextIdentity === selectedIdentity) {
       setSelectedIdentity(nextIdentity || "");
       return;

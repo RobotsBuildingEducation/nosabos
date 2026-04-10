@@ -231,7 +231,6 @@ import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
 import useSoundSettings from "../hooks/useSoundSettings";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import LoadingMiniGame from "./LoadingMiniGame";
@@ -2202,7 +2201,7 @@ export default function SkillTree({
   };
 
   const handleStartLesson = async (lesson, preGeneratedScenario) => {
-    playSound(modeSwitcherSound);
+    playSound("lessonStart");
     if (onStartLesson) {
       const startResult = await onStartLesson(lesson, preGeneratedScenario);
       return startResult !== false;

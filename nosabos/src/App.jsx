@@ -1987,6 +1987,12 @@ export default function App() {
     }
   }, [showCompletionModal, playSound]);
 
+  useEffect(() => {
+    if (showTutorialBitcoinModal) {
+      playSound(selectSound);
+    }
+  }, [showTutorialBitcoinModal, playSound]);
+
   // Proficiency level completion celebration modal
   const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] =
     useState(false);
@@ -2407,6 +2413,12 @@ export default function App() {
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
 
+  useEffect(() => {
+    if (timeUpOpen) {
+      playSound(sparkleSound);
+    }
+  }, [timeUpOpen, playSound]);
+
   // Show proficiency modal for returning users only when the user document
   // does NOT contain a proficiency decision flag yet.
   useEffect(() => {
@@ -2660,6 +2672,16 @@ export default function App() {
   }, [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer]);
 
   const handleCloseTimeUp = useCallback(() => {
+    playSound(selectSound);
+    setTimeUpOpen(false);
+    setTimerRemainingSeconds(null);
+    setTimerDurationSeconds(null);
+    setTimerActive(false);
+    setTimerPaused(false);
+    setTimerEndsAt(null);
+  }, [playSound]);
+
+  const clearTimeUpState = useCallback(() => {
     setTimeUpOpen(false);
     setTimerRemainingSeconds(null);
     setTimerDurationSeconds(null);
@@ -2667,6 +2689,17 @@ export default function App() {
     setTimerPaused(false);
     setTimerEndsAt(null);
   }, []);
+
+  const handleTimeUpButtonClose = useCallback(() => {
+    playSound(submitActionSound);
+    clearTimeUpState();
+  }, [clearTimeUpState, playSound]);
+
+  const handleTimeUpRestart = useCallback(() => {
+    playSound(submitActionSound);
+    clearTimeUpState();
+    setTimerModalOpen(true);
+  }, [clearTimeUpState, playSound]);
 
   const timerHelper = useMemo(() => {
     if (timerRemainingSeconds === null) return null;
@@ -5809,7 +5842,7 @@ export default function App() {
             </VStack>
           </ModalBody>
           <ModalFooter gap={3} flexWrap="wrap">
-            <Button variant="ghost" onClick={handleCloseTimeUp}>
+            <Button variant="ghost" onClick={handleTimeUpButtonClose}>
               {t.timer_times_up_close || "Close"}
             </Button>
             <Button
@@ -5817,10 +5850,7 @@ export default function App() {
               bg="white"
               color="purple.700"
               _hover={{ bg: "whiteAlpha.900" }}
-              onClick={() => {
-                handleCloseTimeUp();
-                setTimerModalOpen(true);
-              }}
+              onClick={handleTimeUpRestart}
             >
               {t.timer_times_up_restart || "Start another timer"}
             </Button>
