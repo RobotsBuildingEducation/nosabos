@@ -531,13 +531,7 @@ export default function DailyGoalModal({
       >
         <ModalCloseButton onClick={handleClose} />
         {/* Header */}
-        <Box
-          bgGradient="linear(to-r, teal.500, teal.500)"
-          color="white"
-          px={6}
-          pr={12}
-          py={5}
-        >
+        <Box bg="teal.500" color="white" px={6} pr={12} py={5}>
           <HStack spacing={3} align="center">
             <Box
               as={FaCalendarAlt}
