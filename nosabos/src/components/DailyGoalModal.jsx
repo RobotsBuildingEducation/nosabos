@@ -67,8 +67,7 @@ const WEEK_DAYS_STYLE = { display: "grid", rowGap: "2px" };
 function buildDayStyle(level, isFuture, isToday) {
   const style = { ...DAY_CELL_BASE_STYLE };
   if (level === "goal") {
-    style.background =
-      "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 100%)";
+    style.background = "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 100%)";
     style.borderColor = "rgba(167, 243, 208, 0.55)";
   } else if (level === "some") {
     style.background = "rgba(45, 212, 191, 0.42)";
@@ -96,7 +95,12 @@ function getLocalDayKey(value) {
   return `${year}-${month}-${day}`;
 }
 
-function buildGoalHeatmapWeeks(xpHistory = {}, completedGoalDates = [], language = "en", now = new Date()) {
+function buildGoalHeatmapWeeks(
+  xpHistory = {},
+  completedGoalDates = [],
+  language = "en",
+  now = new Date(),
+) {
   const today = new Date(now);
   today.setHours(0, 0, 0, 0);
   const currentYear = today.getFullYear();
@@ -196,11 +200,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
 
   const weeks = useMemo(
     () =>
-      buildGoalHeatmapWeeks(
-        effectiveHistory,
-        effectiveCompletedDates,
-        lang,
-      ),
+      buildGoalHeatmapWeeks(effectiveHistory, effectiveCompletedDates, lang),
     [effectiveCompletedDates, effectiveHistory, lang],
   );
 
@@ -213,7 +213,13 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
       borderColor="gray.700"
     >
       <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
-        <Text fontSize="xs" fontWeight="bold" color="gray.300" textTransform="uppercase" letterSpacing="0.08em">
+        <Text
+          fontSize="xs"
+          fontWeight="bold"
+          color="gray.300"
+          textTransform="uppercase"
+          letterSpacing="0.08em"
+        >
           {labels.title}
         </Text>
         <Text fontSize="xs" color="gray.500">
@@ -254,11 +260,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
                   day.isBlank ? (
                     <div key={day.key} style={DAY_CELL_BLANK_STYLE} />
                   ) : (
-                    <div
-                      key={day.key}
-                      style={day.style}
-                      title={day.title}
-                    />
+                    <div key={day.key} style={day.style} title={day.title} />
                   ),
                 )}
               </div>
@@ -367,10 +369,7 @@ export default function DailyGoalModal({
       activitySubtitle: getLabel("daily_goal_activity_subtitle", "This year"),
       activityEmpty: getLabel("daily_goal_activity_empty", "No XP"),
       activitySome: getLabel("daily_goal_activity_some", "Some XP"),
-      activityGoal: getLabel(
-        "daily_goal_activity_goal",
-        "Daily goal reached",
-      ),
+      activityGoal: getLabel("daily_goal_activity_goal", "Daily goal reached"),
       inputLabel: getLabel("daily_goal_input_label", "XP per day"),
       errNoUserTitle: getLabel("daily_goal_error_no_user", "No user ID"),
       errNoUserDesc: getLabel(
@@ -533,14 +532,19 @@ export default function DailyGoalModal({
         <ModalCloseButton onClick={handleClose} />
         {/* Header */}
         <Box
-          bgGradient="linear(to-r, teal.700, teal.500)"
+          bgGradient="linear(to-r, teal.500, teal.500)"
           color="white"
           px={6}
           pr={12}
           py={5}
         >
           <HStack spacing={3} align="center">
-            <Box as={FaCalendarAlt} aria-hidden fontSize="22px" opacity={0.95} />
+            <Box
+              as={FaCalendarAlt}
+              aria-hidden
+              fontSize="22px"
+              opacity={0.95}
+            />
             <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">
               {ui.title || L.title}
             </Text>
