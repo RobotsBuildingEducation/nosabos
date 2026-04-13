@@ -40,17 +40,16 @@ const applyThemeColor = (color) => {
   );
 };
 
-let lastPointerX = null;
-let lastPointerY = null;
+// Track recent user interaction so we only animate the theme switch when
+// it is user-initiated (not on app load or async Firebase hydration).
+let lastInteractionAt = 0;
+const INTERACTION_WINDOW_MS = 600;
 if (typeof window !== "undefined") {
-  window.addEventListener(
-    "pointerdown",
-    (e) => {
-      lastPointerX = e.clientX;
-      lastPointerY = e.clientY;
-    },
-    true
-  );
+  const markInteraction = () => {
+    lastInteractionAt = Date.now();
+  };
+  window.addEventListener("pointerdown", markInteraction, true);
+  window.addEventListener("keydown", markInteraction, true);
 }
 
 const writeThemeMode = (normalized) => {
@@ -71,60 +70,32 @@ export const applyThemeMode = (mode) => {
     window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  const userInitiated =
+    Date.now() - lastInteractionAt < INTERACTION_WINDOW_MS;
+
   if (
     current === normalized ||
     !document.startViewTransition ||
-    prefersReduced
+    prefersReduced ||
+    !userInitiated
   ) {
     writeThemeMode(normalized);
     return;
   }
 
-  const x = lastPointerX ?? window.innerWidth / 2;
-  const y = lastPointerY ?? window.innerHeight / 2;
-  const endRadius = Math.hypot(
-    Math.max(x, window.innerWidth - x),
-    Math.max(y, window.innerHeight - y)
-  );
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  const endRadius = Math.hypot(cx, cy);
 
   const root = document.documentElement;
-  root.style.setProperty("--theme-transition-cx", `${x}px`);
-  root.style.setProperty("--theme-transition-cy", `${y}px`);
+  root.style.setProperty("--theme-transition-cx", `${cx}px`);
+  root.style.setProperty("--theme-transition-cy", `${cy}px`);
   root.style.setProperty("--theme-transition-r", `${endRadius}px`);
   root.classList.add("theme-transitioning");
 
   const transition = document.startViewTransition(() => {
     writeThemeMode(normalized);
   });
-
-  // Drop concentric water rings from the click point, overlaid above
-  // the transitioning root so the circular reveal looks like ripples
-  // spreading on a pond.
-  transition.ready
-    .then(() => {
-      const diameter = endRadius * 2;
-      const overlay = document.createElement("div");
-      overlay.className = "theme-ripple-overlay";
-      overlay.style.setProperty("--ripple-cx", `${x}px`);
-      overlay.style.setProperty("--ripple-cy", `${y}px`);
-      overlay.style.setProperty("--ripple-size", `${diameter}px`);
-
-      for (let i = 0; i < 3; i += 1) {
-        const ring = document.createElement("span");
-        ring.className = "theme-ripple-ring";
-        ring.style.animationDelay = `${i * 110}ms`;
-        overlay.appendChild(ring);
-      }
-
-      document.body.appendChild(overlay);
-      const removeOverlay = () => overlay.remove();
-      overlay.addEventListener("animationend", (evt) => {
-        if (evt.target === overlay.lastChild) removeOverlay();
-      });
-      // Safety net in case animationend is missed.
-      setTimeout(removeOverlay, 1600);
-    })
-    .catch(() => {});
 
   const cleanup = () => {
     root.classList.remove("theme-transitioning");
