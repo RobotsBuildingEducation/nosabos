@@ -1,5 +1,5 @@
 // components/TranslateSentence.jsx
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -96,6 +96,7 @@ export default function TranslateSentence({
   const [bankOrder, setBankOrder] = useState([]);
   // Selected words - indices of words user has chosen, in order
   const [selectedWords, setSelectedWords] = useState([]);
+  const primedWarmAudioPromiseRef = useRef(null);
 
   // Reset state when question changes
   useEffect(() => {
@@ -254,6 +255,55 @@ export default function TranslateSentence({
       ? "Toca las palabras para formar tu respuesta"
       : "Tap the words to form your answer";
 
+  const createWarmAudio = useCallback(async () => {
+    try {
+      const warm = new Audio();
+      warm.playsInline = true;
+      warm.muted = true;
+      warm.volume = 0;
+      warm.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+      const warmPlay = warm.play();
+      warmPlay
+        ?.then(() => {
+          warm.pause();
+          try {
+            warm.currentTime = 0;
+          } catch {
+            // Mobile Safari can reject rewinding warmed audio; playback still works.
+          }
+        })
+        .catch(() => undefined);
+      warm.muted = false;
+      warm.volume = 1;
+      return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const primeTTSGesture = useCallback(() => {
+    if (primedWarmAudioPromiseRef.current) return;
+    primedWarmAudioPromiseRef.current = createWarmAudio().catch(() => null);
+  }, [createWarmAudio]);
+
+  const consumePrimedWarmAudio = useCallback(async () => {
+    const pendingWarmAudio = primedWarmAudioPromiseRef.current;
+    primedWarmAudioPromiseRef.current = null;
+    if (!pendingWarmAudio) return null;
+    try {
+      return await pendingWarmAudio;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const handleManualPlay = useCallback(async () => {
+    const warmAudio =
+      (await consumePrimedWarmAudio()) || (await createWarmAudio());
+    onPlayTTS(sourceSentence, { warmAudio });
+  }, [consumePrimedWarmAudio, createWarmAudio, onPlayTTS, sourceSentence]);
+
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
@@ -327,7 +377,9 @@ export default function TranslateSentence({
                     icon={renderSpeakerIcon(isSynthesizing)}
                     size="sm"
                     fontSize="lg"
-                    onClick={() => onPlayTTS(sourceSentence)}
+                    onPointerDown={primeTTSGesture}
+                    onTouchStart={primeTTSGesture}
+                    onClick={handleManualPlay}
                     {...getQuestionToolButtonProps({ active: isSynthesizing })}
                   />
                   <Text
