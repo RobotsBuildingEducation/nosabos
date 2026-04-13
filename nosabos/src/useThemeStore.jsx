@@ -97,6 +97,21 @@ export const applyThemeMode = (mode) => {
     writeThemeMode(normalized);
   });
 
+  // Kick off the SVG turbulence ripple in sync with the CSS reveal.
+  transition.ready
+    .then(() => {
+      const svg = document.getElementById("theme-watery-ripple");
+      if (!svg) return;
+      svg.querySelectorAll("animate").forEach((node) => {
+        try {
+          node.beginElement();
+        } catch {
+          /* noop — browsers without SMIL just skip the ripple */
+        }
+      });
+    })
+    .catch(() => {});
+
   const cleanup = () => {
     root.classList.remove("theme-transitioning");
   };

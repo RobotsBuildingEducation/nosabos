@@ -39,14 +39,14 @@ html.theme-transitioning::view-transition-new(root) {
     clip-path: circle(
       0px at var(--theme-transition-cx, 50%) var(--theme-transition-cy, 50%)
     );
-    filter: blur(28px) saturate(1.35) brightness(1.05);
+    filter: url(#theme-watery-ripple) blur(28px) saturate(1.35) brightness(1.05);
     transform: scale(1.04);
   }
   35% {
-    filter: blur(18px) saturate(1.25) brightness(1.03);
+    filter: url(#theme-watery-ripple) blur(18px) saturate(1.25) brightness(1.03);
   }
   70% {
-    filter: blur(6px) saturate(1.1);
+    filter: url(#theme-watery-ripple) blur(6px) saturate(1.1);
     transform: scale(1.01);
   }
   100% {
@@ -54,7 +54,7 @@ html.theme-transitioning::view-transition-new(root) {
       var(--theme-transition-r, 150vmax) at var(--theme-transition-cx, 50%)
         var(--theme-transition-cy, 50%)
     );
-    filter: blur(0) saturate(1) brightness(1);
+    filter: url(#theme-watery-ripple) blur(0) saturate(1) brightness(1);
     transform: scale(1);
   }
 }
@@ -66,7 +66,7 @@ html.theme-transitioning::view-transition-new(root) {
     transform: scale(1);
   }
   100% {
-    filter: blur(18px) saturate(1.15);
+    filter: url(#theme-watery-ripple) blur(18px) saturate(1.15);
     opacity: 0.85;
     transform: scale(0.985);
   }
