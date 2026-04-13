@@ -1490,7 +1490,7 @@ function TopBar({
                             ? t.teams_feed_allow_enabled ||
                               "Automatic community posts enabled."
                             : t.teams_feed_allow_disabled ||
-                          "Automatic community posts disabled."}
+                              "Automatic community posts disabled."}
                         </Text>
                       </Box>
 
@@ -5323,7 +5323,8 @@ export default function App() {
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
-    themeMode: user?.onboarding?.draft?.themeMode || user?.themeMode || themeMode,
+    themeMode:
+      user?.onboarding?.draft?.themeMode || user?.themeMode || themeMode,
   };
 
   if (needsOnboarding) {
@@ -5874,7 +5875,11 @@ export default function App() {
             </VStack>
           </ModalBody>
           <ModalFooter gap={3} flexWrap="wrap">
-            <Button variant="ghost" color="white" onClick={handleTimeUpButtonClose}>
+            <Button
+              variant="ghost"
+              color="white"
+              onClick={handleTimeUpButtonClose}
+            >
               {t.timer_times_up_close || "Close"}
             </Button>
             <Button
@@ -6595,7 +6600,9 @@ function BottomActionBar({
                 />
                 <Portal>
                   <MenuList
-                    bg={isLightTheme ? "var(--app-surface-elevated)" : "gray.800"}
+                    bg={
+                      isLightTheme ? "var(--app-surface-elevated)" : "gray.800"
+                    }
                     color={isLightTheme ? "var(--app-text-primary)" : "white"}
                     borderColor="var(--app-border)"
                     boxShadow="var(--app-shadow-soft)"

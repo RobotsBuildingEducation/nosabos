@@ -668,7 +668,7 @@ export default function Onboarding({
                     <>
                       <Box bg="gray.800" p={3} rounded="md">
                         <HStack justifyContent="space-between">
-                          <Text fontSize="sm">
+                          <Text fontSize="sm" fontWeight="semibold" color="var(--app-text-primary)">
                             {ui.sound_effects_label || "Sound effects"}
                           </Text>
                           <Switch
