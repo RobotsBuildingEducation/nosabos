@@ -85,6 +85,7 @@ export default function RepeatWhatYouHear({
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
   const hasPlayedRef = useRef(false);
+  const primedWarmAudioPromiseRef = useRef(null);
 
   useEffect(() => {
     if (wordBank.length > 0) {
@@ -210,14 +211,36 @@ export default function RepeatWhatYouHear({
       warm.volume = 0;
       warm.src =
         "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      await warm.play();
-      warm.pause();
-      try {
-        warm.currentTime = 0;
-      } catch {}
+      const warmPlay = warm.play();
+      warmPlay
+        ?.then(() => {
+          warm.pause();
+          try {
+            warm.currentTime = 0;
+          } catch {
+            // Mobile Safari can reject rewinding warmed audio; playback still works.
+          }
+        })
+        .catch(() => undefined);
       warm.muted = false;
       warm.volume = 1;
       return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const primeTTSGesture = useCallback(() => {
+    if (primedWarmAudioPromiseRef.current) return;
+    primedWarmAudioPromiseRef.current = createWarmAudio().catch(() => null);
+  }, [createWarmAudio]);
+
+  const consumePrimedWarmAudio = useCallback(async () => {
+    const pendingWarmAudio = primedWarmAudioPromiseRef.current;
+    primedWarmAudioPromiseRef.current = null;
+    if (!pendingWarmAudio) return null;
+    try {
+      return await pendingWarmAudio;
     } catch {
       return null;
     }
@@ -269,9 +292,10 @@ export default function RepeatWhatYouHear({
     // Claim playback immediately so the mount auto-play effect can't fire a
     // second competing TTS request right after the user's first click.
     hasPlayedRef.current = true;
-    const warmAudio = await createWarmAudio();
+    const warmAudio =
+      (await consumePrimedWarmAudio()) || (await createWarmAudio());
     onPlayTTS(sourceSentence, { warmAudio });
-  }, [createWarmAudio, onPlayTTS, sourceSentence]);
+  }, [consumePrimedWarmAudio, createWarmAudio, onPlayTTS, sourceSentence]);
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -352,6 +376,8 @@ export default function RepeatWhatYouHear({
                         icon={renderSpeakerIcon(isSynthesizing)}
                         size="md"
                         fontSize="xl"
+                        onPointerDown={primeTTSGesture}
+                        onTouchStart={primeTTSGesture}
                         onClick={handleManualPlay}
                         isRound
                         {...getQuestionToolButtonProps({

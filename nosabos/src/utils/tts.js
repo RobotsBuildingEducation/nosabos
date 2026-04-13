@@ -365,9 +365,33 @@ async function getRealtimePlayer({
   // Reuse a pre-warmed Audio element if provided (already unlocked by user
   // gesture on mobile) so that play() works outside a gesture context.
   const audio = warmAudio || new Audio();
+  // Safari can get stuck on the old data URI source unless we fully detach it
+  // before switching the element over to the live WebRTC stream.
+  try {
+    audio.pause?.();
+  } catch {
+    // Ignore stale audio cleanup failures before reusing the element.
+  }
+  try {
+    audio.removeAttribute?.("src");
+  } catch {
+    // Older browsers may not expose removeAttribute on media elements.
+  }
+  try {
+    audio.src = "";
+  } catch {
+    // Ignore src reset failures and continue with srcObject assignment.
+  }
+  try {
+    audio.load?.();
+  } catch {
+    // Some browsers do not like forcing a load during source swaps.
+  }
   audio.srcObject = remoteStream;
   audio.autoplay = true;
   audio.playsInline = true;
+  audio.muted = false;
+  audio.volume = 1;
 
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });

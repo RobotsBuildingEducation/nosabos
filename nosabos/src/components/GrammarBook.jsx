@@ -1491,6 +1491,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleNext() {
+    primeTTSGesture();
     playSound(nextButtonSound);
     stopModuleTTS();
     setLastOk(null);
@@ -1568,6 +1569,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleSkip() {
+    primeTTSGesture();
     playSound(nextButtonSound);
     stopModuleTTS();
     if (isSpeakRecording) {
@@ -1652,6 +1654,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const questionAudioUrlRef = useRef(null);
   const questionTextRef = useRef("");
   const questionPlaybackRequestRef = useRef(0);
+  const primedWarmAudioPromiseRef = useRef(null);
 
   // Match word TTS state
   const [matchWordSynthesizing, setMatchWordSynthesizing] = useState(null); // index of word being synthesized
@@ -4074,14 +4077,34 @@ Return JSON ONLY:
       warm.volume = 0;
       warm.src =
         "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
-      await warm.play();
-      warm.pause();
-      try {
-        warm.currentTime = 0;
-      } catch {}
+      const warmPlay = warm.play();
+      warmPlay
+        ?.then(() => {
+          warm.pause();
+          try {
+            warm.currentTime = 0;
+          } catch {}
+        })
+        .catch(() => undefined);
       warm.muted = false;
       warm.volume = 1;
       return warm;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const primeTTSGesture = useCallback(() => {
+    if (primedWarmAudioPromiseRef.current) return;
+    primedWarmAudioPromiseRef.current = createWarmAudio().catch(() => null);
+  }, [createWarmAudio]);
+
+  const consumePrimedWarmAudio = useCallback(async () => {
+    const pendingWarmAudio = primedWarmAudioPromiseRef.current;
+    primedWarmAudioPromiseRef.current = null;
+    if (!pendingWarmAudio) return null;
+    try {
+      return await pendingWarmAudio;
     } catch {
       return null;
     }
@@ -4095,7 +4118,8 @@ Return JSON ONLY:
     const requestId = questionPlaybackRequestRef.current;
 
     try {
-      const warmAudio = await createWarmAudio();
+      const warmAudio =
+        (await consumePrimedWarmAudio()) || (await createWarmAudio());
       if (requestId !== questionPlaybackRequestRef.current) return;
 
       setIsSpeakSynthesizing(true);
@@ -4144,6 +4168,7 @@ Return JSON ONLY:
       stopModuleTTS();
     }
   }, [
+    consumePrimedWarmAudio,
     createWarmAudio,
     sTarget,
     stopModuleTTS,
@@ -4162,7 +4187,10 @@ Return JSON ONLY:
       const requestId = questionPlaybackRequestRef.current;
 
       try {
-        const warmAudio = providedWarmAudio || (await createWarmAudio());
+        const warmAudio =
+          providedWarmAudio ||
+          (await consumePrimedWarmAudio()) ||
+          (await createWarmAudio());
         if (requestId !== questionPlaybackRequestRef.current) return;
         setIsQuestionSynthesizing(true);
         questionTextRef.current = ttsText;
@@ -4209,7 +4237,14 @@ Return JSON ONLY:
         stopModuleTTS();
       }
     },
-    [createWarmAudio, stopModuleTTS, targetLang, toast, userLanguage],
+    [
+      consumePrimedWarmAudio,
+      createWarmAudio,
+      stopModuleTTS,
+      targetLang,
+      toast,
+      userLanguage,
+    ],
   );
 
   // Handler for playing TTS on individual match words
@@ -4235,7 +4270,8 @@ Return JSON ONLY:
       const requestId = questionPlaybackRequestRef.current;
 
       try {
-        const warmAudio = await createWarmAudio();
+        const warmAudio =
+          (await consumePrimedWarmAudio()) || (await createWarmAudio());
         if (requestId !== questionPlaybackRequestRef.current) return;
         setMatchWordSynthesizing(index);
 
@@ -4296,7 +4332,12 @@ Return JSON ONLY:
         setMatchWordSynthesizing(null);
       }
     },
-    [createWarmAudio, matchWordSynthesizing, targetLang],
+    [
+      consumePrimedWarmAudio,
+      createWarmAudio,
+      matchWordSynthesizing,
+      targetLang,
+    ],
   );
 
   const renderMcPrompt = () => {
@@ -4643,6 +4684,8 @@ Return JSON ONLY:
                     icon={renderSpeakerIcon(isQuestionSynthesizing)}
                     size="sm"
                     fontSize="lg"
+                    onPointerDown={primeTTSGesture}
+                    onTouchStart={primeTTSGesture}
                     onClick={() => handlePlayQuestionTTS(question)}
                     mr={1}
                     {...getQuestionToolButtonProps({
@@ -4796,6 +4839,8 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
+                          onPointerDown={primeTTSGesture}
+                          onTouchStart={primeTTSGesture}
                           onClick={() => handlePlayQuestionTTS(mcQ)}
                           mr={1}
                           {...getQuestionToolButtonProps({
@@ -4901,6 +4946,8 @@ Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
+                        onPointerDown={primeTTSGesture}
+                        onTouchStart={primeTTSGesture}
                         onClick={() => handlePlayQuestionTTS(mcQ)}
                         mr={1}
                         {...getQuestionToolButtonProps({
@@ -5071,6 +5118,8 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
+                          onPointerDown={primeTTSGesture}
+                          onTouchStart={primeTTSGesture}
                           onClick={() => handlePlayQuestionTTS(maQ)}
                           mr={1}
                           {...getQuestionToolButtonProps({
@@ -5176,6 +5225,8 @@ Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
+                        onPointerDown={primeTTSGesture}
+                        onTouchStart={primeTTSGesture}
                         onClick={() => handlePlayQuestionTTS(maQ)}
                         mr={1}
                         {...getQuestionToolButtonProps({
@@ -5362,6 +5413,8 @@ Return JSON ONLY:
                     position="absolute"
                     top="3"
                     right="3"
+                    onPointerDown={primeTTSGesture}
+                    onTouchStart={primeTTSGesture}
                     onClick={handleToggleSpeakPlayback}
                     isDisabled={!sTarget}
                   />
@@ -5623,6 +5676,8 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"
+                          onPointerDown={primeTTSGesture}
+                          onTouchStart={primeTTSGesture}
                           onClick={() => handlePlayMatchWordTTS(lhs, i)}
                           isDisabled={!lhs || lhs === "…"}
                           {...getQuestionToolButtonProps({
@@ -5961,7 +6016,9 @@ Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onPlayTTS={(text, options) =>
+                handlePlayQuestionTTS(text, questionTTsLang, options)
+              }
               onAskAssistant={handleAskAssistant}
               assistantSupportText={assistantSupportText}
               isLoadingAssistantSupport={isLoadingAssistantSupport}
