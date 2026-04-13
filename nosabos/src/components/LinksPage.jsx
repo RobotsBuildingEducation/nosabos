@@ -137,13 +137,16 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
 
   return (
     <Box
-      position="fixed"
-      top="18px"
-      right={{ base: "16px", md: "20px" }}
-      left="auto"
-      width="fit-content"
-      maxW="calc(100vw - 32px)"
-      zIndex={120}
+      style={{
+        position: "fixed",
+        top: "18px",
+        right: "16px",
+        left: "auto",
+        bottom: "auto",
+        width: "fit-content",
+        maxWidth: "calc(100vw - 32px)",
+        zIndex: 120,
+      }}
     >
       <HStack
         spacing="3px"
@@ -154,6 +157,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         borderColor={APP_BORDER}
         boxShadow={APP_SHADOW}
         backdropFilter="blur(20px)"
+        display="inline-flex"
         width="fit-content"
         flexShrink={0}
       >
