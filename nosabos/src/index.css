@@ -8,6 +8,49 @@ body {
     color 220ms ease;
 }
 
+/* ── Theme switch: circular reveal via View Transitions API ──────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.theme-transitioning,
+html.theme-transitioning body {
+  transition: none !important;
+}
+
+html.theme-transitioning::view-transition-old(root) {
+  animation: none;
+  z-index: 1;
+}
+
+html.theme-transitioning::view-transition-new(root) {
+  z-index: 2;
+  animation: theme-circle-reveal 640ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes theme-circle-reveal {
+  from {
+    clip-path: circle(
+      0px at var(--theme-transition-cx, 50%) var(--theme-transition-cy, 50%)
+    );
+  }
+  to {
+    clip-path: circle(
+      var(--theme-transition-r, 150vmax) at var(--theme-transition-cx, 50%)
+        var(--theme-transition-cy, 50%)
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning::view-transition-new(root),
+  html.theme-transitioning::view-transition-old(root) {
+    animation: none;
+  }
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
