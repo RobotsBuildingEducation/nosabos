@@ -97,18 +97,32 @@ export const applyThemeMode = (mode) => {
     writeThemeMode(normalized);
   });
 
-  // Kick off the SVG turbulence ripple in sync with the CSS reveal.
+  // Drop concentric water rings from the click point, overlaid above
+  // the transitioning root so the circular reveal looks like ripples
+  // spreading on a pond.
   transition.ready
     .then(() => {
-      const svg = document.getElementById("theme-watery-ripple");
-      if (!svg) return;
-      svg.querySelectorAll("animate").forEach((node) => {
-        try {
-          node.beginElement();
-        } catch {
-          /* noop — browsers without SMIL just skip the ripple */
-        }
+      const diameter = endRadius * 2;
+      const overlay = document.createElement("div");
+      overlay.className = "theme-ripple-overlay";
+      overlay.style.setProperty("--ripple-cx", `${x}px`);
+      overlay.style.setProperty("--ripple-cy", `${y}px`);
+      overlay.style.setProperty("--ripple-size", `${diameter}px`);
+
+      for (let i = 0; i < 3; i += 1) {
+        const ring = document.createElement("span");
+        ring.className = "theme-ripple-ring";
+        ring.style.animationDelay = `${i * 110}ms`;
+        overlay.appendChild(ring);
+      }
+
+      document.body.appendChild(overlay);
+      const removeOverlay = () => overlay.remove();
+      overlay.addEventListener("animationend", (evt) => {
+        if (evt.target === overlay.lastChild) removeOverlay();
       });
+      // Safety net in case animationend is missed.
+      setTimeout(removeOverlay, 1600);
     })
     .catch(() => {});
 
