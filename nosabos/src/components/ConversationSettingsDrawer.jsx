@@ -26,6 +26,15 @@ import { FiChevronDown } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import { useThemeStore } from "../useThemeStore";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
@@ -138,6 +147,8 @@ export function ConversationSettingsPanel({
 }) {
   const lang = supportLang === "es" ? "es" : "en";
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   const currentLevel =
     CEFR_LEVELS.find((l) => l.level === settings.proficiencyLevel) ||
@@ -176,7 +187,11 @@ export function ConversationSettingsPanel({
         <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
           {t.proficiencyLabel}
         </FormLabel>
-        <Text fontSize="xs" color="gray.400" mb={3}>
+        <Text
+          fontSize="xs"
+          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+          mb={3}
+        >
           {t.proficiencyHint}
         </Text>
         <Menu matchWidth onOpen={() => playSound(selectSound)}>
@@ -184,9 +199,13 @@ export function ConversationSettingsPanel({
             as={Button}
             rightIcon={<FiChevronDown />}
             w="100%"
-            bg="gray.800"
-            boxShadow="0 4px 0px black"
-            _active={{ bg: "gray.700" }}
+            bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
+            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+            border="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "transparent"}
+            boxShadow={isLightTheme ? APP_SHADOW : "0 4px 0px black"}
+            _active={{ bg: isLightTheme ? APP_SURFACE : "gray.700" }}
+            _hover={{ bg: isLightTheme ? APP_SURFACE : "gray.700" }}
             textAlign="left"
             fontWeight="normal"
             h="auto"
@@ -219,8 +238,9 @@ export function ConversationSettingsPanel({
             </HStack>
           </MenuButton>
           <MenuList
-            bg="gray.800"
-            borderColor="gray.700"
+            bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
+            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+            borderColor={isLightTheme ? APP_BORDER : "gray.700"}
             maxH="300px"
             overflowY="auto"
           >
@@ -230,10 +250,12 @@ export function ConversationSettingsPanel({
                 onClick={() => handleLevelChange(level.level)}
                 bg={
                   settings.proficiencyLevel === level.level
-                    ? "gray.700"
+                    ? isLightTheme
+                      ? APP_SURFACE_MUTED
+                      : "gray.700"
                     : "transparent"
                 }
-                _hover={{ bg: "gray.700" }}
+                _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "gray.700" }}
                 py={3}
               >
                 <HStack spacing={2} w="100%" align="center">
@@ -253,7 +275,10 @@ export function ConversationSettingsPanel({
                     <Text fontSize="sm" fontWeight="medium">
                       {level.name[lang]}
                     </Text>
-                    <Text fontSize="xs" color="gray.400">
+                    <Text
+                      fontSize="xs"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                    >
                       {level.description[lang]}
                     </Text>
                   </Box>
@@ -271,7 +296,11 @@ export function ConversationSettingsPanel({
             <FormLabel fontSize="sm" fontWeight="semibold" mb={0}>
               {t.pronunciationLabel}
             </FormLabel>
-            <Text fontSize="xs" color="gray.400" mt={1}>
+            <Text
+              fontSize="xs"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+              mt={1}
+            >
               {t.pronunciationHint}
             </Text>
           </Box>
@@ -288,16 +317,21 @@ export function ConversationSettingsPanel({
         <FormLabel fontSize="sm" fontWeight="semibold" mb={1}>
           {t.subjectLabel}
         </FormLabel>
-        <Text fontSize="xs" color="gray.400" mb={3}>
+        <Text
+          fontSize="xs"
+          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+          mb={3}
+        >
           {t.subjectHint}
         </Text>
         <Textarea
           value={settings.conversationSubjects || ""}
           onChange={handleSubjectChange}
           placeholder={t.subjectPlaceholder}
-          bg="gray.800"
-          borderColor="gray.700"
-          _hover={{ borderColor: "gray.600" }}
+          bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+          borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+          _hover={{ borderColor: isLightTheme ? APP_BORDER : "gray.600" }}
           _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
           resize="vertical"
           minH="120px"
@@ -309,7 +343,10 @@ export function ConversationSettingsPanel({
         <HStack spacing={3} mt="auto">
           <Button
             variant="outline"
-            colorScheme="gray"
+            colorScheme={isLightTheme ? "gray" : "gray"}
+            borderColor={isLightTheme ? APP_BORDER : undefined}
+            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+            bg={isLightTheme ? APP_SURFACE_ELEVATED : undefined}
             onClick={handleClose}
             size="lg"
             flex={1}
@@ -334,23 +371,30 @@ export default function ConversationSettingsDrawer({
 }) {
   const lang = supportLang === "es" ? "es" : "en";
   const t = useMemo(() => getConversationSettingsUi(lang), [lang]);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   return (
     <Drawer
       isOpen={isOpen}
       placement="right"
-      onClose={handleClose}
+      onClose={onClose}
       size="md"
       closeOnOverlayClick={false}
     >
-      <DrawerOverlay bg="blackAlpha.600" />
+      <DrawerOverlay
+        bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
+        backdropFilter="blur(4px)"
+      />
       <DrawerContent
-        bg="gray.900"
-        color="gray.100"
+        bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+        color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         borderLeftRadius="24px"
         maxH="100vh"
         display="flex"
         flexDirection="column"
+        boxShadow={isLightTheme ? APP_SHADOW : undefined}
+        borderLeft={isLightTheme ? `1px solid ${APP_BORDER}` : undefined}
         sx={{
           "@supports (height: 100dvh)": {
             maxHeight: "100dvh",
@@ -358,11 +402,11 @@ export default function ConversationSettingsDrawer({
         }}
       >
         <DrawerCloseButton
-          color="gray.400"
-          _hover={{ color: "gray.200" }}
+          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+          _hover={{ color: isLightTheme ? APP_TEXT_PRIMARY : "gray.200" }}
           top={4}
           right={4}
-          onClick={handleClose}
+          onClick={onClose}
         />
         <DrawerHeader pb={2} pr={12}>
           {t.title}

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
 import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
+import { useThemeStore } from "../useThemeStore";
 import {
   DAILY_GOAL_PET_DEFAULT_HEALTH,
   DAILY_GOAL_PET_HEALTH_GAIN,
@@ -13,6 +14,10 @@ const TILE = 16;
 const SCALE = 3;
 const T = TILE * SCALE;
 const SCENE_Y_OFFSET = 4;
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 
 const DOG = {
   fur: "#d97706",
@@ -101,7 +106,7 @@ function getCopy(lang) {
   };
 }
 
-function getPetStage(health, copy) {
+function getPetStage(health, copy, isLightTheme = false) {
   if (health <= 0) {
     return {
       key: "dead",
@@ -109,9 +114,13 @@ function getPetStage(health, copy) {
       palette: DEAD_DOG,
       colorScheme: "gray",
       label: copy.dead,
-      background: "rgba(148, 163, 184, 0.22)",
-      waveStart: "#9CA3AF",
-      waveEnd: "#6B7280",
+      background: isLightTheme
+        ? "linear-gradient(180deg, rgba(231, 223, 212, 0.96) 0%, rgba(222, 212, 198, 0.94) 100%)"
+        : "rgba(148, 163, 184, 0.22)",
+      waveStart: isLightTheme ? "#c2b4a0" : "#9CA3AF",
+      waveEnd: isLightTheme ? "#9e8b76" : "#6B7280",
+      badgeBg: isLightTheme ? "rgba(158, 139, 118, 0.14)" : undefined,
+      badgeColor: isLightTheme ? "#6d5a47" : undefined,
       face: "dead",
       decoration: "halo",
       showTongue: false,
@@ -124,9 +133,13 @@ function getPetStage(health, copy) {
       palette: SICK_DOG,
       colorScheme: "red",
       label: copy.unhealthy,
-      background: "rgba(248, 113, 113, 0.18)",
-      waveStart: "#FB7185",
-      waveEnd: "#DC2626",
+      background: isLightTheme
+        ? "linear-gradient(180deg, rgba(248, 223, 218, 0.96) 0%, rgba(243, 210, 204, 0.94) 100%)"
+        : "rgba(248, 113, 113, 0.18)",
+      waveStart: isLightTheme ? "#ef998f" : "#FB7185",
+      waveEnd: isLightTheme ? "#d66f62" : "#DC2626",
+      badgeBg: isLightTheme ? "rgba(214, 111, 98, 0.14)" : undefined,
+      badgeColor: isLightTheme ? "#984d43" : undefined,
       face: "unhealthy",
       decoration: null,
       showTongue: false,
@@ -139,9 +152,13 @@ function getPetStage(health, copy) {
       palette: DOG,
       colorScheme: "orange",
       label: copy.stressed,
-      background: "rgba(251, 146, 60, 0.18)",
-      waveStart: "#FDBA74",
-      waveEnd: "#F97316",
+      background: isLightTheme
+        ? "linear-gradient(180deg, rgba(250, 236, 214, 0.96) 0%, rgba(245, 224, 192, 0.94) 100%)"
+        : "rgba(251, 146, 60, 0.18)",
+      waveStart: isLightTheme ? "#efbb78" : "#FDBA74",
+      waveEnd: isLightTheme ? "#d88f39" : "#F97316",
+      badgeBg: isLightTheme ? "rgba(216, 143, 57, 0.14)" : undefined,
+      badgeColor: isLightTheme ? "#91591f" : undefined,
       face: "stressed",
       decoration: "sweat",
       showTongue: false,
@@ -154,9 +171,13 @@ function getPetStage(health, copy) {
       palette: DOG,
       colorScheme: "yellow",
       label: copy.unhappy,
-      background: "rgba(250, 204, 21, 0.16)",
-      waveStart: "#FDE68A",
-      waveEnd: "#F59E0B",
+      background: isLightTheme
+        ? "linear-gradient(180deg, rgba(250, 244, 214, 0.96) 0%, rgba(246, 236, 196, 0.94) 100%)"
+        : "rgba(250, 204, 21, 0.16)",
+      waveStart: isLightTheme ? "#e7cf7d" : "#FDE68A",
+      waveEnd: isLightTheme ? "#c9a14d" : "#F59E0B",
+      badgeBg: isLightTheme ? "rgba(201, 161, 77, 0.14)" : undefined,
+      badgeColor: isLightTheme ? "#85672c" : undefined,
       face: "unhappy",
       decoration: "cloud",
       showTongue: false,
@@ -169,9 +190,13 @@ function getPetStage(health, copy) {
       palette: DOG,
       colorScheme: "teal",
       label: copy.healthy,
-      background: "rgba(45, 212, 191, 0.20)",
-      waveStart: "#5EEAD4",
-      waveEnd: "#14B8A6",
+      background: isLightTheme
+        ? "linear-gradient(180deg, rgba(220, 244, 232, 0.96) 0%, rgba(205, 236, 222, 0.94) 100%)"
+        : "rgba(45, 212, 191, 0.20)",
+      waveStart: isLightTheme ? "#81d1b3" : "#5EEAD4",
+      waveEnd: isLightTheme ? "#50a587" : "#14B8A6",
+      badgeBg: isLightTheme ? "rgba(80, 165, 135, 0.14)" : undefined,
+      badgeColor: isLightTheme ? "#2f6a57" : undefined,
       face: "happy",
       decoration: null,
       showTongue: false,
@@ -183,9 +208,13 @@ function getPetStage(health, copy) {
     palette: DOG,
     colorScheme: "green",
     label: copy.happy,
-    background: "rgba(29, 251, 192, 0.54)",
-    waveStart: "#86EFAC",
-    waveEnd: "#22C55E",
+    background: isLightTheme
+      ? "linear-gradient(180deg, rgba(206, 242, 226, 0.98) 0%, rgba(190, 232, 214, 0.95) 100%)"
+      : "rgba(29, 251, 192, 0.54)",
+    waveStart: isLightTheme ? "#75d4af" : "#86EFAC",
+    waveEnd: isLightTheme ? "#32a877" : "#22C55E",
+    badgeBg: isLightTheme ? "rgba(50, 168, 119, 0.14)" : undefined,
+    badgeColor: isLightTheme ? "#265f4a" : undefined,
     face: "healthy",
     decoration: "heart",
     showTongue: false,
@@ -462,7 +491,7 @@ function drawDogCharacter(ctx, frame, stage) {
   drawAliveDog(ctx, frame, stage);
 }
 
-function DogCanvas({ stage }) {
+function DogCanvas({ stage, isLightTheme }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
 
@@ -501,8 +530,8 @@ function DogCanvas({ stage }) {
       h={{ base: "96px", md: "144px" }}
       borderRadius={{ base: "lg", md: "xl" }}
       border="1px solid"
-      borderColor="whiteAlpha.300"
-      bg="blackAlpha.250"
+      borderColor={isLightTheme ? "rgba(91, 75, 58, 0.12)" : "whiteAlpha.300"}
+      bg={isLightTheme ? "rgba(255, 253, 249, 0.38)" : "blackAlpha.250"}
       sx={{ imageRendering: "pixelated" }}
     />
   );
@@ -516,18 +545,25 @@ export default function DailyGoalPetPanel({
   variant = "setup",
   showPreview = true,
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const resolvedLang = lang === "es" ? "es" : "en";
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
   const stage = useMemo(
-    () => getPetStage(safeHealth, copy),
-    [safeHealth, copy],
+    () => getPetStage(safeHealth, copy, isLightTheme),
+    [copy, isLightTheme, safeHealth],
   );
   const isCelebration = variant === "celebration";
+  const rewardColor = isLightTheme ? "#48765f" : "green.200";
+  const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
+  const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
 
   return (
     <Box
       bg={stage.background}
+      border="1px solid"
+      borderColor={isLightTheme ? APP_BORDER : "transparent"}
       borderRadius="2xl"
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
@@ -540,9 +576,11 @@ export default function DailyGoalPetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <DogCanvas stage={stage} />
+            <DogCanvas stage={stage} isLightTheme={isLightTheme} />
             <Badge
               colorScheme={stage.colorScheme}
+              bg={isLightTheme ? stage.badgeBg : undefined}
+              color={isLightTheme ? stage.badgeColor : undefined}
               alignSelf="center"
               px={{ base: 2, md: 3 }}
               py={{ base: 0.35, md: 1 }}
@@ -564,13 +602,15 @@ export default function DailyGoalPetPanel({
                 fontSize={{ base: "lg", md: "xl" }}
                 fontWeight="bold"
                 lineHeight="1.1"
+                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
               >
                 {copy.title}
               </Text>
               {!isCelebration ? (
                 <Text
                   fontSize={{ base: "xs", md: "sm" }}
-                  opacity={0.9}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  opacity={isLightTheme ? 1 : 0.9}
                   lineHeight="1.35"
                 >
                   {copy.subtitle}
@@ -583,12 +623,13 @@ export default function DailyGoalPetPanel({
                 <HStack spacing={2}>
                   <Box
                     as={FiHeart}
-                    color="pink.200"
+                    color={isLightTheme ? "#ce7a8c" : "pink.200"}
                     boxSize={{ base: 3.5, md: 4 }}
                   />
                   <Text
                     fontSize={{ base: "xs", md: "sm" }}
                     fontWeight="semibold"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                   >
                     {copy.health}
                   </Text>
@@ -597,6 +638,7 @@ export default function DailyGoalPetPanel({
                   fontSize={{ base: "lg", md: "md" }}
                   fontWeight="bold"
                   lineHeight="1"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 >
                   {safeHealth}%
                 </Text>
@@ -608,8 +650,16 @@ export default function DailyGoalPetPanel({
                   height={14}
                   start={stage.waveStart}
                   end={stage.waveEnd}
-                  bg="rgba(255,255,255,0.22)"
-                  border="rgba(255,255,255,0.14)"
+                  bg={
+                    isLightTheme
+                      ? "rgba(255, 255, 255, 0.58)"
+                      : "rgba(255,255,255,0.22)"
+                  }
+                  border={
+                    isLightTheme
+                      ? "rgba(91, 75, 58, 0.10)"
+                      : "rgba(255,255,255,0.14)"
+                  }
                 />
               </Box>
             </VStack>
@@ -626,7 +676,9 @@ export default function DailyGoalPetPanel({
           >
             <Box
               flex="1"
-              bg="blackAlpha.220"
+              bg={previewCardBg}
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "transparent"}
               borderRadius="xl"
               p={{ base: 2.5, md: 3 }}
               textAlign="center"
@@ -639,7 +691,7 @@ export default function DailyGoalPetPanel({
               >
                 <Box
                   as={FiTrendingUp}
-                  color="green.200"
+                  color={rewardColor}
                   boxSize={{ base: 3.5, md: 4 }}
                   mt="1px"
                 />
@@ -647,6 +699,7 @@ export default function DailyGoalPetPanel({
                   fontSize={{ base: "xs", md: "sm" }}
                   fontWeight="semibold"
                   lineHeight="1.2"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 >
                   {copy.reward}
                 </Text>
@@ -654,7 +707,7 @@ export default function DailyGoalPetPanel({
               <Text
                 fontSize={{ base: "2xl", md: "lg" }}
                 fontWeight="bold"
-                color="green.200"
+                color={rewardColor}
                 lineHeight="1"
               >
                 +{DAILY_GOAL_PET_HEALTH_GAIN}%
@@ -663,7 +716,9 @@ export default function DailyGoalPetPanel({
 
             <Box
               flex="1"
-              bg="blackAlpha.220"
+              bg={previewCardBg}
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "transparent"}
               borderRadius="xl"
               p={{ base: 2.5, md: 3 }}
               textAlign="center"
@@ -676,7 +731,7 @@ export default function DailyGoalPetPanel({
               >
                 <Box
                   as={FiTrendingDown}
-                  color="orange.200"
+                  color={penaltyColor}
                   boxSize={{ base: 3.5, md: 4 }}
                   mt="1px"
                 />
@@ -684,6 +739,7 @@ export default function DailyGoalPetPanel({
                   fontSize={{ base: "xs", md: "sm" }}
                   fontWeight="semibold"
                   lineHeight="1.2"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 >
                   {copy.penalty}
                 </Text>
@@ -691,7 +747,7 @@ export default function DailyGoalPetPanel({
               <Text
                 fontSize={{ base: "2xl", md: "lg" }}
                 fontWeight="bold"
-                color="orange.200"
+                color={penaltyColor}
                 lineHeight="1"
               >
                 -{DAILY_GOAL_PET_HEALTH_LOSS}%

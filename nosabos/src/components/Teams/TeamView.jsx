@@ -28,6 +28,13 @@ import {
   subscribeToTeamUpdates,
 } from "../../utils/teams";
 import VoiceOrb from "../VoiceOrb";
+import { useThemeStore } from "../../useThemeStore";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 const formatCountLabel = (count, singular, plural) => {
   if (count === 1) return `${count} ${singular}`;
@@ -36,6 +43,8 @@ const formatCountLabel = (count, singular, plural) => {
 
 export default function TeamView({ userLanguage, refreshTrigger, t }) {
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const [myTeams, setMyTeams] = useState([]);
   const [teamInvites, setTeamInvites] = useState([]);
   const [teamMemberProgress, setTeamMemberProgress] = useState({});
@@ -222,7 +231,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
     return (
       <VStack py={8} spacing={3} align="center">
         <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
-        <Text fontSize="sm" color="gray.400">
+        <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
           {t?.teams_view_loading || "Loading teams..."}
         </Text>
       </VStack>
@@ -238,9 +247,20 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           </Text>
           <VStack spacing={3} align="stretch">
             {pendingInvites.map((invite) => (
-              <Box key={invite.id} p={4} borderWidth="1px" borderRadius="md">
+              <Box
+                key={invite.id}
+                p={4}
+                borderWidth="1px"
+                borderRadius="md"
+                borderColor={isLightTheme ? APP_BORDER : undefined}
+                bg={isLightTheme ? APP_SURFACE : undefined}
+                boxShadow={isLightTheme ? APP_SHADOW : undefined}
+              >
                 <Text fontWeight="bold">{invite.teamName}</Text>
-                <Text fontSize="sm" color="whiteAlpha.800">
+                <Text
+                  fontSize="sm"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                >
                   {t?.teams_view_invited_by || "Invited by"}:{" "}
                   {invite.invitedByName || invite.invitedBy}
                 </Text>
@@ -273,7 +293,13 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           {`${t?.teams_view_my_teams || "My teams"} (${myTeams.length})`}
         </Text>
         {!myTeams.length ? (
-          <Alert status="warning" color="black">
+          <Alert
+            status="warning"
+            color={isLightTheme ? APP_TEXT_PRIMARY : "black"}
+            bg={isLightTheme ? APP_SURFACE : undefined}
+            borderWidth={isLightTheme ? "1px" : undefined}
+            borderColor={isLightTheme ? APP_BORDER : undefined}
+          >
             <AlertIcon />
             {t?.teams_view_empty ||
               "Create a team to start tracking progress together."}
@@ -296,10 +322,15 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
               return (
                 <AccordionItem
                   key={`${team.id}-${team.createdBy}`}
-                  border="0px solid transparent"
+                  border="1px solid"
+                  borderColor={isLightTheme ? APP_BORDER : "transparent"}
+                  borderRadius="lg"
+                  mb={3}
+                  bg={isLightTheme ? APP_SURFACE : "transparent"}
+                  boxShadow={isLightTheme ? APP_SHADOW : undefined}
                 >
                   <h2>
-                    <AccordionButton>
+                    <AccordionButton _hover={{ bg: isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.100" }}>
                       <Box flex="1" textAlign="left">
                         <HStack spacing={2} align="center">
                           <Text fontWeight="bold">{team.teamName}</Text>
@@ -354,7 +385,11 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                                   member.isCreator ? "purple" : "teal"
                                 }
                               />
-                              <Text fontSize="xs" color="gray.400" mt={1}>
+                              <Text
+                                fontSize="xs"
+                                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                                mt={1}
+                              >
                                 {`${
                                   t?.teams_view_goal_completion ||
                                   "Daily goal completion"
@@ -380,7 +415,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                           ))}
                         </Box>
                       ) : (
-                        <Text fontSize="sm" color="gray.500">
+                        <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.500"}>
                           {t?.teams_view_no_members ||
                             "No accepted members yet."}
                         </Text>
@@ -395,7 +430,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                             <Text
                               key={member.npub}
                               fontSize="xs"
-                              color="gray.500"
+                              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.500"}
                             >
                               {member.npub}
                             </Text>

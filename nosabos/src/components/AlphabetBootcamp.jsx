@@ -69,8 +69,18 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import VoiceOrb from "./VoiceOrb";
+import XpProgressHeader from "./XpProgressHeader";
 
 const MotionBox = motion(Box);
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Language name and script mapping for all supported languages
 const LANGUAGE_NAMES = {
@@ -740,13 +750,13 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={4}
-          bgGradient="linear(to-br, rgba(56, 178, 172, 0.08), rgba(129, 140, 248, 0.06), rgba(236, 72, 153, 0.04))"
+          bg={APP_SURFACE_ELEVATED}
           border="1px solid"
-          borderColor="whiteAlpha.400"
+          borderColor={APP_BORDER}
           borderRadius="lg"
           p={4}
-          boxShadow="0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)"
-          color="white"
+          boxShadow={APP_SHADOW}
+          color={APP_TEXT_PRIMARY}
           position="relative"
           sx={{ backfaceVisibility: "hidden" }}
           minH={{ base: "260px", md: "230px" }}
@@ -769,12 +779,14 @@ function LetterCard({
               <Button
                 size="sm"
                 background="transparent"
-                border="1px solid white"
-                boxShadow={"0px 2px 0px lightgray"}
-                color="white"
+                border="1px solid"
+                borderColor={APP_BORDER_STRONG}
+                boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
+                color={APP_TEXT_PRIMARY}
                 leftIcon={<RiMicLine size={12} />}
                 onClick={handlePracticeClick}
                 fontSize="xs"
+                _hover={{ bg: APP_SURFACE_MUTED }}
               >
                 {appLanguage === "es" ? "Practicar" : "Practice"}
               </Button>
@@ -797,13 +809,13 @@ function LetterCard({
                   aria-label="Play sound"
                   align="center"
                   justify="center"
-                  bg="whiteAlpha.200"
+                  bg={APP_SURFACE_MUTED}
                   border="1px solid"
-                  borderColor="whiteAlpha.400"
+                  borderColor={APP_BORDER}
                   borderRadius="full"
                   p={2}
-                  _hover={{ bg: "whiteAlpha.300" }}
-                  color={isLoading || isPlaying ? "teal.200" : "white"}
+                  _hover={{ bg: APP_SURFACE }}
+                  color={isLoading || isPlaying ? "teal.500" : APP_TEXT_PRIMARY}
                   onClick={() => onPlay(letter)}
                 >
                   {isLoading || isPlaying ? (
@@ -815,10 +827,10 @@ function LetterCard({
               )}
             </Flex>
 
-            <Text color="whiteAlpha.900" fontSize="sm">
+            <Text color={APP_TEXT_PRIMARY} fontSize="sm">
               {sound}
             </Text>
-            <Text fontSize="2xs" color="whiteAlpha.800">
+            <Text fontSize="2xs" color={APP_TEXT_SECONDARY}>
               {tip}
             </Text>
           </VStack>
@@ -832,13 +844,13 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={3}
-          bgGradient="linear(to-br, rgba(56, 178, 172, 0.1), rgba(49, 151, 149, 0.08), rgba(44, 122, 123, 0.06))"
+          bg={APP_SURFACE_ELEVATED}
           border="1px solid"
-          borderColor="teal.400"
+          borderColor={APP_BORDER_STRONG}
           borderRadius="lg"
           p={4}
-          boxShadow="0 10px 30px rgba(0,0,0,0.35), 0 0 0 2px rgba(56, 178, 172, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)"
-          color="white"
+          boxShadow={APP_SHADOW}
+          color={APP_TEXT_PRIMARY}
           position="relative"
           sx={{
             backfaceVisibility: "hidden",
@@ -859,27 +871,29 @@ function LetterCard({
             icon={<RiCloseLine size={18} />}
             size="xs"
             bg="transparent"
-            border="1px solid white"
-            boxShadow={"0px 2px 0px lightgray"}
-            color="whiteAlpha.700"
+            border="1px solid"
+            borderColor={APP_BORDER_STRONG}
+            boxShadow="0px 2px 0px rgba(148, 163, 184, 0.35)"
+            color={APP_TEXT_SECONDARY}
             position="absolute"
             top={2}
             right={2}
             onClick={handleFlipBack}
+            _hover={{ bg: APP_SURFACE_MUTED }}
           />
 
           {/* Practice Word Display */}
-          <Text fontSize="xs" color="whiteAlpha.700" fontWeight="medium">
+          <Text fontSize="xs" color={APP_TEXT_SECONDARY} fontWeight="medium">
             {appLanguage === "es" ? "Di esta palabra:" : "Say this word:"}
           </Text>
 
           <HStack spacing={2} align="center">
-            <Text fontSize="2xl" fontWeight="black" color="white">
+            <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
               {highlightedPracticeWord.map((part, index) => (
                 <Text
                   key={`${part.text}-${index}`}
                   as="span"
-                  color={part.highlight ? "green.300" : "white"}
+                  color={part.highlight ? "green.500" : APP_TEXT_PRIMARY}
                 >
                   {part.text}
                 </Text>
@@ -896,15 +910,15 @@ function LetterCard({
               }
               size="sm"
               variant="ghost"
-              color={isLoadingTts || isPlayingWord ? "teal.300" : "white"}
+              color={isLoadingTts || isPlayingWord ? "teal.500" : APP_TEXT_PRIMARY}
               onClick={handlePlayWord}
               isDisabled={isLoadingTts}
-              _hover={{ bg: "whiteAlpha.200" }}
+              _hover={{ bg: APP_SURFACE_MUTED }}
             />
           </HStack>
 
           {showMeaning && (
-            <Text fontSize="sm" color="whiteAlpha.700">
+            <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
               ({practiceWordMeaningText})
             </Text>
           )}
@@ -920,7 +934,7 @@ function LetterCard({
                 }
                 size={32}
               />
-              <Text fontSize="xs" color="whiteAlpha.700">
+              <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                 {appLanguage === "es" ? "Evaluando..." : "Grading..."}
               </Text>
             </VStack>
@@ -955,9 +969,9 @@ function LetterCard({
                   <Button
                     size="xs"
                     variant="ghost"
-                    color="white"
+                    color={APP_TEXT_PRIMARY}
                     onClick={handleTryAgain}
-                    _hover={{ bg: "whiteAlpha.200" }}
+                    _hover={{ bg: APP_SURFACE_MUTED }}
                   >
                     {appLanguage === "es" ? "Otra vez" : "Try again"}
                   </Button>
@@ -965,9 +979,9 @@ function LetterCard({
                 <Button
                   size="xs"
                   variant="ghost"
-                  color="white"
+                  color={APP_TEXT_PRIMARY}
                   onClick={handleFlipBack}
-                  _hover={{ bg: "whiteAlpha.200" }}
+                  _hover={{ bg: APP_SURFACE_MUTED }}
                 >
                   {appLanguage === "es" ? "Volver" : "Back"}
                 </Button>
@@ -1297,34 +1311,32 @@ export default function AlphabetBootcamp({
   }, [stopLetterPlayback]);
 
   return (
-    <VStack align="stretch" spacing={4} w="100%" color="white" px={6}>
+    <VStack align="stretch" spacing={4} w="100%" color={APP_TEXT_PRIMARY} px={6}>
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
-        <HStack justify="space-between" mb={1}>
-          <Badge variant="subtle">
-            {appLanguage === "es" ? "NIVEL" : "LEVEL"} {xpLevelNumber}
-          </Badge>
-          <Badge variant="subtle">XP {currentXp}</Badge>
-        </HStack>
-        <WaveBar
-          value={nextLevelProgressPct}
-          height={12}
-          start="#38B2AC"
-          end="#81E6D9"
-          bg="whiteAlpha.200"
-          border="whiteAlpha.300"
+        <XpProgressHeader
+          levelText={`${appLanguage === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
+          xpText={`XP ${currentXp}`}
+          progressPct={nextLevelProgressPct}
+          barProps={{
+            height: 12,
+            start: "#38B2AC",
+            end: "#81E6D9",
+            bg: APP_SURFACE_MUTED,
+            border: APP_BORDER,
+          }}
         />
       </Box>
 
       <Heading
         size="md"
-        color="whiteAlpha.900"
+        color={APP_TEXT_PRIMARY}
         zIndex={10}
         textAlign={"center"}
       >
         {headline}
       </Heading>
-      <Text color="whiteAlpha.800" zIndex={10} textAlign={"center"} mt={"-4"}>
+      <Text color={APP_TEXT_SECONDARY} zIndex={10} textAlign={"center"} mt={"-4"}>
         {subhead}
       </Text>
       {/* <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
@@ -1349,7 +1361,7 @@ export default function AlphabetBootcamp({
               {/* Progress bar showing completion */}
               <Box w="100%" maxW="400px" mx="auto">
                 <HStack justify="space-between" mb={1}>
-                  <Text fontSize="xs" color="whiteAlpha.700">
+                  <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                     {appLanguage === "es" ? "Progreso" : "Progress"}
                   </Text>
                   <Text fontSize="xs" color="yellow.300" fontWeight="bold">
@@ -1361,8 +1373,8 @@ export default function AlphabetBootcamp({
                   height={10}
                   start="#D69E2E"
                   end="#F6E05E"
-                  bg="whiteAlpha.200"
-                  border="whiteAlpha.300"
+                  bg={APP_SURFACE_MUTED}
+                  border={APP_BORDER}
                 />
               </Box>
 
@@ -1501,13 +1513,14 @@ export default function AlphabetBootcamp({
         <Flex
           align="center"
           justify="center"
-          bg="whiteAlpha.100"
+          bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
           border="1px solid"
-          borderColor="whiteAlpha.300"
+          borderColor={APP_BORDER}
           p={6}
+          boxShadow={APP_SHADOW}
         >
-          <Text color="whiteAlpha.800">
+          <Text color={APP_TEXT_SECONDARY}>
             {appLanguage === "es"
               ? "No pudimos cargar el alfabeto. Intenta nuevamente."
               : "We couldn't load the alphabet. Please try again."}

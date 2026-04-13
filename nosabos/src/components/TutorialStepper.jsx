@@ -25,6 +25,14 @@ import { RiBook2Line, RiPencilLine } from "react-icons/ri";
 import { MdOutlineDescription } from "react-icons/md";
 import { TbLanguage } from "react-icons/tb";
 
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+
 // Module configuration with icons, colors, and descriptions
 const MODULE_CONFIG = {
   vocabulary: {
@@ -140,7 +148,7 @@ export default function TutorialStepper({
                     bg={
                       completedModules.includes(modules[index - 1])
                         ? config?.color || "green.400"
-                        : "whiteAlpha.300"
+                        : APP_BORDER
                     }
                     transition="background 0.3s ease"
                   />
@@ -159,8 +167,8 @@ export default function TutorialStepper({
                           isCompleted
                             ? config?.color || "green.500"
                             : isCurrent
-                              ? "whiteAlpha.200"
-                              : "whiteAlpha.100"
+                              ? APP_SURFACE_ELEVATED
+                              : APP_SURFACE
                         }
                         transition="all 0.3s ease"
                         transform={isCurrent ? "scale(1.1)" : "scale(1)"}
@@ -196,32 +204,32 @@ export default function TutorialStepper({
                             color={
                               isCurrent
                                 ? config?.color || "#60A5FA"
-                                : "rgba(255,255,255,0.5)"
+                                : APP_TEXT_MUTED
                             }
                           />
                         )}
                       </Circle>
                     </PopoverTrigger>
                     <PopoverContent
-                      bg="rgba(30, 41, 59, 0.97)"
-                      borderColor={config?.color || "whiteAlpha.500"}
+                      bg={APP_SURFACE_ELEVATED}
+                      borderColor={config?.color || APP_BORDER_STRONG}
                       borderWidth="2px"
-                      color="white"
+                      color={APP_TEXT_PRIMARY}
                       maxW="280px"
                     >
-                      <PopoverArrow bg="rgba(30, 41, 59, 0.97)" />
+                      <PopoverArrow bg={APP_SURFACE_ELEVATED} />
                       <PopoverBody py={3}>
                         <Text
                           fontSize="sm"
                           fontWeight="bold"
-                          color={config?.color || "white"}
+                          color={config?.color || APP_TEXT_PRIMARY}
                           mb={1}
                         >
                           {config?.label?.[supportLang] ||
                             config?.label?.en ||
                             module}
                         </Text>
-                        <Text fontSize="sm" color="gray.200" lineHeight="1.4">
+                        <Text fontSize="sm" color={APP_TEXT_SECONDARY} lineHeight="1.4">
                           {getModuleDescription(module) ||
                             "No description available"}
                         </Text>
@@ -234,7 +242,7 @@ export default function TutorialStepper({
                     fontSize={{ base: "2xs", md: "xs" }}
                     fontWeight={isCurrent ? "bold" : "medium"}
                     color={
-                      isCompleted || isCurrent ? "white" : "whiteAlpha.600"
+                      isCompleted || isCurrent ? APP_TEXT_PRIMARY : APP_TEXT_MUTED
                     }
                     textAlign="center"
                     whiteSpace="nowrap"

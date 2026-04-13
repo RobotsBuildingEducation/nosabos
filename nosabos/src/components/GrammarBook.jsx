@@ -30,7 +30,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
@@ -73,9 +72,28 @@ import LessonFlashcard, {
   FlashcardDeckReview,
   buildLessonFlashcardPrompt,
 } from "./LessonFlashcard";
+import XpProgressHeader from "./XpProgressHeader";
+import {
+  getQuestionAssistantPanelProps,
+  getQuestionChoiceCardProps,
+  getQuestionChoiceIndicatorProps,
+  getQuestionChipProps,
+  getQuestionDropZoneProps,
+  getQuestionToolButtonProps,
+  questionAssistantText,
+} from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -3967,12 +3985,10 @@ Return JSON ONLY:
         size="sm"
         fontSize="lg"
         rounded="xl"
-        bg="white"
-        color="blue"
-        boxShadow="0 4px 0 blue"
         onClick={() => copyAll(q, h, tr)}
         isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
         mr={1}
+        {...getQuestionToolButtonProps()}
       />
     );
   };
@@ -3984,15 +4000,12 @@ Return JSON ONLY:
       <Box
         p={4}
         borderRadius="lg"
-        bg="rgba(66, 153, 225, 0.1)"
-        borderWidth="1px"
-        borderColor="blue.400"
-        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
         mt={4}
+        {...getQuestionAssistantPanelProps()}
       >
         <HStack spacing={2} mb={2}>
-          <MdOutlineSupportAgent color="var(--chakra-colors-blue-400)" />
-          <Text fontWeight="semibold" color="blue.300">
+          <MdOutlineSupportAgent color={questionAssistantText.accent} />
+          <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
           {isLoadingAssistantSupport && (
@@ -4006,17 +4019,20 @@ Return JSON ONLY:
         </HStack>
         <Box
           fontSize="md"
-          color="whiteAlpha.900"
+          color={APP_TEXT_PRIMARY}
           lineHeight="1.6"
           sx={{
             "& p": { mb: 2 },
             "& p:last-child": { mb: 0 },
-            "& strong": { fontWeight: "bold", color: "blue.200" },
+            "& strong": {
+              fontWeight: "bold",
+              color: questionAssistantText.accentStrong,
+            },
             "& em": { fontStyle: "italic" },
             "& ul, & ol": { pl: 4, mb: 2 },
             "& li": { mb: 1 },
             "& code": {
-              bg: "rgba(0,0,0,0.3)",
+              bg: APP_SURFACE,
               px: 1,
               py: 0.5,
               borderRadius: "sm",
@@ -4329,12 +4345,12 @@ Return JSON ONLY:
                 borderBottomColor={
                   snapshot.isDraggingOver
                     ? "purple.300"
-                    : "rgba(255,255,255,0.6)"
+                    : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128,90,213,0.18)"
-                    : "rgba(255,255,255,0.08)"
+                    : APP_SURFACE_MUTED
                 }
                 transition="all 0.2s ease"
               >
@@ -4356,7 +4372,7 @@ Return JSON ONLY:
                         borderColor={
                           snapshot.isDragging
                             ? "purple.300"
-                            : "rgba(255,255,255,0.22)"
+                            : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4435,12 +4451,12 @@ Return JSON ONLY:
                 borderBottomColor={
                   snapshot.isDraggingOver
                     ? "purple.300"
-                    : "rgba(255,255,255,0.6)"
+                    : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128,90,213,0.18)"
-                    : "rgba(255,255,255,0.08)"
+                    : APP_SURFACE_MUTED
                 }
                 transition="all 0.2s ease"
               >
@@ -4462,7 +4478,7 @@ Return JSON ONLY:
                         borderColor={
                           snapshot.isDragging
                             ? "purple.300"
-                            : "rgba(255,255,255,0.22)"
+                            : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4494,7 +4510,7 @@ Return JSON ONLY:
   };
 
   return (
-    <Box p={4}>
+    <Box p={4} color={APP_TEXT_PRIMARY}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
@@ -4588,15 +4604,11 @@ Return JSON ONLY:
             ) : (
               // Normal XP progress display
               <>
-                <HStack justify="space-between" mb={1}>
-                  <Badge variant="subtle">
-                    {t("grammar_badge_level", { level: levelNumber })}
-                  </Badge>
-                  <Badge variant="subtle">
-                    {t("grammar_badge_xp", { xp })}
-                  </Badge>
-                </HStack>
-                <WaveBar value={progressPct} />
+                <XpProgressHeader
+                  levelText={t("grammar_badge_level", { level: levelNumber })}
+                  xpText={t("grammar_badge_xp", { xp })}
+                  progressPct={progressPct}
+                />
               </>
             )}
           </Box>
@@ -4605,17 +4617,19 @@ Return JSON ONLY:
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
           <VStack align="stretch" spacing={4}>
-            <Text fontSize="xl" fontWeight="bold" color="white">
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
               {userLanguage === "es"
                 ? "Completa el espacio"
                 : "Fill in the blank"}
             </Text>
             <Box
-              bg="rgba(255, 255, 255, 0.02)"
+              bg={APP_SURFACE_ELEVATED}
               borderRadius="lg"
               borderWidth="1px"
-              borderColor="whiteAlpha.100"
+              borderColor={APP_BORDER}
               p={5}
+              color={APP_TEXT_PRIMARY}
+              boxShadow={APP_SHADOW}
             >
               <VStack align="stretch" spacing={3}>
                 <HStack align="start" spacing={2}>
@@ -4629,9 +4643,11 @@ Return JSON ONLY:
                     icon={renderSpeakerIcon(isQuestionSynthesizing)}
                     size="sm"
                     fontSize="lg"
-                    variant="ghost"
                     onClick={() => handlePlayQuestionTTS(question)}
                     mr={1}
+                    {...getQuestionToolButtonProps({
+                      active: isQuestionSynthesizing,
+                    })}
                   />
                   <Text
                     fontSize="lg"
@@ -4751,7 +4767,7 @@ Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
               {userLanguage === "es"
                 ? "Elige la respuesta correcta"
                 : "Choose the correct answer"}
@@ -4760,11 +4776,13 @@ Return JSON ONLY:
               <DragDropContext onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
-                    bg="rgba(255, 255, 255, 0.02)"
+                    bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.100"
+                    borderColor={APP_BORDER}
                     p={5}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
@@ -4778,9 +4796,11 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
-                          variant="ghost"
                           onClick={() => handlePlayQuestionTTS(mcQ)}
                           mr={1}
+                          {...getQuestionToolButtonProps({
+                            active: isQuestionSynthesizing,
+                          })}
                         />
                         <Text
                           fontSize="lg"
@@ -4825,12 +4845,15 @@ Return JSON ONLY:
                                 borderColor={
                                   snapshot.isDragging
                                     ? "purple.300"
-                                    : "rgba(255,255,255,0.22)"
+                                    : APP_BORDER
                                 }
                                 bg={
                                   snapshot.isDragging
                                     ? "rgba(128,90,213,0.16)"
-                                    : "transparent"
+                                    : APP_SURFACE_ELEVATED
+                                }
+                                color={
+                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign="left"
@@ -4838,7 +4861,7 @@ Return JSON ONLY:
                                   handleMcAnswerClick(idx, position)
                                 }
                                 _hover={{
-                                  bg: "rgba(128,90,213,0.12)",
+                                  bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
                                 }}
                                 transition="all 0.15s ease"
@@ -4857,12 +4880,14 @@ Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  bg="rgba(255, 255, 255, 0.02)"
+                  bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
                   borderWidth="1px"
-                  borderColor="whiteAlpha.100"
+                  borderColor={APP_BORDER}
                   p={5}
                   mb={3}
+                  color={APP_TEXT_PRIMARY}
+                  boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
@@ -4876,9 +4901,11 @@ Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
-                        variant="ghost"
                         onClick={() => handlePlayQuestionTTS(mcQ)}
                         mr={1}
+                        {...getQuestionToolButtonProps({
+                          active: isQuestionSynthesizing,
+                        })}
                       />
                       <Text
                         fontSize="lg"
@@ -4909,32 +4936,11 @@ Return JSON ONLY:
                       px={4}
                       py={3}
                       rounded="lg"
-                      borderWidth="2px"
-                      borderColor={
-                        mcPick === c ? "purple.400" : "rgba(255,255,255,0.15)"
-                      }
-                      bg={
-                        mcPick === c
-                          ? "linear-gradient(135deg, rgba(128,90,213,0.25) 0%, rgba(159,122,234,0.15) 100%)"
-                          : "rgba(255,255,255,0.03)"
-                      }
-                      transition="all 0.2s ease"
-                      _hover={
-                        mcChoices.length
-                          ? {
-                              borderColor:
-                                mcPick === c
-                                  ? "purple.300"
-                                  : "rgba(255,255,255,0.3)",
-                              bg:
-                                mcPick === c
-                                  ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
-                                  : "rgba(255,255,255,0.06)",
-                              transform: "translateY(-2px)",
-                              shadow: "md",
-                            }
-                          : {}
-                      }
+                      {...getQuestionChoiceCardProps({
+                        selected: mcPick === c,
+                        tone: "single",
+                        interactive: mcChoices.length > 0,
+                      })}
                       position="relative"
                       opacity={mcChoices.length ? 1 : 0.5}
                     >
@@ -4943,17 +4949,13 @@ Return JSON ONLY:
                           w="20px"
                           h="20px"
                           rounded="full"
-                          borderWidth="2px"
-                          borderColor={
-                            mcPick === c
-                              ? "purple.400"
-                              : "rgba(255,255,255,0.3)"
-                          }
-                          bg={mcPick === c ? "purple.500" : "transparent"}
+                          {...getQuestionChoiceIndicatorProps({
+                            selected: mcPick === c,
+                            tone: "single",
+                          })}
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
-                          transition="all 0.2s ease"
                           flexShrink={0}
                         >
                           {mcPick === c && (
@@ -5040,7 +5042,7 @@ Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (maQ || loadingMAQ) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
               {userLanguage === "es"
                 ? "Selecciona todas las respuestas correctas"
                 : "Select all correct answers"}
@@ -5049,11 +5051,13 @@ Return JSON ONLY:
               <DragDropContext onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
-                    bg="rgba(255, 255, 255, 0.02)"
+                    bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.100"
+                    borderColor={APP_BORDER}
                     p={5}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
@@ -5067,9 +5071,11 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
-                          variant="ghost"
                           onClick={() => handlePlayQuestionTTS(maQ)}
                           mr={1}
+                          {...getQuestionToolButtonProps({
+                            active: isQuestionSynthesizing,
+                          })}
                         />
                         <Text
                           fontSize="lg"
@@ -5114,12 +5120,15 @@ Return JSON ONLY:
                                 borderColor={
                                   snapshot.isDragging
                                     ? "purple.300"
-                                    : "rgba(255,255,255,0.22)"
+                                    : APP_BORDER
                                 }
                                 bg={
                                   snapshot.isDragging
                                     ? "rgba(128,90,213,0.16)"
-                                    : "transparent"
+                                    : APP_SURFACE_ELEVATED
+                                }
+                                color={
+                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign="left"
@@ -5127,7 +5136,7 @@ Return JSON ONLY:
                                   handleMaAnswerClick(idx, position)
                                 }
                                 _hover={{
-                                  bg: "rgba(128,90,213,0.12)",
+                                  bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
                                 }}
                                 transition="all 0.15s ease"
@@ -5146,12 +5155,14 @@ Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  bg="rgba(255, 255, 255, 0.02)"
+                  bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
                   borderWidth="1px"
-                  borderColor="whiteAlpha.100"
+                  borderColor={APP_BORDER}
                   p={5}
                   mb={3}
+                  color={APP_TEXT_PRIMARY}
+                  boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
@@ -5165,9 +5176,11 @@ Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
-                        variant="ghost"
                         onClick={() => handlePlayQuestionTTS(maQ)}
                         mr={1}
+                        {...getQuestionToolButtonProps({
+                          active: isQuestionSynthesizing,
+                        })}
                       />
                       <Text
                         fontSize="lg"
@@ -5204,30 +5217,11 @@ Return JSON ONLY:
                         px={4}
                         py={3}
                         rounded="lg"
-                        borderWidth="2px"
-                        borderColor={
-                          isSelected ? "teal.400" : "rgba(255,255,255,0.15)"
-                        }
-                        bg={
-                          isSelected
-                            ? "linear-gradient(135deg, rgba(56,178,172,0.25) 0%, rgba(77,201,195,0.15) 100%)"
-                            : "rgba(255,255,255,0.03)"
-                        }
-                        transition="all 0.2s ease"
-                        _hover={
-                          maChoices.length
-                            ? {
-                                borderColor: isSelected
-                                  ? "teal.300"
-                                  : "rgba(255,255,255,0.3)",
-                                bg: isSelected
-                                  ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
-                                  : "rgba(255,255,255,0.06)",
-                                transform: "translateY(-2px)",
-                                shadow: "md",
-                              }
-                            : {}
-                        }
+                        {...getQuestionChoiceCardProps({
+                          selected: isSelected,
+                          tone: "multi",
+                          interactive: maChoices.length > 0,
+                        })}
                         position="relative"
                         opacity={maChoices.length ? 1 : 0.5}
                       >
@@ -5236,15 +5230,13 @@ Return JSON ONLY:
                             w="20px"
                             h="20px"
                             rounded="md"
-                            borderWidth="2px"
-                            borderColor={
-                              isSelected ? "teal.400" : "rgba(255,255,255,0.3)"
-                            }
-                            bg={isSelected ? "teal.500" : "transparent"}
+                            {...getQuestionChoiceIndicatorProps({
+                              selected: isSelected,
+                              tone: "multi",
+                            })}
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
-                            transition="all 0.2s ease"
                             flexShrink={0}
                           >
                             {isSelected && (
@@ -5338,7 +5330,7 @@ Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingSpeakQ) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
               {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
             </Text>
             {loadingSpeakQ ? (
@@ -5353,12 +5345,14 @@ Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  border="1px solid rgba(255,255,255,0.18)"
+                  border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
                   p={6}
                   textAlign="center"
-                  bg="rgba(255,255,255,0.04)"
+                  bg={APP_SURFACE_ELEVATED}
+                  color={APP_TEXT_PRIMARY}
                   position="relative"
+                  boxShadow={APP_SHADOW}
                 >
                   <IconButton
                     aria-label={speakListenLabel}
@@ -5542,12 +5536,13 @@ Return JSON ONLY:
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
             <Box
-              bg="rgba(255,255,255,0.03)"
-              border="1px solid rgba(255,255,255,0.08)"
+              bg={APP_SURFACE_ELEVATED}
+              border={`1px solid ${APP_BORDER}`}
               rounded="2xl"
               p={{ base: 4, md: 6 }}
               position="relative"
               overflow="hidden"
+              boxShadow={APP_SHADOW}
             >
               {/* Accent bar */}
               <Box
@@ -5561,7 +5556,7 @@ Return JSON ONLY:
 
               {/* Header */}
               <HStack justify="space-between" align="center" mb={2}>
-                <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
                   {userLanguage === "es"
                     ? "Empareja las palabras"
                     : "Match the words"}
@@ -5587,13 +5582,11 @@ Return JSON ONLY:
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
-                  bg="white"
-                  color="blue"
-                  boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
                   isDisabled={
                     isLoadingAssistantSupport || !!assistantSupportText
                   }
+                  {...getQuestionToolButtonProps()}
                 />
               </HStack>
 
@@ -5609,11 +5602,11 @@ Return JSON ONLY:
                       key={i}
                       align="center"
                       spacing={3}
-                      bg="rgba(255,255,255,0.025)"
+                      bg={APP_SURFACE}
                       rounded="xl"
                       px={3}
                       py={2}
-                      border="1px solid rgba(255,255,255,0.05)"
+                      border={`1px solid ${APP_BORDER}`}
                     >
                       {/* Left word */}
                       <HStack
@@ -5630,18 +5623,19 @@ Return JSON ONLY:
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"
-                          variant="ghost"
-                          color="cyan.300"
                           onClick={() => handlePlayMatchWordTTS(lhs, i)}
                           isDisabled={!lhs || lhs === "…"}
+                          {...getQuestionToolButtonProps({
+                            active: matchWordSynthesizing === i,
+                          })}
                         />
-                        <Text fontWeight="semibold" color="white">
+                        <Text fontWeight="semibold" color={APP_TEXT_PRIMARY}>
                           {lhs}
                         </Text>
                       </HStack>
 
                       {/* Arrow */}
-                      <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>
+                      <Text color={APP_TEXT_MUTED} fontSize="lg" flexShrink={0}>
                         →
                       </Text>
 
@@ -5656,19 +5650,12 @@ Return JSON ONLY:
                             {...provided.droppableProps}
                             minH="42px"
                             px={3}
-                            border={
-                              mSlots[i] !== null && mRight[mSlots[i]] != null
-                                ? "1px solid rgba(128,90,213,0.4)"
-                                : "1px dashed rgba(255,255,255,0.15)"
-                            }
-                            bg={
-                              mSlots[i] !== null && mRight[mSlots[i]] != null
-                                ? "rgba(128,90,213,0.1)"
-                                : "rgba(255,255,255,0.02)"
-                            }
+                            {...getQuestionDropZoneProps({
+                              filled:
+                                mSlots[i] !== null && mRight[mSlots[i]] != null,
+                            })}
                             rounded="lg"
                             w="100%"
-                            transition="all 0.2s ease"
                           >
                             {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
                               <Draggable
@@ -5722,9 +5709,7 @@ Return JSON ONLY:
                                     px={3}
                                     py={1.5}
                                     rounded="lg"
-                                    bg="rgba(128,90,213,0.15)"
-                                    border="1px solid rgba(128,90,213,0.35)"
-                                    color="white"
+                                    {...getQuestionChipProps()}
                                     fontSize="sm"
                                   >
                                     {mRight[mSlots[i]]}
@@ -5751,15 +5736,15 @@ Return JSON ONLY:
                 {/* Bank */}
                 <Box
                   mt={5}
-                  bg="rgba(255,255,255,0.025)"
-                  border="1px solid rgba(255,255,255,0.08)"
+                  bg={APP_SURFACE}
+                  border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
                   p={3}
                 >
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="whiteAlpha.500"
+                    color={APP_TEXT_MUTED}
                     mb={2}
                     textTransform="uppercase"
                     letterSpacing="wider"
@@ -5775,9 +5760,9 @@ Return JSON ONLY:
                         flexWrap="wrap"
                         minH="44px"
                         p={2}
-                        border="1px dashed rgba(255,255,255,0.1)"
+                        border={`1px dashed ${APP_BORDER_STRONG}`}
                         rounded="lg"
-                        bg="rgba(255,255,255,0.015)"
+                        bg={APP_SURFACE_MUTED}
                       >
                         {(mBank.length
                           ? mBank
@@ -5831,9 +5816,7 @@ Return JSON ONLY:
                                   px={3}
                                   py={1.5}
                                   rounded="lg"
-                                  bg="rgba(128,90,213,0.12)"
-                                  border="1px solid rgba(128,90,213,0.3)"
-                                  color="white"
+                                  {...getQuestionChipProps()}
                                   fontSize="sm"
                                 >
                                   {mRight[ri]}
@@ -5846,7 +5829,7 @@ Return JSON ONLY:
                               px={3}
                               py={1.5}
                               rounded="lg"
-                              border="1px dashed rgba(255,255,255,0.12)"
+                              border={`1px dashed ${APP_BORDER_STRONG}`}
                               opacity={0.4}
                             >
                               …

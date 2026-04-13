@@ -57,6 +57,7 @@ import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
+import { useThemeStore } from "../useThemeStore";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -93,6 +94,58 @@ const MATRIX_PANEL_SX = {
     zIndex: 1,
   },
 };
+const PAPER_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 18% 16%, rgba(172,142,110,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 20%, rgba(217,192,164,0.12) 0%, transparent 38%), " +
+    "linear-gradient(180deg, rgba(255,249,242,0.98) 0%, rgba(248,241,232,0.98) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(155,135,112,0.05) 0px, rgba(155,135,112,0.05) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.24,
+    mixBlendMode: "multiply",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+const PAPER_PAGE_SX = {
+  background:
+    "radial-gradient(circle at 14% 12%, rgba(220, 197, 169, 0.18) 0%, transparent 34%), " +
+    "radial-gradient(circle at 84% 10%, rgba(235, 220, 198, 0.2) 0%, transparent 32%), " +
+    "linear-gradient(180deg, rgba(252,248,242,0.98) 0%, rgba(246,239,230,0.98) 100%)",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(155,135,112,0.03) 0px, rgba(155,135,112,0.03) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.4,
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -474,20 +527,32 @@ function summarizeSpeechEvidence(turns = []) {
 /* ---- Bubble components ---- */
 function UserBubble({ label, text }) {
   if (!text) return null;
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   return (
     <Box
-      bg="cyan.800"
+      bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "cyan.800"}
       p={3}
       rounded="2xl"
-      border="1px solid rgba(255,255,255,0.06)"
+      border="1px solid"
+      borderColor={
+        isLightTheme ? "rgba(108, 182, 191, 0.22)" : "rgba(255,255,255,0.06)"
+      }
       maxW="100%"
       borderBottomRightRadius="0px"
+      color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
     >
-      <Text fontSize="2xs" opacity={0.6} mb={1}>
+      <Text
+        fontSize="2xs"
+        opacity={0.6}
+        mb={1}
+        color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+      >
         {label}
       </Text>
       <Text
         fontSize="sm"
+        color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
         sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
       >
         {text}
@@ -505,17 +570,21 @@ function AssistantBubble({
   contentTransform = "translateY(0px) scale(1)",
 }) {
   if (!text) return null;
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   return (
     <Box
       ref={containerRef}
-      bg="transparent"
+      bg={isLightTheme ? APP_SURFACE_ELEVATED : "transparent"}
       p={3}
       rounded="2xl"
-      border="1px solid rgba(255,255,255,0.06)"
-      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
+      border="1px solid"
+      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
+      boxShadow={isLightTheme ? APP_SHADOW : "0 14px 28px rgba(0,0,0,0.35)"}
       maxW="100%"
       borderBottomLeftRadius="0px"
-      sx={MATRIX_PANEL_SX}
+      sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
+      color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
     >
       <Box
         opacity={contentOpacity}
@@ -524,12 +593,18 @@ function AssistantBubble({
         willChange="opacity, transform"
         pointerEvents={contentOpacity < 0.5 ? "none" : "auto"}
       >
-        <Text fontSize="2xs" opacity={0.6} mb={1}>
+        <Text
+          fontSize="2xs"
+          opacity={0.6}
+          mb={1}
+          color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+        >
           {label}
         </Text>
         <Text
           ref={primaryTextRef}
           fontSize="sm"
+          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
           sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
         >
           {text}
@@ -558,6 +633,8 @@ function RowRight({ children }) {
 export default function ProficiencyTest() {
   const navigate = useNavigate();
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
@@ -1818,7 +1895,7 @@ Return ONLY valid JSON:
     getOutgoingTextById: getAssistantMessageTextById,
   });
   const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted);
+    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
   const liveUiState =
     status === "connected" && uiState === "idle" ? "listening" : uiState;
   const orbUiState = getRealtimeOrbVisualState(liveUiState);
@@ -1881,11 +1958,11 @@ Return ONLY valid JSON:
     <>
       <Box
         minH="100vh"
-        bg="#0b1020"
-        color="gray.100"
+        bg={isLightTheme ? "var(--app-bg)" : "#0b1020"}
+        color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         position="relative"
         pb="140px"
-        sx={{
+        sx={isLightTheme ? PAPER_PAGE_SX : {
           background:
             "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.2) 0%, transparent 42%), " +
             "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.14) 0%, transparent 40%), " +
@@ -1913,8 +1990,11 @@ Return ONLY valid JSON:
             icon={<CloseIcon />}
             aria-label="Close"
             variant="ghost"
-            color="gray.400"
-            _hover={{ color: "gray.200", bg: "whiteAlpha.100" }}
+            color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+            _hover={{
+              color: isLightTheme ? APP_TEXT_PRIMARY : "gray.200",
+              bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+            }}
             size="sm"
             position="absolute"
             top={3}
@@ -1926,19 +2006,20 @@ Return ONLY valid JSON:
         {/* Progress + Robot */}
         <Box px={4} mt={4} display="flex" justifyContent="center">
           <Box
-            bg="transparent"
             p={3}
             rounded="2xl"
-            border="1px solid rgba(255,255,255,0.06)"
+            border="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
             width="100%"
             maxWidth="400px"
             position="relative"
-            sx={MATRIX_PANEL_SX}
+            sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
+            boxShadow={isLightTheme ? APP_SHADOW : undefined}
           >
             <IconButton
               ref={chatLogButtonRef}
               icon={<FaRegCommentDots size={14} />}
-              size="xs"
+              size="sm"
               variant="ghost"
               colorScheme="cyan"
               {...chatLogButtonHighlightProps}
@@ -1947,6 +2028,10 @@ Return ONLY valid JSON:
               position="absolute"
               top={2}
               right={2}
+              minW="36px"
+              h="36px"
+              zIndex={4}
+              pointerEvents="auto"
               aria-label={isEs ? "Historial" : "Chat log"}
             />
 
@@ -1954,7 +2039,7 @@ Return ONLY valid JSON:
               <Text
                 fontSize="lg"
                 fontWeight="bold"
-                color="gray.100"
+                color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
                 textAlign="center"
               >
                 {isEs ? "Prueba de Nivel" : "Proficiency Test"}
@@ -1962,7 +2047,12 @@ Return ONLY valid JSON:
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
-                    <Text fontSize="sm" opacity={0.9} color="white" flex="1">
+                    <Text
+                      fontSize="sm"
+                      opacity={0.9}
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+                      flex="1"
+                    >
                       {isEs
                         ? "Habla naturalmente — estamos evaluando tu nivel"
                         : "Speak naturally — we're assessing your level"}
@@ -1989,6 +2079,14 @@ Return ONLY valid JSON:
                   variant="outline"
                   colorScheme="teal"
                   onClick={handleTryAgain}
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  borderColor={isLightTheme ? APP_BORDER : undefined}
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER }
+                      : undefined
+                  }
                 >
                   {isEs ? "Empezar de nuevo" : "Start over"}
                 </Button>
@@ -1997,6 +2095,14 @@ Return ONLY valid JSON:
                   variant="outline"
                   colorScheme="teal"
                   onClick={() => setShowRubric(true)}
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  borderColor={isLightTheme ? APP_BORDER : undefined}
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER }
+                      : undefined
+                  }
                 >
                   {isEs ? "Rúbrica" : "Grading rubric"}
                 </Button>
@@ -2010,7 +2116,10 @@ Return ONLY valid JSON:
             <VoiceOrb state={orbUiState} />
           </Box>
           {uiStateLabel(liveUiState, isEs) && (
-            <Text fontSize="xs" color="whiteAlpha.800">
+            <Text
+              fontSize="xs"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+            >
               {uiStateLabel(liveUiState, isEs)}
             </Text>
           )}
@@ -2022,9 +2131,13 @@ Return ONLY valid JSON:
             <VStack spacing={0} py={6}>
               {/* Card with loading text */}
               <Box
-                bg="linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,70,0.95) 50%, rgba(15,23,42,0.95) 100%)"
+                bg={
+                  isLightTheme
+                    ? APP_SURFACE_ELEVATED
+                    : "linear-gradient(135deg, rgba(15,23,42,0.95) 0%, rgba(30,41,70,0.95) 50%, rgba(15,23,42,0.95) 100%)"
+                }
                 border="1px solid"
-                borderColor="whiteAlpha.200"
+                borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
                 rounded="2xl"
                 pt={6}
                 pb={5}
@@ -2032,15 +2145,27 @@ Return ONLY valid JSON:
                 w="100%"
                 maxW="340px"
                 textAlign="center"
-                boxShadow="0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)"
+                boxShadow={
+                  isLightTheme
+                    ? APP_SHADOW
+                    : "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)"
+                }
               >
                 <VStack spacing={3}>
                   <HStack spacing={2} justify="center">
-                    <Text fontWeight="bold" fontSize="lg" color="white">
+                    <Text
+                      fontWeight="bold"
+                      fontSize="lg"
+                      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                    >
                       {isEs ? "Evaluando" : "Evaluating"}
                     </Text>
                   </HStack>
-                  <Text fontSize="sm" opacity={0.6} color="whiteAlpha.800">
+                  <Text
+                    fontSize="sm"
+                    opacity={0.7}
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                  >
                     {isEs
                       ? "Analizando tu conversación para determinar tu nivel..."
                       : "Analyzing your conversation to determine your level..."}
@@ -2084,17 +2209,42 @@ Return ONLY valid JSON:
               px={{ base: 8, md: 12 }}
               rounded="full"
               colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              background={
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_BG
+                  : isLightTheme
+                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                    : undefined
+              }
               boxShadow={
-                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_GLOW
+                  : isLightTheme
+                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                    : undefined
               }
               _hover={
                 status === "connected"
                   ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : isLightTheme
+                    ? {
+                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                      }
+                    : undefined
+              }
+              color={
+                status === "connected"
+                  ? "white"
+                  : isLightTheme
+                    ? "white"
+                    : "white"
+              }
+              border={
+                isLightTheme && status !== "connected"
+                  ? "1px solid rgba(255,255,255,0.55)"
                   : undefined
               }
-              color="white"
-              textShadow="0px 0px 20px black"
+              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={3}
               isDisabled={userMessageCount >= MAX_EXCHANGES}
             >
@@ -2122,12 +2272,13 @@ Return ONLY valid JSON:
           <Box px={4} pt={2}>
             <Box
               as="pre"
-              bg="rgba(255,255,255,0.06)"
-              border="1px solid rgba(255,255,255,0.12)"
+              bg={isLightTheme ? APP_SURFACE : "rgba(255,255,255,0.06)"}
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.12)"}
               p={3}
               borderRadius={8}
               whiteSpace="pre-wrap"
-              color="#fee2e2"
+              color={isLightTheme ? "#8a4d5a" : "#fee2e2"}
             >
               {err}
             </Box>
@@ -2144,8 +2295,16 @@ Return ONLY valid JSON:
         onClose={() => setShowChatLog(false)}
         size="xl"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
-        <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
+        <ModalOverlay
+          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
+          backdropFilter="blur(4px)"
+        />
+        <ModalContent
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+          borderWidth="1px"
+          borderColor={isLightTheme ? APP_BORDER : undefined}
+        >
           <ModalHeader>{isEs ? "Historial" : "Chat log"}</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
@@ -2184,14 +2343,23 @@ Return ONLY valid JSON:
         closeOnOverlayClick={false}
         closeOnEsc={false}
       >
-        <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
+        <DrawerOverlay
+          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
+          backdropFilter="blur(6px)"
+        />
         <DrawerContent
-          bg="gray.900"
-          color="gray.100"
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderTopRadius="24px"
           maxH="92vh"
           display="flex"
           flexDirection="column"
+          borderTop={isLightTheme ? `1px solid ${APP_BORDER}` : undefined}
+          boxShadow={
+            isLightTheme
+              ? "0 -18px 42px rgba(111, 86, 54, 0.12)"
+              : undefined
+          }
           sx={{
             "@supports (height: 100dvh)": {
               maxHeight: "92dvh",
@@ -2199,42 +2367,73 @@ Return ONLY valid JSON:
           }}
         >
           <DrawerBody px={{ base: 4, md: 6 }} py={0} overflowY="auto">
-            <VStack spacing={5} align="stretch">
-              {/* Gradient header with level badge */}
+            <VStack spacing={5} align="stretch" w="100%" maxW="1180px" mx="auto">
+              {/* Header */}
               <Box
+                bg={isLightTheme ? APP_SURFACE : undefined}
                 bgGradient={
-                  levelInfo
-                    ? `linear(to-r, ${levelInfo.color}, purple.500)`
-                    : "linear(to-r, cyan.500, purple.500)"
+                  isLightTheme
+                    ? undefined
+                    : levelInfo
+                      ? `linear(to-r, ${levelInfo.color}, purple.500)`
+                      : "linear(to-r, cyan.500, purple.500)"
                 }
-                px={6}
-                py={6}
-                mx={-4}
-                mt={0}
-                borderTopRadius="24px"
+                px={{ base: 5, md: 8 }}
+                py={{ base: 6, md: 7 }}
+                mt={4}
+                rounded="3xl"
+                border="1px solid"
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(255,255,255,0.12)"
+                }
+                boxShadow={isLightTheme ? APP_SHADOW : undefined}
+                sx={isLightTheme ? PAPER_PANEL_SX : undefined}
               >
                 <VStack spacing={3} align="center">
-                  <Box bg="whiteAlpha.200" p={3} rounded="full">
-                    <Box as={LuBadgeCheck} fontSize="36px" color="white" />
+                  <Box
+                    bg={isLightTheme ? APP_SURFACE : "whiteAlpha.200"}
+                    p={3}
+                    rounded="full"
+                    border={isLightTheme ? "1px solid" : undefined}
+                    borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                    boxShadow={isLightTheme ? "0 8px 18px rgba(111, 86, 54, 0.08)" : undefined}
+                  >
+                    <Box
+                      as={LuBadgeCheck}
+                      fontSize="36px"
+                      color={isLightTheme ? "#0f766e" : "white"}
+                    />
                   </Box>
                   <Text
-                    fontSize="xl"
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    letterSpacing="0.08em"
+                    textTransform="uppercase"
+                    color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.800"}
+                  >
+                    {isEs ? "Resultado final" : "Final result"}
+                  </Text>
+                  <Text
+                    fontSize={{ base: "2xl", md: "3xl" }}
                     fontWeight="bold"
-                    color="white"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     textAlign="center"
                   >
                     {isEs ? "Evaluación Completa" : "Assessment Complete"}
                   </Text>
                   {assessedLevel && (
                     <Badge
-                      colorScheme="whiteAlpha"
-                      bg="whiteAlpha.300"
-                      color="white"
+                      colorScheme={isLightTheme ? undefined : "whiteAlpha"}
+                      bg={isLightTheme ? APP_SURFACE : "whiteAlpha.300"}
+                      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                       fontSize="lg"
                       px={5}
                       py={1.5}
                       rounded="full"
                       fontWeight="bold"
+                      border={isLightTheme ? "1px solid" : undefined}
+                      borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                      boxShadow={isLightTheme ? "0 6px 14px rgba(111, 86, 54, 0.06)" : undefined}
                     >
                       {assessedLevel} —{" "}
                       {levelInfo?.name?.[isEs ? "es" : "en"] || assessedLevel}
@@ -2244,32 +2443,53 @@ Return ONLY valid JSON:
               </Box>
               {/* Summary */}
               {assessmentSummary && (
-                <Text
-                  fontSize="md"
-                  opacity={0.9}
-                  textAlign="center"
-                  lineHeight="1.7"
+                <Box
+                  bg={isLightTheme ? APP_SURFACE : "gray.800"}
+                  px={{ base: 4, md: 6 }}
+                  py={{ base: 4, md: 5 }}
+                  rounded="2xl"
+                  border="1px solid"
+                  borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
+                  boxShadow={isLightTheme ? "0 8px 20px rgba(111, 86, 54, 0.06)" : undefined}
                 >
-                  {assessmentSummary}
-                </Text>
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    letterSpacing="0.06em"
+                    textTransform="uppercase"
+                    mb={2}
+                    textAlign="center"
+                    color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.700"}
+                  >
+                    {isEs ? "Resumen de la evaluación" : "Assessment summary"}
+                  </Text>
+                  <Text
+                    fontSize={{ base: "md", md: "lg" }}
+                    textAlign="center"
+                    lineHeight="1.8"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  >
+                    {assessmentSummary}
+                  </Text>
+                </Box>
               )}
 
               {/* Individual criterion scores — compact grid */}
               {assessmentScores && (
                 <>
-                  <Divider borderColor="gray.700" />
+                  <Divider borderColor={isLightTheme ? APP_BORDER : "gray.700"} />
                   <Box>
                     <Text
                       fontWeight="semibold"
                       fontSize="sm"
                       mb={3}
-                      opacity={0.7}
                       letterSpacing="0.05em"
                       textTransform="uppercase"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                     >
                       {isEs ? "Desglose" : "Breakdown"}
                     </Text>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
                       {ASSESSMENT_CRITERIA.map((criterion) => {
                         const data = assessmentScores[criterion.key];
                         const score =
@@ -2288,47 +2508,88 @@ Return ONLY valid JSON:
                           red: "#FC8181",
                         };
                         const accent = colorMap[color] || "#A0AEC0";
+                        const lightToneMap = {
+                          green: {
+                            fg: "#166534",
+                            bg: "rgba(74, 222, 128, 0.16)",
+                            border: "rgba(34, 197, 94, 0.28)",
+                          },
+                          teal: {
+                            fg: "#0f766e",
+                            bg: "rgba(45, 212, 191, 0.16)",
+                            border: "rgba(20, 184, 166, 0.28)",
+                          },
+                          yellow: {
+                            fg: "#a16207",
+                            bg: "rgba(250, 204, 21, 0.18)",
+                            border: "rgba(234, 179, 8, 0.28)",
+                          },
+                          red: {
+                            fg: "#b91c1c",
+                            bg: "rgba(248, 113, 113, 0.14)",
+                            border: "rgba(248, 113, 113, 0.28)",
+                          },
+                        };
+                        const lightTone = lightToneMap[color] || {
+                          fg: APP_TEXT_PRIMARY,
+                          bg: APP_SURFACE_MUTED,
+                          border: APP_BORDER,
+                        };
 
                         return (
                           <GridItem key={criterion.key}>
                             <Box
-                              bg="gray.800"
-                              px={3}
-                              py={2.5}
-                              rounded="lg"
+                              bg={isLightTheme ? APP_SURFACE : "gray.800"}
+                              px={4}
+                              py={3.5}
+                              rounded="2xl"
                               borderLeft="3px solid"
-                              borderColor={accent}
+                              borderLeftColor={isLightTheme ? lightTone.border : accent}
                               h="100%"
+                              border={isLightTheme ? "1px solid" : undefined}
+                              borderColor={isLightTheme ? APP_BORDER : undefined}
+                              boxShadow={
+                                isLightTheme
+                                  ? "0 8px 18px rgba(111, 86, 54, 0.05)"
+                                  : undefined
+                              }
                             >
                               <HStack
                                 justify="space-between"
-                                align="center"
-                                mb={1}
+                                align="start"
+                                mb={2}
                               >
                                 <Text
-                                  fontSize="xs"
+                                  fontSize="sm"
                                   fontWeight="semibold"
-                                  opacity={0.85}
+                                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                                 >
                                   {criterion[isEs ? "es" : "en"]}
                                 </Text>
                                 {score !== null && (
-                                  <Text
-                                    fontSize="lg"
-                                    fontWeight="bold"
-                                    color={accent}
-                                    lineHeight="1"
+                                  <Box
+                                    px={2.5}
+                                    py={1}
+                                    rounded="full"
+                                    bg={isLightTheme ? lightTone.bg : undefined}
                                   >
-                                    {score}
-                                  </Text>
+                                    <Text
+                                      fontSize="md"
+                                      fontWeight="bold"
+                                      color={isLightTheme ? lightTone.fg : accent}
+                                      lineHeight="1"
+                                    >
+                                      {score}
+                                    </Text>
+                                  </Box>
                                 )}
                               </HStack>
                               {note && (
                                 <Text
-                                  fontSize="2xs"
-                                  opacity={0.55}
-                                  lineHeight="1.4"
+                                  fontSize="xs"
+                                  lineHeight="1.6"
                                   noOfLines={3}
+                                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                                 >
                                   {note}
                                 </Text>
@@ -2344,33 +2605,59 @@ Return ONLY valid JSON:
 
               {scoreInsight && (
                 <HStack
-                  bg="gray.800"
+                  bg={isLightTheme ? APP_SURFACE : "gray.800"}
                   px={4}
                   py={3}
-                  rounded="lg"
+                  rounded="2xl"
                   justify="space-between"
                   align="center"
+                  border={isLightTheme ? "1px solid" : undefined}
+                  borderColor={isLightTheme ? APP_BORDER : undefined}
+                  boxShadow={
+                    isLightTheme
+                      ? "0 8px 18px rgba(111, 86, 54, 0.05)"
+                      : undefined
+                  }
                 >
-                  <Text fontSize="xs" opacity={0.6}>
+                  <Text
+                    fontSize="xs"
+                    color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  >
                     {isEs ? "Puntaje compuesto" : "Composite score"}
                   </Text>
-                  <Text fontSize="md" fontWeight="bold" color="cyan.300">
+                  <Text
+                    fontSize="md"
+                    fontWeight="bold"
+                    color={isLightTheme ? "#0f766e" : "cyan.300"}
+                  >
                     {scoreInsight.finalScore}/10
                   </Text>
                 </HStack>
               )}
 
-              <Divider borderColor="gray.700" />
+              <Divider borderColor={isLightTheme ? APP_BORDER : "gray.700"} />
 
               {assessedLevel && (
-                <Box bg="gray.800" px={4} py={3} rounded="lg">
+                <Box
+                  bg={isLightTheme ? APP_SURFACE : "gray.800"}
+                  px={{ base: 4, md: 5 }}
+                  py={{ base: 4, md: 4 }}
+                  rounded="2xl"
+                  border={isLightTheme ? "1px solid" : undefined}
+                  borderColor={isLightTheme ? APP_BORDER : undefined}
+                  boxShadow={
+                    isLightTheme
+                      ? "0 8px 18px rgba(111, 86, 54, 0.05)"
+                      : undefined
+                  }
+                >
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    opacity={0.5}
                     mb={2}
                     textTransform="uppercase"
                     letterSpacing="0.05em"
+                    color={isLightTheme ? APP_TEXT_MUTED : undefined}
                   >
                     {isEs ? `Nivel ${assessedLevel}` : `Level ${assessedLevel}`}
                   </Text>
@@ -2380,7 +2667,12 @@ Return ONLY valid JSON:
                         isEs ? "es" : "en"
                       ] || []
                     ).map((item) => (
-                      <Text key={item} fontSize="xs" opacity={0.7}>
+                      <Text
+                        key={item}
+                        fontSize="xs"
+                        lineHeight="1.55"
+                        color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                      >
                         {item}
                       </Text>
                     ))}
@@ -2408,7 +2700,11 @@ Return ONLY valid JSON:
               )}
 
               {assessmentError && (
-                <Text fontSize="sm" color="yellow.300" textAlign="center">
+                <Text
+                  fontSize="sm"
+                  color={isLightTheme ? "#9a7d3c" : "yellow.300"}
+                  textAlign="center"
+                >
                   {isEs
                     ? "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo."
                     : "There was a problem with automatic evaluation. You can try again."}
@@ -2418,8 +2714,9 @@ Return ONLY valid JSON:
           </DrawerBody>
           <DrawerFooter
             borderTop="1px solid"
-            borderColor="gray.700"
-            bg="gray.900"
+            borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+            bg={isLightTheme ? "rgba(255, 253, 249, 0.96)" : "gray.900"}
+            backdropFilter={isLightTheme ? "blur(10px)" : undefined}
             position="sticky"
             bottom={0}
             zIndex={2}
@@ -2431,9 +2728,17 @@ Return ONLY valid JSON:
                 flex={1}
                 size="lg"
                 variant="outline"
-                colorScheme="whiteAlpha"
+                colorScheme={isLightTheme ? undefined : "whiteAlpha"}
                 onClick={handleTryAgain}
                 rounded="xl"
+                bg={isLightTheme ? APP_SURFACE : undefined}
+                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                _hover={
+                  isLightTheme
+                    ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
+                    : undefined
+                }
               >
                 {isEs ? "Intentar de nuevo" : "Try again"}
               </Button>
@@ -2445,6 +2750,8 @@ Return ONLY valid JSON:
                 fontWeight="bold"
                 rounded="xl"
                 isDisabled={!assessedLevel}
+                color={isLightTheme ? "#083344" : undefined}
+                boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
                 {isEs ? "Volver a la aplicación" : "Return to app"}
               </Button>
@@ -2461,17 +2768,21 @@ Return ONLY valid JSON:
       >
         <DrawerOverlay
           {...rubricSwipeDismiss.overlayProps}
-          bg="blackAlpha.700"
+          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(6px)"
         />
         <DrawerContent
           {...rubricSwipeDismiss.drawerContentProps}
-          bg="linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"
-          color="gray.100"
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderTopRadius="24px"
           h="80vh"
-          borderTop="1px solid rgba(255,255,255,0.14)"
-          boxShadow="0 -18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)"
+          borderTop={isLightTheme ? `1px solid ${APP_BORDER}` : "1px solid rgba(255,255,255,0.14)"}
+          boxShadow={
+            isLightTheme
+              ? APP_SHADOW
+              : "0 -18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.08)"
+          }
           sx={{
             "@supports (height: 100dvh)": {
               height: "80dvh",
@@ -2491,11 +2802,12 @@ Return ONLY valid JSON:
               <Box
                 ref={rubricInitialFocusRef}
                 tabIndex={-1}
-                bg="linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"
-                border="1px solid rgba(255,255,255,0.18)"
+                bg={isLightTheme ? APP_SURFACE_MUTED : "linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"}
+                border="1px solid"
+                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.18)"}
                 borderRadius="2xl"
                 p={4}
-                boxShadow="inset 0 1px 0 rgba(255,255,255,0.06)"
+                boxShadow={isLightTheme ? "none" : "inset 0 1px 0 rgba(255,255,255,0.06)"}
                 maxWidth="600px"
                 width="100%"
               >
@@ -2505,7 +2817,11 @@ Return ONLY valid JSON:
                   </Text>
                 </HStack>
 
-                <Text fontSize="sm" opacity={0.75}>
+                <Text
+                  fontSize="sm"
+                  opacity={0.75}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                >
                   {isEs
                     ? "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio."
                     : "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability."}
@@ -2513,17 +2829,22 @@ Return ONLY valid JSON:
               </Box>
 
               <Box
-                bg="rgba(17,24,39,0.85)"
+                bg={isLightTheme ? APP_SURFACE : "rgba(17,24,39,0.85)"}
                 borderRadius="xl"
                 p={4}
-                border="1px solid rgba(255,255,255,0.10)"
+                border="1px solid"
+                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
                 maxWidth="600px"
                 width="100%"
               >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
                   {isEs ? "Qué puntúa el sistema" : "What gets scored"}
                 </Text>
-                <Text fontSize="sm" opacity={0.8}>
+                <Text
+                  fontSize="sm"
+                  opacity={0.8}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                >
                   {isEs
                     ? "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión."
                     : "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension."}
@@ -2531,10 +2852,11 @@ Return ONLY valid JSON:
               </Box>
 
               <Box
-                bg="rgba(17,24,39,0.85)"
+                bg={isLightTheme ? APP_SURFACE : "rgba(17,24,39,0.85)"}
                 borderRadius="xl"
                 p={4}
-                border="1px solid rgba(255,255,255,0.10)"
+                border="1px solid"
+                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
                 maxWidth={"600px"}
                 width="100%"
               >
@@ -2575,12 +2897,15 @@ Return ONLY valid JSON:
                   {rubricRows.map((row) => (
                     <Box
                       key={row.level}
-                      bg="linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.78))"
+                      bg={isLightTheme ? APP_SURFACE : "linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.78))"}
                       borderRadius="xl"
                       px={3}
                       py={2.5}
-                      border="1px solid rgba(255,255,255,0.10)"
-                      _hover={{ borderColor: "rgba(34,211,238,0.45)" }}
+                      border="1px solid"
+                      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
+                      _hover={{
+                        borderColor: isLightTheme ? "rgba(86, 168, 155, 0.35)" : "rgba(34,211,238,0.45)",
+                      }}
                       transition="border-color 0.2s ease"
                     >
                       <HStack justify="space-between" align="center" mb={1}>
@@ -2592,11 +2917,20 @@ Return ONLY valid JSON:
                         >
                           {row.level}
                         </Badge>
-                        <Text fontSize="xs" opacity={0.6}>
+                        <Text
+                          fontSize="xs"
+                          opacity={0.6}
+                          color={isLightTheme ? APP_TEXT_MUTED : undefined}
+                        >
                           {row.range}
                         </Text>
                       </HStack>
-                      <Text fontSize="sm" opacity={0.8} lineHeight="1.5">
+                      <Text
+                        fontSize="sm"
+                        opacity={0.8}
+                        lineHeight="1.5"
+                        color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                      >
                         {row[isEs ? "es" : "en"]}
                       </Text>
                     </Box>
@@ -2612,6 +2946,7 @@ Return ONLY valid JSON:
                 color="white"
                 rounded="xl"
                 onClick={closeRubric}
+                boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
                 {isEs ? "Entendido" : "Got it"}
               </Button>
@@ -2628,12 +2963,15 @@ Return ONLY valid JSON:
         size="sm"
         motionPreset="slideInBottom"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
-          bg="gray.900"
-          color="gray.100"
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
-          borderColor="gray.700"
+          borderColor={isLightTheme ? APP_BORDER : "gray.700"}
           rounded="2xl"
           mx={4}
         >
@@ -2644,7 +2982,11 @@ Return ONLY valid JSON:
                   ? "¿Salir de la prueba de nivel?"
                   : "Exit proficiency test?"}
               </Text>
-              <Text fontSize="sm" color="gray.400" textAlign="center">
+              <Text
+                fontSize="sm"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                textAlign="center"
+              >
                 {isEs
                   ? "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración."
                   : "Your progress won't be saved. You can retake the test later from settings."}
@@ -2661,8 +3003,10 @@ Return ONLY valid JSON:
                 <Button
                   w="100%"
                   variant="ghost"
-                  color="gray.300"
-                  _hover={{ bg: "whiteAlpha.100" }}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                  _hover={{
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                  }}
                   onClick={() => setShowExitConfirm(false)}
                 >
                   {isEs ? "Continuar la prueba" : "Continue test"}

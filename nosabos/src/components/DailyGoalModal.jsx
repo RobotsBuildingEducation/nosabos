@@ -24,6 +24,7 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { FaCalendarAlt } from "react-icons/fa";
 import { database } from "../firebaseResources/firebaseResources";
+import { useThemeStore } from "../useThemeStore";
 import {
   translations as allTranslations,
   t as translate,
@@ -36,6 +37,15 @@ import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_OVERLAY = "var(--app-overlay)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Precomputed static styles for heatmap cells — plain DOM nodes are ~10x
 // faster to mount/reconcile than Chakra <Box> for hundreds of cells.
@@ -64,9 +74,24 @@ const WEEK_LABEL_STYLE = {
 };
 const WEEK_DAYS_STYLE = { display: "grid", rowGap: "2px" };
 
-function buildDayStyle(level, isFuture, isToday) {
+function buildDayStyle(level, isFuture, isToday, isLightTheme = false) {
   const style = { ...DAY_CELL_BASE_STYLE };
-  if (level === "goal") {
+  if (isLightTheme) {
+    if (level === "goal") {
+      style.background = "linear-gradient(135deg, #6fd0b5 0%, #8bc9de 100%)";
+      style.borderColor = "rgba(79, 139, 120, 0.28)";
+    } else if (level === "some") {
+      style.background = "rgba(117, 198, 167, 0.34)";
+      style.borderColor = "rgba(79, 139, 120, 0.18)";
+    } else {
+      style.background = isFuture
+        ? "rgba(91, 75, 58, 0.035)"
+        : "rgba(91, 75, 58, 0.075)";
+      style.borderColor = isToday
+        ? "rgba(91, 75, 58, 0.22)"
+        : "rgba(91, 75, 58, 0.08)";
+    }
+  } else if (level === "goal") {
     style.background = "linear-gradient(135deg, #2dd4bf 0%, #38bdf8 100%)";
     style.borderColor = "rgba(167, 243, 208, 0.55)";
   } else if (level === "some") {
@@ -80,7 +105,7 @@ function buildDayStyle(level, isFuture, isToday) {
       ? "rgba(255,255,255,0.45)"
       : "rgba(255,255,255,0.08)";
   }
-  if (isFuture) style.opacity = 0.28;
+  if (isFuture) style.opacity = isLightTheme ? 0.48 : 0.28;
   if (isToday) style.transform = "scale(1.04)";
   return style;
 }
@@ -99,6 +124,7 @@ function buildGoalHeatmapWeeks(
   xpHistory = {},
   completedGoalDates = [],
   language = "en",
+  isLightTheme = false,
   now = new Date(),
 ) {
   const today = new Date(now);
@@ -150,7 +176,7 @@ function buildGoalHeatmapWeeks(
         key: dayKey,
         isBlank: false,
         title: `${dateFormatter.format(date)} - ${xp} XP`,
-        style: buildDayStyle(level, isFuture, isToday),
+        style: buildDayStyle(level, isFuture, isToday, isLightTheme),
       };
     });
 
@@ -169,6 +195,7 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
   currentDailyXp = 0,
   currentGoalXp = 0,
   labels,
+  isLightTheme = false,
 }) {
   const effectiveHistory = useMemo(() => {
     const todayKey = getLocalDayKey(new Date());
@@ -200,29 +227,34 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
 
   const weeks = useMemo(
     () =>
-      buildGoalHeatmapWeeks(effectiveHistory, effectiveCompletedDates, lang),
-    [effectiveCompletedDates, effectiveHistory, lang],
+      buildGoalHeatmapWeeks(
+        effectiveHistory,
+        effectiveCompletedDates,
+        lang,
+        isLightTheme,
+      ),
+    [effectiveCompletedDates, effectiveHistory, isLightTheme, lang],
   );
 
   return (
     <Box
       p={4}
       borderRadius="xl"
-      bg="gray.800"
+      bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
       border="1px solid"
-      borderColor="gray.700"
+      borderColor={isLightTheme ? APP_BORDER : "gray.700"}
     >
       <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
         <Text
           fontSize="xs"
           fontWeight="bold"
-          color="gray.300"
+          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
           textTransform="uppercase"
           letterSpacing="0.08em"
         >
           {labels.title}
         </Text>
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize="xs" color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}>
           {labels.subtitle}
         </Text>
       </HStack>
@@ -275,11 +307,20 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
             w="10px"
             h="10px"
             borderRadius="3px"
-            bg="rgba(255,255,255,0.08)"
+            bg={
+              isLightTheme
+                ? "rgba(91, 75, 58, 0.075)"
+                : "rgba(255,255,255,0.08)"
+            }
             border="1px solid"
-            borderColor="rgba(255,255,255,0.08)"
+            borderColor={
+              isLightTheme ? "rgba(91, 75, 58, 0.08)" : "rgba(255,255,255,0.08)"
+            }
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text
+            fontSize="xs"
+            color={isLightTheme ? APP_TEXT_MUTED : "gray.400"}
+          >
             {labels.empty}
           </Text>
         </HStack>
@@ -288,11 +329,22 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
             w="10px"
             h="10px"
             borderRadius="3px"
-            bg="rgba(45, 212, 191, 0.42)"
+            bg={
+              isLightTheme
+                ? "rgba(117, 198, 167, 0.34)"
+                : "rgba(45, 212, 191, 0.42)"
+            }
             border="1px solid"
-            borderColor="rgba(94, 234, 212, 0.28)"
+            borderColor={
+              isLightTheme
+                ? "rgba(79, 139, 120, 0.18)"
+                : "rgba(94, 234, 212, 0.28)"
+            }
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text
+            fontSize="xs"
+            color={isLightTheme ? APP_TEXT_MUTED : "gray.400"}
+          >
             {labels.some}
           </Text>
         </HStack>
@@ -301,11 +353,22 @@ const DailyGoalHeatmap = React.memo(function DailyGoalHeatmap({
             w="10px"
             h="10px"
             borderRadius="3px"
-            bgGradient="linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+            bgGradient={
+              isLightTheme
+                ? "linear(135deg, #6fd0b5 0%, #8bc9de 100%)"
+                : "linear(135deg, #2dd4bf 0%, #38bdf8 100%)"
+            }
             border="1px solid"
-            borderColor="rgba(167, 243, 208, 0.55)"
+            borderColor={
+              isLightTheme
+                ? "rgba(79, 139, 120, 0.28)"
+                : "rgba(167, 243, 208, 0.55)"
+            }
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text
+            fontSize="xs"
+            color={isLightTheme ? APP_TEXT_MUTED : "gray.400"}
+          >
             {labels.goal}
           </Text>
         </HStack>
@@ -331,6 +394,8 @@ export default function DailyGoalModal({
   currentDailyXp = 0,
   currentGoalXp = 0,
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
     () => t || allTranslations[resolvedLang] || allTranslations.en,
@@ -512,15 +577,18 @@ export default function DailyGoalModal({
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      <ModalOverlay bg="blackAlpha.700" />
+      <ModalOverlay
+        bg={isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
+        backdropFilter={isLightTheme ? "blur(4px)" : undefined}
+      />
 
       <ModalContent
-        bg="gray.900"
-        color="gray.100"
+        bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+        color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         border="1px solid"
-        borderColor="gray.700"
+        borderColor={isLightTheme ? APP_BORDER : "gray.700"}
         rounded="2xl"
-        shadow="xl"
+        shadow={isLightTheme ? APP_SHADOW : "xl"}
         overflow="hidden"
         maxH={{ base: "92vh", md: "880px" }}
         sx={{
@@ -529,9 +597,25 @@ export default function DailyGoalModal({
           },
         }}
       >
-        <ModalCloseButton onClick={handleClose} />
+        <ModalCloseButton
+          onClick={handleClose}
+          color={isLightTheme ? "white" : "currentColor"}
+          _hover={{
+            bg: isLightTheme ? "rgba(255,255,255,0.12)" : "whiteAlpha.100",
+          }}
+        />
         {/* Header */}
-        <Box bg="teal.500" color="white" px={6} pr={12} py={5}>
+        <Box
+          bg={
+            isLightTheme
+              ? "linear-gradient(135deg, #43a19d 0%, #378b86 100%)"
+              : "teal.500"
+          }
+          color="white"
+          px={6}
+          pr={12}
+          py={5}
+        >
           <HStack spacing={3} align="center">
             <Box
               as={FaCalendarAlt}
@@ -575,8 +659,46 @@ export default function DailyGoalModal({
                     <Button
                       key={v}
                       size="sm"
-                      variant={active ? "solid" : "outline"}
-                      colorScheme="teal"
+                      variant={
+                        isLightTheme ? "solid" : active ? "solid" : "outline"
+                      }
+                      bg={
+                        isLightTheme
+                          ? active
+                            ? "#3f9f9b"
+                            : APP_SURFACE_ELEVATED
+                          : undefined
+                      }
+                      color={
+                        isLightTheme
+                          ? active
+                            ? "white"
+                            : APP_TEXT_PRIMARY
+                          : undefined
+                      }
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme
+                          ? active
+                            ? "rgba(63, 159, 155, 0.7)"
+                            : APP_BORDER
+                          : active
+                            ? "transparent"
+                            : undefined
+                      }
+                      boxShadow={
+                        isLightTheme && active
+                          ? "0 6px 0 rgba(36, 91, 89, 0.18)"
+                          : "none"
+                      }
+                      _hover={
+                        isLightTheme
+                          ? {
+                              bg: active ? "#398f8b" : APP_SURFACE_MUTED,
+                            }
+                          : undefined
+                      }
+                      colorScheme={isLightTheme ? undefined : "teal"}
                       onClick={() => {
                         playSound(selectSound);
                         setGoal(String(v));
@@ -591,7 +713,9 @@ export default function DailyGoalModal({
 
             {/* Simple text field (no steppers) */}
             <FormControl>
-              <FormLabel>{ui.inputLabel || L.inputLabel}</FormLabel>
+              <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+                {ui.inputLabel || L.inputLabel}
+              </FormLabel>
               <HStack spacing={3} align="center">
                 <Input
                   type="number"
@@ -601,14 +725,23 @@ export default function DailyGoalModal({
                   max={1000}
                   value={goal}
                   onChange={(e) => setGoal(e.target.value)}
-                  bg="gray.800"
+                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
                   rounded="md"
                   size="md"
                   w="180px"
                 />
-                <Text opacity={0.8}>{L.xpUnit}</Text>
+                <Text color={isLightTheme ? APP_TEXT_SECONDARY : undefined}>
+                  {L.xpUnit}
+                </Text>
               </HStack>
-              <Text mt={2} fontSize="xs" opacity={0.7}>
+              <Text
+                mt={2}
+                fontSize="xs"
+                color={isLightTheme ? APP_TEXT_MUTED : undefined}
+                opacity={isLightTheme ? 1 : 0.7}
+              >
                 {L.levelExplainer(levelPct, approxLevels)}
               </Text>
             </FormControl>
@@ -621,14 +754,15 @@ export default function DailyGoalModal({
                 currentDailyXp={currentDailyXp}
                 currentGoalXp={currentGoalXp}
                 labels={heatmapLabels}
+                isLightTheme={isLightTheme}
               />
             ) : (
               <Box
                 p={4}
                 borderRadius="xl"
-                bg="gray.800"
+                bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
                 border="1px solid"
-                borderColor="gray.700"
+                borderColor={isLightTheme ? APP_BORDER : "gray.700"}
                 minH={{ base: "150px", md: "170px" }}
               />
             )}
@@ -639,13 +773,25 @@ export default function DailyGoalModal({
           px={{ base: 4, md: 6 }}
           py={4}
           borderTop="1px solid"
-          borderColor="gray.800"
+          borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
-            <Button variant={"ghost"} onClick={handleClose}>
+            <Button
+              variant={"ghost"}
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+              onClick={handleClose}
+            >
               {t?.teams_drawer_close || "Close"}
             </Button>
-            <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
+            <Button
+              colorScheme={isLightTheme ? undefined : "teal"}
+              bg={isLightTheme ? "#3f9f9b" : undefined}
+              color={isLightTheme ? "white" : undefined}
+              _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+              onClick={save}
+              isDisabled={!npub}
+              boxShadow={"0px 4px 0px teal"}
+            >
               {ui.save || L.save}
             </Button>
           </HStack>

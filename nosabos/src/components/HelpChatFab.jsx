@@ -86,6 +86,7 @@ import clickSound from "../assets/click.mp3";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
+import { useThemeStore } from "../useThemeStore";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -96,6 +97,11 @@ const REALTIME_URL = `${
   REALTIME_MODEL,
 )}`;
 const AUTO_DISCONNECT_MS = 15000;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
 
 /**
  * Small Markdown renderer mapped to Chakra components
@@ -232,6 +238,8 @@ const HelpChatFab = forwardRef(
     });
     const toast = useToast();
     const playSound = useSoundSettings((s) => s.playSound);
+    const themeMode = useThemeStore((s) => s.themeMode);
+    const isLightTheme = themeMode === "light";
 
     const ui = translations[appLanguage] || translations.en;
 
@@ -1516,6 +1524,29 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
     const isDesktop = useBreakpointValue({ base: false, md: true });
     const orderedMessages = getOrderedMessages(messages);
     const hasMessages = orderedMessages.length > 0;
+    const composerBg = isLightTheme ? APP_SURFACE_ELEVATED : "gray.800";
+    const composerBorderColor = isLightTheme ? APP_BORDER : "gray.700";
+    const composerTextColor = isLightTheme ? APP_TEXT_PRIMARY : "gray.100";
+    const composerPlaceholderColor = isLightTheme
+      ? APP_TEXT_MUTED
+      : "gray.500";
+    const sendButtonBg = isLightTheme ? "#0f766e" : "white";
+    const sendButtonColor = isLightTheme ? "#fffaf3" : "gray.900";
+    const sendButtonHoverBg = isLightTheme ? "#115e59" : "gray.200";
+    const sendButtonShadow = isLightTheme
+      ? "0px 4px 0px #0b5d57"
+      : "0px 4px 0px darkgray";
+    const sendButtonDisabledBg = isLightTheme
+      ? "rgba(15, 118, 110, 0.18)"
+      : "#e5e7eb";
+    const sendButtonDisabledColor = isLightTheme
+      ? "rgba(15, 118, 110, 0.54)"
+      : "#6b7280";
+    const userBubbleBg = isLightTheme ? "#6c5842" : "gray.700";
+    const userBubbleColor = isLightTheme ? "#fffaf3" : "white";
+    const userBubbleShadow = isLightTheme
+      ? "0 10px 20px rgba(111, 86, 54, 0.14)"
+      : "none";
 
     // Sidebar content - shared between desktop sidebar and mobile drawer
     const SidebarContent = (
@@ -1795,9 +1826,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       {/* Centered input bar */}
                       <Box w="100%" maxW="600px" mx="auto" px={4}>
                         <Box
-                          bg="gray.800"
+                          bg={composerBg}
                           border="1px solid"
-                          borderColor="gray.700"
+                          borderColor={composerBorderColor}
                           rounded="2xl"
                           p={2}
                         >
@@ -1857,7 +1888,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               }}
                               bg="transparent"
                               border="none"
+                              color={composerTextColor}
                               _focus={{ boxShadow: "none", border: "none" }}
+                              _placeholder={{ color: composerPlaceholderColor }}
                               resize="none"
                               minH="40px"
                               maxH="140px"
@@ -1904,17 +1937,23 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   playSound(submitActionSound);
                                   handleSend();
                                 }}
-                                bg="white"
-                                color="gray.900"
+                                bg={sendButtonBg}
+                                color={sendButtonColor}
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
-                                boxShadow="0px 4px 0px darkgray"
+                                boxShadow={sendButtonShadow}
                                 isDisabled={
                                   !input.trim() ||
                                   realtimeStatus === "connected"
                                 }
-                                _hover={{ bg: "gray.200" }}
+                                _hover={{ bg: sendButtonHoverBg }}
+                                _disabled={{
+                                  opacity: 1,
+                                  bg: sendButtonDisabledBg,
+                                  color: sendButtonDisabledColor,
+                                  boxShadow: "none",
+                                }}
                               />
                             )}
                           </HStack>
@@ -1948,13 +1987,14 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                           return m.role === "user" ? (
                             <Flex key={m.id} justify="flex-end">
                               <Box
-                                bg="gray.700"
-                                color="white"
+                                bg={userBubbleBg}
+                                color={userBubbleColor}
                                 px={4}
                                 py={3}
                                 rounded="2xl"
                                 roundedBottomRight="md"
                                 maxW="80%"
+                                boxShadow={userBubbleShadow}
                               >
                                 <Markdown>{m.text}</Markdown>
                               </Box>
@@ -2039,9 +2079,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         px={{ base: 4, md: 8 }}
                       >
                         <Box
-                          bg="gray.800"
+                          bg={composerBg}
                           border="1px solid"
-                          borderColor="gray.700"
+                          borderColor={composerBorderColor}
                           rounded="2xl"
                           p={2}
                         >
@@ -2108,7 +2148,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               }}
                               bg="transparent"
                               border="none"
+                              color={composerTextColor}
                               _focus={{ boxShadow: "none", border: "none" }}
+                              _placeholder={{ color: composerPlaceholderColor }}
                               resize="none"
                               minH="40px"
                               maxH="140px"
@@ -2155,17 +2197,23 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   playSound(submitActionSound);
                                   handleSend();
                                 }}
-                                bg="white"
-                                color="gray.900"
+                                bg={sendButtonBg}
+                                color={sendButtonColor}
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
-                                boxShadow="0px 4px 0px darkgray"
+                                boxShadow={sendButtonShadow}
                                 isDisabled={
                                   !input.trim() ||
                                   realtimeStatus === "connected"
                                 }
-                                _hover={{ bg: "gray.200" }}
+                                _hover={{ bg: sendButtonHoverBg }}
+                                _disabled={{
+                                  opacity: 1,
+                                  bg: sendButtonDisabledBg,
+                                  color: sendButtonDisabledColor,
+                                  boxShadow: "none",
+                                }}
                               />
                             )}
                           </HStack>

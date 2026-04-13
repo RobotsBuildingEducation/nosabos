@@ -21,9 +21,19 @@ import {
   inviteUserToTeam,
 } from "../../utils/teams";
 import useNOSTR from "../../hooks/useNOSTR";
+import { useThemeStore } from "../../useThemeStore";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const [teamName, setTeamName] = useState("");
   const [memberNpub, setMemberNpub] = useState("");
   const [membersToInvite, setMembersToInvite] = useState([]);
@@ -166,20 +176,32 @@ export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
       </Text>
       <VStack spacing={4} align="stretch">
         <FormControl>
-          <FormLabel>{t?.teams_create_name_label || "Team name"}</FormLabel>
+          <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+            {t?.teams_create_name_label || "Team name"}
+          </FormLabel>
           <Input
             value={teamName}
             onChange={(event) => setTeamName(event.target.value)}
             placeholder={t?.teams_create_name_placeholder || "e.g., Weekend Study"}
+            bg={isLightTheme ? APP_SURFACE_MUTED : undefined}
+            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+            borderColor={isLightTheme ? APP_BORDER : undefined}
+            _hover={{ borderColor: isLightTheme ? APP_BORDER : undefined }}
           />
         </FormControl>
         <FormControl>
-          <FormLabel>{t?.teams_create_member_label || "Invite teammates"}</FormLabel>
+          <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+            {t?.teams_create_member_label || "Invite teammates"}
+          </FormLabel>
           <HStack>
             <Input
               value={memberNpub}
               onChange={(event) => setMemberNpub(event.target.value)}
               placeholder={t?.teams_create_member_placeholder || "npub1..."}
+              bg={isLightTheme ? APP_SURFACE_MUTED : undefined}
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+              borderColor={isLightTheme ? APP_BORDER : undefined}
+              _hover={{ borderColor: isLightTheme ? APP_BORDER : undefined }}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   event.preventDefault();
@@ -204,12 +226,20 @@ export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
                   key={npub}
                   borderWidth="1px"
                   borderRadius="md"
+                  borderColor={isLightTheme ? APP_BORDER : undefined}
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  boxShadow={isLightTheme ? APP_SHADOW : undefined}
                   p={2}
                   display="flex"
                   alignItems="center"
                   justifyContent="space-between"
                 >
-                  <Text fontSize="xs" mr={3} noOfLines={1}>
+                  <Text
+                    fontSize="xs"
+                    mr={3}
+                    noOfLines={1}
+                    color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  >
                     {npub}
                   </Text>
                   <IconButton

@@ -163,6 +163,7 @@ import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
 import GlassContainer from "./components/GlassContainer";
+import ThemeModeField from "./components/ThemeModeField";
 import useBottomDrawerSwipeDismiss from "./hooks/useBottomDrawerSwipeDismiss";
 import {
   buildGameReviewContext,
@@ -198,6 +199,7 @@ import {
   russianFlag,
   usaFlag,
 } from "./components/flagsIcons/flags";
+import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
 
 /* ---------------------------
    Small helpers
@@ -557,6 +559,8 @@ function TopBar({
   const toast = useToast();
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
   const settingsSwipeDismiss = useBottomDrawerSwipeDismiss({
     isOpen: settingsOpen,
@@ -904,7 +908,7 @@ function TopBar({
         top={0}
         zIndex={100}
         w="100%"
-        borderBottom="1px solid #000026ff"
+        borderBottom={themeMode === "light" ? "none" : "1px solid #000026ff"}
       >
         <GlassContainer
           borderRadius={0}
@@ -1004,12 +1008,12 @@ function TopBar({
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
         <DrawerOverlay
           {...settingsSwipeDismiss.overlayProps}
-          bg="blackAlpha.600"
+          bg="var(--app-overlay)"
         />
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
           bg="gray.900"
-          color="gray.100"
+          color="var(--app-text-primary)"
           borderTopRadius="24px"
           maxH="75vh"
           display="flex"
@@ -1019,8 +1023,8 @@ function TopBar({
             isDragging={settingsSwipeDismiss.isDragging}
           />
           <DrawerCloseButton
-            color="gray.400"
-            _hover={{ color: "gray.200" }}
+            color="var(--app-text-muted)"
+            _hover={{ color: "var(--app-text-primary)" }}
             top={4}
             right={4}
           />
@@ -1054,14 +1058,17 @@ function TopBar({
                     pb={3}
                     position="relative"
                     fontWeight="semibold"
-                    color="gray.400"
+                    color="var(--app-text-muted)"
                     borderRadius="0"
                     bg="transparent"
                     border="none"
                     boxShadow="none"
                     outline="none"
                     _active={{ bg: "transparent" }}
-                    _hover={{ color: "gray.100", borderColor: "transparent" }}
+                    _hover={{
+                      color: "var(--app-text-primary)",
+                      borderColor: "transparent",
+                    }}
                     _focus={{
                       boxShadow: "none",
                       outline: "none",
@@ -1111,7 +1118,7 @@ function TopBar({
                       transition: "all 0.2s ease",
                     }}
                     _selected={{
-                      color: "white",
+                      color: "var(--app-text-primary)",
                       _after: {
                         opacity: 1,
                         transform: "scaleX(1)",
@@ -1126,14 +1133,17 @@ function TopBar({
                     pb={3}
                     position="relative"
                     fontWeight="semibold"
-                    color="gray.400"
+                    color="var(--app-text-muted)"
                     borderRadius="0"
                     bg="transparent"
                     border="none"
                     boxShadow="none"
                     outline="none"
                     _active={{ bg: "transparent" }}
-                    _hover={{ color: "gray.100", borderColor: "transparent" }}
+                    _hover={{
+                      color: "var(--app-text-primary)",
+                      borderColor: "transparent",
+                    }}
                     _focus={{
                       boxShadow: "none",
                       outline: "none",
@@ -1183,7 +1193,7 @@ function TopBar({
                       transition: "all 0.2s ease",
                     }}
                     _selected={{
-                      color: "white",
+                      color: "var(--app-text-primary)",
                       _after: {
                         opacity: 1,
                         transform: "scaleX(1)",
@@ -1205,7 +1215,7 @@ function TopBar({
                   minH={0}
                 >
                   <Box maxW="600px" mx="auto" w="100%">
-                    <VStack align="stretch" spacing={3}>
+                    <VStack align="stretch" spacing={3} pb={14}>
                       <Wrap spacing={4}>
                         <VStack align="flex-start" spacing={1}>
                           <Text
@@ -1480,7 +1490,7 @@ function TopBar({
                             ? t.teams_feed_allow_enabled ||
                               "Automatic community posts enabled."
                             : t.teams_feed_allow_disabled ||
-                              "Automatic community posts disabled."}
+                          "Automatic community posts disabled."}
                         </Text>
                       </Box>
 
@@ -1548,6 +1558,17 @@ function TopBar({
                           </HStack>
                         )}
                       </Box>
+
+                      <ThemeModeField
+                        value={themeMode}
+                        compact={isMobile}
+                        t={t}
+                        onChange={(nextMode) => {
+                          playSound(selectSound);
+                          syncThemeMode(nextMode);
+                          persistSettings({ themeMode: nextMode });
+                        }}
+                      />
                     </VStack>
                   </Box>
                 </TabPanel>
@@ -1803,6 +1824,8 @@ export default function App() {
     return stored === "es" ? "es" : "en";
   });
   const t = translations[appLanguage] || translations.en;
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
   const subscriptionVerified = useMemo(() => {
     const matchesLocal =
@@ -1834,6 +1857,16 @@ export default function App() {
     // Default to true if user.allowPosts is not explicitly set
     setAllowPosts(user?.allowPosts !== false);
   }, [user?.allowPosts]);
+
+  useEffect(() => {
+    const resolvedThemeMode = normalizeThemeMode(
+      user?.themeMode ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("themeMode")
+          : "dark"),
+    );
+    syncThemeMode(resolvedThemeMode);
+  }, [syncThemeMode, user?.themeMode]);
 
   // Sync soundEnabled state with global store
   useEffect(() => {
@@ -3032,6 +3065,10 @@ export default function App() {
           ? (partial.practicePronunciation ?? prev.practicePronunciation)
           : false,
     };
+    const nextThemeMode = normalizeThemeMode(
+      partial.themeMode ?? user?.themeMode ?? themeMode,
+    );
+    syncThemeMode(nextThemeMode);
 
     const now = new Date().toISOString();
     setUser?.({
@@ -3039,6 +3076,7 @@ export default function App() {
       local_npub: npub,
       updatedAt: now,
       helpRequest: next.helpRequest || "",
+      themeMode: nextThemeMode,
       progress: next,
       practicePronunciation: next.practicePronunciation,
     });
@@ -3068,12 +3106,15 @@ export default function App() {
         progress: progressForFirestore,
         practicePronunciation: next.practicePronunciation,
         appLanguage: derivedAppLanguage,
+        themeMode: nextThemeMode,
       },
       { merge: true },
     );
 
     window.dispatchEvent(
-      new CustomEvent("app:globalSettingsUpdated", { detail: next }),
+      new CustomEvent("app:globalSettingsUpdated", {
+        detail: { ...next, themeMode: nextThemeMode },
+      }),
     );
   };
 
@@ -3159,6 +3200,10 @@ export default function App() {
         xp: 0,
         streak: 0,
       };
+      const normalizedThemeMode = normalizeThemeMode(
+        safe(payload.themeMode, themeMode),
+      );
+      syncThemeMode(normalizedThemeMode);
 
       const now = new Date().toISOString();
       // Keep persisted app language aligned with onboarding support language.
@@ -3186,6 +3231,7 @@ export default function App() {
           soundEnabled: payload.soundEnabled !== false,
           soundVolume:
             typeof payload.soundVolume === "number" ? payload.soundVolume : 40,
+          themeMode: normalizedThemeMode,
         },
         { merge: true },
       );
@@ -4617,7 +4663,6 @@ export default function App() {
      Top bar with Settings / Account / Install
   ----------------------------------- */
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const conversationSettingsControllerRef = useRef(null);
 
   // Compute userProgress - must be before any conditional returns to maintain hook order
   const userProgress = useMemo(() => {
@@ -5252,15 +5297,8 @@ export default function App() {
   }, [activeLessonLevel, activeFlashcardLevel]);
 
   const handleBottomBarSettingsOpen = useCallback(() => {
-    if (
-      pathMode === "conversations" &&
-      conversationSettingsControllerRef.current?.openConversationSettings
-    ) {
-      conversationSettingsControllerRef.current.openConversationSettings();
-      return;
-    }
     setSettingsOpen(true);
-  }, [pathMode]);
+  }, []);
 
   /* -----------------------------------
      Loading / Onboarding gates
@@ -5285,6 +5323,7 @@ export default function App() {
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
+    themeMode: user?.onboarding?.draft?.themeMode || user?.themeMode || themeMode,
   };
 
   if (needsOnboarding) {
@@ -5505,13 +5544,6 @@ export default function App() {
               levelCompletionStatus={levelCompletionStatus}
               // Conversations props
               activeNpub={activeNpub}
-              activeNsec={activeNsec}
-              auth={auth}
-              onSwitchedAccount={async () => {}}
-              onSelectIdentity={handleIdentitySelection}
-              isIdentitySaving={isIdentitySaving}
-              postNostrContent={postNostrContent}
-              settingsControllerRef={conversationSettingsControllerRef}
               // Path mode props (lifted from SkillTree)
               pathMode={pathMode}
               onPathModeChange={setPathMode}
@@ -5811,10 +5843,10 @@ export default function App() {
                 px={6}
                 py={4}
                 borderRadius="2xl"
-                bg="whiteAlpha.180"
+                bg="rgba(255, 255, 255, 0.18)"
                 boxShadow="0 20px 50px rgba(91, 33, 182, 0.24)"
                 border="1px solid"
-                borderColor="whiteAlpha.300"
+                borderColor="rgba(255, 255, 255, 0.3)"
               >
                 <RandomCharacter
                   key={`${timeUpOpen}-${timerDurationSeconds || 0}`}
@@ -5842,14 +5874,14 @@ export default function App() {
             </VStack>
           </ModalBody>
           <ModalFooter gap={3} flexWrap="wrap">
-            <Button variant="ghost" onClick={handleTimeUpButtonClose}>
+            <Button variant="ghost" color="white" onClick={handleTimeUpButtonClose}>
               {t.timer_times_up_close || "Close"}
             </Button>
             <Button
               colorScheme="whiteAlpha"
               bg="white"
               color="purple.700"
-              _hover={{ bg: "whiteAlpha.900" }}
+              _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
               onClick={handleTimeUpRestart}
             >
               {t.timer_times_up_restart || "Start another timer"}
@@ -5889,13 +5921,13 @@ export default function App() {
               </VStack>
 
               <Box
-                bg="whiteAlpha.200"
+                bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="xl"
                 py={{ base: 4, md: 6 }}
                 px={{ base: 5, md: 8 }}
                 width="100%"
                 border="2px solid"
-                borderColor="whiteAlpha.400"
+                borderColor="rgba(255, 255, 255, 0.4)"
               >
                 <VStack spacing={3}>
                   <HStack spacing={6} justify="center">
@@ -5960,11 +5992,11 @@ export default function App() {
           <ModalBody py={12} px={8}>
             <VStack spacing={6} textAlign="center">
               <Box
-                bg="whiteAlpha.200"
+                bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="full"
                 p={4}
                 border="2px solid"
-                borderColor="whiteAlpha.300"
+                borderColor="rgba(255, 255, 255, 0.3)"
                 boxShadow="0 20px 40px rgba(0, 0, 0, 0.18)"
               >
                 <RandomCharacter
@@ -5991,13 +6023,13 @@ export default function App() {
 
               {/* XP Award Display */}
               <Box
-                bg="whiteAlpha.200"
+                bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="xl"
                 py={6}
                 px={8}
                 width="100%"
                 border="2px solid"
-                borderColor="whiteAlpha.400"
+                borderColor="rgba(255, 255, 255, 0.4)"
               >
                 <VStack spacing={2}>
                   <Text
@@ -6025,8 +6057,8 @@ export default function App() {
                 width="100%"
                 bg="white"
                 color="purple.600"
-                _hover={{ bg: "gray.100" }}
-                _active={{ bg: "gray.200" }}
+                _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
+                _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
                 onClick={handleCloseCompletionModal}
                 fontWeight="bold"
                 fontSize="lg"
@@ -6088,13 +6120,13 @@ export default function App() {
 
               {/* Completion Message */}
               <Box
-                bg="whiteAlpha.200"
+                bg="rgba(255, 255, 255, 0.2)"
                 borderRadius="xl"
                 py={6}
                 px={8}
                 width="100%"
                 border="2px solid"
-                borderColor="whiteAlpha.400"
+                borderColor="rgba(255, 255, 255, 0.4)"
               >
                 <VStack spacing={3}>
                   <Text fontSize="lg" fontWeight="bold">
@@ -6125,8 +6157,8 @@ export default function App() {
                       "purple.600"
                     : "purple.600"
                 }
-                _hover={{ bg: "gray.100" }}
-                _active={{ bg: "gray.200" }}
+                _hover={{ bg: "rgba(255, 255, 255, 0.92)" }}
+                _active={{ bg: "rgba(255, 255, 255, 0.82)" }}
                 onClick={handleCloseProficiencyCompletionModal}
                 fontWeight="bold"
                 fontSize="lg"
@@ -6171,6 +6203,8 @@ function BottomActionBar({
   onScrollToLatest,
   currentTab,
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
   const toggleLabel =
@@ -6284,7 +6318,7 @@ function BottomActionBar({
     ? "green.400"
     : notesIsLoading
       ? "cyan.400"
-      : "whiteAlpha.200";
+      : "var(--app-border)";
   const minimizedAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
     : notesIsDone
@@ -6316,7 +6350,7 @@ function BottomActionBar({
             setIsMinimized(false);
           }}
           borderRadius="24px"
-          bg="rgba(11, 18, 32, 0.6)"
+          bg="var(--app-glass-bg)"
           backdropFilter="blur(8px)"
           px={6}
           py={2}
@@ -6326,10 +6360,15 @@ function BottomActionBar({
           gap={2}
           borderWidth={notesIsDone || notesIsLoading ? "2px" : "1px"}
           borderColor={minimizedBorderColor}
-          boxShadow={minimizedHighlight || "0 2px 8px rgba(0,0,0,0.3)"}
+          boxShadow={
+            minimizedHighlight ||
+            (isLightTheme
+              ? "0 4px 10px rgba(117, 94, 66, 0.1)"
+              : "0 2px 8px rgba(0,0,0,0.3)")
+          }
           transition="all 0.3s ease"
           animation={minimizedAnimation}
-          _hover={{ bg: "rgba(11, 18, 32, 0.8)" }}
+          _hover={{ bg: "var(--app-glass-hover)" }}
           sx={{
             "@keyframes notesPulse": {
               "0%": {
@@ -6351,8 +6390,10 @@ function BottomActionBar({
                   "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
               },
               "100%": {
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                borderColor: "whiteAlpha.200",
+                boxShadow: isLightTheme
+                  ? "0 4px 10px rgba(117, 94, 66, 0.1)"
+                  : "0 2px 8px rgba(0,0,0,0.3)",
+                borderColor: "var(--app-border)",
               },
             },
           }}
@@ -6392,7 +6433,7 @@ function BottomActionBar({
           className="bottombar-glass"
           elasticity={0.9}
           fallbackBlur="2px"
-          fallbackBg="rgba(11, 18, 32, 0.05)"
+          fallbackBg="var(--app-glass-bg-soft)"
         >
           <Box
             py={2}
@@ -6450,10 +6491,13 @@ function BottomActionBar({
                 boxShadow={
                   hasPendingTeamInvite
                     ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-                    : "0 4px 0 #313a4b"
+                    : isLightTheme
+                      ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+                      : "0 4px 0 #313a4b"
                 }
                 colorScheme="gray"
                 bg="gray.800"
+                color="gray.100"
               />
 
               <IconButton
@@ -6467,7 +6511,11 @@ function BottomActionBar({
                 flexShrink={0}
                 colorScheme="gray"
                 bg="gray.800"
-                boxShadow="0 4px 0 #313a4b"
+                boxShadow={
+                  isLightTheme
+                    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+                    : "0 4px 0 #313a4b"
+                }
               />
 
               <IconButton
@@ -6478,8 +6526,12 @@ function BottomActionBar({
                 isLoading={notesIsLoading}
                 colorScheme="gray"
                 bg="gray.800"
-                boxShadow="0 4px 0 #313a4b"
-                color="white"
+                boxShadow={
+                  isLightTheme
+                    ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+                    : "0 4px 0 #313a4b"
+                }
+                color="gray.100"
                 size="sm"
                 zIndex={50}
                 rounded="xl"
@@ -6543,9 +6595,10 @@ function BottomActionBar({
                 />
                 <Portal>
                   <MenuList
-                    bg="gray.800"
-                    borderColor="whiteAlpha.200"
-                    boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+                    bg={isLightTheme ? "var(--app-surface-elevated)" : "gray.800"}
+                    color={isLightTheme ? "var(--app-text-primary)" : "white"}
+                    borderColor="var(--app-border)"
+                    boxShadow="var(--app-shadow-soft)"
                     minW="180px"
                     zIndex="popover"
                     mb={4}
@@ -6569,9 +6622,38 @@ function BottomActionBar({
                               onPathModeChange?.(mode.id);
                             }
                           }}
-                          bg={isSelected ? "whiteAlpha.100" : "transparent"}
-                          _hover={{ bg: "whiteAlpha.200" }}
-                          color="white"
+                          bg={
+                            isLightTheme
+                              ? isSelected
+                                ? "var(--app-surface-muted)"
+                                : "transparent"
+                              : isSelected
+                                ? "whiteAlpha.100"
+                                : "transparent"
+                          }
+                          _hover={{
+                            bg: isLightTheme
+                              ? "var(--app-surface-muted)"
+                              : "whiteAlpha.200",
+                            color: isLightTheme
+                              ? "var(--app-text-primary)"
+                              : "white",
+                          }}
+                          _active={{
+                            bg: isLightTheme
+                              ? "var(--app-glass-bg-soft)"
+                              : "whiteAlpha.200",
+                            color: isLightTheme
+                              ? "var(--app-text-primary)"
+                              : "white",
+                          }}
+                          color={
+                            isLightTheme
+                              ? isSelected
+                                ? "var(--app-text-primary)"
+                                : "var(--app-text-secondary)"
+                              : "white"
+                          }
                           icon={<ModeIcon size={18} />}
                           fontWeight={isSelected ? "bold" : "normal"}
                           p={6}

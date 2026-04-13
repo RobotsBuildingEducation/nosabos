@@ -21,7 +21,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaDice, FaRegCommentDots } from "react-icons/fa";
+import { FaStop, FaDice, FaRegCommentDots, FaExclamation } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 import { MdOutlineTranslate } from "react-icons/md";
 
@@ -50,7 +50,6 @@ import {
   getRealtimeOrbVisualState,
   useArchiveTextStream,
 } from "./realtimeArchiveStream";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -63,6 +62,8 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import { useThemeStore } from "../useThemeStore";
+import XpProgressHeader from "./XpProgressHeader";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -113,6 +114,38 @@ const MATRIX_PANEL_SX = {
     zIndex: 1,
   },
 };
+const PAPER_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 18% 16%, rgba(172,142,110,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 20%, rgba(217,192,164,0.12) 0%, transparent 38%), " +
+    "linear-gradient(180deg, rgba(255,249,242,0.98) 0%, rgba(248,241,232,0.98) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(155,135,112,0.05) 0px, rgba(155,135,112,0.05) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.24,
+    mixBlendMode: "multiply",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 function uiStateLabel(uiState, isEs) {
   if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
@@ -318,6 +351,8 @@ function AlignedBubble({
   contentOpacity = 1,
   contentTransform = "translateY(0px) scale(1)",
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
     return React.Children.map(nodes, (node) => {
@@ -346,14 +381,16 @@ function AlignedBubble({
   return (
     <Box
       ref={containerRef}
-      bg="transparent"
+      bg={isLightTheme ? APP_SURFACE_ELEVATED : "transparent"}
       p={3}
       rounded="2xl"
-      border="1px solid rgba(255,255,255,0.06)"
-      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
+      border="1px solid"
+      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
+      boxShadow={isLightTheme ? APP_SHADOW : "0 14px 28px rgba(0,0,0,0.35)"}
       maxW="100%"
       borderBottomLeftRadius="0px"
-      sx={MATRIX_PANEL_SX}
+      sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
     >
       <Box
         opacity={contentOpacity}
@@ -382,6 +419,7 @@ function AlignedBubble({
             as="p"
             fontSize="md"
             lineHeight="1.6"
+            color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
             sx={MOBILE_TEXT_SX}
             flex="1"
           >
@@ -395,6 +433,7 @@ function AlignedBubble({
             fontSize="sm"
             mt={1}
             lineHeight="1.55"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
             sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
@@ -414,10 +453,18 @@ function AlignedBubble({
                     py={2.5}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor={hexToRgba(color, 0.6)}
-                    background="#0b1220"
-                    boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
-                    color="whiteAlpha.900"
+                    borderColor={
+                      isLightTheme
+                        ? hexToRgba(color, 0.34)
+                        : hexToRgba(color, 0.6)
+                    }
+                    background={isLightTheme ? APP_SURFACE : "#0b1220"}
+                    boxShadow={
+                      isLightTheme
+                        ? "0 6px 16px rgba(120,94,61,0.06)"
+                        : `0 6px 18px ${hexToRgba(color, 0.12)}`
+                    }
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                     minW="0"
                     maxW="260px"
                   >
@@ -426,7 +473,9 @@ function AlignedBubble({
                     </Text>
                     <Text
                       fontSize="xs"
-                      color="whiteAlpha.800"
+                      color={
+                        isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                      }
                       mt={1}
                       lineHeight="1.35"
                     >
@@ -477,16 +526,29 @@ function RowRight({ children }) {
   );
 }
 function UserBubble({ label, text }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   return (
     <Box
-      bg="blue.500"
-      color="white"
+      bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       p={3}
       rounded="lg"
-      boxShadow="0 6px 20px rgba(0,0,0,0.25)"
-      border="1px solid rgba(255,255,255,0.08)"
+      boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
+      border="1px solid"
+      borderColor={
+        isLightTheme
+          ? "rgba(108, 182, 191, 0.22)"
+          : "rgba(255,255,255,0.08)"
+      }
     >
-      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
+      <Box
+        as="p"
+        fontSize="md"
+        lineHeight="1.6"
+        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+        sx={MOBILE_TEXT_SX}
+      >
         {text}
       </Box>
     </Box>
@@ -556,6 +618,8 @@ export default function RealTimeTest({
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   // Lesson content ref
   const lessonContentRef = useRef(lessonContent);
@@ -3021,7 +3085,7 @@ Do not return the whole sentence as a single chunk.`;
     measureDeps: [showTranslations, replayingId, translatingMessageId],
   });
   const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted);
+    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
   const orbUiState = getRealtimeOrbVisualState(uiState);
 
   const liveStateLabel = uiStateLabel(uiState, uiLang === "es");
@@ -3088,13 +3152,18 @@ Do not return the whole sentence as a single chunk.`;
         <Box px={4} mt={3} display="flex" justifyContent="center">
           <VStack spacing={2} w="100%" maxW="520px" align="center">
             <Box
-              sx={{ ...MATRIX_PANEL_SX, overflow: "visible" }}
+              sx={{
+                ...(isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX),
+                overflow: "visible",
+              }}
               p={3}
               rounded="2xl"
-              border="1px solid rgba(255,255,255,0.16)"
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.16)"}
               width="100%"
               maxWidth="520px"
               position="relative"
+              boxShadow={isLightTheme ? APP_SHADOW : undefined}
             >
               <VStack
                 align="flex-start"
@@ -3121,11 +3190,15 @@ Do not return the whole sentence as a single chunk.`;
                       }
                       size="xs"
                       variant="ghost"
-                      color="white"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                       aria-label={uiLang === "es" ? "Nueva meta" : "New goal"}
                       onClick={generateGoalVariation}
                       opacity={0.7}
-                      _hover={{ opacity: 1 }}
+                      bg={isLightTheme ? APP_SURFACE : undefined}
+                      _hover={{
+                        opacity: 1,
+                        bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                      }}
                       isDisabled={status === "connected" || isGeneratingGoal}
                       minW="24px"
                       h="24px"
@@ -3137,7 +3210,12 @@ Do not return the whole sentence as a single chunk.`;
                     >
                       {tGoalLabel}
                     </Badge>
-                    <Text fontSize="xs" opacity={0.9} color="white" flex="1">
+                    <Text
+                      fontSize="xs"
+                      opacity={0.9}
+                      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                      flex="1"
+                    >
                       {isGeneratingGoal
                         ? streamingGoalText ||
                           (uiLang === "es" ? "Generando..." : "Generating...")
@@ -3158,27 +3236,68 @@ Do not return the whole sentence as a single chunk.`;
                   />
                 </HStack>
                 {!!currentGoal && !isGeneratingGoal && (
-                  <Text fontSize="xs" opacity={0.8}>
+                  <Text
+                    fontSize="xs"
+                    opacity={0.8}
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                  >
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
                     {goalRubricForUI(currentGoal)}
                   </Text>
                 )}
                 {goalFeedback && !isGeneratingGoal ? (
-                  <Text fontSize="xs" mt={2} opacity={0.9}>
-                    💡 {goalFeedback}
-                  </Text>
+                  <HStack
+                    mt={2}
+                    spacing={2}
+                    align="flex-start"
+                    color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
+                  >
+                    <Box
+                      mt="2px"
+                      width="14px"
+                      height="14px"
+                      display="inline-flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      borderRadius="full"
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme
+                          ? "rgba(165, 89, 108, 0.38)"
+                          : "red.300"
+                      }
+                      bg={
+                        isLightTheme
+                          ? "rgba(214, 96, 122, 0.16)"
+                          : "rgba(239,68,68,0.9)"
+                      }
+                      color={isLightTheme ? "#8f4a5e" : "white"}
+                      boxShadow={
+                        isLightTheme
+                          ? "0 1px 0 rgba(255,255,255,0.45)"
+                          : undefined
+                      }
+                      flexShrink={0}
+                    >
+                      <FaExclamation size={7} />
+                    </Box>
+                    <Text
+                      fontSize="xs"
+                      opacity={0.95}
+                      color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
+                    >
+                      {goalFeedback}
+                    </Text>
+                  </HStack>
                 ) : null}
 
                 <Box mt={3}>
-                  <HStack justifyContent="space-between" mb={1}>
-                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                    </Badge>
-                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                      {ui.ra_label_xp} {xp}
-                    </Badge>
-                  </HStack>
-                  <WaveBar value={progressPct} />
+                  <XpProgressHeader
+                    levelText={`${uiLang === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
+                    xpText={`${ui.ra_label_xp} ${xp}`}
+                    progressPct={progressPct}
+                    xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+                  />
                 </Box>
               </Box>
               </VStack>
@@ -3189,7 +3308,10 @@ Do not return the whole sentence as a single chunk.`;
                 <VoiceOrb state={orbUiState} />
               </Box>
               {!!liveStateLabel && (
-                <Text fontSize="xs" color="whiteAlpha.800">
+                <Text
+                  fontSize="xs"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                >
                   {liveStateLabel}
                 </Text>
               )}
@@ -3263,9 +3385,17 @@ Do not return the whole sentence as a single chunk.`;
               px={{ base: 6, md: 8 }}
               rounded="full"
               colorScheme="orange"
-              variant="ghost"
-              color="white"
-              textShadow="0px 0px 20px black"
+              variant={isLightTheme ? "outline" : "ghost"}
+              bg={isLightTheme ? APP_SURFACE : undefined}
+              borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+              boxShadow={isLightTheme ? "none" : undefined}
+              _hover={
+                isLightTheme
+                  ? { bg: APP_SURFACE_MUTED, borderColor: APP_BORDER_STRONG }
+                  : undefined
+              }
+              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={20}
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
@@ -3277,17 +3407,42 @@ Do not return the whole sentence as a single chunk.`;
               px={{ base: 8, md: 12 }}
               rounded="full"
               colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              bg={
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_BG
+                  : isLightTheme
+                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                    : undefined
+              }
               boxShadow={
-                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_GLOW
+                  : isLightTheme
+                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                    : undefined
               }
               _hover={
                 status === "connected"
                   ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : isLightTheme
+                    ? {
+                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                      }
                   : undefined
               }
-              color="white"
-              textShadow="0px 0px 20px black"
+              color={
+                status === "connected"
+                  ? "white"
+                  : isLightTheme
+                    ? "white"
+                    : "white"
+              }
+              border={
+                isLightTheme && status !== "connected"
+                  ? "1px solid rgba(255,255,255,0.55)"
+                  : undefined
+              }
+              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={20}
             >
               {status === "connected" ? (
@@ -3310,11 +3465,50 @@ Do not return the whole sentence as a single chunk.`;
               height="48px"
               px={{ base: 6, md: 8 }}
               rounded="full"
-              color="white"
-              textShadow="0px 0px 20px black"
+              variant={isLightTheme ? "outline" : "solid"}
+              color={
+                isLightTheme
+                  ? goalCompleted
+                    ? "#134e4a"
+                    : APP_TEXT_MUTED
+                  : "white"
+              }
+              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={20}
-              bg={!goalCompleted ? "gray.800" : "cyan.700"}
-              border="1px solid cyan"
+              bg={
+                isLightTheme
+                  ? APP_SURFACE
+                  : !goalCompleted
+                    ? "gray.800"
+                    : "cyan.700"
+              }
+              border="1px solid"
+              borderColor={
+                isLightTheme
+                  ? goalCompleted
+                    ? "rgba(64, 198, 217, 0.95)"
+                    : APP_BORDER
+                  : "cyan"
+              }
+              boxShadow={isLightTheme ? "none" : undefined}
+              _hover={
+                isLightTheme && goalCompleted
+                  ? {
+                      bg: APP_SURFACE_MUTED,
+                      borderColor: "#40c6d9",
+                    }
+                  : undefined
+              }
+              _disabled={
+                isLightTheme
+                  ? {
+                      opacity: 1,
+                      bg: APP_SURFACE,
+                      color: APP_TEXT_MUTED,
+                      borderColor: APP_BORDER,
+                    }
+                  : undefined
+              }
               disabled={!goalCompleted}
             >
               {uiLang === "es" ? "Siguiente" : "Next"}

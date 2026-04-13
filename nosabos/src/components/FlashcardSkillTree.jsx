@@ -21,6 +21,7 @@ import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
+import { useThemeStore } from "../useThemeStore";
 import {
   FLASHCARD_DAILY_TARGET,
   FLASHCARD_REVIEW_STATES,
@@ -32,6 +33,15 @@ import {
 
 const MotionBox = motion(Box);
 const EMPTY_PROGRESS = {};
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
@@ -190,7 +200,66 @@ function formatActivityDate(date, language) {
   }).format(date);
 }
 
-function getCardDecor(status, cefrColor) {
+function getCardDecor(status, cefrColor, isLightTheme) {
+  if (isLightTheme) {
+    switch (status) {
+      case "due":
+        return {
+          bg: "#f6ebd9",
+          bgGradient:
+            "linear(180deg, rgba(248, 238, 221, 0.98) 0%, rgba(240, 224, 198, 0.98) 100%)",
+          borderColor: "rgba(181, 137, 71, 0.36)",
+          opacity: 1,
+        };
+      case "active":
+        return {
+          bg: "#f4f0ea",
+          bgGradient: `linear(180deg, ${cefrColor.primary}1a 0%, rgba(255, 252, 247, 0.98) 58%, rgba(241, 232, 219, 0.98) 100%)`,
+          borderColor: `${cefrColor.primary}55`,
+          opacity: 1,
+        };
+      case "learning":
+        return {
+          bg: "#edf5f0",
+          bgGradient:
+            "linear(180deg, rgba(222, 243, 236, 0.98) 0%, rgba(240, 248, 244, 0.98) 100%)",
+          borderColor: "rgba(69, 145, 122, 0.28)",
+          opacity: 0.94,
+        };
+      case "weak":
+        return {
+          bg: "#f7ecef",
+          bgGradient:
+            "linear(180deg, rgba(248, 229, 236, 0.98) 0%, rgba(252, 242, 246, 0.98) 100%)",
+          borderColor: "rgba(194, 103, 132, 0.28)",
+          opacity: 0.96,
+        };
+      case "scheduled":
+        return {
+          bg: APP_SURFACE_ELEVATED,
+          bgGradient:
+            "linear(180deg, rgba(255, 252, 247, 0.98) 0%, rgba(243, 236, 226, 0.98) 100%)",
+          borderColor: APP_BORDER,
+          opacity: 0.78,
+        };
+      case "locked":
+        return {
+          bg: "#efe5d8",
+          bgGradient:
+            "linear(180deg, rgba(244, 238, 229, 0.98) 0%, rgba(231, 220, 204, 0.98) 100%)",
+          borderColor: "rgba(120, 101, 77, 0.16)",
+          opacity: 0.76,
+        };
+      default:
+        return {
+          bg: "#f4f0ea",
+          bgGradient: `linear(180deg, ${cefrColor.primary}16 0%, rgba(255, 252, 247, 0.98) 60%, rgba(241, 232, 219, 0.98) 100%)`,
+          borderColor: `${cefrColor.primary}4a`,
+          opacity: 1,
+        };
+    }
+  }
+
   switch (status) {
     case "due":
       return {
@@ -225,9 +294,9 @@ function getCardDecor(status, cefrColor) {
       };
     case "scheduled":
       return {
-        bg: undefined,
-        bgGradient: "linear(135deg, whiteAlpha.100, whiteAlpha.50)",
-        borderColor: "whiteAlpha.200",
+        bg: APP_SURFACE_ELEVATED,
+        bgGradient: undefined,
+        borderColor: APP_BORDER,
         opacity: 0.62,
       };
     case "locked":
@@ -255,6 +324,8 @@ const FlashcardCard = React.memo(function FlashcardCard({
   supportLang,
   skipInitialAnimation = false,
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isActive = status === "active";
   const isDue = status === "due";
@@ -263,8 +334,24 @@ const FlashcardCard = React.memo(function FlashcardCard({
   const isStacked = stackPosition !== undefined;
   const isCompletedStyle =
     status === "scheduled" || status === "learning" || isDue || isWeak;
-  const decor = getCardDecor(status, cefrColor);
+  const decor = getCardDecor(status, cefrColor, isLightTheme);
   const isActionable = isActive || isDue || isWeak;
+  const cardTextColor = isLightTheme
+    ? isLocked
+      ? "#8c7a67"
+      : isWeak
+        ? "#7d6268"
+        : isDue
+          ? "#7a5d40"
+          : "#746250"
+    : status === "scheduled"
+      ? APP_TEXT_PRIMARY
+      : "white";
+  const cardTextShadow = isLightTheme
+    ? "0 1px 8px rgba(255, 249, 241, 0.52)"
+    : status === "scheduled"
+      ? "none"
+      : "0 2px 12px rgba(0,0,0,0.4)";
 
   const glowColor = isDue
     ? "rgba(251, 191, 36, 0.65)"
@@ -330,19 +417,38 @@ const FlashcardCard = React.memo(function FlashcardCard({
         border="2px solid"
         borderColor={decor.borderColor}
         boxShadow={
-          isActionable
-            ? "0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(0,0,0,0)"
-            : "0 8px 24px rgba(0, 0, 0, 0.28)"
+          isLightTheme
+            ? isActionable
+              ? "0 6px 14px rgba(122, 94, 61, 0.10)"
+              : "0 4px 10px rgba(122, 94, 61, 0.08)"
+            : isActionable
+              ? "0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(0,0,0,0)"
+              : "0 8px 24px rgba(0, 0, 0, 0.28)"
         }
         animation={
-          isActionable ? `${activeGlow} 2s ease-in-out infinite` : undefined
+          isActionable && !isLightTheme
+            ? `${activeGlow} 2s ease-in-out infinite`
+            : undefined
         }
-        backdropFilter="blur(10px)"
+        backdropFilter={isLightTheme ? "none" : "blur(10px)"}
         position="relative"
         overflow="hidden"
         opacity={decor.opacity}
         sx={
-          isActionable
+          isLightTheme
+            ? {
+                "&::before": {
+                  content: '""',
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, rgba(96,77,56,0.035) 0px, rgba(96,77,56,0.035) 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, rgba(96,77,56,0.03) 0px, rgba(96,77,56,0.03) 1px, transparent 1px, transparent 28px)",
+                  opacity: 0.36,
+                  zIndex: 0,
+                  pointerEvents: "none",
+                },
+              }
+            : isActionable
             ? {
                 "&::before": {
                   content: '""',
@@ -382,7 +488,11 @@ const FlashcardCard = React.memo(function FlashcardCard({
             left="0"
             right="0"
             h="50%"
-            bgGradient="linear(to-b, whiteAlpha.200, transparent)"
+            bgGradient={
+              isLightTheme
+                ? "linear(to-b, rgba(255,255,255,0.28), transparent)"
+                : "linear(to-b, rgba(255,255,255,0.12), transparent)"
+            }
             pointerEvents="none"
           />
         ) : null}
@@ -393,9 +503,12 @@ const FlashcardCard = React.memo(function FlashcardCard({
             top="50%"
             left="50%"
             transform="translate(-50%, -50%)"
-            opacity={isDue ? 0.16 : 0.28}
+            opacity={isLightTheme ? 0.14 : isDue ? 0.16 : 0.28}
           >
-            <RiCheckLine size={isDue ? 96 : 120} color="white" />
+            <RiCheckLine
+              size={isDue ? 96 : 120}
+              color={isLightTheme ? "rgba(96,77,56,0.32)" : "white"}
+            />
           </Box>
         ) : null}
 
@@ -405,9 +518,12 @@ const FlashcardCard = React.memo(function FlashcardCard({
             top="50%"
             left="50%"
             transform="translate(-50%, -50%)"
-            opacity={0.5}
+            opacity={isLightTheme ? 0.3 : 0.5}
           >
-            <RiLockLine size={80} color="white" />
+            <RiLockLine
+              size={80}
+              color={isLightTheme ? "rgba(96,77,56,0.54)" : "white"}
+            />
           </Box>
         ) : null}
 
@@ -425,10 +541,10 @@ const FlashcardCard = React.memo(function FlashcardCard({
             <Text
               fontSize="3xl"
               fontWeight="black"
-              color="white"
+              color={cardTextColor}
               textAlign="center"
               lineHeight="1.2"
-              textShadow="0 2px 12px rgba(0,0,0,0.4)"
+              textShadow={cardTextShadow}
             >
               {getConceptText(card, getEffectiveCardLanguage(supportLang))}
             </Text>
@@ -471,15 +587,15 @@ function DashboardStat({ label, value }) {
       flex="1"
       p={4}
       borderRadius="2xl"
-      bg="whiteAlpha.100"
+      bg={APP_SURFACE_ELEVATED}
       border="1px solid"
-      borderColor="whiteAlpha.200"
-      backdropFilter="blur(12px)"
+      borderColor={APP_BORDER}
+      boxShadow={APP_SHADOW}
     >
-      <Text fontSize="xs" color="gray.400" textTransform="uppercase" letterSpacing="0.08em">
+      <Text fontSize="xs" color={APP_TEXT_MUTED} textTransform="uppercase" letterSpacing="0.08em">
         {label}
       </Text>
-      <Text mt={1} fontSize="2xl" fontWeight="black" color="white">
+      <Text mt={1} fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
         {value}
       </Text>
     </Box>
@@ -554,11 +670,11 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
         key={day.dayKey}
         {...baseProps}
         title={title}
-        bg={day.isFuture ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.08)"}
+        bg={day.isFuture ? "rgba(148,163,184,0.08)" : "rgba(148,163,184,0.16)"}
         borderColor={
           day.isToday
-            ? "rgba(255,255,255,0.45)"
-            : "rgba(255,255,255,0.08)"
+            ? APP_BORDER_STRONG
+            : "rgba(148,163,184,0.18)"
         }
         opacity={day.isFuture ? 0.35 : 1}
         transform={day.isToday ? "scale(1.04)" : "none"}
@@ -570,21 +686,21 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
     <Box
       p={{ base: 3, md: 4 }}
       borderRadius="2xl"
-      bg="whiteAlpha.100"
+      bg={APP_SURFACE_ELEVATED}
       border="1px solid"
-      borderColor="whiteAlpha.200"
-      backdropFilter="blur(12px)"
+      borderColor={APP_BORDER}
+      boxShadow={APP_SHADOW}
     >
       <HStack justify="space-between" align="baseline" mb={3} flexWrap="wrap">
         <Text
           fontSize="xs"
-          color="gray.400"
+          color={APP_TEXT_MUTED}
           textTransform="uppercase"
           letterSpacing="0.08em"
         >
           {getTranslation("flashcard_activity")}
         </Text>
-        <Text fontSize="xs" color="gray.500">
+        <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
           {getTranslation("flashcard_activity_subtitle")}
         </Text>
       </HStack>
@@ -622,7 +738,7 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
                 minH={{ base: "10px", sm: "11px", md: "12px", lg: "14px" }}
                 fontSize={{ base: "7px", sm: "7px", md: "8px", lg: "9px" }}
                 lineHeight="1"
-                color="gray.500"
+                color={APP_TEXT_SECONDARY}
                 textTransform="uppercase"
                 whiteSpace="nowrap"
                 textAlign="left"
@@ -643,11 +759,11 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
             w="10px"
             h="10px"
             borderRadius="3px"
-            bg="rgba(255,255,255,0.08)"
+            bg="rgba(148,163,184,0.16)"
             border="1px solid"
-            borderColor="rgba(255,255,255,0.08)"
+            borderColor="rgba(148,163,184,0.18)"
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
             {getTranslation("flashcard_activity_empty")}
           </Text>
         </HStack>
@@ -660,7 +776,7 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
             border="1px solid"
             borderColor="rgba(94, 234, 212, 0.28)"
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
             {getTranslation("flashcard_activity_some")}
           </Text>
         </HStack>
@@ -673,7 +789,7 @@ function ActivityHeatmap({ activityMap, appLanguage }) {
             border="1px solid"
             borderColor="rgba(167, 243, 208, 0.55)"
           />
-          <Text fontSize="xs" color="gray.400">
+          <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
             {getTranslation("flashcard_activity_goal")}
           </Text>
         </HStack>
@@ -699,11 +815,11 @@ function DeckSection({
   return (
     <VStack align="stretch" spacing={3}>
       <VStack align="stretch" spacing={1} px={1}>
-        <Text fontSize="lg" fontWeight="black" color="white">
+        <Text fontSize="lg" fontWeight="black" color={APP_TEXT_PRIMARY}>
           {title}
         </Text>
         {subtitle ? (
-          <Text fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
             {subtitle}
           </Text>
         ) : null}
@@ -747,7 +863,7 @@ function DeckSection({
                   {getCardNote ? (
                     <Text
                       fontSize="sm"
-                      color="gray.400"
+                      color={APP_TEXT_SECONDARY}
                       textAlign="center"
                       px={2}
                       whiteSpace="pre-line"
@@ -1196,10 +1312,10 @@ export default function FlashcardSkillTree({
         <Box
           p={{ base: 5, md: 6 }}
           borderRadius="3xl"
-          bg="#071224"
+          bg={APP_SURFACE}
           border="1px solid"
-          borderColor="whiteAlpha.200"
-          boxShadow="0 18px 40px rgba(0, 0, 0, 0.28)"
+          borderColor={APP_BORDER}
+          boxShadow={APP_SHADOW}
           overflow="hidden"
           position="relative"
         >
@@ -1234,15 +1350,16 @@ export default function FlashcardSkillTree({
             <Box
               p={4}
               borderRadius="2xl"
-              bg="whiteAlpha.100"
+              bg={APP_SURFACE_ELEVATED}
               border="1px solid"
-              borderColor="whiteAlpha.200"
+              borderColor={APP_BORDER}
+              boxShadow={APP_SHADOW}
             >
               <HStack justify="space-between" align="center" mb={2}>
-                <Text fontSize="sm" fontWeight="bold" color="white">
+                <Text fontSize="sm" fontWeight="bold" color={APP_TEXT_PRIMARY}>
                   {getTranslation("flashcard_daily_target")}
                 </Text>
-                <Text fontSize="sm" color="gray.300">
+                <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
                   {getTranslation("flashcard_cards_done_today", {
                     count: reviewedTodayCount,
                     target: FLASHCARD_DAILY_TARGET,
@@ -1254,8 +1371,8 @@ export default function FlashcardSkillTree({
                 height={10}
                 start="#f7d66c"
                 end="#f0b429"
-                bg="rgba(255,255,255,0.12)"
-                border="rgba(255, 231, 168, 0.35)"
+                bg={APP_SURFACE_MUTED}
+                border="rgba(240, 180, 41, 0.3)"
               />
             </Box>
 
@@ -1276,9 +1393,10 @@ export default function FlashcardSkillTree({
                 <Button
                   size="lg"
                   variant="ghost"
-                  color="white"
+                  color={APP_TEXT_PRIMARY}
                   border="1px solid"
-                  borderColor="whiteAlpha.300"
+                  borderColor={APP_BORDER_STRONG}
+                  _hover={{ bg: APP_SURFACE_MUTED }}
                   onClick={handleLaunchWeakCard}
                   minW={{ base: "100%", sm: "220px" }}
                   flex={{ base: "1 1 100%", lg: "1 1 0" }}
@@ -1305,7 +1423,7 @@ export default function FlashcardSkillTree({
 
         {isLoadingFlashcards ? (
           <Box px={2}>
-            <Text fontSize="sm" color="gray.400">
+            <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
               {getTranslation("flashcard_session_loading")}
             </Text>
           </Box>
@@ -1337,14 +1455,14 @@ export default function FlashcardSkillTree({
 
         {learningCards.length > 0 || remainingScheduledCards.length > 0 ? (
           <Box textAlign="center" py={1}>
-            <RiArrowDownLine size={30} color="rgba(255, 255, 255, 0.18)" />
+            <RiArrowDownLine size={30} color="rgba(148,163,184,0.32)" />
           </Box>
         ) : null}
 
         {learningCards.length > 0 || remainingScheduledCards.length > 0 ? (
           <VStack align="stretch" spacing={4}>
             <VStack align="stretch" spacing={1}>
-              <Text fontSize="lg" fontWeight="black" color="white">
+              <Text fontSize="lg" fontWeight="black" color={APP_TEXT_PRIMARY}>
                 {getTranslation("flashcard_scheduled_queue")}
               </Text>
             </VStack>
@@ -1389,7 +1507,7 @@ export default function FlashcardSkillTree({
                           />
                           <Text
                             fontSize="sm"
-                            color="gray.400"
+                            color={APP_TEXT_SECONDARY}
                             textAlign="center"
                             px={2}
                             whiteSpace="pre-line"
@@ -1415,16 +1533,16 @@ export default function FlashcardSkillTree({
               spacing={4}
               p={12}
               borderRadius="2xl"
-              bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
+              bg={APP_SURFACE_ELEVATED}
               border="2px solid"
-              borderColor="whiteAlpha.200"
-              backdropFilter="blur(10px)"
+              borderColor={APP_BORDER}
+              boxShadow={APP_SHADOW}
             >
               <RiCheckLine size={64} color="#22C55E" />
-              <Text fontSize="2xl" fontWeight="black" color="white">
+              <Text fontSize="2xl" fontWeight="black" color={APP_TEXT_PRIMARY}>
                 {getTranslation("flashcard_all_done")}
               </Text>
-              <Text fontSize="md" color="gray.400" textAlign="center">
+              <Text fontSize="md" color={APP_TEXT_SECONDARY} textAlign="center">
                 {getTranslation("flashcard_all_completed")}
               </Text>
             </VStack>

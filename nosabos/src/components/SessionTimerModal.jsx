@@ -18,8 +18,20 @@ import {
 } from "@chakra-ui/react";
 import { FiClock } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
+import { useThemeStore } from "../useThemeStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_OVERLAY = "var(--app-overlay)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Helper: get angle in degrees (0=12 o'clock, clockwise) from pointer to element center
 function getAngleFromCenter(clientX, clientY, rect) {
@@ -38,6 +50,7 @@ function ClockVisual({
   rotationMinutes = 120,
   maxMinutes = 240,
   playSliderTick,
+  isLightTheme = false,
 }) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
   const clockRef = useRef(null);
@@ -76,7 +89,7 @@ function ClockVisual({
       const minuteDelta = (delta / 360) * rotationMinutes;
       state.accumMinutes = Math.max(
         0,
-        Math.min(maxMinutes, state.accumMinutes + minuteDelta)
+        Math.min(maxMinutes, state.accumMinutes + minuteDelta),
       );
 
       // Snap to nearest STEP
@@ -105,7 +118,7 @@ function ClockVisual({
       const clientY = e.touches ? e.touches[0].clientY : e.clientY;
       const current = Math.max(
         0,
-        Math.min(maxMinutes, Number(minutesRef.current) || 0)
+        Math.min(maxMinutes, Number(minutesRef.current) || 0),
       );
 
       dragState.current = {
@@ -166,14 +179,22 @@ function ClockVisual({
           y1={y1}
           x2={x2}
           y2={y2}
-          stroke={isQuarter ? "#38B2AC" : "#4A5568"}
-          strokeWidth={isQuarter ? 2 : 1}
+          stroke={
+            isQuarter
+              ? isLightTheme
+                ? "#43a19d"
+                : "#38B2AC"
+              : isLightTheme
+                ? "#6d6457"
+                : "#4A5568"
+          }
+          strokeWidth={isQuarter ? 2 : 1.25}
           strokeLinecap="round"
-        />
+        />,
       );
     }
     return items;
-  }, []);
+  }, [isLightTheme]);
 
   // Arc path generator for a given portion of the circle
   const createArcPath = (startMin, endMin, radius) => {
@@ -220,19 +241,35 @@ function ClockVisual({
   const handLength = 32;
   const handX = 50 + handLength * Math.cos((angle * Math.PI) / 180);
   const handY = 50 + handLength * Math.sin((angle * Math.PI) / 180);
+  const clockFaceBackground = isLightTheme
+    ? "radial-gradient(circle at 50% 38%, rgba(255, 252, 247, 0.98) 0%, rgba(244, 236, 225, 0.96) 64%, rgba(232, 219, 203, 0.94) 100%)"
+    : "gray.800";
+  const clockBorderColor = isLightTheme ? APP_BORDER_STRONG : "gray.700";
+  const clockShadow = isLightTheme
+    ? "0 10px 24px rgba(120, 94, 61, 0.08)"
+    : "0 0 30px rgba(56, 178, 172, 0.3), inset 0 0 20px rgba(0,0,0,0.5)";
+  const accentColor = isLightTheme ? "#43a19d" : "#38B2AC";
+  const accentTipColor = isLightTheme ? "#6bd3cb" : "#81E6D9";
+  const centerTextColor = isLightTheme ? "#3f9f9b" : "#4FD1C5";
 
   return (
-    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" py={4}>
+    <Box
+      display="flex"
+      flexDirection="column"
+      justifyContent="center"
+      alignItems="center"
+      py={4}
+    >
       <Box
         ref={clockRef}
         position="relative"
         width="160px"
         height="160px"
         borderRadius="full"
-        bg="gray.800"
-        boxShadow="0 0 30px rgba(56, 178, 172, 0.3), inset 0 0 20px rgba(0,0,0,0.5)"
+        bg={clockFaceBackground}
+        boxShadow={clockShadow}
         border="3px solid"
-        borderColor="gray.700"
+        borderColor={clockBorderColor}
         cursor={onMinutesChange ? "grab" : "default"}
         userSelect="none"
         style={onMinutesChange ? { touchAction: "none" } : undefined}
@@ -255,8 +292,22 @@ function ClockVisual({
               x2="100%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="rgba(56, 178, 172, 0.4)" />
-              <stop offset="100%" stopColor="rgba(49, 151, 149, 0.6)" />
+              <stop
+                offset="0%"
+                stopColor={
+                  isLightTheme
+                    ? "rgba(93, 196, 180, 0.32)"
+                    : "rgba(56, 178, 172, 0.4)"
+                }
+              />
+              <stop
+                offset="100%"
+                stopColor={
+                  isLightTheme
+                    ? "rgba(67, 161, 157, 0.52)"
+                    : "rgba(49, 151, 149, 0.6)"
+                }
+              />
             </linearGradient>
             <linearGradient
               id="arcGradient2"
@@ -265,8 +316,22 @@ function ClockVisual({
               x2="100%"
               y2="100%"
             >
-              <stop offset="0%" stopColor="rgba(21, 53, 255, 0.5)" />
-              <stop offset="100%" stopColor="rgba(7, 0, 198, 0.7)" />
+              <stop
+                offset="0%"
+                stopColor={
+                  isLightTheme
+                    ? "rgba(137, 146, 228, 0.34)"
+                    : "rgba(21, 53, 255, 0.5)"
+                }
+              />
+              <stop
+                offset="100%"
+                stopColor={
+                  isLightTheme
+                    ? "rgba(109, 116, 203, 0.5)"
+                    : "rgba(7, 0, 198, 0.7)"
+                }
+              />
             </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -309,7 +374,13 @@ function ClockVisual({
           {ticks}
 
           {/* Center circle */}
-          <circle cx="50" cy="50" r="4" fill="#38B2AC" filter="url(#glow)" />
+          <circle
+            cx="50"
+            cy="50"
+            r="4"
+            fill={accentColor}
+            filter={isLightTheme ? undefined : "url(#glow)"}
+          />
 
           {/* Minute hand */}
           <line
@@ -317,14 +388,12 @@ function ClockVisual({
             y1="50"
             x2={handX}
             y2={handY}
-            stroke="#38B2AC"
+            stroke={accentColor}
             strokeWidth="3"
             strokeLinecap="round"
-            filter="url(#glow)"
+            filter={isLightTheme ? undefined : "url(#glow)"}
             style={{
-              transition: dragState.current
-                ? "none"
-                : "all 0.3s ease-out",
+              transition: dragState.current ? "none" : "all 0.3s ease-out",
             }}
           />
 
@@ -333,12 +402,10 @@ function ClockVisual({
             cx={handX}
             cy={handY}
             r="3"
-            fill="#81E6D9"
-            filter="url(#glow)"
+            fill={accentTipColor}
+            filter={isLightTheme ? undefined : "url(#glow)"}
             style={{
-              transition: dragState.current
-                ? "none"
-                : "all 0.3s ease-out",
+              transition: dragState.current ? "none" : "all 0.3s ease-out",
             }}
           />
         </svg>
@@ -354,15 +421,21 @@ function ClockVisual({
           <Text
             fontSize="lg"
             fontWeight="bold"
-            color="teal.300"
-            textShadow="0 0 10px rgba(56, 178, 172, 0.5)"
+            color={centerTextColor}
+            textShadow={
+              isLightTheme ? "none" : "0 0 10px rgba(56, 178, 172, 0.5)"
+            }
           >
             {parsedMinutes}m
           </Text>
         </Box>
       </Box>
       {onMinutesChange && (
-        <Text fontSize="xs" color="gray.500" mt={2}>
+        <Text
+          fontSize="xs"
+          color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}
+          mt={2}
+        >
           Drag around the clock to set time
         </Text>
       )}
@@ -383,6 +456,8 @@ export default function SessionTimerModal({
   const presets = [20, 30, 45, 60, 90, 120, 150, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const handleClose = useCallback(() => {
     playSound(selectSound);
     onClose?.();
@@ -401,25 +476,43 @@ export default function SessionTimerModal({
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      <ModalOverlay bg="blackAlpha.700" />
+      <ModalOverlay
+        bg={isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
+        backdropFilter={isLightTheme ? "blur(4px)" : undefined}
+      />
       <ModalContent
-        bg="gray.900"
-        color="gray.100"
-        borderColor="gray.700"
+        bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+        color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+        borderColor={isLightTheme ? APP_BORDER : "gray.700"}
         border="1px solid"
         rounded="2xl"
-        shadow="xl"
+        shadow={isLightTheme ? APP_SHADOW : "xl"}
       >
         <ModalHeader>
           <HStack spacing={2} align="center">
-            <Box as={FiClock} aria-hidden color="teal.400" />
+            <Box
+              as={FiClock}
+              aria-hidden
+              color={isLightTheme ? "#3f9f9b" : "teal.400"}
+            />
             <Text>{t.timer_modal_title || "Session timer"}</Text>
           </HStack>
         </ModalHeader>
-        <ModalCloseButton onClick={handleClose} />
+        <ModalCloseButton
+          onClick={handleClose}
+          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+          _hover={{
+            bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+          }}
+          _focusVisible={{
+            boxShadow: isLightTheme
+              ? "0 0 0 2px rgba(63, 159, 155, 0.2)"
+              : undefined,
+          }}
+        />
         <ModalBody>
           <VStack align="stretch" spacing={4}>
-            <Text color="gray.400">
+            <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
               {t.timer_modal_description || "Set how long you want to focus."}
             </Text>
 
@@ -428,12 +521,15 @@ export default function SessionTimerModal({
               minutes={minutes}
               onMinutesChange={onMinutesChange}
               playSliderTick={playSliderTick}
+              isLightTheme={isLightTheme}
             />
 
             {helper}
 
             <FormControl>
-              <FormLabel>{t.timer_modal_minutes_label || "Minutes"}</FormLabel>
+              <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+                {t.timer_modal_minutes_label || "Minutes"}
+              </FormLabel>
               <Input
                 type="number"
                 min={0}
@@ -447,21 +543,34 @@ export default function SessionTimerModal({
                     onMinutesChange?.(e.target.value);
                   }
                 }}
-                bg="gray.800"
-                borderColor="gray.600"
-                _hover={{ borderColor: "gray.500" }}
+                bg={isLightTheme ? APP_SURFACE : "gray.800"}
+                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
+                _hover={{
+                  borderColor: isLightTheme ? APP_BORDER_STRONG : "gray.500",
+                }}
                 _focus={{
                   borderColor: "teal.400",
-                  boxShadow: "0 0 0 1px #38B2AC",
+                  boxShadow: isLightTheme
+                    ? "0 0 0 1px rgba(63, 159, 155, 0.78)"
+                    : "0 0 0 1px #38B2AC",
                 }}
               />
-              <Text fontSize="xs" color="gray.500" mt={1}>
+              <Text
+                fontSize="xs"
+                color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}
+                mt={1}
+              >
                 {t.timer_modal_max_hint || "max 240 minutes (4 hours)"}
               </Text>
             </FormControl>
 
             <Box>
-              <Text fontSize="sm" mb={2} color="gray.400">
+              <Text
+                fontSize="sm"
+                mb={2}
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+              >
                 {t.timer_modal_quick_picks || "Quick picks"}
               </Text>
               <HStack spacing={2} wrap="wrap">
@@ -471,8 +580,44 @@ export default function SessionTimerModal({
                     <Button
                       key={preset}
                       size="sm"
-                      variant={isActive ? "solid" : "outline"}
-                      colorScheme="teal"
+                      variant={
+                        isLightTheme ? "solid" : isActive ? "solid" : "outline"
+                      }
+                      colorScheme={isLightTheme ? undefined : "teal"}
+                      bg={
+                        isLightTheme
+                          ? isActive
+                            ? "#3f9f9b"
+                            : APP_SURFACE_ELEVATED
+                          : undefined
+                      }
+                      color={
+                        isLightTheme
+                          ? isActive
+                            ? "white"
+                            : APP_TEXT_PRIMARY
+                          : undefined
+                      }
+                      border="1px solid"
+                      borderColor={
+                        isLightTheme
+                          ? isActive
+                            ? "rgba(63, 159, 155, 0.7)"
+                            : APP_BORDER
+                          : undefined
+                      }
+                      boxShadow={
+                        isLightTheme && isActive
+                          ? "0 6px 0 rgba(36, 91, 89, 0.18)"
+                          : "none"
+                      }
+                      _hover={
+                        isLightTheme
+                          ? {
+                              bg: isActive ? "#398f8b" : APP_SURFACE_MUTED,
+                            }
+                          : undefined
+                      }
                       onClick={() => {
                         playSound(selectSound);
                         onMinutesChange?.(String(preset));
@@ -490,12 +635,24 @@ export default function SessionTimerModal({
           gap={3}
           flexWrap="wrap"
           borderTop="1px solid"
-          borderColor="gray.800"
+          borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
-          <Button variant="ghost" colorScheme="gray" onClick={handleClose}>
+          <Button
+            variant="ghost"
+            colorScheme="gray"
+            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+            onClick={handleClose}
+          >
             {t.timer_modal_close || "Close"}
           </Button>
-          <Button colorScheme="teal" onClick={handleStart}>
+          <Button
+            colorScheme={isLightTheme ? undefined : "teal"}
+            bg={isLightTheme ? "#3f9f9b" : undefined}
+            color={isLightTheme ? "white" : undefined}
+            _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+            onClick={handleStart}
+            boxShadow={"0px 4px 0px teal"}
+          >
             {isRunning
               ? t.timer_modal_restart || "Restart timer"
               : t.timer_modal_start || "Start timer"}

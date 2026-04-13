@@ -16,6 +16,14 @@ import {
 } from "@chakra-ui/react";
 import useNOSTR from "../../hooks/useNOSTR";
 import VoiceOrb from "../VoiceOrb";
+import { useThemeStore } from "../../useThemeStore";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 const TOTAL_FEED_STEPS = 120;
 const HASHTAG = "LearnWithNostr";
@@ -49,7 +57,7 @@ const colorForQuestion = (questionNumber = 0) => {
   return bucket;
 };
 
-const ReplaceHashtagWithLink = ({ text = "" }) => {
+const ReplaceHashtagWithLink = ({ text = "", linkColor = "blue.400" }) => {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
   return (
@@ -62,7 +70,7 @@ const ReplaceHashtagWithLink = ({ text = "" }) => {
             <Link
               key={`${part}-${index}`}
               href={part}
-              color="blue.400"
+              color={linkColor}
               isExternal
               textDecoration="underline"
             >
@@ -92,6 +100,8 @@ export default function TeamFeed({
   onAllowPostsChange,
 }) {
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const [profiles, setProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -233,8 +243,10 @@ export default function TeamFeed({
           fontSize="sm"
           p={4}
           borderRadius="lg"
-          borderColor="whiteAlpha.200"
-          bg="gray.900"
+          borderWidth="1px"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+          bg={isLightTheme ? APP_SURFACE_MUTED : "gray.900"}
+          boxShadow={isLightTheme ? APP_SHADOW : undefined}
           width="100%"
         >
           <HStack align="center" spacing={3} mb={2}>
@@ -251,6 +263,7 @@ export default function TeamFeed({
             <Link
               href={`https://primal.net/p/${profile.npub}`}
               textDecoration="underline"
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
               isExternal
             >
               {profile.profile?.name || "Nostr friend"}
@@ -267,10 +280,13 @@ export default function TeamFeed({
               background={lightenColor(bucket.color, 0.85)}
             />
           ) : null}
-          <ReplaceHashtagWithLink text={profile.content} />
+          <ReplaceHashtagWithLink
+            text={profile.content}
+            linkColor={isLightTheme ? "#2f7dd3" : "blue.400"}
+          />
           <br />
           <br />
-          <Divider />
+          <Divider borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"} />
         </Box>
       );
     }
@@ -291,8 +307,10 @@ export default function TeamFeed({
           fontSize="sm"
           p={4}
           borderRadius="lg"
-          borderColor="whiteAlpha.200"
-          bg="gray.900"
+          borderWidth="1px"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+          bg={isLightTheme ? APP_SURFACE_MUTED : "gray.900"}
+          boxShadow={isLightTheme ? APP_SHADOW : undefined}
           width="100%"
         >
           <HStack align="center" spacing={3} mb={2}>
@@ -309,6 +327,7 @@ export default function TeamFeed({
             <Link
               href={`https://primal.net/p/${profile.npub}`}
               textDecoration="underline"
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
               isExternal
             >
               {profile.profile?.name || "Nostr friend"}
@@ -336,7 +355,11 @@ export default function TeamFeed({
                 height={4}
                 mb={2}
               />
-              <Text fontSize="xs" color="gray.300" mb={2}>
+              <Text
+                fontSize="xs"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                mb={2}
+              >
                 {`${
                   t?.teams_feed_goal_completion || "Goal completion"
                 }: ${dailyGoalPercent}%`}
@@ -348,10 +371,13 @@ export default function TeamFeed({
               </Text>
             </>
           )}
-          <ReplaceHashtagWithLink text={profile.content} />
+          <ReplaceHashtagWithLink
+            text={profile.content}
+            linkColor={isLightTheme ? "#2f7dd3" : "blue.400"}
+          />
           <br />
           <br />
-          <Divider />
+          <Divider borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"} />
         </Box>
       );
     }
@@ -361,7 +387,7 @@ export default function TeamFeed({
     return (
       <VStack py={8} spacing={3} align="center">
         <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
-        <Text fontSize="sm" color="gray.400">
+        <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
           {localeStrings.loading}
         </Text>
       </VStack>
@@ -370,12 +396,16 @@ export default function TeamFeed({
 
   return (
     <VStack spacing={4} align="stretch">
-      <Text fontSize="sm" color="gray.300">
+      <Text fontSize="sm" color={isLightTheme ? APP_TEXT_PRIMARY : "gray.300"}>
         {t?.teams_feed_instructions || localeStrings.instructions}
       </Text>
 
       <FormControl display="flex" alignItems="center" mb={4}>
-        <FormLabel htmlFor="allow-posts-switch" mb="0">
+        <FormLabel
+          htmlFor="allow-posts-switch"
+          mb="0"
+          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+        >
           {t?.teams_feed_allow_label || localeStrings.allowLabel}
         </FormLabel>
         <Switch
@@ -387,8 +417,18 @@ export default function TeamFeed({
       </FormControl>
 
       {error ? (
-        <Box borderWidth="1px" borderRadius="md" p={4} borderColor="red.400">
-          <Text fontSize="sm" color="red.200" mb={2}>
+        <Box
+          borderWidth="1px"
+          borderRadius="md"
+          p={4}
+          borderColor={isLightTheme ? "rgba(194, 103, 132, 0.28)" : "red.400"}
+          bg={isLightTheme ? APP_SURFACE : undefined}
+        >
+          <Text
+            fontSize="sm"
+            color={isLightTheme ? "#8f4a5e" : "red.200"}
+            mb={2}
+          >
             {error}
           </Text>
           <Button size="sm" onClick={fetchFeed}>
@@ -400,9 +440,10 @@ export default function TeamFeed({
           borderWidth="1px"
           borderRadius="md"
           p={4}
-          borderColor="whiteAlpha.200"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+          bg={isLightTheme ? APP_SURFACE : undefined}
         >
-          <Text fontSize="sm" color="gray.400">
+          <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
             {localeStrings.empty}
           </Text>
         </Box>

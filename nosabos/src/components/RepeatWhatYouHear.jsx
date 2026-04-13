@@ -20,9 +20,22 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
+import {
+  getQuestionAssistantPanelProps,
+  getQuestionChipProps,
+  getQuestionToolButtonProps,
+  questionAssistantText,
+} from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise
@@ -263,19 +276,20 @@ export default function RepeatWhatYouHear({
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
-        <Text fontSize="xl" fontWeight="bold" color="white">
+        <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
           {headingLabel}
         </Text>
         <Box
-          bg="rgba(255, 255, 255, 0.02)"
+          bg={APP_SURFACE_ELEVATED}
           borderRadius="lg"
           borderWidth="1px"
-          borderColor="whiteAlpha.100"
+          borderColor={APP_BORDER}
           p={5}
+          boxShadow={APP_SHADOW}
         >
           <VStack align="stretch" spacing={4}>
             <Box
-              bg="rgba(255, 255, 255, 0.02)"
+              bg={APP_SURFACE}
               borderRadius="lg"
               borderWidth="2px"
               borderColor={
@@ -283,7 +297,7 @@ export default function RepeatWhatYouHear({
                   ? "green.400"
                   : lastOk === false
                   ? "red.400"
-                  : "whiteAlpha.200"
+                  : APP_BORDER
               }
               p={4}
               minH="80px"
@@ -324,13 +338,11 @@ export default function RepeatWhatYouHear({
                           size="sm"
                           fontSize="lg"
                           rounded="xl"
-                          bg="white"
-                          color="blue"
-                          boxShadow="0 4px 0 blue"
                           onClick={handleSendHelp}
                           isDisabled={
                             isLoadingAssistantSupport || !!assistantSupportText
                           }
+                          {...getQuestionToolButtonProps()}
                         />
                       )}
                       <IconButton
@@ -340,14 +352,16 @@ export default function RepeatWhatYouHear({
                         icon={renderSpeakerIcon(isSynthesizing)}
                         size="md"
                         fontSize="xl"
-                        variant="ghost"
                         onClick={handleManualPlay}
                         isRound
+                        {...getQuestionToolButtonProps({
+                          active: isSynthesizing,
+                        })}
                       />
                       {selectedWords.length === 0 &&
                         !snapshot.isDraggingOver && (
                           <Text
-                            color="gray.500"
+                            color={APP_TEXT_MUTED}
                             fontSize="sm"
                             fontStyle="italic"
                             w="100%"
@@ -373,17 +387,9 @@ export default function RepeatWhatYouHear({
                             px={3}
                             py={2}
                             rounded="md"
-                            borderWidth="1px"
-                            borderColor={
-                              dragSnapshot.isDragging
-                                ? "purple.300"
-                                : "rgba(255, 255, 255, 0.22)"
-                            }
-                            bg={
-                              dragSnapshot.isDragging
-                                ? "rgba(128, 90, 213, 0.25)"
-                                : "rgba(255, 255, 255, 0.06)"
-                            }
+                            {...getQuestionChipProps({
+                              dragging: dragSnapshot.isDragging,
+                            })}
                             cursor={lastOk === true ? "default" : "grab"}
                             onClick={() => {
                               if (lastOk !== true) {
@@ -392,15 +398,8 @@ export default function RepeatWhatYouHear({
                               }
                             }}
                             _hover={
-                              lastOk !== true
-                                ? {
-                                    bg: "rgba(128, 90, 213, 0.12)",
-                                    borderColor: "purple.200",
-                                  }
-                                : {}
+                              lastOk !== true ? getQuestionChipProps()._hover : {}
                             }
-                            transition="all 0.15s ease"
-                            boxShadow="0 2px 4px rgba(0, 0, 0, 0.2)"
                             style={dragProvided.draggableProps.style}
                           >
                             {wordBank[wordIndex]}
@@ -416,7 +415,7 @@ export default function RepeatWhatYouHear({
           </VStack>
         </Box>
 
-        <Box borderBottomWidth="1px" borderColor="whiteAlpha.200" />
+        <Box borderBottomWidth="1px" borderColor={APP_BORDER} />
 
         <Droppable droppableId="word-bank" direction="horizontal">
           {(provided, snapshot) => (
@@ -451,17 +450,9 @@ export default function RepeatWhatYouHear({
                       px={4}
                       py={2}
                       rounded="lg"
-                      borderWidth="2px"
-                      borderColor={
-                        dragSnapshot.isDragging
-                          ? "purple.300"
-                          : "rgba(255, 255, 255, 0.22)"
-                      }
-                      bg={
-                        dragSnapshot.isDragging
-                          ? "rgba(128, 90, 213, 0.16)"
-                          : "rgba(255, 255, 255, 0.04)"
-                      }
+                      {...getQuestionChipProps({
+                        dragging: dragSnapshot.isDragging,
+                      })}
                       fontSize="sm"
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
@@ -471,15 +462,8 @@ export default function RepeatWhatYouHear({
                         }
                       }}
                       _hover={
-                        lastOk !== true
-                          ? {
-                              bg: "rgba(128, 90, 213, 0.12)",
-                              borderColor: "purple.200",
-                            }
-                          : {}
+                        lastOk !== true ? getQuestionChipProps()._hover : {}
                       }
-                      transition="all 0.15s ease"
-                      boxShadow="0 2px 4px rgba(0, 0, 0, 0.2)"
                       style={dragProvided.draggableProps.style}
                     >
                       {wordBank[wordIndex]}
@@ -497,14 +481,11 @@ export default function RepeatWhatYouHear({
           <Box
             p={4}
             borderRadius="lg"
-            bg="rgba(66, 153, 225, 0.1)"
-            borderWidth="1px"
-            borderColor="blue.400"
-            boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+            {...getQuestionAssistantPanelProps()}
           >
             <HStack spacing={2} mb={2}>
-              <MdOutlineSupportAgent color="var(--chakra-colors-blue-400)" />
-              <Text fontWeight="semibold" color="blue.300">
+              <MdOutlineSupportAgent color={questionAssistantText.accent} />
+              <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
                 {userLanguage === "es" ? "Asistente" : "Assistant"}
               </Text>
               {isLoadingAssistantSupport && (
@@ -513,15 +494,25 @@ export default function RepeatWhatYouHear({
             </HStack>
             <Box
               fontSize="md"
-              color="whiteAlpha.900"
+              color={APP_TEXT_PRIMARY}
               lineHeight="1.6"
               sx={{
                 "& p": { mb: 2 },
                 "& p:last-child": { mb: 0 },
-                "& strong": { fontWeight: "bold", color: "blue.200" },
+                "& strong": {
+                  fontWeight: "bold",
+                  color: questionAssistantText.accentStrong,
+                },
                 "& em": { fontStyle: "italic" },
                 "& ul, & ol": { pl: 4, mb: 2 },
                 "& li": { mb: 1 },
+                "& code": {
+                  bg: APP_SURFACE,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: "sm",
+                  fontFamily: "mono",
+                },
               }}
             >
               <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
@@ -536,6 +527,8 @@ export default function RepeatWhatYouHear({
               onClick={onSkip}
               px={{ base: 6, md: 10 }}
               py={{ base: 3, md: 4 }}
+              color={APP_TEXT_PRIMARY}
+              _hover={{ bg: APP_SURFACE_MUTED }}
             >
               {skipLabel}
             </Button>

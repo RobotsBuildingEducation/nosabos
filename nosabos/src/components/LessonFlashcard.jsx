@@ -53,8 +53,24 @@ import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import { useThemeStore } from "../useThemeStore";
+import {
+  getQuestionFeedbackPanelProps,
+  getQuestionToolButtonProps,
+  questionFeedbackAccent,
+  questionToneText,
+} from "./questionUiStyles";
 
 const MotionBox = motion(Box);
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // --------------- helpers ---------------
 
@@ -208,6 +224,8 @@ export default function LessonFlashcard({
   const audioRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   const stopAnswerAudio = () => {
     stopTTSPlayback(audioRef.current);
@@ -529,13 +547,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         w="100%"
         p={3}
         borderRadius="xl"
-        bg="whiteAlpha.50"
+        bg={APP_SURFACE_ELEVATED}
         border="1px solid"
-        borderColor="whiteAlpha.100"
+        borderColor={APP_BORDER}
         cursor="pointer"
         onClick={onOpenDeck}
-        _hover={{ bg: "whiteAlpha.100" }}
+        _hover={{ bg: APP_SURFACE_MUTED }}
         transition="background 0.2s"
+        boxShadow={APP_SHADOW}
       >
         <HStack justify="space-between" align="center">
           <HStack spacing={2}>
@@ -555,7 +574,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                 opacity={0.5 + (i / Math.min(deckSize, 8)) * 0.5}
               />
             ))}
-            <Text fontSize="xs" color="whiteAlpha.600" ml={1}>
+            <Text fontSize="xs" color={APP_TEXT_MUTED} ml={1}>
               {deckSize}
             </Text>
           </HStack>
@@ -569,14 +588,21 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         <Box
           borderRadius="2xl"
           overflow="hidden"
-          bg="#08142b"
-          boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "#08142b"}
+          boxShadow={
+            isLightTheme
+              ? APP_SHADOW
+              : "0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+          }
           border="2px solid"
-          borderColor="rgba(59, 130, 246, 0.2)"
+          borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
           w="100%"
           p={5}
           position="relative"
-          sx={{
+          sx={
+            isLightTheme
+              ? {}
+              : {
             "&::before": {
               content: '""',
               position: "absolute",
@@ -619,7 +645,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
               }
               size={32}
             />
-            <Text color="whiteAlpha.800" fontSize="sm">
+            <Text color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"} fontSize="sm">
               {userLanguage === "es"
                 ? "Generando tarjeta..."
                 : "Generating flashcard..."}
@@ -645,17 +671,24 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
       <Box
         borderRadius="2xl"
         overflow="hidden"
-        boxShadow="0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+        boxShadow={
+          isLightTheme
+            ? APP_SHADOW
+            : "0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(59, 130, 246, 0.25)"
+        }
         border="2px solid"
-        borderColor="rgba(59, 130, 246, 0.2)"
+        borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
         w="100%"
       >
         <Box
           px={4}
           py={3}
           position="relative"
-          bg="#08142b"
-          sx={{
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "#08142b"}
+          sx={
+            isLightTheme
+              ? {}
+              : {
             "&::before": {
               content: '""',
               position: "absolute",
@@ -723,17 +756,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     top={2}
                     left={2}
                     size="sm"
-                    variant="solid"
-                    bg="white"
-                    color="blue"
-                    boxShadow="0 4px 0 blue"
                     rounded="xl"
-                    _hover={{ bg: "gray.50" }}
+                    onClick={handleFlip}
+                    {...getQuestionToolButtonProps({ active: isFlipped })}
                     zIndex={2}
                   />
                   <Text
                     fontSize="xs"
-                    color="whiteAlpha.800"
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                     fontWeight="medium"
                     mb={1}
                   >
@@ -742,9 +772,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   <Text
                     fontSize="xl"
                     fontWeight="black"
-                    color="white"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                    textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
                   >
                     {concept}
                   </Text>
@@ -767,15 +797,20 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   cursor="pointer"
                   onClick={handleFlip}
                 >
-                  <Text fontSize="xs" color="white" fontWeight="medium" mb={1}>
+                  <Text
+                    fontSize="xs"
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+                    fontWeight="medium"
+                    mb={1}
+                  >
                     {t("answer_label")}
                   </Text>
                   <Text
                     fontSize="xl"
                     fontWeight="black"
-                    color="white"
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     textAlign="center"
-                    textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                    textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
                   >
                     {answer || "..."}
                   </Text>
@@ -788,9 +823,6 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         bottom={2}
                         left={2}
                         size="sm"
-                        variant="ghost"
-                        // colorScheme="purple"
-                        color="white"
                         icon={
                           loadingTts ? (
                             <Spinner size="xs" />
@@ -799,8 +831,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           )
                         }
                         onClick={handleListenToAnswer}
-                        _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
+                        {...getQuestionToolButtonProps({
+                          active: isPlayingAudio || loadingTts,
+                        })}
                       />
                     )}
                     <Text
@@ -808,7 +842,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       bottom={2}
                       right={2}
                       fontSize="xs"
-                      color="white"
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                       onClick={handleFlip}
                     >
                       {t("tap_to_flip")}
@@ -838,7 +872,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }
                       size={32}
                     />
-                    <Text color="whiteAlpha.700" fontSize="sm">
+                    <Text
+                      color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
+                      fontSize="sm"
+                    >
                       {t("grading")}
                     </Text>
                   </VStack>
@@ -895,12 +932,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       <Box
                         p={2}
                         borderRadius="md"
-                        bg="whiteAlpha.100"
+                        bg={APP_SURFACE}
                         border="1px solid"
-                        borderColor="whiteAlpha.200"
+                        borderColor={APP_BORDER}
                         w="100%"
                       >
-                        <Text fontSize="xs" color="whiteAlpha.700" mb={1}>
+                        <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={1}>
                           {userLanguage === "es"
                             ? "Reconocido:"
                             : "Recognized:"}
@@ -921,11 +958,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         size="sm"
                         fontSize="14px"
                         textAlign="center"
-                        bg="#f4f5ffff"
+                        bg={APP_SURFACE}
                         border="1px solid"
-                        borderColor="whiteAlpha.200"
-                        color="black"
-                        _placeholder={{ color: "gray.500" }}
+                        borderColor={APP_BORDER}
+                        color={APP_TEXT_PRIMARY}
+                        _placeholder={{ color: APP_TEXT_MUTED }}
                         _focus={{
                           borderColor: "blue.300",
                           boxShadow: "0 0 0 1px #3B82F6",
@@ -950,11 +987,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             icon={<MdKeyboard size={20} />}
                             size="md"
                             variant="outline"
-                            bg={showKeyboard ? "blue.500" : "whiteAlpha.200"}
-                            color="white"
+                            bg={showKeyboard ? "blue.500" : APP_SURFACE_MUTED}
+                            color={showKeyboard ? "white" : APP_TEXT_PRIMARY}
                             onClick={() => setShowKeyboard(!showKeyboard)}
                             _hover={{
-                              bg: showKeyboard ? "blue.600" : "whiteAlpha.300",
+                              bg: showKeyboard ? "blue.600" : APP_SURFACE,
                             }}
                             flexShrink={0}
                           />
@@ -976,9 +1013,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     <Button
                       size="sm"
                       variant="ghost"
-                      color="whiteAlpha.600"
+                      color={APP_TEXT_MUTED}
                       onClick={handleAdvance}
-                      _hover={{ bg: "whiteAlpha.100" }}
+                      _hover={{ bg: APP_SURFACE_MUTED }}
                       mt={8}
                       w="100%"
                       py={5}
@@ -1002,20 +1039,25 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     spacing={2}
                     p={3}
                     borderRadius="xl"
-                    bg={isCorrect ? "transparent" : "red.900"}
-                    border="2px solid"
-                    borderColor={isCorrect ? "green.500" : "red.500"}
+                    borderWidth="2px"
+                    {...getQuestionFeedbackPanelProps({ ok: isCorrect })}
                   >
                     <HStack spacing={2} w="100%">
                       {isCorrect ? (
-                        <RiCheckLine size={24} color="#22C55E" />
+                        <RiCheckLine
+                          size={24}
+                          color={questionFeedbackAccent.ok}
+                        />
                       ) : (
-                        <RiCloseLine size={24} color="#EF4444" />
+                        <RiCloseLine
+                          size={24}
+                          color={questionFeedbackAccent.error}
+                        />
                       )}
                       <Text
                         fontSize="lg"
                         fontWeight="bold"
-                        color="white"
+                        color={questionToneText.primary}
                         flex="1"
                       >
                         {isCorrect ? t("correct") : t("incorrect")}
@@ -1024,7 +1066,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                     {isCorrect ? (
                       <>
-                        <HStack spacing={2} color="yellow.400">
+                        <HStack spacing={2} color={questionToneText.secondary}>
                           <RiStarLine size={16} />
                           <Text fontSize="md" fontWeight="bold">
                             +{xpAwarded} XP
@@ -1034,8 +1076,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         {/* Next */}
                         <Button
                           size="sm"
-                          bg="teal"
-                          variant="outline"
+                          colorScheme="blue"
+                          variant="solid"
                           onClick={handleNextQuestion}
                         >
                           {t("next")}
@@ -1045,8 +1087,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       <VStack w="100%" spacing={2} mt={1}>
                         <Button
                           size="sm"
-                          bg="teal"
-                          colorScheme="teal"
+                          colorScheme="blue"
                           onClick={handleTryAgain}
                         >
                           {t("try_again")}
@@ -1054,8 +1095,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                         <Button
                           size="sm"
-                          colorScheme="pink"
-                          variant="solid"
+                          variant="outline"
+                          bg={APP_SURFACE_ELEVATED}
+                          color={APP_TEXT_PRIMARY}
+                          borderColor={APP_BORDER_STRONG}
+                          _hover={{ bg: APP_SURFACE_MUTED }}
                           onClick={handleExplainAnswer}
                           isDisabled={
                             isLoadingExplanation ||
@@ -1087,15 +1131,15 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         w="100%"
                         p={3}
                         borderRadius="md"
-                        bg="rgba(244, 114, 182, 0.08)"
+                        bg={APP_SURFACE_ELEVATED}
                         border="1px solid"
-                        borderColor="pink.400"
-                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                        borderColor={APP_BORDER}
+                        boxShadow={APP_SHADOW}
                       >
                         <Text
                           fontSize="sm"
                           fontWeight="semibold"
-                          color="pink.200"
+                          color={questionToneText.primary}
                           mb={2}
                           display="flex"
                           alignItems="center"
@@ -1105,7 +1149,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           {t("explanation_heading")}
                         </Text>
                         <Box
-                          color="white"
+                          color={questionToneText.primary}
                           fontSize="sm"
                           lineHeight="1.6"
                           sx={{
@@ -1113,7 +1157,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             "& p:last-child": { mb: 0 },
                             "& strong": {
                               fontWeight: "bold",
-                              color: "pink.100",
+                              color: "var(--question-tool-accent)",
                             },
                             "& em": { fontStyle: "italic" },
                             "& ul, & ol": { pl: 4, mb: 2 },
@@ -1157,6 +1201,8 @@ export function FlashcardDeckReview({
 }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   if (!isOpen || cards.length === 0) return null;
 
@@ -1216,48 +1262,52 @@ export function FlashcardDeckReview({
                 flexDirection="column"
                 justifyContent="center"
                 alignItems="center"
-                bg="#08142b"
+                bg={isLightTheme ? APP_SURFACE_ELEVATED : "#08142b"}
                 borderRadius="xl"
                 border="2px solid"
-                borderColor="rgba(59, 130, 246, 0.2)"
+                borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
                 sx={{
                   backfaceVisibility: "hidden",
-                  "&::before": {
-                    content: '""',
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "xl",
-                    background:
-                      "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
-                      "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
-                      "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
-                      "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
-                    animation: "matrixGlowShift 10s ease-in-out infinite",
-                    pointerEvents: "none",
-                  },
-                  "&::after": {
-                    content: '""',
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "xl",
-                    backgroundImage:
-                      "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
-                      "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
-                    opacity: 0.45,
-                    mixBlendMode: "screen",
-                    pointerEvents: "none",
-                  },
-                  "@keyframes matrixGlowShift": {
-                    "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-                    "50%": { transform: "translate(0, -2%) scale(1.02)" },
-                  },
+                  ...(isLightTheme
+                    ? {}
+                    : {
+                        "&::before": {
+                          content: '""',
+                          position: "absolute",
+                          inset: 0,
+                          borderRadius: "xl",
+                          background:
+                            "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+                            "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+                            "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+                            "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+                          animation: "matrixGlowShift 10s ease-in-out infinite",
+                          pointerEvents: "none",
+                        },
+                        "&::after": {
+                          content: '""',
+                          position: "absolute",
+                          inset: 0,
+                          borderRadius: "xl",
+                          backgroundImage:
+                            "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                            "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+                          opacity: 0.45,
+                          mixBlendMode: "screen",
+                          pointerEvents: "none",
+                        },
+                        "@keyframes matrixGlowShift": {
+                          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                          "50%": { transform: "translate(0, -2%) scale(1.02)" },
+                        },
+                      }),
                 }}
                 overflow="hidden"
                 p={4}
               >
                 <Text
                   fontSize="xs"
-                  color="whiteAlpha.700"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
                   mb={2}
                   position="relative"
                   zIndex={1}
@@ -1267,7 +1317,7 @@ export function FlashcardDeckReview({
                 <Text
                   fontSize="2xl"
                   fontWeight="bold"
-                  color="white"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                   textAlign="center"
                   position="relative"
                   zIndex={1}
@@ -1276,7 +1326,7 @@ export function FlashcardDeckReview({
                 </Text>
                 <Text
                   fontSize="xs"
-                  color="whiteAlpha.600"
+                  color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.600"}
                   mt={4}
                   position="relative"
                   zIndex={1}
@@ -1293,23 +1343,31 @@ export function FlashcardDeckReview({
                 flexDirection="column"
                 justifyContent="center"
                 alignItems="center"
-                bgGradient="linear(135deg, #065F46, #059669)"
+                bgGradient={
+                  isLightTheme
+                    ? "linear(135deg, rgba(5,150,105,0.18), rgba(16,185,129,0.1))"
+                    : "linear(135deg, #065F46, #059669)"
+                }
                 borderRadius="xl"
                 border="2px solid"
-                borderColor="rgba(59, 130, 246, 0.2)"
+                borderColor={isLightTheme ? APP_BORDER : "rgba(59, 130, 246, 0.2)"}
                 sx={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
                 }}
                 p={4}
               >
-                <Text fontSize="xs" color="whiteAlpha.700" mb={2}>
+                <Text
+                  fontSize="xs"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
+                  mb={2}
+                >
                   {LANG_NAME(targetLang)}
                 </Text>
                 <Text
                   fontSize="2xl"
                   fontWeight="bold"
-                  color="white"
+                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                   textAlign="center"
                 >
                   {card.answer}

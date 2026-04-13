@@ -126,6 +126,30 @@ export default function BitcoinSupportModal({
       ),
     [selectedIdentity],
   );
+  const paperTheme = useMemo(
+    () => ({
+      shellBg: "#f8f0df",
+      shellBorder: "#d7b98d",
+      bodyBg: "#f6ecdb",
+      footerBg: "#f1e4ce",
+      text: "#352412",
+      mutedText: "#715331",
+      subtleText: "#8d6d46",
+      panelBg: "#fff8eb",
+      panelBorder: "#dcc09a",
+      panelBorderHover: "#c89447",
+      panelSelectedBg: "#f5dfbe",
+      panelSelectedBorder: "#c67c1b",
+      link: "#0f766e",
+      warning: "#996300",
+      primaryButtonBg: "#319795",
+      primaryButtonHoverBg: "#2c7a7b",
+      primaryButtonActiveBg: "#285e61",
+      ghostHoverBg: "#ead7b8",
+      ghostActiveBg: "#dfc499",
+    }),
+    [],
+  );
 
   const title =
     ui.tutorial_bitcoin_modal_title ||
@@ -194,16 +218,28 @@ export default function BitcoinSupportModal({
                   py={{ base: 2.5, md: 3 }}
                   borderRadius="xl"
                   border="1px solid"
-                  borderColor={isSelected ? "teal.200" : "whiteAlpha.300"}
-                  bg={isSelected ? "whiteAlpha.200" : "whiteAlpha.100"}
+                  borderColor={
+                    isSelected
+                      ? paperTheme.panelSelectedBorder
+                      : paperTheme.panelBorder
+                  }
+                  bg={
+                    isSelected
+                      ? paperTheme.panelSelectedBg
+                      : paperTheme.panelBg
+                  }
                   boxShadow={
-                    isSelected ? "0 0 0 1px rgba(129, 230, 217, 0.3)" : "none"
+                    isSelected ? "0 0 0 1px rgba(198, 124, 27, 0.28)" : "none"
                   }
                   cursor={isIdentitySaving ? "not-allowed" : "pointer"}
                   transition="background 0.18s ease, border-color 0.18s ease, transform 0.18s ease"
                   _hover={{
-                    bg: isSelected ? "whiteAlpha.250" : "whiteAlpha.150",
-                    borderColor: isSelected ? "teal.100" : "whiteAlpha.400",
+                    bg: isSelected
+                      ? paperTheme.panelSelectedBg
+                      : "#f5ead5",
+                    borderColor: isSelected
+                      ? paperTheme.panelSelectedBorder
+                      : paperTheme.panelBorderHover,
                   }}
                   _active={{
                     transform: isIdentitySaving ? "none" : "scale(0.98)",
@@ -224,13 +260,14 @@ export default function BitcoinSupportModal({
                   }}
                 >
                   <Radio
-                    colorScheme="purple"
+                    colorScheme="orange"
                     value={recipient.npub}
                     size="sm"
                     isDisabled={isIdentitySaving}
                     pointerEvents="none"
                     flex="1"
                     minW={0}
+                    color={paperTheme.text}
                     sx={{
                       ".chakra-radio__label": {
                         fontSize: "xs",
@@ -248,7 +285,7 @@ export default function BitcoinSupportModal({
                       href={recipient.identityUrl}
                       isExternal
                       fontSize="xs"
-                      color="teal.200"
+                      color={paperTheme.link}
                       lineHeight="1"
                       ml="auto"
                       whiteSpace="nowrap"
@@ -266,7 +303,7 @@ export default function BitcoinSupportModal({
         </VStack>
       </RadioGroup>
       {!selectedIdentity ? (
-        <Text fontSize="xs" mt={2} color="orange.200" textAlign="left">
+        <Text fontSize="xs" mt={2} color={paperTheme.warning} textAlign="left">
           {lang === "es"
             ? "Selecciona una opción para habilitar los depósitos."
             : "Select an option to enable deposits."}
@@ -303,12 +340,12 @@ export default function BitcoinSupportModal({
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
-        bg="#171923"
-        color="gray.100"
+        bg={paperTheme.shellBg}
+        color={paperTheme.text}
         border="1px solid"
-        borderColor="#2a2f3a"
+        borderColor={paperTheme.shellBorder}
         borderRadius="2xl"
-        boxShadow="xl"
+        boxShadow="0 24px 60px rgba(53, 36, 18, 0.28)"
         overflow="hidden"
         pointerEvents="auto"
         position="relative"
@@ -342,7 +379,7 @@ export default function BitcoinSupportModal({
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
-          _hover={{ color: "whiteAlpha.900", bg: "blackAlpha.200" }}
+          _hover={{ color: "white", bg: "blackAlpha.200" }}
           position="absolute"
           top={4}
           right={4}
@@ -371,7 +408,7 @@ export default function BitcoinSupportModal({
               fontSize={{ base: "xs", md: "sm" }}
               maxW="560px"
               lineHeight="1.45"
-              color="whiteAlpha.900"
+              color="#5a3510"
             >
               {subtitle}
             </Text>
@@ -381,7 +418,7 @@ export default function BitcoinSupportModal({
         <Box
           px={{ base: 4, md: 5 }}
           py={{ base: 4, md: 5 }}
-          bg="#171923"
+          bg={paperTheme.bodyBg}
           overflowY="auto"
           flex="1"
           minH={0}
@@ -406,18 +443,19 @@ export default function BitcoinSupportModal({
               showSectionTitle={false}
               showScholarshipNote={false}
               containerProps={{
-                bg: "#171923",
+                bg: "transparent",
                 rounded: "xl",
                 p: 0,
                 mx: "auto",
               }}
-              sectionBg="#171923"
+              sectionBg="#f1e4ce"
               identitySelectorPlacement="bottom"
               contentMaxW="420px"
               showIdentitySelector={false}
               compactCardMobile
               compactCardDesktop
               hydrateWalletOnMount={false}
+              visualStyle="paper"
             />
 
             <Box w="100%" maxW="420px" mx="auto" pt={2}>
@@ -450,13 +488,17 @@ export default function BitcoinSupportModal({
                       onClick={() => playSound(selectSound)}
                     >
                       <Box flex="1" textAlign="left">
-                        <Text fontSize="sm">
+                        <Text fontSize="sm" color={paperTheme.text}>
                           {lang === "es"
                             ? "Elige un destinatario"
                             : "Choose a recipient"}
                         </Text>
                         {selectedRecipient ? (
-                          <Text fontSize="xs" color="gray.400" mt={1}>
+                          <Text
+                            fontSize="xs"
+                            color={paperTheme.subtleText}
+                            mt={1}
+                          >
                             {selectedRecipient.label}
                           </Text>
                         ) : null}
@@ -470,7 +512,12 @@ export default function BitcoinSupportModal({
                 </Accordion>
               ) : (
                 <>
-                  <Text fontSize="sm" mb={2} textAlign="left">
+                  <Text
+                    fontSize="sm"
+                    mb={2}
+                    textAlign="left"
+                    color={paperTheme.text}
+                  >
                     {lang === "es"
                       ? "Elige un destinatario"
                       : "Choose a recipient"}
@@ -485,20 +532,32 @@ export default function BitcoinSupportModal({
         <Box
           px={{ base: 4, md: 5 }}
           py={{ base: 3, md: 4 }}
-          bg="#171923"
+          bg={paperTheme.footerBg}
           borderTop="1px solid"
-          borderColor="whiteAlpha.100"
+          borderColor={paperTheme.shellBorder}
         >
           <VStack spacing={2} width="100%">
             <Box display="flex" justifyContent="flex-end" width="100%" gap={3}>
-              <Button variant="ghost" onClick={handleDismiss}>
+              <Button
+                variant="ghost"
+                color={paperTheme.text}
+                _hover={{ bg: paperTheme.ghostHoverBg }}
+                _active={{ bg: paperTheme.ghostActiveBg }}
+                onClick={handleDismiss}
+              >
                 {skipLabel}
               </Button>
-              <Button colorScheme="teal" onClick={handleConfirm}>
+              <Button
+                bg={paperTheme.primaryButtonBg}
+                color="white"
+                _hover={{ bg: paperTheme.primaryButtonHoverBg }}
+                _active={{ bg: paperTheme.primaryButtonActiveBg }}
+                onClick={handleConfirm}
+              >
                 {closeLabel}
               </Button>
             </Box>
-            <Text fontSize="xs" color="gray.400" textAlign="center">
+            <Text fontSize="xs" color={paperTheme.mutedText} textAlign="center">
               {footerNote}
             </Text>
           </VStack>

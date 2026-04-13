@@ -61,6 +61,7 @@ import { translations } from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
+import { useThemeStore } from "../useThemeStore";
 
 export function IdentityPanel({
   onClose,
@@ -83,6 +84,39 @@ export function IdentityPanel({
   showSignOutButton = true,
 }) {
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
+  const panelTheme = useMemo(
+    () =>
+      isLightTheme
+        ? {
+            surface: "var(--app-surface)",
+            surfaceStrong: "var(--app-surface-elevated)",
+            surfaceMuted: "var(--app-surface-muted)",
+            border: "var(--app-border)",
+            borderStrong: "var(--app-border-strong)",
+            textPrimary: "var(--app-text-primary)",
+            textSecondary: "var(--app-text-secondary)",
+            textMuted: "var(--app-text-muted)",
+            accent: "#19736d",
+            accentSoft: "#2f8f87",
+            divider: "var(--app-border)",
+          }
+        : {
+            surface: "gray.800",
+            surfaceStrong: "gray.900",
+            surfaceMuted: "gray.700",
+            border: "whiteAlpha.200",
+            borderStrong: "whiteAlpha.300",
+            textPrimary: "gray.100",
+            textSecondary: "gray.300",
+            textMuted: "gray.400",
+            accent: "teal.200",
+            accentSoft: "teal.100",
+            divider: "gray.700",
+          },
+    [isLightTheme],
+  );
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
@@ -292,6 +326,9 @@ export function IdentityPanel({
             padding={4}
             leftIcon={<LuKeyRound size={14} />}
             colorScheme="orange"
+            boxShadow="none"
+            transform="none"
+            _active={{ boxShadow: "none", transform: "none" }}
             onClick={() =>
               copy(currentSecret, t?.toast_secret_copied || "Secret copied")
             }
@@ -493,30 +530,52 @@ export function IdentityPanel({
                 setIsWalletOpen(index === 0);
               }
             }}
-            bg="gray.800"
+            bg={panelTheme.surface}
+            border="1px solid"
+            borderColor={panelTheme.border}
             rounded="md"
             maxW="600px"
             w="100%"
             mx="auto"
           >
             <AccordionItem border="none">
-              <AccordionButton px={4} py={3}>
+              <AccordionButton
+                px={4}
+                py={3}
+                color={panelTheme.textPrimary}
+                _hover={{ bg: panelTheme.surfaceMuted }}
+                _expanded={{ bg: panelTheme.surfaceMuted }}
+              >
                 <Flex flex="1" textAlign="left" align="center" gap={3}>
-                  <Text fontWeight="semibold" textShadow="0px 0px 24px black">
+                  <Text fontWeight="semibold">
                     {appLanguage === "es"
                       ? "Billetera Bitcoin"
                       : "Bitcoin wallet"}
                   </Text>
                 </Flex>
-                <AccordionIcon />
+                <AccordionIcon color={panelTheme.textSecondary} />
               </AccordionButton>
               <AccordionPanel px={0} pb={4} pt={0}>
-                <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
+                <Box
+                  bg={panelTheme.surfaceStrong}
+                  border="1px solid"
+                  borderColor={panelTheme.border}
+                  p={3}
+                  rounded="md"
+                  mx={3}
+                  mt={3}
+                >
                   <BitcoinWalletSection
                     userLanguage={appLanguage}
                     identity={user?.identity || ""}
                     onSelectIdentity={onSelectIdentity}
                     isIdentitySaving={isIdentitySaving}
+                    sectionBg={
+                      isLightTheme
+                        ? "var(--app-surface-elevated)"
+                        : panelTheme.surfaceStrong
+                    }
+                    visualStyle={isLightTheme ? "paper" : "default"}
                   />
                 </Box>
               </AccordionPanel>
@@ -527,10 +586,16 @@ export function IdentityPanel({
         {/* Install App Section (Always Visible - NOT an accordion) */}
         <Box display="flex" justifyContent={"center"} mt={6}>
           <Box maxW="600px">
-            <Text fontWeight="semibold" mb={3}>
+            <Text fontWeight="semibold" mb={3} color={panelTheme.textPrimary}>
               {t?.app_install_title || "Install as app"}
             </Text>
-            <Box bg="gray.900" p={3} rounded="md">
+            <Box
+              bg={panelTheme.surfaceStrong}
+              border="1px solid"
+              borderColor={panelTheme.border}
+              p={3}
+              rounded="md"
+            >
               {installSteps.map((step, idx) => (
                 <Box key={step.id} py={2}>
                   <Flex
@@ -540,18 +605,26 @@ export function IdentityPanel({
                     flexWrap="wrap"
                   >
                     <HStack align="center" gap={3}>
-                      <Box color="teal.200">{step.icon}</Box>
-                      <Text fontSize="sm">{step.text}</Text>
+                      <Box color={panelTheme.accent}>{step.icon}</Box>
+                      <Text fontSize="sm" color={panelTheme.textPrimary}>
+                        {step.text}
+                      </Text>
                     </HStack>
                     {step.action ? <Box>{step.action}</Box> : null}
                   </Flex>
                   {step.subText ? (
-                    <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                    <Text
+                      fontSize="xs"
+                      color={isLightTheme ? panelTheme.textSecondary : panelTheme.accentSoft}
+                      mt={2}
+                      ml={8}
+                      lineHeight="1.65"
+                    >
                       {step.subText}
                     </Text>
                   ) : null}
                   {idx < installSteps.length - 1 && (
-                    <Divider my={3} borderColor="gray.700" />
+                    <Divider my={3} borderColor={panelTheme.divider} />
                   )}
                 </Box>
               ))}
@@ -717,9 +790,11 @@ export function BitcoinWalletSection({
   compactCardMobile = false,
   compactCardDesktop = false,
   hydrateWalletOnMount = true,
+  visualStyle = "default",
 }) {
   const toast = useToast();
   const playSound = useSoundSettings((s) => s.playSound);
+  const isPaperStyle = visualStyle === "paper";
   const shouldCenterContent =
     centerContent ||
     (useBreakpointValue({
@@ -747,6 +822,73 @@ export function BitcoinWalletSection({
       base: compactCardMobile ? 140 : 184,
       md: compactCardDesktop ? 136 : compactCardMobile ? 156 : 192,
     }) ?? 184;
+  const walletTheme = useMemo(
+    () =>
+      isPaperStyle
+        ? {
+            text: "#362311",
+            mutedText: "#6f5130",
+            surface: "#f6ecda",
+            elevatedSurface: "#fff9ed",
+            note: "#9b5f17",
+            link: "#0f766e",
+            warning: "#9a6700",
+            border: "#d8bb91",
+            borderHover: "#c99953",
+            buttonBg: "#fff8ec",
+            buttonHoverBg: "#f4e4c9",
+            buttonActiveBg: "#ecd5ac",
+            inputBg: "#fff9ef",
+            inputBorder: "#d6b98d",
+            inputFocus: "#c7821e",
+            radioScheme: "orange",
+          }
+        : {
+            text: "gray.100",
+            mutedText: "gray.300",
+            surface: "gray.800",
+            elevatedSurface: "gray.700",
+            note: "teal.100",
+            link: "teal.200",
+            warning: "orange.200",
+            border: "whiteAlpha.400",
+            borderHover: "whiteAlpha.500",
+            buttonBg: "transparent",
+            buttonHoverBg: "whiteAlpha.100",
+            buttonActiveBg: "whiteAlpha.200",
+            inputBg: "gray.800",
+            inputBorder: "gray.600",
+            inputFocus: "orange.400",
+            radioScheme: "purple",
+          },
+    [isPaperStyle],
+  );
+  const outlineButtonStyles = useMemo(
+    () => ({
+      variant: "outline",
+      bg: walletTheme.buttonBg,
+      borderColor: walletTheme.border,
+      color: walletTheme.text,
+      boxShadow: "none",
+      transform: "none",
+      _hover: {
+        bg: walletTheme.buttonHoverBg,
+        borderColor: walletTheme.borderHover,
+      },
+      _active: {
+        bg: walletTheme.buttonActiveBg,
+        boxShadow: "none",
+        transform: "none",
+      },
+      _focus: {
+        boxShadow: "none",
+      },
+      _focusVisible: {
+        boxShadow: "none",
+      },
+    }),
+    [walletTheme],
+  );
 
   // Select each field independently (avoid new-object snapshots)
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
@@ -1090,6 +1232,7 @@ export function BitcoinWalletSection({
         fontSize="sm"
         mb={2}
         textAlign={shouldCenterContent ? "center" : "left"}
+        color={walletTheme.text}
       >
         {userLanguage === "es"
           ? "Elige a quién apoyar con tus depósitos:"
@@ -1111,7 +1254,7 @@ export function BitcoinWalletSection({
             return (
               <HStack key={recipient.npub} align="center" spacing={3}>
                 <Radio
-                  colorScheme="purple"
+                  colorScheme={walletTheme.radioScheme}
                   value={recipient.npub}
                   isDisabled={isIdentitySaving}
                   size="sm"
@@ -1128,7 +1271,7 @@ export function BitcoinWalletSection({
                     href={recipient.identityUrl}
                     isExternal
                     fontSize="xs"
-                    color="teal.200"
+                    color={walletTheme.link}
                     lineHeight="1"
                   >
                     {userLanguage === "es" ? "Ver sitio" : "View site"}
@@ -1143,7 +1286,7 @@ export function BitcoinWalletSection({
         <Text
           fontSize="xs"
           mt={2}
-          color="orange.200"
+          color={walletTheme.warning}
           textAlign={shouldCenterContent ? "center" : "left"}
         >
           {userLanguage === "es"
@@ -1157,7 +1300,8 @@ export function BitcoinWalletSection({
   // ---------- Renders ----------
   return (
     <Box
-      bg="gray.800"
+      bg={walletTheme.surface}
+      color={walletTheme.text}
       rounded="md"
       p={3}
       mx={1}
@@ -1175,7 +1319,7 @@ export function BitcoinWalletSection({
       ) : null}
 
       {showScholarshipNote ? (
-        <Text fontSize="xs" color="teal.100" mb={3}>
+        <Text fontSize="xs" color={walletTheme.note} mb={3}>
           {W("scholarshipNote")}{" "}
           <Link
             href="https://robotsbuildingeducation.com"
@@ -1213,14 +1357,14 @@ export function BitcoinWalletSection({
         <Box>
           {/* NIP-07 users need to provide their nsec for wallet creation */}
           {isNip07Mode && noWalletFound && (
-            <Box bg="gray.700" p={3} rounded="md" mb={3}>
+            <Box bg={walletTheme.elevatedSurface} p={3} rounded="md" mb={3}>
               <HStack mb={2}>
                 <FaKey color="#f08e19" />
                 <Text fontSize="sm" fontWeight="semibold">
                   {W("nip07NsecTitle")}
                 </Text>
               </HStack>
-              <Text fontSize="xs" color="gray.300" mb={3}>
+              <Text fontSize="xs" color={walletTheme.mutedText} mb={3}>
                 {W("nip07NsecDescription")}
               </Text>
               <Input
@@ -1228,12 +1372,14 @@ export function BitcoinWalletSection({
                 value={nsecForWallet}
                 onChange={(e) => setNsecForWallet(e.target.value)}
                 placeholder={W("nip07NsecPlaceholder")}
-                bg="gray.800"
-                borderColor="gray.600"
-                _focus={{ borderColor: "orange.400" }}
+                bg={walletTheme.inputBg}
+                borderColor={walletTheme.inputBorder}
+                color={walletTheme.text}
+                _placeholder={{ color: walletTheme.mutedText }}
+                _focus={{ borderColor: walletTheme.inputFocus }}
                 mb={2}
               />
-              <Text fontSize="xs" color="orange.200">
+              <Text fontSize="xs" color={walletTheme.warning}>
                 {W("nip07NsecWarning")}
               </Text>
             </Box>
@@ -1243,13 +1389,9 @@ export function BitcoinWalletSection({
               onClick={handleCreateWallet}
               isLoading={isCreatingWallet}
               loadingText={W("loadingWallet")}
-              variant="outline"
-              borderColor="whiteAlpha.400"
-              color="gray.100"
-              _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
-              _active={{ bg: "whiteAlpha.200" }}
               isDisabled={isNip07Mode && noWalletFound && !nsecForWallet.trim()}
               minW="160px"
+              {...outlineButtonStyles}
             >
               {W("createWallet")}
             </Button>
@@ -1286,6 +1428,7 @@ export function BitcoinWalletSection({
             target="_blank"
             textDecoration="underline"
             fontSize="sm"
+            color={walletTheme.link}
             textAlign="center"
             mx="auto"
             mt={2}
@@ -1330,15 +1473,11 @@ export function BitcoinWalletSection({
                 mt={3}
                 onClick={handleInitiateDeposit}
                 isDisabled={!effectiveSelectedIdentity || isIdentitySaving}
-                variant="outline"
-                borderColor="whiteAlpha.400"
-                color="gray.100"
-                _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
-                _active={{ bg: "whiteAlpha.200" }}
                 width="100%"
                 maxWidth={cardMaxWidth}
                 py={5}
                 px={6}
+                {...outlineButtonStyles}
               >
                 {W("deposit")}
               </Button>
@@ -1362,29 +1501,27 @@ export function BitcoinWalletSection({
                 <Text fontSize="sm">{W("or")}</Text>
                 <Button
                   onClick={handleCopyInvoice}
-                  variant="outline"
                   size="sm"
-                  borderColor="whiteAlpha.400"
-                  color="gray.100"
-                  _hover={{
-                    bg: "whiteAlpha.100",
-                    borderColor: "whiteAlpha.500",
-                  }}
-                  _active={{ bg: "whiteAlpha.200" }}
                   leftIcon={<LuKeyRound size={14} />}
                   whiteSpace="nowrap"
+                  {...outlineButtonStyles}
                 >
                   {W("copyAddress")}
                 </Button>
               </HStack>
-              <Text fontSize="sm" opacity={0.8} textAlign={"center"}>
+              <Text
+                fontSize="sm"
+                color={walletTheme.mutedText}
+                opacity={0.9}
+                textAlign={"center"}
+              >
                 {W("ps")}
                 <br />
 
                 <Link
                   href="https://click.cash.app/ui6m/home2022"
                   isExternal
-                  color="white.500"
+                  color={walletTheme.link}
                   display="inline-flex" // Ensures icon and text stay inline
                   alignItems="center" // Aligns icon and text vertically
                   gap="4px" // Optional: small space between icon and text
@@ -1392,7 +1529,7 @@ export function BitcoinWalletSection({
                   ml="-1.5"
                   textDecoration={"underline"}
                 >
-                  <SiCashapp color="white" />
+                  <SiCashapp color={isPaperStyle ? "#0f766e" : "white"} />
                   <Text>Cash App</Text>
                 </Link>
               </Text>
@@ -1401,11 +1538,7 @@ export function BitcoinWalletSection({
                 onClick={generateNewQR}
                 isDisabled={!effectiveSelectedIdentity || isIdentitySaving}
                 leftIcon={<BsQrCode />}
-                variant="outline"
-                borderColor="whiteAlpha.400"
-                color="gray.100"
-                _hover={{ bg: "whiteAlpha.100", borderColor: "whiteAlpha.500" }}
-                _active={{ bg: "whiteAlpha.200" }}
+                {...outlineButtonStyles}
               >
                 {W("generateNew")}
               </Button>
