@@ -8,7 +8,7 @@ body {
     color 220ms ease;
 }
 
-/* ── Theme switch: circular reveal via View Transitions API ──────────── */
+/* ── Theme switch: watery circular reveal via View Transitions API ──── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -21,26 +21,54 @@ html.theme-transitioning body {
 }
 
 html.theme-transitioning::view-transition-old(root) {
-  animation: none;
   z-index: 1;
+  animation: theme-watery-fade-out 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transform-origin: var(--theme-transition-cx, 50%)
+    var(--theme-transition-cy, 50%);
 }
 
 html.theme-transitioning::view-transition-new(root) {
   z-index: 2;
-  animation: theme-circle-reveal 640ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: theme-watery-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: var(--theme-transition-cx, 50%)
+    var(--theme-transition-cy, 50%);
 }
 
-@keyframes theme-circle-reveal {
-  from {
+@keyframes theme-watery-reveal {
+  0% {
     clip-path: circle(
       0px at var(--theme-transition-cx, 50%) var(--theme-transition-cy, 50%)
     );
+    filter: blur(28px) saturate(1.35) brightness(1.05);
+    transform: scale(1.04);
   }
-  to {
+  35% {
+    filter: blur(18px) saturate(1.25) brightness(1.03);
+  }
+  70% {
+    filter: blur(6px) saturate(1.1);
+    transform: scale(1.01);
+  }
+  100% {
     clip-path: circle(
       var(--theme-transition-r, 150vmax) at var(--theme-transition-cx, 50%)
         var(--theme-transition-cy, 50%)
     );
+    filter: blur(0) saturate(1) brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes theme-watery-fade-out {
+  0% {
+    filter: blur(0) saturate(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    filter: blur(18px) saturate(1.15);
+    opacity: 0.85;
+    transform: scale(0.985);
   }
 }
 
