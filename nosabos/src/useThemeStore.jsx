@@ -60,6 +60,13 @@ const writeThemeMode = (normalized) => {
   }
 };
 
+// Background colors per theme, used to paint the overlay wipe without
+// needing to snapshot the DOM.
+const THEME_OVERLAY_COLOR = {
+  dark: "#0b1220",
+  light: "#f7f1e7",
+};
+
 export const applyThemeMode = (mode) => {
   if (typeof document === "undefined") return;
   const normalized = normalizeThemeMode(mode);
@@ -75,32 +82,60 @@ export const applyThemeMode = (mode) => {
 
   if (
     current === normalized ||
-    !document.startViewTransition ||
     prefersReduced ||
-    !userInitiated
+    !userInitiated ||
+    typeof document.body === "undefined" ||
+    !document.body
   ) {
     writeThemeMode(normalized);
     return;
   }
 
-  const cx = window.innerWidth / 2;
-  const cy = window.innerHeight / 2;
-  const endRadius = Math.hypot(cx, cy);
+  // Remove any in-flight overlay before starting a new one.
+  document
+    .querySelectorAll(".theme-swap-overlay")
+    .forEach((node) => node.remove());
 
-  const root = document.documentElement;
-  root.style.setProperty("--theme-transition-cx", `${cx}px`);
-  root.style.setProperty("--theme-transition-cy", `${cy}px`);
-  root.style.setProperty("--theme-transition-r", `${endRadius}px`);
-  root.classList.add("theme-transitioning");
+  const overlay = document.createElement("div");
+  overlay.className = "theme-swap-overlay";
+  overlay.style.backgroundColor = THEME_OVERLAY_COLOR[normalized];
+  document.body.appendChild(overlay);
 
-  const transition = document.startViewTransition(() => {
+  // Force a reflow so the starting keyframe values are registered before
+  // we kick off the animation.
+  // eslint-disable-next-line no-unused-expressions
+  overlay.offsetWidth;
+  overlay.classList.add("theme-swap-overlay--active");
+
+  // Total animation is 1200ms. The overlay reaches full coverage and
+  // peak blur/opacity by 70% (840ms). We swap the live theme then so
+  // the DOM beneath the overlay is already the new theme before the
+  // overlay fades out — no color flip is ever visible.
+  const SWAP_AT = 840;
+  const TOTAL = 1200;
+
+  const swapTimer = window.setTimeout(() => {
     writeThemeMode(normalized);
-  });
+  }, SWAP_AT);
 
-  const cleanup = () => {
-    root.classList.remove("theme-transitioning");
-  };
-  transition.finished.then(cleanup, cleanup);
+  const removeTimer = window.setTimeout(() => {
+    overlay.remove();
+  }, TOTAL + 80);
+
+  overlay.addEventListener(
+    "animationend",
+    () => {
+      window.clearTimeout(swapTimer);
+      window.clearTimeout(removeTimer);
+      // If for any reason the swap timer didn't fire yet, make sure the
+      // theme actually gets applied.
+      if (document.documentElement.dataset.themeMode !== normalized) {
+        writeThemeMode(normalized);
+      }
+      overlay.remove();
+    },
+    { once: true }
+  );
 };
 
 const getStoredThemeColor = () => {
