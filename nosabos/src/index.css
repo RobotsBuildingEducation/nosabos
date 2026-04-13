@@ -22,14 +22,25 @@ html.theme-transitioning body {
 
 html.theme-transitioning::view-transition-old(root) {
   z-index: 1;
-  animation: theme-watery-fade-out 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  /* Start pre-blurred so there is no uncovered frame of the new theme. */
+  clip-path: circle(
+    var(--theme-transition-r, 150vmax) at var(--theme-transition-cx, 50%)
+      var(--theme-transition-cy, 50%)
+  );
+  animation: theme-watery-fade-out 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;
   transform-origin: var(--theme-transition-cx, 50%)
     var(--theme-transition-cy, 50%);
 }
 
 html.theme-transitioning::view-transition-new(root) {
   z-index: 2;
-  animation: theme-watery-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  /* Apply the 0% keyframe state immediately so the new theme cannot
+     flash in before the animation begins. */
+  clip-path: circle(
+    0px at var(--theme-transition-cx, 50%) var(--theme-transition-cy, 50%)
+  );
+  filter: blur(36px) saturate(1.15);
+  animation: theme-watery-reveal 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: var(--theme-transition-cx, 50%)
     var(--theme-transition-cy, 50%);
 }
@@ -39,10 +50,10 @@ html.theme-transitioning::view-transition-new(root) {
     clip-path: circle(
       0px at var(--theme-transition-cx, 50%) var(--theme-transition-cy, 50%)
     );
-    filter: blur(22px) saturate(1.2);
+    filter: blur(36px) saturate(1.15);
   }
-  60% {
-    filter: blur(6px) saturate(1.08);
+  55% {
+    filter: blur(16px) saturate(1.08);
   }
   100% {
     clip-path: circle(
@@ -59,8 +70,10 @@ html.theme-transitioning::view-transition-new(root) {
     opacity: 1;
   }
   100% {
-    filter: blur(10px);
-    opacity: 0.9;
+    filter: blur(14px);
+    /* Keep fully opaque so the underlying live DOM (already on the
+       new theme) never bleeds through the old snapshot. */
+    opacity: 1;
   }
 }
 
