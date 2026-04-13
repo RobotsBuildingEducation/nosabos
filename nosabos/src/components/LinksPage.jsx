@@ -140,6 +140,9 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       position="fixed"
       top="18px"
       right={{ base: "16px", md: "20px" }}
+      left="auto"
+      width="fit-content"
+      maxW="calc(100vw - 32px)"
       zIndex={120}
     >
       <HStack
@@ -151,6 +154,8 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         borderColor={APP_BORDER}
         boxShadow={APP_SHADOW}
         backdropFilter="blur(20px)"
+        width="fit-content"
+        flexShrink={0}
       >
         {modes.map((mode) => {
           const isActive = themeMode === mode.id;
