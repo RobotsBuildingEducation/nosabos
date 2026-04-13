@@ -83,6 +83,7 @@ import {
   SOFT_STOP_BUTTON_SOLID_BG,
   SOFT_STOP_BUTTON_SOLID_HOVER_BG,
 } from "../../utils/softStopButton";
+import { useThemeStore } from "../../useThemeStore";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -1737,6 +1738,8 @@ export default function RPGGame({
   const navigate = useNavigate();
   const user = useUserStore((state) => state.user);
   const patchUser = useUserStore((state) => state.patchUser);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const reviewContext = useMemo(
     () =>
       lessonContext?.gameReviewContext ||
@@ -1859,6 +1862,35 @@ export default function RPGGame({
   const seededMusicPreferenceRef = useRef(false);
   const gatherSpritesRef = useRef([]);
   const toast = useToast();
+  const rpgPanelBg = isLightTheme
+    ? "rgba(255, 250, 241, 0.98)"
+    : "rgba(250, 244, 232, 0.96)";
+  const rpgPanelBgSoft = isLightTheme
+    ? "rgba(249, 240, 221, 0.94)"
+    : "orange.50";
+  const rpgPanelBorder = isLightTheme ? "rgba(224, 180, 116, 0.92)" : "orange.200";
+  const rpgPanelBorderSoft = isLightTheme
+    ? "rgba(216, 183, 133, 0.52)"
+    : "orange.100";
+  const rpgPanelShadow = isLightTheme
+    ? "0 14px 28px rgba(84, 62, 36, 0.20)"
+    : "0 18px 38px rgba(0,0,0,0.52)";
+  const rpgTextPrimary = isLightTheme ? "#4b3726" : "gray.800";
+  const rpgTextSecondary = isLightTheme ? "#6b553f" : "gray.700";
+  const rpgTextMuted = isLightTheme ? "#8a745c" : "gray.600";
+  const rpgReplyText = isLightTheme ? "#9b5d2d" : "orange.700";
+  const rpgTranslationText = isLightTheme ? "#466f9a" : "blue.700";
+  const rpgChoiceBg = isLightTheme
+    ? "rgba(255, 253, 249, 0.98)"
+    : "rgba(255,255,255,0.92)";
+  const rpgChoiceHoverBg = isLightTheme ? "#f8f0e1" : "gray.100";
+  const rpgChoiceBorder = isLightTheme
+    ? "rgba(200, 173, 136, 0.86)"
+    : "blackAlpha.200";
+  const rpgChoiceShadow = isLightTheme
+    ? "0px 3px 0px #d2c1a9"
+    : "0px 4px 0px #a9a18c";
+  const rpgOverlayBg = isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700";
   const transitionCooldownUntilRef = useRef(0);
   const mapEntrySpawnRef = useRef(null);
   const npcAssignmentsCacheRef = useRef(null);
@@ -5809,7 +5841,7 @@ export default function RPGGame({
         w={isEmbedded ? "100%" : "100vw"}
         h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
-        bg={isEmbedded ? "transparent" : "#1a1a2e"}
+        bg={isEmbedded ? "transparent" : isLightTheme ? "var(--app-bg)" : "#1a1a2e"}
         display="flex"
         alignItems={isEmbedded ? "flex-start" : "center"}
         justifyContent="center"
@@ -5825,7 +5857,7 @@ export default function RPGGame({
               aria-label={ui.back}
               size="sm"
               variant="ghost"
-              color="white"
+              color={isLightTheme ? rpgTextPrimary : "white"}
               position="absolute"
               top={4}
               left={4}
@@ -5864,7 +5896,7 @@ export default function RPGGame({
           ) : (
             <>
               <Text
-                color="yellow.300"
+                color={isLightTheme ? rpgTextPrimary : "yellow.300"}
                 fontSize="2xl"
                 fontWeight="bold"
                 textAlign="center"
@@ -5880,16 +5912,17 @@ export default function RPGGame({
                         h="auto"
                         py={4}
                         px={6}
-                        bg="whiteAlpha.100"
-                        color="white"
+                        bg={isLightTheme ? rpgPanelBg : "whiteAlpha.100"}
+                        color={isLightTheme ? rpgTextPrimary : "white"}
                         border="2px solid"
-                        borderColor="whiteAlpha.200"
+                        borderColor={isLightTheme ? rpgPanelBorderSoft : "whiteAlpha.200"}
                         borderRadius="xl"
                         _hover={{
-                          bg: "whiteAlpha.200",
-                          borderColor: "yellow.400",
+                          bg: isLightTheme ? rpgPanelBgSoft : "whiteAlpha.200",
+                          borderColor: isLightTheme ? rpgPanelBorder : "yellow.400",
                           transform: "scale(1.05)",
                         }}
+                        boxShadow={isLightTheme ? "0 10px 20px rgba(84, 62, 36, 0.14)" : undefined}
                         transition="all 0.2s"
                         onClick={() => handleSelectScenario(choice.id)}
                         flexDir="column"
@@ -5933,7 +5966,7 @@ export default function RPGGame({
         }
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
-        bg={isEmbedded ? "transparent" : "#1a1a2e"}
+        bg={isEmbedded ? "transparent" : isLightTheme ? "var(--app-bg)" : "#1a1a2e"}
         mx="auto"
         display="flex"
         flexDirection="column"
@@ -5948,7 +5981,7 @@ export default function RPGGame({
         {!isTutorialGame && (
           <Text
             fontSize="md"
-            color="purple.200"
+            color={isLightTheme ? rpgTextSecondary : "purple.200"}
             textAlign="center"
             minH="20px"
             py={0}
@@ -6009,12 +6042,17 @@ export default function RPGGame({
                 </Text>
                 <Button
                   size="sm"
-                  variant="ghost"
-                  color="whiteAlpha.900"
+                  variant="solid"
+                  bg="rgba(9, 16, 34, 0.7)"
+                  color="white"
+                  border="1px solid"
+                  borderColor="rgba(170, 201, 255, 0.26)"
+                  boxShadow="0 10px 18px rgba(0, 0, 0, 0.24)"
+                  backdropFilter="blur(10px)"
                   onClick={handleSkipLoadingScenario}
                   flexShrink={0}
-                  _hover={{ bg: "whiteAlpha.200" }}
-                  _active={{ bg: "whiteAlpha.300" }}
+                  _hover={{ bg: "rgba(14, 24, 46, 0.82)" }}
+                  _active={{ bg: "rgba(6, 12, 28, 0.92)" }}
                 >
                   {ui.skip}
                 </Button>
@@ -6032,7 +6070,7 @@ export default function RPGGame({
       position="relative"
       w={isEmbedded ? "100%" : "100vw"}
       h={isEmbedded ? "80vh" : "100vh"}
-      bg="#1a1a2e"
+      bg={isLightTheme ? "var(--app-bg)" : "#1a1a2e"}
       overflow="hidden"
       userSelect="none"
       onPointerDownCapture={handleAudioGesture}
@@ -6078,8 +6116,10 @@ export default function RPGGame({
           )}
           {!!activeAreaLabel && (
             <Badge
-              bg="blackAlpha.700"
-              color="white"
+              bg={isLightTheme ? rpgPanelBg : "blackAlpha.700"}
+              color={isLightTheme ? rpgTextPrimary : "white"}
+              border={isLightTheme ? "1px solid" : undefined}
+              borderColor={isLightTheme ? rpgPanelBorderSoft : undefined}
               px={3}
               py={1.5}
               borderRadius="full"
@@ -6090,8 +6130,16 @@ export default function RPGGame({
             </Badge>
           )}
         </HStack>
-        <HStack bg="blackAlpha.700" borderRadius="md" px={3} py={1} spacing={2}>
-          <Text color="white" fontSize="sm" fontWeight="bold">
+        <HStack
+          bg={isLightTheme ? rpgPanelBg : "blackAlpha.700"}
+          borderRadius="md"
+          px={3}
+          py={1}
+          spacing={2}
+          border={isLightTheme ? "1px solid" : undefined}
+          borderColor={isLightTheme ? rpgPanelBorderSoft : undefined}
+        >
+          <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm" fontWeight="bold">
             {completedSteps}/{totalSteps}
           </Text>
           <Progress
@@ -6220,24 +6268,24 @@ export default function RPGGame({
         isCentered
         size="sm"
       >
-        <ModalOverlay bg="blackAlpha.700" />
+        <ModalOverlay bg={rpgOverlayBg} />
         <ModalContent
-          bg="rgba(250, 244, 232, 0.96)"
+          bg={rpgPanelBg}
           border="2px solid"
-          borderColor="orange.200"
+          borderColor={rpgPanelBorder}
           borderRadius="xl"
-          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+          boxShadow={rpgPanelShadow}
         >
-          <ModalHeader color="orange.800" fontSize="md" pb={1}>
+          <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
             {targetLang === "es" ? "Inventario" : "Inventory"}
           </ModalHeader>
           <ModalCloseButton
-            color="gray.600"
-            _hover={{ bg: "whiteAlpha.200" }}
+            color={rpgTextMuted}
+            _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
           />
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
-              <Text color="gray.500" fontSize="sm" textAlign="center" py={4}>
+              <Text color={rpgTextMuted} fontSize="sm" textAlign="center" py={4}>
                 {targetLang === "es" ? "No tienes objetos." : "No items yet."}
               </Text>
             ) : (
@@ -6251,15 +6299,15 @@ export default function RPGGame({
                       onClick={() =>
                         setSelectedInvItem(selectedInvItem === idx ? null : idx)
                       }
-                      bg={selectedInvItem === idx ? "orange.100" : "orange.50"}
+                      bg={selectedInvItem === idx ? rpgPanelBgSoft : rpgPanelBg}
                       borderRadius="lg"
                       border="2px solid"
                       borderColor={
-                        selectedInvItem === idx ? "orange.400" : "transparent"
+                        selectedInvItem === idx ? rpgPanelBorder : "transparent"
                       }
                       p={2}
                       transition="all 0.15s"
-                      _hover={{ bg: "orange.100" }}
+                      _hover={{ bg: rpgPanelBgSoft }}
                     >
                       <Image
                         src={getItemSpriteDataURL(item)}
@@ -6273,15 +6321,15 @@ export default function RPGGame({
                 </SimpleGrid>
                 {selectedInvItem !== null && inventory[selectedInvItem] && (
                   <HStack
-                    bg="orange.50"
+                    bg={rpgPanelBgSoft}
                     borderRadius="lg"
                     px={3}
                     py={2}
                     justify="space-between"
                     border="1px solid"
-                    borderColor="orange.200"
+                    borderColor={rpgPanelBorderSoft}
                   >
-                    <Text color="gray.800" fontSize="sm" fontWeight="medium">
+                    <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
                       {inventory[selectedInvItem].name}
                     </Text>
                     <Button
@@ -6310,36 +6358,36 @@ export default function RPGGame({
         isCentered
         size="sm"
       >
-        <ModalOverlay bg="blackAlpha.700" />
+        <ModalOverlay bg={rpgOverlayBg} />
         <ModalContent
-          bg="rgba(250, 244, 232, 0.96)"
+          bg={rpgPanelBg}
           border="2px solid"
-          borderColor="orange.200"
+          borderColor={rpgPanelBorder}
           borderRadius="xl"
-          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+          boxShadow={rpgPanelShadow}
         >
-          <ModalHeader color="orange.800" fontSize="md" pb={1}>
+          <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
             {currentQuestLog.title}
           </ModalHeader>
           <ModalCloseButton
-            color="gray.600"
-            _hover={{ bg: "whiteAlpha.200" }}
+            color={rpgTextMuted}
+            _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
           />
           <ModalBody pb={4}>
             <VStack align="stretch" spacing={3}>
               <HStack
                 justify="space-between"
-                bg="orange.50"
+                bg={rpgPanelBgSoft}
                 borderRadius="lg"
                 px={3}
                 py={2}
                 border="1px solid"
-                borderColor="orange.200"
+                borderColor={rpgPanelBorderSoft}
               >
-                <Text color="gray.700" fontSize="xs" fontWeight="semibold">
+                <Text color={rpgTextSecondary} fontSize="xs" fontWeight="semibold">
                   {questLogCopy.currentTask}
                 </Text>
-                <Text color="orange.800" fontSize="xs" fontWeight="bold">
+                <Text color={rpgReplyText} fontSize="xs" fontWeight="bold">
                   {currentQuestLog.progressText}
                 </Text>
               </HStack>
@@ -6350,22 +6398,22 @@ export default function RPGGame({
                     key={`${item}-${idx}`}
                     align="flex-start"
                     spacing={3}
-                    bg="whiteAlpha.700"
+                    bg={rpgChoiceBg}
                     borderRadius="lg"
                     px={3}
                     py={2}
                     border="1px solid"
-                    borderColor="orange.100"
+                    borderColor={rpgPanelBorderSoft}
                   >
                     <Text
-                      color="orange.600"
+                      color={rpgReplyText}
                       fontSize="sm"
                       fontWeight="bold"
                       lineHeight="1.4"
                     >
                       {idx + 1}.
                     </Text>
-                    <Text color="gray.800" fontSize="sm" lineHeight="1.45">
+                    <Text color={rpgTextPrimary} fontSize="sm" lineHeight="1.45">
                       {item}
                     </Text>
                   </HStack>
@@ -6393,21 +6441,21 @@ export default function RPGGame({
             {pickupBanner ? (
               <HStack
                 alignSelf="center"
-                bg="gray.800"
+                bg={isLightTheme ? rpgPanelBg : "gray.800"}
                 border="1px solid"
-                borderColor="yellow.400"
+                borderColor={isLightTheme ? rpgPanelBorder : "yellow.400"}
                 borderRadius="lg"
                 px={3}
                 py={2}
                 spacing={2}
                 justify="center"
-                boxShadow="0 0 12px rgba(236,201,75,0.3)"
+                boxShadow={isLightTheme ? "0 10px 18px rgba(84, 62, 36, 0.16)" : "0 0 12px rgba(236,201,75,0.3)"}
                 maxW="min(82vw, 320px)"
               >
-                <Text color="yellow.300" fontSize="sm" fontWeight="bold">
+                <Text color={isLightTheme ? rpgReplyText : "yellow.300"} fontSize="sm" fontWeight="bold">
                   +
                 </Text>
-                <Text color="white" fontSize="sm">
+                <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm">
                   {pickupBanner.itemName}
                 </Text>
               </HStack>
@@ -6415,14 +6463,14 @@ export default function RPGGame({
 
             {objectExamine ? (
               <Box
-                bg="rgba(250, 244, 232, 0.96)"
-                color="gray.800"
+                bg={rpgPanelBg}
+                color={rpgTextPrimary}
                 border="2px solid"
-                borderColor="orange.200"
+                borderColor={rpgPanelBorder}
                 borderRadius="xl"
                 px={4}
                 py={3}
-                boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+                boxShadow={rpgPanelShadow}
               >
                 {objectExamine.pending ? (
                   <VStack align="stretch" spacing={1}>
@@ -6430,7 +6478,7 @@ export default function RPGGame({
                       <Text
                         fontSize="xs"
                         lineHeight="1.35"
-                        color="orange.700"
+                        color={rpgReplyText}
                         fontWeight="semibold"
                       >
                         {objectExamine.lootText}
@@ -6445,7 +6493,7 @@ export default function RPGGame({
                         }
                         size={16}
                       />
-                      <Text fontSize="sm" color="gray.700">
+                      <Text fontSize="sm" color={rpgTextSecondary}>
                         ...
                       </Text>
                     </HStack>
@@ -6456,7 +6504,7 @@ export default function RPGGame({
                       <Text
                         fontSize="xs"
                         lineHeight="1.35"
-                        color="orange.700"
+                        color={rpgReplyText}
                         fontWeight="semibold"
                         pb={1}
                       >
@@ -6467,7 +6515,7 @@ export default function RPGGame({
                       <Text
                         fontSize="sm"
                         lineHeight="1.35"
-                        color="gray.800"
+                        color={rpgTextPrimary}
                         fontWeight="semibold"
                       >
                         {objectExamine.name}
@@ -6477,7 +6525,7 @@ export default function RPGGame({
                       </Text>
                     ) : null}
                     {objectExamine.text ? (
-                      <Text fontSize="sm" lineHeight="1.45" color="gray.800">
+                      <Text fontSize="sm" lineHeight="1.45" color={rpgTextPrimary}>
                         {objectExamine.text}
                       </Text>
                     ) : null}
@@ -6485,7 +6533,7 @@ export default function RPGGame({
                       <Text
                         fontSize="xs"
                         lineHeight="1.35"
-                        color="gray.600"
+                        color={rpgTextMuted}
                         fontStyle="italic"
                       >
                         ({objectExamine.supportText})
@@ -6552,12 +6600,12 @@ export default function RPGGame({
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
               }}
-              bg="rgba(250, 244, 232, 0.96)"
+              bg={rpgPanelBg}
               border="2px solid"
-              borderColor="orange.200"
+              borderColor={rpgPanelBorder}
               borderRadius={isMobileDialogueLayout ? "xl" : "2xl"}
               p={0}
-              boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+              boxShadow={rpgPanelShadow}
               pointerEvents="auto"
             >
               {!isMobileDialogueLayout && dialogueBubblePosition && (
@@ -6577,13 +6625,13 @@ export default function RPGGame({
                   borderBottom="10px solid transparent"
                   borderRight={
                     dialogueBubblePosition.preferredRight
-                      ? "12px solid rgba(250, 244, 232, 0.96)"
+                      ? `12px solid ${rpgPanelBg}`
                       : "none"
                   }
                   borderLeft={
                     dialogueBubblePosition.preferredRight
                       ? "none"
-                      : "12px solid rgba(250, 244, 232, 0.96)"
+                      : `12px solid ${rpgPanelBg}`
                   }
                 />
               )}
@@ -6596,8 +6644,8 @@ export default function RPGGame({
                 top={2}
                 right={2}
                 variant="ghost"
-                color="gray.600"
-                _hover={{ bg: "whiteAlpha.200" }}
+                color={rpgTextMuted}
+                _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
                 onClick={closeDialogue}
               />
 
@@ -6605,9 +6653,9 @@ export default function RPGGame({
                 {/* Player dialogue line (bridges narrative between NPCs) */}
                 {dialogue.node?.playerLine && (
                   <Box
-                    bg="blue.50"
+                    bg={isLightTheme ? "rgba(98, 143, 202, 0.10)" : "blue.50"}
                     border="1px solid"
-                    borderColor="blue.200"
+                    borderColor={isLightTheme ? "rgba(98, 143, 202, 0.24)" : "blue.200"}
                     borderRadius="lg"
                     px={3}
                     py={2}
@@ -6615,7 +6663,7 @@ export default function RPGGame({
                     mt={8}
                     mb={2}
                   >
-                    <Text color="blue.800" fontSize="sm" fontStyle="italic">
+                    <Text color={isLightTheme ? "#4b6888" : "blue.800"} fontSize="sm" fontStyle="italic">
                       {dialogue.node.playerLine}
                     </Text>
                   </Box>
@@ -6627,9 +6675,9 @@ export default function RPGGame({
                   px={2}
                   py={0}
                   pr={8}
-                  bg="orange.50"
+                  bg={rpgPanelBgSoft}
                   borderBottom="1px solid"
-                  borderColor="orange.100"
+                  borderColor={rpgPanelBorderSoft}
                 >
                   <Box flexShrink={0}>
                     <RandomCharacter
@@ -6673,16 +6721,18 @@ export default function RPGGame({
                       }
                       size="xs"
                       rounded="md"
-                      bg="white"
-                      color={
-                        hasDialogueTranslations ? "orange.500" : "blue.600"
-                      }
+                      bg={isLightTheme ? rpgChoiceBg : "white"}
+                      color={hasDialogueTranslations ? rpgReplyText : rpgTranslationText}
                       boxShadow={
                         hasDialogueTranslations
-                          ? "0 1px 0 #c05621"
-                          : "0 1px 0 #2b6cb0"
+                          ? isLightTheme
+                            ? "0 1px 0 #d8b58b"
+                            : "0 1px 0 #c05621"
+                          : isLightTheme
+                            ? "0 1px 0 #cfbd9f"
+                            : "0 1px 0 #2b6cb0"
                       }
-                      _hover={{ bg: "gray.50" }}
+                      _hover={{ bg: isLightTheme ? rpgPanelBgSoft : "gray.50" }}
                       onClick={toggleTranslation}
                       isLoading={isTranslating}
                     />
@@ -6696,7 +6746,7 @@ export default function RPGGame({
                           <Box key={i}>
                             {isReply ? (
                               <Box
-                                color="orange.700"
+                                color={rpgReplyText}
                                 fontSize="sm"
                                 sx={{
                                   "& p": { m: 0 },
@@ -6709,7 +6759,7 @@ export default function RPGGame({
                               </Box>
                             ) : (
                               <Text
-                                color="gray.800"
+                                color={rpgTextPrimary}
                                 fontSize="md"
                                 fontWeight="bold"
                                 m={0}
@@ -6719,7 +6769,7 @@ export default function RPGGame({
                             )}
                             {lineTranslations[i] && (
                               <Text
-                                color="blue.700"
+                                color={rpgTranslationText}
                                 fontSize="sm"
                                 fontStyle="italic"
                                 m={0}
@@ -6740,7 +6790,7 @@ export default function RPGGame({
                             dialogue.node?.prompt ||
                             dialogue.question.prompt
                           }
-                          color="gray.800"
+                          color={rpgTextPrimary}
                           fontSize="md"
                           fontWeight="bold"
                           m={0}
@@ -6748,7 +6798,7 @@ export default function RPGGame({
                       )}
                       {!!dialogue.npcReply && (
                         <Box
-                          color="orange.700"
+                          color={rpgReplyText}
                           fontSize="sm"
                           sx={{
                             "& p": { m: 0 },
@@ -6765,7 +6815,7 @@ export default function RPGGame({
 
                   {lastHeardSpeech &&
                     dialogue.node?.responseMode === "speech" && (
-                      <Text color="teal.700" fontSize="xs" m={0}>
+                      <Text color={isLightTheme ? "#2f7e77" : "teal.700"} fontSize="xs" m={0}>
                         {ui.heardYou}: {lastHeardSpeech}
                       </Text>
                     )}
@@ -6782,7 +6832,11 @@ export default function RPGGame({
                         >
                           <VoiceOrb state="idle" size={24} />
                         </Box>
-                        <Text fontSize="sm" color="gray.500" textAlign="center">
+                        <Text
+                          fontSize="sm"
+                          color={isLightTheme ? rpgTextMuted : "gray.500"}
+                          textAlign="center"
+                        >
                           {targetLang === "es" ? "Pensando..." : "Thinking..."}
                         </Text>
                       </VStack>
@@ -6799,12 +6853,30 @@ export default function RPGGame({
                               w="100%"
                               size="sm"
                               variant="solid"
-                              bg="rgba(255,255,255,0.92)"
-                              color="gray.900"
+                              bg={rpgChoiceBg}
+                              color={isLightTheme ? rpgTextPrimary : "gray.900"}
                               border="1px solid"
-                              borderColor="blackAlpha.200"
-                              boxShadow="0px 4px 0px #a9a18c"
-                              _active={{ bg: "gray.100" }}
+                              borderColor={rpgChoiceBorder}
+                              boxShadow={rpgChoiceShadow}
+                              _hover={{
+                                bg: rpgChoiceHoverBg,
+                                borderColor: isLightTheme ? rpgPanelBorderSoft : "blackAlpha.300",
+                              }}
+                              _active={{
+                                bg: rpgChoiceHoverBg,
+                                transform: "translateY(2px)",
+                                boxShadow: isLightTheme
+                                  ? "0px 1px 0px #d2c1a9"
+                                  : "0px 2px 0px #a9a18c",
+                              }}
+                              _disabled={{
+                                opacity: 1,
+                                bg: rpgChoiceBg,
+                                color: isLightTheme ? rpgTextSecondary : "gray.700",
+                                borderColor: rpgChoiceBorder,
+                                boxShadow: rpgChoiceShadow,
+                                cursor: "not-allowed",
+                              }}
                               onClick={() => handleAnswer(idx)}
                               isDisabled={isRecording || isConnecting}
                               justifyContent="flex-start"
@@ -6814,12 +6886,12 @@ export default function RPGGame({
                               py={2}
                             >
                               <VStack align="stretch" spacing={0} w="100%">
-                                <Text color="gray.900" fontSize="sm" m={0}>
+                                <Text color={isLightTheme ? rpgTextPrimary : "gray.900"} fontSize="sm" m={0}>
                                   {String.fromCharCode(65 + idx)}. {opt}
                                 </Text>
                                 {translatedOpt ? (
                                   <Text
-                                    color="blue.700"
+                                    color={rpgTranslationText}
                                     fontSize="xs"
                                     fontStyle="italic"
                                     m={0}
@@ -6904,12 +6976,12 @@ export default function RPGGame({
                       {inventory.length > 0 ? (
                         <>
                           <VStack align="stretch" spacing={0}>
-                            <Text color="gray.600" fontSize="xs" m={0}>
+                            <Text color={rpgTextMuted} fontSize="xs" m={0}>
                               {dialogueActionLabelMap.submitPrompt}
                             </Text>
                             {actionTranslations?.submitPrompt ? (
                               <Text
-                                color="blue.700"
+                                color={rpgTranslationText}
                                 fontSize="xs"
                                 fontStyle="italic"
                                 m={0}
@@ -6924,18 +6996,20 @@ export default function RPGGame({
                                 <Box
                                   as="button"
                                   onClick={() => handleItemSubmit(idx)}
-                                  bg="rgba(255,255,255,0.92)"
+                                  bg={rpgChoiceBg}
                                   border="2px solid"
-                                  borderColor="blackAlpha.200"
+                                  borderColor={rpgChoiceBorder}
                                   borderRadius="lg"
-                                  boxShadow="0px 4px 0px #a9a18c"
+                                  boxShadow={rpgChoiceShadow}
                                   _hover={{
-                                    bg: "orange.50",
-                                    borderColor: "orange.400",
+                                    bg: rpgChoiceHoverBg,
+                                    borderColor: rpgPanelBorder,
                                   }}
                                   _active={{
                                     transform: "translateY(2px)",
-                                    boxShadow: "0px 2px 0px #a9a18c",
+                                    boxShadow: isLightTheme
+                                      ? "0px 1px 0px #d2c1a9"
+                                      : "0px 2px 0px #a9a18c",
                                   }}
                                   p={2}
                                   transition="all 0.12s"
@@ -6968,9 +7042,9 @@ export default function RPGGame({
                       >
                         <VStack align="stretch" spacing={0} w="100%">
                           <Text m={0}>{dialogueActionLabelMap.continue}</Text>
-                          {actionTranslations?.continue ? (
-                            <Text
-                              color="blue.700"
+                        {actionTranslations?.continue ? (
+                          <Text
+                              color={rpgTranslationText}
                               fontSize="xs"
                               fontStyle="italic"
                               fontWeight="normal"
@@ -6999,7 +7073,7 @@ export default function RPGGame({
                         </Text>
                         {actionTranslations?.continue ? (
                           <Text
-                            color="blue.700"
+                            color={rpgTranslationText}
                             fontSize="xs"
                             fontStyle="italic"
                             fontWeight="normal"
@@ -7026,28 +7100,28 @@ export default function RPGGame({
           left={0}
           w="100%"
           h="100%"
-          bg="blackAlpha.800"
+          bg={isLightTheme ? "rgba(76, 60, 40, 0.24)" : "blackAlpha.800"}
           display="flex"
           alignItems="center"
           justifyContent="center"
           zIndex={30}
         >
           <VStack
-            bg="gray.900"
+            bg={isLightTheme ? rpgPanelBg : "gray.900"}
             border="3px solid"
-            borderColor="yellow.400"
+            borderColor={isLightTheme ? rpgPanelBorder : "yellow.400"}
             borderRadius="xl"
             p={8}
             spacing={4}
             maxW="400px"
             mx={4}
             textAlign="center"
-            boxShadow="0 0 40px rgba(255,215,0,0.3)"
+            boxShadow={isLightTheme ? rpgPanelShadow : "0 0 40px rgba(255,215,0,0.3)"}
           >
             <Text fontSize="4xl">
               {scenario?.emoji || SCENARIO_EMOJIS[scenarioId] || "🏆"}
             </Text>
-            <Text color="yellow.300" fontSize="xl" fontWeight="bold">
+            <Text color={isLightTheme ? rpgTextPrimary : "yellow.300"} fontSize="xl" fontWeight="bold">
               {ui.completed}
             </Text>
             <HStack spacing={3}>
@@ -7055,9 +7129,16 @@ export default function RPGGame({
                 {ui.playAgain}
               </Button>
               <Button
-                variant="outline"
-                colorScheme="whiteAlpha"
-                color="white"
+                variant={isLightTheme ? "solid" : "outline"}
+                colorScheme={isLightTheme ? undefined : "whiteAlpha"}
+                bg={isLightTheme ? rpgChoiceBg : undefined}
+                color={isLightTheme ? rpgTextPrimary : "white"}
+                borderColor={isLightTheme ? rpgChoiceBorder : undefined}
+                _hover={
+                  isLightTheme
+                    ? { bg: rpgChoiceHoverBg }
+                    : undefined
+                }
                 onClick={goToScenarioSelect}
               >
                 {isTutorialGame ? ui.scenario : ui.newWorld}

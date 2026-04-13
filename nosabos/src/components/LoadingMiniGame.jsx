@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useCallback, useState, useMemo } from "react"
 import { Box, Text } from "@chakra-ui/react";
 import * as Tone from "tone";
 import useSoundSettings from "../hooks/useSoundSettings";
+import { useThemeStore } from "../useThemeStore";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const TILE = 16;
@@ -972,6 +973,16 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
   const { playSound, warmupAudio } = useSoundSettings();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
+  const loaderPanelBg = isLightTheme
+    ? "rgba(255, 250, 241, 0.98)"
+    : "rgba(250, 244, 232, 0.96)";
+  const loaderPanelBorder = isLightTheme ? "rgba(224, 180, 116, 0.9)" : "orange.200";
+  const loaderTextColor = isLightTheme ? "#5b4430" : "gray.800";
+  const loaderShadow = isLightTheme
+    ? "0 12px 24px rgba(84, 62, 36, 0.16)"
+    : "0 18px 38px rgba(0,0,0,0.52)";
 
   // Generate world once on mount with random seed
   const world = useMemo(() => generateWorld(Date.now()), []);
@@ -1361,7 +1372,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
   }, [supportLang, showRoomName, world]);
 
   return (
-    <Box ref={containerRef} position="relative" w="100%" h="100%" bg="#08142b" overflow="hidden">
+    <Box
+      ref={containerRef}
+      position="relative"
+      w="100%"
+      h="100%"
+      bg={isLightTheme ? "#e7dcc3" : "#08142b"}
+      overflow="hidden"
+    >
       <canvas
         ref={canvasRef}
         onClick={handleCanvasClick}
@@ -1372,9 +1390,11 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       {roomName && (
         <Box
           position="absolute" top="50%" left="50%" transform="translate(-50%, -50%)"
-          bg="rgba(250, 244, 232, 0.96)" border="2px solid" borderColor="orange.200"
+          bg={loaderPanelBg}
+          border="2px solid"
+          borderColor={loaderPanelBorder}
           borderRadius="xl" px={5} py={2} pointerEvents="none"
-          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+          boxShadow={loaderShadow}
           sx={{
             animation: "roomFadeIn 0.4s ease-out",
             "@keyframes roomFadeIn": {
@@ -1383,7 +1403,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
             },
           }}
         >
-          <Text fontSize="md" fontWeight="bold" color="gray.800" fontFamily="monospace" whiteSpace="nowrap">
+          <Text
+            fontSize="md"
+            fontWeight="bold"
+            color={loaderTextColor}
+            fontFamily="monospace"
+            whiteSpace="nowrap"
+            textShadow={isLightTheme ? "0 1px 0 rgba(255,255,255,0.45)" : "none"}
+          >
             {roomName}
           </Text>
         </Box>
@@ -1392,9 +1419,11 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       {message && (
         <Box
           position="absolute" bottom="12px" left="12px" right="12px"
-          bg="rgba(250, 244, 232, 0.96)" border="2px solid" borderColor="orange.200"
+          bg={loaderPanelBg}
+          border="2px solid"
+          borderColor={loaderPanelBorder}
           borderRadius="xl" px={4} py={3} pointerEvents="none"
-          boxShadow="0 18px 38px rgba(0,0,0,0.52)"
+          boxShadow={loaderShadow}
           sx={{
             animation: "msgSlideUp 0.3s ease-out",
             "@keyframes msgSlideUp": {
@@ -1403,7 +1432,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
             },
           }}
         >
-          <Text fontSize="sm" color="gray.800" fontFamily="monospace">{message}</Text>
+          <Text
+            fontSize="sm"
+            color={loaderTextColor}
+            fontFamily="monospace"
+            textShadow={isLightTheme ? "0 1px 0 rgba(255,255,255,0.42)" : "none"}
+          >
+            {message}
+          </Text>
         </Box>
       )}
     </Box>

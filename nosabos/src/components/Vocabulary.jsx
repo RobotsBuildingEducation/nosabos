@@ -33,7 +33,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
-import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import VoiceOrb from "./VoiceOrb";
 import translations from "../utils/translation";
@@ -78,9 +77,28 @@ import LessonFlashcard, {
   FlashcardDeckReview,
   buildLessonFlashcardPrompt,
 } from "./LessonFlashcard";
+import XpProgressHeader from "./XpProgressHeader";
+import {
+  getQuestionAssistantPanelProps,
+  getQuestionChoiceCardProps,
+  getQuestionChoiceIndicatorProps,
+  getQuestionChipProps,
+  getQuestionDropZoneProps,
+  getQuestionToolButtonProps,
+  questionAssistantText,
+} from "./questionUiStyles";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -4348,12 +4366,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         size="sm"
         fontSize="lg"
         rounded="xl"
-        bg="white"
-        color="blue"
-        boxShadow="0 4px 0 blue"
         onClick={() => copyAll(q, h, tr)}
         isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
         mr={1}
+        {...getQuestionToolButtonProps()}
       />
     );
   };
@@ -4365,15 +4381,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       <Box
         p={4}
         borderRadius="lg"
-        bg="rgba(66, 153, 225, 0.1)"
-        borderWidth="1px"
-        borderColor="blue.400"
-        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
         mt={4}
+        {...getQuestionAssistantPanelProps()}
       >
         <HStack spacing={2} mb={2}>
-          <MdOutlineSupportAgent color="var(--chakra-colors-blue-400)" />
-          <Text fontWeight="semibold" color="blue.300">
+          <MdOutlineSupportAgent color={questionAssistantText.accent} />
+          <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
             {userLanguage === "es" ? "Asistente" : "Assistant"}
           </Text>
           {isLoadingAssistantSupport && (
@@ -4387,17 +4400,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         </HStack>
         <Box
           fontSize="md"
-          color="whiteAlpha.900"
+          color={APP_TEXT_PRIMARY}
           lineHeight="1.6"
           sx={{
             "& p": { mb: 2 },
             "& p:last-child": { mb: 0 },
-            "& strong": { fontWeight: "bold", color: "blue.200" },
+            "& strong": {
+              fontWeight: "bold",
+              color: questionAssistantText.accentStrong,
+            },
             "& em": { fontStyle: "italic" },
             "& ul, & ol": { pl: 4, mb: 2 },
             "& li": { mb: 1 },
             "& code": {
-              bg: "rgba(0,0,0,0.3)",
+              bg: APP_SURFACE,
               px: 1,
               py: 0.5,
               borderRadius: "sm",
@@ -4461,12 +4477,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderBottomColor={
                   snapshot.isDraggingOver
                     ? "purple.300"
-                    : "rgba(255,255,255,0.6)"
+                    : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128,90,213,0.18)"
-                    : "rgba(255,255,255,0.08)"
+                    : APP_SURFACE_MUTED
                 }
                 transition="all 0.2s ease"
               >
@@ -4494,7 +4510,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         borderColor={
                           snapshot.isDragging
                             ? "purple.300"
-                            : "rgba(255,255,255,0.22)"
+                            : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4571,12 +4587,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderBottomColor={
                   snapshot.isDraggingOver
                     ? "purple.300"
-                    : "rgba(255,255,255,0.6)"
+                    : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128,90,213,0.18)"
-                    : "rgba(255,255,255,0.08)"
+                    : APP_SURFACE_MUTED
                 }
                 transition="all 0.2s ease"
               >
@@ -4608,7 +4624,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         borderColor={
                           snapshot.isDragging
                             ? "purple.300"
-                            : "rgba(255,255,255,0.22)"
+                            : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4896,7 +4912,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       : picksMA.length > 0;
 
   return (
-    <Box p={4}>
+    <Box p={4} color={APP_TEXT_PRIMARY}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
@@ -4990,13 +5006,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ) : (
               // Normal XP progress display
               <>
-                <HStack justify="space-between" mb={1}>
-                  <Badge variant="subtle">
-                    {t("vocab_badge_level", { level: levelNumber })}
-                  </Badge>
-                  <Badge variant="subtle">{t("vocab_badge_xp", { xp })}</Badge>
-                </HStack>
-                <WaveBar value={progressPct} />
+                <XpProgressHeader
+                  levelText={t("vocab_badge_level", { level: levelNumber })}
+                  xpText={t("vocab_badge_xp", { xp })}
+                  progressPct={progressPct}
+                />
               </>
             )}
           </Box>
@@ -5005,17 +5019,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
-            <Text fontSize="xl" fontWeight="bold" color="white">
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
               {userLanguage === "es"
                 ? "Completa el espacio"
                 : "Fill in the blank"}
             </Text>
             <Box
-              bg="rgba(255, 255, 255, 0.02)"
+              bg={APP_SURFACE_ELEVATED}
               borderRadius="lg"
               borderWidth="1px"
-              borderColor="whiteAlpha.100"
+              borderColor={APP_BORDER}
               p={5}
+              color={APP_TEXT_PRIMARY}
+              boxShadow={APP_SHADOW}
             >
               <VStack align="stretch" spacing={3}>
                 <HStack align="start" spacing={2}>
@@ -5029,9 +5045,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     icon={renderSpeakerIcon(isQuestionSynthesizing)}
                     size="sm"
                     fontSize="lg"
-                    variant="ghost"
                     onClick={() => handlePlayQuestionTTS(qFill)}
                     mr={1}
+                    {...getQuestionToolButtonProps({
+                      active: isQuestionSynthesizing,
+                    })}
                   />
                   <Text
                     fontSize="lg"
@@ -5148,7 +5166,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
               {userLanguage === "es"
                 ? "Elige la respuesta correcta"
                 : "Choose the correct answer"}
@@ -5157,11 +5175,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <DragDropContext onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
-                    bg="rgba(255, 255, 255, 0.02)"
+                    bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.100"
+                    borderColor={APP_BORDER}
                     p={5}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
@@ -5171,9 +5191,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
-                          variant="ghost"
                           onClick={() => handlePlayQuestionTTS(qMC)}
                           mr={1}
+                          {...getQuestionToolButtonProps({
+                            active: isQuestionSynthesizing,
+                          })}
                         />
                         <Text
                           fontSize="lg"
@@ -5222,17 +5244,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 borderColor={
                                   snapshot.isDragging
                                     ? "purple.300"
-                                    : "rgba(255,255,255,0.22)"
+                                    : APP_BORDER
                                 }
                                 bg={
                                   snapshot.isDragging
                                     ? "rgba(128,90,213,0.16)"
-                                    : "transparent"
+                                    : APP_SURFACE_ELEVATED
+                                }
+                                color={
+                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign="left"
                                 _hover={{
-                                  bg: "rgba(128,90,213,0.12)",
+                                  bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
                                 }}
                                 transition="all 0.15s ease"
@@ -5251,12 +5276,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  bg="rgba(255, 255, 255, 0.02)"
+                  bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
                   borderWidth="1px"
-                  borderColor="whiteAlpha.100"
+                  borderColor={APP_BORDER}
                   p={5}
                   mb={3}
+                  color={APP_TEXT_PRIMARY}
+                  boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
@@ -5266,9 +5293,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
-                        variant="ghost"
                         onClick={() => handlePlayQuestionTTS(qMC)}
                         mr={1}
+                        {...getQuestionToolButtonProps({
+                          active: isQuestionSynthesizing,
+                        })}
                       />
                       <Text
                         fontSize="lg"
@@ -5299,32 +5328,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       px={4}
                       py={3}
                       rounded="lg"
-                      borderWidth="2px"
-                      borderColor={
-                        pickMC === c ? "purple.400" : "rgba(255,255,255,0.15)"
-                      }
-                      bg={
-                        pickMC === c
-                          ? "linear-gradient(135deg, rgba(128,90,213,0.25) 0%, rgba(159,122,234,0.15) 100%)"
-                          : "rgba(255,255,255,0.03)"
-                      }
-                      transition="all 0.2s ease"
-                      _hover={
-                        choicesMC.length
-                          ? {
-                              borderColor:
-                                pickMC === c
-                                  ? "purple.300"
-                                  : "rgba(255,255,255,0.3)",
-                              bg:
-                                pickMC === c
-                                  ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
-                                  : "rgba(255,255,255,0.06)",
-                              transform: "translateY(-2px)",
-                              shadow: "md",
-                            }
-                          : {}
-                      }
+                      {...getQuestionChoiceCardProps({
+                        selected: pickMC === c,
+                        tone: "single",
+                        interactive: choicesMC.length > 0,
+                      })}
                       position="relative"
                       opacity={choicesMC.length ? 1 : 0.5}
                     >
@@ -5333,17 +5341,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           w="20px"
                           h="20px"
                           rounded="full"
-                          borderWidth="2px"
-                          borderColor={
-                            pickMC === c
-                              ? "purple.400"
-                              : "rgba(255,255,255,0.3)"
-                          }
-                          bg={pickMC === c ? "purple.500" : "transparent"}
+                          {...getQuestionChoiceIndicatorProps({
+                            selected: pickMC === c,
+                            tone: "single",
+                          })}
                           display="flex"
                           alignItems="center"
                           justifyContent="center"
-                          transition="all 0.2s ease"
                           flexShrink={0}
                         >
                           {pickMC === c && (
@@ -5428,7 +5432,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
               {userLanguage === "es"
                 ? "Selecciona todas las respuestas correctas"
                 : "Select all correct answers"}
@@ -5437,11 +5441,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <DragDropContext onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
-                    bg="rgba(255, 255, 255, 0.02)"
+                    bg={APP_SURFACE_ELEVATED}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor="whiteAlpha.100"
+                    borderColor={APP_BORDER}
                     p={5}
+                    color={APP_TEXT_PRIMARY}
+                    boxShadow={APP_SHADOW}
                   >
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
@@ -5451,9 +5457,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
-                          variant="ghost"
                           onClick={() => handlePlayQuestionTTS(qMA)}
                           mr={1}
+                          {...getQuestionToolButtonProps({
+                            active: isQuestionSynthesizing,
+                          })}
                         />
                         <Text
                           fontSize="lg"
@@ -5502,17 +5510,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 borderColor={
                                   snapshot.isDragging
                                     ? "purple.300"
-                                    : "rgba(255,255,255,0.22)"
+                                    : APP_BORDER
                                 }
                                 bg={
                                   snapshot.isDragging
                                     ? "rgba(128,90,213,0.16)"
-                                    : "transparent"
+                                    : APP_SURFACE_ELEVATED
+                                }
+                                color={
+                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign="left"
                                 _hover={{
-                                  bg: "rgba(128,90,213,0.12)",
+                                  bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
                                 }}
                                 transition="all 0.15s ease"
@@ -5531,12 +5542,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  bg="rgba(255, 255, 255, 0.02)"
+                  bg={APP_SURFACE_ELEVATED}
                   borderRadius="lg"
                   borderWidth="1px"
-                  borderColor="whiteAlpha.100"
+                  borderColor={APP_BORDER}
                   p={5}
                   mb={3}
+                  color={APP_TEXT_PRIMARY}
+                  boxShadow={APP_SHADOW}
                 >
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
@@ -5546,9 +5559,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
-                        variant="ghost"
                         onClick={() => handlePlayQuestionTTS(qMA)}
                         mr={1}
+                        {...getQuestionToolButtonProps({
+                          active: isQuestionSynthesizing,
+                        })}
                       />
                       <Text
                         fontSize="lg"
@@ -5585,30 +5600,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         px={4}
                         py={3}
                         rounded="lg"
-                        borderWidth="2px"
-                        borderColor={
-                          isSelected ? "teal.400" : "rgba(255,255,255,0.15)"
-                        }
-                        bg={
-                          isSelected
-                            ? "linear-gradient(135deg, rgba(56,178,172,0.25) 0%, rgba(77,201,195,0.15) 100%)"
-                            : "rgba(255,255,255,0.03)"
-                        }
-                        transition="all 0.2s ease"
-                        _hover={
-                          choicesMA.length
-                            ? {
-                                borderColor: isSelected
-                                  ? "teal.300"
-                                  : "rgba(255,255,255,0.3)",
-                                bg: isSelected
-                                  ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
-                                  : "rgba(255,255,255,0.06)",
-                                transform: "translateY(-2px)",
-                                shadow: "md",
-                              }
-                            : {}
-                        }
+                        {...getQuestionChoiceCardProps({
+                          selected: isSelected,
+                          tone: "multi",
+                          interactive: choicesMA.length > 0,
+                        })}
                         position="relative"
                         opacity={choicesMA.length ? 1 : 0.5}
                       >
@@ -5617,15 +5613,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             w="20px"
                             h="20px"
                             rounded="md"
-                            borderWidth="2px"
-                            borderColor={
-                              isSelected ? "teal.400" : "rgba(255,255,255,0.3)"
-                            }
-                            bg={isSelected ? "teal.500" : "transparent"}
+                            {...getQuestionChoiceIndicatorProps({
+                              selected: isSelected,
+                              tone: "multi",
+                            })}
                             display="flex"
                             alignItems="center"
                             justifyContent="center"
-                            transition="all 0.2s ease"
                             flexShrink={0}
                           >
                             {isSelected && (
@@ -5718,7 +5712,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
             <HStack justify="space-between" align="center" mb={2}>
-              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+              <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
                 {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
               </Text>
               {sVariant === "translate" || sVariant === "complete" ? (
@@ -5743,13 +5737,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
-                  bg="white"
-                  color="blue"
-                  boxShadow="0 4px 0 blue"
                   onClick={sendSpeakHelp}
                   isDisabled={
                     isLoadingAssistantSupport || !!assistantSupportText
                   }
+                  {...getQuestionToolButtonProps()}
                 />
               ) : null}
             </HStack>
@@ -5765,23 +5757,27 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ) : (
               <>
                 <Box
-                  border="1px solid rgba(255,255,255,0.18)"
+                  border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
                   p={6}
                   textAlign="center"
-                  bg="rgba(255,255,255,0.04)"
+                  bg={APP_SURFACE_ELEVATED}
+                  color={APP_TEXT_PRIMARY}
                   position="relative"
+                  boxShadow={APP_SHADOW}
                 >
                   <IconButton
                     aria-label={speakListenLabel}
                     icon={renderSpeakerIcon(isSpeakSynthesizing)}
                     size="sm"
-                    variant="ghost"
                     position="absolute"
                     top="3"
                     right="3"
                     onClick={handleToggleSpeakPlayback}
                     isDisabled={!sTarget}
+                    {...getQuestionToolButtonProps({
+                      active: isSpeakSynthesizing,
+                    })}
                   />
 
                   <Text fontSize="3xl" fontWeight="700">
@@ -5977,12 +5973,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
             <Box
-              bg="rgba(255,255,255,0.03)"
-              border="1px solid rgba(255,255,255,0.08)"
+              bg={APP_SURFACE_ELEVATED}
+              border={`1px solid ${APP_BORDER}`}
               rounded="2xl"
               p={{ base: 4, md: 6 }}
               position="relative"
               overflow="hidden"
+              boxShadow={APP_SHADOW}
             >
               {/* Accent bar */}
               <Box
@@ -5996,7 +5993,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
               {/* Header */}
               <HStack justify="space-between" align="center" mb={2}>
-                <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
                   {userLanguage === "es"
                     ? "Empareja las palabras"
                     : "Match the words"}
@@ -6022,13 +6019,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
-                  bg="white"
-                  color="blue"
-                  boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
                   isDisabled={
                     isLoadingAssistantSupport || !!assistantSupportText
                   }
+                  {...getQuestionToolButtonProps()}
                 />
               </HStack>
 
@@ -6044,11 +6039,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       key={i}
                       align="center"
                       spacing={3}
-                      bg="rgba(255,255,255,0.025)"
+                      bg={APP_SURFACE}
                       rounded="xl"
                       px={3}
                       py={2}
-                      border="1px solid rgba(255,255,255,0.05)"
+                      border={`1px solid ${APP_BORDER}`}
                     >
                       {/* Left word */}
                       <HStack
@@ -6065,18 +6060,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"
-                          variant="ghost"
-                          color="cyan.300"
                           onClick={() => handlePlayMatchWordTTS(lhs, i)}
                           isDisabled={!lhs || lhs === "…"}
+                          {...getQuestionToolButtonProps({
+                            active: matchWordSynthesizing === i,
+                          })}
                         />
-                        <Text fontWeight="semibold" color="white">
+                        <Text fontWeight="semibold" color={APP_TEXT_PRIMARY}>
                           {lhs}
                         </Text>
                       </HStack>
 
                       {/* Arrow */}
-                      <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>
+                      <Text color={APP_TEXT_MUTED} fontSize="lg" flexShrink={0}>
                         →
                       </Text>
 
@@ -6091,19 +6087,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             {...provided.droppableProps}
                             minH="42px"
                             px={3}
-                            border={
-                              mSlots[i] !== null && mRight[mSlots[i]] != null
-                                ? "1px solid rgba(128,90,213,0.4)"
-                                : "1px dashed rgba(255,255,255,0.15)"
-                            }
-                            bg={
-                              mSlots[i] !== null && mRight[mSlots[i]] != null
-                                ? "rgba(128,90,213,0.1)"
-                                : "rgba(255,255,255,0.02)"
-                            }
+                            {...getQuestionDropZoneProps({
+                              filled:
+                                mSlots[i] !== null && mRight[mSlots[i]] != null,
+                            })}
                             rounded="lg"
                             w="100%"
-                            transition="all 0.2s ease"
                           >
                             {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
                               <Draggable
@@ -6157,9 +6146,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     px={3}
                                     py={1.5}
                                     rounded="lg"
-                                    bg="rgba(128,90,213,0.15)"
-                                    border="1px solid rgba(128,90,213,0.35)"
-                                    color="white"
+                                    {...getQuestionChipProps()}
                                     fontSize="sm"
                                   >
                                     {mRight[mSlots[i]]}
@@ -6186,15 +6173,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {/* Bank */}
                 <Box
                   mt={5}
-                  bg="rgba(255,255,255,0.025)"
-                  border="1px solid rgba(255,255,255,0.08)"
+                  bg={APP_SURFACE}
+                  border={`1px solid ${APP_BORDER}`}
                   rounded="xl"
                   p={3}
                 >
                   <Text
                     fontSize="xs"
                     fontWeight="semibold"
-                    color="whiteAlpha.500"
+                    color={APP_TEXT_MUTED}
                     mb={2}
                     textTransform="uppercase"
                     letterSpacing="wider"
@@ -6210,9 +6197,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         flexWrap="wrap"
                         minH="44px"
                         p={2}
-                        border="1px dashed rgba(255,255,255,0.1)"
+                        border={`1px dashed ${APP_BORDER_STRONG}`}
                         rounded="lg"
-                        bg="rgba(255,255,255,0.015)"
+                        bg={APP_SURFACE_MUTED}
                       >
                         {(mBank.length
                           ? mBank
@@ -6266,9 +6253,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   px={3}
                                   py={1.5}
                                   rounded="lg"
-                                  bg="rgba(128,90,213,0.12)"
-                                  border="1px solid rgba(128,90,213,0.3)"
-                                  color="white"
+                                  {...getQuestionChipProps()}
                                   fontSize="sm"
                                 >
                                   {mRight[ri]}
@@ -6281,7 +6266,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                               px={3}
                               py={1.5}
                               rounded="lg"
-                              border="1px dashed rgba(255,255,255,0.12)"
+                              border={`1px dashed ${APP_BORDER_STRONG}`}
                               opacity={0.4}
                             >
                               …

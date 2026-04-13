@@ -688,6 +688,15 @@ export const translations = {
     sound_effects_enabled: "Sound effects are enabled.",
     sound_effects_disabled: "Sound effects are muted.",
     sound_volume_label: "Volume",
+    theme_mode_label: "Theme",
+    theme_mode_description:
+      "Choose how the app looks. Light mode uses a warm, Claude-style paper palette.",
+    theme_mode_dark: "Midnight",
+    theme_mode_dark_description:
+      "Deep navy panels and brighter contrast for focused sessions.",
+    theme_mode_light: "Paper",
+    theme_mode_light_description:
+      "Soft parchment surfaces with ink-dark text and gentle shadows.",
     test_sound: "Test sound",
     teams_feed_refresh: "Refresh",
     teams_feed_loading: "Syncing with the community...",
@@ -1428,6 +1437,15 @@ export const translations = {
     sound_effects_enabled: "Los efectos de sonido están activados.",
     sound_effects_disabled: "Los efectos de sonido están silenciados.",
     sound_volume_label: "Volumen",
+    theme_mode_label: "Tema",
+    theme_mode_description:
+      "Elige cómo se ve la app. El modo claro usa una paleta cálida, tipo papel, al estilo Claude.",
+    theme_mode_dark: "Medianoche",
+    theme_mode_dark_description:
+      "Paneles azul marino profundos y contraste más fuerte para concentrarte.",
+    theme_mode_light: "Papel",
+    theme_mode_light_description:
+      "Superficies tipo pergamino con texto oscuro y sombras suaves.",
     test_sound: "Probar sonido",
     teams_feed_refresh: "Actualizar",
     teams_feed_loading: "Sincronizando con la comunidad...",

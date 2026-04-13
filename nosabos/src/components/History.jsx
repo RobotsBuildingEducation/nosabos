@@ -62,6 +62,8 @@ import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import XpProgressHeader from "./XpProgressHeader";
+import { useThemeStore } from "../useThemeStore";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_EDGE,
@@ -796,6 +798,39 @@ export default function History({
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
+  const paperText = "#4a3727";
+  const paperHeading = "#5a4736";
+  const paperMuted = "#7c6955";
+  const paperPanelBg = "rgba(255, 250, 241, 0.96)";
+  const paperPanelBgSoft = "rgba(242, 234, 220, 0.9)";
+  const paperPanelBgRaised = "rgba(247, 240, 229, 0.98)";
+  const paperPanelBorder = "rgba(185, 156, 118, 0.34)";
+  const paperPanelShadow = "0 16px 34px rgba(97, 74, 47, 0.14)";
+  const paperActionBg = "#26aabd";
+  const paperActionHoverBg = "#1d96a7";
+  const paperActionActiveBg = "#178392";
+  const paperActionDisabledBg = "rgba(38, 170, 189, 0.42)";
+  const paperActionShadow = "0 4px 0 #166976";
+  const paperSecondaryButtonBg = "rgba(255, 250, 241, 0.98)";
+  const paperSecondaryButtonHoverBg = "rgba(245, 236, 222, 0.98)";
+  const paperSecondaryButtonActiveBg = "rgba(239, 228, 212, 0.98)";
+  const paperSuccessBg =
+    "linear-gradient(135deg, rgba(231, 246, 233, 0.96), rgba(249, 243, 233, 0.95))";
+  const speechAccentMap = isLightTheme
+    ? {
+        green: "#358f67",
+        teal: "#2f8f88",
+        yellow: "#a87318",
+        purple: "#8d63c7",
+      }
+    : {
+        green: "#48BB78",
+        teal: "#38B2AC",
+        yellow: "#ECC94B",
+        purple: "#B794F4",
+      };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -1881,15 +1916,13 @@ Return ONLY valid JSON:
         {/* Header: Level / XP */}
         <Box justifyContent={"center"} display="flex">
           <Box width="50%">
-            <HStack justify="space-between" mb={2}>
-              <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("reading_badge_level", { level: levelNumber })}
-              </Badge>
-              <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("reading_badge_xp", { xp })}
-              </Badge>
-            </HStack>
-            <WaveBar value={progressPct} />
+            <XpProgressHeader
+              levelText={t("reading_badge_level", { level: levelNumber })}
+              xpText={t("reading_badge_xp", { xp })}
+              progressPct={progressPct}
+              mb={2}
+              xpBadgeProps={{ px: 2, py: 1, rounded: "md" }}
+            />
           </Box>
         </Box>
 
@@ -2321,17 +2354,47 @@ Return ONLY valid JSON:
                                       transform: "translateY(2px)",
                                       boxShadow: "none",
                                     }}
+                                    minW="168px"
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
                                   <Button
-                                    size="sm"
-                                    variant="outline"
-                                    colorScheme="whiteAlpha"
+                                    size="md"
+                                    variant={isLightTheme ? "solid" : "outline"}
+                                    bg={
+                                      isLightTheme
+                                        ? paperSecondaryButtonBg
+                                        : undefined
+                                    }
+                                    color={isLightTheme ? paperText : undefined}
+                                    borderWidth={isLightTheme ? "1px" : undefined}
+                                    borderColor={
+                                      isLightTheme ? paperPanelBorder : undefined
+                                    }
+                                    boxShadow={
+                                      isLightTheme
+                                        ? "0 4px 0 rgba(178, 156, 127, 0.46)"
+                                        : undefined
+                                    }
                                     onClick={() => {
                                       playSound(selectSound);
                                       startOverSpeech();
                                     }}
+                                    _hover={
+                                      isLightTheme
+                                        ? { bg: paperSecondaryButtonHoverBg }
+                                        : undefined
+                                    }
+                                    _active={
+                                      isLightTheme
+                                        ? {
+                                            bg: paperSecondaryButtonActiveBg,
+                                            transform: "translateY(2px)",
+                                            boxShadow: "0 2px 0 rgba(178, 156, 127, 0.38)",
+                                          }
+                                        : undefined
+                                    }
+                                    minW="168px"
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2368,7 +2431,12 @@ Return ONLY valid JSON:
                               <Box display="flex" justifyContent="center">
                                 <Button
                                   size="md"
-                                  colorScheme="teal"
+                                  colorScheme={isLightTheme ? undefined : "teal"}
+                                  bg={isLightTheme ? paperActionBg : undefined}
+                                  color={isLightTheme ? "white" : undefined}
+                                  boxShadow={
+                                    isLightTheme ? paperActionShadow : undefined
+                                  }
                                   onClick={gradeSpeechAttempt}
                                   isLoading={isGradingSpeech}
                                   loadingText={t("history_speech_submitting")}
@@ -2376,6 +2444,39 @@ Return ONLY valid JSON:
                                   maxW="300px"
                                   w="full"
                                   py={6}
+                                  _hover={
+                                    isLightTheme
+                                      ? { bg: paperActionHoverBg }
+                                      : undefined
+                                  }
+                                  _active={
+                                    isLightTheme
+                                      ? {
+                                          bg: paperActionActiveBg,
+                                          transform: "translateY(2px)",
+                                          boxShadow: "0 2px 0 #166976",
+                                        }
+                                      : undefined
+                                  }
+                                  _loading={
+                                    isLightTheme
+                                      ? {
+                                          bg: paperActionBg,
+                                          color: "white",
+                                          _hover: { bg: paperActionBg },
+                                        }
+                                      : undefined
+                                  }
+                                  _disabled={
+                                    isLightTheme
+                                      ? {
+                                          bg: paperActionDisabledBg,
+                                          color: "rgba(255,255,255,0.95)",
+                                          boxShadow: "none",
+                                          opacity: 1,
+                                        }
+                                      : undefined
+                                  }
                                 >
                                   {t("history_speech_submit")}
                                 </Button>
@@ -2393,10 +2494,20 @@ Return ONLY valid JSON:
                                 align="stretch"
                                 p={4}
                                 borderRadius="xl"
-                                bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                                bg={
+                                  isLightTheme
+                                    ? paperSuccessBg
+                                    : "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                                }
                                 borderWidth="1px"
-                                borderColor="green.400"
-                                boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                                borderColor={
+                                  isLightTheme ? "rgba(77, 153, 106, 0.74)" : "green.400"
+                                }
+                                boxShadow={
+                                  isLightTheme
+                                    ? paperPanelShadow
+                                    : "0 12px 30px rgba(0, 0, 0, 0.3)"
+                                }
                               >
                                 <HStack spacing={3} align="center">
                                   <Flex
@@ -2405,17 +2516,24 @@ Return ONLY valid JSON:
                                     rounded="full"
                                     align="center"
                                     justify="center"
-                                    bg="green.500"
+                                    bg={isLightTheme ? "#37a06f" : "green.500"}
                                     color="white"
                                     fontWeight="bold"
                                     fontSize="lg"
-                                    boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                                    boxShadow={
+                                      isLightTheme
+                                        ? "0 10px 20px rgba(55, 118, 84, 0.18)"
+                                        : "0 10px 24px rgba(0,0,0,0.22)"
+                                    }
                                     flexShrink={0}
                                   >
                                     {"✓"}
                                   </Flex>
                                   <Box flex="1">
-                                    <Text fontWeight="semibold">
+                                    <Text
+                                      fontWeight="semibold"
+                                      color={isLightTheme ? paperHeading : undefined}
+                                    >
                                       {t("history_speech_complete")}
                                     </Text>
                                   </Box>
@@ -2424,7 +2542,8 @@ Return ONLY valid JSON:
                                 {speechFeedback.summary && (
                                   <Text
                                     fontSize="sm"
-                                    opacity={0.9}
+                                    color={isLightTheme ? paperText : undefined}
+                                    opacity={isLightTheme ? 1 : 0.9}
                                     lineHeight="1.6"
                                   >
                                     {speechFeedback.summary}
@@ -2436,12 +2555,6 @@ Return ONLY valid JSON:
                                   Object.keys(speechFeedback.scores).length >
                                     0 &&
                                   (() => {
-                                    const totalColorMap = {
-                                      green: "#48BB78",
-                                      teal: "#38B2AC",
-                                      yellow: "#ECC94B",
-                                      purple: "#B794F4",
-                                    };
                                     let totalScore = 0;
                                     let count = 0;
                                     SPEECH_CRITERIA.forEach((c) => {
@@ -2460,22 +2573,32 @@ Return ONLY valid JSON:
                                     if (count === 0) return null;
                                     const avg = totalScore / count;
                                     const totalAccent =
-                                      totalColorMap[speechScoreColor(avg)] ||
+                                      speechAccentMap[speechScoreColor(avg)] ||
                                       "#A0AEC0";
                                     return (
                                       <Box
-                                        bg="rgba(0,0,0,0.25)"
+                                        bg={
+                                          isLightTheme
+                                            ? paperPanelBgSoft
+                                            : "rgba(0,0,0,0.25)"
+                                        }
                                         px={4}
                                         py={3}
                                         rounded="xl"
                                         borderWidth="1px"
                                         borderColor={totalAccent}
                                         textAlign="center"
+                                        boxShadow={
+                                          isLightTheme
+                                            ? "inset 0 1px 0 rgba(255,255,255,0.28)"
+                                            : undefined
+                                        }
                                       >
                                         <Text
                                           fontWeight="semibold"
                                           fontSize="xs"
-                                          opacity={0.7}
+                                          color={isLightTheme ? paperMuted : undefined}
+                                          opacity={isLightTheme ? 1 : 0.7}
                                           textTransform="uppercase"
                                           letterSpacing="0.05em"
                                           mb={1}
@@ -2492,7 +2615,8 @@ Return ONLY valid JSON:
                                           <Text
                                             as="span"
                                             fontSize="md"
-                                            opacity={0.5}
+                                            color={isLightTheme ? paperMuted : undefined}
+                                            opacity={isLightTheme ? 1 : 0.5}
                                             fontWeight="normal"
                                           >
                                             /{count * 10}
@@ -2511,7 +2635,8 @@ Return ONLY valid JSON:
                                         fontWeight="semibold"
                                         fontSize="xs"
                                         mb={2}
-                                        opacity={0.7}
+                                        color={isLightTheme ? paperMuted : undefined}
+                                        opacity={isLightTheme ? 1 : 0.7}
                                         textTransform="uppercase"
                                         letterSpacing="0.05em"
                                       >
@@ -2544,23 +2669,36 @@ Return ONLY valid JSON:
                                               ? data.note
                                               : "";
                                           const color = speechScoreColor(score);
-                                          const colorMap = {
-                                            green: "#48BB78",
-                                            teal: "#38B2AC",
-                                            yellow: "#ECC94B",
-                                            purple: "#B794F4",
-                                          };
                                           const accent =
-                                            colorMap[color] || "#A0AEC0";
+                                            speechAccentMap[color] || "#A0AEC0";
                                           return (
                                             <GridItem key={criterion.key}>
                                               <Box
-                                                bg="rgba(0,0,0,0.2)"
+                                                bg={
+                                                  isLightTheme
+                                                    ? paperPanelBgRaised
+                                                    : "rgba(0,0,0,0.2)"
+                                                }
                                                 px={3}
                                                 py={2.5}
                                                 rounded="lg"
                                                 borderLeft="3px solid"
                                                 borderColor={accent}
+                                                borderWidth={isLightTheme ? "1px" : undefined}
+                                                borderTopColor={
+                                                  isLightTheme ? paperPanelBorder : undefined
+                                                }
+                                                borderRightColor={
+                                                  isLightTheme ? paperPanelBorder : undefined
+                                                }
+                                                borderBottomColor={
+                                                  isLightTheme ? paperPanelBorder : undefined
+                                                }
+                                                boxShadow={
+                                                  isLightTheme
+                                                    ? "0 6px 18px rgba(97, 74, 47, 0.08)"
+                                                    : undefined
+                                                }
                                                 h="100%"
                                               >
                                                 <HStack
@@ -2571,7 +2709,12 @@ Return ONLY valid JSON:
                                                   <Text
                                                     fontSize="xs"
                                                     fontWeight="semibold"
-                                                    opacity={0.85}
+                                                    color={
+                                                      isLightTheme
+                                                        ? paperHeading
+                                                        : undefined
+                                                    }
+                                                    opacity={isLightTheme ? 1 : 0.85}
                                                   >
                                                     {
                                                       criterion[
@@ -2593,7 +2736,12 @@ Return ONLY valid JSON:
                                                 {note && (
                                                   <Text
                                                     fontSize="2xs"
-                                                    opacity={0.55}
+                                                    color={
+                                                      isLightTheme
+                                                        ? paperMuted
+                                                        : undefined
+                                                    }
+                                                    opacity={isLightTheme ? 1 : 0.55}
                                                     lineHeight="1.4"
                                                     noOfLines={3}
                                                   >
@@ -2647,14 +2795,14 @@ Return ONLY valid JSON:
                                       fontSize="xs"
                                     >
                                       <Text
-                                        color="whiteAlpha.800"
+                                        color={isLightTheme ? paperMuted : "whiteAlpha.800"}
                                         fontWeight="semibold"
                                         textAlign="center"
                                       >
                                         {lessonProgress.label}
                                       </Text>
                                       <Text
-                                        color="whiteAlpha.800"
+                                        color={isLightTheme ? paperMuted : "whiteAlpha.800"}
                                         fontWeight="semibold"
                                         textAlign="center"
                                       >

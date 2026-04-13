@@ -70,9 +70,19 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
+import XpProgressHeader from "./XpProgressHeader";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 /* ================================
    ENV / API
@@ -1649,10 +1659,10 @@ export default function StoryMode({
       >
         <Center>
           <VStack spacing={6}>
-            <Text color="white" fontSize="xl" fontWeight="600">
+            <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
               {uiText.generatingTitle}
             </Text>
-            <Text color="#94a3b8" fontSize="sm">
+            <Text color={APP_TEXT_SECONDARY} fontSize="sm">
               {uiText.generatingSub}
             </Text>
             <VoiceOrb />
@@ -1671,10 +1681,10 @@ export default function StoryMode({
       >
         <Center h="100vh">
           <VStack spacing={6}>
-            <Text color="white" fontSize="xl" fontWeight="600">
+            <Text color={APP_TEXT_PRIMARY} fontSize="xl" fontWeight="600">
               {uiText.generatingTitle}
             </Text>
-            <Text color="#94a3b8" fontSize="sm">
+            <Text color={APP_TEXT_SECONDARY} fontSize="sm">
               {uiText.generatingSub}
             </Text>
             <VoiceOrb
@@ -1711,7 +1721,7 @@ export default function StoryMode({
           py={3}
           // bg="rgba(15, 15, 35, 0.8)"
           // backdropFilter="blur(20px)"
-          color="white"
+          color={APP_TEXT_PRIMARY}
           // borderBottom="1px solid"
           borderColor="rgba(255, 255, 255, 0.1)"
           // position="sticky"
@@ -1733,18 +1743,13 @@ export default function StoryMode({
       <Box px={4} pt={4}>
         <Box p={3} rounded="2xl">
           <Box display="flex" justifyContent={"center"}>
-            <HStack justify="space-between" mb={1} width="50%" maxW="600px">
-              <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                {uiText.levelLabel} {levelNumber}
-              </Badge>
-              <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                {uiText.xp} {xp}
-              </Badge>
-            </HStack>
-          </Box>
-          <Box display="flex" justifyContent={"center"}>
             <Box width="50%" maxW="600px">
-              <WaveBar value={progressPct} />
+              <XpProgressHeader
+                levelText={`${uiText.levelLabel} ${levelNumber}`}
+                xpText={`${uiText.xp} ${xp}`}
+                progressPct={progressPct}
+                xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+              />
             </Box>
           </Box>
         </Box>
@@ -1774,7 +1779,8 @@ export default function StoryMode({
                   onClick={handleSkipModule}
                   // size="md"
                   variant="ghost"
-                  color="white"
+                  color={APP_TEXT_PRIMARY}
+                  _hover={{ bg: APP_SURFACE_MUTED }}
                   // padding={6}
                   width="fit-content"
                 >
@@ -1783,11 +1789,11 @@ export default function StoryMode({
               </Box>
             )}
             <Box
-              bg="rgba(255, 255, 255, 0.05)"
+              bg={APP_SURFACE_ELEVATED}
               p={6}
               rounded="20px"
-              border="1px solid rgba(255, 255, 255, 0.1)"
-              backdropFilter="blur(20px)"
+              border={`1px solid ${APP_BORDER}`}
+              boxShadow={APP_SHADOW}
             >
               {showFullStory ? (
                 <VStack spacing={4} align="stretch">
@@ -1860,9 +1866,9 @@ export default function StoryMode({
                                     ).finally(() => setPlayingLineIndex(null));
                                   }}
                                   variant="outline"
-                                  borderColor="rgba(255, 255, 255, 0.3)"
-                                  color="white"
-                                  _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                                  borderColor={APP_BORDER_STRONG}
+                                  color={APP_TEXT_PRIMARY}
+                                  _hover={{ bg: APP_SURFACE_MUTED }}
                                   size="xs"
                                   aria-label={`Play ${
                                     sentence.character || "line"
@@ -1901,7 +1907,7 @@ export default function StoryMode({
                                   <Text
                                     fontSize="lg"
                                     fontWeight="500"
-                                    color="#f8fafc"
+                                    color={APP_TEXT_PRIMARY}
                                     lineHeight="1.6"
                                   >
                                     {sentence.tgt}
@@ -1909,7 +1915,7 @@ export default function StoryMode({
                                   {!!sentence.sup && (
                                     <Text
                                       fontSize="sm"
-                                      color="#94a3b8"
+                                      color={APP_TEXT_SECONDARY}
                                       lineHeight="1.4"
                                       mt={1}
                                     >
@@ -1932,9 +1938,9 @@ export default function StoryMode({
                             )
                           }
                           variant="outline"
-                          borderColor="rgba(255, 255, 255, 0.3)"
-                          color="white"
-                          _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                          borderColor={APP_BORDER_STRONG}
+                          color={APP_TEXT_PRIMARY}
+                          _hover={{ bg: APP_SURFACE_MUTED }}
                           size="sm"
                           isDisabled={isAutoPlaying || isSynthesizingTarget}
                           aria-label={uiText.playTarget(targetDisplayName)}
@@ -1946,7 +1952,7 @@ export default function StoryMode({
                           <Text
                             fontSize="lg"
                             fontWeight="500"
-                            color="#f8fafc"
+                            color={APP_TEXT_PRIMARY}
                             mb={3}
                             lineHeight="1.8"
                           >
@@ -1956,7 +1962,7 @@ export default function StoryMode({
                           {!!storyData.fullStory?.sup && (
                             <Text
                               fontSize="md"
-                              color="#94a3b8"
+                              color={APP_TEXT_SECONDARY}
                               lineHeight="1.6"
                             >
                               {storyData.fullStory.sup}
@@ -1971,7 +1977,7 @@ export default function StoryMode({
                 /* Sentence practice */
                 <VStack spacing={4} align="stretch">
                   <Box>
-                    <Text fontSize="lg" fontWeight="500" color="#f8fafc" mb={3}>
+                    <Text fontSize="lg" fontWeight="500" color={APP_TEXT_PRIMARY} mb={3}>
                       {uiText.practiceThis}
                     </Text>
                     {/* Show character label for conversation scripts */}
@@ -1993,7 +1999,7 @@ export default function StoryMode({
                     <Text
                       fontSize="xl"
                       fontWeight="600"
-                      color="white"
+                      color={APP_TEXT_PRIMARY}
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
@@ -2003,7 +2009,7 @@ export default function StoryMode({
                     {!!currentSentence?.sup && (
                       <Text
                         fontSize="md"
-                        color="#94a3b8"
+                        color={APP_TEXT_SECONDARY}
                         lineHeight="1.5"
                         textAlign="center"
                       >
@@ -2012,7 +2018,7 @@ export default function StoryMode({
                     )}
                     <Text
                       fontSize="sm"
-                      color="#64748b"
+                      color={APP_TEXT_MUTED}
                       textAlign="center"
                       mt={2}
                     >
@@ -2090,9 +2096,9 @@ export default function StoryMode({
                         aria-label={uiText.listen}
                         px={3}
                         variant="outline"
-                        borderColor="rgba(255, 255, 255, 0.3)"
-                        color="white"
-                        _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                        borderColor={APP_BORDER_STRONG}
+                        color={APP_TEXT_PRIMARY}
+                        _hover={{ bg: APP_SURFACE_MUTED }}
                         size="sm"
                       >
                         {renderSpeakerIcon(
@@ -2138,7 +2144,7 @@ export default function StoryMode({
                                     "stories_sentence_success_title",
                                   ) || uiText.wellDone}
                                 </Text>
-                                <Text fontSize="sm" color="whiteAlpha.800">
+                                <Text fontSize="sm" color={APP_TEXT_SECONDARY}>
                                   {typeof lastSuccessInfo.score === "number"
                                     ? t(
                                         uiLang,
@@ -2169,10 +2175,10 @@ export default function StoryMode({
                           {/* Progress WaveBar */}
                           <Box mt={4}>
                             <HStack justify="space-between" mb={2}>
-                              <Text fontSize="xs" color="whiteAlpha.700">
+                              <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                                 {uiText.progress}
                               </Text>
-                              <Text fontSize="xs" color="whiteAlpha.700">
+                              <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                                 {`${currentSentenceIndex + 1} / ${
                                   storyData?.sentences?.length || 0
                                 }`}
@@ -2189,8 +2195,8 @@ export default function StoryMode({
                               height={12}
                               start="#48bb78"
                               end="#38b2ac"
-                              bg="rgba(255,255,255,0.15)"
-                              border="rgba(255,255,255,0.2)"
+                              bg={APP_SURFACE_MUTED}
+                              border={APP_BORDER}
                             />
                           </Box>
                         </Box>

@@ -24,6 +24,21 @@ const duoGreen = {
   900: "#2f7cf7",
 };
 
+const appGray = {
+  50: "#f8fafc",
+  100: "#e5e7eb",
+  200: "#cbd5e1",
+  300: "#94a3b8",
+  400: "#64748b",
+  500: "#475569",
+  600: "#334155",
+  700: "#1f2937",
+  750: "#182031",
+  800: "#111827",
+  900: "#0b1220",
+  950: "#030712",
+};
+
 // -------------------------------------------------------
 // Buttons (flat press effect by default)
 // -------------------------------------------------------
@@ -91,28 +106,35 @@ const duoSolid = defineStyle((props) => {
 });
 
 // Minimal OUTLINE (no press effect, neutral surface)
-const duoOutline = defineStyle((props) => {
-  const border = "gray.700";
+const duoOutline = defineStyle(() => {
   return {
-    bg: "gray.900",
-    color: "gray.100",
+    bg: "var(--app-surface-elevated)",
+    color: "var(--app-text-primary)",
     borderWidth: "1px",
-    borderColor: border,
+    borderColor: "var(--app-border)",
     boxShadow: "none",
     transform: "none",
-    _hover: { bg: "gray.800" },
-    _active: { bg: "gray.800", boxShadow: "none", transform: "none" },
+    _hover: { bg: "var(--app-surface-muted)" },
+    _active: {
+      bg: "var(--app-surface-muted)",
+      boxShadow: "none",
+      transform: "none",
+    },
   };
 });
 
 // Minimal GHOST (fully transparent, no press effect)
 const duoGhost = defineStyle(() => ({
   bg: "transparent",
-  color: "gray.100",
+  color: "inherit",
   boxShadow: "none",
   transform: "none",
-  _hover: { bg: "gray.800" },
-  _active: { bg: "gray.800", boxShadow: "none", transform: "none" },
+  _hover: { bg: "var(--app-surface-muted)" },
+  _active: {
+    bg: "var(--app-surface-muted)",
+    boxShadow: "none",
+    transform: "none",
+  },
 }));
 
 const Button = defineStyleConfig({
@@ -155,26 +177,26 @@ const IconButton = defineStyleConfig({
 const minimalMenu = definePartsStyle(() => ({
   // Dropdown panel
   list: {
-    bg: "gray.900",
-    color: "gray.100",
+    bg: "var(--app-surface-elevated)",
+    color: "var(--app-text-primary)",
     border: "1px solid",
-    borderColor: "gray.700",
+    borderColor: "var(--app-border)",
     rounded: "lg",
-    boxShadow: "none",
+    boxShadow: "var(--app-shadow-soft)",
     p: "6px",
   },
 
   // Items (applies to MenuItem & MenuItemOption)
   item: {
     bg: "transparent",
-    color: "gray.100",
+    color: "var(--app-text-primary)",
     px: 3,
     py: 2,
     rounded: "md",
-    _hover: { bg: "gray.800" },
-    _focus: { bg: "gray.800" },
+    _hover: { bg: "var(--app-surface-muted)" },
+    _focus: { bg: "var(--app-surface-muted)" },
     _active: { bg: "teal.600", color: "white" },
-    _expanded: { bg: "gray.800" },
+    _expanded: { bg: "var(--app-surface-muted)" },
     _disabled: { opacity: 0.45, cursor: "not-allowed" },
     _checked: {
       bg: "teal.600",
@@ -190,12 +212,12 @@ const minimalMenu = definePartsStyle(() => ({
     fontSize: "xs",
     textTransform: "uppercase",
     letterSpacing: "0.02em",
-    color: "gray.400",
+    color: "var(--app-text-muted)",
   },
 
-  command: { color: "gray.400" },
+  command: { color: "var(--app-text-muted)" },
 
-  divider: { my: 1, borderColor: "gray.700" },
+  divider: { my: 1, borderColor: "var(--app-border)" },
 }));
 
 const Menu = defineMultiStyleConfig({
@@ -207,11 +229,22 @@ const Menu = defineMultiStyleConfig({
 // Export theme
 // -------------------------------------------------------
 export const theme = extendTheme({
-  colors: { duo: duoGreen },
+  colors: { duo: duoGreen, gray: appGray },
   components: {
     Button,
     IconButton,
     Menu,
+  },
+  styles: {
+    global: {
+      "html, body": {
+        bg: "var(--app-page-bg)",
+        color: "var(--app-text-primary)",
+      },
+      "::selection": {
+        background: "rgba(59, 130, 246, 0.28)",
+      },
+    },
   },
   // fonts: { heading: "Nunito, system-ui, sans-serif", body: "Nunito, system-ui, sans-serif" },
 });

@@ -18,6 +18,14 @@ import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import sparkleSound from "../assets/sparkle.mp3";
 import VoiceOrb from "./VoiceOrb";
+import {
+  getQuestionFeedbackPanelProps,
+  questionFeedbackAccent,
+  questionToneText,
+} from "./questionUiStyles";
+
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_BORDER = "var(--app-border)";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -80,14 +88,7 @@ const FeedbackRail = React.memo(
             align="stretch"
             p={4}
             borderRadius="xl"
-            bg={
-              ok
-                ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
-                : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
-            }
-            borderWidth="1px"
-            borderColor={ok ? "green.400" : "red.300"}
-            boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+            {...getQuestionFeedbackPanelProps({ ok })}
           >
             <HStack spacing={3} align="center">
               <Flex
@@ -96,18 +97,20 @@ const FeedbackRail = React.memo(
                 rounded="full"
                 align="center"
                 justify="center"
-                bg={ok ? "green.500" : "red.500"}
+                bg={ok ? questionFeedbackAccent.ok : questionFeedbackAccent.error}
                 color="white"
                 fontWeight="bold"
                 fontSize="lg"
-                boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                boxShadow="var(--question-feedback-shadow)"
                 flexShrink={0}
               >
                 {ok ? "✓" : "✖"}
               </Flex>
               <Box flex="1">
-                <Text fontWeight="semibold">{label}</Text>
-                <Text fontSize="sm" color="whiteAlpha.800">
+                <Text fontWeight="semibold" color={questionToneText.primary}>
+                  {label}
+                </Text>
+                <Text fontSize="sm" color={questionToneText.secondary}>
                   {xp > 0
                     ? `+${xp} XP`
                     : ok
@@ -152,14 +155,14 @@ const FeedbackRail = React.memo(
                   fontSize="xs"
                 >
                   <Text
-                    color="whiteAlpha.800"
+                    color={questionToneText.secondary}
                     fontWeight="semibold"
                     textAlign="center"
                   >
                     {lessonProgress.label}
                   </Text>
                   <Text
-                    color="whiteAlpha.800"
+                    color={questionToneText.secondary}
                     fontWeight="semibold"
                     textAlign="center"
                   >
@@ -219,30 +222,33 @@ const FeedbackRail = React.memo(
             <Box
               p={4}
               borderRadius="lg"
-              bg="rgba(246, 92, 174, 0.1)"
+              bg={APP_SURFACE_ELEVATED}
               borderWidth="1px"
-              borderColor="pink.400"
-              boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+              borderColor={APP_BORDER}
+              boxShadow="var(--question-feedback-shadow)"
             >
               <HStack spacing={2} mb={2}>
-                <FiHelpCircle color="var(--chakra-colors-pink-400)" />
-                <Text fontWeight="semibold" color="pink.300">
+                <FiHelpCircle color="var(--question-tool-accent)" />
+                <Text fontWeight="semibold" color={questionToneText.primary}>
                   {userLanguage === "es" ? "Explicación" : "Explanation"}
                 </Text>
               </HStack>
               <Box
                 fontSize="md"
-                color="whiteAlpha.900"
+                color={questionToneText.primary}
                 lineHeight="1.6"
                 sx={{
                   "& p": { mb: 2 },
                   "& p:last-child": { mb: 0 },
-                  "& strong": { fontWeight: "bold", color: "purple.200" },
+                  "& strong": {
+                    fontWeight: "bold",
+                    color: "var(--question-tool-accent)",
+                  },
                   "& em": { fontStyle: "italic" },
                   "& ul, & ol": { pl: 4, mb: 2 },
                   "& li": { mb: 1 },
                   "& code": {
-                    bg: "rgba(0,0,0,0.3)",
+                    bg: "var(--app-surface-muted)",
                     px: 1,
                     py: 0.5,
                     borderRadius: "sm",

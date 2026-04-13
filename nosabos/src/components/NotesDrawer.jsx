@@ -28,6 +28,16 @@ import translations from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
+import { useThemeStore } from "../useThemeStore";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -40,6 +50,14 @@ const CEFR_COLORS = {
   B2: "#F97316",
   C1: "#EF4444",
   C2: "#A855F7",
+};
+const CEFR_TEXT_COLORS = {
+  A1: "white",
+  A2: "#083344",
+  B1: "#3b2f13",
+  B2: "#431407",
+  C1: "white",
+  C2: "white",
 };
 
 // Module type labels
@@ -61,6 +79,8 @@ export default function NotesDrawer({
   const audioRef = useRef(null);
   const pcRef = useRef(null);
   const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   const lang = appLanguage === "es" ? "es" : "en";
 
@@ -78,6 +98,59 @@ export default function NotesDrawer({
   const summaryLabel = lang === "es" ? "Resumen" : "Summary";
   const lessonLabel = lang === "es" ? "Lección" : "Lesson";
   const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
+  const noteUi = useMemo(
+    () =>
+      isLightTheme
+        ? {
+            overlay: "rgba(76, 60, 40, 0.18)",
+            drawerBg: APP_SURFACE_ELEVATED,
+            drawerBorder: APP_BORDER,
+            drawerText: APP_TEXT_PRIMARY,
+            headerBorder: APP_BORDER,
+            sectionBg: APP_SURFACE,
+            sectionBgHover: APP_SURFACE_MUTED,
+            sectionBgExpanded: "#ebe0d0",
+            sectionBorder: APP_BORDER,
+            noteBg: "#f3ebdf",
+            noteBgHover: "#ece1cf",
+            notePanelBg: "#f7f0e4",
+            noteBorder: "rgba(96, 77, 56, 0.12)",
+            primaryText: APP_TEXT_PRIMARY,
+            secondaryText: APP_TEXT_SECONDARY,
+            mutedText: APP_TEXT_MUTED,
+            icon: APP_TEXT_SECONDARY,
+            moduleBadgeBg: "#433527",
+            moduleBadgeColor: "#fff8ef",
+            emptyOpacity: 0.78,
+            closeHoverBg: APP_SURFACE_MUTED,
+            shadow: APP_SHADOW,
+          }
+        : {
+            overlay: "blackAlpha.600",
+            drawerBg: "gray.900",
+            drawerBorder: undefined,
+            drawerText: "white",
+            headerBorder: "whiteAlpha.200",
+            sectionBg: "whiteAlpha.100",
+            sectionBgHover: "whiteAlpha.200",
+            sectionBgExpanded: "whiteAlpha.200",
+            sectionBorder: "transparent",
+            noteBg: "whiteAlpha.50",
+            noteBgHover: "whiteAlpha.100",
+            notePanelBg: "whiteAlpha.50",
+            noteBorder: "transparent",
+            primaryText: "white",
+            secondaryText: "gray.300",
+            mutedText: "gray.500",
+            icon: "gray.400",
+            moduleBadgeBg: undefined,
+            moduleBadgeColor: undefined,
+            emptyOpacity: 0.5,
+            closeHoverBg: "whiteAlpha.100",
+            shadow: undefined,
+          },
+    [isLightTheme],
+  );
 
   const stopAudio = () => {
     if (audioRef.current) {
@@ -179,22 +252,24 @@ export default function NotesDrawer({
         key={note.id}
         border="none"
         mb={2}
-        bg="whiteAlpha.50"
+        bg={noteUi.noteBg}
+        borderWidth="1px"
+        borderColor={noteUi.noteBorder}
         borderRadius="lg"
         overflow="hidden"
       >
         <AccordionButton
           py={3}
           px={4}
-          _hover={{ bg: "whiteAlpha.100" }}
-          _expanded={{ bg: "whiteAlpha.100" }}
+          _hover={{ bg: noteUi.noteBgHover }}
+          _expanded={{ bg: noteUi.noteBgHover }}
         >
           <VStack align="start" spacing={1} flex="1">
             {/* Example as the title */}
             <Text
               fontSize="sm"
               fontWeight="medium"
-              color="white"
+              color={noteUi.primaryText}
               noOfLines={2}
               textAlign="left"
               fontStyle="italic"
@@ -203,8 +278,10 @@ export default function NotesDrawer({
             </Text>
             <HStack spacing={2}>
               <Badge
-                variant="subtle"
-                colorScheme="gray"
+                variant={isLightTheme ? "solid" : "subtle"}
+                bg={isLightTheme ? noteUi.moduleBadgeBg : undefined}
+                color={isLightTheme ? noteUi.moduleBadgeColor : undefined}
+                colorScheme={isLightTheme ? undefined : "gray"}
                 fontSize="10px"
                 textTransform="capitalize"
               >
@@ -221,23 +298,23 @@ export default function NotesDrawer({
               >
                 {note.wasCorrect ? "✓" : "✖"}
               </Badge>
-              <Text fontSize="xs" color="gray.500">
+              <Text fontSize="xs" color={noteUi.mutedText}>
                 {formatDate(note.createdAt)} · {formatTime(note.createdAt)}
               </Text>
             </HStack>
           </VStack>
-          <AccordionIcon color="gray.400" ml={2} />
+          <AccordionIcon color={noteUi.icon} ml={2} />
         </AccordionButton>
 
-        <AccordionPanel pb={3} px={4}>
+        <AccordionPanel pb={3} px={4} bg={noteUi.notePanelBg}>
           <VStack align="stretch" spacing={2}>
             {/* Summary */}
-            <Text fontSize="sm" color="gray.300" lineHeight="tall">
+            <Text fontSize="sm" color={noteUi.secondaryText} lineHeight="tall">
               {note.summary}
             </Text>
 
             {/* Lesson details - compact inline */}
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color={noteUi.mutedText}>
               {lessonLabel}: {lessonTitle}
             </Text>
 
@@ -281,7 +358,8 @@ export default function NotesDrawer({
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
       <DrawerOverlay
-        bg="blackAlpha.600"
+        bg={noteUi.overlay}
+        backdropFilter={isLightTheme ? "blur(4px)" : undefined}
         opacity={swipeDismiss.overlayOpacity}
         transition="opacity 0.18s ease"
       />
@@ -289,10 +367,12 @@ export default function NotesDrawer({
         {...swipeDismiss.drawerContentProps}
         display="flex"
         flexDirection="column"
-        bg="gray.900"
-        color="white"
+        bg={noteUi.drawerBg}
+        color={noteUi.drawerText}
         borderTopRadius="24px"
         h="90vh"
+        borderTop={noteUi.drawerBorder ? `1px solid ${noteUi.drawerBorder}` : undefined}
+        boxShadow={noteUi.shadow}
         sx={{
           "@supports (height: 100dvh)": {
             height: "90dvh",
@@ -300,16 +380,28 @@ export default function NotesDrawer({
         }}
       >
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
-        <DrawerCloseButton color="white" top={4} right={4} />
-        <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200" pr={12}>
+        <DrawerCloseButton
+          color={noteUi.icon}
+          _hover={{ color: noteUi.primaryText, bg: noteUi.closeHoverBg }}
+          top={4}
+          right={4}
+        />
+        <DrawerHeader borderBottomWidth="1px" borderColor={noteUi.headerBorder} pr={12}>
           <Box maxW="720px" mx="auto" w="100%">
             <HStack justify="space-between" align="center">
-              <Text>{drawerTitle}</Text>
+              <Text color={noteUi.primaryText} fontWeight="semibold">
+                {drawerTitle}
+              </Text>
               {filteredNotes.length > 0 && (
                 <Button
                   size="xs"
                   variant="ghost"
-                  colorScheme="red"
+                  color={isLightTheme ? "#b45309" : undefined}
+                  _hover={
+                    isLightTheme
+                      ? { bg: noteUi.closeHoverBg, color: "#92400e" }
+                      : undefined
+                  }
                   onClick={() => clearNotesForLanguage(targetLang)}
                 >
                   {clearAllLabel}
@@ -329,7 +421,7 @@ export default function NotesDrawer({
               h="200px"
               textAlign="center"
             >
-              <Text color="gray.400" fontSize="sm">
+              <Text color={noteUi.secondaryText} fontSize="sm" maxW="520px">
                 {emptyMessage}
               </Text>
             </Flex>
@@ -351,20 +443,22 @@ export default function NotesDrawer({
                         <AccordionButton
                           py={3}
                           px={4}
-                          bg={hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
+                          bg={hasNotes ? noteUi.sectionBg : noteUi.notePanelBg}
+                          border="1px solid"
+                          borderColor={hasNotes ? noteUi.sectionBorder : noteUi.noteBorder}
                           borderRadius="lg"
                           borderBottomRadius={isExpanded ? 0 : "lg"}
-                          opacity={hasNotes ? 1 : 0.5}
+                          opacity={hasNotes ? 1 : noteUi.emptyOpacity}
                           cursor={hasNotes ? "pointer" : "not-allowed"}
                           _hover={{
-                            bg: hasNotes ? "whiteAlpha.200" : "whiteAlpha.50",
+                            bg: hasNotes ? noteUi.sectionBgHover : noteUi.notePanelBg,
                           }}
-                          _expanded={{ bg: "whiteAlpha.150" }}
+                          _expanded={{ bg: noteUi.sectionBgExpanded }}
                         >
                           <HStack flex="1" spacing={3}>
                             <Badge
                               bg={CEFR_COLORS[level]}
-                              color="white"
+                              color={CEFR_TEXT_COLORS[level] || "white"}
                               fontSize="sm"
                               fontWeight="bold"
                               px={3}
@@ -375,7 +469,7 @@ export default function NotesDrawer({
                             </Badge>
                             <Text
                               fontSize="sm"
-                              color={hasNotes ? "white" : "gray.500"}
+                              color={hasNotes ? noteUi.primaryText : noteUi.mutedText}
                               fontWeight="medium"
                             >
                               {hasNotes
@@ -391,7 +485,7 @@ export default function NotesDrawer({
                                 : noNotesLabel}
                             </Text>
                           </HStack>
-                          {hasNotes && <AccordionIcon color="gray.400" />}
+                          {hasNotes && <AccordionIcon color={noteUi.icon} />}
                         </AccordionButton>
 
                         {hasNotes && (
@@ -399,7 +493,7 @@ export default function NotesDrawer({
                             pb={4}
                             px={2}
                             pt={2}
-                            bg="whiteAlpha.50"
+                            bg={noteUi.notePanelBg}
                             borderBottomRadius="lg"
                           >
                             <Accordion allowMultiple>
@@ -416,9 +510,14 @@ export default function NotesDrawer({
           )}
           </Box>
         </DrawerBody>
-        <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
+        <DrawerFooter borderTopWidth="1px" borderColor={noteUi.headerBorder}>
           <Box maxW="720px" mx="auto" w="100%" display="flex" justifyContent="flex-end">
-            <Button variant={"ghost"} onClick={onClose}>
+            <Button
+              variant={"ghost"}
+              color={noteUi.primaryText}
+              _hover={{ bg: noteUi.closeHoverBg }}
+              onClick={onClose}
+            >
               {translations[appLanguage]["teams_drawer_close"] || "Close"}
             </Button>
           </Box>

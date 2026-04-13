@@ -36,7 +36,6 @@ import {
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -45,6 +44,7 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
+import XpProgressHeader from "./XpProgressHeader";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -2010,18 +2010,13 @@ export default function JobScript({
       <Box px={4} pt={4}>
         <Box p={3} rounded="2xl">
           <Box display="flex" justifyContent="center">
-            <HStack justify="space-between" mb={1} width="50%">
-              <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                {uiText.levelLabel} {levelNumber}
-              </Badge>
-              <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                {uiText.xp} {xp}
-              </Badge>
-            </HStack>
-          </Box>
-          <Box display="flex" justifyContent="center">
             <Box width="50%">
-              <WaveBar value={progressPct} />
+              <XpProgressHeader
+                levelText={`${uiText.levelLabel} ${levelNumber}`}
+                xpText={`${uiText.xp} ${xp}`}
+                progressPct={progressPct}
+                xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+              />
             </Box>
           </Box>
         </Box>

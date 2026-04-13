@@ -162,8 +162,8 @@ export default function CEFRLevelNavigator({
     variant: "outline",
     borderColor: "blue.300",
     borderWidth: "2px",
-    color: "blue.100",
-    bg: "whiteAlpha.50",
+    color: "var(--app-text-primary)",
+    bg: "var(--app-glass-bg-soft)",
 
     px: 4,
     py: 3,
@@ -190,22 +190,22 @@ export default function CEFRLevelNavigator({
               px={4}
               py={2}
               borderRadius="16px"
-              bg="rgba(10, 14, 28, 0.82)"
+              bg="var(--app-glass-bg)"
               bgGradient={`linear(135deg, ${levelInfo.color}20, ${levelInfo.color}10)`}
               backdropFilter="blur(10px)"
               border="2px solid"
               borderColor={`${levelInfo.color}55`}
-              color="white"
+              color="var(--app-text-primary)"
               fontSize="md"
               fontWeight="black"
-              boxShadow={`0 8px 24px ${levelInfo.color}22, 0 4px 12px rgba(0, 0, 0, 0.28)`}
+              boxShadow={`0 8px 24px ${levelInfo.color}22, 0 4px 12px rgba(0, 0, 0, 0.12)`}
             >
               {levelInfo.displayLabel || activeCEFRLevel}
             </Badge>
             <Text
               fontSize="md"
               fontWeight="bold"
-              color="white"
+              color="var(--app-text-primary)"
               textAlign={"center"}
             >
               {levelInfo.name[getAppLanguage()] || levelInfo.name.en}

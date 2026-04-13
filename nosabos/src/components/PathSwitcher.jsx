@@ -44,21 +44,16 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
   ];
 
   return (
-    <Box
-      mb={6}
-      display="flex"
-      justifyContent="center"
-      width="100%"
-    >
+    <Box mb={6} display="flex" justifyContent="center" width="100%">
       <HStack
         spacing={2}
-        bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+        bg="var(--app-glass-bg-soft)"
         backdropFilter="blur(10px)"
         p={1.5}
         borderRadius="full"
         border="1px solid"
-        borderColor="whiteAlpha.200"
-        boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+        borderColor="var(--app-border)"
+        boxShadow="var(--app-shadow-soft)"
         display="inline-flex"
       >
         {modes.map((mode) => {
@@ -74,22 +69,24 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
               px={6}
               py={2}
               h="auto"
-              bg={isSelected ? "whiteAlpha.200" : "transparent"}
-              color={isSelected ? "white" : "gray.400"}
+              bg={isSelected ? "var(--app-surface-muted)" : "transparent"}
+              color={isSelected ? "var(--app-text-primary)" : "var(--app-text-muted)"}
               fontWeight={isSelected ? "bold" : "medium"}
               border={isSelected ? "1px solid" : "none"}
-              borderColor={isSelected ? "whiteAlpha.300" : "transparent"}
+              borderColor={isSelected ? "var(--app-border-strong)" : "transparent"}
               boxShadow={
-                isSelected ? "0 2px 12px rgba(255, 255, 255, 0.15)" : "none"
+                isSelected ? "var(--app-shadow-soft)" : "none"
               }
               _hover={{
-                bg: isSelected ? "whiteAlpha.250" : "whiteAlpha.100",
-                color: "white",
+                bg: isSelected
+                  ? "var(--app-surface-muted)"
+                  : "var(--app-glass-bg-soft)",
+                color: "var(--app-text-primary)",
               }}
               _active={{
-                bg: "whiteAlpha.300",
-                color: "white",
-                borderColor: "whiteAlpha.400",
+                bg: "var(--app-surface-muted)",
+                color: "var(--app-text-primary)",
+                borderColor: "var(--app-border-strong)",
                 transform: "scale(0.97)",
               }}
               transition="background 0.1s, color 0.1s, border-color 0.1s"

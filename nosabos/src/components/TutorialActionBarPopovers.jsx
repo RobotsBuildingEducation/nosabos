@@ -28,8 +28,19 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
+import { useThemeStore } from "../useThemeStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Keep the tutorial card lively without scaling the layout box.
 const glowKeyframes = keyframes`
@@ -127,6 +138,8 @@ export default function TutorialActionBarPopovers({
   const [arrowOffset, setArrowOffset] = useState(null);
   const popoverRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   // Measure the target button and compute arrow position
   const measureArrow = useCallback(
@@ -213,6 +226,62 @@ export default function TutorialActionBarPopovers({
     currentButton.id === "back" || currentButton.id === "settings";
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === activeExplanations.length - 1;
+  const accentColor = isLightTheme ? "#6B6EF6" : "#8B5CF6";
+  const accentGlow = isLightTheme
+    ? "linear-gradient(135deg, rgba(107, 110, 246, 0.16) 0%, rgba(244, 114, 182, 0.1) 100%)"
+    : "linear-gradient(135deg, rgba(34, 211, 238, 0.35) 0%, rgba(167, 139, 250, 0.28) 100%)";
+  const popoverBackground = isLightTheme
+    ? "linear-gradient(180deg, rgba(255, 251, 245, 0.98) 0%, rgba(247, 239, 226, 0.96) 100%)"
+    : "linear-gradient(135deg, rgba(95, 51, 189, 0.95) 0%, rgba(131, 61, 244, 0.95) 100%)";
+  const popoverBorder = isLightTheme ? APP_BORDER : "cyan";
+  const popoverShadow = isLightTheme
+    ? "0 18px 40px rgba(120, 94, 61, 0.18), 0 8px 22px rgba(107, 110, 246, 0.12)"
+    : "0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255,255,255,0.1)";
+  const iconChipBackground = isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200";
+  const iconChipBorder = isLightTheme ? APP_BORDER : "transparent";
+  const headingColor = isLightTheme ? APP_TEXT_PRIMARY : "white";
+  const bodyColor = isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.900";
+  const inactiveDotColor = isLightTheme ? APP_BORDER_STRONG : "whiteAlpha.400";
+  const counterColor = isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.800";
+  const navButtonStyles = isLightTheme
+    ? {
+        bg: APP_SURFACE,
+        color: accentColor,
+        border: `1px solid ${APP_BORDER}`,
+        boxShadow: "0px 3px 0px rgba(122, 94, 61, 0.22)",
+        _hover: {
+          bg: APP_SURFACE_ELEVATED,
+          transform: "translateY(1px)",
+          boxShadow: "0px 2px 0px rgba(122, 94, 61, 0.22)",
+        },
+        _active: {
+          transform: "translateY(3px)",
+          boxShadow: "0px 0px 0px rgba(122, 94, 61, 0.22)",
+        },
+      }
+    : {
+        color: "white",
+        colorScheme: "purple",
+      };
+  const doneButtonStyles = isLightTheme
+    ? {
+        bg: "linear-gradient(135deg, #6B6EF6 0%, #8E73F3 100%)",
+        color: "white",
+        border: "none",
+        boxShadow: "0px 4px 0px rgba(92, 86, 186, 0.45)",
+        _hover: {
+          bg: "linear-gradient(135deg, #6164ec 0%, #846ae9 100%)",
+          transform: "translateY(1px)",
+          boxShadow: "0px 3px 0px rgba(92, 86, 186, 0.45)",
+        },
+        _active: {
+          transform: "translateY(4px)",
+          boxShadow: "0px 0px 0px rgba(92, 86, 186, 0.45)",
+        },
+      }
+    : {
+        colorScheme: "purple",
+      };
 
   return (
     <Box
@@ -228,22 +297,21 @@ export default function TutorialActionBarPopovers({
       <Fade in={isVisible}>
         <Box
           position="relative"
-          bg="linear-gradient(135deg, rgba(95, 51, 189, 0.95) 0%, rgba(131, 61, 244, 0.95) 100%)"
+          bg={popoverBackground}
           borderRadius="2xl"
           p={5}
-          boxShadow="0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255,255,255,0.1)"
+          boxShadow={isLightTheme ? `${APP_SHADOW}, ${popoverShadow}` : popoverShadow}
           backdropFilter="blur(12px)"
-          border="1px solid cyan"
+          border={`1px solid ${popoverBorder}`}
           isolation="isolate"
           _before={{
             content: '""',
             position: "absolute",
             inset: "-4px",
             borderRadius: "inherit",
-            background:
-              "linear-gradient(135deg, rgba(34, 211, 238, 0.35) 0%, rgba(167, 139, 250, 0.28) 100%)",
-            filter: "blur(16px)",
-            opacity: 0.32,
+            background: accentGlow,
+            filter: isLightTheme ? "blur(22px)" : "blur(16px)",
+            opacity: isLightTheme ? 0.46 : 0.32,
             zIndex: -1,
             pointerEvents: "none",
             animation: `${glowKeyframes} 2.4s ease-in-out infinite`,
@@ -253,7 +321,8 @@ export default function TutorialActionBarPopovers({
             {/* Icon and Label */}
             <HStack spacing={3}>
               <Box
-                bg="whiteAlpha.200"
+                bg={iconChipBackground}
+                border={isLightTheme ? `1px solid ${iconChipBorder}` : "none"}
                 borderRadius="xl"
                 p={3}
                 display="flex"
@@ -261,12 +330,12 @@ export default function TutorialActionBarPopovers({
                 justifyContent="center"
               >
                 {isChakraIcon ? (
-                  <Icon boxSize={6} color="white" />
+                  <Icon boxSize={6} color={headingColor} />
                 ) : (
-                  <Icon size={24} color="white" />
+                  <Icon size={24} color={headingColor} />
                 )}
               </Box>
-              <Text fontSize="lg" fontWeight="bold" color="white">
+              <Text fontSize="lg" fontWeight="bold" color={headingColor}>
                 {currentButton.label[lang]}
               </Text>
             </HStack>
@@ -274,7 +343,7 @@ export default function TutorialActionBarPopovers({
             {/* Description */}
             <Text
               fontSize="sm"
-              color="whiteAlpha.900"
+              color={bodyColor}
               textAlign="center"
               lineHeight="1.5"
             >
@@ -289,7 +358,7 @@ export default function TutorialActionBarPopovers({
                   w="8px"
                   h="8px"
                   borderRadius="full"
-                  bg={index === currentStep ? "white" : "whiteAlpha.400"}
+                  bg={index === currentStep ? accentColor : inactiveDotColor}
                   transition="background 0.3s ease"
                 />
               ))}
@@ -303,14 +372,13 @@ export default function TutorialActionBarPopovers({
                 isDisabled={isFirstStep}
                 aria-label={lang === "es" ? "Anterior" : "Previous"}
                 size="sm"
-                color="white"
-                colorScheme="purple"
+                {...navButtonStyles}
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
               />
 
               <Text
                 fontSize="xs"
-                color="whiteAlpha.800"
+                color={counterColor}
                 minW="60px"
                 textAlign="center"
               >
@@ -320,9 +388,9 @@ export default function TutorialActionBarPopovers({
               {isLastStep ? (
                 <Button
                   size="sm"
-                  colorScheme="purple"
                   onClick={handleFinish}
                   px={4}
+                  {...doneButtonStyles}
                 >
                   {lang === "es" ? "Listo" : "Done"}
                 </Button>
@@ -332,8 +400,7 @@ export default function TutorialActionBarPopovers({
                   onClick={handleNext}
                   aria-label={lang === "es" ? "Siguiente" : "Next"}
                   size="sm"
-                  color="white"
-                  colorScheme="purple"
+                  {...navButtonStyles}
                 />
               )}
             </HStack>
@@ -353,7 +420,12 @@ export default function TutorialActionBarPopovers({
             h={0}
             borderLeft="12px solid transparent"
             borderRight="12px solid transparent"
-            borderTop="12px solid rgba(139, 92, 246, 0.95)"
+            borderTop={`12px solid ${isLightTheme ? "rgba(247, 239, 226, 0.98)" : "rgba(139, 92, 246, 0.95)"}`}
+            filter={
+              isLightTheme
+                ? "drop-shadow(0 6px 8px rgba(120, 94, 61, 0.18))"
+                : "none"
+            }
             transition="transform 0.22s ease"
             willChange="transform"
           />

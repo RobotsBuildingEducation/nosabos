@@ -52,6 +52,8 @@ import {
   usaFlag,
 } from "./flagsIcons/flags";
 import RandomCharacter from "./RandomCharacter";
+import ThemeModeField from "./ThemeModeField";
+import { useThemeStore } from "../useThemeStore";
 
 const BASE_PATH = "/onboarding";
 const stepContentReveal = keyframes`
@@ -87,6 +89,8 @@ export default function Onboarding({
   const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
   const [supportLang, setSupportLang] = useState(initialSupportLang);
   const ui = translations[supportLang] || translations.en;
+  const storedThemeMode = useThemeStore((s) => s.themeMode);
+  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
   const defaults = useMemo(() => {
     return {
@@ -110,8 +114,14 @@ export default function Onboarding({
         typeof initialDraft.soundVolume === "number"
           ? initialDraft.soundVolume
           : 40,
+      themeMode:
+        initialDraft.themeMode === "light"
+          ? "light"
+          : storedThemeMode === "light"
+            ? "light"
+            : "dark",
     };
-  }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
+  }, [initialDraft, initialSupportLang, storedThemeMode, ui.DEFAULT_PERSONA]);
 
   const [level, setLevel] = useState(defaults.level);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
@@ -119,11 +129,16 @@ export default function Onboarding({
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
   const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
+  const [themeMode, setThemeMode] = useState(defaults.themeMode);
   const playSound = useSoundSettings((s) => s.playSound);
   const setGlobalVolume = useSoundSettings((s) => s.setVolume);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    syncThemeMode(themeMode);
+  }, [syncThemeMode, themeMode]);
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
@@ -272,6 +287,7 @@ export default function Onboarding({
         pauseMs,
         soundEnabled,
         soundVolume,
+        themeMode,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
@@ -305,8 +321,8 @@ export default function Onboarding({
     practiceLanguageOptions[0];
   const stepLabels =
     supportLang === "es"
-      ? ["Idiomas", "Voz", "Sonido"]
-      : ["Languages", "Voice", "Sound"];
+      ? ["Idiomas", "Voz", "Efectos"]
+      : ["Languages", "Voice", "Effects"];
 
   return (
     <Box
@@ -320,7 +336,7 @@ export default function Onboarding({
       }}
     >
       <Drawer isOpen={true} placement="bottom" onClose={() => {}}>
-        <DrawerOverlay bg="blackAlpha.700" />
+        <DrawerOverlay bg="var(--app-overlay)" />
         <DrawerContent
           bg="gray.900"
           color="gray.100"
@@ -379,7 +395,7 @@ export default function Onboarding({
                         <Box
                           h="8px"
                           borderRadius="full"
-                          bg="whiteAlpha.120"
+                          bg="var(--app-border)"
                           position="relative"
                           overflow="hidden"
                         >
@@ -650,7 +666,6 @@ export default function Onboarding({
                   {/* ── Step 3: Extra ── */}
                   {step === 2 && (
                     <>
-                      {/* Sound Effects toggle */}
                       <Box bg="gray.800" p={3} rounded="md">
                         <HStack justifyContent="space-between">
                           <Text fontSize="sm">
@@ -670,8 +685,14 @@ export default function Onboarding({
                               "Sound effects are muted."}
                         </Text>
                         {soundEnabled && (
-                          <VStack mt={3} spacing={3} align="center">
-                            <Box w="100%">
+                          <HStack
+                            mt={3}
+                            spacing={4}
+                            align="end"
+                            w="100%"
+                            flexWrap="wrap"
+                          >
+                            <Box flex="1" minW="240px">
                               <HStack justify="space-between" mb={2} mt={3}>
                                 <Text fontSize="sm">
                                   {ui.sound_volume_label || "Volume"}
@@ -707,13 +728,22 @@ export default function Onboarding({
                               size="sm"
                               variant="outline"
                               onClick={() => playSound(submitActionSound)}
-                              mt={4}
+                              mb={1}
                             >
                               {ui.test_sound || "Test sound"}
                             </Button>
-                          </VStack>
+                          </HStack>
                         )}
                       </Box>
+
+                      <ThemeModeField
+                        value={themeMode}
+                        onChange={(nextMode) => {
+                          playSound(selectSound);
+                          setThemeMode(nextMode);
+                        }}
+                        t={ui}
+                      />
                     </>
                   )}
                 </VStack>

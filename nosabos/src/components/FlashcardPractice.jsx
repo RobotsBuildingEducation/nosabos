@@ -62,6 +62,7 @@ import selectSound from "../assets/select.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
+import { useThemeStore } from "../useThemeStore";
 import {
   buildFlashcardReviewUpdate,
   FLASHCARD_REVIEW_STATES,
@@ -70,6 +71,15 @@ import {
 } from "../utils/flashcardReview";
 
 const MotionBox = motion(Box);
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -152,7 +162,7 @@ Where <xp_amount> is 4-7 based on:
 `.trim();
 }
 
-function getFlashcardModalTrimTheme(card, cefrColor) {
+function getFlashcardModalTrimTheme(card, cefrColor, isLightTheme) {
   const practiceStatus =
     card?.practiceStatus ||
     (card?.reviewState === FLASHCARD_REVIEW_STATES.DUE
@@ -166,28 +176,42 @@ function getFlashcardModalTrimTheme(card, cefrColor) {
   switch (practiceStatus) {
     case "due":
       return {
-        borderColor: "rgba(251, 191, 36, 0.55)",
-        ringColor: "rgba(251, 191, 36, 0.22)",
+        borderColor: isLightTheme
+          ? "rgba(181, 137, 71, 0.34)"
+          : "rgba(251, 191, 36, 0.55)",
+        ringColor: isLightTheme
+          ? "rgba(181, 137, 71, 0.1)"
+          : "rgba(251, 191, 36, 0.22)",
       };
     case "weak":
       return {
-        borderColor: "rgba(244, 114, 182, 0.36)",
-        ringColor: "rgba(244, 114, 182, 0.18)",
+        borderColor: isLightTheme
+          ? "rgba(194, 103, 132, 0.3)"
+          : "rgba(244, 114, 182, 0.36)",
+        ringColor: isLightTheme
+          ? "rgba(194, 103, 132, 0.1)"
+          : "rgba(244, 114, 182, 0.18)",
       };
     case "learning":
       return {
-        borderColor: "rgba(45, 212, 191, 0.34)",
-        ringColor: "rgba(45, 212, 191, 0.18)",
+        borderColor: isLightTheme
+          ? "rgba(69, 145, 122, 0.28)"
+          : "rgba(45, 212, 191, 0.34)",
+        ringColor: isLightTheme
+          ? "rgba(69, 145, 122, 0.1)"
+          : "rgba(45, 212, 191, 0.18)",
       };
     case "scheduled":
       return {
-        borderColor: "rgba(255, 255, 255, 0.22)",
-        ringColor: "rgba(255, 255, 255, 0.12)",
+        borderColor: isLightTheme ? APP_BORDER : "rgba(255, 255, 255, 0.22)",
+        ringColor: isLightTheme
+          ? "rgba(122, 94, 61, 0.08)"
+          : "rgba(255, 255, 255, 0.12)",
       };
     default:
       return {
-        borderColor: `${cefrColor.primary}80`,
-        ringColor: `${cefrColor.primary}26`,
+        borderColor: isLightTheme ? `${cefrColor.primary}52` : `${cefrColor.primary}80`,
+        ringColor: isLightTheme ? `${cefrColor.primary}14` : `${cefrColor.primary}26`,
       };
   }
 }
@@ -225,6 +249,8 @@ export default function FlashcardPractice({
   const audioRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   // Notes store
   const addNote = useNotesStore((s) => s.addNote);
@@ -233,8 +259,8 @@ export default function FlashcardPractice({
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const modalTrimTheme = useMemo(
-    () => getFlashcardModalTrimTheme(card, cefrColor),
-    [card, cefrColor],
+    () => getFlashcardModalTrimTheme(card, cefrColor, isLightTheme),
+    [card, cefrColor, isLightTheme],
   );
   const currentLanguageXp = Number(languageXp) || 0;
   const updatedTotalXp = currentLanguageXp + xpAwarded;
@@ -254,51 +280,72 @@ export default function FlashcardPractice({
     description: ratingDescription(option.rating),
   }));
   const defaultModalShell = {
-    bg: "#08142b",
-    background:
-      "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
-      "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
-      "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
-      "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
+    bg: isLightTheme ? APP_SURFACE_ELEVATED : "#08142b",
+    background: isLightTheme
+      ? "linear-gradient(180deg, rgba(255, 251, 245, 0.98) 0%, rgba(246, 237, 224, 0.98) 100%)"
+      : "radial-gradient(circle at 20% 15%, rgba(56,189,248,0.14) 0%, transparent 42%), " +
+        "radial-gradient(circle at 82% 25%, rgba(45,212,191,0.12) 0%, transparent 40%), " +
+        "radial-gradient(circle at 50% 100%, rgba(30,64,175,0.28) 0%, transparent 62%), " +
+        "linear-gradient(180deg, rgba(8,20,43,0.95) 0%, rgba(5,16,36,0.98) 100%)",
   };
   const resultTheme =
     assessmentMode === "self"
       ? {
           title: getTranslation("flashcard_rate_recall"),
-          icon: <RiEyeLine size={30} color="#93C5FD" />,
-          shellBg: "#10233d",
-          shellBorderColor: "rgba(96, 165, 250, 0.38)",
-          shellRingColor: "rgba(96, 165, 250, 0.2)",
-          shellBackground:
-            "radial-gradient(circle at 20% 15%, rgba(125,211,252,0.14) 0%, transparent 42%), " +
-            "radial-gradient(circle at 82% 22%, rgba(96,165,250,0.16) 0%, transparent 38%), " +
-            "radial-gradient(circle at 50% 100%, rgba(37,99,235,0.24) 0%, transparent 60%), " +
-            "linear-gradient(180deg, rgba(18,44,84,0.95) 0%, rgba(10,26,54,0.98) 100%)",
+          icon: (
+            <RiEyeLine
+              size={30}
+              color={isLightTheme ? "#7b8794" : "#93C5FD"}
+            />
+          ),
+          shellBg: isLightTheme ? APP_SURFACE_ELEVATED : "#10233d",
+          shellBorderColor: isLightTheme
+            ? "rgba(113, 145, 186, 0.28)"
+            : "rgba(96, 165, 250, 0.38)",
+          shellRingColor: isLightTheme
+            ? "rgba(113, 145, 186, 0.08)"
+            : "rgba(96, 165, 250, 0.2)",
+          shellBackground: isLightTheme
+            ? "linear-gradient(180deg, rgba(249, 247, 243, 0.98) 0%, rgba(236, 242, 250, 0.96) 100%)"
+            : "radial-gradient(circle at 20% 15%, rgba(125,211,252,0.14) 0%, transparent 42%), " +
+              "radial-gradient(circle at 82% 22%, rgba(96,165,250,0.16) 0%, transparent 38%), " +
+              "radial-gradient(circle at 50% 100%, rgba(37,99,235,0.24) 0%, transparent 60%), " +
+              "linear-gradient(180deg, rgba(18,44,84,0.95) 0%, rgba(10,26,54,0.98) 100%)",
         }
       : isCorrect
         ? {
             title: getTranslation("flashcard_correct"),
             icon: <RiCheckLine size={32} color="#22C55E" />,
-            shellBg: "#1c6668",
-            shellBorderColor: "rgba(74, 222, 128, 0.42)",
-            shellRingColor: "rgba(45, 212, 191, 0.2)",
-            shellBackground:
-              "radial-gradient(circle at 20% 15%, rgba(74,222,128,0.14) 0%, transparent 40%), " +
-              "radial-gradient(circle at 82% 20%, rgba(45,212,191,0.18) 0%, transparent 38%), " +
-              "radial-gradient(circle at 50% 100%, rgba(34,197,94,0.16) 0%, transparent 60%), " +
-              "linear-gradient(180deg, rgba(58,155,155,0.95) 0%, rgba(49,140,140,0.98) 100%)",
+            shellBg: isLightTheme ? APP_SURFACE_ELEVATED : "#1c6668",
+            shellBorderColor: isLightTheme
+              ? "rgba(74, 160, 112, 0.28)"
+              : "rgba(74, 222, 128, 0.42)",
+            shellRingColor: isLightTheme
+              ? "rgba(74, 160, 112, 0.08)"
+              : "rgba(45, 212, 191, 0.2)",
+            shellBackground: isLightTheme
+              ? "linear-gradient(180deg, rgba(248, 250, 244, 0.98) 0%, rgba(230, 242, 234, 0.98) 100%)"
+              : "radial-gradient(circle at 20% 15%, rgba(74,222,128,0.14) 0%, transparent 40%), " +
+                "radial-gradient(circle at 82% 20%, rgba(45,212,191,0.18) 0%, transparent 38%), " +
+                "radial-gradient(circle at 50% 100%, rgba(34,197,94,0.16) 0%, transparent 60%), " +
+                "linear-gradient(180deg, rgba(58,155,155,0.95) 0%, rgba(49,140,140,0.98) 100%)",
           }
         : {
             title: getTranslation("flashcard_incorrect"),
             icon: <RiCloseLine size={32} color="#EF4444" />,
-            shellBg: "#6b1d25",
-            shellBorderColor: "rgba(248, 113, 113, 0.5)",
-            shellRingColor: "rgba(239, 68, 68, 0.24)",
-            shellBackground:
-              "radial-gradient(circle at 20% 15%, rgba(251,113,133,0.12) 0%, transparent 40%), " +
-              "radial-gradient(circle at 82% 20%, rgba(248,113,113,0.18) 0%, transparent 36%), " +
-              "radial-gradient(circle at 50% 100%, rgba(127,29,29,0.22) 0%, transparent 60%), " +
-              "linear-gradient(180deg, rgba(112,28,39,0.96) 0%, rgba(96,22,32,0.98) 100%)",
+            shellBg: isLightTheme ? APP_SURFACE_ELEVATED : "#6b1d25",
+            shellBorderColor: isLightTheme
+              ? "rgba(198, 112, 126, 0.3)"
+              : "rgba(248, 113, 113, 0.5)",
+            shellRingColor: isLightTheme
+              ? "rgba(198, 112, 126, 0.08)"
+              : "rgba(239, 68, 68, 0.24)",
+            shellBackground: isLightTheme
+              ? "linear-gradient(180deg, rgba(252, 246, 246, 0.98) 0%, rgba(248, 233, 236, 0.98) 100%)"
+              : "radial-gradient(circle at 20% 15%, rgba(251,113,133,0.12) 0%, transparent 40%), " +
+                "radial-gradient(circle at 82% 20%, rgba(248,113,113,0.18) 0%, transparent 36%), " +
+                "radial-gradient(circle at 50% 100%, rgba(127,29,29,0.22) 0%, transparent 60%), " +
+                "linear-gradient(180deg, rgba(112,28,39,0.96) 0%, rgba(96,22,32,0.98) 100%)",
           };
   const modalShellTheme = showResult
     ? {
@@ -331,36 +378,52 @@ export default function FlashcardPractice({
   };
   const reviewButtonThemes = {
     again: {
-      bg: "#d45b88",
-      hoverBg: "#dc7098",
-      activeBg: "#c54d79",
-      borderColor: "rgba(255, 227, 237, 0.38)",
-      shadow: "0px 4px 0px #8f2950",
-      activeShadow: "0px 2px 0px #8f2950",
+      bg: isLightTheme ? "#ddb4c3" : "#d45b88",
+      hoverBg: isLightTheme ? "#d7a8ba" : "#dc7098",
+      activeBg: isLightTheme ? "#cf9bad" : "#c54d79",
+      borderColor: isLightTheme
+        ? "rgba(176, 94, 122, 0.32)"
+        : "rgba(255, 227, 237, 0.38)",
+      shadow: isLightTheme ? "0px 3px 0px #c993a3" : "0px 4px 0px #8f2950",
+      activeShadow: isLightTheme ? "0px 1px 0px #c993a3" : "0px 2px 0px #8f2950",
+      textColor: isLightTheme ? "#432b33" : "white",
+      delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
     hard: {
-      bg: "#d4951f",
-      hoverBg: "#deA637",
-      activeBg: "#c78612",
-      borderColor: "rgba(255, 239, 204, 0.38)",
-      shadow: "0px 4px 0px #8a5300",
-      activeShadow: "0px 2px 0px #8a5300",
+      bg: isLightTheme ? "#e0c28d" : "#d4951f",
+      hoverBg: isLightTheme ? "#dbb777" : "#deA637",
+      activeBg: isLightTheme ? "#d3ab60" : "#c78612",
+      borderColor: isLightTheme
+        ? "rgba(154, 109, 36, 0.28)"
+        : "rgba(255, 239, 204, 0.38)",
+      shadow: isLightTheme ? "0px 3px 0px #bf9b62" : "0px 4px 0px #8a5300",
+      activeShadow: isLightTheme ? "0px 1px 0px #bf9b62" : "0px 2px 0px #8a5300",
+      textColor: isLightTheme ? "#4a3921" : "white",
+      delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
     good: {
-      bg: "#27c1a5",
-      hoverBg: "#38ceb3",
-      activeBg: "#19b197",
-      borderColor: "rgba(213, 255, 247, 0.34)",
-      shadow: "0px 4px 0px #0c7a6d",
-      activeShadow: "0px 2px 0px #0c7a6d",
+      bg: isLightTheme ? "#abd8ca" : "#27c1a5",
+      hoverBg: isLightTheme ? "#9fcebf" : "#38ceb3",
+      activeBg: isLightTheme ? "#92c3b4" : "#19b197",
+      borderColor: isLightTheme
+        ? "rgba(68, 135, 122, 0.24)"
+        : "rgba(213, 255, 247, 0.34)",
+      shadow: isLightTheme ? "0px 3px 0px #88b8aa" : "0px 4px 0px #0c7a6d",
+      activeShadow: isLightTheme ? "0px 1px 0px #88b8aa" : "0px 2px 0px #0c7a6d",
+      textColor: isLightTheme ? "#2d403a" : "white",
+      delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
     easy: {
-      bg: "#62b0ff",
-      hoverBg: "#77bcff",
-      activeBg: "#4ea4fa",
-      borderColor: "rgba(226, 242, 255, 0.36)",
-      shadow: "0px 4px 0px #2f6fda",
-      activeShadow: "0px 2px 0px #2f6fda",
+      bg: isLightTheme ? "#b5cdea" : "#62b0ff",
+      hoverBg: isLightTheme ? "#a6c1e2" : "#77bcff",
+      activeBg: isLightTheme ? "#97b4d9" : "#4ea4fa",
+      borderColor: isLightTheme
+        ? "rgba(90, 124, 169, 0.26)"
+        : "rgba(226, 242, 255, 0.36)",
+      shadow: isLightTheme ? "0px 3px 0px #93afd2" : "0px 4px 0px #2f6fda",
+      activeShadow: isLightTheme ? "0px 1px 0px #93afd2" : "0px 2px 0px #2f6fda",
+      textColor: isLightTheme ? "#314256" : "white",
+      delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
   };
 
@@ -851,7 +914,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
-      <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.700" />
+      <ModalOverlay
+        backdropFilter={isLightTheme ? "blur(4px)" : "blur(8px)"}
+        bg={isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700"}
+      />
       <ModalContent
         bg={modalShellTheme.bg}
         borderRadius="2xl"
@@ -859,7 +925,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         mx={{ base: "1%", md: 0 }}
         h={{ base: "calc(100vh - 2rem)", md: "620px" }}
         maxH="calc(100vh - 2rem)"
-        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px ${modalShellTheme.ringColor}`}
+        boxShadow={
+          isLightTheme
+            ? `${APP_SHADOW}, 0 0 0 1px ${modalShellTheme.ringColor}`
+            : `0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 2px ${modalShellTheme.ringColor}`
+        }
         border="2px solid"
         borderColor={modalShellTheme.borderColor}
         position="relative"
@@ -871,7 +941,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             position: "absolute",
             inset: 0,
             background: modalShellTheme.background,
-            animation: "matrixGlowShift 10s ease-in-out infinite",
+            animation: isLightTheme
+              ? "none"
+              : "matrixGlowShift 10s ease-in-out infinite",
             zIndex: 0,
             borderRadius: "2xl",
           },
@@ -879,11 +951,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             content: '""',
             position: "absolute",
             inset: 0,
-            backgroundImage:
-              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
-              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
-            opacity: 0.45,
-            mixBlendMode: "screen",
+            backgroundImage: isLightTheme
+              ? "repeating-linear-gradient(0deg, rgba(96,77,56,0.03) 0px, rgba(96,77,56,0.03) 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, rgba(96,77,56,0.026) 0px, rgba(96,77,56,0.026) 1px, transparent 1px, transparent 28px)"
+              : "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+            opacity: isLightTheme ? 0.28 : 0.45,
+            mixBlendMode: isLightTheme ? "normal" : "screen",
             zIndex: 0,
             borderRadius: "2xl",
           },
@@ -938,7 +1011,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       >
                         <Text
                           fontSize="xs"
-                          color="whiteAlpha.800"
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                           fontWeight="medium"
                           mb={1}
                         >
@@ -949,9 +1022,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <Text
                           fontSize="3xl"
                           fontWeight="black"
-                          color="white"
+                          color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                           textAlign="center"
-                          textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                          textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
                         >
                           {getConceptText(
                             card,
@@ -965,12 +1038,16 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           left={3}
                           size="sm"
                           variant="solid"
-                          bg="white"
-                          color="blue"
-                          boxShadow="0 4px 0 blue"
+                          bg={isLightTheme ? APP_SURFACE : "white"}
+                          color={isLightTheme ? "#5d6edc" : "blue"}
+                          boxShadow={
+                            isLightTheme
+                              ? "0 2px 6px rgba(122, 94, 61, 0.12)"
+                              : "0 4px 0 blue"
+                          }
                           icon={<MdOutlineSupportAgent size={18} />}
                           onClick={handleShowAnswer}
-                          _hover={{ bg: "gray.50" }}
+                          _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "gray.50" }}
                           rounded="xl"
                         />
                       </Box>
@@ -992,7 +1069,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       >
                         <Text
                           fontSize="xs"
-                          color="white"
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                           fontWeight="medium"
                           mb={1}
                         >
@@ -1011,9 +1088,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <Text
                             fontSize="3xl"
                             fontWeight="black"
-                            color="white"
+                            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                             textAlign="center"
-                            textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                            textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
                           >
                             {streamedAnswer || "..."}
                           </Text>
@@ -1032,7 +1109,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               left={3}
                               size="sm"
                               variant="ghost"
-                              color="white"
+                              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                               icon={
                                 loadingTts ? (
                                   <Spinner size="xs" />
@@ -1041,7 +1118,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                 )
                               }
                               onClick={handleListenToAnswer}
-                              _hover={{ bg: "whiteAlpha.300" }}
+                              _hover={{
+                                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.300",
+                              }}
                               fontSize="xs"
                             />
                           )}
@@ -1050,7 +1129,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             bottom={3}
                             right={3}
                             fontSize="xs"
-                            color="white"
+                            color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                             onClick={handleFlipBack}
                           >
                             {getTranslation("flashcard_tap_to_flip")}
@@ -1075,7 +1154,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           }
                           size={48}
                         />
-                        <Text color="gray.400">
+                        <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
                           {getTranslation("flashcard_grading")}
                         </Text>
                       </VStack>
@@ -1092,8 +1171,18 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                 ? "yellow"
                                 : "teal"
                           }
-                          bg={isRecording ? SOFT_STOP_BUTTON_BG : undefined}
-                          color={isRecording ? "white" : undefined}
+                          bg={
+                            isRecording
+                              ? SOFT_STOP_BUTTON_BG
+                              : isLightTheme && !isConnecting
+                                ? "#56a89b"
+                                : undefined
+                          }
+                          color={
+                            isRecording || (isLightTheme && !isConnecting)
+                              ? "white"
+                              : undefined
+                          }
                           boxShadow={
                             isRecording ? SOFT_STOP_BUTTON_GLOW : undefined
                           }
@@ -1112,7 +1201,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             transform: "translateY(-2px)",
                             boxShadow: isRecording
                               ? SOFT_STOP_BUTTON_GLOW
-                              : `0 8px 20px ${cefrColor.primary}40`,
+                              : isLightTheme
+                                ? "0 6px 14px rgba(86, 168, 155, 0.18)"
+                                : `0 8px 20px ${cefrColor.primary}40`,
                             ...(isRecording
                               ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
                               : {}),
@@ -1134,15 +1225,22 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <Box
                             p={4}
                             borderRadius="lg"
-                            bg="whiteAlpha.100"
+                            bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
                             border="1px solid"
-                            borderColor="whiteAlpha.200"
+                            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
                             w="100%"
                           >
-                            <Text fontSize="sm" color="gray.400" mb={1}>
+                            <Text
+                              fontSize="sm"
+                              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                              mb={1}
+                            >
                               {getTranslation("flashcard_recognized")}
                             </Text>
-                            <Text fontSize="lg" color="teal.200">
+                            <Text
+                              fontSize="lg"
+                              color={isLightTheme ? "#447a70" : "teal.200"}
+                            >
                               {recognizedText}
                             </Text>
                           </Box>
@@ -1161,11 +1259,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             size="lg"
                             fontSize="16px"
                             textAlign="center"
-                            bg="#f4f5ffff"
+                            bg={isLightTheme ? APP_SURFACE_ELEVATED : "#f4f5ffff"}
                             border="2px solid"
-                            borderColor="whiteAlpha.200"
-                            color="black"
-                            _placeholder={{ color: "gray.500" }}
+                            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                            color={isLightTheme ? APP_TEXT_PRIMARY : "black"}
+                            _placeholder={{
+                              color: isLightTheme ? APP_TEXT_MUTED : "gray.500",
+                            }}
                             _focus={{
                               borderColor: cefrColor.primary,
                               boxShadow: `0 0 0 1px ${cefrColor.primary}`,
@@ -1176,13 +1276,16 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <Button
                             w="100%"
                             size="lg"
+                            bg={isLightTheme ? "#6b8ecf" : undefined}
                             color="white"
                             onClick={handleTextSubmit}
                             isDisabled={!textAnswer.trim()}
                             leftIcon={<RiKeyboardLine size={20} />}
                             _hover={{
                               transform: "translateY(-2px)",
-                              boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                              boxShadow: isLightTheme
+                                ? "0 6px 14px rgba(107, 142, 207, 0.18)"
+                                : `0 8px 20px ${cefrColor.primary}40`,
                             }}
                             padding={9}
                             _active={{ transform: "translateY(0)" }}
@@ -1196,9 +1299,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           w="100%"
                           size="md"
                           variant="ghost"
-                          color="white"
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                           onClick={handleCancel}
-                          _hover={{ bg: "whiteAlpha.100" }}
+                          _hover={{
+                            bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                          }}
                         >
                           {getTranslation("flashcard_cancel")}
                         </Button>
@@ -1221,7 +1326,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <Text
                             fontSize="2xl"
                             fontWeight="bold"
-                            color="white"
+                            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                             flex="1"
                           >
                             {resultTheme.title}
@@ -1264,7 +1369,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <VStack w="100%" spacing={3} mt={2}>
                             <Button
                               size="lg"
-                              bg="teal"
+                              bg={isLightTheme ? "#56a89b" : "teal"}
                               colorScheme="teal"
                               onClick={handleTryAgain}
                               w="100%"
@@ -1274,7 +1379,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                             <Button
                               size="lg"
-                              colorScheme="pink"
+                              colorScheme={isLightTheme ? undefined : "pink"}
+                              bg={isLightTheme ? "#d8a4b6" : undefined}
+                              color={isLightTheme ? "#432b33" : "white"}
                               variant="solid"
                               onClick={handleExplainAnswer}
                               isDisabled={
@@ -1303,9 +1410,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           w="100%"
                           p={4}
                           borderRadius="lg"
-                          bg="whiteAlpha.100"
+                          bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
                           border="1px solid"
-                          borderColor="whiteAlpha.200"
+                          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
                         >
                           <HStack justify="flex-end" mb={-1}>
                             <Popover trigger="click" placement="top-end" isLazy>
@@ -1317,21 +1424,27 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                   icon={<FiHelpCircle />}
                                   size="sm"
                                   variant="ghost"
-                                  color="whiteAlpha.900"
+                                  color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                                   onClick={() => playSound(selectSound)}
-                                  _hover={{ bg: "whiteAlpha.200" }}
-                                  _active={{ bg: "whiteAlpha.300" }}
+                                  _hover={{
+                                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
+                                  }}
+                                  _active={{
+                                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.300",
+                                  }}
                                 />
                               </PopoverTrigger>
                               <Portal>
                                 <PopoverContent
-                                  bg="rgba(15, 23, 42, 0.98)"
-                                  borderColor="whiteAlpha.300"
-                                  color="white"
+                                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "rgba(15, 23, 42, 0.98)"}
+                                  borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
+                                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                                   maxW="280px"
                                   zIndex={1600}
                                 >
-                                  <PopoverArrow bg="rgba(15, 23, 42, 0.98)" />
+                                  <PopoverArrow
+                                    bg={isLightTheme ? APP_SURFACE_ELEVATED : "rgba(15, 23, 42, 0.98)"}
+                                  />
                                   <PopoverBody py={4}>
                                     <VStack align="stretch" spacing={3}>
                                       <Text fontSize="sm" fontWeight="bold">
@@ -1342,13 +1455,13 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                           <Text
                                             fontSize="sm"
                                             fontWeight="semibold"
-                                            color="whiteAlpha.900"
+                                            color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                                           >
                                             {item.label}
                                           </Text>
                                           <Text
                                             fontSize="xs"
-                                            color="whiteAlpha.800"
+                                            color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                                             lineHeight="1.5"
                                           >
                                             {item.description}
@@ -1385,12 +1498,14 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                   whiteSpace="normal"
                                   textAlign="left"
                                   justifyContent="flex-start"
-                                  color="white"
+                                  color={buttonTheme.textColor || "white"}
                                   bg={buttonTheme.bg}
                                   border="1px solid"
                                   borderColor={
                                     isSuggested
-                                      ? "rgba(255, 255, 255, 0.78)"
+                                      ? isLightTheme
+                                        ? APP_BORDER_STRONG
+                                        : "rgba(255, 255, 255, 0.78)"
                                       : buttonTheme.borderColor
                                   }
                                   boxShadow={buttonTheme.shadow}
@@ -1425,14 +1540,22 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                     <Text
                                       fontSize="sm"
                                       fontWeight="semibold"
-                                      textShadow="0 1px 2px rgba(0,0,0,0.18)"
+                                      textShadow={
+                                        isLightTheme
+                                          ? "none"
+                                          : "0 1px 2px rgba(0,0,0,0.18)"
+                                      }
                                     >
                                       {ratingLabel(option.rating)}
                                     </Text>
                                     <Text
                                       fontSize="xs"
-                                      color="whiteAlpha.900"
-                                      textShadow="0 1px 2px rgba(0,0,0,0.16)"
+                                      color={buttonTheme.delayColor || "whiteAlpha.900"}
+                                      textShadow={
+                                        isLightTheme
+                                          ? "none"
+                                          : "0 1px 2px rgba(0,0,0,0.16)"
+                                      }
                                     >
                                       {option.delayLabel}
                                     </Text>
@@ -1450,15 +1573,21 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             w="100%"
                             p={4}
                             borderRadius="md"
-                            bg="rgba(244, 114, 182, 0.08)"
+                            bg={
+                              isLightTheme
+                                ? "rgba(194, 103, 132, 0.08)"
+                                : "rgba(244, 114, 182, 0.08)"
+                            }
                             border="1px solid"
-                            borderColor="pink.400"
-                            boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                            borderColor={
+                              isLightTheme ? "rgba(194, 103, 132, 0.24)" : "pink.400"
+                            }
+                            boxShadow={isLightTheme ? "none" : "0 4px 12px rgba(0, 0, 0, 0.2)"}
                           >
                             <Text
                               fontSize="sm"
                               fontWeight="semibold"
-                              color="pink.200"
+                              color={isLightTheme ? "#8b4f61" : "pink.200"}
                               mb={2}
                               display="flex"
                               alignItems="center"
@@ -1469,7 +1598,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                 "Explanation"}
                             </Text>
                             <Box
-                              color="white"
+                              color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                               fontSize="sm"
                               lineHeight="1.6"
                               sx={{
@@ -1477,13 +1606,15 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                                 "& p:last-child": { mb: 0 },
                                 "& strong": {
                                   fontWeight: "bold",
-                                  color: "pink.100",
+                                  color: isLightTheme ? "#7a3f52" : "pink.100",
                                 },
                                 "& em": { fontStyle: "italic" },
                                 "& ul, & ol": { pl: 4, mb: 2 },
                                 "& li": { mb: 1 },
                                 "& code": {
-                                  bg: "rgba(0,0,0,0.3)",
+                                  bg: isLightTheme
+                                    ? "rgba(96,77,56,0.08)"
+                                    : "rgba(0,0,0,0.3)",
                                   px: 1,
                                   py: 0.5,
                                   borderRadius: "sm",
@@ -1500,7 +1631,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           <VStack align="stretch" spacing={3} w="100%" p={4}>
                             <Text
                               fontSize="xs"
-                              color="whiteAlpha.800"
+                              color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                               textAlign="center"
                             >
                               {`Level ${xpLevelNumber} • Total XP ${updatedTotalXp}`}

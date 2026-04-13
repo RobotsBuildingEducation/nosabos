@@ -1,14 +1,10 @@
 import React, {
   useCallback,
   useEffect,
-  useMemo,
   useState,
-  useRef,
 } from "react";
 import {
   motion,
-  useScroll,
-  useTransform,
   AnimatePresence,
 } from "framer-motion";
 import {
@@ -26,6 +22,8 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaMicrophone,
+  FaMoon,
+  FaSun,
 } from "react-icons/fa";
 
 import VoiceOrb from "./VoiceOrb";
@@ -34,6 +32,7 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
+import { useThemeStore } from "../useThemeStore";
 import {
   LANGUAGE_FALLBACK_LABELS,
   getPracticeLanguageOptions,
@@ -50,16 +49,16 @@ import submitActionSound from "../assets/submitaction.mp3";
 const theme = {
   colors: {
     bg: {
-      deep: "#030712",
-      elevated: "rgba(15, 23, 42, 0.8)",
-      glass: "rgba(15, 23, 42, 0.4)",
+      deep: "var(--app-page-bg)",
+      elevated: "var(--app-glass-bg)",
+      glass: "var(--app-glass-bg-soft)",
       glow: "rgba(20, 184, 166, 0.08)",
     },
     text: {
-      primary: "#f8fafc",
-      secondary: "rgba(148, 163, 184, 1)",
+      primary: "var(--app-text-primary)",
+      secondary: "var(--app-text-secondary)",
       accent: "#2dd4bf",
-      muted: "rgba(100, 116, 139, 1)",
+      muted: "var(--app-text-muted)",
     },
     accent: {
       primary: "#14b8a6",
@@ -68,7 +67,7 @@ const theme = {
       warm: "#f97316",
     },
     border: {
-      subtle: "rgba(51, 65, 85, 0.5)",
+      subtle: "var(--app-border)",
       accent: "rgba(20, 184, 166, 0.3)",
     },
   },
@@ -482,6 +481,72 @@ const Logo = ({ size = 48 }) => (
   </motion.div>
 );
 
+const ThemeModeToggle = ({ themeMode, onModeChange }) => {
+  const modes = [
+    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
+    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
+  ];
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: "18px",
+        right: "20px",
+        zIndex: 120,
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "3px",
+          padding: "3px",
+          borderRadius: "999px",
+          background: theme.colors.bg.elevated,
+          backdropFilter: "blur(20px)",
+          border: `1px solid ${theme.colors.border.subtle}`,
+          boxShadow: "var(--app-shadow-soft)",
+        }}
+      >
+        {modes.map((mode) => {
+          const isActive = themeMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              aria-pressed={isActive}
+              aria-label={mode.label}
+              title={mode.label}
+              onClick={() => onModeChange(mode.id)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "34px",
+                height: "34px",
+                borderRadius: "999px",
+                border: "none",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                background: isActive
+                  ? `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`
+                  : "transparent",
+                color: isActive ? "#ffffff" : theme.colors.text.secondary,
+                boxShadow: isActive
+                  ? "0 8px 18px rgba(20, 184, 166, 0.18)"
+                  : "none",
+              }}
+            >
+              {mode.icon}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUTTON COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -600,7 +665,7 @@ const Input = ({
       padding: "16px 20px",
       fontSize: "1rem",
       fontFamily: theme.fonts.body,
-      background: "rgba(15, 23, 42, 0.6)",
+      background: theme.colors.bg.glass,
       border: `1px solid ${theme.colors.border.subtle}`,
       borderRadius: "12px",
       color: theme.colors.text.primary,
@@ -980,6 +1045,8 @@ const LandingPage = ({ onAuthenticated }) => {
   const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
     useDecentralizedIdentity();
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
   const [lang, setLang] = useState(() => {
     const detected = detectUserLanguage();
@@ -1000,9 +1067,6 @@ const LandingPage = ({ onAuthenticated }) => {
   });
 
   const copy = translations[lang];
-
-  const { scrollYProgress } = useScroll();
-  const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
   useEffect(() => {
     setHasExtension(isNip07Available());
@@ -1129,11 +1193,24 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const values = [copy.value_1, copy.value_2, copy.value_3, copy.value_4];
 
+  const handleThemeModeChange = useCallback(
+    (nextMode) => {
+      if (nextMode === themeMode) return;
+      playSound(selectSound);
+      syncThemeMode(nextMode);
+    },
+    [playSound, syncThemeMode, themeMode],
+  );
+
   if (view === "signIn") {
     return (
       <>
         <GlobalStyles />
         <AnimatedBackground />
+        <ThemeModeToggle
+          themeMode={themeMode}
+          onModeChange={handleThemeModeChange}
+        />
         <SignInView
           copy={copy}
           onBack={() => setView("landing")}
@@ -1150,43 +1227,10 @@ const LandingPage = ({ onAuthenticated }) => {
       <GlobalStyles />
       <AnimatedBackground />
 
-      {/* Fixed Header */}
-      <motion.header
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          padding: "16px 24px",
-          background: "rgba(3, 7, 18, 0.8)",
-          backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${theme.colors.border.subtle}`,
-          opacity: headerOpacity,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "1.25rem",
-                fontWeight: 600,
-              }}
-            >
-              No Sabos
-            </span>
-          </div>
-        </div>
-      </motion.header>
+      <ThemeModeToggle
+        themeMode={themeMode}
+        onModeChange={handleThemeModeChange}
+      />
 
       {/* Hero Section */}
       <section

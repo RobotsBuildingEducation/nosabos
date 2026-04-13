@@ -61,7 +61,6 @@ import {
   getRealtimeOrbVisualState,
 } from "./realtimeArchiveStream";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -78,6 +77,8 @@ import {
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import XpProgressHeader from "./XpProgressHeader";
+import { useThemeStore } from "../useThemeStore";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -136,6 +137,36 @@ const MATRIX_PANEL_SX = {
     zIndex: 1,
   },
 };
+const PAPER_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  background:
+    "radial-gradient(circle at 18% 16%, rgba(172,142,110,0.12) 0%, transparent 42%), " +
+    "radial-gradient(circle at 82% 20%, rgba(217,192,164,0.12) 0%, transparent 38%), " +
+    "linear-gradient(180deg, rgba(255,249,242,0.98) 0%, rgba(248,241,232,0.98) 100%)",
+  "&::after": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(155,135,112,0.05) 0px, rgba(155,135,112,0.05) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.24,
+    mixBlendMode: "multiply",
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 const isoNow = () => {
   try {
     return new Date().toISOString();
@@ -463,6 +494,8 @@ function AlignedBubble({
   contentOpacity = 1,
   contentTransform = "translateY(0px) scale(1)",
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
     return React.Children.map(nodes, (node) => {
@@ -491,14 +524,16 @@ function AlignedBubble({
   return (
     <Box
       ref={containerRef}
-      bg="transparent"
+      bg={isLightTheme ? APP_SURFACE_ELEVATED : "transparent"}
       p={3}
       rounded="2xl"
-      border="1px solid rgba(255,255,255,0.06)"
-      boxShadow="0 14px 28px rgba(0,0,0,0.35)"
+      border="1px solid"
+      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
+      boxShadow={isLightTheme ? APP_SHADOW : "0 14px 28px rgba(0,0,0,0.35)"}
       maxW="100%"
       borderBottomLeftRadius="0px"
-      sx={MATRIX_PANEL_SX}
+      sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
     >
       <Box
         opacity={contentOpacity}
@@ -531,6 +566,7 @@ function AlignedBubble({
             as="p"
             fontSize="md"
             lineHeight="1.6"
+            color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
             sx={MOBILE_TEXT_SX}
             flex="1"
           >
@@ -544,6 +580,7 @@ function AlignedBubble({
             fontSize="xs"
             mt={1}
             lineHeight="1.55"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
             sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
@@ -563,10 +600,18 @@ function AlignedBubble({
                     py={2.5}
                     borderRadius="lg"
                     borderWidth="1px"
-                    borderColor={hexToRgba(color, 0.6)}
-                    background="#0b1220"
-                    boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
-                    color="whiteAlpha.900"
+                    borderColor={
+                      isLightTheme
+                        ? hexToRgba(color, 0.34)
+                        : hexToRgba(color, 0.6)
+                    }
+                    background={isLightTheme ? APP_SURFACE : "#0b1220"}
+                    boxShadow={
+                      isLightTheme
+                        ? "0 6px 16px rgba(120,94,61,0.06)"
+                        : `0 6px 18px ${hexToRgba(color, 0.12)}`
+                    }
+                    color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                     minW="0"
                     maxW="260px"
                   >
@@ -575,7 +620,9 @@ function AlignedBubble({
                     </Text>
                     <Text
                       fontSize="2xs"
-                      color="whiteAlpha.800"
+                      color={
+                        isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                      }
                       mt={1}
                       lineHeight="1.35"
                     >
@@ -626,16 +673,29 @@ function RowRight({ children }) {
   );
 }
 function UserBubble({ label, text }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   return (
     <Box
-      bg="blue.500"
-      color="white"
+      bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
       p={3}
       rounded="lg"
-      boxShadow="0 6px 20px rgba(0,0,0,0.25)"
-      border="1px solid rgba(255,255,255,0.08)"
+      boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
+      border="1px solid"
+      borderColor={
+        isLightTheme
+          ? "rgba(108, 182, 191, 0.22)"
+          : "rgba(255,255,255,0.08)"
+      }
     >
-      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
+      <Box
+        as="p"
+        fontSize="md"
+        lineHeight="1.6"
+        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+        sx={MOBILE_TEXT_SX}
+      >
         {text}
       </Box>
     </Box>
@@ -865,21 +925,16 @@ async function idbGetClip(id) {
 --------------------------- */
 export default function Conversations({
   activeNpub = "",
-  activeNsec = "",
   targetLang = "es",
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
-  auth,
-  onSwitchedAccount,
-  onSelectIdentity,
-  isIdentitySaving = false,
-  postNostrContent,
-  settingsControllerRef,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -954,7 +1009,6 @@ export default function Conversations({
     onOpen: openSettings,
     onClose: closeSettings,
   } = useDisclosure();
-  const [settingsTabIndex, setSettingsTabIndex] = useState(0);
   const {
     isOpen: isTranscriptOpen,
     onOpen: openTranscript,
@@ -962,12 +1016,6 @@ export default function Conversations({
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
     playSound(selectSound);
-    setSettingsTabIndex(0);
-    openSettings();
-  }, [openSettings, playSound]);
-  const handleAccountOpen = useCallback(() => {
-    playSound(selectSound);
-    setSettingsTabIndex(1);
     openSettings();
   }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
@@ -1051,21 +1099,6 @@ export default function Conversations({
       }, 150);
     }
   }, [closeSettings, scrollConversationToTop]);
-
-  useEffect(() => {
-    if (!settingsControllerRef) return undefined;
-
-    settingsControllerRef.current = {
-      openConversationSettings: handleSettingsOpen,
-      openAccountSettings: handleAccountOpen,
-    };
-
-    return () => {
-      if (settingsControllerRef.current) {
-        settingsControllerRef.current = null;
-      }
-    };
-  }, [handleAccountOpen, handleSettingsOpen, settingsControllerRef]);
 
   // XP
   const [xp, setXp] = useState(0);
@@ -1307,7 +1340,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const [isChatLogHighlighted, setIsChatLogHighlighted] = useState(false);
   const [hiddenIncomingMessageId, setHiddenIncomingMessageId] = useState(null);
   const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted);
+    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
   const shouldMuteIncomingBubble =
     hiddenIncomingMessageId != null &&
     latestAssistantMessage?.id === hiddenIncomingMessageId;
@@ -2678,13 +2711,17 @@ Do not return the whole sentence as a single chunk.`;
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={1} align="center">
           <Box
-            bg="transparent"
             p={2}
             rounded="2xl"
-            border="1px solid rgba(255,255,255,0.06)"
+            border="1px solid"
+            borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
             width="100%"
             maxWidth="400px"
-            sx={{ ...MATRIX_PANEL_SX, overflow: "visible" }}
+            sx={{
+              ...(isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX),
+              overflow: "visible",
+            }}
+            boxShadow={isLightTheme ? APP_SHADOW : undefined}
           >
             <VStack spacing={3} align="center" width="100%">
               <HStack width="100%" justify="space-between" align="center">
@@ -2692,10 +2729,13 @@ Do not return the whole sentence as a single chunk.`;
                   leftIcon={<FiSettings />}
                   size="xs"
                   variant="ghost"
-                  colorScheme="gray"
                   onClick={handleSettingsOpen}
                   opacity={0.7}
-                  _hover={{ opacity: 1 }}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                  _hover={{
+                    opacity: 1,
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                  }}
                   fontWeight="medium"
                 >
                   {uiLang === "es" ? "Configuración" : "Conversation settings"}
@@ -2731,12 +2771,13 @@ Do not return the whole sentence as a single chunk.`;
                           ],
                         )}
                         size={24}
+                        theme={isLightTheme ? "light" : "dark"}
                       />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"
                         textAlign="center"
-                        color="white"
+                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                         flex="1"
                       >
                         {streamingText ||
@@ -2751,19 +2792,24 @@ Do not return the whole sentence as a single chunk.`;
                         icon={<FaDice />}
                         size="xs"
                         variant="ghost"
-                        colorScheme="purple"
+                        color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                         aria-label={
                           uiLang === "es" ? "Nuevo tema" : "New topic"
                         }
                         onClick={handleShuffleTopic}
                         opacity={0.7}
-                        _hover={{ opacity: 1 }}
+                        bg={isLightTheme ? APP_SURFACE : undefined}
+                        _hover={{
+                          opacity: 1,
+                          bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                        }}
                         isDisabled={status === "connected"}
                       />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"
                         textAlign="center"
+                        color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                         opacity={currentGoal.completed ? 0.6 : 1}
                         textDecoration={
                           currentGoal.completed ? "line-through" : "none"
@@ -2792,23 +2838,42 @@ Do not return the whole sentence as a single chunk.`;
                                   justifyContent="center"
                                   borderRadius="full"
                                   border="1px solid"
-                                  borderColor="red.300"
-                                  bg="rgba(239,68,68,0.9)"
-                                  color="white"
+                                  borderColor={
+                                    isLightTheme
+                                      ? "rgba(165, 89, 108, 0.38)"
+                                      : "red.300"
+                                  }
+                                  bg={
+                                    isLightTheme
+                                      ? "rgba(214, 96, 122, 0.16)"
+                                      : "rgba(239,68,68,0.9)"
+                                  }
+                                  color={isLightTheme ? "#8f4a5e" : "white"}
+                                  boxShadow={
+                                    isLightTheme
+                                      ? "0 1px 0 rgba(255,255,255,0.45)"
+                                      : undefined
+                                  }
                                   verticalAlign="text-bottom"
                                   transform="translateY(-1px)"
                                   lineHeight={1}
                                 >
-                                  <FaExclamation size={6} />
+                                  <FaExclamation size={7} />
                                 </Box>
                               </PopoverTrigger>
                               <PopoverContent
-                                bg="red.900"
-                                color="red.100"
-                                borderColor="red.500"
+                                bg={isLightTheme ? APP_SURFACE : "red.900"}
+                                color={isLightTheme ? APP_TEXT_PRIMARY : "red.100"}
+                                borderColor={
+                                  isLightTheme
+                                    ? "rgba(194, 103, 132, 0.24)"
+                                    : "red.500"
+                                }
                                 maxW="320px"
                               >
-                                <PopoverArrow bg="red.900" />
+                                <PopoverArrow
+                                  bg={isLightTheme ? APP_SURFACE : "red.900"}
+                                />
                                 <PopoverBody fontSize="xs">
                                   {goalFeedback}
                                 </PopoverBody>
@@ -2819,7 +2884,7 @@ Do not return the whole sentence as a single chunk.`;
                       {currentGoal.completed && (
                         <Box
                           as={FaCheckCircle}
-                          color="green.400"
+                          color={isLightTheme ? "#5f9d8a" : "green.400"}
                           boxSize="18px"
                         />
                       )}
@@ -2835,10 +2900,14 @@ Do not return the whole sentence as a single chunk.`;
                     px={3}
                     py={1.5}
                     borderRadius="md"
-                    bg="green.900"
-                    color="green.200"
+                    bg={
+                      isLightTheme ? "rgba(86, 168, 155, 0.12)" : "green.900"
+                    }
+                    color={isLightTheme ? APP_TEXT_SECONDARY : "green.200"}
                     border="1px solid"
-                    borderColor="green.600"
+                    borderColor={
+                      isLightTheme ? "rgba(86, 168, 155, 0.24)" : "green.600"
+                    }
                     maxW="90%"
                   >
                     {goalFeedback}
@@ -2848,15 +2917,12 @@ Do not return the whole sentence as a single chunk.`;
 
               {/* XP Progress Bar */}
               <Box w="100%">
-                <HStack justifyContent="space-between" mb={1}>
-                  <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                    {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                  </Badge>
-                  <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                    {ui.ra_label_xp} {xp}
-                  </Badge>
-                </HStack>
-                <WaveBar value={progressPct} />
+                <XpProgressHeader
+                  levelText={`${uiLang === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
+                  xpText={`${ui.ra_label_xp} ${xp}`}
+                  progressPct={progressPct}
+                  xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+                />
               </Box>
             </VStack>
           </Box>
@@ -2875,15 +2941,24 @@ Do not return the whole sentence as a single chunk.`;
                   opacity={isRobotTransitioning ? 0 : 1}
                   transition="opacity 0.5s ease"
                 >
-                  <VoiceOrb state={previousOrbState} />
+                  <VoiceOrb
+                    state={previousOrbState}
+                    theme={isLightTheme ? "light" : "dark"}
+                  />
                 </Box>
               )}
               <Box opacity={1} transition="opacity 0.5s ease">
-                <VoiceOrb state={displayOrbState} />
+                <VoiceOrb
+                  state={displayOrbState}
+                  theme={isLightTheme ? "light" : "dark"}
+                />
               </Box>
             </Box>
             {status === "connected" && uiStateLabel(liveUiState, uiLang) && (
-              <Text fontSize="xs" color="whiteAlpha.800">
+              <Text
+                fontSize="xs"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+              >
                 {uiStateLabel(liveUiState, uiLang)}
               </Text>
             )}
@@ -2960,17 +3035,42 @@ Do not return the whole sentence as a single chunk.`;
               px={{ base: 8, md: 12 }}
               rounded="full"
               colorScheme={status === "connected" ? undefined : "cyan"}
-              bg={status === "connected" ? SOFT_STOP_BUTTON_BG : undefined}
+              bg={
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_BG
+                  : isLightTheme
+                    ? "linear-gradient(180deg, #40c6d9 0%, #2fb4c7 100%)"
+                    : undefined
+              }
               boxShadow={
-                status === "connected" ? SOFT_STOP_BUTTON_GLOW : undefined
+                status === "connected"
+                  ? SOFT_STOP_BUTTON_GLOW
+                  : isLightTheme
+                    ? "0 10px 24px rgba(66, 168, 181, 0.22), 0 4px 0 rgba(41, 126, 136, 0.82)"
+                    : undefined
               }
               _hover={
                 status === "connected"
                   ? { bg: SOFT_STOP_BUTTON_HOVER_BG }
+                  : isLightTheme
+                    ? {
+                        bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
+                      }
                   : undefined
               }
-              color="white"
-              textShadow="0px 0px 20px black"
+              color={
+                status === "connected"
+                  ? "white"
+                  : isLightTheme
+                    ? "white"
+                    : "white"
+              }
+              border={
+                isLightTheme && status !== "connected"
+                  ? "1px solid rgba(255,255,255,0.55)"
+                  : undefined
+              }
+              textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={20}
             >
               {status === "connected" ? (
@@ -3019,24 +3119,10 @@ Do not return the whole sentence as a single chunk.`;
       <ConversationAccountDrawer
         isOpen={isSettingsOpen}
         onClose={handleSettingsClose}
-        tabIndex={settingsTabIndex}
-        onTabChange={setSettingsTabIndex}
         appLanguage={uiLang}
         settings={conversationSettings}
         onSettingsChange={handleSettingsChange}
         supportLang={supportLang}
-        identityProps={{
-          t: ui,
-          appLanguage: uiLang,
-          activeNpub: currentNpub,
-          activeNsec,
-          auth,
-          onSwitchedAccount,
-          user,
-          onSelectIdentity,
-          isIdentitySaving,
-          postNostrContent,
-        }}
       />
 
       <Modal isOpen={isTranscriptOpen} onClose={closeTranscript} size="xl">

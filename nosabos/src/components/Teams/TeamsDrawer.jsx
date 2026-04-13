@@ -21,6 +21,14 @@ import TeamCreation from "./TeamCreation";
 import TeamView from "./TeamView";
 import useBottomDrawerSwipeDismiss from "../../hooks/useBottomDrawerSwipeDismiss";
 import { translations } from "../../utils/translation.jsx";
+import { useThemeStore } from "../../useThemeStore";
+
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 export default function TeamsDrawer({
   isOpen,
@@ -37,6 +45,8 @@ export default function TeamsDrawer({
     () => overrideTranslations || translations[userLanguage] || translations.en,
     [overrideTranslations, userLanguage],
   );
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const swipeDismiss = useBottomDrawerSwipeDismiss({
     isOpen,
     onClose,
@@ -64,16 +74,19 @@ export default function TeamsDrawer({
     <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
       <DrawerOverlay
         {...swipeDismiss.overlayProps}
-        bg="blackAlpha.600"
+        bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
+        backdropFilter="blur(4px)"
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         display="flex"
         flexDirection="column"
-        bg="gray.900"
-        color="white"
+        bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
         borderTopRadius="24px"
         h="80vh"
+        boxShadow={isLightTheme ? APP_SHADOW : undefined}
+        borderTop={isLightTheme ? `1px solid ${APP_BORDER}` : undefined}
         sx={{
           "@supports (height: 100dvh)": {
             height: "80dvh",
@@ -81,13 +94,27 @@ export default function TeamsDrawer({
         }}
       >
         <BottomDrawerDragHandle isDragging={swipeDismiss.isDragging} />
-        <DrawerCloseButton color="white" top={4} right={4} />
-        <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200" pr={12}>
+        <DrawerCloseButton
+          color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+          _hover={{ color: isLightTheme ? APP_TEXT_PRIMARY : "white" }}
+          top={4}
+          right={4}
+        />
+        <DrawerHeader
+          borderBottomWidth="1px"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+          pr={12}
+        >
           <Box maxW="720px" mx="auto" w="100%">
             {t?.teams_drawer_title || "Teams & Community"}
           </Box>
         </DrawerHeader>
-        <DrawerBody overflowY="auto" flex="1" bg="gray.900" pb={4}>
+        <DrawerBody
+          overflowY="auto"
+          flex="1"
+          bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
+          pb={4}
+        >
           <Box maxW="720px" mx="auto" w="100%">
             <Tabs
               index={selectedTab}
@@ -96,33 +123,33 @@ export default function TeamsDrawer({
               isFitted
               colorScheme="purple"
             >
-              <TabList mb={4} borderColor="whiteAlpha.200">
+              <TabList mb={4} borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}>
                 <Tab
-                  color="gray.300"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
                   _selected={{
-                    color: "white",
-                    borderColor: "purple.400",
-                    bg: "whiteAlpha.200",
+                    color: isLightTheme ? APP_TEXT_PRIMARY : "white",
+                    borderColor: isLightTheme ? APP_BORDER : "purple.400",
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
                   }}
                 >
                   {t?.teams_tab_feed || "Global feed"}
                 </Tab>
                 <Tab
-                  color="gray.300"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
                   _selected={{
-                    color: "white",
-                    borderColor: "purple.400",
-                    bg: "whiteAlpha.200",
+                    color: isLightTheme ? APP_TEXT_PRIMARY : "white",
+                    borderColor: isLightTheme ? APP_BORDER : "purple.400",
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
                   }}
                 >
                   {t?.teams_tab_create || "Create team"}
                 </Tab>
                 <Tab
-                  color="gray.300"
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
                   _selected={{
-                    color: "white",
-                    borderColor: "purple.400",
-                    bg: "whiteAlpha.200",
+                    color: isLightTheme ? APP_TEXT_PRIMARY : "white",
+                    borderColor: isLightTheme ? APP_BORDER : "purple.400",
+                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
                   }}
                 >
                   {t?.teams_tab_view || "View teams"}
@@ -155,9 +182,14 @@ export default function TeamsDrawer({
             </Tabs>
           </Box>
         </DrawerBody>
-        <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
+        <DrawerFooter borderTopWidth="1px" borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}>
           <Box maxW="720px" mx="auto" w="100%" display="flex" justifyContent="flex-end">
-            <Button variant={"ghost"} onClick={onClose}>
+            <Button
+              variant={"ghost"}
+              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+              onClick={onClose}
+            >
               {t?.teams_drawer_close || "Close"}
             </Button>
           </Box>

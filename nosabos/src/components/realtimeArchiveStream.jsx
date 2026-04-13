@@ -27,7 +27,61 @@ export function getRealtimeOrbVisualState(uiState) {
   return uiState;
 }
 
-export function getChatLogButtonHighlightProps(isActive) {
+export function getChatLogButtonHighlightProps(isActive, isLightTheme = false) {
+  if (isLightTheme) {
+    return {
+      opacity: 1,
+      color: isActive ? "#69533d" : "#8b755f",
+      bg: isActive
+        ? "rgba(255, 250, 241, 0.96)"
+        : "rgba(255, 250, 241, 0.58)",
+      border: "1px solid",
+      borderColor: isActive
+        ? "rgba(110, 193, 214, 0.56)"
+        : "rgba(191, 168, 139, 0.34)",
+      boxShadow: isActive
+        ? "0 10px 18px rgba(97, 74, 47, 0.14), 0 0 16px rgba(110, 193, 214, 0.16)"
+        : "0 6px 12px rgba(97, 74, 47, 0.08)",
+      textShadow: isActive
+        ? "0 0 8px rgba(110, 193, 214, 0.22)"
+        : "none",
+      animation: isActive
+        ? `realtimeChatLogPulsePaper ${CHAT_LOG_HIGHLIGHT_DURATION_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`
+        : undefined,
+      transition:
+        "opacity 180ms ease, color 180ms ease, text-shadow 220ms ease, transform 220ms ease, filter 220ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease",
+      sx: {
+        "@keyframes realtimeChatLogPulsePaper": {
+          "0%": {
+            boxShadow:
+              "0 6px 12px rgba(97, 74, 47, 0.08), 0 0 0 rgba(110, 193, 214, 0)",
+            transform: "translateY(0px) scale(1)",
+          },
+          "22%": {
+            boxShadow:
+              "0 12px 20px rgba(97, 74, 47, 0.14), 0 0 18px rgba(110, 193, 214, 0.24)",
+            transform: "translateY(-1px) scale(1.015)",
+          },
+          "65%": {
+            boxShadow:
+              "0 8px 16px rgba(97, 74, 47, 0.1), 0 0 10px rgba(110, 193, 214, 0.14)",
+            transform: "translateY(0px) scale(1)",
+          },
+          "100%": {
+            boxShadow:
+              "0 6px 12px rgba(97, 74, 47, 0.08), 0 0 0 rgba(110, 193, 214, 0)",
+            transform: "translateY(0px) scale(1)",
+          },
+        },
+        "& .chakra-button__icon, & svg": {
+          filter: isActive
+            ? "drop-shadow(0 0 6px rgba(110, 193, 214, 0.24))"
+            : "none",
+          transition: "filter 220ms ease",
+        },
+      },
+    };
+  }
   return {
     opacity: isActive ? 1 : 0.82,
     color: isActive ? "#eff6ff" : undefined,

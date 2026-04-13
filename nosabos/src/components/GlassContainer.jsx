@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { LiquidGlass } from "@liquidglass/react";
 import { Box } from "@chakra-ui/react";
+import { useThemeStore } from "../useThemeStore";
 
 /**
  * SVG filters inside backdrop-filter only work in Chromium desktop browsers.
@@ -43,19 +44,22 @@ export default function GlassContainer({
   displacementScale,
   elasticity,
   fallbackBlur = "0px",
-  fallbackBg = "rgba(11, 18, 32, 0.65)",
+  fallbackBg = "var(--app-glass-bg)",
   ...rest
 }) {
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const isLightTheme = themeMode === "light";
   const fallbackStyle = useMemo(
     () => ({
-      backdropFilter: `blur(${fallbackBlur})`,
-      WebkitBackdropFilter: `blur(${fallbackBlur})`,
+      backdropFilter: isLightTheme ? "none" : `blur(${fallbackBlur})`,
+      WebkitBackdropFilter: isLightTheme ? "none" : `blur(${fallbackBlur})`,
       background: fallbackBg,
+      boxShadow: isLightTheme ? "none" : undefined,
     }),
-    [fallbackBlur, fallbackBg],
+    [fallbackBlur, fallbackBg, isLightTheme],
   );
 
-  if (supportsLiquidGlass) {
+  if (supportsLiquidGlass && !isLightTheme) {
     return (
       <LiquidGlass
         borderRadius={borderRadius}

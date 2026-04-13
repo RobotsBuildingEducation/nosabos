@@ -57,6 +57,15 @@ import VoiceOrb from "./VoiceOrb";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -1321,7 +1330,8 @@ YES or NO
   return (
     <Box
       minH="100vh"
-      bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
+      bg="transparent"
+      color={APP_TEXT_PRIMARY}
       py={8}
     >
       <VStack spacing={6} maxW="800px" mx="auto" px={4}>
@@ -1348,17 +1358,17 @@ YES or NO
         {/* Question Card */}
         <Box
           w="full"
-          bg="whiteAlpha.100"
+          bg={APP_SURFACE_ELEVATED}
           borderRadius="xl"
           p={8}
-          backdropFilter="blur(10px)"
           border="1px solid"
-          borderColor="whiteAlpha.200"
+          borderColor={APP_BORDER}
+          boxShadow={APP_SHADOW}
         >
           {isLoading ? (
             <VStack spacing={4}>
               <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
-              <Text color="white">
+              <Text color={APP_TEXT_PRIMARY}>
                 {userLanguage === "es"
                   ? "Generando pregunta..."
                   : "Generating question..."}
@@ -1375,7 +1385,7 @@ YES or NO
                   variant="ghost"
                   onClick={() => handlePlayQuestionTTS(qFill)}
                 />
-                <Text fontSize="lg" color="white" flex="1">
+                <Text fontSize="lg" color={APP_TEXT_PRIMARY} flex="1">
                   {qFill}
                 </Text>
               </HStack>
@@ -1398,8 +1408,9 @@ YES or NO
                     : "Type your answer..."
                 }
                 size="lg"
-                bg="whiteAlpha.100"
-                color="white"
+                bg={APP_SURFACE}
+                color={APP_TEXT_PRIMARY}
+                borderColor={APP_BORDER}
                 isDisabled={lastOk !== null || isGrading}
                 onKeyPress={(e) => e.key === "Enter" && handleSubmit()}
               />
@@ -1415,7 +1426,7 @@ YES or NO
                   variant="ghost"
                   onClick={() => handlePlayQuestionTTS(qMC)}
                 />
-                <Text fontSize="lg" color="white" flex="1">
+                <Text fontSize="lg" color={APP_TEXT_PRIMARY} flex="1">
                   {qMC}
                 </Text>
               </HStack>
@@ -1460,7 +1471,7 @@ YES or NO
                   variant="ghost"
                   onClick={() => handlePlayQuestionTTS(qMA)}
                 />
-                <Text fontSize="lg" color="white" flex="1">
+                <Text fontSize="lg" color={APP_TEXT_PRIMARY} flex="1">
                   {qMA}
                 </Text>
               </HStack>
@@ -1496,7 +1507,7 @@ YES or NO
             </VStack>
           ) : mode === "speak" ? (
             <VStack spacing={4} align="stretch">
-              <Text fontSize="lg" color="white">
+              <Text fontSize="lg" color={APP_TEXT_PRIMARY}>
                 {sPrompt}
               </Text>
               <HStack align="center" spacing={2}>
@@ -1542,7 +1553,7 @@ YES or NO
                   : "Start Speaking"}
               </Button>
               {transcript && (
-                <Text color="white" fontSize="sm">
+                <Text color={APP_TEXT_PRIMARY} fontSize="sm">
                   {userLanguage === "es" ? "Dijiste" : "You said"}: "
                   {transcript}"
                 </Text>
@@ -1550,7 +1561,7 @@ YES or NO
             </VStack>
           ) : mode === "match" ? (
             <VStack spacing={4} align="stretch">
-              <Text fontSize="lg" color="white">
+              <Text fontSize="lg" color={APP_TEXT_PRIMARY}>
                 {mStem ||
                   (userLanguage === "es"
                     ? "Empareja las palabras con sus definiciones"
@@ -1567,11 +1578,13 @@ YES or NO
                     <Box
                       key={idx}
                       p={3}
-                      bg="whiteAlpha.200"
+                      bg={APP_SURFACE}
                       borderRadius="md"
+                      border="1px solid"
+                      borderColor={APP_BORDER}
                       w="full"
                       textAlign="center"
-                      color="white"
+                      color={APP_TEXT_PRIMARY}
                     >
                       {word}
                     </Box>
@@ -1582,11 +1595,13 @@ YES or NO
                     <Box
                       key={idx}
                       p={3}
-                      bg="whiteAlpha.100"
+                      bg={APP_SURFACE_ELEVATED}
                       borderRadius="md"
+                      border="1px solid"
+                      borderColor={APP_BORDER}
                       w="full"
                       textAlign="center"
-                      color="white"
+                      color={APP_TEXT_PRIMARY}
                       fontSize="sm"
                       cursor="pointer"
                       onClick={() => {
@@ -1611,7 +1626,7 @@ YES or NO
               </Text>
             </VStack>
           ) : (
-            <Text color="white">
+            <Text color={APP_TEXT_PRIMARY}>
               {userLanguage === "es"
                 ? "Tipo de pregunta desconocida"
                 : "Unknown question type"}

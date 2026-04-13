@@ -18,7 +18,7 @@ export const linksPageTranslations = {
         </p>
 
         <p style={{ marginBottom: 12 }}>
-          <span style={{ color: "cyan" }}>
+          <span style={{ color: "var(--links-accent-primary)" }}>
             I started this idea called Robots Building Education back in 2015
             because I felt that education technology was always behind on what
             the internet was capable of.
@@ -35,7 +35,7 @@ export const linksPageTranslations = {
         </p>
 
         <p style={{ marginBottom: 12 }}>
-          <span style={{ color: "gold" }}>
+          <span style={{ color: "var(--links-accent-warm)" }}>
             Robots Building Education is this idea that your learning has real
             impact at the moment of learning and progressing.{" "}
           </span>
@@ -56,7 +56,7 @@ export const linksPageTranslations = {
           seen before. Some stuff is pretty smooth and frictionless for what’s
           actually happening and that’s partially because I’ve been relentless
           in creating this idea and making it a real experience for people.{" "}
-          <span style={{ color: "hotpink" }}>
+          <span style={{ color: "var(--links-accent-pink)" }}>
             I genuinely believe this is how the world ought to work, because it
             doesn’t make sense to me that billions of hours of work in daily
             online education goes unnoticed and unrecorded publicly.
@@ -111,9 +111,6 @@ export const linksPageTranslations = {
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "You'll use your secret key to switch in to your account in the menu. If you entered through social media, you only have to do this once.",
-    copySecretKey: "Copy Secret Key",
-    goToApp: "Go to app",
-    close: "Close",
 
     // Profile Modal
     customizeProfileTitle: "Customize Profile",
@@ -208,7 +205,7 @@ export const linksPageTranslations = {
         </p>
 
         <p style={{ marginBottom: 12 }}>
-          <span style={{ color: "cyan" }}>
+          <span style={{ color: "var(--links-accent-primary)" }}>
             Empecé esta idea llamada Robots Building Education en 2015 porque
             sentía que la tecnología educativa siempre iba por detrás de lo que
             Internet era capaz de hacer.
@@ -226,7 +223,7 @@ export const linksPageTranslations = {
         </p>
 
         <p style={{ marginBottom: 12 }}>
-          <span style={{ color: "gold" }}>
+          <span style={{ color: "var(--links-accent-warm)" }}>
             Robots Building Education es la idea de que tu aprendizaje tenga un
             impacto real en el mismo momento de aprender y progresar.{" "}
           </span>
@@ -249,7 +246,7 @@ export const linksPageTranslations = {
           lo que realmente está ocurriendo, y eso se debe en parte a que he sido
           incansable al crear esta idea y convertirla en una experiencia real
           para las personas.{" "}
-          <span style={{ color: "hotpink" }}>
+          <span style={{ color: "var(--links-accent-pink)" }}>
             Sinceramente creo que así debería funcionar el mundo, porque no
             tiene sentido que miles de millones de horas de trabajo en educación
             en línea pasen desapercibidas.

@@ -32,7 +32,7 @@ import { keyframes } from "@emotion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
-import { FaKey, FaInstagram, FaLinkedinIn } from "react-icons/fa";
+import { FaKey, FaInstagram, FaLinkedinIn, FaMoon, FaSun } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -55,6 +55,7 @@ import useLanguage from "../hooks/useLanguage";
 
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
+import { useThemeStore } from "../useThemeStore";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -95,6 +96,104 @@ const roleCycle = [
   "chores",
   "counselor",
 ];
+
+const APP_PAGE_BG = "var(--app-page-bg)";
+const APP_SURFACE = "var(--app-surface)";
+const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
+const APP_SURFACE_MUTED = "var(--app-surface-muted)";
+const APP_BORDER = "var(--app-border)";
+const APP_BORDER_STRONG = "var(--app-border-strong)";
+const APP_TEXT_PRIMARY = "var(--app-text-primary)";
+const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
+const APP_TEXT_MUTED = "var(--app-text-muted)";
+const APP_SHADOW = "var(--app-shadow-soft)";
+
+const LINKS_PAPER_PAGE_SX = {
+  background:
+    "radial-gradient(circle at 14% 12%, rgba(220, 197, 169, 0.18) 0%, transparent 34%), " +
+    "radial-gradient(circle at 84% 10%, rgba(235, 220, 198, 0.2) 0%, transparent 32%), " +
+    "linear-gradient(180deg, rgba(252,248,242,0.98) 0%, rgba(246,239,230,0.98) 100%)",
+  "&::before": {
+    content: '""',
+    position: "absolute",
+    inset: 0,
+    backgroundImage:
+      "repeating-linear-gradient(0deg, rgba(155,135,112,0.04) 0px, rgba(155,135,112,0.04) 1px, transparent 1px, transparent 28px), " +
+      "repeating-linear-gradient(90deg, rgba(155,135,112,0.03) 0px, rgba(155,135,112,0.03) 1px, transparent 1px, transparent 28px)",
+    opacity: 0.4,
+    pointerEvents: "none",
+  },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+
+const ThemeModeToggle = ({ themeMode, onModeChange }) => {
+  const modes = [
+    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
+    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
+  ];
+
+  return (
+    <Box
+      position="fixed"
+      top="18px"
+      right={{ base: "16px", md: "20px" }}
+      zIndex={120}
+    >
+      <HStack
+        spacing="3px"
+        p="3px"
+        rounded="full"
+        bg={APP_SURFACE_ELEVATED}
+        border="1px solid"
+        borderColor={APP_BORDER}
+        boxShadow={APP_SHADOW}
+        backdropFilter="blur(20px)"
+      >
+        {modes.map((mode) => {
+          const isActive = themeMode === mode.id;
+          return (
+            <IconButton
+              key={mode.id}
+              type="button"
+              aria-pressed={isActive}
+              aria-label={mode.label}
+              title={mode.label}
+              onClick={() => onModeChange(mode.id)}
+              icon={mode.icon}
+              size="sm"
+              minW="34px"
+              h="34px"
+              rounded="full"
+              border="none"
+              bg={
+                isActive
+                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
+                  : "transparent"
+              }
+              color={isActive ? "#ffffff" : APP_TEXT_SECONDARY}
+              boxShadow={
+                isActive ? "0 8px 18px rgba(20, 184, 166, 0.18)" : "none"
+              }
+              _hover={{
+                bg: isActive
+                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
+                  : APP_SURFACE_MUTED,
+              }}
+              _active={{
+                bg: isActive
+                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
+                  : APP_SURFACE_MUTED,
+              }}
+            />
+          );
+        })}
+      </HStack>
+    </Box>
+  );
+};
 
 // 8-bit pixel star with random direction movement
 function PixelStar({
@@ -140,18 +239,27 @@ function PixelStar({
   );
 }
 
-function RetroStarfield() {
+function RetroStarfield({ isLightTheme = false }) {
   const stars = useMemo(() => {
     const starArray = [];
     // Neon 80s colors
-    const colors = [
-      "#ff00ff", // Magenta
-      "#00ffff", // Cyan
-      "#ff6ec7", // Hot pink
-      "#39ff14", // Neon green
-      "#fff", // White
-      "#ffff00", // Yellow
-    ];
+    const colors = isLightTheme
+      ? [
+          "#0f766e",
+          "#1d4ed8",
+          "#db2777",
+          "#a16207",
+          "#ffffff",
+          "#7c3aed",
+        ]
+      : [
+          "#ff00ff", // Magenta
+          "#00ffff", // Cyan
+          "#ff6ec7", // Hot pink
+          "#39ff14", // Neon green
+          "#fff", // White
+          "#ffff00", // Yellow
+        ];
 
     for (let i = 0; i < 30; i++) {
       // Random direction for each star
@@ -171,7 +279,7 @@ function RetroStarfield() {
       });
     }
     return starArray;
-  }, []);
+  }, [isLightTheme]);
 
   return (
     <Box
@@ -194,23 +302,28 @@ function RetroStarfield() {
         left={0}
         right={0}
         bottom={0}
-        opacity={0.03}
-        backgroundImage="linear-gradient(#ff00ff 1px, transparent 1px), linear-gradient(90deg, #ff00ff 1px, transparent 1px)"
-        backgroundSize="50px 50px"
+        opacity={isLightTheme ? 0.08 : 0.03}
+        backgroundImage={
+          isLightTheme
+            ? "linear-gradient(rgba(155,135,112,0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(155,135,112,0.14) 1px, transparent 1px)"
+            : "linear-gradient(#ff00ff 1px, transparent 1px), linear-gradient(90deg, #ff00ff 1px, transparent 1px)"
+        }
+        backgroundSize={isLightTheme ? "42px 42px" : "50px 50px"}
         pointerEvents="none"
       />
 
-      {/* Scanline effect */}
-      <Box
-        position="absolute"
-        top={0}
-        left={0}
-        right={0}
-        height="4px"
-        bg="linear-gradient(transparent, rgba(255,255,255,0.03), transparent)"
-        animation={`${scanline} 8s linear infinite`}
-        pointerEvents="none"
-      />
+      {!isLightTheme && (
+        <Box
+          position="absolute"
+          top={0}
+          left={0}
+          right={0}
+          height="4px"
+          bg="linear-gradient(transparent, rgba(255,255,255,0.03), transparent)"
+          animation={`${scanline} 8s linear infinite`}
+          pointerEvents="none"
+        />
+      )}
 
       {/* Vignette effect */}
       <Box
@@ -219,7 +332,11 @@ function RetroStarfield() {
         left={0}
         right={0}
         bottom={0}
-        bg="radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)"
+        bg={
+          isLightTheme
+            ? "radial-gradient(ellipse at center, transparent 0%, rgba(111,86,54,0.1) 100%)"
+            : "radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)"
+        }
         pointerEvents="none"
       />
     </Box>
@@ -236,8 +353,13 @@ function LinkCard({
   onLaunchEvent,
   launchAppText,
   secondaryAction,
+  isLightTheme = false,
 }) {
-  const secondaryActionColor = secondaryAction?.color || "#4da3ff";
+  const primaryActionColor = isLightTheme ? "#0f766e" : "#00ffff";
+  const secondaryActionColor =
+    isLightTheme && secondaryAction?.color === "#4da3ff"
+      ? "#1d4ed8"
+      : secondaryAction?.color || "#4da3ff";
 
   const primaryActionProps = onLaunch
     ? {
@@ -282,13 +404,16 @@ function LinkCard({
   return (
     <Box
       w="100%"
-      // border="1px solid"
-      // borderColor="rgba(0, 255, 255, 0.4)"
-      bg="rgba(7, 16, 29, 0.65)"
+      bg={isLightTheme ? "transparent" : "rgba(7, 16, 29, 0.65)"}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+      border="1px solid"
+      borderColor={isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.08)"}
       borderRadius="36px"
       px={{ base: 4, md: 6 }}
       py={{ base: 4, md: 5 }}
-      boxShadow="0 0 10px rgba(0, 255, 255, 0.15)"
+      boxShadow={
+        isLightTheme ? APP_SHADOW : "0 0 10px rgba(0, 255, 255, 0.15)"
+      }
     >
       <Stack
         direction="column"
@@ -311,13 +436,13 @@ function LinkCard({
             size="md"
             fontFamily="monospace"
             letterSpacing="wider"
-            color="white"
+            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
             textAlign={"center"}
           >
             {title}
           </Heading>
           <Text
-            color="gray.400"
+            color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
             fontSize={{ base: "xs", md: "md" }}
             maxW="520px"
             fontFamily="monospace"
@@ -329,29 +454,30 @@ function LinkCard({
             <Button
               {...primaryActionProps}
               variant="outline"
-              borderColor="#00ffff"
-              color="#00ffff"
+              bg={isLightTheme ? APP_SURFACE_ELEVATED : undefined}
+              borderColor={primaryActionColor}
+              color={primaryActionColor}
               fontFamily="monospace"
               size="sm"
               px={6}
               py={4}
               minH="44px"
               _hover={{
-                bg: "transparent",
-                borderColor: "#00ffff",
-                color: "#00ffff",
+                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
+                borderColor: primaryActionColor,
+                color: primaryActionColor,
                 textDecoration: "none",
                 opacity: 0.8,
               }}
               _active={{
-                bg: "transparent",
-                color: "#00ffff",
+                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
+                color: primaryActionColor,
               }}
               _focus={{
                 boxShadow: "none",
               }}
               sx={{
-                "&:visited": { color: "#00ffff" },
+                "&:visited": { color: primaryActionColor },
               }}
             >
               {launchAppText || "Launch app"}
@@ -360,6 +486,7 @@ function LinkCard({
               <Button
                 {...secondaryActionProps}
                 variant="outline"
+                bg={isLightTheme ? APP_SURFACE_ELEVATED : undefined}
                 borderColor={secondaryActionColor}
                 color={secondaryActionColor}
                 fontFamily="monospace"
@@ -368,14 +495,14 @@ function LinkCard({
                 py={4}
                 minH="44px"
                 _hover={{
-                  bg: "transparent",
+                  bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
                   borderColor: secondaryActionColor,
                   color: secondaryActionColor,
                   textDecoration: "none",
                   opacity: 0.8,
                 }}
                 _active={{
-                  bg: "transparent",
+                  bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
                   color: secondaryActionColor,
                 }}
                 _focus={{
@@ -398,6 +525,9 @@ function LinkCard({
 export default function LinksPage() {
   const { generateNostrKeys, auth, postNostrContent, connectToNostr } =
     useDecentralizedIdentity();
+  const themeMode = useThemeStore((s) => s.themeMode);
+  const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
+  const isLightTheme = themeMode === "light";
 
   // Language state
   const { language, initLanguage, toggleLanguage, t } = useLanguage();
@@ -444,6 +574,50 @@ export default function LinksPage() {
   } = useDisclosure();
   const toast = useToast();
   const playSound = useSoundSettings((s) => s.playSound);
+  const primaryAccent = isLightTheme ? "#0f766e" : "#00ffff";
+  const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
+  const linkAccent = isLightTheme ? "#1d4ed8" : "#4da3ff";
+  const walletAccent = isLightTheme ? "#15803d" : "#16b078";
+  const modalOverlayBg = isLightTheme ? "rgba(76, 60, 40, 0.24)" : "blackAlpha.800";
+  const modalBg = isLightTheme ? APP_SURFACE_ELEVATED : "rgba(7, 16, 29, 0.95)";
+  const modalBorderColor = isLightTheme ? APP_BORDER_STRONG : primaryAccent;
+  const modalBorderSoft = isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)";
+  const modalHeadingColor = isLightTheme ? APP_TEXT_PRIMARY : primaryAccent;
+  const labelColor = isLightTheme ? APP_TEXT_SECONDARY : "gray.400";
+  const helperColor = isLightTheme ? APP_TEXT_MUTED : "gray.500";
+  const inputBg = isLightTheme ? APP_SURFACE : "rgba(0, 0, 0, 0.3)";
+  const inputBorderColor = isLightTheme ? APP_BORDER : "gray.600";
+
+  const modalScrollSx = useMemo(
+    () => ({
+      "&::-webkit-scrollbar": {
+        width: "8px",
+      },
+      "&::-webkit-scrollbar-track": {
+        background: isLightTheme ? "rgba(96, 77, 56, 0.08)" : "rgba(0, 0, 0, 0.3)",
+        borderRadius: "4px",
+      },
+      "&::-webkit-scrollbar-thumb": {
+        background: isLightTheme
+          ? "linear-gradient(180deg, #d6c1a7 0%, #0f766e 100%)"
+          : "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
+        borderRadius: "4px",
+        border: "2px solid transparent",
+        backgroundClip: "padding-box",
+      },
+      "&::-webkit-scrollbar-thumb:hover": {
+        background: isLightTheme
+          ? "linear-gradient(180deg, #cbb391 0%, #0e7490 100%)"
+          : "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
+        backgroundClip: "padding-box",
+      },
+      scrollbarWidth: "thin",
+      scrollbarColor: isLightTheme
+        ? "#b28f6d rgba(96, 77, 56, 0.08)"
+        : "#00ffff rgba(0, 0, 0, 0.3)",
+    }),
+    [isLightTheme],
+  );
 
   const hasTriggeredKeygen = useRef(false);
 
@@ -521,6 +695,11 @@ export default function LinksPage() {
   const rbeUrl = "https://robotsbuildingeducation.com";
   const handleSelectSound = () => playSound(selectSound);
   const handleSubmitActionSound = () => playSound(submitActionSound);
+  const handleThemeModeChange = (nextMode) => {
+    if (nextMode === themeMode) return;
+    handleSelectSound();
+    syncThemeMode(nextMode);
+  };
 
   // Wallet handlers
   const handleCreateWallet = async () => {
@@ -964,13 +1143,22 @@ export default function LinksPage() {
   return (
     <Box
       minH="100dvh"
-      // py={{ base: 12, md: 16 }}
-
-      bg="rgba(7,16,29)"
+      bg={isLightTheme ? APP_PAGE_BG : "rgba(7,16,29)"}
+      color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
       position="relative"
       overflow="hidden"
+      sx={isLightTheme ? LINKS_PAPER_PAGE_SX : undefined}
+      style={{
+        "--links-accent-primary": isLightTheme ? "#0f766e" : "#00ffff",
+        "--links-accent-warm": isLightTheme ? "#b45309" : "gold",
+        "--links-accent-pink": isLightTheme ? "#db2777" : "hotpink",
+      }}
     >
-      <RetroStarfield />
+      <RetroStarfield isLightTheme={isLightTheme} />
+      <ThemeModeToggle
+        themeMode={themeMode}
+        onModeChange={handleThemeModeChange}
+      />
 
       <Container
         maxW="container.md"
@@ -987,8 +1175,13 @@ export default function LinksPage() {
               h="100px"
               borderRadius="full"
               overflow="hidden"
-              border="3px solid #00ffff"
-              boxShadow="0 0 20px rgba(0, 255, 255, 0.4)"
+              border="3px solid"
+              borderColor={isLightTheme ? APP_BORDER_STRONG : primaryAccent}
+              boxShadow={
+                isLightTheme
+                  ? "0 10px 24px rgba(111, 86, 54, 0.12)"
+                  : "0 0 20px rgba(0, 255, 255, 0.4)"
+              }
             >
               <img
                 src={profilePicture}
@@ -1011,7 +1204,7 @@ export default function LinksPage() {
             size="sm"
             fontFamily="monospace"
             letterSpacing="wider"
-            color="white"
+            color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
           >
             {translations.welcome}, {getWelcomeText()}
           </Heading>
@@ -1023,9 +1216,15 @@ export default function LinksPage() {
                 onOpen();
               }}
               variant="outline"
+              bg={isLightTheme ? APP_SURFACE : undefined}
               fontFamily="monospace"
-              borderColor="#00ffff"
-              color="#00ffff"
+              borderColor={primaryAccent}
+              color={primaryAccent}
+              boxShadow={isLightTheme ? APP_SHADOW : undefined}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
+                borderColor: primaryAccent,
+              }}
             >
               {translations.profile}
             </Button>
@@ -1035,9 +1234,15 @@ export default function LinksPage() {
                 onAboutOpen();
               }}
               variant="outline"
+              bg={isLightTheme ? APP_SURFACE : undefined}
               fontFamily="monospace"
-              borderColor="#00ffff"
-              color="#00ffff"
+              borderColor={primaryAccent}
+              color={primaryAccent}
+              boxShadow={isLightTheme ? APP_SHADOW : undefined}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "transparent",
+                borderColor: primaryAccent,
+              }}
             >
               {translations.about}
             </Button>
@@ -1047,18 +1252,18 @@ export default function LinksPage() {
           <HStack
             spacing={3}
             justify="center"
-            bg="rgba(7, 16, 29, 0.8)"
+            bg="transparent"
             px={4}
             py={2}
             borderRadius="md"
+            mb={4}
           >
             <Text
               fontSize="sm"
-              color={language === "en" ? "#00ffff" : "gray.500"}
+              color={language === "en" ? primaryAccent : helperColor}
               fontWeight={language === "en" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
-              mb={4}
             >
               {translations.english}
             </Text>
@@ -1070,15 +1275,13 @@ export default function LinksPage() {
               }}
               colorScheme="cyan"
               size="md"
-              mb={4}
             />
             <Text
               fontSize="sm"
-              color={language === "es" ? "#00ffff" : "gray.500"}
+              color={language === "es" ? primaryAccent : helperColor}
               fontWeight={language === "es" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
-              mb={4}
             >
               {translations.spanish}
             </Text>
@@ -1091,6 +1294,7 @@ export default function LinksPage() {
             <LinkCard
               key={link.title}
               {...link}
+              isLightTheme={isLightTheme}
               onLaunchSound={handleSubmitActionSound}
               onLaunchEvent={() => {
                 if (!isLocalhost() && !link.onLaunch) {
@@ -1165,27 +1369,31 @@ export default function LinksPage() {
 
       {/* Robots Building Education Modal */}
       <Modal isOpen={isRbeOpen} onClose={onRbeClose} isCentered size="md">
-        <ModalOverlay bg="blackAlpha.800" />
+        <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
-          bg="rgba(7, 16, 29, 0.95)"
-          color="gray.100"
+          bg={modalBg}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
-          borderColor="#00ffff"
+          borderColor={modalBorderColor}
           rounded="xl"
-          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
           fontFamily="monospace"
         >
           <ModalHeader
             borderBottom="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
-            color="#00ffff"
+            borderColor={modalBorderSoft}
+            color={modalHeadingColor}
           >
             {translations.rbeModalTitle}
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
+          <ModalCloseButton
+            color={modalHeadingColor}
+            onClick={handleSelectSound}
+            _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+          />
           <ModalBody py={6}>
             <VStack spacing={4} align="stretch">
-              <Text fontSize="sm" color="gray.300">
+              <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}>
                 {translations.rbeModalDescription}
               </Text>
               <Button
@@ -1193,10 +1401,16 @@ export default function LinksPage() {
                   handleSelectSound();
                   handleCopySecretKey();
                 }}
-                colorScheme="cyan"
-                bg="#00aaff"
+                variant={isLightTheme ? "outline" : "solid"}
+                bg={isLightTheme ? APP_SURFACE : "#00aaff"}
                 w="100%"
-                color="white"
+                borderColor={isLightTheme ? linkAccent : undefined}
+                color={isLightTheme ? linkAccent : "white"}
+                _hover={
+                  isLightTheme
+                    ? { bg: APP_SURFACE_MUTED, borderColor: linkAccent }
+                    : undefined
+                }
               >
                 {translations.copySecretKey}
               </Button>
@@ -1205,10 +1419,17 @@ export default function LinksPage() {
                 href={rbeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                colorScheme="cyan"
-                bg="#009c9c"
-                color="white"
+                bg={isLightTheme ? primaryAccent : "#009c9c"}
+                color={isLightTheme ? "#f8fafc" : "white"}
                 w="100%"
+                boxShadow={
+                  isLightTheme ? "0 8px 18px rgba(15, 118, 110, 0.16)" : undefined
+                }
+                _hover={
+                  isLightTheme
+                    ? { bg: "#0d9488" }
+                    : undefined
+                }
                 onClick={() => {
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
@@ -1225,7 +1446,7 @@ export default function LinksPage() {
           </ModalBody>
           <ModalFooter
             borderTop="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
+            borderColor={modalBorderSoft}
           >
             <Button
               onClick={() => {
@@ -1233,7 +1454,8 @@ export default function LinksPage() {
                 onRbeClose();
               }}
               variant="ghost"
-              color="gray.400"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
             >
               {translations.close}
             </Button>
@@ -1249,85 +1471,78 @@ export default function LinksPage() {
         size="md"
         scrollBehavior="inside"
       >
-        <ModalOverlay bg="blackAlpha.800" />
+        <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
-          bg="rgba(7, 16, 29, 0.95)"
-          color="gray.100"
+          bg={modalBg}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
-          borderColor="#00ffff"
+          borderColor={modalBorderColor}
           rounded="xl"
-          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
           fontFamily="monospace"
           maxH="85vh"
+          style={{
+            "--links-accent-primary": isLightTheme ? "#0f766e" : "#00ffff",
+            "--links-accent-warm": isLightTheme ? "#b45309" : "gold",
+            "--links-accent-pink": isLightTheme ? "#db2777" : "hotpink",
+          }}
         >
           <ModalHeader
             borderBottom="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
-            color="#00ffff"
+            borderColor={modalBorderSoft}
+            color={modalHeadingColor}
           >
             {translations.customizeProfileTitle}
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
-          <ModalBody
-            py={6}
-            overflowY="auto"
-            sx={{
-              "&::-webkit-scrollbar": {
-                width: "8px",
-              },
-              "&::-webkit-scrollbar-track": {
-                background: "rgba(0, 0, 0, 0.3)",
-                borderRadius: "4px",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                background: "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
-                borderRadius: "4px",
-                border: "2px solid transparent",
-                backgroundClip: "padding-box",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                background: "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
-                backgroundClip: "padding-box",
-              },
-              scrollbarWidth: "thin",
-              scrollbarColor: "#00ffff rgba(0, 0, 0, 0.3)",
-            }}
-          >
+          <ModalCloseButton
+            color={modalHeadingColor}
+            onClick={handleSelectSound}
+            _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+          />
+          <ModalBody py={6} overflowY="auto" sx={modalScrollSx}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
               <Box>
-                <Text fontSize="sm" color="gray.400" mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2}>
                   {translations.username}
                 </Text>
                 <Input
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
                   placeholder={translations.enterUsername}
-                  bg="rgba(0, 0, 0, 0.3)"
+                  bg={inputBg}
                   border="1px solid"
-                  borderColor="gray.600"
+                  borderColor={inputBorderColor}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  _placeholder={{ color: helperColor }}
                   _focus={{
-                    borderColor: "#00ffff",
-                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                    borderColor: primaryAccent,
+                    boxShadow: isLightTheme
+                      ? "0 0 0 3px rgba(15, 118, 110, 0.12)"
+                      : "0 0 10px rgba(0, 255, 255, 0.3)",
                   }}
                 />
               </Box>
 
               {/* Profile Picture Section */}
               <Box>
-                <Text fontSize="sm" color="gray.400" mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2}>
                   {translations.profilePictureUrl}
                 </Text>
                 <Input
                   value={profilePictureUrlInput}
                   onChange={(e) => setProfilePictureUrlInput(e.target.value)}
                   placeholder={translations.profilePicturePlaceholder}
-                  bg="rgba(0, 0, 0, 0.3)"
+                  bg={inputBg}
                   border="1px solid"
-                  borderColor="gray.600"
+                  borderColor={inputBorderColor}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  _placeholder={{ color: helperColor }}
                   _focus={{
-                    borderColor: "#00ffff",
-                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                    borderColor: primaryAccent,
+                    boxShadow: isLightTheme
+                      ? "0 0 0 3px rgba(15, 118, 110, 0.12)"
+                      : "0 0 10px rgba(0, 255, 255, 0.3)",
                   }}
                 />
               </Box>
@@ -1342,19 +1557,22 @@ export default function LinksPage() {
                   handleSaveProfile();
                 }}
                 isLoading={isSaving}
-                colorScheme="cyan"
-                bg="#00ffff"
-                color="black"
+                bg={isLightTheme ? primaryAccent : "#00ffff"}
+                color={isLightTheme ? "#f8fafc" : "black"}
                 w="100%"
+                boxShadow={
+                  isLightTheme ? "0 8px 18px rgba(15, 118, 110, 0.16)" : undefined
+                }
+                _hover={isLightTheme ? { bg: "#0d9488" } : undefined}
               >
                 {translations.saveProfile}
               </Button>
 
-              <Divider borderColor="rgba(255, 0, 255, 0.3)" />
+              <Divider borderColor={isLightTheme ? APP_BORDER : "rgba(255, 0, 255, 0.3)"} />
 
               {/* Secret Key Section */}
               <Box>
-                <Text fontSize="sm" color="gray.400" mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2}>
                   {translations.secretKey}
                 </Text>
                 <Button
@@ -1363,14 +1581,19 @@ export default function LinksPage() {
                     handleCopySecretKey();
                   }}
                   variant="outline"
-                  colorScheme="pink"
-                  borderColor="#ff00ff"
-                  color="#ff00ff"
+                  bg={isLightTheme ? APP_SURFACE : undefined}
+                  borderColor={secondaryAccent}
+                  color={secondaryAccent}
                   w="100%"
+                  _hover={
+                    isLightTheme
+                      ? { bg: APP_SURFACE_MUTED, borderColor: secondaryAccent }
+                      : undefined
+                  }
                 >
                   {translations.copySecretKey}
                 </Button>
-                <Text fontSize="xs" color="gray.500" mt={2}>
+                <Text fontSize="xs" color={helperColor} mt={2}>
                   {translations.secretKeyWarning}
                 </Text>
               </Box>
@@ -1379,11 +1602,11 @@ export default function LinksPage() {
                 <AccordionItem border="none">
                   <AccordionButton px={0} _hover={{ bg: "transparent" }}>
                     <Box flex="1" textAlign="left">
-                      <Text fontSize="sm" color="gray.400">
+                      <Text fontSize="sm" color={labelColor}>
                         {translations.switchAccount}
                       </Text>
                     </Box>
-                    <AccordionIcon color="#ff00ff" />
+                    <AccordionIcon color={secondaryAccent} />
                   </AccordionButton>
                   <AccordionPanel px={0} pt={3}>
                     <VStack spacing={3} align="stretch">
@@ -1391,13 +1614,17 @@ export default function LinksPage() {
                         value={nsecInput}
                         onChange={(e) => setNsecInput(e.target.value)}
                         placeholder={translations.pasteNsec}
-                        bg="rgba(0, 0, 0, 0.3)"
+                        bg={inputBg}
                         border="1px solid"
-                        borderColor="gray.600"
+                        borderColor={inputBorderColor}
                         type="password"
+                        color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                        _placeholder={{ color: helperColor }}
                         _focus={{
-                          borderColor: "#ff00ff",
-                          boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
+                          borderColor: secondaryAccent,
+                          boxShadow: isLightTheme
+                            ? "0 0 0 3px rgba(192, 38, 211, 0.12)"
+                            : "0 0 10px rgba(255, 0, 255, 0.3)",
                         }}
                       />
                       <Button
@@ -1407,13 +1634,21 @@ export default function LinksPage() {
                         }}
                         isLoading={isSwitching}
                         variant="outline"
-                        colorScheme="pink"
-                        borderColor="#ff00ff"
-                        color="#ff00ff"
+                        bg={isLightTheme ? APP_SURFACE : undefined}
+                        borderColor={secondaryAccent}
+                        color={secondaryAccent}
+                        _hover={
+                          isLightTheme
+                            ? {
+                                bg: APP_SURFACE_MUTED,
+                                borderColor: secondaryAccent,
+                              }
+                            : undefined
+                        }
                       >
                         {translations.switchAccount}
                       </Button>
-                      <Text fontSize="xs" color="gray.500">
+                      <Text fontSize="xs" color={helperColor}>
                         {translations.switchAccountHelp}
                       </Text>
                     </VStack>
@@ -1421,24 +1656,24 @@ export default function LinksPage() {
                 </AccordionItem>
               </Accordion>
 
-              <Divider borderColor="rgba(0, 255, 255, 0.3)" />
+              <Divider borderColor={isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)"} />
               {/* Bitcoin Wallet Section */}
               <Box
-                bg="rgba(0, 0, 0, 0.3)"
+                bg={isLightTheme ? APP_SURFACE : "rgba(0, 0, 0, 0.3)"}
                 rounded="md"
                 p={4}
                 border="1px solid"
-                borderColor="#16b078"
+                borderColor={walletAccent}
               >
-                <Text fontSize="sm" color="#16b078" fontWeight="bold" mb={3}>
+                <Text fontSize="sm" color={walletAccent} fontWeight="bold" mb={3}>
                   {translations.bitcoinWallet}
                 </Text>
 
-                <Text fontSize="xs" color="gray.400" mb={4}>
+                <Text fontSize="xs" color={labelColor} mb={4}>
                   {translations.walletDescription1}
                 </Text>
 
-                <Text fontSize="xs" color="gray.400" mb={4}>
+                <Text fontSize="xs" color={labelColor} mb={4}>
                   {translations.walletDescription2}
                 </Text>
 
@@ -1453,7 +1688,7 @@ export default function LinksPage() {
                       }
                       size={24}
                     />
-                    <Text fontSize="sm" color="gray.400">
+                    <Text fontSize="sm" color={labelColor}>
                       {translations.loadingWallet}
                     </Text>
                   </HStack>
@@ -1465,24 +1700,32 @@ export default function LinksPage() {
                     {/* NIP-07 users need to provide their nsec for wallet creation */}
                     {isNip07Mode && noWalletFound && (
                       <Box
-                        bg="rgba(255, 0, 255, 0.1)"
+                        bg={
+                          isLightTheme
+                            ? "rgba(192, 38, 211, 0.08)"
+                            : "rgba(255, 0, 255, 0.1)"
+                        }
                         p={3}
                         rounded="md"
                         mb={3}
                         border="1px solid"
-                        borderColor="rgba(255, 0, 255, 0.3)"
+                        borderColor={
+                          isLightTheme
+                            ? "rgba(192, 38, 211, 0.18)"
+                            : "rgba(255, 0, 255, 0.3)"
+                        }
                       >
                         <HStack mb={2}>
-                          <FaKey color="#ff00ff" />
+                          <FaKey color={secondaryAccent} />
                           <Text
                             fontSize="sm"
                             fontWeight="semibold"
-                            color="#ff00ff"
+                            color={secondaryAccent}
                           >
                             {translations.secretKeyRequired}
                           </Text>
                         </HStack>
-                        <Text fontSize="xs" color="gray.400" mb={3}>
+                        <Text fontSize="xs" color={labelColor} mb={3}>
                           {translations.nip07Warning}
                         </Text>
                         <Input
@@ -1490,15 +1733,22 @@ export default function LinksPage() {
                           value={nsecForWallet}
                           onChange={(e) => setNsecForWallet(e.target.value)}
                           placeholder={translations.enterNsec}
-                          bg="rgba(0, 0, 0, 0.3)"
-                          borderColor="gray.600"
+                          bg={inputBg}
+                          borderColor={inputBorderColor}
+                          color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                          _placeholder={{ color: helperColor }}
                           _focus={{
-                            borderColor: "#ff00ff",
-                            boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
+                            borderColor: secondaryAccent,
+                            boxShadow: isLightTheme
+                              ? "0 0 0 3px rgba(192, 38, 211, 0.12)"
+                              : "0 0 10px rgba(255, 0, 255, 0.3)",
                           }}
                           mb={2}
                         />
-                        <Text fontSize="xs" color="orange.300">
+                        <Text
+                          fontSize="xs"
+                          color={isLightTheme ? "#92400e" : "orange.300"}
+                        >
                           {translations.keyNotStored}
                         </Text>
                       </Box>
@@ -1510,8 +1760,12 @@ export default function LinksPage() {
                       }}
                       isLoading={isCreatingWallet}
                       loadingText={translations.creatingWallet}
-                      bg="#16b078"
-                      boxShadow="0px 4px 0px teal"
+                      bg={walletAccent}
+                      boxShadow={
+                        isLightTheme
+                          ? "0 4px 0px rgba(21, 128, 61, 0.72)"
+                          : "0px 4px 0px teal"
+                      }
                       color="white"
                       w="100%"
                       isDisabled={
@@ -1577,9 +1831,13 @@ export default function LinksPage() {
                             handleInitiateDeposit();
                           }}
                           w="100%"
-                          bg="#16b078"
+                          bg={walletAccent}
                           color="white"
-                          boxShadow={"0px 4px 0px teal"}
+                          boxShadow={
+                            isLightTheme
+                              ? "0 4px 0px rgba(21, 128, 61, 0.72)"
+                              : "0px 4px 0px teal"
+                          }
                         >
                           {translations.deposit}
                         </Button>
@@ -1598,7 +1856,7 @@ export default function LinksPage() {
                           <QRCodeSVG value={invoice} size={200} />
                         </Box>
                         <HStack>
-                          <Text fontSize="sm" color="gray.400">
+                          <Text fontSize="sm" color={labelColor}>
                             {translations.or}
                           </Text>
                           <Button
@@ -1608,19 +1866,28 @@ export default function LinksPage() {
                             }}
                             size="sm"
                             variant="outline"
-                            borderColor="#00ffff"
-                            color="#00ffff"
+                            bg={isLightTheme ? APP_SURFACE : undefined}
+                            borderColor={primaryAccent}
+                            color={primaryAccent}
+                            _hover={
+                              isLightTheme
+                                ? {
+                                    bg: APP_SURFACE_MUTED,
+                                    borderColor: primaryAccent,
+                                  }
+                                : undefined
+                            }
                           >
                             {translations.copyAddress}
                           </Button>
                         </HStack>
-                        <Text fontSize="xs" color="gray.500" textAlign="center">
+                        <Text fontSize="xs" color={helperColor} textAlign="center">
                           {translations.lightningInstructions}
                           <br />
                           <Link
                             href="https://click.cash.app/ui6m/home2022"
                             isExternal
-                            color="#00ffff"
+                            color={primaryAccent}
                             display="inline-flex"
                             alignItems="center"
                             gap="4px"
@@ -1638,8 +1905,17 @@ export default function LinksPage() {
                           leftIcon={<BsQrCode />}
                           size="sm"
                           variant="outline"
-                          borderColor="#ff00ff"
-                          color="#ff00ff"
+                          bg={isLightTheme ? APP_SURFACE : undefined}
+                          borderColor={secondaryAccent}
+                          color={secondaryAccent}
+                          _hover={
+                            isLightTheme
+                              ? {
+                                  bg: APP_SURFACE_MUTED,
+                                  borderColor: secondaryAccent,
+                                }
+                              : undefined
+                          }
                         >
                           {translations.generateNewQR}
                         </Button>
@@ -1652,7 +1928,7 @@ export default function LinksPage() {
           </ModalBody>
           <ModalFooter
             borderTop="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
+            borderColor={modalBorderSoft}
           >
             <Button
               onClick={() => {
@@ -1660,7 +1936,8 @@ export default function LinksPage() {
                 onClose();
               }}
               variant="ghost"
-              color="gray.400"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
             >
               {translations.close}
             </Button>
@@ -1676,64 +1953,65 @@ export default function LinksPage() {
         size="md"
         scrollBehavior="inside"
       >
-        <ModalOverlay bg="blackAlpha.800" />
+        <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
-          bg="rgba(7, 16, 29, 0.95)"
-          color="gray.100"
+          bg={modalBg}
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
-          borderColor="#00ffff"
+          borderColor={modalBorderColor}
           rounded="xl"
-          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
           fontFamily="monospace"
           maxH="85vh"
+          style={{
+            "--links-accent-primary": isLightTheme ? "#0f766e" : "#00ffff",
+            "--links-accent-warm": isLightTheme ? "#b45309" : "gold",
+            "--links-accent-pink": isLightTheme ? "#db2777" : "hotpink",
+          }}
         >
           <ModalHeader
             borderBottom="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
-            color="#00ffff"
+            borderColor={modalBorderSoft}
+            color={modalHeadingColor}
           >
             {translations.aboutTitle}
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
-          <ModalBody
-            py={6}
-            overflowY="auto"
-            sx={{
-              "&::-webkit-scrollbar": {
-                width: "8px",
-              },
-              "&::-webkit-scrollbar-track": {
-                background: "rgba(0, 0, 0, 0.3)",
-                borderRadius: "4px",
-              },
-              "&::-webkit-scrollbar-thumb": {
-                background: "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
-                borderRadius: "4px",
-                border: "2px solid transparent",
-                backgroundClip: "padding-box",
-              },
-              "&::-webkit-scrollbar-thumb:hover": {
-                background: "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
-                backgroundClip: "padding-box",
-              },
-              scrollbarWidth: "thin",
-              scrollbarColor: "#00ffff rgba(0, 0, 0, 0.3)",
-            }}
-          >
+          <ModalCloseButton
+            color={modalHeadingColor}
+            onClick={handleSelectSound}
+            _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+          />
+          <ModalBody py={6} overflowY="auto" sx={modalScrollSx}>
             <VStack spacing={4} align="stretch">
               <Box mt={"-6"}>
                 {" "}
                 <RandomCharacter notSoRandomCharacter={"38"} />
               </Box>
 
-              <Text color="gray.300" fontSize="sm" lineHeight="tall" mt={"-6"}>
+              <Box
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                fontSize="sm"
+                lineHeight="tall"
+                mt={"-6"}
+                sx={{
+                  "& p": {
+                    marginBottom: "12px",
+                  },
+                  "& span": {
+                    fontWeight: 600,
+                    textShadow: isLightTheme
+                      ? "none"
+                      : "0 0 16px rgba(0, 255, 255, 0.08)",
+                  },
+                }}
+              >
                 {translations.aboutContent}
-              </Text>
+              </Box>
             </VStack>
           </ModalBody>
           <ModalFooter
             borderTop="1px solid"
-            borderColor="rgba(0, 255, 255, 0.3)"
+            borderColor={modalBorderSoft}
           >
             <Button
               onClick={() => {
@@ -1741,7 +2019,8 @@ export default function LinksPage() {
                 onAboutClose();
               }}
               variant="ghost"
-              color="gray.400"
+              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
             >
               {translations.close}
             </Button>

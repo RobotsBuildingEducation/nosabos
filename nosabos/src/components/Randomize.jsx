@@ -10,10 +10,10 @@ import {
 import { doc, onSnapshot } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
-import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import VoiceOrb from "./VoiceOrb";
+import XpProgressHeader from "./XpProgressHeader";
 
 // Lazy-load modules
 const StoryMode = React.lazy(() => import("./Stories"));
@@ -249,10 +249,8 @@ export default function Randomize() {
             ) : null}
           </HStack>
 
-          {/* Right: Level/XP + Shuffle */}
+          {/* Right: Shuffle */}
           <HStack spacing={2}>
-            <Badge variant="subtle">{STR.level}</Badge>
-            <Badge variant="subtle">{STR.xpBadge}</Badge>
             <Button
               size="sm"
               variant="outline"
@@ -267,7 +265,11 @@ export default function Randomize() {
           </HStack>
         </HStack>
         <Box mt={2}>
-          <WaveBar value={progressPct} />
+          <XpProgressHeader
+            levelText={STR.level}
+            xpText={STR.xpBadge}
+            progressPct={progressPct}
+          />
         </Box>
       </Box>
 
