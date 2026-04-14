@@ -1299,7 +1299,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.5 }}
             style={{
               fontFamily: theme.fonts.body,
-              fontSize: "clamp(0.8rem, 1.5vw, 0.9rem)",
+              fontSize: "clamp(0.7rem, 1.2vw, 0.8rem)",
               color: theme.colors.text.secondary,
               maxWidth: "580px",
               margin: "0 auto 32px",
