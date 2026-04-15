@@ -472,11 +472,7 @@ export default function RealWorldTasksModal({
           top={4}
           right={4}
         />
-        <DrawerHeader
-          borderBottomWidth="1px"
-          borderColor={ui.headerBorder}
-          pr={12}
-        >
+        <DrawerHeader pr={12}>
           <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={2}>
               <Text color={ui.primaryText} fontWeight="semibold">
@@ -630,12 +626,7 @@ export default function RealWorldTasksModal({
           </Box>
         </DrawerBody>
 
-        <DrawerFooter
-          borderTopWidth="1px"
-          borderColor={ui.headerBorder}
-          flexDirection="column"
-          gap={2}
-        >
+        <DrawerFooter flexDirection="column" gap={2}>
           <Box maxW="520px" mx="auto" w="100%">
             <Button
               colorScheme={allDone && !rewarded ? "teal" : "gray"}
