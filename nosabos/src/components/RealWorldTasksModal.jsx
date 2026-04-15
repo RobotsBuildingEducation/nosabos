@@ -1,5 +1,5 @@
 // src/components/RealWorldTasksModal.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -127,6 +127,8 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
+export { generateRealWorldTasks };
+
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
     return lang === "es" ? "Listas para renovar" : "Ready to refresh";
@@ -149,6 +151,9 @@ export default function RealWorldTasksModal({
   cefrLevel = "A1",
   realWorldTasks,
   onTasksUpdated,
+  isGenerating = false,
+  generationError = "",
+  onRequestGenerate,
 }) {
   const lang = appLanguage === "es" ? "es" : "en";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -156,11 +161,9 @@ export default function RealWorldTasksModal({
   const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
   const toast = useToast();
 
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [isClaiming, setIsClaiming] = useState(false);
-  const generationGuard = useRef(false);
+  const errorMsg = generationError;
 
   const ui = useMemo(
     () =>
@@ -258,50 +261,9 @@ export default function RealWorldTasksModal({
     [npub, onTasksUpdated],
   );
 
-  const triggerGeneration = useCallback(async () => {
-    if (!npub) return;
-    if (generationGuard.current) return;
-    generationGuard.current = true;
-    setIsGenerating(true);
-    setErrorMsg("");
-    try {
-      const fresh = await generateRealWorldTasks({
-        targetLang: normalizedTargetLang,
-        appLanguage: lang,
-        cefrLevel: normalizedLevel,
-      });
-      const next = {
-        tasks: fresh,
-        completed: [false, false, false],
-        rewarded: false,
-        generatedAt: new Date().toISOString(),
-        targetLang: normalizedTargetLang,
-        cefrLevel: normalizedLevel,
-        appLanguage: lang,
-      };
-      await persistTasks(next);
-    } catch (err) {
-      console.error("Real-world task generation failed:", err);
-      setErrorMsg(
-        lang === "es"
-          ? "No se pudieron generar las tareas. Intenta de nuevo."
-          : "Could not generate tasks. Please try again.",
-      );
-    } finally {
-      setIsGenerating(false);
-      generationGuard.current = false;
-    }
-  }, [npub, normalizedTargetLang, lang, normalizedLevel, persistTasks]);
-
-  // Auto-generate when stale and modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!npub) return;
-    if (isGenerating) return;
-    if (isStale) {
-      triggerGeneration();
-    }
-  }, [isOpen, npub, isStale, isGenerating, triggerGeneration]);
+  const triggerGeneration = useCallback(() => {
+    onRequestGenerate?.();
+  }, [onRequestGenerate]);
 
   const handleToggleTask = useCallback(
     async (index) => {
