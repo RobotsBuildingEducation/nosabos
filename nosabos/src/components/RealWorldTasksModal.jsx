@@ -13,7 +13,6 @@ import {
   DrawerOverlay,
   Flex,
   HStack,
-  Spinner,
   Text,
   VStack,
   useToast,
@@ -25,6 +24,7 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import { useThemeStore } from "../useThemeStore";
 import { WaveBar } from "./WaveBar";
+import VoiceOrb from "./VoiceOrb";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -88,16 +88,38 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   const sName = TARGET_LANGUAGE_LABELS[appLanguage] || appLanguage;
   const level = cefrLevel || "A1";
 
+  // Nudge the model toward variety by seeding each call with a random
+  // creative signature. The model never sees this verbatim — it just
+  // influences what it dreams up.
+  const creativitySeed = Math.random().toString(36).slice(2, 10);
+  const diversityHints = [
+    "unexpected everyday moments",
+    "social or interpersonal contexts",
+    "digital / online interactions",
+    "solo reflection or observation",
+    "creative or playful self-expression",
+    "sensory or physical-world engagement",
+    "media consumption",
+    "casual writing or note-taking",
+    "spoken micro-practice",
+    "exploration of local culture",
+  ];
+  // Pick 3 distinct vibes for this batch so the 3 tasks cover different territory.
+  const shuffled = [...diversityHints].sort(() => Math.random() - 0.5);
+  const pickedHints = shuffled.slice(0, 3);
+
   const prompt = [
-    `You are a language coach. Create EXACTLY 3 short, real-world practice missions for a learner of ${tName}.`,
-    `The learner's proficiency level is ${level} (CEFR).`,
-    `Each mission should be doable in the real world or on the internet within a few minutes.`,
-    `Topic ideas (do NOT copy verbatim): ordering at a cafe, commenting on a video, switching a device's language, watching a short clip, labelling objects in your home, sending a voice message to a friend, searching for a recipe, reading a news headline, asking a stranger for the time, etc.`,
-    `Adjust difficulty to the ${level} level — keep missions accessible at lower levels, and richer/more nuanced at higher levels.`,
+    `You are a creative language coach. Invent EXACTLY 3 short, original immersion missions for a learner of ${tName}.`,
+    `The learner's proficiency level is ${level} (CEFR). Adjust difficulty: keep missions accessible at lower levels, richer and more nuanced at higher levels.`,
+    `Each mission should be doable in the real world or online within a few minutes.`,
+    `Make the 3 missions meaningfully DIFFERENT from each other — different settings, different modalities (speaking, listening, reading, writing, observing), different social dynamics.`,
+    `Vary across batches — avoid defaulting to the same cafe/restaurant/menu scenarios every time. Surprise the learner.`,
+    `For inspiration this batch only, loosely draw one mission from each of these vibes (do NOT quote them, just use them as a direction): 1) ${pickedHints[0]}, 2) ${pickedHints[1]}, 3) ${pickedHints[2]}.`,
     `CRITICAL: Do NOT give the learner the answer. Do NOT write the target-language phrase they should say. Do NOT translate anything for them. The description is a short prompt/context only — it tells them WHAT to do and WHY, never HOW.`,
-    `Titles should be an action phrase (e.g. "Order a drink in ${tName}"), max ~8 words.`,
+    `Titles should be an action phrase, max ~8 words.`,
     `Descriptions should be 1 short sentence of context (max ~20 words) — a hint about the setting or goal, NOT the words to say. Avoid quoted phrases in the target language. Avoid literal scripts or vocabulary lists.`,
     `Write titles and descriptions in ${sName} (the learner's UI language). Mention ${tName} by name when referring to the target language.`,
+    `Creativity seed (internal, ignore in output): ${creativitySeed}.`,
     `Return ONLY a JSON object matching: {"tasks":[{"title":"...","description":"..."},{"title":"...","description":"..."},{"title":"...","description":"..."}]}`,
     `No code fences. No commentary. JSON only.`,
   ].join(" ");
@@ -380,7 +402,11 @@ export default function RealWorldTasksModal({
       ? "Próximo lote en"
       : "Next batch in";
   const generatingLabel =
-    lang === "es" ? "Generando tareas..." : "Generating tasks...";
+    lang === "es" ? "Creando tareas..." : "Creating tasks...";
+  const voiceOrbState = useMemo(() => {
+    const options = ["idle", "listening", "speaking"];
+    return options[Math.floor(Math.random() * options.length)];
+  }, [isGenerating]);
   const claimLabel =
     lang === "es"
       ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
@@ -479,7 +505,7 @@ export default function RealWorldTasksModal({
                 py={10}
                 gap={3}
               >
-                <Spinner size="md" color="cyan.400" />
+                <VoiceOrb state={voiceOrbState} size={96} />
                 <Text fontSize="sm" color={ui.secondaryText}>
                   {generatingLabel}
                 </Text>
