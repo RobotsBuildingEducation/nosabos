@@ -89,13 +89,15 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   const level = cefrLevel || "A1";
 
   const prompt = [
-    `You are a language coach. Create EXACTLY 3 short, real-world practice tasks for a learner of ${tName}.`,
+    `You are a language coach. Create EXACTLY 3 short, real-world practice missions for a learner of ${tName}.`,
     `The learner's proficiency level is ${level} (CEFR).`,
-    `Tasks should be doable in the real world or on the internet within a few minutes each.`,
-    `Examples: order something at a cafe in ${tName}, leave a comment in ${tName} on a YouTube video, change phone language to ${tName} for an hour, watch a 1-minute clip in ${tName}, write a sticky note in ${tName} and put it on a household object, send a voice message in ${tName} to a friend, search a recipe in ${tName}, etc.`,
-    `Adjust difficulty to the ${level} level — keep tasks accessible at lower levels, and richer/more nuanced at higher levels.`,
-    `Write the task titles and descriptions in ${sName} (the learner's UI language), but reference the target language (${tName}) by name when relevant.`,
-    `Keep titles short (max ~8 words) and descriptions concise (1–2 sentences, max ~30 words).`,
+    `Each mission should be doable in the real world or on the internet within a few minutes.`,
+    `Topic ideas (do NOT copy verbatim): ordering at a cafe, commenting on a video, switching a device's language, watching a short clip, labelling objects in your home, sending a voice message to a friend, searching for a recipe, reading a news headline, asking a stranger for the time, etc.`,
+    `Adjust difficulty to the ${level} level — keep missions accessible at lower levels, and richer/more nuanced at higher levels.`,
+    `CRITICAL: Do NOT give the learner the answer. Do NOT write the target-language phrase they should say. Do NOT translate anything for them. The description is a short prompt/context only — it tells them WHAT to do and WHY, never HOW.`,
+    `Titles should be an action phrase (e.g. "Order a drink in ${tName}"), max ~8 words.`,
+    `Descriptions should be 1 short sentence of context (max ~20 words) — a hint about the setting or goal, NOT the words to say. Avoid quoted phrases in the target language. Avoid literal scripts or vocabulary lists.`,
+    `Write titles and descriptions in ${sName} (the learner's UI language). Mention ${tName} by name when referring to the target language.`,
     `Return ONLY a JSON object matching: {"tasks":[{"title":"...","description":"..."},{"title":"...","description":"..."},{"title":"...","description":"..."}]}`,
     `No code fences. No commentary. JSON only.`,
   ].join(" ");
@@ -381,17 +383,10 @@ export default function RealWorldTasksModal({
     lang === "es" ? "Generar nuevas tareas" : "Generate new tasks";
   const generatingLabel =
     lang === "es" ? "Generando tareas..." : "Generating tasks...";
-  const claimLabel = rewarded
-    ? lang === "es"
-      ? `Recompensa reclamada · +${REAL_WORLD_TASKS_REWARD_XP} XP`
-      : `Reward claimed · +${REAL_WORLD_TASKS_REWARD_XP} XP`
-    : allDone
-      ? lang === "es"
-        ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-        : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`
-      : lang === "es"
-        ? `Completa las 3 tareas para ganar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-        : `Finish all 3 to earn +${REAL_WORLD_TASKS_REWARD_XP} XP`;
+  const claimLabel =
+    lang === "es"
+      ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
+      : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
   const closeLabel = lang === "es" ? "Cerrar" : "Close";
   const levelLabel = lang === "es" ? "Nivel" : "Level";
 
@@ -431,9 +426,22 @@ export default function RealWorldTasksModal({
         >
           <Box maxW="720px" mx="auto" w="100%">
             <VStack align="stretch" spacing={2}>
-              <Text color={ui.primaryText} fontWeight="semibold">
-                {drawerTitle}
-              </Text>
+              <HStack justify="space-between" align="center">
+                <Text color={ui.primaryText} fontWeight="semibold">
+                  {drawerTitle}
+                </Text>
+                {/* TEMP test button — remove later */}
+                <Button
+                  size="xs"
+                  variant="outline"
+                  colorScheme="orange"
+                  onClick={triggerGeneration}
+                  isDisabled={isGenerating}
+                  isLoading={isGenerating}
+                >
+                  {lang === "es" ? "Prueba: regenerar" : "Test: regenerate"}
+                </Button>
+              </HStack>
               <Text fontSize="sm" color={ui.secondaryText}>
                 {subtitle}
               </Text>
@@ -514,21 +522,35 @@ export default function RealWorldTasksModal({
                   return (
                     <Box
                       key={i}
+                      as="button"
+                      type="button"
                       bg={ui.cardBg}
                       borderWidth="1px"
                       borderColor={ui.cardBorder}
                       borderRadius="lg"
                       p={4}
+                      w="100%"
+                      textAlign="left"
+                      cursor={rewarded ? "default" : "pointer"}
                       opacity={rewarded ? 0.75 : 1}
+                      onClick={() => {
+                        if (rewarded) return;
+                        handleToggleTask(i);
+                      }}
+                      _hover={rewarded ? undefined : { filter: "brightness(1.05)" }}
+                      _active={rewarded ? undefined : { transform: "scale(0.995)" }}
+                      transition="transform 0.08s ease, filter 0.15s ease"
                     >
                       <HStack align="start" spacing={3}>
                         <Checkbox
                           isChecked={isChecked}
                           isDisabled={rewarded}
                           onChange={() => handleToggleTask(i)}
+                          onClick={(e) => e.stopPropagation()}
                           colorScheme="green"
                           size="lg"
                           mt={1}
+                          pointerEvents="none"
                         />
                         <VStack align="stretch" spacing={1} flex="1">
                           <Text
