@@ -68,8 +68,8 @@ const BUTTON_EXPLANATIONS = [
     icon: FiCompass,
     label: { en: "Real-World Tasks", es: "Tareas del Mundo Real" },
     description: {
-      en: "Get 3 fresh micro-tasks every 6 hours to practice your language outside the app. Complete all three to earn 50 XP.",
-      es: "Recibe 3 micro-tareas nuevas cada 6 horas para practicar tu idioma fuera de la app. Completa las tres para ganar 50 XP.",
+      en: "3 micro-tasks every 6 hours. Complete all to earn 50 XP.",
+      es: "3 micro-tareas cada 6 horas. Complétalas para ganar 50 XP.",
     },
     position: 1,
   },
@@ -342,14 +342,22 @@ export default function TutorialActionBarPopovers({
             </HStack>
 
             {/* Description */}
-            <Text
-              fontSize="sm"
-              color={bodyColor}
-              textAlign="center"
-              lineHeight="1.5"
+            <Box
+              minH="72px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              px={2}
             >
-              {currentButton.description[lang]}
-            </Text>
+              <Text
+                fontSize="sm"
+                color={bodyColor}
+                textAlign="center"
+                lineHeight="1.5"
+              >
+                {currentButton.description[lang]}
+              </Text>
+            </Box>
 
             {/* Progress dots */}
             <HStack spacing={2} mt={2}>
