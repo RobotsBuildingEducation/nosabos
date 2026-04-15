@@ -5079,33 +5079,25 @@ export default function App() {
       !realWorldTasks.completed.some(Boolean),
   );
 
-  // True when the current untouched batch was generated after the user's
-  // last open of the modal (i.e. a fresh set the user hasn't seen yet).
-  const realWorldTasksBatchGeneratedAt = realWorldTasks?.generatedAt
-    ? new Date(realWorldTasks.generatedAt).getTime()
-    : 0;
-  const realWorldTasksFreshUnseen =
-    realWorldTasksBatchUntouched &&
-    realWorldTasksBatchGeneratedAt > 0 &&
-    realWorldTasksBatchGeneratedAt > realWorldTasksLastOpenedAt;
-
   const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
   const prevAnimTriggerRef = useRef(false);
 
-  // Trigger a brief one-time animation when a fresh, untouched batch is
-  // available that the user hasn't opened yet. Once the user opens the
-  // modal, the animation suppresses until another new batch appears.
+  // Fire a brief one-time animation whenever the current batch is
+  // untouched (no completed tasks, not claimed). This re-fires on each
+  // page load / mount so the user sees a visual signal every time they
+  // return and still have pending tasks. It also re-fires when a new
+  // untouched batch replaces a touched/claimed one.
   useEffect(() => {
-    if (realWorldTasksFreshUnseen && !prevAnimTriggerRef.current) {
+    if (realWorldTasksBatchUntouched && !prevAnimTriggerRef.current) {
       setRealWorldTasksAttention(true);
       const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
       prevAnimTriggerRef.current = true;
       return () => clearTimeout(id);
     }
-    if (!realWorldTasksFreshUnseen) {
+    if (!realWorldTasksBatchUntouched) {
       prevAnimTriggerRef.current = false;
     }
-  }, [realWorldTasksFreshUnseen]);
+  }, [realWorldTasksBatchUntouched]);
 
   const handleRealWorldTasksUpdated = useCallback(
     (next) => {
