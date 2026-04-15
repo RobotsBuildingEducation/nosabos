@@ -6665,18 +6665,19 @@ function BottomActionBar({
                     top="50%"
                     left="50%"
                     transform="translate(-50%, -50%)"
-                    width="38px"
-                    height="38px"
-                    viewBox="0 0 38 38"
+                    width="36px"
+                    height="36px"
+                    viewBox="0 0 36 36"
                     pointerEvents="none"
                     aria-hidden="true"
                     zIndex={1}
+                    overflow="visible"
                   >
                     <rect
                       x="1.5"
                       y="1.5"
-                      width="35"
-                      height="35"
+                      width="33"
+                      height="33"
                       rx="12"
                       ry="12"
                       fill="none"
@@ -6685,23 +6686,23 @@ function BottomActionBar({
                           ? "rgba(120, 94, 61, 0.18)"
                           : "rgba(255,255,255,0.08)"
                       }
-                      strokeWidth="1.5"
+                      strokeWidth="3"
                     />
                     <rect
                       x="1.5"
                       y="1.5"
-                      width="35"
-                      height="35"
+                      width="33"
+                      height="33"
                       rx="12"
                       ry="12"
                       fill="none"
                       stroke="#22d3ee"
-                      strokeWidth="1.5"
+                      strokeWidth="3"
                       strokeLinecap="round"
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 19 19)"
+                      transform="rotate(-90 18 18)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
