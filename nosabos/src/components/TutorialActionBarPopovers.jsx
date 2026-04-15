@@ -23,6 +23,7 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons";
 import { PiPath, PiUsersBold } from "react-icons/pi";
+import { FiCompass } from "react-icons/fi";
 import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
@@ -62,13 +63,13 @@ const BUTTON_EXPLANATIONS = [
     position: 0,
   },
   {
-    id: "teams",
+    id: "realWorldTasks",
     tutorialId: "teams",
-    icon: PiUsersBold,
-    label: { en: "Teams", es: "Equipos" },
+    icon: FiCompass,
+    label: { en: "Real-World Tasks", es: "Tareas del Mundo Real" },
     description: {
-      en: "Join or create study groups to learn together with friends",
-      es: "Únete o crea grupos de estudio para aprender junto con amigos",
+      en: "Get 3 fresh micro-tasks every 6 hours to practice your language outside the app. Complete all three to earn 50 XP.",
+      es: "Recibe 3 micro-tareas nuevas cada 6 horas para practicar tu idioma fuera de la app. Completa las tres para ganar 50 XP.",
     },
     position: 1,
   },
