@@ -6702,7 +6702,6 @@ function BottomActionBar({
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 22 24)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
