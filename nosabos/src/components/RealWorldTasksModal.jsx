@@ -107,18 +107,21 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   const creativitySeed = Math.random().toString(36).slice(2, 10);
   // Realistic, self-contained vibes. Every option must be doable by a
   // learner alone, without access to native speakers, a target-language
-  // country, or specific local businesses.
+  // country, or specific local businesses. Leans heavily on passive
+  // immersion and discovery, not just producing language.
   const diversityHints = [
-    "digital / online interactions on apps the learner already uses",
-    "solo reflection, journaling, or observation at home",
-    "creative or playful self-expression (writing, drawing, naming)",
-    "media consumption (short video, song, article, post)",
-    "casual writing or note-taking in the target language",
-    "spoken micro-practice out loud to themselves",
-    "labelling or describing objects in their own environment",
-    "searching and exploring content in the target language",
-    "short listening or shadowing exercises",
-    "talking to an AI chatbot or voice assistant",
+    `follow a ${tName}-speaking creator on YouTube / TikTok / Instagram`,
+    `discover and subscribe to a ${tName}-language subreddit or forum`,
+    `find and save a ${tName}-language podcast or radio station`,
+    `find and bookmark a ${tName}-language show, movie, or channel to watch`,
+    `follow a ${tName}-language news account or newsletter`,
+    `discover a musician who sings in ${tName} and play their music`,
+    `browse a ${tName}-language community, meme page, or hobby group`,
+    `switch an app, game, or device interface into ${tName}`,
+    `journal, label, or note-take a few words/phrases in ${tName}`,
+    `shadow or read aloud a short clip in ${tName}`,
+    `chat briefly with an AI or voice assistant in ${tName}`,
+    `watch a short video in ${tName} and observe without translating`,
   ];
   // Pick 3 distinct vibes for this batch so the 3 tasks cover different territory.
   const shuffled = [...diversityHints].sort(() => Math.random() - 0.5);
@@ -130,7 +133,8 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
     `STRICTLY match the difficulty to ${level}. Do NOT suggest anything above this level. At Pre-A1/A1, absolutely no full conversations, no nuanced opinions, no reading articles — stick to words, labels, and rehearsed micro-phrases. At higher levels, make the missions richer and more demanding.`,
     `Each mission must be doable alone, from anywhere, in a few minutes, using only a phone/computer or the learner's immediate home environment.`,
     `DO NOT assume the learner has access to native speakers, a target-language country, local shops, clerks, strangers, restaurants, or community events. No "greet a local clerk", "order at a cafe", "ask a stranger" style tasks. No missions that require traveling or finding a specific place.`,
-    `Make the 3 missions meaningfully DIFFERENT from each other — different modalities (speaking to self, listening, reading, writing, observing) and different contexts.`,
+    `GO BROADER THAN JUST SPEAKING/WRITING DRILLS. Prioritize discovery and passive immersion: following a ${tName}-speaking creator, subscribing to a ${tName}-language subreddit / Discord / forum, finding a podcast, show, musician, or streamer in ${tName}, switching an app's language, lurking in a hobby community, etc. Building the learner's ${tName} media diet matters as much as producing language. Mix passive (follow / watch / listen / lurk) and active (shadow / journal / label / chat) tasks across the 3 missions.`,
+    `Make the 3 missions meaningfully DIFFERENT from each other — different modalities and different contexts.`,
     `Vary across batches — do not default to the same ideas every time.`,
     `For inspiration this batch only, loosely draw one mission from each of these vibes (do NOT quote them, just use them as direction): 1) ${pickedHints[0]}, 2) ${pickedHints[1]}, 3) ${pickedHints[2]}.`,
     `CRITICAL: Do NOT give the learner the answer. Do NOT write the target-language phrase they should say. Do NOT translate anything for them. The description is a short prompt/context only — it tells them WHAT to do and WHY, never HOW.`,
