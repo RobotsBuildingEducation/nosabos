@@ -379,16 +379,12 @@ export default function RealWorldTasksModal({
     lang === "es"
       ? "Próximo lote en"
       : "Next batch in";
-  const refreshNowLabel =
-    lang === "es" ? "Generar nuevas tareas" : "Generate new tasks";
   const generatingLabel =
     lang === "es" ? "Generando tareas..." : "Generating tasks...";
   const claimLabel =
     lang === "es"
       ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
       : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
-  const closeLabel = lang === "es" ? "Cerrar" : "Close";
-  const levelLabel = lang === "es" ? "Nivel" : "Level";
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
@@ -442,19 +438,9 @@ export default function RealWorldTasksModal({
                   {lang === "es" ? "Prueba: regenerar" : "Test: regenerate"}
                 </Button>
               </HStack>
-              <Text fontSize="sm" color={ui.secondaryText}>
+              <Text fontSize="xs" color={ui.secondaryText}>
                 {subtitle}
               </Text>
-              <HStack spacing={2} fontSize="xs" color={ui.mutedText}>
-                <Text>
-                  {levelLabel}: {normalizedLevel}
-                </Text>
-                <Text>·</Text>
-                <Text>
-                  {TARGET_LANGUAGE_LABELS[normalizedTargetLang] ||
-                    normalizedTargetLang}
-                </Text>
-              </HStack>
             </VStack>
           </Box>
         </DrawerHeader>
@@ -583,38 +569,16 @@ export default function RealWorldTasksModal({
           gap={2}
         >
           <Box maxW="720px" mx="auto" w="100%">
-            <VStack align="stretch" spacing={2}>
-              <Button
-                colorScheme={rewarded ? "gray" : allDone ? "green" : "gray"}
-                variant={allDone && !rewarded ? "solid" : "outline"}
-                isDisabled={!allDone || rewarded || isGenerating}
-                isLoading={isClaiming}
-                onClick={handleClaimReward}
-                w="100%"
-              >
-                {claimLabel}
-              </Button>
-              <HStack justify="space-between">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  color={ui.secondaryText}
-                  onClick={triggerGeneration}
-                  isDisabled={isGenerating || remainingMs > 0}
-                >
-                  {refreshNowLabel}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  color={ui.primaryText}
-                  _hover={{ bg: ui.closeHoverBg }}
-                  onClick={onClose}
-                >
-                  {closeLabel}
-                </Button>
-              </HStack>
-            </VStack>
+            <Button
+              colorScheme={allDone && !rewarded ? "teal" : "gray"}
+              variant={allDone && !rewarded ? "solid" : "outline"}
+              isDisabled={!allDone || rewarded || isGenerating}
+              isLoading={isClaiming}
+              onClick={handleClaimReward}
+              w="100%"
+            >
+              {claimLabel}
+            </Button>
           </Box>
         </DrawerFooter>
       </DrawerContent>
