@@ -420,7 +420,7 @@ export default function RealWorldTasksModal({
           borderColor={ui.headerBorder}
           pr={12}
         >
-          <Box maxW="720px" mx="auto" w="100%">
+          <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={2}>
               <HStack justify="space-between" align="center">
                 <Text color={ui.primaryText} fontWeight="semibold">
@@ -438,7 +438,7 @@ export default function RealWorldTasksModal({
                   {lang === "es" ? "Prueba: regenerar" : "Test: regenerate"}
                 </Button>
               </HStack>
-              <Text fontSize="xs" color={ui.secondaryText}>
+              <Text fontSize="11px" color={ui.secondaryText}>
                 {subtitle}
               </Text>
             </VStack>
@@ -446,7 +446,7 @@ export default function RealWorldTasksModal({
         </DrawerHeader>
 
         <DrawerBody overflowY="auto" flex="1" py={4}>
-          <Box maxW="720px" mx="auto" w="100%">
+          <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={3} mb={4}>
               <HStack justify="space-between" fontSize="xs" color={ui.mutedText}>
                 <Text>{progressLabel}</Text>
@@ -548,7 +548,7 @@ export default function RealWorldTasksModal({
                             {task.title}
                           </Text>
                           {task.description && (
-                            <Text fontSize="xs" color={ui.secondaryText}>
+                            <Text fontSize="11px" color={ui.secondaryText}>
                               {task.description}
                             </Text>
                           )}
@@ -568,7 +568,7 @@ export default function RealWorldTasksModal({
           flexDirection="column"
           gap={2}
         >
-          <Box maxW="720px" mx="auto" w="100%">
+          <Box maxW="520px" mx="auto" w="100%">
             <Button
               colorScheme={allDone && !rewarded ? "teal" : "gray"}
               variant={allDone && !rewarded ? "solid" : "outline"}
