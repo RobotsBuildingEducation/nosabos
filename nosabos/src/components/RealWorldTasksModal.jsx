@@ -581,11 +581,21 @@ export default function RealWorldTasksModal({
           <Box maxW="520px" mx="auto" w="100%">
             <Button
               colorScheme={allDone && !rewarded ? "teal" : "gray"}
-              variant={allDone && !rewarded ? "solid" : "outline"}
+              variant={allDone && !rewarded ? "solid" : "ghost"}
               isDisabled={!allDone || rewarded || isGenerating}
               isLoading={isClaiming}
               onClick={handleClaimReward}
               w="100%"
+              _disabled={{
+                bg: "transparent",
+                color: isLightTheme ? "blackAlpha.400" : "whiteAlpha.400",
+                borderStyle: "dashed",
+                borderWidth: "1px",
+                borderColor: isLightTheme ? "blackAlpha.200" : "whiteAlpha.200",
+                cursor: "not-allowed",
+                opacity: 0.6,
+                boxShadow: "none",
+              }}
             >
               {claimLabel}
             </Button>
