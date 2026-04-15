@@ -88,21 +88,37 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   const sName = TARGET_LANGUAGE_LABELS[appLanguage] || appLanguage;
   const level = cefrLevel || "A1";
 
+  // Concrete, level-specific guidance so the model actually respects CEFR.
+  const levelGuidance = {
+    "Pre-A1":
+      "Absolute beginner. Single words or 2-3 word phrases. Numbers, colors, greetings in isolation, naming objects, copying characters. Listening/reading should be labels, signs, or single words at a time. No sentences, no conversations.",
+    A1: "Beginner. Very short, rehearsed phrases about self, family, basic needs. Can ask/answer simple personal questions if the other person speaks slowly. Reading: signs, menus, short messages. Writing: a postcard, filling a form.",
+    A2: "Elementary. Short routine exchanges on familiar topics (shopping, work, local area). Can understand frequently used expressions. Reading: short simple texts, ads, schedules. Writing: short notes and messages.",
+    B1: "Intermediate. Can handle most situations while traveling. Can describe experiences, dreams, opinions briefly. Understands clear standard input on familiar matters. Reading: factual texts on topics of interest. Writing: connected text on familiar topics.",
+    B2: "Upper intermediate. Can interact with fluency and spontaneity. Can produce detailed text on a wide range of subjects and explain a viewpoint. Can follow most news, films, articles.",
+    C1: "Advanced. Can express ideas fluently and spontaneously without much searching. Can use language flexibly for social, academic, and professional purposes. Can understand long, demanding texts and implicit meaning.",
+    C2: "Proficient. Can understand virtually everything heard or read. Can summarize from different sources, reconstruct arguments, express shades of meaning precisely.",
+  };
+  const levelDescription = levelGuidance[level] || levelGuidance.A1;
+
   // Nudge the model toward variety by seeding each call with a random
   // creative signature. The model never sees this verbatim — it just
   // influences what it dreams up.
   const creativitySeed = Math.random().toString(36).slice(2, 10);
+  // Realistic, self-contained vibes. Every option must be doable by a
+  // learner alone, without access to native speakers, a target-language
+  // country, or specific local businesses.
   const diversityHints = [
-    "unexpected everyday moments",
-    "social or interpersonal contexts",
-    "digital / online interactions",
-    "solo reflection or observation",
-    "creative or playful self-expression",
-    "sensory or physical-world engagement",
-    "media consumption",
-    "casual writing or note-taking",
-    "spoken micro-practice",
-    "exploration of local culture",
+    "digital / online interactions on apps the learner already uses",
+    "solo reflection, journaling, or observation at home",
+    "creative or playful self-expression (writing, drawing, naming)",
+    "media consumption (short video, song, article, post)",
+    "casual writing or note-taking in the target language",
+    "spoken micro-practice out loud to themselves",
+    "labelling or describing objects in their own environment",
+    "searching and exploring content in the target language",
+    "short listening or shadowing exercises",
+    "talking to an AI chatbot or voice assistant",
   ];
   // Pick 3 distinct vibes for this batch so the 3 tasks cover different territory.
   const shuffled = [...diversityHints].sort(() => Math.random() - 0.5);
@@ -110,11 +126,13 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
 
   const prompt = [
     `You are a creative language coach. Invent EXACTLY 3 short, original immersion missions for a learner of ${tName}.`,
-    `The learner's proficiency level is ${level} (CEFR). Adjust difficulty: keep missions accessible at lower levels, richer and more nuanced at higher levels.`,
-    `Each mission should be doable in the real world or online within a few minutes.`,
-    `Make the 3 missions meaningfully DIFFERENT from each other — different settings, different modalities (speaking, listening, reading, writing, observing), different social dynamics.`,
-    `Vary across batches — avoid defaulting to the same cafe/restaurant/menu scenarios every time. Surprise the learner.`,
-    `For inspiration this batch only, loosely draw one mission from each of these vibes (do NOT quote them, just use them as a direction): 1) ${pickedHints[0]}, 2) ${pickedHints[1]}, 3) ${pickedHints[2]}.`,
+    `The learner's proficiency level is ${level} (CEFR). ${levelDescription}`,
+    `STRICTLY match the difficulty to ${level}. Do NOT suggest anything above this level. At Pre-A1/A1, absolutely no full conversations, no nuanced opinions, no reading articles — stick to words, labels, and rehearsed micro-phrases. At higher levels, make the missions richer and more demanding.`,
+    `Each mission must be doable alone, from anywhere, in a few minutes, using only a phone/computer or the learner's immediate home environment.`,
+    `DO NOT assume the learner has access to native speakers, a target-language country, local shops, clerks, strangers, restaurants, or community events. No "greet a local clerk", "order at a cafe", "ask a stranger" style tasks. No missions that require traveling or finding a specific place.`,
+    `Make the 3 missions meaningfully DIFFERENT from each other — different modalities (speaking to self, listening, reading, writing, observing) and different contexts.`,
+    `Vary across batches — do not default to the same ideas every time.`,
+    `For inspiration this batch only, loosely draw one mission from each of these vibes (do NOT quote them, just use them as direction): 1) ${pickedHints[0]}, 2) ${pickedHints[1]}, 3) ${pickedHints[2]}.`,
     `CRITICAL: Do NOT give the learner the answer. Do NOT write the target-language phrase they should say. Do NOT translate anything for them. The description is a short prompt/context only — it tells them WHAT to do and WHY, never HOW.`,
     `Titles should be an action phrase, max ~8 words.`,
     `Descriptions should be 1 short sentence of context (max ~20 words) — a hint about the setting or goal, NOT the words to say. Avoid quoted phrases in the target language. Avoid literal scripts or vocabulary lists.`,
