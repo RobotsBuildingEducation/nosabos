@@ -6665,21 +6665,21 @@ function BottomActionBar({
                     top="calc(50% + 2px)"
                     left="50%"
                     transform="translate(-50%, -50%)"
-                    width="40px"
-                    height="42px"
-                    viewBox="0 0 40 42"
+                    width="44px"
+                    height="48px"
+                    viewBox="0 0 44 48"
                     pointerEvents="none"
                     aria-hidden="true"
                     zIndex={1}
                     overflow="visible"
                   >
                     <rect
-                      x="1.5"
-                      y="1.5"
-                      width="37"
-                      height="39"
-                      rx="13"
-                      ry="13"
+                      x="1.75"
+                      y="1.75"
+                      width="40.5"
+                      height="44.5"
+                      rx="14"
+                      ry="14"
                       fill="none"
                       stroke={
                         isLightTheme
@@ -6689,12 +6689,12 @@ function BottomActionBar({
                       strokeWidth="3"
                     />
                     <rect
-                      x="1.5"
-                      y="1.5"
-                      width="37"
-                      height="39"
-                      rx="13"
-                      ry="13"
+                      x="1.75"
+                      y="1.75"
+                      width="40.5"
+                      height="44.5"
+                      rx="14"
+                      ry="14"
                       fill="none"
                       stroke="#06b6d4"
                       strokeWidth="3.5"
@@ -6702,7 +6702,7 @@ function BottomActionBar({
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 20 21)"
+                      transform="rotate(-90 22 24)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
