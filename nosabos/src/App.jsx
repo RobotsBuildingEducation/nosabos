@@ -6662,12 +6662,12 @@ function BottomActionBar({
                   <Box
                     as="svg"
                     position="absolute"
-                    top="50%"
+                    top="calc(50% + 2px)"
                     left="50%"
                     transform="translate(-50%, -50%)"
                     width="36px"
-                    height="36px"
-                    viewBox="0 0 36 36"
+                    height="38px"
+                    viewBox="0 0 36 38"
                     pointerEvents="none"
                     aria-hidden="true"
                     zIndex={1}
@@ -6677,7 +6677,7 @@ function BottomActionBar({
                       x="1.5"
                       y="1.5"
                       width="33"
-                      height="33"
+                      height="35"
                       rx="12"
                       ry="12"
                       fill="none"
@@ -6692,7 +6692,7 @@ function BottomActionBar({
                       x="1.5"
                       y="1.5"
                       width="33"
-                      height="33"
+                      height="35"
                       rx="12"
                       ry="12"
                       fill="none"
@@ -6702,7 +6702,7 @@ function BottomActionBar({
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 18 18)"
+                      transform="rotate(-90 18 19)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
