@@ -1,5 +1,11 @@
 // src/components/RealWorldTasksModal.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -111,7 +117,7 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   // immersion and discovery, not just producing language.
   const diversityHints = [
     `follow a ${tName}-speaking creator on YouTube / TikTok / Instagram`,
-    `discover and subscribe to a ${tName}-language subreddit or forum`,
+    `Post to a ${tName}-language subreddit or forum`,
     `find and save a ${tName}-language podcast or radio station`,
     `find and bookmark a ${tName}-language show, movie, or channel to watch`,
     `follow a ${tName}-language news account or newsletter`,
@@ -133,7 +139,7 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
     `STRICTLY match the difficulty to ${level}. Do NOT suggest anything above this level. At Pre-A1/A1, absolutely no full conversations, no nuanced opinions, no reading articles — stick to words, labels, and rehearsed micro-phrases. At higher levels, make the missions richer and more demanding.`,
     `Each mission must be doable alone, from anywhere, in a few minutes, using only a phone/computer or the learner's immediate home environment.`,
     `DO NOT assume the learner has access to native speakers, a target-language country, local shops, clerks, strangers, restaurants, or community events. No "greet a local clerk", "order at a cafe", "ask a stranger" style tasks. No missions that require traveling or finding a specific place.`,
-    `GO BROADER THAN JUST SPEAKING/WRITING DRILLS. Prioritize discovery and passive immersion: following a ${tName}-speaking creator, subscribing to a ${tName}-language subreddit / Discord / forum, finding a podcast, show, musician, or streamer in ${tName}, switching an app's language, lurking in a hobby community, etc. Building the learner's ${tName} media diet matters as much as producing language. Mix passive (follow / watch / listen / lurk) and active (shadow / journal / label / chat) tasks across the 3 missions.`,
+    `GO BROADER THAN JUST SPEAKING/WRITING DRILLS. Prioritize discovery and passive immersion: following a ${tName}-speaking creator, posting to a ${tName}-language subreddit / Discord / forum, finding a podcast, show, musician, or streamer in ${tName}, switching an app's language, lurking in a hobby community, etc. Building the learner's ${tName} media diet matters as much as producing language. Mix passive (follow / watch / listen / lurk) and active (shadow / journal / label / chat) tasks across the 3 missions.`,
     `Make the 3 missions meaningfully DIFFERENT from each other — different modalities and different contexts.`,
     `Vary across batches — do not default to the same ideas every time.`,
     `For inspiration this batch only, loosely draw one mission from each of these vibes (do NOT quote them, just use them as direction): 1) ${pickedHints[0]}, 2) ${pickedHints[1]}, 3) ${pickedHints[2]}.`,
@@ -364,7 +370,14 @@ export default function RealWorldTasksModal({
         console.error("Failed to update task completion:", err);
       }
     },
-    [realWorldTasks, isStale, rewarded, completed, onTasksUpdated, persistTasks],
+    [
+      realWorldTasks,
+      isStale,
+      rewarded,
+      completed,
+      onTasksUpdated,
+      persistTasks,
+    ],
   );
 
   const handleClaimReward = useCallback(async () => {
@@ -417,12 +430,9 @@ export default function RealWorldTasksModal({
     lang === "es" ? "Práctica de inmersión" : "Immersion Practice";
   const subtitle =
     lang === "es"
-      ? "3 micro-tareas para usar tu idioma fuera de la app"
-      : "3 micro-tasks to use your language outside the app";
-  const progressLabel =
-    lang === "es"
-      ? "Próximo lote en"
-      : "Next batch in";
+      ? "3 tareas para usar tu idioma fuera de la app"
+      : "3 tasks to use your language outside the app";
+  const progressLabel = lang === "es" ? "Próximo lote en" : "Next batch in";
   const generatingLabel =
     lang === "es" ? "Creando tareas..." : "Creating tasks...";
   const voiceOrbState = useMemo(() => {
@@ -488,7 +498,11 @@ export default function RealWorldTasksModal({
         <DrawerBody overflowY="auto" flex="1" py={4}>
           <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={3} mb={4}>
-              <HStack justify="space-between" fontSize="xs" color={ui.mutedText}>
+              <HStack
+                justify="space-between"
+                fontSize="xs"
+                color={ui.mutedText}
+              >
                 <Text>{progressLabel}</Text>
                 <Text>{formatRemaining(remainingMs, lang)}</Text>
               </HStack>
@@ -537,9 +551,7 @@ export default function RealWorldTasksModal({
             ) : tasks.length === 0 ? (
               <Flex justify="center" py={10}>
                 <Text fontSize="sm" color={ui.secondaryText}>
-                  {lang === "es"
-                    ? "No hay tareas todavía."
-                    : "No tasks yet."}
+                  {lang === "es" ? "No hay tareas todavía." : "No tasks yet."}
                 </Text>
               </Flex>
             ) : (
@@ -564,8 +576,12 @@ export default function RealWorldTasksModal({
                         if (rewarded) return;
                         handleToggleTask(i);
                       }}
-                      _hover={rewarded ? undefined : { filter: "brightness(1.05)" }}
-                      _active={rewarded ? undefined : { transform: "scale(0.995)" }}
+                      _hover={
+                        rewarded ? undefined : { filter: "brightness(1.05)" }
+                      }
+                      _active={
+                        rewarded ? undefined : { transform: "scale(0.995)" }
+                      }
                       transition="transform 0.08s ease, filter 0.15s ease"
                     >
                       <HStack align="start" spacing={3}>
