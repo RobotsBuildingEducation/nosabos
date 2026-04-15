@@ -6686,7 +6686,7 @@ function BottomActionBar({
                           ? "rgba(120, 94, 61, 0.18)"
                           : "rgba(255,255,255,0.08)"
                       }
-                      strokeWidth="3"
+                      strokeWidth="3.5"
                     />
                     <rect
                       x="1.75"
