@@ -6665,43 +6665,43 @@ function BottomActionBar({
                     top="50%"
                     left="50%"
                     transform="translate(-50%, -50%)"
-                    width="44px"
-                    height="44px"
-                    viewBox="0 0 44 44"
+                    width="38px"
+                    height="38px"
+                    viewBox="0 0 38 38"
                     pointerEvents="none"
                     aria-hidden="true"
                     zIndex={1}
                   >
                     <rect
-                      x="2"
-                      y="2"
-                      width="40"
-                      height="40"
-                      rx="14"
-                      ry="14"
+                      x="1.5"
+                      y="1.5"
+                      width="35"
+                      height="35"
+                      rx="12"
+                      ry="12"
                       fill="none"
                       stroke={
                         isLightTheme
                           ? "rgba(120, 94, 61, 0.18)"
-                          : "rgba(255,255,255,0.1)"
+                          : "rgba(255,255,255,0.08)"
                       }
-                      strokeWidth="2"
+                      strokeWidth="1.5"
                     />
                     <rect
-                      x="2"
-                      y="2"
-                      width="40"
-                      height="40"
-                      rx="14"
-                      ry="14"
+                      x="1.5"
+                      y="1.5"
+                      width="35"
+                      height="35"
+                      rx="12"
+                      ry="12"
                       fill="none"
                       stroke="#22d3ee"
-                      strokeWidth="2"
+                      strokeWidth="1.5"
                       strokeLinecap="round"
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 22 22)"
+                      transform="rotate(-90 19 19)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
