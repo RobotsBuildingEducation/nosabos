@@ -13,7 +13,6 @@ import {
   DrawerOverlay,
   Flex,
   HStack,
-  Progress,
   Spinner,
   Text,
   VStack,
@@ -25,6 +24,7 @@ import { awardXp } from "../utils/utils";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import { useThemeStore } from "../useThemeStore";
+import { WaveBar } from "./WaveBar";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -461,12 +461,13 @@ export default function RealWorldTasksModal({
                 <Text>{progressLabel}</Text>
                 <Text>{formatRemaining(remainingMs, lang)}</Text>
               </HStack>
-              <Progress
+              <WaveBar
                 value={progressValue}
-                size="sm"
-                borderRadius="full"
-                colorScheme={remainingMs <= 0 ? "purple" : "cyan"}
-                bg={ui.progressTrack}
+                height={12}
+                start={remainingMs <= 0 ? "#a855f7" : "#22d3ee"}
+                end={remainingMs <= 0 ? "#f472b6" : "#38f9d7"}
+                bg={isLightTheme ? ui.progressTrack : "rgba(255,255,255,0.08)"}
+                border={isLightTheme ? "#e2d6bf" : "rgba(255,255,255,0.12)"}
               />
             </VStack>
 
