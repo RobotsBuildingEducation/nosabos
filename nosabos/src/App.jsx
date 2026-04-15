@@ -92,7 +92,7 @@ import {
   PiUsersBold,
   PiUsersThreeBold,
 } from "react-icons/pi";
-import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
+import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import {
   collection,
@@ -6612,7 +6612,7 @@ function BottomActionBar({
               <Box position="relative" flexShrink={0}>
                 <IconButton
                   data-tutorial-id="teams"
-                  icon={<FiTarget size={16} />}
+                  icon={<FiCompass size={16} />}
                   onClick={() => handleActionClick(onOpenTeams)}
                   aria-label={tasksLabel}
                   size="sm"
