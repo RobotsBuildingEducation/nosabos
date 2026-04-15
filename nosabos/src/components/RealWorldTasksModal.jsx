@@ -370,7 +370,7 @@ export default function RealWorldTasksModal({
   ]);
 
   const drawerTitle =
-    lang === "es" ? "Práctica del mundo real" : "Real-World Practice";
+    lang === "es" ? "Práctica de inmersión" : "Immersion Practice";
   const subtitle =
     lang === "es"
       ? "3 micro-tareas para usar tu idioma fuera de la app"

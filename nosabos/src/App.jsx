@@ -6356,7 +6356,7 @@ function BottomActionBar({
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const tasksLabel =
-    appLanguage === "es" ? "Práctica del mundo real" : "Real-world practice";
+    appLanguage === "es" ? "Práctica de inmersión" : "Immersion practice";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
 
   // Path mode configuration

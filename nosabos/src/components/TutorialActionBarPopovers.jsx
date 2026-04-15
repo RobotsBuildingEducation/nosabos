@@ -66,10 +66,10 @@ const BUTTON_EXPLANATIONS = [
     id: "realWorldTasks",
     tutorialId: "teams",
     icon: FiCompass,
-    label: { en: "Real-World Tasks", es: "Tareas del Mundo Real" },
+    label: { en: "Immersion Practice", es: "Práctica de Inmersión" },
     description: {
-      en: "3 micro-tasks every 6 hours. Complete all to earn 50 XP.",
-      es: "3 micro-tareas cada 6 horas. Complétalas para ganar 50 XP.",
+      en: "Complete tasks outside of the app to immerse and practice the language.",
+      es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
     },
     position: 1,
   },

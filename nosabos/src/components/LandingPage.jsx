@@ -130,9 +130,9 @@ const translations = {
     feature_notes: "Generate Notes",
     feature_notes_desc:
       "Create comprehensive study notes from your lessons to review later.",
-    feature_teams: "Real-World Tasks",
+    feature_teams: "Immersion Practice",
     feature_teams_desc:
-      "Get 3 fresh micro-tasks every 6 hours to practice your language in the real world and earn XP.",
+      "Complete tasks outside of the app to immerse and practice the language.",
     feature_assistant: "Personal Assistant",
     feature_assistant_desc:
       "Get personalized guidance and recommendations when you need help.",
@@ -241,9 +241,9 @@ const translations = {
     feature_notes: "Generar Notas",
     feature_notes_desc:
       "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
-    feature_teams: "Tareas del Mundo Real",
+    feature_teams: "Práctica de Inmersión",
     feature_teams_desc:
-      "Recibe 3 micro-tareas nuevas cada 6 horas para practicar tu idioma en el mundo real y ganar XP.",
+      "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
     feature_assistant: "Asistente Personal",
     feature_assistant_desc:
       "Obtén orientación y recomendaciones personalizadas cuando las necesites.",
