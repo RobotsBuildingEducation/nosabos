@@ -140,7 +140,6 @@ import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import NotesDrawer from "./components/NotesDrawer";
 import RealWorldTasksModal, {
   REAL_WORLD_TASKS_REFRESH_MS,
-  generateRealWorldTasks,
 } from "./components/RealWorldTasksModal";
 import useNotesStore from "./hooks/useNotesStore";
 import { subscribeToTeamInvites } from "./utils/teams";
@@ -5107,85 +5106,6 @@ export default function App() {
     [patchUser],
   );
 
-  // Background generation: whenever the current tasks are stale/missing and
-  // we have the minimum context, generate a fresh batch without requiring
-  // the user to open the drawer.
-  const [isGeneratingRealWorldTasks, setIsGeneratingRealWorldTasks] =
-    useState(false);
-  const [realWorldTasksGenError, setRealWorldTasksGenError] = useState("");
-  const realWorldTasksGenGuard = useRef(false);
-
-  const runRealWorldTasksGeneration = useCallback(async () => {
-    if (!activeNpub) return;
-    if (!resolvedTargetLang) return;
-    if (realWorldTasksGenGuard.current) return;
-    const appLang = appLanguage === "es" ? "es" : "en";
-    const level = currentCEFRLevel || "A1";
-    realWorldTasksGenGuard.current = true;
-    setIsGeneratingRealWorldTasks(true);
-    setRealWorldTasksGenError("");
-    try {
-      const fresh = await generateRealWorldTasks({
-        targetLang: resolvedTargetLang,
-        appLanguage: appLang,
-        cefrLevel: level,
-      });
-      const next = {
-        tasks: fresh,
-        completed: [false, false, false],
-        rewarded: false,
-        generatedAt: new Date().toISOString(),
-        targetLang: resolvedTargetLang,
-        cefrLevel: level,
-        appLanguage: appLang,
-      };
-      patchUser({ realWorldTasks: next });
-      await setDoc(
-        doc(database, "users", activeNpub),
-        {
-          realWorldTasks: next,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true },
-      );
-    } catch (err) {
-      console.error("Real-world task generation failed:", err);
-      setRealWorldTasksGenError(
-        appLanguage === "es"
-          ? "No se pudieron generar las tareas. Intenta de nuevo."
-          : "Could not generate tasks. Please try again.",
-      );
-    } finally {
-      setIsGeneratingRealWorldTasks(false);
-      realWorldTasksGenGuard.current = false;
-    }
-  }, [
-    activeNpub,
-    resolvedTargetLang,
-    currentCEFRLevel,
-    appLanguage,
-    patchUser,
-  ]);
-
-  // Kick off background generation whenever tasks are ready-to-refresh
-  // (stale, missing, or for a different target language).
-  useEffect(() => {
-    if (!user) return;
-    if (!activeNpub || !resolvedTargetLang) return;
-    if (!realWorldTasksReady) return;
-    if (isGeneratingRealWorldTasks) return;
-    if (realWorldTasksGenError) return;
-    runRealWorldTasksGeneration();
-  }, [
-    user,
-    activeNpub,
-    resolvedTargetLang,
-    realWorldTasksReady,
-    isGeneratingRealWorldTasks,
-    realWorldTasksGenError,
-    runRealWorldTasksGeneration,
-  ]);
-
   const handleOpenRealWorldTasks = useCallback(() => {
     setRealWorldTasksOpen(true);
     setRealWorldTasksAttention(false);
@@ -5655,9 +5575,6 @@ export default function App() {
         cefrLevel={currentCEFRLevel}
         realWorldTasks={realWorldTasks}
         onTasksUpdated={handleRealWorldTasksUpdated}
-        isGenerating={isGeneratingRealWorldTasks}
-        generationError={realWorldTasksGenError}
-        onRequestGenerate={runRealWorldTasksGeneration}
       />
 
       <NotesDrawer
