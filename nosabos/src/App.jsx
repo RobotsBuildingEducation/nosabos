@@ -6665,9 +6665,9 @@ function BottomActionBar({
                     top="calc(50% + 2px)"
                     left="50%"
                     transform="translate(-50%, -50%)"
-                    width="36px"
-                    height="38px"
-                    viewBox="0 0 36 38"
+                    width="40px"
+                    height="42px"
+                    viewBox="0 0 40 42"
                     pointerEvents="none"
                     aria-hidden="true"
                     zIndex={1}
@@ -6676,10 +6676,10 @@ function BottomActionBar({
                     <rect
                       x="1.5"
                       y="1.5"
-                      width="33"
-                      height="35"
-                      rx="12"
-                      ry="12"
+                      width="37"
+                      height="39"
+                      rx="13"
+                      ry="13"
                       fill="none"
                       stroke={
                         isLightTheme
@@ -6691,10 +6691,10 @@ function BottomActionBar({
                     <rect
                       x="1.5"
                       y="1.5"
-                      width="33"
-                      height="35"
-                      rx="12"
-                      ry="12"
+                      width="37"
+                      height="39"
+                      rx="13"
+                      ry="13"
                       fill="none"
                       stroke="#22d3ee"
                       strokeWidth="3"
@@ -6702,7 +6702,7 @@ function BottomActionBar({
                       pathLength="100"
                       strokeDasharray="100"
                       strokeDashoffset={100 - realWorldTasksTimerProgress}
-                      transform="rotate(-90 18 19)"
+                      transform="rotate(-90 20 21)"
                       style={{
                         transition: "stroke-dashoffset 0.8s ease",
                       }}
