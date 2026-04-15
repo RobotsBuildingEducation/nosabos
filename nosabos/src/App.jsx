@@ -5069,12 +5069,21 @@ export default function App() {
   const realWorldTasksHasNotification =
     realWorldTasksReady && realWorldTasksLastOpenedAt < Math.max(1, realWorldTasksReadySince || tasksTickNow);
 
+  // True only when the current batch has zero completed tasks.
+  const realWorldTasksNoneCompleted = !(
+    Array.isArray(realWorldTasks?.completed) &&
+    realWorldTasks.completed.some(Boolean)
+  );
+
   const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
   const prevNotificationRef = useRef(false);
 
-  // Trigger a brief one-time animation whenever the notification first appears
+  // Trigger a brief one-time animation when a new batch is available AND
+  // the user has not completed any of its tasks yet.
   useEffect(() => {
-    if (realWorldTasksHasNotification && !prevNotificationRef.current) {
+    const shouldAnimate =
+      realWorldTasksHasNotification && realWorldTasksNoneCompleted;
+    if (shouldAnimate && !prevNotificationRef.current) {
       setRealWorldTasksAttention(true);
       const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
       prevNotificationRef.current = true;
@@ -5083,7 +5092,7 @@ export default function App() {
     if (!realWorldTasksHasNotification) {
       prevNotificationRef.current = false;
     }
-  }, [realWorldTasksHasNotification]);
+  }, [realWorldTasksHasNotification, realWorldTasksNoneCompleted]);
 
   const handleRealWorldTasksUpdated = useCallback(
     (next) => {
