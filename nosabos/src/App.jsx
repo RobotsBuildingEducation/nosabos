@@ -5079,26 +5079,33 @@ export default function App() {
       !realWorldTasks.completed.some(Boolean),
   );
 
-  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
-  const prevNotificationRef = useRef(false);
+  // True when the current untouched batch was generated after the user's
+  // last open of the modal (i.e. a fresh set the user hasn't seen yet).
+  const realWorldTasksBatchGeneratedAt = realWorldTasks?.generatedAt
+    ? new Date(realWorldTasks.generatedAt).getTime()
+    : 0;
+  const realWorldTasksFreshUnseen =
+    realWorldTasksBatchUntouched &&
+    realWorldTasksBatchGeneratedAt > 0 &&
+    realWorldTasksBatchGeneratedAt > realWorldTasksLastOpenedAt;
 
-  // Trigger a brief one-time animation only when a new batch is ready AND
-  // the current batch is completely untouched (no checkboxes, not claimed).
-  // If the previous batch has any progress or was rewarded, the "!" badge
-  // still shows but the button does not pulse.
+  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
+  const prevAnimTriggerRef = useRef(false);
+
+  // Trigger a brief one-time animation when a fresh, untouched batch is
+  // available that the user hasn't opened yet. Once the user opens the
+  // modal, the animation suppresses until another new batch appears.
   useEffect(() => {
-    const shouldAnimate =
-      realWorldTasksHasNotification && realWorldTasksBatchUntouched;
-    if (shouldAnimate && !prevNotificationRef.current) {
+    if (realWorldTasksFreshUnseen && !prevAnimTriggerRef.current) {
       setRealWorldTasksAttention(true);
       const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
-      prevNotificationRef.current = true;
+      prevAnimTriggerRef.current = true;
       return () => clearTimeout(id);
     }
-    if (!realWorldTasksHasNotification) {
-      prevNotificationRef.current = false;
+    if (!realWorldTasksFreshUnseen) {
+      prevAnimTriggerRef.current = false;
     }
-  }, [realWorldTasksHasNotification, realWorldTasksBatchUntouched]);
+  }, [realWorldTasksFreshUnseen]);
 
   const handleRealWorldTasksUpdated = useCallback(
     (next) => {
