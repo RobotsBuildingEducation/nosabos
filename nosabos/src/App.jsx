@@ -5069,20 +5069,26 @@ export default function App() {
   const realWorldTasksHasNotification =
     realWorldTasksReady && realWorldTasksLastOpenedAt < Math.max(1, realWorldTasksReadySince || tasksTickNow);
 
-  // True only when the current batch has zero completed tasks.
-  const realWorldTasksNoneCompleted = !(
-    Array.isArray(realWorldTasks?.completed) &&
-    realWorldTasks.completed.some(Boolean)
+  // True only when the current batch exists, hasn't been claimed,
+  // and has zero completed tasks — i.e. it is genuinely untouched.
+  const realWorldTasksBatchUntouched = Boolean(
+    realWorldTasks &&
+      !realWorldTasks.rewarded &&
+      Array.isArray(realWorldTasks.completed) &&
+      realWorldTasks.completed.length === 3 &&
+      !realWorldTasks.completed.some(Boolean),
   );
 
   const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
   const prevNotificationRef = useRef(false);
 
-  // Trigger a brief one-time animation when a new batch is available AND
-  // the user has not completed any of its tasks yet.
+  // Trigger a brief one-time animation only when a new batch is ready AND
+  // the current batch is completely untouched (no checkboxes, not claimed).
+  // If the previous batch has any progress or was rewarded, the "!" badge
+  // still shows but the button does not pulse.
   useEffect(() => {
     const shouldAnimate =
-      realWorldTasksHasNotification && realWorldTasksNoneCompleted;
+      realWorldTasksHasNotification && realWorldTasksBatchUntouched;
     if (shouldAnimate && !prevNotificationRef.current) {
       setRealWorldTasksAttention(true);
       const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
@@ -5092,7 +5098,7 @@ export default function App() {
     if (!realWorldTasksHasNotification) {
       prevNotificationRef.current = false;
     }
-  }, [realWorldTasksHasNotification, realWorldTasksNoneCompleted]);
+  }, [realWorldTasksHasNotification, realWorldTasksBatchUntouched]);
 
   const handleRealWorldTasksUpdated = useCallback(
     (next) => {
