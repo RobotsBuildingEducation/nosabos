@@ -138,6 +138,9 @@ import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import NotesDrawer from "./components/NotesDrawer";
+import RealWorldTasksModal, {
+  REAL_WORLD_TASKS_REFRESH_MS,
+} from "./components/RealWorldTasksModal";
 import useNotesStore from "./hooks/useNotesStore";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
@@ -1636,7 +1639,18 @@ export default function App() {
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
+  const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+
+  // Periodically tick to drive the real-world tasks "ready" animation
+  useEffect(() => {
+    const id = setInterval(
+      () => setTasksTickNow(Date.now()),
+      60 * 1000,
+    );
+    return () => clearInterval(id);
+  }, []);
 
   // Notes store state for action bar animations
   const notesIsLoading = useNotesStore((s) => s.isLoading);
@@ -5004,6 +5018,33 @@ export default function App() {
     return unlockedLevel;
   }, [levelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
+  // Real-world tasks state derived from user document
+  const realWorldTasks = user?.realWorldTasks || null;
+  const realWorldTasksReady = useMemo(() => {
+    if (!realWorldTasks) return true;
+    if (!Array.isArray(realWorldTasks.tasks) || realWorldTasks.tasks.length !== 3) {
+      return true;
+    }
+    if (
+      realWorldTasks.targetLang &&
+      realWorldTasks.targetLang !== resolvedTargetLang
+    ) {
+      return true;
+    }
+    const generatedAt = realWorldTasks.generatedAt
+      ? new Date(realWorldTasks.generatedAt).getTime()
+      : 0;
+    if (!generatedAt) return true;
+    return tasksTickNow - generatedAt >= REAL_WORLD_TASKS_REFRESH_MS;
+  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
+
+  const handleRealWorldTasksUpdated = useCallback(
+    (next) => {
+      patchUser({ realWorldTasks: next });
+    },
+    [patchUser],
+  );
+
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
@@ -5433,6 +5474,7 @@ export default function App() {
         />
       )}
 
+      {/* Teams/global feed modal temporarily hidden — replaced by Real-World Practice tasks.
       <TeamsDrawer
         isOpen={teamsOpen}
         onClose={() => setTeamsOpen(false)}
@@ -5441,6 +5483,18 @@ export default function App() {
         pendingInviteCount={pendingTeamInviteCount}
         allowPosts={allowPosts}
         onAllowPostsChange={handleAllowPostsChange}
+      />
+      */}
+
+      <RealWorldTasksModal
+        isOpen={realWorldTasksOpen}
+        onClose={() => setRealWorldTasksOpen(false)}
+        npub={activeNpub}
+        appLanguage={appLanguage}
+        targetLang={resolvedTargetLang}
+        cefrLevel={currentCEFRLevel}
+        realWorldTasks={realWorldTasks}
+        onTasksUpdated={handleRealWorldTasksUpdated}
       />
 
       <NotesDrawer
@@ -5454,8 +5508,9 @@ export default function App() {
         <BottomActionBar
           t={t}
           onOpenSettings={handleBottomBarSettingsOpen}
-          onOpenTeams={() => setTeamsOpen(true)}
+          onOpenTeams={() => setRealWorldTasksOpen(true)}
           onOpenNotes={() => setNotesOpen(true)}
+          realWorldTasksReady={realWorldTasksReady}
           showTranslations={showTranslationsEnabled}
           onToggleTranslations={handleToggleTranslations}
           translationLabel={translationToggleLabel}
@@ -6201,6 +6256,7 @@ function BottomActionBar({
   playSound,
   helpLabel,
   hasPendingTeamInvite = false,
+  realWorldTasksReady = false,
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "path",
@@ -6217,6 +6273,8 @@ function BottomActionBar({
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
+  const tasksLabel =
+    appLanguage === "es" ? "Práctica del mundo real" : "Real-world practice";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
 
   // Path mode configuration
@@ -6485,24 +6543,45 @@ function BottomActionBar({
             >
               <IconButton
                 data-tutorial-id="teams"
-                icon={<PiUsersBold size={16} />}
+                icon={<FiTarget size={16} />}
                 onClick={() => handleActionClick(onOpenTeams)}
-                aria-label={teamsLabel}
+                aria-label={tasksLabel}
                 size="sm"
                 rounded="xl"
                 flexShrink={0}
-                borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
-                borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
+                borderWidth={realWorldTasksReady ? "2px" : "0px"}
+                borderColor={realWorldTasksReady ? "purple.400" : "gray.700"}
                 boxShadow={
-                  hasPendingTeamInvite
+                  realWorldTasksReady
                     ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
                     : isLightTheme
                       ? "0 4px 0 rgba(180, 164, 144, 0.9)"
                       : "0 4px 0 #313a4b"
                 }
+                animation={
+                  realWorldTasksReady
+                    ? "tasksReadyPulse 1.5s ease-in-out infinite"
+                    : undefined
+                }
                 colorScheme="gray"
                 bg="gray.800"
                 color="gray.100"
+                sx={{
+                  "@keyframes tasksReadyPulse": {
+                    "0%": {
+                      boxShadow:
+                        "0 0 0 2px rgba(168,85,247,0.35), 0 0 8px rgba(168,85,247,0.4)",
+                    },
+                    "50%": {
+                      boxShadow:
+                        "0 0 0 3px rgba(168,85,247,0.55), 0 0 20px rgba(168,85,247,0.75)",
+                    },
+                    "100%": {
+                      boxShadow:
+                        "0 0 0 2px rgba(168,85,247,0.35), 0 0 8px rgba(168,85,247,0.4)",
+                    },
+                  },
+                }}
               />
 
               <IconButton
