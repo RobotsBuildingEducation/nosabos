@@ -479,22 +479,9 @@ export default function RealWorldTasksModal({
         >
           <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={2}>
-              <HStack justify="space-between" align="center">
-                <Text color={ui.primaryText} fontWeight="semibold">
-                  {drawerTitle}
-                </Text>
-                {/* TEMP test button — remove later */}
-                <Button
-                  size="xs"
-                  variant="outline"
-                  colorScheme="orange"
-                  onClick={triggerGeneration}
-                  isDisabled={isGenerating}
-                  isLoading={isGenerating}
-                >
-                  {lang === "es" ? "Prueba: regenerar" : "Test: regenerate"}
-                </Button>
-              </HStack>
+              <Text color={ui.primaryText} fontWeight="semibold">
+                {drawerTitle}
+              </Text>
               <Text fontSize="11px" color={ui.secondaryText}>
                 {subtitle}
               </Text>

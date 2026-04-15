@@ -6673,6 +6673,19 @@ function BottomActionBar({
                     zIndex={1}
                     overflow="visible"
                   >
+                    <defs>
+                      <linearGradient
+                        id="immersionProgressGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                        gradientTransform="rotate(135 0.5 0.5)"
+                      >
+                        <stop offset="0%" stopColor="#14b8a6" />
+                        <stop offset="100%" stopColor="#06b6d4" />
+                      </linearGradient>
+                    </defs>
                     <rect
                       x="1.75"
                       y="1.75"
@@ -6696,7 +6709,7 @@ function BottomActionBar({
                       rx="14"
                       ry="14"
                       fill="none"
-                      stroke="#06b6d4"
+                      stroke="url(#immersionProgressGradient)"
                       strokeWidth="3.5"
                       strokeLinecap="round"
                       pathLength="100"
@@ -6717,7 +6730,7 @@ function BottomActionBar({
                   rounded="xl"
                   borderWidth={realWorldTasksAttention ? "2px" : "0px"}
                   borderColor={
-                    realWorldTasksAttention ? "purple.400" : "gray.700"
+                    realWorldTasksAttention ? "teal.400" : "gray.700"
                   }
                   boxShadow={
                     isLightTheme
@@ -6736,7 +6749,7 @@ function BottomActionBar({
                     "@keyframes tasksAttentionPing": {
                       "0%": {
                         boxShadow:
-                          "0 0 0 3px rgba(168,85,247,0.6), 0 0 20px rgba(168,85,247,0.8)",
+                          "0 0 0 3px rgba(20,184,166,0.6), 0 0 20px rgba(6,182,212,0.75)",
                       },
                       "100%": {
                         boxShadow: isLightTheme
@@ -6756,7 +6769,7 @@ function BottomActionBar({
                     h="16px"
                     px="4px"
                     borderRadius="full"
-                    bg="red.500"
+                    bgGradient="linear(135deg, #14b8a6 0%, #06b6d4 100%)"
                     color="white"
                     fontSize="10px"
                     fontWeight="bold"
