@@ -591,10 +591,33 @@ export default function RealWorldTasksModal({
                           isDisabled={rewarded}
                           onChange={() => handleToggleTask(i)}
                           onClick={(e) => e.stopPropagation()}
-                          colorScheme="green"
+                          colorScheme="teal"
+                          iconColor="white"
                           size="lg"
                           mt={1}
                           pointerEvents="none"
+                          sx={{
+                            "& .chakra-checkbox__control": {
+                              borderWidth: "2px",
+                              borderColor: isLightTheme
+                                ? "rgba(96, 77, 56, 0.35)"
+                                : "whiteAlpha.500",
+                              borderRadius: "md",
+                              bg: isLightTheme
+                                ? "rgba(255,255,255,0.6)"
+                                : "whiteAlpha.100",
+                              transition:
+                                "background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease",
+                              boxShadow: isChecked
+                                ? "0 0 0 3px rgba(20, 184, 166, 0.25)"
+                                : "none",
+                            },
+                            "& .chakra-checkbox__control[data-checked]": {
+                              bgGradient:
+                                "linear(135deg, #14b8a6 0%, #06b6d4 100%)",
+                              borderColor: "#14b8a6",
+                            },
+                          }}
                         />
                         <VStack align="stretch" spacing={1} flex="1">
                           <Text
