@@ -230,7 +230,7 @@ export default function RealWorldTasksModal({
     : Math.min(REAL_WORLD_TASKS_REFRESH_MS, now - generatedAt);
   const progressValue = Math.min(
     100,
-    Math.max(0, (elapsedMs / REAL_WORLD_TASKS_REFRESH_MS) * 100),
+    Math.max(0, (remainingMs / REAL_WORLD_TASKS_REFRESH_MS) * 100),
   );
 
   // Tick timer while modal is open so progress bar updates
