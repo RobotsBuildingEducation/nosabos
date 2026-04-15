@@ -5079,6 +5079,38 @@ export default function App() {
       !realWorldTasks.completed.some(Boolean),
   );
 
+  // 0-100% representing remaining time until the next batch. Full = lots
+  // of time left, 0 = ready for a new batch. Used to render a drain ring
+  // around the immersion action-bar button so users see the countdown
+  // without opening the drawer.
+  const realWorldTasksTimerProgress = useMemo(() => {
+    if (!realWorldTasks) return 0;
+    const generatedAt = realWorldTasks.generatedAt
+      ? new Date(realWorldTasks.generatedAt).getTime()
+      : 0;
+    if (!generatedAt) return 0;
+    if (
+      !Array.isArray(realWorldTasks.tasks) ||
+      realWorldTasks.tasks.length !== 3
+    ) {
+      return 0;
+    }
+    if (
+      realWorldTasks.targetLang &&
+      realWorldTasks.targetLang !== resolvedTargetLang
+    ) {
+      return 0;
+    }
+    const remainingMs = Math.max(
+      0,
+      REAL_WORLD_TASKS_REFRESH_MS - (tasksTickNow - generatedAt),
+    );
+    return Math.max(
+      0,
+      Math.min(100, (remainingMs / REAL_WORLD_TASKS_REFRESH_MS) * 100),
+    );
+  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
+
   const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
   const prevAnimTriggerRef = useRef(false);
 
@@ -5592,6 +5624,7 @@ export default function App() {
           onOpenNotes={() => setNotesOpen(true)}
           realWorldTasksHasNotification={realWorldTasksHasNotification}
           realWorldTasksAttention={realWorldTasksAttention}
+          realWorldTasksTimerProgress={realWorldTasksTimerProgress}
           showTranslations={showTranslationsEnabled}
           onToggleTranslations={handleToggleTranslations}
           translationLabel={translationToggleLabel}
@@ -6339,6 +6372,7 @@ function BottomActionBar({
   hasPendingTeamInvite = false,
   realWorldTasksHasNotification = false,
   realWorldTasksAttention = false,
+  realWorldTasksTimerProgress = 0,
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "path",
@@ -6624,6 +6658,56 @@ function BottomActionBar({
               borderRadius="24px"
             >
               <Box position="relative" flexShrink={0}>
+                {realWorldTasksTimerProgress > 0 && (
+                  <Box
+                    as="svg"
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    width="44px"
+                    height="44px"
+                    viewBox="0 0 44 44"
+                    pointerEvents="none"
+                    aria-hidden="true"
+                    zIndex={1}
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="40"
+                      height="40"
+                      rx="14"
+                      ry="14"
+                      fill="none"
+                      stroke={
+                        isLightTheme
+                          ? "rgba(120, 94, 61, 0.18)"
+                          : "rgba(255,255,255,0.1)"
+                      }
+                      strokeWidth="2"
+                    />
+                    <rect
+                      x="2"
+                      y="2"
+                      width="40"
+                      height="40"
+                      rx="14"
+                      ry="14"
+                      fill="none"
+                      stroke="#22d3ee"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      pathLength="100"
+                      strokeDasharray="100"
+                      strokeDashoffset={100 - realWorldTasksTimerProgress}
+                      transform="rotate(-90 22 22)"
+                      style={{
+                        transition: "stroke-dashoffset 0.8s ease",
+                      }}
+                    />
+                  </Box>
+                )}
                 <IconButton
                   data-tutorial-id="teams"
                   icon={<FiCompass size={16} />}
