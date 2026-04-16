@@ -202,6 +202,7 @@ export default function RealWorldTasksModal({
   cefrLevel = "A1",
   realWorldTasks,
   onTasksUpdated,
+  onRewardClaimed,
 }) {
   const lang = appLanguage === "es" ? "es" : "en";
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -405,6 +406,7 @@ export default function RealWorldTasksModal({
       };
       await persistTasks(next);
       playSound(sparkleSound);
+      onRewardClaimed?.();
     } catch (err) {
       console.error("Failed to claim real-world task reward:", err);
       toast({
@@ -430,6 +432,7 @@ export default function RealWorldTasksModal({
     toast,
     lang,
     playSound,
+    onRewardClaimed,
   ]);
 
   const drawerTitle =

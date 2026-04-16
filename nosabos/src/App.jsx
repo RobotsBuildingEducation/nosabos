@@ -5138,6 +5138,17 @@ export default function App() {
     [patchUser],
   );
 
+  const handleRealWorldRewardClaimed = useCallback(async () => {
+    const npub = resolveNpub();
+    if (!npub) return;
+    try {
+      const fresh = await loadUserObjectFromDB(database, npub);
+      if (fresh) setUser?.(fresh);
+    } catch (err) {
+      console.error("Failed to refresh user after real-world reward:", err);
+    }
+  }, [resolveNpub, setUser]);
+
   const handleOpenRealWorldTasks = useCallback(() => {
     setRealWorldTasksOpen(true);
     setRealWorldTasksAttention(false);
@@ -5607,6 +5618,7 @@ export default function App() {
         cefrLevel={currentCEFRLevel}
         realWorldTasks={realWorldTasks}
         onTasksUpdated={handleRealWorldTasksUpdated}
+        onRewardClaimed={handleRealWorldRewardClaimed}
       />
 
       <NotesDrawer
