@@ -12,7 +12,6 @@ import {
   Drawer,
   DrawerBody,
   DrawerContent,
-  DrawerCloseButton,
   DrawerOverlay,
   HStack,
   IconButton,
@@ -64,6 +63,7 @@ import {
   ChevronUpIcon,
   CheckCircleIcon,
   ArrowBackIcon,
+  CloseIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -1036,14 +1036,6 @@ function TopBar({
           <BottomDrawerDragHandle
             isDragging={settingsSwipeDismiss.isDragging}
           />
-          <DrawerCloseButton
-            color="var(--app-text-muted)"
-            bg="gray.900"
-            _hover={{ color: "var(--app-text-primary)", bg: "gray.800" }}
-            top={4}
-            right={4}
-            zIndex={2}
-          />
           <DrawerBody
             pb={6}
             display="flex"
@@ -1060,8 +1052,10 @@ function TopBar({
               flex={1}
               minH={0}
             >
-              <Box maxW="600px" mx="auto" w="100%" pr={12}>
+              <Flex maxW="600px" mx="auto" w="100%" align="center">
+                <Box w="32px" flexShrink={0} />
                 <TabList
+                  flex="1"
                   mb={4}
                   mt={2}
                   gap={6}
@@ -1219,7 +1213,20 @@ function TopBar({
                     {t.app_account_title || "Account"}
                   </Tab>
                 </TabList>
-              </Box>
+                <IconButton
+                  aria-label={t.close || "Close"}
+                  icon={<CloseIcon boxSize={3} />}
+                  size="sm"
+                  variant="ghost"
+                  color="var(--app-text-muted)"
+                  _hover={{
+                    color: "var(--app-text-primary)",
+                    bg: "gray.800",
+                  }}
+                  onClick={closeSettings}
+                  flexShrink={0}
+                />
+              </Flex>
               <TabPanels flex={1} minH={0}>
                 <TabPanel
                   px={0}
