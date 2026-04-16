@@ -469,12 +469,12 @@ export default function RealWorldTasksModal({
         bg={ui.drawerBg}
         color={ui.drawerText}
         borderTopRadius="24px"
-        h={{ base: "90vh", md: "85vh" }}
+        h={{ base: "70vh", md: "70vh" }}
         borderTop={ui.drawerBorder ? `1px solid ${ui.drawerBorder}` : undefined}
         boxShadow={ui.shadow}
         sx={{
           "@supports (height: 100dvh)": {
-            height: { base: "90dvh", md: "85dvh" },
+            height: { base: "70dvh", md: "70dvh" },
           },
         }}
       >
