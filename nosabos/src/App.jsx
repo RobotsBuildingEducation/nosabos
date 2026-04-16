@@ -890,6 +890,16 @@ function TopBar({
     return () => unsub();
   }, [activeNpub]);
 
+  // Sync dailyXp from the user prop whenever it increases — this lets
+  // optimistic XP updates from other flows (e.g. the immersion drawer's
+  // reward claim) update the progress bar without waiting for Firestore
+  // onSnapshot to round-trip.
+  useEffect(() => {
+    const candidate = Number(user?.dailyXp);
+    if (!Number.isFinite(candidate)) return;
+    setDailyXp((prev) => (candidate > prev ? candidate : prev));
+  }, [user?.dailyXp]);
+
   const dailyPct =
     dailyGoalXp > 0
       ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
@@ -5143,10 +5153,9 @@ export default function App() {
       const delta = Number(awardedXp) || 0;
       if (!delta) return;
 
-      // Immediately increment the local XP counters so the UI updates
-      // without waiting for the Firestore onSnapshot round-trip.
-      setDailyXp((prev) => prev + delta);
-
+      // Immediately increment the local XP counters in the Zustand store
+      // so the UI updates without waiting for the Firestore onSnapshot
+      // round-trip. TopBar's dailyXp state syncs from user.dailyXp.
       const currentUser = useUserStore.getState()?.user || {};
       patchUser({
         xp: (Number(currentUser.xp) || 0) + delta,
