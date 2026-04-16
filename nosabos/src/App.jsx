@@ -1656,10 +1656,7 @@ export default function App() {
 
   // Periodically tick to drive the real-world tasks "ready" animation
   useEffect(() => {
-    const id = setInterval(
-      () => setTasksTickNow(Date.now()),
-      60 * 1000,
-    );
+    const id = setInterval(() => setTasksTickNow(Date.now()), 60 * 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -5035,7 +5032,10 @@ export default function App() {
   // Ready = user should be prompted to generate/see a new batch
   const realWorldTasksReady = useMemo(() => {
     if (!realWorldTasks) return true;
-    if (!Array.isArray(realWorldTasks.tasks) || realWorldTasks.tasks.length !== 3) {
+    if (
+      !Array.isArray(realWorldTasks.tasks) ||
+      realWorldTasks.tasks.length !== 3
+    ) {
       return true;
     }
     if (
@@ -5059,7 +5059,10 @@ export default function App() {
       ? new Date(realWorldTasks.generatedAt).getTime()
       : 0;
     if (!generatedAt) return 0;
-    if (!Array.isArray(realWorldTasks.tasks) || realWorldTasks.tasks.length !== 3) {
+    if (
+      !Array.isArray(realWorldTasks.tasks) ||
+      realWorldTasks.tasks.length !== 3
+    ) {
       return 0;
     }
     if (
@@ -5078,16 +5081,18 @@ export default function App() {
   // Show the notification badge when the tasks are ready and the user
   // hasn't opened the modal since the ready state began.
   const realWorldTasksHasNotification =
-    realWorldTasksReady && realWorldTasksLastOpenedAt < Math.max(1, realWorldTasksReadySince || tasksTickNow);
+    realWorldTasksReady &&
+    realWorldTasksLastOpenedAt <
+      Math.max(1, realWorldTasksReadySince || tasksTickNow);
 
   // True only when the current batch exists, hasn't been claimed,
   // and has zero completed tasks — i.e. it is genuinely untouched.
   const realWorldTasksBatchUntouched = Boolean(
     realWorldTasks &&
-      !realWorldTasks.rewarded &&
-      Array.isArray(realWorldTasks.completed) &&
-      realWorldTasks.completed.length === 3 &&
-      !realWorldTasks.completed.some(Boolean),
+    !realWorldTasks.rewarded &&
+    Array.isArray(realWorldTasks.completed) &&
+    realWorldTasks.completed.length === 3 &&
+    !realWorldTasks.completed.some(Boolean),
   );
 
   // 0-100% representing remaining time until the next batch. Full = lots
