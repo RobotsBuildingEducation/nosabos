@@ -692,15 +692,15 @@ export function IdentityPanel({
       </VStack>
 
       {showSignOutButton ? (
-        <Flex mt="auto" justify="flex-end">
+        <Flex mt="auto" mb="24px" justify="flex-end">
           <Button
             mt={6}
             leftIcon={<LuDoorOpen size={18} />}
             onClick={() => setIsSignOutOpen(true)}
             padding={6}
             borderRadius="lg"
-            colorScheme="gray"
-            border="1px solid orange"
+            variant="outline"
+            colorScheme="red"
           >
             {t?.app_sign_out || "Sign out"}
           </Button>
@@ -759,7 +759,7 @@ export default function IdentityDrawer({ isOpen, onClose, ...panelProps }) {
         bg="gray.900"
         color="gray.100"
         borderTopRadius="24px"
-        maxH="80vh"
+        maxH="85vh"
         display="flex"
         flexDirection="column"
       >

@@ -469,13 +469,12 @@ export default function RealWorldTasksModal({
         bg={ui.drawerBg}
         color={ui.drawerText}
         borderTopRadius="24px"
-        h="auto"
-        maxH={{ base: "90vh", md: "85vh" }}
+        h={{ base: "70vh", md: "70vh" }}
         borderTop={ui.drawerBorder ? `1px solid ${ui.drawerBorder}` : undefined}
         boxShadow={ui.shadow}
         sx={{
           "@supports (height: 100dvh)": {
-            maxHeight: { base: "90dvh", md: "85dvh" },
+            height: { base: "70dvh", md: "70dvh" },
           },
         }}
       >
@@ -499,8 +498,14 @@ export default function RealWorldTasksModal({
           </Box>
         </DrawerHeader>
 
-        <DrawerBody overflowY="auto" flex="1" py={4}>
-          <Box maxW="520px" mx="auto" w="100%">
+        <DrawerBody
+          overflowY="auto"
+          flex="1"
+          py={4}
+          display="flex"
+          flexDirection="column"
+        >
+          <Box maxW="520px" mx="auto" my="auto" w="100%">
             <VStack align="stretch" spacing={3} mb={4}>
               <HStack
                 justify="space-between"
