@@ -19,6 +19,7 @@ import {
   DrawerOverlay,
   Flex,
   HStack,
+  Spinner,
   Text,
   VStack,
   useToast,
@@ -645,12 +646,13 @@ export default function RealWorldTasksModal({
         </DrawerBody>
 
         <DrawerFooter flexDirection="column" gap={2}>
-          <Box maxW="520px" mx="auto" w="100%">
+          <Box maxW="520px" mx="auto" w="100%" mb="16px">
             <Button
               colorScheme={allDone && !rewarded ? "teal" : "gray"}
               variant={allDone && !rewarded ? "solid" : "ghost"}
               isDisabled={!allDone || rewarded || isGenerating}
               isLoading={isClaiming}
+              spinner={<Spinner color="white" size="sm" />}
               onClick={handleClaimReward}
               w="100%"
               _disabled={{
