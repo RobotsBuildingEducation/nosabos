@@ -31,6 +31,9 @@ import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import { useThemeStore } from "../useThemeStore";
 import { WaveBar } from "./WaveBar";
 import VoiceOrb from "./VoiceOrb";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import sparkleSound from "../assets/sparkle.mp3";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -199,11 +202,20 @@ export default function RealWorldTasksModal({
   cefrLevel = "A1",
   realWorldTasks,
   onTasksUpdated,
+  onRewardClaimed,
 }) {
   const lang = appLanguage === "es" ? "es" : "en";
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const swipeDismiss = useBottomDrawerSwipeDismiss({ isOpen, onClose });
+  const playSound = useSoundSettings((s) => s.playSound);
+  const handleClose = useCallback(() => {
+    playSound(selectSound);
+    onClose?.();
+  }, [onClose, playSound]);
+  const swipeDismiss = useBottomDrawerSwipeDismiss({
+    isOpen,
+    onClose: handleClose,
+  });
   const toast = useToast();
 
   const [isGenerating, setIsGenerating] = useState(false);
@@ -362,6 +374,7 @@ export default function RealWorldTasksModal({
         ...realWorldTasks,
         completed: nextCompleted,
       };
+      playSound(selectSound);
       // Optimistic update
       onTasksUpdated?.(next);
       try {
@@ -377,6 +390,7 @@ export default function RealWorldTasksModal({
       completed,
       onTasksUpdated,
       persistTasks,
+      playSound,
     ],
   );
 
@@ -391,15 +405,8 @@ export default function RealWorldTasksModal({
         rewardedAt: new Date().toISOString(),
       };
       await persistTasks(next);
-      toast({
-        title:
-          lang === "es"
-            ? `+${REAL_WORLD_TASKS_REWARD_XP} XP ganados`
-            : `+${REAL_WORLD_TASKS_REWARD_XP} XP earned`,
-        status: "success",
-        duration: 2500,
-        isClosable: true,
-      });
+      playSound(sparkleSound);
+      onRewardClaimed?.(REAL_WORLD_TASKS_REWARD_XP);
     } catch (err) {
       console.error("Failed to claim real-world task reward:", err);
       toast({
@@ -424,6 +431,8 @@ export default function RealWorldTasksModal({
     persistTasks,
     toast,
     lang,
+    playSound,
+    onRewardClaimed,
   ]);
 
   const drawerTitle =
@@ -445,7 +454,7 @@ export default function RealWorldTasksModal({
       : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+    <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
       <DrawerOverlay
         bg={ui.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
@@ -459,19 +468,13 @@ export default function RealWorldTasksModal({
         bg={ui.drawerBg}
         color={ui.drawerText}
         borderTopRadius="24px"
-        h={{ base: "90vh", md: "auto" }}
+        h="auto"
         maxH={{ base: "90vh", md: "85vh" }}
         borderTop={ui.drawerBorder ? `1px solid ${ui.drawerBorder}` : undefined}
         boxShadow={ui.shadow}
         sx={{
           "@supports (height: 100dvh)": {
-            "@media (max-width: 47.99em)": {
-              height: "90dvh",
-              maxHeight: "90dvh",
-            },
-            "@media (min-width: 48em)": {
-              maxHeight: "85dvh",
-            },
+            maxHeight: { base: "90dvh", md: "85dvh" },
           },
         }}
       >
@@ -584,7 +587,7 @@ export default function RealWorldTasksModal({
                       }
                       transition="transform 0.08s ease, filter 0.15s ease"
                     >
-                      <HStack align="start" spacing={3}>
+                      <HStack align="center" spacing={3}>
                         <Checkbox
                           isChecked={isChecked}
                           isDisabled={rewarded}
@@ -593,7 +596,6 @@ export default function RealWorldTasksModal({
                           colorScheme="teal"
                           iconColor="white"
                           size="lg"
-                          mt={1}
                           pointerEvents="none"
                           sx={{
                             "& .chakra-checkbox__control": {
