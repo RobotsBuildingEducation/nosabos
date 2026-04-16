@@ -1038,7 +1038,8 @@ function TopBar({
           />
           <DrawerCloseButton
             color="var(--app-text-muted)"
-            _hover={{ color: "var(--app-text-primary)" }}
+            bg="gray.900"
+            _hover={{ color: "var(--app-text-primary)", bg: "gray.800" }}
             top={4}
             right={4}
             zIndex={2}
