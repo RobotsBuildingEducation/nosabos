@@ -1043,6 +1043,20 @@ function TopBar({
             flex={1}
             minH={0}
           >
+            <Flex justify="flex-end" mt={-2} mb={-2}>
+              <IconButton
+                aria-label={t.close || "Close"}
+                icon={<CloseIcon boxSize={3} />}
+                size="sm"
+                variant="ghost"
+                color="var(--app-text-muted)"
+                _hover={{
+                  color: "var(--app-text-primary)",
+                  bg: "gray.800",
+                }}
+                onClick={closeSettings}
+              />
+            </Flex>
             <Tabs
               index={settingsTabIndex}
               onChange={setSettingsTabIndex}
@@ -1052,10 +1066,8 @@ function TopBar({
               flex={1}
               minH={0}
             >
-              <Flex maxW="600px" mx="auto" w="100%" align="center">
-                <Box w="32px" flexShrink={0} />
+              <Box maxW="600px" mx="auto" w="100%">
                 <TabList
-                  flex="1"
                   mb={4}
                   mt={2}
                   gap={6}
@@ -1213,20 +1225,7 @@ function TopBar({
                     {t.app_account_title || "Account"}
                   </Tab>
                 </TabList>
-                <IconButton
-                  aria-label={t.close || "Close"}
-                  icon={<CloseIcon boxSize={3} />}
-                  size="sm"
-                  variant="ghost"
-                  color="var(--app-text-muted)"
-                  _hover={{
-                    color: "var(--app-text-primary)",
-                    bg: "gray.800",
-                  }}
-                  onClick={closeSettings}
-                  flexShrink={0}
-                />
-              </Flex>
+              </Box>
               <TabPanels flex={1} minH={0}>
                 <TabPanel
                   px={0}
