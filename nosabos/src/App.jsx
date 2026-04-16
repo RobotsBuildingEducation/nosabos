@@ -1041,6 +1041,7 @@ function TopBar({
             _hover={{ color: "var(--app-text-primary)" }}
             top={4}
             right={4}
+            zIndex={2}
           />
           <DrawerBody
             pb={6}
