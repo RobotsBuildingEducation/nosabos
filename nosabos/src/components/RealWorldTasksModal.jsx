@@ -498,7 +498,14 @@ export default function RealWorldTasksModal({
           </Box>
         </DrawerHeader>
 
-        <DrawerBody overflowY="auto" flex="1" py={4}>
+        <DrawerBody
+          overflowY="auto"
+          flex="1"
+          py={4}
+          display="flex"
+          flexDirection="column"
+          justifyContent="center"
+        >
           <Box maxW="520px" mx="auto" w="100%">
             <VStack align="stretch" spacing={3} mb={4}>
               <HStack
