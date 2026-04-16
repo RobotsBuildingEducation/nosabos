@@ -890,15 +890,16 @@ function TopBar({
     return () => unsub();
   }, [activeNpub]);
 
-  // Sync dailyXp from the user prop whenever it increases — this lets
-  // optimistic XP updates from other flows (e.g. the immersion drawer's
-  // reward claim) update the progress bar without waiting for Firestore
-  // onSnapshot to round-trip.
+  // Sync local dailyXp/dailyGoalXp from the user prop so XP awarded via
+  // setUser(fresh) — e.g. from the immersion drawer reward claim — updates
+  // the progress bar immediately without waiting for the Firestore
+  // onSnapshot round-trip.
   useEffect(() => {
-    const candidate = Number(user?.dailyXp);
-    if (!Number.isFinite(candidate)) return;
-    setDailyXp((prev) => (candidate > prev ? candidate : prev));
-  }, [user?.dailyXp]);
+    const dxp = Number(user?.dailyXp);
+    if (Number.isFinite(dxp)) setDailyXp(dxp);
+    const goal = Number(user?.dailyGoalXp);
+    if (Number.isFinite(goal)) setDailyGoalXp(goal);
+  }, [user?.dailyXp, user?.dailyGoalXp]);
 
   const dailyPct =
     dailyGoalXp > 0
@@ -5148,22 +5149,20 @@ export default function App() {
     [patchUser],
   );
 
-  const handleRealWorldRewardClaimed = useCallback(
-    (awardedXp) => {
-      const delta = Number(awardedXp) || 0;
-      if (!delta) return;
-
-      // Immediately increment the local XP counters in the Zustand store
-      // so the UI updates without waiting for the Firestore onSnapshot
-      // round-trip. TopBar's dailyXp state syncs from user.dailyXp.
-      const currentUser = useUserStore.getState()?.user || {};
-      patchUser({
-        xp: (Number(currentUser.xp) || 0) + delta,
-        dailyXp: (Number(currentUser.dailyXp) || 0) + delta,
-      });
-    },
-    [patchUser],
-  );
+  const handleRealWorldRewardClaimed = useCallback(async () => {
+    const npub = resolveNpub();
+    if (!npub) return;
+    // Match the pattern used by lesson completion and flashcard review:
+    // re-read the full user doc from Firestore after awardXp so every
+    // downstream consumer (XP counter, daily goal progress bar, etc.)
+    // stays in sync.
+    try {
+      const fresh = await loadUserObjectFromDB(database, npub);
+      if (fresh) setUser?.(fresh);
+    } catch (err) {
+      console.error("Failed to refresh user after real-world reward:", err);
+    }
+  }, [resolveNpub, setUser]);
 
   const handleOpenRealWorldTasks = useCallback(() => {
     setRealWorldTasksOpen(true);
