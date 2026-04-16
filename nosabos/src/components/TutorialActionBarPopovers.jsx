@@ -23,6 +23,7 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons";
 import { PiPath, PiUsersBold } from "react-icons/pi";
+import { FiCompass } from "react-icons/fi";
 import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
@@ -62,13 +63,13 @@ const BUTTON_EXPLANATIONS = [
     position: 0,
   },
   {
-    id: "teams",
+    id: "realWorldTasks",
     tutorialId: "teams",
-    icon: PiUsersBold,
-    label: { en: "Teams", es: "Equipos" },
+    icon: FiCompass,
+    label: { en: "Immersion Practice", es: "Práctica de Inmersión" },
     description: {
-      en: "Join or create study groups to learn together with friends",
-      es: "Únete o crea grupos de estudio para aprender junto con amigos",
+      en: "Complete tasks outside of the app to immerse and practice the language.",
+      es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
     },
     position: 1,
   },
@@ -341,14 +342,22 @@ export default function TutorialActionBarPopovers({
             </HStack>
 
             {/* Description */}
-            <Text
-              fontSize="sm"
-              color={bodyColor}
-              textAlign="center"
-              lineHeight="1.5"
+            <Box
+              minH="72px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              px={2}
             >
-              {currentButton.description[lang]}
-            </Text>
+              <Text
+                fontSize="sm"
+                color={bodyColor}
+                textAlign="center"
+                lineHeight="1.5"
+              >
+                {currentButton.description[lang]}
+              </Text>
+            </Box>
 
             {/* Progress dots */}
             <HStack spacing={2} mt={2}>

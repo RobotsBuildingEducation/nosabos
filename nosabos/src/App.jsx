@@ -92,7 +92,7 @@ import {
   PiUsersBold,
   PiUsersThreeBold,
 } from "react-icons/pi";
-import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
+import { FiClock, FiCompass, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import {
   collection,
@@ -138,6 +138,9 @@ import { LuKey } from "react-icons/lu";
 import AlphabetBootcamp from "./components/AlphabetBootcamp";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import NotesDrawer from "./components/NotesDrawer";
+import RealWorldTasksModal, {
+  REAL_WORLD_TASKS_REFRESH_MS,
+} from "./components/RealWorldTasksModal";
 import useNotesStore from "./hooks/useNotesStore";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
@@ -1636,7 +1639,18 @@ export default function App() {
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [realWorldTasksOpen, setRealWorldTasksOpen] = useState(false);
+  const [tasksTickNow, setTasksTickNow] = useState(() => Date.now());
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+
+  // Periodically tick to drive the real-world tasks "ready" animation
+  useEffect(() => {
+    const id = setInterval(
+      () => setTasksTickNow(Date.now()),
+      60 * 1000,
+    );
+    return () => clearInterval(id);
+  }, []);
 
   // Notes store state for action bar animations
   const notesIsLoading = useNotesStore((s) => s.isLoading);
@@ -5004,6 +5018,145 @@ export default function App() {
     return unlockedLevel;
   }, [levelCompletionStatus, user?.proficiencyPlacements, resolvedTargetLang]);
 
+  // Real-world tasks state derived from user document
+  const realWorldTasks = user?.realWorldTasks || null;
+
+  // Ready = user should be prompted to generate/see a new batch
+  const realWorldTasksReady = useMemo(() => {
+    if (!realWorldTasks) return true;
+    if (!Array.isArray(realWorldTasks.tasks) || realWorldTasks.tasks.length !== 3) {
+      return true;
+    }
+    if (
+      realWorldTasks.targetLang &&
+      realWorldTasks.targetLang !== resolvedTargetLang
+    ) {
+      return true;
+    }
+    const generatedAt = realWorldTasks.generatedAt
+      ? new Date(realWorldTasks.generatedAt).getTime()
+      : 0;
+    if (!generatedAt) return true;
+    return tasksTickNow - generatedAt >= REAL_WORLD_TASKS_REFRESH_MS;
+  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
+
+  // When did the current "ready" state start? Used to decide if the user
+  // has already seen this ready notification.
+  const realWorldTasksReadySince = useMemo(() => {
+    if (!realWorldTasks) return 0;
+    const generatedAt = realWorldTasks.generatedAt
+      ? new Date(realWorldTasks.generatedAt).getTime()
+      : 0;
+    if (!generatedAt) return 0;
+    if (!Array.isArray(realWorldTasks.tasks) || realWorldTasks.tasks.length !== 3) {
+      return 0;
+    }
+    if (
+      realWorldTasks.targetLang &&
+      realWorldTasks.targetLang !== resolvedTargetLang
+    ) {
+      return 0;
+    }
+    return generatedAt + REAL_WORLD_TASKS_REFRESH_MS;
+  }, [realWorldTasks, resolvedTargetLang]);
+
+  const realWorldTasksLastOpenedAt = user?.realWorldTasksLastOpenedAt
+    ? new Date(user.realWorldTasksLastOpenedAt).getTime()
+    : 0;
+
+  // Show the notification badge when the tasks are ready and the user
+  // hasn't opened the modal since the ready state began.
+  const realWorldTasksHasNotification =
+    realWorldTasksReady && realWorldTasksLastOpenedAt < Math.max(1, realWorldTasksReadySince || tasksTickNow);
+
+  // True only when the current batch exists, hasn't been claimed,
+  // and has zero completed tasks — i.e. it is genuinely untouched.
+  const realWorldTasksBatchUntouched = Boolean(
+    realWorldTasks &&
+      !realWorldTasks.rewarded &&
+      Array.isArray(realWorldTasks.completed) &&
+      realWorldTasks.completed.length === 3 &&
+      !realWorldTasks.completed.some(Boolean),
+  );
+
+  // 0-100% representing remaining time until the next batch. Full = lots
+  // of time left, 0 = ready for a new batch. Used to render a drain ring
+  // around the immersion action-bar button so users see the countdown
+  // without opening the drawer.
+  const realWorldTasksTimerProgress = useMemo(() => {
+    if (!realWorldTasks) return 0;
+    const generatedAt = realWorldTasks.generatedAt
+      ? new Date(realWorldTasks.generatedAt).getTime()
+      : 0;
+    if (!generatedAt) return 0;
+    if (
+      !Array.isArray(realWorldTasks.tasks) ||
+      realWorldTasks.tasks.length !== 3
+    ) {
+      return 0;
+    }
+    if (
+      realWorldTasks.targetLang &&
+      realWorldTasks.targetLang !== resolvedTargetLang
+    ) {
+      return 0;
+    }
+    const remainingMs = Math.max(
+      0,
+      REAL_WORLD_TASKS_REFRESH_MS - (tasksTickNow - generatedAt),
+    );
+    return Math.max(
+      0,
+      Math.min(100, (remainingMs / REAL_WORLD_TASKS_REFRESH_MS) * 100),
+    );
+  }, [realWorldTasks, resolvedTargetLang, tasksTickNow]);
+
+  const [realWorldTasksAttention, setRealWorldTasksAttention] = useState(false);
+  const prevAnimTriggerRef = useRef(false);
+
+  // Fire a brief one-time animation whenever the current batch is
+  // untouched (no completed tasks, not claimed). This re-fires on each
+  // page load / mount so the user sees a visual signal every time they
+  // return and still have pending tasks. It also re-fires when a new
+  // untouched batch replaces a touched/claimed one.
+  useEffect(() => {
+    if (realWorldTasksBatchUntouched && !prevAnimTriggerRef.current) {
+      setRealWorldTasksAttention(true);
+      const id = setTimeout(() => setRealWorldTasksAttention(false), 1800);
+      prevAnimTriggerRef.current = true;
+      return () => clearTimeout(id);
+    }
+    if (!realWorldTasksBatchUntouched) {
+      prevAnimTriggerRef.current = false;
+    }
+  }, [realWorldTasksBatchUntouched]);
+
+  const handleRealWorldTasksUpdated = useCallback(
+    (next) => {
+      patchUser({ realWorldTasks: next });
+    },
+    [patchUser],
+  );
+
+  const handleOpenRealWorldTasks = useCallback(() => {
+    setRealWorldTasksOpen(true);
+    setRealWorldTasksAttention(false);
+    const openedAt = new Date().toISOString();
+    patchUser({ realWorldTasksLastOpenedAt: openedAt });
+    if (activeNpub) {
+      setDoc(
+        doc(database, "users", activeNpub),
+        {
+          realWorldTasksLastOpenedAt: openedAt,
+          updatedAt: openedAt,
+        },
+        { merge: true },
+      ).catch((err) =>
+        console.warn("Failed to persist realWorldTasksLastOpenedAt:", err),
+      );
+    }
+  }, [activeNpub, patchUser]);
+
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
@@ -5433,6 +5586,7 @@ export default function App() {
         />
       )}
 
+      {/* Teams/global feed modal temporarily hidden — replaced by Real-World Practice tasks.
       <TeamsDrawer
         isOpen={teamsOpen}
         onClose={() => setTeamsOpen(false)}
@@ -5441,6 +5595,18 @@ export default function App() {
         pendingInviteCount={pendingTeamInviteCount}
         allowPosts={allowPosts}
         onAllowPostsChange={handleAllowPostsChange}
+      />
+      */}
+
+      <RealWorldTasksModal
+        isOpen={realWorldTasksOpen}
+        onClose={() => setRealWorldTasksOpen(false)}
+        npub={activeNpub}
+        appLanguage={appLanguage}
+        targetLang={resolvedTargetLang}
+        cefrLevel={currentCEFRLevel}
+        realWorldTasks={realWorldTasks}
+        onTasksUpdated={handleRealWorldTasksUpdated}
       />
 
       <NotesDrawer
@@ -5454,8 +5620,11 @@ export default function App() {
         <BottomActionBar
           t={t}
           onOpenSettings={handleBottomBarSettingsOpen}
-          onOpenTeams={() => setTeamsOpen(true)}
+          onOpenTeams={handleOpenRealWorldTasks}
           onOpenNotes={() => setNotesOpen(true)}
+          realWorldTasksHasNotification={realWorldTasksHasNotification}
+          realWorldTasksAttention={realWorldTasksAttention}
+          realWorldTasksTimerProgress={realWorldTasksTimerProgress}
           showTranslations={showTranslationsEnabled}
           onToggleTranslations={handleToggleTranslations}
           translationLabel={translationToggleLabel}
@@ -6201,6 +6370,9 @@ function BottomActionBar({
   playSound,
   helpLabel,
   hasPendingTeamInvite = false,
+  realWorldTasksHasNotification = false,
+  realWorldTasksAttention = false,
+  realWorldTasksTimerProgress = 0,
   notesIsLoading = false,
   notesIsDone = false,
   pathMode = "path",
@@ -6217,6 +6389,8 @@ function BottomActionBar({
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
+  const tasksLabel =
+    appLanguage === "es" ? "Práctica de inmersión" : "Immersion practice";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
 
   // Path mode configuration
@@ -6483,27 +6657,132 @@ function BottomActionBar({
               overflow="visible"
               borderRadius="24px"
             >
-              <IconButton
-                data-tutorial-id="teams"
-                icon={<PiUsersBold size={16} />}
-                onClick={() => handleActionClick(onOpenTeams)}
-                aria-label={teamsLabel}
-                size="sm"
-                rounded="xl"
-                flexShrink={0}
-                borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
-                borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
-                boxShadow={
-                  hasPendingTeamInvite
-                    ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-                    : isLightTheme
+              <Box position="relative" flexShrink={0}>
+                {realWorldTasksTimerProgress > 0 && (
+                  <Box
+                    as="svg"
+                    position="absolute"
+                    top="calc(50% + 2px)"
+                    left="50%"
+                    transform="translate(-50%, -50%)"
+                    width="44px"
+                    height="48px"
+                    viewBox="0 0 44 48"
+                    pointerEvents="none"
+                    aria-hidden="true"
+                    zIndex={1}
+                    overflow="visible"
+                  >
+                    <defs>
+                      <linearGradient
+                        id="immersionProgressGradient"
+                        x1="0%"
+                        y1="0%"
+                        x2="100%"
+                        y2="100%"
+                        gradientTransform="rotate(135 0.5 0.5)"
+                      >
+                        <stop offset="0%" stopColor="#14b8a6" />
+                        <stop offset="100%" stopColor="#06b6d4" />
+                      </linearGradient>
+                    </defs>
+                    <rect
+                      x="1.75"
+                      y="1.75"
+                      width="40.5"
+                      height="44.5"
+                      rx="14"
+                      ry="14"
+                      fill="none"
+                      stroke={
+                        isLightTheme
+                          ? "rgba(120, 94, 61, 0.18)"
+                          : "rgba(255,255,255,0.08)"
+                      }
+                      strokeWidth="3.5"
+                    />
+                    <rect
+                      x="1.75"
+                      y="1.75"
+                      width="40.5"
+                      height="44.5"
+                      rx="14"
+                      ry="14"
+                      fill="none"
+                      stroke="url(#immersionProgressGradient)"
+                      strokeWidth="3.5"
+                      strokeLinecap="round"
+                      pathLength="100"
+                      strokeDasharray="100"
+                      strokeDashoffset={100 - realWorldTasksTimerProgress}
+                      style={{
+                        transition: "stroke-dashoffset 0.8s ease",
+                      }}
+                    />
+                  </Box>
+                )}
+                <IconButton
+                  data-tutorial-id="teams"
+                  icon={<FiCompass size={16} />}
+                  onClick={() => handleActionClick(onOpenTeams)}
+                  aria-label={tasksLabel}
+                  size="sm"
+                  rounded="xl"
+                  borderWidth={realWorldTasksAttention ? "2px" : "0px"}
+                  borderColor={
+                    realWorldTasksAttention ? "teal.400" : "gray.700"
+                  }
+                  boxShadow={
+                    isLightTheme
                       ? "0 4px 0 rgba(180, 164, 144, 0.9)"
                       : "0 4px 0 #313a4b"
-                }
-                colorScheme="gray"
-                bg="gray.800"
-                color="gray.100"
-              />
+                  }
+                  animation={
+                    realWorldTasksAttention
+                      ? "tasksAttentionPing 1.5s ease-out"
+                      : undefined
+                  }
+                  colorScheme="gray"
+                  bg="gray.800"
+                  color="gray.100"
+                  sx={{
+                    "@keyframes tasksAttentionPing": {
+                      "0%": {
+                        boxShadow:
+                          "0 0 0 3px rgba(20,184,166,0.6), 0 0 20px rgba(6,182,212,0.75)",
+                      },
+                      "100%": {
+                        boxShadow: isLightTheme
+                          ? "0 4px 0 rgba(180, 164, 144, 0.9)"
+                          : "0 4px 0 #313a4b",
+                        borderColor: "gray.700",
+                      },
+                    },
+                  }}
+                />
+                {realWorldTasksHasNotification && (
+                  <Box
+                    position="absolute"
+                    top="-4px"
+                    right="-4px"
+                    minW="16px"
+                    h="16px"
+                    px="4px"
+                    borderRadius="full"
+                    bgGradient="linear(135deg, #14b8a6 0%, #06b6d4 100%)"
+                    color="white"
+                    fontSize="10px"
+                    fontWeight="bold"
+                    lineHeight="16px"
+                    textAlign="center"
+                    boxShadow="0 0 0 2px var(--app-glass-bg-soft, rgba(0,0,0,0.6))"
+                    pointerEvents="none"
+                    aria-hidden="true"
+                  >
+                    !
+                  </Box>
+                )}
+              </Box>
 
               <IconButton
                 data-tutorial-id="settings"

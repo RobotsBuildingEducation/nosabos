@@ -16,6 +16,7 @@ import {
   FaLayerGroup,
   FaStickyNote,
   FaUsers,
+  FaCompass,
   FaRobot,
   FaMap,
   FaBullseye,
@@ -129,9 +130,9 @@ const translations = {
     feature_notes: "Generate Notes",
     feature_notes_desc:
       "Create comprehensive study notes from your lessons to review later.",
-    feature_teams: "Create Teams",
-    feature_teams_desc:
-      "Form study groups and learn together with friends, family, or classmates in collaborative spaces.",
+    feature_immersion: "Immersion Practice",
+    feature_immersion_desc:
+      "Complete tasks outside of the app to immerse and practice the language.",
     feature_assistant: "Personal Assistant",
     feature_assistant_desc:
       "Get personalized guidance and recommendations when you need help.",
@@ -240,9 +241,9 @@ const translations = {
     feature_notes: "Generar Notas",
     feature_notes_desc:
       "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
-    feature_teams: "Crear Equipos",
-    feature_teams_desc:
-      "Forma grupos de estudio y aprende junto con amigos, familia o compañeros en espacios colaborativos.",
+    feature_immersion: "Práctica de Inmersión",
+    feature_immersion_desc:
+      "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
     feature_assistant: "Asistente Personal",
     feature_assistant_desc:
       "Obtén orientación y recomendaciones personalizadas cuando las necesites.",
@@ -1158,9 +1159,9 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_notes_desc,
     },
     {
-      icon: <FaUsers />,
-      title: copy.feature_teams,
-      desc: copy.feature_teams_desc,
+      icon: <FaCompass />,
+      title: copy.feature_immersion,
+      desc: copy.feature_immersion_desc,
     },
     {
       icon: <MdSupportAgent />,
