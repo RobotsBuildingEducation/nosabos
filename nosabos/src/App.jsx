@@ -5138,24 +5138,23 @@ export default function App() {
     [patchUser],
   );
 
-  const handleRealWorldRewardClaimed = useCallback(async () => {
-    const npub = resolveNpub();
-    if (!npub) return;
-    try {
-      const fresh = await loadUserObjectFromDB(database, npub);
-      if (fresh) {
-        setUser?.(fresh);
-        // Also sync the daily-goal state variables so the progress bar
-        // updates immediately (the onSnapshot may lag behind because
-        // persistTasks writes to the same doc right after awardXp).
-        if (typeof fresh.dailyXp === "number") setDailyXp(fresh.dailyXp);
-        if (typeof fresh.dailyGoalXp === "number")
-          setDailyGoalXp(fresh.dailyGoalXp);
-      }
-    } catch (err) {
-      console.error("Failed to refresh user after real-world reward:", err);
-    }
-  }, [resolveNpub, setUser]);
+  const handleRealWorldRewardClaimed = useCallback(
+    (awardedXp) => {
+      const delta = Number(awardedXp) || 0;
+      if (!delta) return;
+
+      // Immediately increment the local XP counters so the UI updates
+      // without waiting for the Firestore onSnapshot round-trip.
+      setDailyXp((prev) => prev + delta);
+
+      const currentUser = useUserStore.getState()?.user || {};
+      patchUser({
+        xp: (Number(currentUser.xp) || 0) + delta,
+        dailyXp: (Number(currentUser.dailyXp) || 0) + delta,
+      });
+    },
+    [patchUser],
+  );
 
   const handleOpenRealWorldTasks = useCallback(() => {
     setRealWorldTasksOpen(true);

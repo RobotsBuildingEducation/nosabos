@@ -406,7 +406,7 @@ export default function RealWorldTasksModal({
       };
       await persistTasks(next);
       playSound(sparkleSound);
-      onRewardClaimed?.();
+      onRewardClaimed?.(REAL_WORLD_TASKS_REWARD_XP);
     } catch (err) {
       console.error("Failed to claim real-world task reward:", err);
       toast({
