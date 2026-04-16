@@ -79,6 +79,7 @@ body {
   margin: 0;
   /* border: 5px solid green; */
   width: 100%;
+  min-height: 100%;
 }
 
 :root[data-theme-mode="light"] {
@@ -160,7 +161,13 @@ body {
   --chakra-colors-whiteAlpha-900: rgba(47, 38, 29, 0.92);
   color-scheme: light;
 }
-
+.app-shell {
+  min-height: 100vh; /* fallback */
+  min-height: 100dvh; /* real fix for mobile browser UI */
+  background: #0b0b0b;
+  padding-bottom: env(safe-area-inset-bottom);
+  box-sizing: border-box;
+}
 a {
   font-weight: 500;
   color: #646cff;
