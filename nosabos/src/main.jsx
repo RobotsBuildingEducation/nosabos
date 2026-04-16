@@ -73,17 +73,19 @@ function ProficiencyContainer() {
 createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
     <MiniKitContextProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<AppContainer />} />
-          <Route path="/onboarding/*" element={<AppContainer />} />
-          <Route path="/subscribe" element={<AppContainer />} />
-          <Route path="/proficiency" element={<ProficiencyContainer />} />
-          <Route path="/links" element={<LinksPage />} />
-          <Route path="/experiments" element={<SoundExperiment />} />
-          <Route path="/game" element={<RPGGame />} />
-        </Routes>
-      </Router>
+      <div className="app-shell">
+        <Router>
+          <Routes>
+            <Route path="/" element={<AppContainer />} />
+            <Route path="/onboarding/*" element={<AppContainer />} />
+            <Route path="/subscribe" element={<AppContainer />} />
+            <Route path="/proficiency" element={<ProficiencyContainer />} />
+            <Route path="/links" element={<LinksPage />} />
+            <Route path="/experiments" element={<SoundExperiment />} />
+            <Route path="/game" element={<RPGGame />} />
+          </Routes>
+        </Router>
+      </div>
     </MiniKitContextProvider>
-  </ChakraProvider>
+  </ChakraProvider>,
 );
