@@ -5143,7 +5143,15 @@ export default function App() {
     if (!npub) return;
     try {
       const fresh = await loadUserObjectFromDB(database, npub);
-      if (fresh) setUser?.(fresh);
+      if (fresh) {
+        setUser?.(fresh);
+        // Also sync the daily-goal state variables so the progress bar
+        // updates immediately (the onSnapshot may lag behind because
+        // persistTasks writes to the same doc right after awardXp).
+        if (typeof fresh.dailyXp === "number") setDailyXp(fresh.dailyXp);
+        if (typeof fresh.dailyGoalXp === "number")
+          setDailyGoalXp(fresh.dailyGoalXp);
+      }
     } catch (err) {
       console.error("Failed to refresh user after real-world reward:", err);
     }

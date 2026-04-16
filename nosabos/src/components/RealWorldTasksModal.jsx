@@ -468,19 +468,13 @@ export default function RealWorldTasksModal({
         bg={ui.drawerBg}
         color={ui.drawerText}
         borderTopRadius="24px"
-        h={{ base: "90vh", md: "auto" }}
+        h="auto"
         maxH={{ base: "90vh", md: "85vh" }}
         borderTop={ui.drawerBorder ? `1px solid ${ui.drawerBorder}` : undefined}
         boxShadow={ui.shadow}
         sx={{
           "@supports (height: 100dvh)": {
-            "@media (max-width: 47.99em)": {
-              height: "90dvh",
-              maxHeight: "90dvh",
-            },
-            "@media (min-width: 48em)": {
-              maxHeight: "85dvh",
-            },
+            maxHeight: { base: "90dvh", md: "85dvh" },
           },
         }}
       >
