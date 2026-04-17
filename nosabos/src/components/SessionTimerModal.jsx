@@ -466,6 +466,7 @@ export default function SessionTimerModal({
     if (isOpen) setLocalMinutes(minutes);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Used by presets and clock drag — commits the value to the parent too.
   const handleLocalMinutesChange = useCallback(
     (value) => {
       setLocalMinutes(value);
@@ -474,14 +475,27 @@ export default function SessionTimerModal({
     [onMinutesChange],
   );
 
+  // Typing only updates local state so each keystroke stays instant.
+  // The parent is synced on blur and on Start.
+  const handleInputChange = useCallback((e) => {
+    const raw = e.target.value;
+    const val = Number(raw);
+    setLocalMinutes(val > 240 ? "240" : raw);
+  }, []);
+
+  const handleInputBlur = useCallback(() => {
+    onMinutesChange?.(localMinutes);
+  }, [onMinutesChange, localMinutes]);
+
   const handleClose = useCallback(() => {
     playSound(selectSound);
     onClose?.();
   }, [onClose, playSound]);
   const handleStart = useCallback(() => {
-    onStart?.();
+    onMinutesChange?.(localMinutes);
+    onStart?.(localMinutes);
     void playSound(submitActionSound);
-  }, [onStart, playSound]);
+  }, [onMinutesChange, onStart, localMinutes, playSound]);
 
   return (
     <Modal
@@ -551,14 +565,8 @@ export default function SessionTimerModal({
                 min={0}
                 max={240}
                 value={localMinutes}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  if (val > 240) {
-                    handleLocalMinutesChange("240");
-                  } else {
-                    handleLocalMinutesChange(e.target.value);
-                  }
-                }}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
                 bg={isLightTheme ? APP_SURFACE : "gray.800"}
                 color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
