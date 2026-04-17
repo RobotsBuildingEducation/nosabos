@@ -156,6 +156,11 @@ import {
 } from "./utils/flashcardReview";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
+import SessionTimerBadge from "./components/SessionTimerBadge";
+import {
+  getRemainingSeconds,
+  setRemainingSeconds,
+} from "./provider/SessionTimerProvider";
 import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
@@ -534,10 +539,9 @@ function TopBar({
   viewMode,
 
   // 🆕 timer props
-  timerRemainingSeconds,
+  hasTimer,
   isTimerRunning,
   timerPaused,
-  formatTimer,
   onOpenTimerModal,
   onTogglePauseTimer,
   // 🆕 daily goal modal props
@@ -973,22 +977,7 @@ function TopBar({
               ml="auto"
               align="center"
             >
-              {timerRemainingSeconds !== null && (
-                <Badge
-                  colorScheme={isTimerRunning ? "teal" : "purple"}
-                  variant="subtle"
-                  px={3}
-                  py={1.5}
-                  borderRadius="md"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                >
-                  <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
-                    {formatTimer(timerRemainingSeconds)}
-                  </Text>
-                </Badge>
-              )}
+              {hasTimer && <SessionTimerBadge isRunning={isTimerRunning} />}
               <Button
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
@@ -1000,7 +989,7 @@ function TopBar({
               >
                 <FiClock />
               </Button>
-              {timerRemainingSeconds !== null && (
+              {hasTimer && (
                 <Button
                   colorScheme="teal"
                   variant={timerPaused ? "outline" : "ghost"}
@@ -2458,23 +2447,26 @@ export default function App() {
 
   /* -----------------------------------
      Session timer
+     The high-frequency "remaining seconds" value is kept in a module-level
+     store (SessionTimerProvider) so only <SessionTimerBadge/> re-renders on
+     each 1-second tick. App and TopBar only re-render on structural changes
+     (start, pause, reset, time-up).
   ----------------------------------- */
   const [timerModalOpen, setTimerModalOpen] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState("20");
-  const [timerRemainingSeconds, setTimerRemainingSeconds] = useState(null);
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
   const [timerEndsAt, setTimerEndsAt] = useState(null);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
+  const [hasTimer, setHasTimer] = useState(false);
   const timerIntervalRef = useRef(null);
   const timerHydratedRef = useRef(false);
   const sessionTimerStorageKey = useMemo(
     () => `${SESSION_TIMER_STORAGE_KEY}:${activeNpub || "anonymous"}`,
     [activeNpub],
   );
-  const isTimerRunning =
-    timerActive && !timerPaused && timerRemainingSeconds !== null;
+  const isTimerRunning = timerActive && !timerPaused && hasTimer;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -2570,13 +2562,6 @@ export default function App() {
     proficiencyTestOpen,
   ]);
 
-  const formatTimer = useCallback((seconds) => {
-    const safe = Math.max(0, Math.floor(Number(seconds) || 0));
-    const mins = String(Math.floor(safe / 60)).padStart(2, "0");
-    const secs = String(safe % 60).padStart(2, "0");
-    return `${mins}:${secs}`;
-  }, []);
-
   useEffect(() => {
     timerHydratedRef.current = false;
 
@@ -2589,12 +2574,13 @@ export default function App() {
       const raw = window.sessionStorage.getItem(sessionTimerStorageKey);
       if (!raw) {
         setTimerMinutes("20");
-        setTimerRemainingSeconds(null);
+        setRemainingSeconds(null);
         setTimerDurationSeconds(null);
         setTimerActive(false);
         setTimerPaused(false);
         setTimerEndsAt(null);
         setTimeUpOpen(false);
+        setHasTimer(false);
         return;
       }
 
@@ -2617,11 +2603,12 @@ export default function App() {
         Number.isFinite(storedRemaining) &&
         storedRemaining > 0
       ) {
-        setTimerRemainingSeconds(storedRemaining);
+        setRemainingSeconds(storedRemaining);
         setTimerActive(true);
         setTimerPaused(true);
         setTimerEndsAt(null);
         setTimeUpOpen(false);
+        setHasTimer(true);
         return;
       }
 
@@ -2632,17 +2619,19 @@ export default function App() {
         );
 
         if (nextRemaining > 0) {
-          setTimerRemainingSeconds(nextRemaining);
+          setRemainingSeconds(nextRemaining);
           setTimerActive(true);
           setTimerPaused(false);
           setTimerEndsAt(storedEndsAt);
           setTimeUpOpen(false);
+          setHasTimer(true);
         } else {
-          setTimerRemainingSeconds(0);
+          setRemainingSeconds(0);
           setTimerActive(false);
           setTimerPaused(false);
           setTimerEndsAt(null);
           setTimeUpOpen(true);
+          setHasTimer(true);
         }
       }
     } catch (error) {
@@ -2656,11 +2645,13 @@ export default function App() {
     if (!timerHydratedRef.current || typeof window === "undefined") return;
 
     try {
+      // While running we persist only endsAt (remaining is recomputed on
+      // hydrate). While paused we snapshot remaining so it survives reload.
       window.sessionStorage.setItem(
         sessionTimerStorageKey,
         JSON.stringify({
           minutes: timerMinutes,
-          remainingSeconds: timerRemainingSeconds,
+          remainingSeconds: timerPaused ? getRemainingSeconds() : null,
           durationSeconds: timerDurationSeconds,
           active: timerActive,
           paused: timerPaused,
@@ -2672,7 +2663,6 @@ export default function App() {
     }
   }, [
     timerMinutes,
-    timerRemainingSeconds,
     timerDurationSeconds,
     timerActive,
     timerPaused,
@@ -2710,47 +2700,57 @@ export default function App() {
     }
     setTimerActive(false);
     setTimerPaused(false);
-    setTimerRemainingSeconds(null);
+    setRemainingSeconds(null);
     setTimerDurationSeconds(null);
     setTimerEndsAt(null);
     setTimeUpOpen(false);
+    setHasTimer(false);
   }, []);
 
-  const handleStartTimer = useCallback(() => {
-    const parsedMinutes = Math.max(1, Math.round(Number(timerMinutes) || 0));
-    handleResetTimer();
-    const seconds = parsedMinutes * 60;
-    const endsAt = Date.now() + seconds * 1000;
-    setTimerDurationSeconds(seconds);
-    setTimerRemainingSeconds(seconds);
-    setTimerActive(true);
-    setTimerPaused(false);
-    setTimerEndsAt(endsAt);
-    setTimeUpOpen(false);
-    setTimerModalOpen(false);
-    if (shouldShowProficiencyAfterTimer) {
-      setShouldShowProficiencyAfterTimer(false);
-      setProficiencyTestOpen(true);
-    }
-  }, [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer]);
+  const handleStartTimer = useCallback(
+    (minutesArg) => {
+      // The modal may pass its local draft value here — prefer it over the
+      // parent state to avoid any staleness if the user hadn't blurred yet.
+      const source = minutesArg ?? timerMinutes;
+      const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
+      handleResetTimer();
+      const seconds = parsedMinutes * 60;
+      const endsAt = Date.now() + seconds * 1000;
+      setTimerDurationSeconds(seconds);
+      setRemainingSeconds(seconds);
+      setTimerActive(true);
+      setTimerPaused(false);
+      setTimerEndsAt(endsAt);
+      setTimeUpOpen(false);
+      setTimerModalOpen(false);
+      setHasTimer(true);
+      if (shouldShowProficiencyAfterTimer) {
+        setShouldShowProficiencyAfterTimer(false);
+        setProficiencyTestOpen(true);
+      }
+    },
+    [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer],
+  );
 
   const handleCloseTimeUp = useCallback(() => {
     playSound(selectSound);
     setTimeUpOpen(false);
-    setTimerRemainingSeconds(null);
+    setRemainingSeconds(null);
     setTimerDurationSeconds(null);
     setTimerActive(false);
     setTimerPaused(false);
     setTimerEndsAt(null);
+    setHasTimer(false);
   }, [playSound]);
 
   const clearTimeUpState = useCallback(() => {
     setTimeUpOpen(false);
-    setTimerRemainingSeconds(null);
+    setRemainingSeconds(null);
     setTimerDurationSeconds(null);
     setTimerActive(false);
     setTimerPaused(false);
     setTimerEndsAt(null);
+    setHasTimer(false);
   }, []);
 
   const handleTimeUpButtonClose = useCallback(() => {
@@ -2764,11 +2764,6 @@ export default function App() {
     setTimerModalOpen(true);
   }, [clearTimeUpState, playSound]);
 
-  const timerHelper = useMemo(() => {
-    if (timerRemainingSeconds === null) return null;
-    return null;
-  }, [formatTimer, timerActive, timerRemainingSeconds]);
-
   useEffect(() => {
     if (!timerActive || timerPaused || !Number.isFinite(timerEndsAt)) return;
 
@@ -2777,7 +2772,9 @@ export default function App() {
         0,
         Math.ceil((timerEndsAt - Date.now()) / 1000),
       );
-      setTimerRemainingSeconds(nextRemaining);
+      // Writes to the module-level store and notifies only subscribers
+      // (SessionTimerBadge). App and TopBar do NOT re-render on each tick.
+      setRemainingSeconds(nextRemaining);
 
       if (nextRemaining <= 0) {
         if (timerIntervalRef.current) {
@@ -2804,7 +2801,8 @@ export default function App() {
   }, [timerActive, timerPaused, timerEndsAt]);
 
   const handleTogglePauseTimer = useCallback(() => {
-    if (!timerActive || timerRemainingSeconds === null) return;
+    const remaining = getRemainingSeconds();
+    if (!timerActive || remaining === null) return;
 
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -2812,14 +2810,14 @@ export default function App() {
     }
 
     if (timerPaused) {
-      setTimerEndsAt(Date.now() + timerRemainingSeconds * 1000);
+      setTimerEndsAt(Date.now() + remaining * 1000);
       setTimerPaused(false);
       return;
     }
 
     setTimerEndsAt(null);
     setTimerPaused(true);
-  }, [timerActive, timerPaused, timerRemainingSeconds]);
+  }, [timerActive, timerPaused]);
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
@@ -5604,10 +5602,9 @@ export default function App() {
           onSelectTab={handleSelectTab}
           viewMode={viewMode}
           // 🆕 timer props
-          timerRemainingSeconds={timerRemainingSeconds}
+          hasTimer={hasTimer}
           isTimerRunning={isTimerRunning}
           timerPaused={timerPaused}
-          formatTimer={formatTimer}
           onOpenTimerModal={() => setTimerModalOpen(true)}
           onTogglePauseTimer={handleTogglePauseTimer}
           onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
@@ -5997,7 +5994,7 @@ export default function App() {
         onMinutesChange={setTimerMinutes}
         onStart={handleStartTimer}
         isRunning={isTimerRunning}
-        helper={timerHelper}
+        helper={null}
         t={t}
       />
 

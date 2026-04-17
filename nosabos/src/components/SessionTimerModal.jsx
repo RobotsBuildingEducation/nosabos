@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useMemo, useCallback, useRef, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -458,14 +458,37 @@ export default function SessionTimerModal({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+
+  // All editing (typing, presets, clock drag) updates only this local draft
+  // so interactions stay instant. The parent App is synced at commit points:
+  // close and start. This avoids an App re-render on every drag tick or
+  // preset click.
+  const [localMinutes, setLocalMinutes] = useState(() => minutes);
+  useEffect(() => {
+    if (isOpen) setLocalMinutes(minutes);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLocalMinutesChange = useCallback((value) => {
+    setLocalMinutes(value);
+  }, []);
+
+  const handleInputChange = useCallback((e) => {
+    const raw = e.target.value;
+    const val = Number(raw);
+    setLocalMinutes(val > 240 ? "240" : raw);
+  }, []);
+
   const handleClose = useCallback(() => {
+    onMinutesChange?.(localMinutes);
     playSound(selectSound);
     onClose?.();
-  }, [onClose, playSound]);
+  }, [onClose, onMinutesChange, localMinutes, playSound]);
+
   const handleStart = useCallback(() => {
-    onStart?.();
+    onMinutesChange?.(localMinutes);
+    onStart?.(localMinutes);
     void playSound(submitActionSound);
-  }, [onStart, playSound]);
+  }, [onMinutesChange, onStart, localMinutes, playSound]);
 
   return (
     <Modal
@@ -518,8 +541,8 @@ export default function SessionTimerModal({
 
             {/* Clock visual — drag around the face to adjust time */}
             <ClockVisual
-              minutes={minutes}
-              onMinutesChange={onMinutesChange}
+              minutes={localMinutes}
+              onMinutesChange={handleLocalMinutesChange}
               playSliderTick={playSliderTick}
               isLightTheme={isLightTheme}
             />
@@ -534,15 +557,8 @@ export default function SessionTimerModal({
                 type="number"
                 min={0}
                 max={240}
-                value={minutes}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  if (val > 240) {
-                    onMinutesChange?.("240");
-                  } else {
-                    onMinutesChange?.(e.target.value);
-                  }
-                }}
+                value={localMinutes}
+                onChange={handleInputChange}
                 bg={isLightTheme ? APP_SURFACE : "gray.800"}
                 color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
@@ -575,7 +591,7 @@ export default function SessionTimerModal({
               </Text>
               <HStack spacing={2} wrap="wrap">
                 {presets.map((preset) => {
-                  const isActive = Number(minutes) === preset;
+                  const isActive = Number(localMinutes) === preset;
                   return (
                     <Button
                       key={preset}
@@ -620,7 +636,7 @@ export default function SessionTimerModal({
                       }
                       onClick={() => {
                         playSound(selectSound);
-                        onMinutesChange?.(String(preset));
+                        handleLocalMinutesChange(String(preset));
                       }}
                     >
                       {preset}m
