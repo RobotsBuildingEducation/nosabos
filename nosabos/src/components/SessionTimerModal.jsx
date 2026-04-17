@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useRef, useEffect } from "react";
+import React, { useMemo, useCallback, useRef, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -458,6 +458,22 @@ export default function SessionTimerModal({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+
+  // Local draft so the input and clock are instantly responsive without
+  // waiting for the parent App re-render to round-trip back.
+  const [localMinutes, setLocalMinutes] = useState(() => minutes);
+  useEffect(() => {
+    if (isOpen) setLocalMinutes(minutes);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLocalMinutesChange = useCallback(
+    (value) => {
+      setLocalMinutes(value);
+      onMinutesChange?.(value);
+    },
+    [onMinutesChange],
+  );
+
   const handleClose = useCallback(() => {
     playSound(selectSound);
     onClose?.();
@@ -518,8 +534,8 @@ export default function SessionTimerModal({
 
             {/* Clock visual — drag around the face to adjust time */}
             <ClockVisual
-              minutes={minutes}
-              onMinutesChange={onMinutesChange}
+              minutes={localMinutes}
+              onMinutesChange={handleLocalMinutesChange}
               playSliderTick={playSliderTick}
               isLightTheme={isLightTheme}
             />
@@ -534,13 +550,13 @@ export default function SessionTimerModal({
                 type="number"
                 min={0}
                 max={240}
-                value={minutes}
+                value={localMinutes}
                 onChange={(e) => {
                   const val = Number(e.target.value);
                   if (val > 240) {
-                    onMinutesChange?.("240");
+                    handleLocalMinutesChange("240");
                   } else {
-                    onMinutesChange?.(e.target.value);
+                    handleLocalMinutesChange(e.target.value);
                   }
                 }}
                 bg={isLightTheme ? APP_SURFACE : "gray.800"}
@@ -575,7 +591,7 @@ export default function SessionTimerModal({
               </Text>
               <HStack spacing={2} wrap="wrap">
                 {presets.map((preset) => {
-                  const isActive = Number(minutes) === preset;
+                  const isActive = Number(localMinutes) === preset;
                   return (
                     <Button
                       key={preset}
@@ -620,7 +636,7 @@ export default function SessionTimerModal({
                       }
                       onClick={() => {
                         playSound(selectSound);
-                        onMinutesChange?.(String(preset));
+                        handleLocalMinutesChange(String(preset));
                       }}
                     >
                       {preset}m
