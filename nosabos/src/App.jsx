@@ -2707,27 +2707,30 @@ export default function App() {
     setHasTimer(false);
   }, []);
 
-  const handleStartTimer = useCallback((minutesArg) => {
-    // The modal may pass its local draft value here — prefer it over the
-    // parent state to avoid any staleness if the user hadn't blurred yet.
-    const source = minutesArg ?? timerMinutes;
-    const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
-    handleResetTimer();
-    const seconds = parsedMinutes * 60;
-    const endsAt = Date.now() + seconds * 1000;
-    setTimerDurationSeconds(seconds);
-    setRemainingSeconds(seconds);
-    setTimerActive(true);
-    setTimerPaused(false);
-    setTimerEndsAt(endsAt);
-    setTimeUpOpen(false);
-    setTimerModalOpen(false);
-    setHasTimer(true);
-    if (shouldShowProficiencyAfterTimer) {
-      setShouldShowProficiencyAfterTimer(false);
-      setProficiencyTestOpen(true);
-    }
-  }, [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer]);
+  const handleStartTimer = useCallback(
+    (minutesArg) => {
+      // The modal may pass its local draft value here — prefer it over the
+      // parent state to avoid any staleness if the user hadn't blurred yet.
+      const source = minutesArg ?? timerMinutes;
+      const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
+      handleResetTimer();
+      const seconds = parsedMinutes * 60;
+      const endsAt = Date.now() + seconds * 1000;
+      setTimerDurationSeconds(seconds);
+      setRemainingSeconds(seconds);
+      setTimerActive(true);
+      setTimerPaused(false);
+      setTimerEndsAt(endsAt);
+      setTimeUpOpen(false);
+      setTimerModalOpen(false);
+      setHasTimer(true);
+      if (shouldShowProficiencyAfterTimer) {
+        setShouldShowProficiencyAfterTimer(false);
+        setProficiencyTestOpen(true);
+      }
+    },
+    [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer],
+  );
 
   const handleCloseTimeUp = useCallback(() => {
     playSound(selectSound);
