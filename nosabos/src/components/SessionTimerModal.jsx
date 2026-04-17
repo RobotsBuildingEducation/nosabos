@@ -459,38 +459,31 @@ export default function SessionTimerModal({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
-  // Local draft so the input and clock are instantly responsive without
-  // waiting for the parent App re-render to round-trip back.
+  // All editing (typing, presets, clock drag) updates only this local draft
+  // so interactions stay instant. The parent App is synced at commit points:
+  // close and start. This avoids an App re-render on every drag tick or
+  // preset click.
   const [localMinutes, setLocalMinutes] = useState(() => minutes);
   useEffect(() => {
     if (isOpen) setLocalMinutes(minutes);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Used by presets and clock drag — commits the value to the parent too.
-  const handleLocalMinutesChange = useCallback(
-    (value) => {
-      setLocalMinutes(value);
-      onMinutesChange?.(value);
-    },
-    [onMinutesChange],
-  );
+  const handleLocalMinutesChange = useCallback((value) => {
+    setLocalMinutes(value);
+  }, []);
 
-  // Typing only updates local state so each keystroke stays instant.
-  // The parent is synced on blur and on Start.
   const handleInputChange = useCallback((e) => {
     const raw = e.target.value;
     const val = Number(raw);
     setLocalMinutes(val > 240 ? "240" : raw);
   }, []);
 
-  const handleInputBlur = useCallback(() => {
-    onMinutesChange?.(localMinutes);
-  }, [onMinutesChange, localMinutes]);
-
   const handleClose = useCallback(() => {
+    onMinutesChange?.(localMinutes);
     playSound(selectSound);
     onClose?.();
-  }, [onClose, playSound]);
+  }, [onClose, onMinutesChange, localMinutes, playSound]);
+
   const handleStart = useCallback(() => {
     onMinutesChange?.(localMinutes);
     onStart?.(localMinutes);
@@ -566,7 +559,6 @@ export default function SessionTimerModal({
                 max={240}
                 value={localMinutes}
                 onChange={handleInputChange}
-                onBlur={handleInputBlur}
                 bg={isLightTheme ? APP_SURFACE : "gray.800"}
                 color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                 borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
