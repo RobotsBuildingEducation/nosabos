@@ -452,6 +452,7 @@ export default function SessionTimerModal({
   isRunning,
   helper,
   t = {},
+  useSharedBackdrop = false,
 }) {
   const presets = [20, 30, 45, 60, 90, 120, 150, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
@@ -468,6 +469,21 @@ export default function SessionTimerModal({
     if (isOpen) setLocalMinutes(minutes);
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const deferPostAction = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        task();
+      });
+    });
+  }, []);
+
   const handleLocalMinutesChange = useCallback((value) => {
     setLocalMinutes(value);
   }, []);
@@ -479,16 +495,20 @@ export default function SessionTimerModal({
   }, []);
 
   const handleClose = useCallback(() => {
-    onMinutesChange?.(localMinutes);
-    playSound(selectSound);
     onClose?.();
-  }, [onClose, onMinutesChange, localMinutes, playSound]);
+    deferPostAction(() => {
+      onMinutesChange?.(localMinutes);
+      void playSound(selectSound);
+    });
+  }, [deferPostAction, onClose, onMinutesChange, localMinutes, playSound]);
 
   const handleStart = useCallback(() => {
-    onMinutesChange?.(localMinutes);
     onStart?.(localMinutes);
-    void playSound(submitActionSound);
-  }, [onMinutesChange, onStart, localMinutes, playSound]);
+    deferPostAction(() => {
+      onMinutesChange?.(localMinutes);
+      void playSound(submitActionSound);
+    });
+  }, [deferPostAction, onMinutesChange, onStart, localMinutes, playSound]);
 
   return (
     <Modal
@@ -500,8 +520,8 @@ export default function SessionTimerModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
-        bg={isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
-        backdropFilter={isLightTheme ? "blur(4px)" : undefined}
+        bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
+        backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
       />
       <ModalContent
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

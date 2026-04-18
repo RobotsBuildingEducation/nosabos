@@ -393,6 +393,7 @@ export default function DailyGoalModal({
   dailyXpHistory = {},
   currentDailyXp = 0,
   currentGoalXp = 0,
+  useSharedBackdrop = false,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -460,6 +461,20 @@ export default function DailyGoalModal({
 
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
+  const deferPostAction = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        task();
+      });
+    });
+  }, []);
 
   // Lazy-mount the XP-activity heatmap AFTER the modal shell paints.
   // The heatmap is still ~371 DOM nodes + a scrollable grid; rendering
@@ -521,7 +536,9 @@ export default function DailyGoalModal({
   const save = async () => {
     if (onSaveGoal) {
       onSaveGoal(parsed);
-      void playSound(submitActionSound);
+      deferPostAction(() => {
+        void playSound(submitActionSound);
+      });
       return;
     }
 
@@ -556,15 +573,19 @@ export default function DailyGoalModal({
         { merge: true },
       );
       onClose?.();
-      void playSound(submitActionSound);
+      deferPostAction(() => {
+        void playSound(submitActionSound);
+      });
     } catch (e) {
       console.error(L.errSaveTitle, e);
     }
   };
   const handleClose = useCallback(() => {
-    playSound(selectSound);
     onClose?.();
-  }, [onClose, playSound]);
+    deferPostAction(() => {
+      void playSound(selectSound);
+    });
+  }, [deferPostAction, onClose, playSound]);
 
   return (
     <Modal
@@ -578,8 +599,8 @@ export default function DailyGoalModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
-        bg={isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
-        backdropFilter={isLightTheme ? "blur(4px)" : undefined}
+        bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
+        backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
       />
 
       <ModalContent

@@ -2481,6 +2481,21 @@ export default function App() {
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const gettingStartedCheckDoneRef = useRef(false);
 
+  const runAfterNextPaint = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        task();
+      });
+    });
+  }, []);
+
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
     if (celebrateOpen) {
@@ -2510,6 +2525,8 @@ export default function App() {
     [activeNpub],
   );
   const isTimerRunning = timerActive && !timerPaused && hasTimer;
+  const isOnboardingChainModalOpen =
+    dailyGoalOpen || timerModalOpen || proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -2523,7 +2540,14 @@ export default function App() {
     if (proficiencyCheckDoneRef.current) return;
     if (isLoadingApp || !user || !activeNpub) return;
     if (needsOnboarding) return;
-    if (dailyGoalOpen || timerModalOpen) return;
+    if (
+      dailyGoalOpen ||
+      timerModalOpen ||
+      proficiencyTestOpen ||
+      shouldShowProficiencyAfterTimer
+    ) {
+      return;
+    }
 
     let cancelled = false;
 
@@ -2568,6 +2592,8 @@ export default function App() {
     needsOnboarding,
     dailyGoalOpen,
     timerModalOpen,
+    proficiencyTestOpen,
+    shouldShowProficiencyAfterTimer,
   ]);
 
   // Show getting started tutorial modal once after the proficiency decision.
@@ -2578,7 +2604,7 @@ export default function App() {
     if (isLoadingApp || !user || !activeNpub) return;
     if (needsOnboarding) return;
     // Wait until all onboarding-chain modals are closed
-    if (dailyGoalOpen || timerModalOpen || proficiencyTestOpen) return;
+    if (dailyGoalOpen || timerModalOpen || proficiencyTestOpen || gettingStartedOpen) return;
 
     // User must have made a proficiency decision already
     const hasProficiencyDecision =
@@ -2603,6 +2629,7 @@ export default function App() {
     dailyGoalOpen,
     timerModalOpen,
     proficiencyTestOpen,
+    gettingStartedOpen,
   ]);
 
   useEffect(() => {
@@ -2756,23 +2783,36 @@ export default function App() {
       // parent state to avoid any staleness if the user hadn't blurred yet.
       const source = minutesArg ?? timerMinutes;
       const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
-      handleResetTimer();
-      const seconds = parsedMinutes * 60;
-      const endsAt = Date.now() + seconds * 1000;
-      setTimerDurationSeconds(seconds);
-      setRemainingSeconds(seconds);
-      setTimerActive(true);
-      setTimerPaused(false);
-      setTimerEndsAt(endsAt);
-      setTimeUpOpen(false);
-      setTimerModalOpen(false);
-      setHasTimer(true);
-      if (shouldShowProficiencyAfterTimer) {
-        setShouldShowProficiencyAfterTimer(false);
-        setProficiencyTestOpen(true);
-      }
+      const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
+
+      flushSync(() => {
+        setTimerModalOpen(false);
+        if (shouldOpenProficiency) {
+          proficiencyCheckDoneRef.current = true;
+          setShouldShowProficiencyAfterTimer(false);
+          setProficiencyTestOpen(true);
+        }
+      });
+
+      runAfterNextPaint(() => {
+        handleResetTimer();
+        const seconds = parsedMinutes * 60;
+        const endsAt = Date.now() + seconds * 1000;
+        setTimerDurationSeconds(seconds);
+        setRemainingSeconds(seconds);
+        setTimerActive(true);
+        setTimerPaused(false);
+        setTimerEndsAt(endsAt);
+        setTimeUpOpen(false);
+        setHasTimer(true);
+      });
     },
-    [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer],
+    [
+      handleResetTimer,
+      runAfterNextPaint,
+      timerMinutes,
+      shouldShowProficiencyAfterTimer,
+    ],
   );
 
   const handleCloseTimeUp = useCallback(() => {
@@ -3311,6 +3351,8 @@ export default function App() {
       if (fresh) setUser?.(fresh);
 
       // Prompt for daily goal right after onboarding
+      proficiencyCheckDoneRef.current = true;
+      gettingStartedCheckDoneRef.current = true;
       setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
       setShouldShowProficiencyAfterTimer(true);
@@ -4064,11 +4106,15 @@ export default function App() {
   );
 
   const handleDailyGoalClose = useCallback(() => {
-    setDailyGoalOpen(false);
-    if (shouldShowTimerAfterGoal) {
-      setShouldShowTimerAfterGoal(false);
-      setTimerModalOpen(true);
-    }
+    const shouldOpenTimer = shouldShowTimerAfterGoal;
+
+    flushSync(() => {
+      setDailyGoalOpen(false);
+      if (shouldOpenTimer) {
+        setShouldShowTimerAfterGoal(false);
+        setTimerModalOpen(true);
+      }
+    });
   }, [shouldShowTimerAfterGoal]);
 
   const handleDailyGoalSave = useCallback(
@@ -4090,11 +4136,15 @@ export default function App() {
         dailyGoalPetHealth,
       });
 
-      setDailyGoalOpen(false);
-      if (shouldShowTimerAfterGoal) {
-        setShouldShowTimerAfterGoal(false);
-        setTimerModalOpen(true);
-      }
+      const shouldOpenTimer = shouldShowTimerAfterGoal;
+
+      flushSync(() => {
+        setDailyGoalOpen(false);
+        if (shouldOpenTimer) {
+          setShouldShowTimerAfterGoal(false);
+          setTimerModalOpen(true);
+        }
+      });
 
       const commitDailyGoal = () => {
         patchUser?.({
@@ -4148,11 +4198,7 @@ export default function App() {
         });
       };
 
-      if (typeof window !== "undefined") {
-        window.setTimeout(commitDailyGoal, 0);
-      } else {
-        commitDailyGoal();
-      }
+      runAfterNextPaint(commitDailyGoal);
     },
     [
       activeNpub,
@@ -4160,15 +4206,19 @@ export default function App() {
       dailyGoalPetHealth,
       dailyGoalXpHistory,
       patchUser,
+      runAfterNextPaint,
       shouldShowTimerAfterGoal,
       toast,
     ],
   );
 
   const handleTimerModalClose = useCallback(() => {
+    const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
+
     flushSync(() => {
       setTimerModalOpen(false);
-      if (shouldShowProficiencyAfterTimer) {
+      if (shouldOpenProficiency) {
+        proficiencyCheckDoneRef.current = true;
         setShouldShowProficiencyAfterTimer(false);
         setProficiencyTestOpen(true);
       }
@@ -4176,9 +4226,12 @@ export default function App() {
   }, [shouldShowProficiencyAfterTimer]);
 
   const handleProficiencySkip = useCallback(async () => {
+    const shouldOpenGettingStarted = shouldShowGettingStartedAfterProficiency;
+
     flushSync(() => {
       setProficiencyTestOpen(false);
-      if (shouldShowGettingStartedAfterProficiency) {
+      if (shouldOpenGettingStarted) {
+        gettingStartedCheckDoneRef.current = true;
         setShouldShowGettingStartedAfterProficiency(false);
         setGettingStartedOpen(true);
       }
@@ -4218,6 +4271,7 @@ export default function App() {
   ]);
 
   const handleProficiencyTakeTest = useCallback(() => {
+    proficiencyCheckDoneRef.current = true;
     setProficiencyTestOpen(false);
     navigate("/proficiency");
   }, [navigate]);
@@ -4246,18 +4300,18 @@ export default function App() {
     flushSync(() => {
       setGettingStartedOpen(false);
     });
-    window.setTimeout(() => {
+    runAfterNextPaint(() => {
       markGettingStartedShown();
-    }, 0);
-  }, [markGettingStartedShown]);
+    });
+  }, [markGettingStartedShown, runAfterNextPaint]);
 
   const handleGettingStartedStart = useCallback(() => {
     flushSync(() => {
       setGettingStartedOpen(false);
     });
-    window.setTimeout(() => {
+    runAfterNextPaint(() => {
       markGettingStartedShown();
-    }, 0);
+    });
 
     // Find the tutorial lesson from the Pre-A1 learning path and launch it directly
     const units = getLearningPath(resolvedTargetLang, "Pre-A1");
@@ -4266,7 +4320,12 @@ export default function App() {
     if (tutorialLesson) {
       handleStartLesson(tutorialLesson);
     }
-  }, [markGettingStartedShown, handleStartLesson, resolvedTargetLang]);
+  }, [
+    markGettingStartedShown,
+    handleStartLesson,
+    resolvedTargetLang,
+    runAfterNextPaint,
+  ]);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -6019,6 +6078,20 @@ export default function App() {
         showFloatingTrigger={false}
       />
 
+      {isOnboardingChainModalOpen ? (
+        <Portal>
+          <Box
+            aria-hidden="true"
+            position="fixed"
+            inset="0"
+            zIndex="1300"
+            pointerEvents="none"
+            bg="var(--app-overlay)"
+            backdropFilter="blur(4px)"
+          />
+        </Portal>
+      ) : null}
+
       {/* Daily Goal Setup — only opened right after onboarding completes */}
       <DailyGoalModal
         isOpen={dailyGoalOpen}
@@ -6035,6 +6108,7 @@ export default function App() {
         dailyXpHistory={dailyGoalXpHistory}
         currentDailyXp={dailyXpToday}
         currentGoalXp={dailyGoalTarget}
+        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
       <SessionTimerModal
@@ -6046,6 +6120,7 @@ export default function App() {
         isRunning={isTimerRunning}
         helper={null}
         t={t}
+        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
       <ProficiencyTestModal
@@ -6057,6 +6132,7 @@ export default function App() {
           t[`language_${resolvedTargetLang}`] ||
           TARGET_LANGUAGE_LABELS[resolvedTargetLang]
         }
+        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
       <GettingStartedModal
@@ -6065,6 +6141,7 @@ export default function App() {
         onStartTutorial={handleGettingStartedStart}
         secretKey={activeNsec}
         lang={appLanguage}
+        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
       <BitcoinSupportModal

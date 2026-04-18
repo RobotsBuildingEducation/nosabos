@@ -37,17 +37,34 @@ export default function GettingStartedModal({
   onStartTutorial,
   secretKey = "",
   lang = "en",
+  useSharedBackdrop = false,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
   const isEs = lang === "es";
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const deferPostAction = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        task();
+      });
+    });
+  }, []);
 
   const handleGotIt = useCallback(() => {
-    playSound(submitActionSound);
     onClose?.();
-  }, [onClose, playSound]);
+    deferPostAction(() => {
+      void playSound(submitActionSound);
+    });
+  }, [deferPostAction, onClose, playSound]);
 
   const handleCopyKey = useCallback(() => {
     if (!secretKey) return;
@@ -109,10 +126,11 @@ export default function GettingStartedModal({
       closeOnOverlayClick={false}
       closeOnEsc={true}
       motionPreset="none"
+      returnFocusOnClose={false}
     >
       <ModalOverlay
-        bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
-        backdropFilter="blur(4px)"
+        bg={useSharedBackdrop ? "transparent" : isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
+        backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
       />
       <ModalContent
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
