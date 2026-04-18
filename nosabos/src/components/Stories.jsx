@@ -83,6 +83,9 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const STORY_PRIMARY_BUTTON_BG = "#14b8a6";
+const STORY_PRIMARY_BUTTON_HOVER_BG = "#0d9488";
+const STORY_PRIMARY_BUTTON_EDGE = "#0f766e";
 
 /* ================================
    ENV / API
@@ -1824,9 +1827,14 @@ export default function StoryMode({
                       size="lg"
                       px={8}
                       rounded="full"
-                      bg="linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                      bg={STORY_PRIMARY_BUTTON_BG}
                       color="white"
                       fontWeight="600"
+                      boxShadow={`0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`}
+                      _hover={{
+                        bg: STORY_PRIMARY_BUTTON_HOVER_BG,
+                        transform: "translateY(-2px)",
+                      }}
                       _active={{ transform: "translateY(0)" }}
                       transition="all 0.2s ease"
                     >
@@ -2042,14 +2050,14 @@ export default function StoryMode({
                               ? SOFT_STOP_BUTTON_BG
                               : isConnecting
                                 ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
-                                : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                                : STORY_PRIMARY_BUTTON_BG
                           }
                           boxShadow={
                             isRecording
                               ? `0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`
                               : isConnecting
                                 ? "0px 4px 0px #eab308"
-                                : "0px 4px 0px rgb(0, 157, 255)"
+                                : `0px 4px 0px ${STORY_PRIMARY_BUTTON_EDGE}`
                           }
                           color="white"
                           fontWeight="600"
@@ -2067,7 +2075,7 @@ export default function StoryMode({
                               ? SOFT_STOP_BUTTON_HOVER_BG
                               : isConnecting
                                 ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
-                                : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
+                                : STORY_PRIMARY_BUTTON_HOVER_BG,
                             transform: "translateY(-2px)",
                           }}
                           _active={{ transform: "translateY(0)" }}
