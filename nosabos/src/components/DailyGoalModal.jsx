@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -461,6 +461,7 @@ export default function DailyGoalModal({
 
   const [goal, setGoal] = useState(String(defaultGoal));
   const playSound = useSoundSettings((s) => s.playSound);
+  const recentActionRef = useRef({ key: "", at: 0 });
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
 
@@ -475,6 +476,41 @@ export default function DailyGoalModal({
       });
     });
   }, []);
+
+  const blurActiveElement = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      typeof activeElement.blur === "function"
+    ) {
+      activeElement.blur();
+    }
+  }, []);
+
+  const runResponsiveAction = useCallback((key, action) => {
+    recentActionRef.current = { key, at: Date.now() };
+    action?.();
+  }, []);
+
+  const getActionPressProps = useCallback(
+    (key, action) => ({
+      touchAction: "manipulation",
+      onPointerDown: (event) => {
+        if (event.button !== 0) return;
+        runResponsiveAction(key, action);
+      },
+      onClick: () => {
+        const recent = recentActionRef.current;
+        if (recent.key === key && Date.now() - recent.at < 750) {
+          recentActionRef.current = { key: "", at: 0 };
+          return;
+        }
+        runResponsiveAction(key, action);
+      },
+    }),
+    [runResponsiveAction],
+  );
 
   // Lazy-mount the XP-activity heatmap AFTER the modal shell paints.
   // The heatmap is still ~371 DOM nodes + a scrollable grid; rendering
@@ -534,6 +570,8 @@ export default function DailyGoalModal({
   const approxLevels = (parsed / 100).toFixed(parsed % 100 === 0 ? 0 : 1);
 
   const save = async () => {
+    blurActiveElement();
+
     if (onSaveGoal) {
       onSaveGoal(parsed);
       deferPostAction(() => {
@@ -581,9 +619,10 @@ export default function DailyGoalModal({
     }
   };
   const handleClose = useCallback(() => {
+    blurActiveElement();
     onClose?.();
     void playSound(selectSound);
-  }, [onClose, playSound]);
+  }, [blurActiveElement, onClose, playSound]);
 
   return (
     <Modal
@@ -797,7 +836,7 @@ export default function DailyGoalModal({
             <Button
               variant={"ghost"}
               color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              onClick={handleClose}
+              {...getActionPressProps("daily-goal-close", handleClose)}
             >
               {t?.teams_drawer_close || "Close"}
             </Button>
@@ -806,7 +845,7 @@ export default function DailyGoalModal({
               bg={isLightTheme ? "#3f9f9b" : undefined}
               color={isLightTheme ? "white" : undefined}
               _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
-              onClick={save}
+              {...getActionPressProps("daily-goal-save", save)}
               isDisabled={!npub}
               boxShadow={"0px 4px 0px teal"}
             >
