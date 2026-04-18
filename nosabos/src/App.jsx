@@ -512,6 +512,28 @@ async function loadUserObjectFromDB(db, id) {
   }
 }
 
+// Disables Chakra's exit animation on menus so the menu disappears
+// immediately on select; enter animation is left at Chakra's default.
+const INSTANT_EXIT_MOTION_PROPS = {
+  variants: {
+    enter: {
+      visibility: "visible",
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.15,
+        ease: [0, 0, 0.2, 1],
+      },
+    },
+    exit: {
+      transitionEnd: { visibility: "hidden" },
+      opacity: 0,
+      scale: 1,
+      transition: { duration: 0 },
+    },
+  },
+};
+
 /* -------------------------------------------------------------------------------------------------
    Top Bar
 --------------------------------------------------------------------------------------------------*/
@@ -1304,7 +1326,11 @@ function TopBar({
                                 </Text>
                               </HStack>
                             </MenuButton>
-                            <MenuList borderColor="gray.700" bg="gray.900">
+                            <MenuList
+                              borderColor="gray.700"
+                              bg="gray.900"
+                              motionProps={INSTANT_EXIT_MOTION_PROPS}
+                            >
                               <Box
                                 px={3}
                                 pt={2}
@@ -1322,7 +1348,12 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setSupportLang(value);
-                                  persistSettings({ supportLang: value });
+                                  // Defer the Zustand user-store update so the
+                                  // cascade of App-wide re-renders happens
+                                  // after paint, not while the menu is closing.
+                                  setTimeout(() => {
+                                    persistSettings({ supportLang: value });
+                                  }, 0);
                                 }}
                               >
                                 {supportLanguageOptions.map((option) => (
@@ -1388,6 +1419,7 @@ function TopBar({
                               bg="gray.900"
                               maxH="300px"
                               overflowY="auto"
+                              motionProps={INSTANT_EXIT_MOTION_PROPS}
                               sx={{
                                 "&::-webkit-scrollbar": {
                                   width: "8px",
@@ -1423,7 +1455,9 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setTargetLang(value);
-                                  persistSettings({ targetLang: value });
+                                  setTimeout(() => {
+                                    persistSettings({ targetLang: value });
+                                  }, 0);
                                 }}
                               >
                                 {practiceLanguageOptions.map((option) => (
@@ -1452,10 +1486,16 @@ function TopBar({
                           leftIcon={<LuBadgeCheck />}
                           size="sm"
                           variant="outline"
-                          borderColor="cyan.600"
-                          color="cyan.200"
+                          borderColor={
+                            themeMode === "light" ? "cyan.700" : "cyan.600"
+                          }
+                          color={
+                            themeMode === "light" ? "cyan.800" : "cyan.200"
+                          }
                           padding={6}
-                          _hover={{ bg: "cyan.900" }}
+                          _hover={{
+                            bg: themeMode === "light" ? "cyan.50" : "cyan.900",
+                          }}
                           onClick={() => {
                             closeSettings();
                             navigate("/proficiency");
