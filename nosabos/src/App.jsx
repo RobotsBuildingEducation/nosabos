@@ -926,6 +926,7 @@ function TopBar({
         top={0}
         zIndex={100}
         w="100%"
+        pt="env(safe-area-inset-top, 0px)"
         borderBottom={themeMode === "light" ? "none" : "1px solid #000026ff"}
       >
         <GlassContainer
