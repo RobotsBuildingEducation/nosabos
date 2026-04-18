@@ -5176,22 +5176,27 @@ export default function App() {
   }, [resolveNpub, setUser]);
 
   const handleOpenRealWorldTasks = useCallback(() => {
+    // Open immediately so the drawer animation starts on the next paint,
+    // then defer persistence work that can otherwise block the interaction.
     setRealWorldTasksOpen(true);
     setRealWorldTasksAttention(false);
-    const openedAt = new Date().toISOString();
-    patchUser({ realWorldTasksLastOpenedAt: openedAt });
-    if (activeNpub) {
-      setDoc(
-        doc(database, "users", activeNpub),
-        {
-          realWorldTasksLastOpenedAt: openedAt,
-          updatedAt: openedAt,
-        },
-        { merge: true },
-      ).catch((err) =>
-        console.warn("Failed to persist realWorldTasksLastOpenedAt:", err),
-      );
-    }
+
+    requestAnimationFrame(() => {
+      const openedAt = new Date().toISOString();
+      patchUser({ realWorldTasksLastOpenedAt: openedAt });
+      if (activeNpub) {
+        setDoc(
+          doc(database, "users", activeNpub),
+          {
+            realWorldTasksLastOpenedAt: openedAt,
+            updatedAt: openedAt,
+          },
+          { merge: true },
+        ).catch((err) =>
+          console.warn("Failed to persist realWorldTasksLastOpenedAt:", err),
+        );
+      }
+    });
   }, [activeNpub, patchUser]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
@@ -5487,7 +5492,9 @@ export default function App() {
   }, [activeLessonLevel, activeFlashcardLevel]);
 
   const handleBottomBarSettingsOpen = useCallback(() => {
-    setSettingsOpen(true);
+    // Yield one frame before opening to avoid coupling the tap with
+    // expensive work in the same event turn.
+    requestAnimationFrame(() => setSettingsOpen(true));
   }, []);
 
   /* -----------------------------------
