@@ -1322,7 +1322,9 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setSupportLang(value);
-                                  persistSettings({ supportLang: value });
+                                  setTimeout(() => {
+                                    persistSettings({ supportLang: value });
+                                  }, 0);
                                 }}
                               >
                                 {supportLanguageOptions.map((option) => (
@@ -1423,7 +1425,9 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setTargetLang(value);
-                                  persistSettings({ targetLang: value });
+                                  setTimeout(() => {
+                                    persistSettings({ targetLang: value });
+                                  }, 0);
                                 }}
                               >
                                 {practiceLanguageOptions.map((option) => (
