@@ -2526,7 +2526,10 @@ export default function App() {
   );
   const isTimerRunning = timerActive && !timerPaused && hasTimer;
   const isOnboardingChainModalOpen =
-    dailyGoalOpen || timerModalOpen || proficiencyTestOpen || gettingStartedOpen;
+    dailyGoalOpen ||
+    timerModalOpen ||
+    proficiencyTestOpen ||
+    gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -2604,7 +2607,13 @@ export default function App() {
     if (isLoadingApp || !user || !activeNpub) return;
     if (needsOnboarding) return;
     // Wait until all onboarding-chain modals are closed
-    if (dailyGoalOpen || timerModalOpen || proficiencyTestOpen || gettingStartedOpen) return;
+    if (
+      dailyGoalOpen ||
+      timerModalOpen ||
+      proficiencyTestOpen ||
+      gettingStartedOpen
+    )
+      return;
 
     // User must have made a proficiency decision already
     const hasProficiencyDecision =
