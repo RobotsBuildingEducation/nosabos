@@ -22,19 +22,38 @@ export default function ProficiencyTestModal({
   onTakeTest,
   lang = "en",
   targetLangLabel = "",
+  useSharedBackdrop = false,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const isEs = lang === "es";
+  const deferPostAction = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        task();
+      });
+    });
+  }, []);
 
   const handleSkip = useCallback(() => {
-    playSound(selectSound);
     onClose?.();
-  }, [onClose, playSound]);
+    deferPostAction(() => {
+      void playSound(selectSound);
+    });
+  }, [deferPostAction, onClose, playSound]);
 
   const handleTakeTest = useCallback(() => {
-    playSound(submitActionSound);
     onTakeTest?.();
-  }, [onTakeTest, playSound]);
+    deferPostAction(() => {
+      void playSound(submitActionSound);
+    });
+  }, [deferPostAction, onTakeTest, playSound]);
 
   return (
     <Modal
@@ -45,8 +64,12 @@ export default function ProficiencyTestModal({
       closeOnOverlayClick={false}
       closeOnEsc={true}
       motionPreset="none"
+      returnFocusOnClose={false}
     >
-      <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+      <ModalOverlay
+        bg={useSharedBackdrop ? "transparent" : "blackAlpha.700"}
+        backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
+      />
       <ModalContent
         bg="gray.900"
         color="gray.100"
