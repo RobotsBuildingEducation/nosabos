@@ -1494,8 +1494,7 @@ function TopBar({
                           }
                           padding={6}
                           _hover={{
-                            bg:
-                              themeMode === "light" ? "cyan.50" : "cyan.900",
+                            bg: themeMode === "light" ? "cyan.50" : "cyan.900",
                           }}
                           onClick={() => {
                             closeSettings();
