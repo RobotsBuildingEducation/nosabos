@@ -2481,6 +2481,30 @@ export default function App() {
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
   const gettingStartedCheckDoneRef = useRef(false);
 
+  const blurActiveElement = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const activeElement = document.activeElement;
+    if (
+      activeElement instanceof HTMLElement &&
+      typeof activeElement.blur === "function"
+    ) {
+      activeElement.blur();
+    }
+  }, []);
+
+  const runOnNextFrame = useCallback((task) => {
+    if (typeof task !== "function") return;
+
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      task();
+    });
+  }, []);
+
   const runAfterNextPaint = useCallback((task) => {
     if (typeof task !== "function") return;
 
@@ -4116,15 +4140,21 @@ export default function App() {
 
   const handleDailyGoalClose = useCallback(() => {
     const shouldOpenTimer = shouldShowTimerAfterGoal;
+    blurActiveElement();
 
     flushSync(() => {
       setDailyGoalOpen(false);
       if (shouldOpenTimer) {
         setShouldShowTimerAfterGoal(false);
-        setTimerModalOpen(true);
       }
     });
-  }, [shouldShowTimerAfterGoal]);
+
+    if (shouldOpenTimer) {
+      runOnNextFrame(() => {
+        setTimerModalOpen(true);
+      });
+    }
+  }, [blurActiveElement, runOnNextFrame, shouldShowTimerAfterGoal]);
 
   const handleDailyGoalSave = useCallback(
     (goalValue) => {
@@ -4146,14 +4176,20 @@ export default function App() {
       });
 
       const shouldOpenTimer = shouldShowTimerAfterGoal;
+      blurActiveElement();
 
       flushSync(() => {
         setDailyGoalOpen(false);
         if (shouldOpenTimer) {
           setShouldShowTimerAfterGoal(false);
-          setTimerModalOpen(true);
         }
       });
+
+      if (shouldOpenTimer) {
+        runOnNextFrame(() => {
+          setTimerModalOpen(true);
+        });
+      }
 
       const commitDailyGoal = () => {
         patchUser?.({
@@ -4212,10 +4248,12 @@ export default function App() {
     [
       activeNpub,
       appLanguage,
+      blurActiveElement,
       dailyGoalPetHealth,
       dailyGoalXpHistory,
       patchUser,
       runAfterNextPaint,
+      runOnNextFrame,
       shouldShowTimerAfterGoal,
       toast,
     ],
