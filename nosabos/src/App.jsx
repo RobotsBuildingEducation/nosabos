@@ -1452,10 +1452,17 @@ function TopBar({
                           leftIcon={<LuBadgeCheck />}
                           size="sm"
                           variant="outline"
-                          borderColor="cyan.600"
-                          color="cyan.200"
+                          borderColor={
+                            themeMode === "light" ? "cyan.700" : "cyan.600"
+                          }
+                          color={
+                            themeMode === "light" ? "cyan.800" : "cyan.200"
+                          }
                           padding={6}
-                          _hover={{ bg: "cyan.900" }}
+                          _hover={{
+                            bg:
+                              themeMode === "light" ? "cyan.50" : "cyan.900",
+                          }}
                           onClick={() => {
                             closeSettings();
                             navigate("/proficiency");
