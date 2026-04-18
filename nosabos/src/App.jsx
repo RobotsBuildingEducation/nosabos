@@ -916,6 +916,39 @@ function TopBar({
     new Date(cefrResult.updatedAt).toLocaleString(
       appLanguage === "es" ? "es" : "en-US",
     );
+  const recentTopBarPointerRef = useRef({ key: "", at: 0 });
+
+  const runTopBarAction = useCallback(
+    (action) => {
+      try {
+        void playSound?.(selectSound);
+      } catch (error) {
+        console.warn("Failed to play top bar sound:", error);
+      }
+      action?.();
+    },
+    [playSound],
+  );
+
+  const getTopBarPressProps = useCallback(
+    (key, action) => ({
+      touchAction: "manipulation",
+      onPointerDown: (event) => {
+        if (event.button !== 0) return;
+        recentTopBarPointerRef.current = { key, at: Date.now() };
+        runTopBarAction(action);
+      },
+      onClick: () => {
+        const recent = recentTopBarPointerRef.current;
+        if (recent.key === key && Date.now() - recent.at < 750) {
+          recentTopBarPointerRef.current = { key: "", at: 0 };
+          return;
+        }
+        runTopBarAction(action);
+      },
+    }),
+    [runTopBarAction],
+  );
 
   return (
     <>
@@ -939,7 +972,8 @@ function TopBar({
           <HStack
             w="100%"
             px={{ base: 2, md: 3 }}
-            py={2}
+            pt="calc(env(safe-area-inset-top, 0px) + 0.5rem)"
+            pb={2}
             color="gray.100"
             wrap="wrap"
             spacing={{ base: 2, md: 3 }}
@@ -956,12 +990,12 @@ function TopBar({
                 variant="outline"
                 colorScheme="teal"
                 icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-                onClick={() => {
-                  playSound(selectSound);
-                  onOpenDailyGoalModal?.();
-                }}
+                aria-label={
+                  appLanguage === "es" ? "Abrir meta diaria" : "Open daily goal"
+                }
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
+                {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
               <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
                 <WaveBar value={dailyPct} />
@@ -982,10 +1016,10 @@ function TopBar({
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
                 size="sm"
-                onClick={() => {
-                  playSound(selectSound);
-                  onOpenTimerModal?.();
-                }}
+                aria-label={
+                  appLanguage === "es" ? "Abrir temporizador" : "Open timer"
+                }
+                {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
                 <FiClock />
               </Button>
@@ -994,10 +1028,19 @@ function TopBar({
                   colorScheme="teal"
                   variant={timerPaused ? "outline" : "ghost"}
                   size="sm"
-                  onClick={() => {
-                    playSound(selectSound);
-                    onTogglePauseTimer?.();
-                  }}
+                  aria-label={
+                    timerPaused
+                      ? appLanguage === "es"
+                        ? "Reanudar temporizador"
+                        : "Resume timer"
+                      : appLanguage === "es"
+                        ? "Pausar temporizador"
+                        : "Pause timer"
+                  }
+                  {...getTopBarPressProps(
+                    "session-timer-toggle",
+                    onTogglePauseTimer,
+                  )}
                 >
                   {timerPaused ? <FiPlay /> : <FiPause />}
                 </Button>
