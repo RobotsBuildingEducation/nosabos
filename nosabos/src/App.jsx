@@ -1347,8 +1347,11 @@ function TopBar({
                                 value={supportLang}
                                 onChange={(value) => {
                                   playSound(selectSound);
+                                  setSupportLang(value);
+                                  // Defer the Zustand user-store update so the
+                                  // cascade of App-wide re-renders happens
+                                  // after paint, not while the menu is closing.
                                   setTimeout(() => {
-                                    setSupportLang(value);
                                     persistSettings({ supportLang: value });
                                   }, 0);
                                 }}
@@ -1451,8 +1454,8 @@ function TopBar({
                                 value={targetLang}
                                 onChange={(value) => {
                                   playSound(selectSound);
+                                  setTargetLang(value);
                                   setTimeout(() => {
-                                    setTargetLang(value);
                                     persistSettings({ targetLang: value });
                                   }, 0);
                                 }}
