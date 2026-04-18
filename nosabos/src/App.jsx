@@ -512,6 +512,28 @@ async function loadUserObjectFromDB(db, id) {
   }
 }
 
+// Disables Chakra's exit animation on menus so the menu disappears
+// immediately on select; enter animation is left at Chakra's default.
+const INSTANT_EXIT_MOTION_PROPS = {
+  variants: {
+    enter: {
+      visibility: "visible",
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.15,
+        ease: [0, 0, 0.2, 1],
+      },
+    },
+    exit: {
+      transitionEnd: { visibility: "hidden" },
+      opacity: 0,
+      scale: 1,
+      transition: { duration: 0 },
+    },
+  },
+};
+
 /* -------------------------------------------------------------------------------------------------
    Top Bar
 --------------------------------------------------------------------------------------------------*/
@@ -1304,7 +1326,11 @@ function TopBar({
                                 </Text>
                               </HStack>
                             </MenuButton>
-                            <MenuList borderColor="gray.700" bg="gray.900">
+                            <MenuList
+                              borderColor="gray.700"
+                              bg="gray.900"
+                              motionProps={INSTANT_EXIT_MOTION_PROPS}
+                            >
                               <Box
                                 px={3}
                                 pt={2}
@@ -1321,8 +1347,8 @@ function TopBar({
                                 value={supportLang}
                                 onChange={(value) => {
                                   playSound(selectSound);
-                                  setSupportLang(value);
                                   setTimeout(() => {
+                                    setSupportLang(value);
                                     persistSettings({ supportLang: value });
                                   }, 0);
                                 }}
@@ -1390,6 +1416,7 @@ function TopBar({
                               bg="gray.900"
                               maxH="300px"
                               overflowY="auto"
+                              motionProps={INSTANT_EXIT_MOTION_PROPS}
                               sx={{
                                 "&::-webkit-scrollbar": {
                                   width: "8px",
@@ -1424,8 +1451,8 @@ function TopBar({
                                 value={targetLang}
                                 onChange={(value) => {
                                   playSound(selectSound);
-                                  setTargetLang(value);
                                   setTimeout(() => {
+                                    setTargetLang(value);
                                     persistSettings({ targetLang: value });
                                   }, 0);
                                 }}
