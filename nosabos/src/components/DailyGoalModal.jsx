@@ -582,10 +582,8 @@ export default function DailyGoalModal({
   };
   const handleClose = useCallback(() => {
     onClose?.();
-    deferPostAction(() => {
-      void playSound(selectSound);
-    });
-  }, [deferPostAction, onClose, playSound]);
+    void playSound(selectSound);
+  }, [onClose, playSound]);
 
   return (
     <Modal
@@ -619,7 +617,6 @@ export default function DailyGoalModal({
         }}
       >
         <ModalCloseButton
-          onClick={handleClose}
           color={isLightTheme ? "white" : "currentColor"}
           _hover={{
             bg: isLightTheme ? "rgba(255,255,255,0.12)" : "whiteAlpha.100",

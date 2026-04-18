@@ -1,4 +1,11 @@
-import React, { useMemo, useCallback, useRef, useEffect, useState } from "react";
+import React, {
+  startTransition,
+  useMemo,
+  useCallback,
+  useRef,
+  useEffect,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -496,11 +503,14 @@ export default function SessionTimerModal({
 
   const handleClose = useCallback(() => {
     onClose?.();
-    deferPostAction(() => {
-      onMinutesChange?.(localMinutes);
-      void playSound(selectSound);
-    });
-  }, [deferPostAction, onClose, onMinutesChange, localMinutes, playSound]);
+    void playSound(selectSound);
+
+    if (onMinutesChange && localMinutes !== minutes) {
+      startTransition(() => {
+        onMinutesChange(localMinutes);
+      });
+    }
+  }, [localMinutes, minutes, onClose, onMinutesChange, playSound]);
 
   const handleStart = useCallback(() => {
     onStart?.(localMinutes);
@@ -542,7 +552,6 @@ export default function SessionTimerModal({
           </HStack>
         </ModalHeader>
         <ModalCloseButton
-          onClick={handleClose}
           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
           _hover={{
             bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
