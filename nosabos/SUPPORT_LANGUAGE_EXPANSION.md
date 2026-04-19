@@ -194,19 +194,77 @@ Language touchpoints are spread throughout. Key anchors:
 
 ## 5. Data Layer
 
-### 5.1 Skill tree data
-- `src/data/skillTreeData.js`: `SUPPORTED_TARGET_LANGS` set (~lines 10898–10908) and `LEARNING_PATHS` map (~lines 10914–10924).
-- `src/data/skillTree/c2.js`: `SUPPORTED_TARGET_LANGS` (~lines 1424–1434) and `LEARNING_PATHS` (~lines 1440–1450).
-- `src/data/skillTree/a1.js`: `successCriteria_<code>` on the tutorial lesson (~lines 71–79).
-- Repeat for every level file that defines `successCriteria_*` keys.
+The `src/data/` tree is where most of the raw content lives. It splits into three families: **skill-tree lessons**, **flashcard decks**, and **alphabet bootcamps**. Every family currently encodes UI copy as `{ en: "...", es: "..." }` pairs. Adding a new support language means extending those pairs to `{ en, es, <code> }` and adjusting the readers that consume them.
 
-### 5.2 Flashcard datasets
-- `src/data/flashcardData.js`: ~400 entries of the shape `concept: { en: "...", es: "..." }`. For a new support language the `en`/`es` pair stays but each UI rendering path that reads these values must fall back to English cleanly.
-- `src/data/flashcards/common.js`: same shape; same caveat.
-- If the new language should also be usable as a **label language** on cards, extend the schema to `{ en, es, <code> }`.
+### 5.1 Skill-tree lessons (`src/data/skillTree/` and `skillTreeData.js`)
 
-### 5.3 Alphabet files
-- Only required for languages with a non-standard writing system (`src/data/<lang>Alphabet.js`). Italian does not need one.
+Every CEFR-level file is in scope — they all follow the same schema:
+
+| File                                        | `{ en, es }` pairs (approx) | Notes |
+| ------------------------------------------- | --------------------------- | ----- |
+| `src/data/skillTree/pre-a1.js`              | ~106                        | Lesson titles, descriptions, module copy |
+| `src/data/skillTree/a1.js`                  | ~238                        | Also contains `successCriteria_<code>` strings for the tutorial lesson (~lines 71–86) |
+| `src/data/skillTree/a2.js`                  | ~216                        | |
+| `src/data/skillTree/b1.js`                  | ~180                        | |
+| `src/data/skillTree/b2.js`                  | ~144                        | |
+| `src/data/skillTree/c1.js`                  | ~120                        | |
+| `src/data/skillTree/c2.js`                  | ~98                         | `SUPPORTED_TARGET_LANGS` (~lines 1424–1434) and `LEARNING_PATHS` (~lines 1440–1450) |
+| `src/data/skillTree/index.js`               | —                           | Barrel export; confirm no inline copy |
+| `src/data/skillTreeData.js`                 | —                           | `SUPPORTED_TARGET_LANGS` (~10898–10908) and `LEARNING_PATHS` (~10914–10924) |
+
+Two shapes coexist inside the CEFR files — both must be extended:
+
+1. **Inline bilingual objects** — used for titles, section descriptions, mode-card copy:
+   ```js
+   { en: "Getting Started", es: "Primeros Pasos" }
+   ```
+   Add `it: "Per iniziare"` (etc.) to every occurrence. Total footprint is ~1,100 pairs across the seven CEFR files.
+
+2. **Flat `*_<code>` suffix keys** — used for realtime lesson success criteria and any other per-language metadata. Today these already cover `en, es, pt, fr, it, nl, nah, ja, ru, de, el, pl, ga, yua`. New languages must add their entry to every such key.
+
+If a rendering helper reads these fields, make sure it falls back to English when the new code is missing. Do not silently fall back to Spanish — it regresses the English baseline.
+
+### 5.2 Flashcard decks (`src/data/flashcards/` and `flashcardData.js`)
+
+Each level file is a flat list of card objects of the shape `concept: { en, es }`.
+
+| File                                     | Card count |
+| ---------------------------------------- | ---------- |
+| `src/data/flashcards/pre-a1.js`          | 100        |
+| `src/data/flashcards/a1.js`              | 300        |
+| `src/data/flashcards/a2.js`              | 250        |
+| `src/data/flashcards/b1.js`              | 200        |
+| `src/data/flashcards/b2.js`              | 150        |
+| `src/data/flashcards/c1.js`              | 100        |
+| `src/data/flashcards/c2.js`              | 50         |
+| `src/data/flashcardData.js`              | ~400 legacy entries (deprecated path; still referenced) |
+| `src/data/flashcards/common.js`          | — (reader + constants) |
+| `src/data/flashcards/index.js`           | — (barrel) |
+
+**Canonical count**: `CEFR_LEVEL_COUNTS` in `common.js:47` enumerates 1,150 cards across the CEFR levels; adding a new support language means adding `<code>: "..."` to every one of them.
+
+**Reader (`src/data/flashcards/common.js`)**:
+- `getConceptText(card, supportLang)` (lines 23–42) — the bilingual branch hard-codes `["en", "es"]` at line 35. Extend this list (or accept any valid support-language code) so cards rendered in "bilingual" mode include the new language.
+- `CEFR_COLORS`, `CEFR_LEVELS`, `CEFR_LEVEL_COUNTS` — no change; they're language-agnostic.
+
+### 5.3 Alphabet bootcamps (`src/data/<lang>Alphabet.js`)
+
+Only needed when the new language has a non-standard script or diacritics. Italian is Latin and does not need a bootcamp file, but the following exist as reference implementations:
+
+- `dutchAlphabet.js`, `englishAlphabet.js`, `frenchAlphabet.js`, `germanAlphabet.js`, `greekAlphabet.js`, `irishAlphabet.js`, `italianAlphabet.js`, `japaneseAlphabet.js`, `nahuatlAlphabet.js`, `polishAlphabet.js`, `portugueseAlphabet.js`, `russianAlphabet.js`, `spanishAlphabet.js`, `yucatecMayaAlphabet.js`.
+
+Each file must be registered in `AlphabetBootcamp.jsx` (`LANGUAGE_ALPHABETS` map, ~lines 1000–1012) and `LANGUAGE_SCRIPTS` (~lines 118–128).
+
+### 5.4 Conversation topics (`src/data/conversationTopics.js`)
+
+Another large `{ en, es }` payload (free-chat topic seeds, ~90+ entries starting at line 87). Extend to `{ en, es, <code> }` so Conversations can surface topics in the new support language. The consumer is `Conversations.jsx` via `languageNameFor` and the topic renderer.
+
+### 5.5 Schema principles for new support languages
+
+- Prefer additive keys: keep `en` and `es` untouched; add `<code>` alongside.
+- When a translation is unknown, omit the key instead of guessing — readers fall back to `en`, which is the sane default.
+- Any helper that does `text.en || text.es` is a bug magnet; migrate it to `text[supportLang] || text.en`.
+- If a reader hard-codes `["en", "es"]` (as `common.js:35` does today), list it in the audit patterns in §8 and fix it as part of the rollout.
 
 ---
 
@@ -248,6 +306,8 @@ translations[lang] \|\| translations.en
 Intl\.(DateTimeFormat|Collator|RelativeTimeFormat)
 new Intl\.\w+\(["'](en|es)
 lang === "es" \? "es-(MX|ES)" : "en-US"
+concept\[supportLang\] \|\| concept\.en
+\{\s*en:\s*".*",\s*es:\s*".*"\s*\}
 ```
 
 Replace hits with either:
@@ -309,7 +369,10 @@ Current state (to keep this doc honest):
 | `useLanguage.js` validation accepts `"it"`     | **Missing** (still `=== "es" \|\| === "en"`) |
 | Italian LLM prompt templates (`llm.js`, `GrammarBook.jsx`, `JobScript.jsx`) | **Missing** |
 | `Intl.DateTimeFormat` / `Intl.Collator` handles `it-IT` | **Missing** |
-| Flashcard `concept` entries include `it`       | **Missing** (still `{ en, es }` only; English fallback is currently acceptable) |
+| Flashcard `concept` entries include `it`       | **Missing** across all 9 flashcard files (~1,150 cards + `flashcardData.js` legacy entries) |
+| Skill-tree `{ en, es }` pairs include `it`     | **Missing** across all 7 CEFR files (~1,100 pairs in `pre-a1`/`a1`/`a2`/`b1`/`b2`/`c1`/`c2`) |
+| `conversationTopics.js` includes `it`          | **Missing** (~90+ topic entries) |
+| `flashcards/common.js` `getConceptText` bilingual list includes `it` | **Missing** (line 35 hard-codes `["en", "es"]`) |
 | `languageDetection.js` timezone heuristics     | **Missing** (Europe/Rome etc.) |
 
 Treat the "Missing" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
@@ -329,8 +392,10 @@ Treat the "Missing" rows as the working TODO for Italian — they become the acc
 | Quiz & lesson wrappers                 | 3     |
 | Flashcards / skill tree                | 4     |
 | Utility helpers (tts, llm, notes, speech, flashcardReview) | 5 |
-| Skill tree data files                  | 3+    |
-| Flashcard data                         | 2     |
+| Skill tree data files                  | 9 (`skillTreeData.js` + `skillTree/{pre-a1,a1,a2,b1,b2,c1,c2,index}.js`) |
+| Flashcard data                         | 9 (`flashcardData.js` + `flashcards/{pre-a1,a1,a2,b1,b2,c1,c2,common,index}.js`) |
+| Conversation topics                    | 1 (`conversationTopics.js`) |
+| Alphabet bootcamp data (per-script)    | 0–1 (`<lang>Alphabet.js`, only if new script) |
 | Flag icons                             | 1     |
 | Virtual keyboard (only for scripts)    | 0–1   |
 | **Total**                              | **~40 files per new support language** |
