@@ -1327,7 +1327,14 @@ function normalizeQuest(
     },
   };
 
-  const t = L[tl] || L.en;
+  const t = L[tl] || {
+    ...L.en,
+    // For target languages with no template, use LLM-generated seeds directly
+    // to avoid prepending English text to target-language content
+    firstGreetings: [(seed) => seed],
+    midGreetings: [(fromNpc) => `${fromNpc}!`],
+    finalGreetings: [(fromNpc) => `${fromNpc}!`],
+  };
 
   const storySeed = rawStorySeed || t.defaultSeed;
   const intro =

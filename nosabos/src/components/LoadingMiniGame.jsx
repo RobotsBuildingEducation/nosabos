@@ -642,6 +642,7 @@ function generateWorld(seed) {
     messages[tile] = {
       en: shuffle(rng, msgs.en),
       es: shuffle(rng, msgs.es),
+      it: shuffle(rng, msgs.it || msgs.en),
     };
   }
 
