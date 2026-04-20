@@ -1643,6 +1643,16 @@ const GAME_LOADING_MESSAGES = {
     "Ambientando la escena...",
     "Creando tu aventura...",
   ],
+  it: [
+    "Costruendo il tuo mondo...",
+    "Posizionando i personaggi...",
+    "Scrivendo i dialoghi della missione...",
+    "Generando sfide di vocabolario...",
+    "Progettando la mappa...",
+    "Preparando i rompicapo linguistici...",
+    "Ambientando la scena...",
+    "Creando la tua avventura...",
+  ],
 };
 
 function LessonDetailModal({
@@ -1887,17 +1897,13 @@ function LessonDetailModal({
               zIndex={2}
               px={{ base: 3, md: 4 }}
               py={{ base: 3, md: 4 }}
-              bgGradient={
-                isLightTheme
-                  ? "linear(to-b, rgba(255, 252, 247, 0.98), rgba(255, 252, 247, 0.76), transparent)"
-                  : "linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
-              }
+              bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
             >
               <Flex align="center" justify="space-between" gap={3}>
                 <Text
                   flex="1"
                   fontSize={{ base: "sm", md: "md" }}
-                  color={isLightTheme ? "gray.200" : "blue.100"}
+                  color="blue.100"
                   minH="24px"
                   key={loadingMsgIdx}
                   fontFamily="monospace"

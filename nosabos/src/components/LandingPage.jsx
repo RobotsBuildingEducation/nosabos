@@ -207,6 +207,7 @@ const translations = {
     signin_placeholder: "Paste your secret key",
     signin_button: "Sign In",
     signin_extension: "Sign in with Extension",
+    signin_or: "or",
     back_button: "Back",
     language_en: "English",
     language_es: "Español",
@@ -319,6 +320,7 @@ const translations = {
     signin_placeholder: "Pega tu llave secreta",
     signin_button: "Iniciar Sesión",
     signin_extension: "Iniciar con Extensión",
+    signin_or: "o",
     back_button: "Regresar",
     language_en: "English",
     language_es: "Español",
@@ -429,6 +431,7 @@ const translations = {
     signin_placeholder: "Incolla la tua chiave segreta",
     signin_button: "Accedi",
     signin_extension: "Accedi con Estensione",
+    signin_or: "o",
     back_button: "Indietro",
     language_en: "English",
     language_es: "Español",
@@ -1196,7 +1199,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
                     fontSize: "0.875rem",
                   }}
                 >
-                  or
+                  {copy.signin_or}
                 </span>
                 <div
                   style={{
