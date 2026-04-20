@@ -210,10 +210,9 @@ const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
 };
 
 const ThemeModeToggle = ({ themeMode, onModeChange }) => {
-  const modes = [
-    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
-    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
-  ];
+  const isDark = themeMode === "dark";
+  const nextMode = isDark ? "light" : "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
     <Box
@@ -221,65 +220,28 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
         position: "fixed",
         top: "18px",
         right: "16px",
-        left: "auto",
-        bottom: "auto",
-        width: "fit-content",
-        maxWidth: "calc(100vw - 32px)",
         zIndex: 120,
       }}
     >
-      <HStack
-        spacing="3px"
-        p="3px"
+      <IconButton
+        type="button"
+        aria-label={label}
+        title={label}
+        onClick={() => onModeChange(nextMode)}
+        icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+        size="sm"
+        minW="40px"
+        h="40px"
         rounded="full"
         bg={APP_SURFACE_ELEVATED}
         border="1px solid"
         borderColor={APP_BORDER}
         boxShadow={APP_SHADOW}
         backdropFilter="blur(20px)"
-        display="inline-flex"
-        width="fit-content"
-        flexShrink={0}
-      >
-        {modes.map((mode) => {
-          const isActive = themeMode === mode.id;
-          return (
-            <IconButton
-              key={mode.id}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={mode.label}
-              title={mode.label}
-              onClick={() => onModeChange(mode.id)}
-              icon={mode.icon}
-              size="sm"
-              minW="34px"
-              h="34px"
-              rounded="full"
-              border="none"
-              bg={
-                isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : "transparent"
-              }
-              color={isActive ? "#ffffff" : APP_TEXT_SECONDARY}
-              boxShadow={
-                isActive ? "0 8px 18px rgba(20, 184, 166, 0.18)" : "none"
-              }
-              _hover={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-              _active={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-            />
-          );
-        })}
-      </HStack>
+        color="linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
+        _hover={{ bg: APP_SURFACE_MUTED }}
+        _active={{ bg: APP_SURFACE_MUTED }}
+      />
     </Box>
   );
 };
