@@ -749,6 +749,7 @@ export const translations = {
     mode_reading: "Reading",
     mode_realtime: "Chat",
     mode_stories: "Stories",
+    mode_game: "Game",
     // PathSwitcher tabs
     path_switcher_path: "Path",
     path_switcher_flashcards: "Cards",
@@ -1620,6 +1621,7 @@ export const translations = {
     mode_reading: "Lectura",
     mode_realtime: "Chat",
     mode_stories: "Narrativos",
+    mode_game: "Juego",
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
@@ -2449,6 +2451,7 @@ translations.it = {
   mode_reading: "Lettura",
   mode_realtime: "Chat",
   mode_stories: "Storie",
+  mode_game: "Gioco",
   path_switcher_path: "Percorso",
   path_switcher_flashcards: "Carte",
   path_switcher_conversations: "Chat",
