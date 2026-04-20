@@ -70,6 +70,16 @@ These files are the primary surface area. Any new support language MUST update e
 ### 3.4 `src/utils/languageDetection.js`
 - `SPANISH_TIMEZONES`, `isSpanishTimezone`, `isSpanishBrowserLanguage`, `detectUserLanguage` (lines 3–139) — Replace the binary Spanish-vs-English logic with a multi-language resolver, or add a parallel `ITALIAN_TIMEZONES` set plus priority ordering.
 
+**Italian implementation note:** Done. `languageDetection.js` already contains a full multi-language resolver:
+1. **Stored preference** — if `localStorage.appLanguage` is a valid support language code, it is returned immediately (respects explicit user choice).
+2. **Italian timezone** — `ITALIAN_TIMEZONES = ['Europe/Rome', 'Europe/Vatican', 'Europe/San_Marino']` checked first; returns `'it'`.
+3. **Spanish timezone** — returns `'es'`.
+4. **Italian browser language** — `ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA']` checked against `navigator.languages`; returns `'it'`.
+5. **Spanish browser language** — returns `'es'`.
+6. **Default** — returns `DEFAULT_SUPPORT_LANGUAGE` (`'en'`).
+
+`LandingPage.jsx` calls `detectUserLanguage()` in its `useState` initializer — so Italian-timezone and Italian-browser-language users land on the page in Italian automatically. The prerequisite was `translations.it` existing in `LandingPage.jsx`, which was added in §3.21f. For any future support language, add its timezone set + browser language codes to this file in the same pattern.
+
 ### 3.5 `src/App.jsx`
 Language touchpoints are spread throughout. Key anchors:
 - `TARGET_LANGUAGE_LABELS` (~lines 173–217).
@@ -461,7 +471,7 @@ Current state (to keep this doc honest):
 | Alphabet bootcamp UI and all card content     | Done — `AlphabetBootcamp.jsx` UI copy plus `alphabetItalianLocalizer.js` coverage for all registered alphabet datasets |
 | `conversationTopics.js` includes `it`          | Done |
 | `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
-| `languageDetection.js` timezone heuristics     | Done |
+| `languageDetection.js` timezone + browser-language heuristics | Done — `ITALIAN_TIMEZONES` (`Europe/Rome`, `Europe/Vatican`, `Europe/San_Marino`) and `ITALIAN_LANGUAGE_CODES` already present; `detectUserLanguage()` returns `'it'` before falling back to `'es'` or `'en'`; `LandingPage.jsx` calls it on mount so Italian-locale users auto-land in Italian |
 | Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
 | `Stories.jsx` (role-play UI + loader lang detection), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; `getAppUILang()` fixed to return `"it"`; 21+ role-play/repeat-hear/translate-sentence keys added; flashcard local dict extended with `it` entry + `generating` key |
 | `ProficiencyTestModal.jsx` localized | Done — `isEs` removed; all 6 visible-copy ternaries replaced with `tFn(lang, key)` |
