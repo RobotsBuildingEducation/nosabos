@@ -602,6 +602,10 @@ function TopBar({
   const [supportLang, setSupportLang] = useState(
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
+  // Tracks a locally-chosen support lang so stale Firestore snapshots (arriving
+  // before the write is confirmed) cannot revert the UI during the write window.
+  const pendingLangRef = useRef(null);
+  const pendingLangTimeoutRef = useRef(null);
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
@@ -673,9 +677,10 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    setSupportLang(
-      normalizeSupportLanguage(q.supportLang, DEFAULT_SUPPORT_LANGUAGE),
-    );
+    const incomingLang = normalizeSupportLanguage(q.supportLang, DEFAULT_SUPPORT_LANGUAGE);
+    if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
+      setSupportLang(incomingLang);
+    }
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ??
@@ -1282,6 +1287,13 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
+                                  // Pin the pending lang so stale Firestore snapshots
+                                  // can't revert the UI before the write is confirmed.
+                                  pendingLangRef.current = normalized;
+                                  if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
+                                  pendingLangTimeoutRef.current = setTimeout(() => {
+                                    pendingLangRef.current = null;
+                                  }, 5000);
                                   setSupportLang(normalized);
                                   setAppLanguage(normalized);
                                   localStorage.setItem("appLanguage", normalized);
@@ -1727,6 +1739,9 @@ export default function App() {
       resolvedSupportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
+    // Ignore incoming Firestore value if it differs from a pending local selection
+    // (stale snapshot arriving before the write is confirmed).
+    if (pendingLangRef.current && nextLang !== pendingLangRef.current) return;
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
