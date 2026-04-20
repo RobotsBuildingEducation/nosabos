@@ -1763,7 +1763,7 @@ export default function App() {
   const [passcodeError, setPasscodeError] = useState("");
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
-  const storedUiLang = useMemo(() => {
+  const readStoredUiLang = useCallback(() => {
     if (typeof window === "undefined") return "";
     try {
       return localStorage.getItem("appLanguage") || "";
@@ -1780,7 +1780,7 @@ export default function App() {
   const resolvedTargetLang = (user?.progress?.targetLang || "es").toLowerCase();
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
-    (storedUiLang === "es" ? "es" : "en");
+    (readStoredUiLang() === "es" ? "es" : "en");
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
@@ -2435,9 +2435,9 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc?.progress?.supportLang === "es"
+          userDoc.appLanguage === "es"
             ? "es"
-            : userDoc.appLanguage === "es"
+            : userDoc?.progress?.supportLang === "es"
               ? "es"
               : "en";
         setAppLanguage(uiLang);
