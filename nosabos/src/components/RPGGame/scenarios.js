@@ -1329,11 +1329,21 @@ function normalizeQuest(
 
   const t = L[tl] || {
     ...L.en,
-    // For target languages with no template, use LLM-generated seeds directly
-    // to avoid prepending English text to target-language content
+    // For target languages with no template, use LLM-generated content directly
+    // to avoid prepending/appending English text to target-language dialogue
     firstGreetings: [(seed) => seed],
     midGreetings: [(fromNpc) => `${fromNpc}!`],
     finalGreetings: [(fromNpc) => `${fromNpc}!`],
+    // Terminal nodes: NPC name only, no English narrative
+    npcHandoff: (nextNpc) => `${nextNpc}!`,
+    questComplete: "✓",
+    // Player connector lines: NPC name reference only
+    playerBridge: (fromNpc) => `${fromNpc}.`,
+    // Speech fallbacks: null so index.jsx falls through to ui.* (support language)
+    fallbackSpeech: null,
+    speechContinue: null,
+    // Follow-up NPC prompts in speech mode
+    speechPrompts: [() => "…"],
   };
 
   const storySeed = rawStorySeed || t.defaultSeed;
