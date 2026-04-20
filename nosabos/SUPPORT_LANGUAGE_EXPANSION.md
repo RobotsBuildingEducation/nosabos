@@ -123,9 +123,13 @@ Language touchpoints are spread throughout. Key anchors:
 - `LANG_NAME` (~lines 155–165), `localizedLangName` (~lines 955–966).
 - English/Spanish prompt template pair (~lines 1187–1423). Add a parallel `userLanguage === "<code>"` branch with translated `fillPrompt` / `mcPrompt` / `maPrompt` / `speakPrompt` / `matchPrompt`.
 
+**Italian implementation note:** All visible UI binary ternaries (`userLanguage === "es" ? … : …`) in `GrammarBook.jsx` have been replaced with `t("key")` calls that resolve through `translations.it` when `userLanguage === "it"`. This includes: mode instruction headers (fill/MC/MA/match/speak), quiz result modals (pass/fail titles, score strings, action buttons), keyboard toggle labels, lesson progress label, speech error toast titles/descriptions, and the ask-assistant aria label. The `isSpanishUI` flag near LLM prompt construction is intentionally preserved — it gates AI-prompt text (not visible chrome) and only needs extending when the Italian AI prompt branch is authored. 27 new `vocab_*` translation keys were added to `translations.en`, `translations.es`, and `translations.it` in `translation.jsx` to support these lookups. Several lookups reuse existing keys (`story_score`, `flashcard_continue`, `try_again`, `flashcard_try_again`, `history_keyboard_close`, `history_keyboard_open`, `flashcard_mic_denied_title`, `flashcard_mic_denied_desc`, `flashcard_speech_unavailable_desc`) rather than duplicating strings.
+
 ### 3.13 `src/components/Vocabulary.jsx`
 - `useSharedProgress` (~line 207) and component validation (~line 1025).
 - `LANG_NAME` (~lines 156–166), `localizedLangName` (~lines 1041–1052).
+
+**Italian implementation note:** All visible UI binary ternaries in `Vocabulary.jsx` have been replaced with `t("key")` calls, matching the same treatment as `GrammarBook.jsx`. Covered areas: mode instruction headers, quiz result modals, keyboard toggle, lesson progress label (`vocab_lesson_progress`), speak-mode header (`vocab_say_it_aloud`), listen labels (`vocab_listen_question`, `vocab_listen_example`, `vocab_listen_word`), LLM hint prefix label (`vocab_speak_hint_label`), and all speech error toasts. `FeedbackRail.jsx` was also updated: the note-button labels (`vocab_create_note`, `vocab_note_saved`) and the explain/explanation strings (`flashcard_explain_answer`, `flashcard_explanation_heading`) now use the `t` prop passed from parents instead of hardcoded `userLanguage === "es"` ternaries.
 
 ### 3.14 `src/components/Stories.jsx`
 - `useSharedProgress` (~lines 202–214).
@@ -416,6 +420,7 @@ Current state (to keep this doc honest):
 | `conversationTopics.js` includes `it`          | Done |
 | `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
 | `languageDetection.js` timezone heuristics     | Done |
+| Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
