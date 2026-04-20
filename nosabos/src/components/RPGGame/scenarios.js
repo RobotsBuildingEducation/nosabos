@@ -3333,13 +3333,16 @@ function normalizeScenario({
   });
   const hubMap = reviewMaps.maps[0];
 
+  const processedName = {
+    en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
+    es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
+    it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
+  };
+  hubMap.name = processedName;
+
   return {
     id: mapId,
-    name: {
-      en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
-      es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
-      it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
-    },
+    name: processedName,
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
     mapHeight: hubMap.mapHeight,
