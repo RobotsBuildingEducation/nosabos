@@ -268,10 +268,10 @@ function scoreColor(score) {
   return "red";
 }
 
-function uiStateLabel(uiState, isEs) {
-  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
-  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
-  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+function uiStateLabel(uiState, ui) {
+  if (uiState === "speaking") return ui.proficiency_speaking;
+  if (uiState === "listening") return ui.proficiency_listening;
+  if (uiState === "thinking") return ui.proficiency_thinking;
   return "";
 }
 
@@ -701,8 +701,7 @@ export default function ProficiencyTest() {
   const voicePersona = user?.progress?.voicePersona || "";
   const pauseMs = user?.progress?.pauseMs || 800;
 
-  const isEs = supportLang === "es";
-  const ui = translations[isEs ? "es" : "en"];
+  const ui = translations[supportLang] || translations.en;
 
   // Realtime refs
   const audioRef = useRef(null);
@@ -1456,21 +1455,14 @@ Return ONLY valid JSON:
           CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1",
         );
         setAssessmentSummary(
-          parsed?.summary ||
-            (isEs
-              ? "Evaluación completada. Revisa tus resultados abajo."
-              : "Assessment complete. Review your results below."),
+          parsed?.summary || ui.proficiency_test_assess_fallback,
         );
       }
     } catch (e) {
       console.error("Assessment failed:", e);
       setAssessmentError(true);
       setAssessedLevel("Pre-A1");
-      setAssessmentSummary(
-        isEs
-          ? "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad."
-          : "Assessment error. Conservatively placing you at Pre-A1/A0.",
-      );
+      setAssessmentSummary(ui.proficiency_test_assess_error);
     }
 
     setIsEvaluating(false);
@@ -2032,7 +2024,7 @@ Return ONLY valid JSON:
               h="36px"
               zIndex={4}
               pointerEvents="auto"
-              aria-label={isEs ? "Historial" : "Chat log"}
+              aria-label={ui.ra_chat_log}
             />
 
             <VStack align="center" spacing={2} width="100%">
@@ -2042,7 +2034,7 @@ Return ONLY valid JSON:
                 color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
                 textAlign="center"
               >
-                {isEs ? "Prueba de Nivel" : "Proficiency Test"}
+                {ui.proficiency_test_title}
               </Text>
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
@@ -2053,9 +2045,7 @@ Return ONLY valid JSON:
                       color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                       flex="1"
                     >
-                      {isEs
-                        ? "Habla naturalmente — estamos evaluando tu nivel"
-                        : "Speak naturally — we're assessing your level"}
+                      {ui.proficiency_test_instruction}
                     </Text>
                   </HStack>
                 </HStack>
@@ -2063,7 +2053,7 @@ Return ONLY valid JSON:
                 <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
                     <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {isEs ? "Progreso" : "Progress"}
+                      {ui.ra_progress_header}
                     </Badge>
                     <Badge colorScheme="teal" variant="subtle" fontSize="10px">
                       {Math.min(userMessageCount, MAX_EXCHANGES)}/
@@ -2088,7 +2078,7 @@ Return ONLY valid JSON:
                       : undefined
                   }
                 >
-                  {isEs ? "Empezar de nuevo" : "Start over"}
+                  {ui.history_speech_start_over}
                 </Button>
                 <Button
                   size="sm"
@@ -2104,7 +2094,7 @@ Return ONLY valid JSON:
                       : undefined
                   }
                 >
-                  {isEs ? "Rúbrica" : "Grading rubric"}
+                  {ui.proficiency_test_rubric}
                 </Button>
               </HStack>
             </VStack>
@@ -2115,12 +2105,12 @@ Return ONLY valid JSON:
           <Box width="132px" opacity={0.95}>
             <VoiceOrb state={orbUiState} />
           </Box>
-          {uiStateLabel(liveUiState, isEs) && (
+          {uiStateLabel(liveUiState, ui) && (
             <Text
               fontSize="xs"
               color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
             >
-              {uiStateLabel(liveUiState, isEs)}
+              {uiStateLabel(liveUiState, ui)}
             </Text>
           )}
         </VStack>
@@ -2158,7 +2148,7 @@ Return ONLY valid JSON:
                       fontSize="lg"
                       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     >
-                      {isEs ? "Evaluando" : "Evaluating"}
+                      {ui.proficiency_test_evaluating}
                     </Text>
                   </HStack>
                   <Text
@@ -2166,9 +2156,7 @@ Return ONLY valid JSON:
                     opacity={0.7}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                   >
-                    {isEs
-                      ? "Analizando tu conversación para determinar tu nivel..."
-                      : "Analyzing your conversation to determine your level..."}
+                    {ui.proficiency_test_analyzing}
                   </Text>
                 </VStack>
               </Box>
@@ -2182,7 +2170,7 @@ Return ONLY valid JSON:
                   primaryTextRef={liveBubbleTextRef}
                   contentOpacity={liveBubbleContentOpacity}
                   contentTransform={liveBubbleContentTransform}
-                  label={isEs ? "Evaluador" : "Assessor"}
+                  label={ui.proficiency_test_assessor}
                   text={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
@@ -2250,18 +2238,14 @@ Return ONLY valid JSON:
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {isEs ? "Detener" : "Stop"}
+                  <FaStop /> &nbsp; {ui.story_stop}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? isEs
-                      ? "Conectando..."
-                      : "Connecting..."
-                    : isEs
-                      ? "Comenzar"
-                      : "Start"}
+                    ? ui.vocab_connecting
+                    : ui.proficiency_test_start}
                 </>
               )}
             </Button>
@@ -2305,7 +2289,7 @@ Return ONLY valid JSON:
           borderWidth="1px"
           borderColor={isLightTheme ? APP_BORDER : undefined}
         >
-          <ModalHeader>{isEs ? "Historial" : "Chat log"}</ModalHeader>
+          <ModalHeader>{ui.ra_chat_log}</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <VStack align="stretch" spacing={3}>
@@ -2314,7 +2298,7 @@ Return ONLY valid JSON:
                   const userText = m.pendingTranscript ? "…" : m.textFinal;
                   return (
                     <RowRight key={m.id}>
-                      <UserBubble label={isEs ? "Tú" : "You"} text={userText} />
+                      <UserBubble label={ui.proficiency_test_you} text={userText} />
                     </RowRight>
                   );
                 }
@@ -2324,7 +2308,7 @@ Return ONLY valid JSON:
                 return (
                   <RowLeft key={m.id}>
                     <AssistantBubble
-                      label={isEs ? "Evaluador" : "Assessor"}
+                      label={ui.proficiency_test_assessor}
                       text={text}
                     />
                   </RowLeft>
@@ -2411,7 +2395,7 @@ Return ONLY valid JSON:
                     textTransform="uppercase"
                     color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.800"}
                   >
-                    {isEs ? "Resultado final" : "Final result"}
+                    {ui.proficiency_test_final_result}
                   </Text>
                   <Text
                     fontSize={{ base: "2xl", md: "3xl" }}
@@ -2419,7 +2403,7 @@ Return ONLY valid JSON:
                     color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     textAlign="center"
                   >
-                    {isEs ? "Evaluación Completa" : "Assessment Complete"}
+                    {ui.proficiency_test_complete}
                   </Text>
                   {assessedLevel && (
                     <Badge
@@ -2436,7 +2420,7 @@ Return ONLY valid JSON:
                       boxShadow={isLightTheme ? "0 6px 14px rgba(111, 86, 54, 0.06)" : undefined}
                     >
                       {assessedLevel} —{" "}
-                      {levelInfo?.name?.[isEs ? "es" : "en"] || assessedLevel}
+                      {levelInfo?.name?.[supportLang] || levelInfo?.name?.en || assessedLevel}
                     </Badge>
                   )}
                 </VStack>
@@ -2461,7 +2445,7 @@ Return ONLY valid JSON:
                     textAlign="center"
                     color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.700"}
                   >
-                    {isEs ? "Resumen de la evaluación" : "Assessment summary"}
+                    {ui.proficiency_test_summary}
                   </Text>
                   <Text
                     fontSize={{ base: "md", md: "lg" }}
@@ -2487,7 +2471,7 @@ Return ONLY valid JSON:
                       textTransform="uppercase"
                       color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                     >
-                      {isEs ? "Desglose" : "Breakdown"}
+                      {ui.proficiency_test_breakdown}
                     </Text>
                     <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
                       {ASSESSMENT_CRITERIA.map((criterion) => {
@@ -2564,7 +2548,7 @@ Return ONLY valid JSON:
                                   fontWeight="semibold"
                                   color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                                 >
-                                  {criterion[isEs ? "es" : "en"]}
+                                  {criterion[supportLang] || criterion.en}
                                 </Text>
                                 {score !== null && (
                                   <Box
@@ -2623,7 +2607,7 @@ Return ONLY valid JSON:
                     fontSize="xs"
                     color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   >
-                    {isEs ? "Puntaje compuesto" : "Composite score"}
+                    {ui.proficiency_test_composite}
                   </Text>
                   <Text
                     fontSize="md"
@@ -2659,13 +2643,13 @@ Return ONLY valid JSON:
                     letterSpacing="0.05em"
                     color={isLightTheme ? APP_TEXT_MUTED : undefined}
                   >
-                    {isEs ? `Nivel ${assessedLevel}` : `Level ${assessedLevel}`}
+                    {ui.proficiency_test_level_label?.replace("{level}", assessedLevel) || `Level ${assessedLevel}`}
                   </Text>
                   <VStack align="start" spacing={1}>
                     {(
-                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.[
-                        isEs ? "es" : "en"
-                      ] || []
+                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.[supportLang] ||
+                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.en ||
+                      []
                     ).map((item) => (
                       <Text
                         key={item}
@@ -2705,9 +2689,7 @@ Return ONLY valid JSON:
                   color={isLightTheme ? "#9a7d3c" : "yellow.300"}
                   textAlign="center"
                 >
-                  {isEs
-                    ? "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo."
-                    : "There was a problem with automatic evaluation. You can try again."}
+                  {ui.proficiency_test_eval_error}
                 </Text>
               )}
             </VStack>
@@ -2740,7 +2722,7 @@ Return ONLY valid JSON:
                     : undefined
                 }
               >
-                {isEs ? "Intentar de nuevo" : "Try again"}
+                {ui.try_again}
               </Button>
               <Button
                 flex={1}
@@ -2753,7 +2735,7 @@ Return ONLY valid JSON:
                 color={isLightTheme ? "#083344" : undefined}
                 boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
-                {isEs ? "Volver a la aplicación" : "Return to app"}
+                {ui.proficiency_test_return_app}
               </Button>
             </HStack>
           </DrawerFooter>
@@ -2813,7 +2795,7 @@ Return ONLY valid JSON:
               >
                 <HStack justify="space-between" align="start" mb={2}>
                   <Text fontSize="xl" fontWeight="bold" mb={2}>
-                    {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
+                    {ui.proficiency_test_rubric}
                   </Text>
                 </HStack>
 
@@ -2822,9 +2804,7 @@ Return ONLY valid JSON:
                   opacity={0.75}
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                 >
-                  {isEs
-                    ? "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio."
-                    : "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability."}
+                  {ui.proficiency_test_rubric_desc}
                 </Text>
               </Box>
 
@@ -2838,16 +2818,14 @@ Return ONLY valid JSON:
                 width="100%"
               >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {isEs ? "Qué puntúa el sistema" : "What gets scored"}
+                  {ui.proficiency_test_what_scored}
                 </Text>
                 <Text
                   fontSize="sm"
                   opacity={0.8}
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                 >
-                  {isEs
-                    ? "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión."
-                    : "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension."}
+                  {ui.proficiency_test_what_scored_desc}
                 </Text>
               </Box>
 
@@ -2861,33 +2839,24 @@ Return ONLY valid JSON:
                 width="100%"
               >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {isEs ? "Mecanismo de calificación" : "Scoring mechanism"}
+                  {ui.proficiency_test_scoring_heading}
                 </Text>
                 <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Comprensión y fluidez pesan más que confianza."
-                      : "Comprehension and fluency are weighted more heavily than confidence."}
+                    {ui.proficiency_test_scoring_1}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1."
-                      : "Very short or low-substance responses cap the result at Pre-A1/A1."}
+                    {ui.proficiency_test_scoring_2}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Si hay muchos " +
-                        '"no sé"/relleno, el nivel baja automáticamente.'
-                      : 'Frequent filler or "I don\'t know" responses automatically lower the placement.'}
+                    {ui.proficiency_test_scoring_3}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "El nivel final nunca supera la evidencia real de tu conversación."
-                      : "Final placement never exceeds what your conversation evidence supports."}
+                    {ui.proficiency_test_scoring_4}
                   </Text>
                 </VStack>
               </Box>
@@ -2931,7 +2900,7 @@ Return ONLY valid JSON:
                         lineHeight="1.5"
                         color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                       >
-                        {row[isEs ? "es" : "en"]}
+                        {row[supportLang] || row.en}
                       </Text>
                     </Box>
                   ))}
@@ -2948,7 +2917,7 @@ Return ONLY valid JSON:
                 onClick={closeRubric}
                 boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
-                {isEs ? "Entendido" : "Got it"}
+                {ui.proficiency_test_got_it}
               </Button>
             </VStack>
           </DrawerBody>
@@ -2978,18 +2947,14 @@ Return ONLY valid JSON:
           <ModalBody py={8} px={6}>
             <VStack spacing={4}>
               <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                {isEs
-                  ? "¿Salir de la prueba de nivel?"
-                  : "Exit proficiency test?"}
+                {ui.proficiency_test_exit_title}
               </Text>
               <Text
                 fontSize="sm"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
                 textAlign="center"
               >
-                {isEs
-                  ? "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración."
-                  : "Your progress won't be saved. You can retake the test later from settings."}
+                {ui.proficiency_test_exit_desc}
               </Text>
               <VStack spacing={3} w="100%" pt={2}>
                 <Button
@@ -2998,7 +2963,7 @@ Return ONLY valid JSON:
                   variant="solid"
                   onClick={handleConfirmExit}
                 >
-                  {isEs ? "Sí, salir" : "Yes, exit"}
+                  {ui.proficiency_test_yes_exit}
                 </Button>
                 <Button
                   w="100%"
@@ -3009,7 +2974,7 @@ Return ONLY valid JSON:
                   }}
                   onClick={() => setShowExitConfirm(false)}
                 >
-                  {isEs ? "Continuar la prueba" : "Continue test"}
+                  {ui.proficiency_test_continue}
                 </Button>
               </VStack>
             </VStack>

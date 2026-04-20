@@ -39,6 +39,7 @@ import { WaveBar } from "./WaveBar";
 import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
+import { t } from "../utils/translation";
 import { completeLesson } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import {
@@ -1349,9 +1350,7 @@ YES or NO
             <VStack spacing={4}>
               <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
               <Text color={APP_TEXT_PRIMARY}>
-                {userLanguage === "es"
-                  ? "Generando pregunta..."
-                  : "Generating question..."}
+                {t(userLanguage, "history_generating_question")}
               </Text>
             </VStack>
           ) : mode === "fill" ? (
