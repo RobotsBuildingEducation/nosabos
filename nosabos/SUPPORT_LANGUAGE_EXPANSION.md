@@ -569,6 +569,7 @@ Current state (to keep this doc honest):
 | `LandingPage.jsx` sign-in "or" divider | Done — hardcoded `"or"` replaced with `{copy.signin_or}`; `signin_or` key added to `en` ("or"), `es` ("o"), `it` ("o") translation blocks |
 | `SkillTree.jsx` game review loader messages | Done — `GAME_LOADING_MESSAGES` extended with `it` array (8 Italian messages); loader header gradient always dark (removed light-theme white override); text color fixed to `blue.100` regardless of theme |
 | RPGGame LLM-generated map/room names in support language (`scenarios.js`) | Done — both `generateScenarioWithAI` prompt JSON shapes now include `"${supportLang}": "..."` in the `name` field when support lang is not `en`/`es` (so the LLM generates Italian names directly); `environment.names[lang]` array fallback fixed to use `[0]` instead of `String(array)` to avoid comma-joined names |
+| `REVIEW_ROOM_BLUEPRINTS` static sub-room names (`scenarios.js`) | Done — all 24 static review-world sub-room specs (home, market, library, transit, nature, civic, lab, festival × 3 rooms each) now include `it` translations so the HUD area label shows Italian names instead of falling back to English |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
