@@ -393,9 +393,11 @@ function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
 
 function normalizeQuestions(questions, supportLang) {
   const basePrompt =
-    supportLang === "es"
-      ? "Elige la opción correcta."
-      : "Choose the correct option.";
+    supportLang === "it"
+      ? "Scegli l'opzione corretta."
+      : supportLang === "es"
+        ? "Elige la opción correcta."
+        : "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
     .slice(0, 20)

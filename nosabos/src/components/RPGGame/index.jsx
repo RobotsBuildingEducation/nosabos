@@ -119,6 +119,18 @@ const OBJECT_SEARCH_TEST_COPY = {
     nothingFound: "No hay nada util aqui.",
     continueSearching: "Seguir buscando",
   },
+  it: {
+    intro: (itemName) =>
+      `Ho bisogno di ${itemName}. Cerca tra gli oggetti in qualsiasi stanza di questa mappa. Ognuno nasconde un oggetto. Portami quello giusto.`,
+    wrongItem: (wrongName, correctName) =>
+      `Questo è ${wrongName}. Ho ancora bisogno di ${correctName}. Continua a controllare gli oggetti.`,
+    success: (itemName) => `Perfetto. ${itemName} è esattamente ciò di cui avevo bisogno.`,
+    chooseItem: "Scegli un oggetto da consegnare:",
+    foundItem: (itemName) => `Trovato: ${itemName}`,
+    alreadyChecked: "Hai già controllato questo oggetto.",
+    nothingFound: "Niente di utile qui.",
+    continueSearching: "Continua a cercare",
+  },
 };
 
 const QUEST_LOG_COPY = {
@@ -158,6 +170,24 @@ const QUEST_LOG_COPY = {
     choiceTask: (npcName) => `Habla con ${npcName} y elige una respuesta.`,
     speechTask: (npcName) => `Habla con ${npcName} y responde con tu voz.`,
     continueTask: (npcName) => `Habla con ${npcName} para continuar.`,
+  },
+  it: {
+    title: "Diario delle missioni",
+    button: "Diario missioni",
+    currentTask: "Compito attuale",
+    progress: (done, total) => `Progresso: ${done}/${total}`,
+    complete: "Missione completata! Ottimo lavoro.",
+    defaultTask: "Continua ad esplorare e parla con il prossimo personaggio.",
+    startObjectSearch: (npcName, itemName) =>
+      `Parla con ${npcName} per iniziare la ricerca di ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Esamina gli oggetti in qualsiasi stanza per trovare ${itemName}. Ogni oggetto nasconde un elemento.`,
+    returnItem: (itemName, npcName) => `Porta ${itemName} da ${npcName}.`,
+    gatherSearch: (itemName) => `Cerca ${itemName} in questa zona.`,
+    gatherHint: (hint) => `Suggerimento: ${hint}`,
+    choiceTask: (npcName) => `Parla con ${npcName} e scegli una risposta.`,
+    speechTask: (npcName) => `Parla con ${npcName} e rispondi con la tua voce.`,
+    continueTask: (npcName) => `Parla con ${npcName} per continuare.`,
   },
 };
 
@@ -1430,6 +1460,16 @@ const UI_TEXT = {
     disableMusic: "Turn music off",
     musicOn: "Music on",
     musicOff: "Music off",
+    help: "Help",
+    inventory: "Inventory",
+    noItems: "No items yet.",
+    dropItem: "Drop",
+    wrongItem: "the wrong item",
+    speechContinue: "I understand. Let's continue.",
+    thinking: "Thinking...",
+    translateText: "Translate text",
+    undoTranslation: "Undo translation",
+    chooseCorrect: "Choose the correct option.",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -1461,6 +1501,57 @@ const UI_TEXT = {
     disableMusic: "Apagar música",
     musicOn: "Música activada",
     musicOff: "Música apagada",
+    help: "Ayuda",
+    inventory: "Inventario",
+    noItems: "No tienes objetos.",
+    dropItem: "Soltar",
+    wrongItem: "el objeto equivocado",
+    speechContinue: "Entiendo. Sigamos.",
+    thinking: "Pensando...",
+    translateText: "Traducir texto",
+    undoTranslation: "Deshacer traducción",
+    chooseCorrect: "Elige la opción correcta.",
+  },
+  it: {
+    talkHint: "Premi SPAZIO o tocca per parlare",
+    correct: "Corretto!",
+    incorrect: "Riprova!",
+    completed: "Congratulazioni! Hai risposto correttamente a tutte le domande!",
+    playAgain: "Gioca ancora",
+    back: "Indietro",
+    progress: "Progresso",
+    answeredOf: "di",
+    moveHint: "Frecce o WASD per muoversi",
+    touchMove: "Tocca per muoverti, tocca NPC per parlare",
+    chooseScenario: "Scegli uno scenario",
+    scenario: "Scenario",
+    newWorld: "Nuovo mondo",
+    quest: "Missione",
+    lockedNpc: "Dovresti iniziare con",
+    response: "Risposta",
+    micStart: "Avvia mic",
+    micStop: "Ferma mic",
+    heardYou: "Ho sentito",
+    speechUnavailable: "Voce non disponibile in questo browser",
+    noSpeechMatch: "Non ho capito. Riprova.",
+    continue: "Continua",
+    skip: "Salta",
+    loadingTutorialScene: "Caricamento scena tutorial...",
+    loadingGeneratingGame: "Generazione del tuo gioco...",
+    enableMusic: "Attiva musica",
+    disableMusic: "Disattiva musica",
+    musicOn: "Musica attivata",
+    musicOff: "Musica disattivata",
+    help: "Aiuto",
+    inventory: "Inventario",
+    noItems: "Nessun oggetto.",
+    dropItem: "Lascia",
+    wrongItem: "l'oggetto sbagliato",
+    speechContinue: "Capisco. Andiamo avanti.",
+    thinking: "Sto pensando...",
+    translateText: "Traduci testo",
+    undoTranslation: "Annulla traduzione",
+    chooseCorrect: "Scegli l'opzione corretta.",
   },
 };
 
@@ -1489,6 +1580,16 @@ const GAME_LOADING_MESSAGES = {
     "Preparando acertijos de idiomas...",
     "Ambientando la escena...",
     "Creando tu aventura...",
+  ],
+  it: [
+    "Costruendo il tuo mondo...",
+    "Posizionando i PNG...",
+    "Scrivendo i dialoghi delle missioni...",
+    "Generando sfide di vocabolario...",
+    "Progettando la mappa...",
+    "Preparando i puzzle linguistici...",
+    "Ambientando la scena...",
+    "Creando la tua avventura...",
   ],
 };
 
@@ -2652,15 +2753,11 @@ export default function RPGGame({
       const submitPrompt =
         dialogue.node.responseMode === "objectSearch"
           ? objectSearchCopy.chooseItem
-          : targetLang === "es"
-            ? "Elige un objeto para entregar:"
-            : "Choose an item to hand over:";
+          : objectSearchCopy.chooseItem;
       const continueLabel =
         dialogue.node.responseMode === "objectSearch"
           ? objectSearchCopy.continueSearching
-          : targetLang === "es"
-            ? "Seguir buscando"
-            : "Keep searching";
+          : objectSearchCopy.continueSearching;
 
       return [
         ...(inventory.length > 0
@@ -3234,10 +3331,7 @@ export default function RPGGame({
             ? rotatedDecoys[decoyIdx % rotatedDecoys.length]
             : {
                 ...targetItem,
-                name:
-                  targetLang === "es"
-                    ? "el objeto equivocado"
-                    : "the wrong item",
+                name: ui.wrongItem,
                 isCorrect: false,
               };
       const objectKey = getObjectExamineKey(entry.map, entry.object);
@@ -5615,10 +5709,7 @@ export default function RPGGame({
         ? getCharacterPersonality(characterId)
         : null;
       const fallbackReply =
-        dialogue.node.speechContinueReply ||
-        (targetLang === "es"
-          ? "Entiendo. Sigamos."
-          : "I understand. Let's continue.");
+        dialogue.node.speechContinueReply || ui.speechContinue;
       const replyToken = pendingSpeechReplyTokenRef.current + 1;
       pendingSpeechReplyTokenRef.current = replyToken;
 
@@ -6156,7 +6247,7 @@ export default function RPGGame({
       {!gameComplete && (
         <VStack position="absolute" top={14} right={3} zIndex={10} spacing={4}>
           <IconButton
-            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
+            aria-label={ui.help}
             icon={<MdOutlineSupportAgent size={20} />}
             size="md"
             variant="solid"
@@ -6277,7 +6368,7 @@ export default function RPGGame({
           boxShadow={rpgPanelShadow}
         >
           <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
-            {targetLang === "es" ? "Inventario" : "Inventory"}
+            {ui.inventory}
           </ModalHeader>
           <ModalCloseButton
             color={rpgTextMuted}
@@ -6286,7 +6377,7 @@ export default function RPGGame({
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
               <Text color={rpgTextMuted} fontSize="sm" textAlign="center" py={4}>
-                {targetLang === "es" ? "No tienes objetos." : "No items yet."}
+                {ui.noItems}
               </Text>
             ) : (
               <VStack spacing={3} align="stretch">
@@ -6342,7 +6433,7 @@ export default function RPGGame({
                         dropInventoryItem(idx);
                       }}
                     >
-                      {targetLang === "es" ? "Soltar" : "Drop"}
+                      {ui.dropItem}
                     </Button>
                   </HStack>
                 )}
@@ -6705,12 +6796,8 @@ export default function RPGGame({
                     <IconButton
                       aria-label={
                         hasDialogueTranslations
-                          ? supportLang === "es"
-                            ? "Deshacer traducción"
-                            : "Undo translation"
-                          : supportLang === "es"
-                            ? "Traducir texto"
-                            : "Translate text"
+                          ? ui.undoTranslation
+                          : ui.translateText
                       }
                       icon={
                         hasDialogueTranslations ? (
@@ -6837,7 +6924,7 @@ export default function RPGGame({
                           color={isLightTheme ? rpgTextMuted : "gray.500"}
                           textAlign="center"
                         >
-                          {targetLang === "es" ? "Pensando..." : "Thinking..."}
+                          {ui.thinking}
                         </Text>
                       </VStack>
                     ) : (

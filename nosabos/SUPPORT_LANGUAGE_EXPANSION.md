@@ -234,6 +234,29 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
 
+### 3.21i `src/components/RPGGame/index.jsx` + `scenarios.js`
+
+The RPGGame has its own isolated UI text system — it does **not** use `translation.jsx`. All UI strings live in component-local dictionaries that must each have an `it` entry.
+
+**Dictionaries in `index.jsx`** — add `it` block to each:
+- `UI_TEXT` — all game-chrome strings (Skip, Continue, Correct, Incorrect, quest, mic, movement hints, music, Inventory, Drop, Thinking, translate/undo aria-labels, speech-continue fallback, wrong-item name, chooseCorrect prompt).
+- `QUEST_LOG_COPY` — quest log title, button, task strings (all are functions or strings).
+- `OBJECT_SEARCH_TEST_COPY` — NPC object-search dialogue (intro, wrongItem, success, chooseItem, foundItem, alreadyChecked, nothingFound, continueSearching).
+- `GAME_LOADING_MESSAGES` — loading-screen messages array.
+
+**Hardcoded `targetLang === "es"` / `supportLang === "es"` ternaries in `index.jsx`** — replace with `ui.*` lookups (all keys now in `UI_TEXT`):
+- `chooseItem` / `continueSearching` fallbacks (use `objectSearchCopy.*` directly)
+- `wrongItem` name in gather quest
+- `speechContinue` fallback reply
+- `aria-label` on Help button
+- Inventory modal header, empty-inventory text, Drop button
+- translate/undo-translation `aria-label`
+- "Thinking..." text during NPC reply
+
+**`scenarios.js` `normalizeQuestions()`** (line ~396) — `supportLang === "es" ? "Elige..." : "Choose..."` extended to three-way including `"it"`.
+
+**Italian implementation note:** Done — `it` entries added to all four dictionaries; all 10 hardcoded ternaries replaced with `ui.*` lookups; `normalizeQuestions` extended to three-way. The LLM prompt construction in `scenarios.js` already used `getLanguagePromptName()` and worked for any language code — no changes needed there. The `GATHER_ITEMS_BY_MAP` gather-quest item pools (`en`/`es` only) remain English as a fallback since item names are target-language content, not support-language chrome.
+
 ### 3.21h `src/components/SubscriptionGate.jsx` + `/subscribe` route
 
 `SubscriptionGate.jsx` already uses a `supportCopy(lang, en, es, it)` helper and has inline Italian strings for the empty-input error, submit button text, and loading text. The gaps are in `translation.jsx` and `App.jsx`:
@@ -514,6 +537,7 @@ Current state (to keep this doc honest):
 | `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added |
 | `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook |
 | `SubscriptionGate.jsx` + `/subscribe` route fully localized | Done — `"passcode.instructions"` JSX added to `translations.it` (intro text, benefit list, Abbonati/Paga una volta buttons); `invalid`, `bannedTitle`, `bannedBody`, `goToPatreon`, `passcodeLink` added to `it` block; three binary `appLanguage === "es"` ternaries in `App.jsx` passcode handler extended to include Italian (`"it"` branch: not-configured msg, accepted toast, save-failed msg) |
+| `RPGGame/index.jsx` + `scenarios.js` UI fully localized | Done — `it` block added to `UI_TEXT`, `QUEST_LOG_COPY`, `OBJECT_SEARCH_TEST_COPY`, `GAME_LOADING_MESSAGES`; all 10 hardcoded `=== "es"` ternaries replaced with `ui.*` lookups; `normalizeQuestions` `chooseCorrect` string extended to three-way |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
