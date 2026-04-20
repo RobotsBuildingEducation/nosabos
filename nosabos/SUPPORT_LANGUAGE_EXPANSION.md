@@ -234,6 +234,23 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
 
+### 3.21h `src/components/SubscriptionGate.jsx` + `/subscribe` route
+
+`SubscriptionGate.jsx` already uses a `supportCopy(lang, en, es, it)` helper and has inline Italian strings for the empty-input error, submit button text, and loading text. The gaps are in `translation.jsx` and `App.jsx`:
+
+**`translation.jsx` `it` block** — add:
+- `"passcode.instructions"` — JSX with intro sentence, benefit `<ol>`, and "Abbonati" / "Paga una volta" `<Button>` pair (mirroring the `en` block structure exactly).
+- `invalid` — invalid-passcode message.
+- `bannedTitle` / `bannedBody` — access-denied strings.
+- `goToPatreon` / `passcodeLink` — Patreon link labels.
+
+**`App.jsx` passcode submit handler** (~line 2958) — three binary `appLanguage === "es" ? "..." : "..."` ternaries that must be extended to three-way `"it" / "es" / default`:
+1. "Subscription passcode is not configured" message.
+2. "Passcode accepted" success toast title.
+3. "Failed to save passcode" error message.
+
+**Italian implementation note:** Done — all five `it` translation keys added; three App.jsx ternaries extended to include Italian.
+
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
 - Loader room names and interactable messages are data payloads, not regular UI strings. Add the new language to `OUTDOOR_NAMES`, every `INDOOR_ROOM_TYPES[].names`, and each message pool (`SIGN_MESSAGES`, `CHEST_MESSAGES`, `LAMP_MESSAGES`, `PLANT_MESSAGES`, `TABLE_MESSAGES`).
@@ -496,6 +513,7 @@ Current state (to keep this doc honest):
 | `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
 | `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added |
 | `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook |
+| `SubscriptionGate.jsx` + `/subscribe` route fully localized | Done — `"passcode.instructions"` JSX added to `translations.it` (intro text, benefit list, Abbonati/Paga una volta buttons); `invalid`, `bannedTitle`, `bannedBody`, `goToPatreon`, `passcodeLink` added to `it` block; three binary `appLanguage === "es"` ternaries in `App.jsx` passcode handler extended to include Italian (`"it"` branch: not-configured msg, accepted toast, save-failed msg) |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 

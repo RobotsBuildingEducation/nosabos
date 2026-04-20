@@ -2072,6 +2072,76 @@ translations.it = {
   toast_switched_account: "Account cambiato",
   toast_save_lang_failed: "Impossibile salvare la lingua",
   "passcode.label": "Codice abbonato",
+  "passcode.instructions": (
+    <div>
+      Inserisci il codice abbonamento per continuare.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>L'abbonamento ti dà accesso a:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Accesso a più app educative con intelligenza artificiale.
+          </li>
+          <li style={{ marginBottom: 8 }}>Supporto personale.</li>
+          <li style={{ marginBottom: 8 }}>
+            Una raccolta in crescita di contenuti per abbonati orientati
+            all'ingegneria startup e agli investimenti.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            Riconoscimento per il supporto alla missione di creare borse di
+            studio attraverso l'apprendimento.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            Abbonati
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Paga una volta
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+  invalid: "Codice non valido. Riprova.",
+  bannedTitle: "Accesso negato",
+  bannedBody:
+    "Sei stato bloccato e il codice è stato modificato. Contatta il proprietario dell'app su Patreon se si tratta di un errore.",
+  goToPatreon: "Vai su Patreon",
+  passcodeLink: "Link al codice abbonato",
   backToQuestion9: "Torna alla domanda 9",
   app_err_save_language_title: "Impossibile salvare la lingua",
   tabs_realtime: "Chat",

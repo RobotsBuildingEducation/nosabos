@@ -2957,9 +2957,11 @@ export default function App() {
       const expected = (subscriptionPasscode || "").trim();
       if (!expected) {
         const msg =
-          appLanguage === "es"
-            ? "El código de acceso no está configurado"
-            : "Subscription passcode is not configured";
+          appLanguage === "it"
+            ? "Il codice abbonamento non è configurato"
+            : appLanguage === "es"
+              ? "El código de acceso no está configurado"
+              : "Subscription passcode is not configured";
         setPasscodeError(msg);
         setLocalError?.(msg);
         return;
@@ -2998,14 +3000,21 @@ export default function App() {
         patchUser?.({ subscriptionPasscodeVerified: true });
         toast({
           status: "success",
-          title: appLanguage === "es" ? "Código aceptado" : "Passcode accepted",
+          title:
+            appLanguage === "it"
+              ? "Codice accettato"
+              : appLanguage === "es"
+                ? "Código aceptado"
+                : "Passcode accepted",
         });
       } catch (error) {
         console.error("Failed to save subscription passcode", error);
         const msg =
-          appLanguage === "es"
-            ? "No se pudo guardar el código"
-            : "Failed to save passcode";
+          appLanguage === "it"
+            ? "Impossibile salvare il codice"
+            : appLanguage === "es"
+              ? "No se pudo guardar el código"
+              : "Failed to save passcode";
         setPasscodeError(msg);
         setLocalError?.(msg);
       } finally {
