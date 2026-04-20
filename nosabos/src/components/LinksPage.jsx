@@ -139,14 +139,7 @@ const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
   const selected = langOptions.find((o) => o.value === language) || langOptions[0];
 
   return (
-    <Box
-      style={{
-        position: "fixed",
-        top: "18px",
-        left: "16px",
-        zIndex: 121,
-      }}
-    >
+    <Box>
       <Menu placement="bottom-start">
         <MenuButton
           as={IconButton}
@@ -1196,12 +1189,6 @@ export default function LinksPage() {
       }}
     >
       <RetroStarfield isLightTheme={isLightTheme} />
-      <LanguageMenuFixed
-        language={language}
-        onSelect={setLanguage}
-        playSound={handleSelectSound}
-      />
-
       <Container
         maxW="container.md"
         position="relative"
@@ -1210,8 +1197,13 @@ export default function LinksPage() {
         pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
-          {/* Top-right theme toggle */}
-          <Box w="100%" display="flex" justifyContent="flex-end" pr={1}>
+          {/* Top bar: language menu left, theme toggle right */}
+          <Box w="100%" display="flex" justifyContent="space-between" alignItems="center">
+            <LanguageMenuFixed
+              language={language}
+              onSelect={setLanguage}
+              playSound={handleSelectSound}
+            />
             <ThemeModeToggle
               themeMode={themeMode}
               onModeChange={handleThemeModeChange}
