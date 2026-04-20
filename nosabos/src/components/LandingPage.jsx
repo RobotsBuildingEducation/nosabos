@@ -198,6 +198,7 @@ const translations = {
     back_button: "Back",
     language_en: "English",
     language_es: "Español",
+    language_it: "Italiano",
   },
   es: {
     nav_signin: "Iniciar Sesión",
@@ -309,8 +310,125 @@ const translations = {
     back_button: "Regresar",
     language_en: "English",
     language_es: "Español",
+    language_it: "Italiano",
+  },
+  it: {
+    nav_signin: "Accedi",
+    hero_title: "Il Tuo Tutor",
+    hero_title_accent: "Linguistico Personale",
+    hero_subtitle:
+      "Usa strumenti intelligenti per praticare e imparare nuove lingue.",
+    cta_start: "Inizia",
+    cta_signin: "Ho già una Chiave",
+    languages_label: "LINGUE",
+    languages_title: "Pratica in",
+    languages_title_accent: "14 Lingue",
+    languages_stable: "Stabile",
+    languages_beta: "Beta",
+    languages_alpha: "Alfa",
+    features_label: "FUNZIONALITÀ",
+    features_title: "Tutto ciò che ti serve per",
+    features_title_accent: "Diventare Fluente",
+    feature_conversations: "Conversazioni in Tempo Reale",
+    feature_conversations_desc:
+      "Dialoghi immersivi che si adattano al tuo livello, guidandoti nel parlato e nell'ascolto in tempo reale.",
+    feature_stories: "Storie Interattive",
+    feature_stories_desc:
+      "Narrazioni coinvolgenti che ti invitano a leggere ad alta voce, riassumere e fare role-play nella tua lingua target.",
+    feature_reading: "Pratica di Lettura",
+    feature_reading_desc:
+      "Lezioni tematiche che ampliano il vocabolario e le conoscenze culturali con esercizi di comprensione.",
+    feature_grammar: "Libro di Grammatica",
+    feature_grammar_desc:
+      "Riferimenti rapidi alle regole, esercizi concettuali e set di revisione adattivi per rafforzare le basi.",
+    feature_skilltree: "Albero delle Abilità",
+    feature_skilltree_desc:
+      "Percorsi di apprendimento strutturati che costruiscono le abilità passo dopo passo con una visualizzazione chiara dei progressi.",
+    feature_flashcards: "Vocabolario",
+    feature_flashcards_desc:
+      "Pratica nuove parole in base al tuo livello e a situazioni quotidiane.",
+    feature_goals: "Obiettivi Giornalieri",
+    feature_goals_desc:
+      "Target personalizzati che monitorano i progressi e celebrano le serie per mantenerti motivato.",
+    feature_notes: "Genera Note",
+    feature_notes_desc:
+      "Crea note di studio complete dalle tue lezioni da rivedere in seguito.",
+    feature_immersion: "Pratica di Immersione",
+    feature_immersion_desc:
+      "Completa attività fuori dall'app per immergerti e praticare la lingua.",
+    feature_assistant: "Assistente Personale",
+    feature_assistant_desc:
+      "Ottieni guida e raccomandazioni personalizzate quando ne hai bisogno.",
+    feature_flashcards_spaced: "Flashcard di Ripetizione",
+    feature_flashcards_spaced_desc:
+      "Padroneggia oltre 1.000 parole e frasi con flashcard a ripetizione spaziata organizzate per livello CEFR, dal principiante all'avanzato.",
+    feature_game_review: "Gioco RPG di Revisione",
+    feature_game_review_desc:
+      "Esplora mondi con missioni, parla con PNG e raccogli oggetti — tutto nella tua lingua target — per ripassare il vocabolario delle lezioni.",
+    feature_proficiency_test: "Test di Livello",
+    feature_proficiency_test_desc:
+      "Sostieni una conversazione vocale di 10 scambi con un'IA che si adatta in tempo reale per collocarti al tuo livello CEFR esatto.",
+    feature_phonics: "Fonetica",
+    feature_phonics_desc:
+      "Pratica parole e suoni con la modalità Alfabeto per padroneggiare la pronuncia dalle basi.",
+    value_label: "PERCHÉ NO SABOS",
+    value_title: "Apprendimento che",
+    value_title_accent: "Funziona Davvero",
+    value_1:
+      "IA che si adatta in tempo reale — conversazioni, esercizi e feedback adeguati al tuo livello esatto",
+    value_2:
+      "Sei modalità di pratica per ogni stile: parlato, lettura, scrittura, ascolto, grammatica e vocabolario",
+    value_3:
+      "Progressione CEFR strutturata da A1 principiante a C2 maestria con 324 lezioni e traguardi chiari",
+    value_4:
+      "Coaching della pronuncia in tempo reale che ascolta, corregge e costruisce la tua fiducia nel parlare",
+    scholarship_label: "DAI QUALCOSA IN CAMBIO",
+    scholarship_title: "Crea Borse di Studio",
+    scholarship_title_accent: "con Bitcoin",
+    scholarship_desc:
+      "Ricarica il tuo portafoglio Bitcoin nell'app per aiutare a creare borse di studio attraverso l'apprendimento con",
+    scholarship_link: "RobotsBuildingEducation.com",
+    scholarship_note:
+      "Scegli un'identità comunitaria nell'app in modo che ogni satoshi che spendi supporti persone reali.",
+    faq_label: "DOMANDE",
+    faq_title: "Domande Frequenti",
+    faq_q1: "Cosa succede quando creo un account?",
+    faq_a1:
+      "Generiamo una chiave sicura che sblocca il tuo spazio di studio personale. Conservala bene — è l'unico modo per accedere da un altro dispositivo.",
+    faq_q2: "Devo sapere qualcosa su blockchain o Nostr?",
+    faq_a2:
+      "No. Ci occupiamo noi dei dettagli tecnici. Hai solo bisogno della tua chiave per tornare alle lezioni.",
+    faq_q3: "Quali lingue posso praticare?",
+    faq_a3:
+      "Inizia subito con spagnolo, inglese, portoghese, francese o italiano, poi esplora i moduli culturali ispirati al nahuatl.",
+    faq_q4: "Ha un costo?",
+    faq_a4:
+      "Gli strumenti principali sono gratuiti. Alcuni laboratori avanzati potrebbero richiedere borse di studio o accesso a pagamento.",
+    cta_final_title: "Pronto a Iniziare il tuo",
+    cta_final_accent: "Viaggio Linguistico?",
+    cta_final_subtitle:
+      "Crea il tuo profilo sicuro in pochi secondi, salva la chiave e sblocca un mondo di apprendimento linguistico.",
+    placeholder_name: "Il tuo nome visualizzato",
+    footer_brand: "No Sabos",
+    footer_tagline: "Rendere l'apprendimento delle lingue accessibile a tutti.",
+    signin_title: "Bentornato",
+    signin_subtitle:
+      "Incolla la chiave segreta che hai salvato quando hai creato il tuo account.",
+    signin_placeholder: "Incolla la tua chiave segreta",
+    signin_button: "Accedi",
+    signin_extension: "Accedi con Estensione",
+    back_button: "Indietro",
+    language_en: "English",
+    language_es: "Español",
+    language_it: "Italiano",
   },
 };
+
+const LANG_OPTIONS = [
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+  { value: "it", label: "Italiano" },
+];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLOBAL STYLES
@@ -1067,7 +1185,7 @@ const LandingPage = ({ onAuthenticated }) => {
     return HERO_VOICE_ORB_STATES[randomIndex];
   });
 
-  const copy = translations[lang];
+  const copy = translations[lang] || translations.en;
 
   useEffect(() => {
     setHasExtension(isNip07Available());
@@ -1350,35 +1468,47 @@ const LandingPage = ({ onAuthenticated }) => {
               {copy.cta_signin}
             </Button>
 
-            {/* Language Toggle */}
+            {/* Language Menu */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "center",
-                gap: "8px",
                 marginTop: "8px",
               }}
             >
-              <Button
-                variant={lang === "en" ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => {
+              <select
+                value={lang}
+                onChange={(e) => {
                   playSound(selectSound);
-                  setLang("en");
+                  setLang(e.target.value);
+                }}
+                style={{
+                  background: theme.colors.bg.elevated,
+                  color: theme.colors.text.primary,
+                  border: `1px solid ${theme.colors.border.accent}`,
+                  borderRadius: "12px",
+                  padding: "10px 36px 10px 16px",
+                  fontSize: "0.875rem",
+                  fontFamily: theme.fonts.body,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  outline: "none",
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232dd4bf' d='M6 8L0 0h12z'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: "right 12px center",
+                  backdropFilter: "blur(20px)",
+                  boxShadow: "var(--app-shadow-soft)",
+                  minWidth: "130px",
                 }}
               >
-                {copy.language_en}
-              </Button>
-              <Button
-                variant={lang === "es" ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  playSound(selectSound);
-                  setLang("es");
-                }}
-              >
-                {copy.language_es}
-              </Button>
+                {LANG_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} style={{ background: "var(--app-page-bg)", color: "var(--app-text-primary)" }}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           </motion.div>
         </div>

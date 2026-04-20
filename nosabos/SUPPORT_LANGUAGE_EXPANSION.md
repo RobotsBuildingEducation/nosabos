@@ -195,6 +195,14 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Italian implementation note:** Done — `it` added to all 6 module entries (vocabulary, grammar, reading, stories, realtime, game) for all three fields.
 
+### 3.21f `src/components/LandingPage.jsx`
+- Contains its own **component-local `translations` object** (completely separate from `src/utils/translation.jsx`) with only `en` and `es` entries.
+- `copy = translations[lang]` has no fallback — crashes when `detectUserLanguage()` returns `"it"`.
+- Language picker was a two-button `en`/`es` toggle — must be replaced with a menu/select supporting all supported UI languages.
+- Add `language_it` key to `en` and `es` blocks, and author a complete `it` entry for all ~60 keys.
+
+**Italian implementation note:** Done — full `it` block added covering all landing-page copy (nav, hero, features, values, scholarship, FAQ, CTA, sign-in, footer). `copy = translations[lang] || translations.en` fallback guard added. Language two-button toggle replaced with a styled `<select>` dropdown listing all three options (English / Español / Italiano) using a `LANG_OPTIONS` constant. `language_it` added to `en` and `es` blocks.
+
 ### 3.21e `src/components/TutorialActionBarPopovers.jsx`
 - `BUTTON_EXPLANATIONS` array has `label` and `description` objects with only `en` and `es` keys — Italian users see a completely blank card body.
 - `aria-label` / "Done" button copy uses binary `lang === "es"` ternaries.
@@ -462,6 +470,7 @@ Current state (to keep this doc honest):
 | `LessonGroupQuiz.jsx` generating-question loader | Done — binary ternary replaced with `t(userLanguage, "history_generating_question")` |
 | `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
 | `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
+| `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
