@@ -257,6 +257,29 @@ The RPGGame has its own isolated UI text system — it does **not** use `transla
 
 **Italian implementation note:** Done — `it` entries added to all four dictionaries; all 10 hardcoded ternaries replaced with `ui.*` lookups; `normalizeQuestions` extended to three-way. The LLM prompt construction in `scenarios.js` already used `getLanguagePromptName()` and worked for any language code — no changes needed there. The `GATHER_ITEMS_BY_MAP` gather-quest item pools (`en`/`es` only) remain English as a fallback since item names are target-language content, not support-language chrome.
 
+### 3.21j RPGGame room names (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`)
+
+Room/area names displayed in the game HUD and loader are stored as `{ en, es }` name objects and looked up by `supportLang`. Adding `it` requires changes in three files:
+
+**`scenarios.js` `MAP_NAME_BY_ID`** — static map names for the 5 built-in maps:
+```js
+{ en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti" }
+// likewise for livingRoom, park, airport, REVIEW_WORLD_ID
+```
+
+**`scenarios.js` — 4 call sites that build the `name` object** (lines ~2836, ~2963, ~3261, ~3320):
+```js
+{ en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it") }
+```
+
+**`worldGen.js` `WORLD_BLUEPRINTS`** — 8 blueprints (`home`, `market`, `library`, `transit`, `nature`, `civic`, `lab`, `festival`) each had `names: { en, es }` — `it` array added to all 8.
+
+**`LoadingMiniGame.jsx` world generation** (lines ~571–591) — `outdoorName`, `indoor1Name`, `indoor2Name` objects were built with only `en`/`es` keys even though `OUTDOOR_NAMES` and `INDOOR_ROOM_TYPES[].names` already had `it` arrays. Added `it: pick(rng, ...)` to all three.
+
+**`index.jsx` object-examine `mapName`** — was looking up `map.name?.[targetLang]` (the practice language) for LLM context. Changed to `map.name?.en` since the LLM prompt is in English regardless of target language.
+
+**`activeAreaLabel`** in `index.jsx` already correctly reads `activeMap.name?.[supportLang]` — no change needed; it works automatically once the upstream name objects include the `it` key.
+
 ### 3.21h `src/components/SubscriptionGate.jsx` + `/subscribe` route
 
 `SubscriptionGate.jsx` already uses a `supportCopy(lang, en, es, it)` helper and has inline Italian strings for the empty-input error, submit button text, and loading text. The gaps are in `translation.jsx` and `App.jsx`:
@@ -538,6 +561,7 @@ Current state (to keep this doc honest):
 | `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook |
 | `SubscriptionGate.jsx` + `/subscribe` route fully localized | Done — `"passcode.instructions"` JSX added to `translations.it` (intro text, benefit list, Abbonati/Paga una volta buttons); `invalid`, `bannedTitle`, `bannedBody`, `goToPatreon`, `passcodeLink` added to `it` block; three binary `appLanguage === "es"` ternaries in `App.jsx` passcode handler extended to include Italian (`"it"` branch: not-configured msg, accepted toast, save-failed msg) |
 | `RPGGame/index.jsx` + `scenarios.js` UI fully localized | Done — `it` block added to `UI_TEXT`, `QUEST_LOG_COPY`, `OBJECT_SEARCH_TEST_COPY`, `GAME_LOADING_MESSAGES`; all 10 hardcoded `=== "es"` ternaries replaced with `ui.*` lookups; `normalizeQuestions` `chooseCorrect` string extended to three-way |
+| RPGGame room/area names in Italian (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`) | Done — `it` added to `MAP_NAME_BY_ID` + 4 call sites in `scenarios.js`; `it` arrays added to all 8 `WORLD_BLUEPRINTS` in `worldGen.js`; `LoadingMiniGame.jsx` world-gen now picks `it` from existing pools; object-examine `mapName` fixed to use `en` for LLM context |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 

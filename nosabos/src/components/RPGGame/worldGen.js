@@ -122,6 +122,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Cozy Living Room", "Family Apartment", "Neighborhood Home"],
       es: ["Sala Acogedora", "Apartamento Familiar", "Casa del Barrio"],
+      it: ["Salotto Accogliente", "Appartamento di Famiglia", "Casa del Quartiere"],
     },
     summary: {
       en: "a warm home full of everyday objects and lived-in details",
@@ -168,6 +169,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Busy Food Hall", "Neighborhood Kitchen", "Market Cafe"],
       es: ["Comedor Animado", "Cocina del Barrio", "Cafe del Mercado"],
+      it: ["Sala da Pranzo Animata", "Cucina del Quartiere", "Caffe del Mercato"],
     },
     summary: {
       en: "a lively food space with counters, appliances, and practical props",
@@ -215,6 +217,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Quiet Library Hall", "Reading Room", "Writers' Archive"],
       es: ["Sala de Biblioteca", "Sala de Lectura", "Archivo de Escritores"],
+      it: ["Sala della Biblioteca", "Sala di Lettura", "Archivio degli Scrittori"],
     },
     summary: {
       en: "a book-filled study space with shelves, desks, and reading corners",
@@ -262,6 +265,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["International Terminal", "Transit Concourse", "Travel Hub"],
       es: ["Terminal Internacional", "Pasillo de Transito", "Centro de Viaje"],
+      it: ["Terminal Internazionale", "Corridoio di Transito", "Centro Viaggi"],
     },
     summary: {
       en: "an international travel space with gates, signs, and waiting areas",
@@ -309,6 +313,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Forest Path", "Garden Walk", "Park Clearing"],
       es: ["Sendero del Bosque", "Paseo del Jardin", "Claro del Parque"],
+      it: ["Sentiero del Bosco", "Passeggiata nel Giardino", "Radura del Parco"],
     },
     summary: {
       en: "an open natural area with winding paths, greenery, and landmarks",
@@ -355,6 +360,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Civic Hall", "Conference Atrium", "Public Forum"],
       es: ["Salon Civico", "Atrio de Conferencias", "Foro Publico"],
+      it: ["Sala Civica", "Atrio Conferenze", "Foro Pubblico"],
     },
     summary: {
       en: "a polished public space with desks, signs, and formal meeting points",
@@ -400,6 +406,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Research Lab", "Innovation Studio", "Science Workshop"],
       es: ["Laboratorio de Investigacion", "Estudio de Innovacion", "Taller Cientifico"],
+      it: ["Laboratorio di Ricerca", "Studio di Innovazione", "Laboratorio Scientifico"],
     },
     summary: {
       en: "a clean technical space with equipment, storage, and study stations",
@@ -445,6 +452,7 @@ const WORLD_BLUEPRINTS = [
     names: {
       en: ["Festival Plaza", "Celebration Terrace", "Street Party"],
       es: ["Plaza del Festival", "Terraza de Celebracion", "Fiesta en la Calle"],
+      it: ["Piazza del Festival", "Terrazza delle Celebrazioni", "Festa in Strada"],
     },
     summary: {
       en: "a colorful social space with sound, decorations, and event energy",

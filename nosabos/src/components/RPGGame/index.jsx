@@ -2420,7 +2420,7 @@ export default function RPGGame({
       const mapName =
         typeof map.name === "string"
           ? map.name
-          : map.name?.[targetLang] || map.name?.en || map.name?.es || "Area";
+          : map.name?.en || map.name?.es || "Area";
       const prompt = [
         objectExamineCefrPromptRule,
         objectExaminePromptContext,

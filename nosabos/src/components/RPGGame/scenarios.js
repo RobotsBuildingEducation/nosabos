@@ -35,11 +35,11 @@ export const MAP_CHOICES = [
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado" },
-  livingRoom: { en: "Living Room", es: "Sala" },
-  park: { en: "Park", es: "Parque" },
-  airport: { en: "Airport", es: "Aeropuerto" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato" },
+  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno" },
+  park: { en: "Park", es: "Parque", it: "Parco" },
+  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -2833,7 +2833,7 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it") };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2962,6 +2962,7 @@ async function fallbackScenario(
     name: environment?.names || {
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
+      it: getMapName(mapId, "it"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3260,6 +3261,7 @@ function normalizeScenario({
       name: {
         en: String(raw?.name?.en || getMapName(mapId, "en")),
         es: String(raw?.name?.es || getMapName(mapId, "es")),
+        it: String(raw?.name?.it || getMapName(mapId, "it")),
       },
       tileSize: 32,
       mapWidth,
@@ -3319,6 +3321,7 @@ function normalizeScenario({
     name: {
       en: String(raw?.name?.en || environment?.names?.en || getMapName(mapId, "en")),
       es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
+      it: String(raw?.name?.it || environment?.names?.it || getMapName(mapId, "it")),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
