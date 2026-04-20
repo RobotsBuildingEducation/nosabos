@@ -244,16 +244,11 @@ export default function TranslateSentence({
     onAskAssistant(promptLines.join("\n"));
   }, [hint, onAskAssistant, isLoadingAssistantSupport, assistantSupportText, sourceSentence, userLanguage, wordBank]);
 
-  const translateLabel =
-    userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
-  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
-  const nextLabel =
-    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
-  const instructionLabel =
-    userLanguage === "es"
-      ? "Toca las palabras para formar tu respuesta"
-      : "Tap the words to form your answer";
+  const translateLabel = t("translate_sentence_heading");
+  const skipLabel = t("practice_skip_question");
+  const submitLabel = t("quiz_submit");
+  const nextLabel = t("practice_next_question");
+  const instructionLabel = t("translate_sentence_instruction");
 
   const createWarmAudio = useCallback(async () => {
     try {

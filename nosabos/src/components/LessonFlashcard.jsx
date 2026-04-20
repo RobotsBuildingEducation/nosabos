@@ -292,6 +292,28 @@ export default function LessonFlashcard({
         next: "Siguiente pregunta",
         added_to_deck: "Añadida al mazo",
       },
+      it: {
+        translate_to: `Traduci in ${LANG_NAME(targetLang)}`,
+        show_answer: "Mostra risposta",
+        tap_to_flip: "Tocca per girare",
+        answer_label: "Risposta",
+        type_placeholder: "Scrivi la tua traduzione...",
+        submit: "Invia",
+        record: "Registra risposta",
+        stop_recording: "Ferma",
+        grading: "Controllo...",
+        correct: "Corretto!",
+        incorrect: "Non proprio",
+        try_again: "Riprova",
+        explain: "Spiega la mia risposta",
+        explanation_heading: "Spiegazione",
+        skip: "Salta",
+        collect: "Raccogli carta",
+        collected: "Raccolta!",
+        deck_label: "Mazzo",
+        next: "Prossima domanda",
+        added_to_deck: "Aggiunta al mazzo",
+      },
     };
     return (dict[userLanguage] || dict.en)[key] || key;
   };

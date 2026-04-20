@@ -137,6 +137,8 @@ Language touchpoints are spread throughout. Key anchors:
 - `LLM_LANG_NAME` (~lines 114–129).
 - `toLangKey` (~lines 147–181) — add native/English name aliases.
 
+**Italian implementation note:** The `useUIText` hook's entire role-play string object has been migrated from binary `uiLang === "es" ? ... : ...` ternaries to `t(uiLang, "story_*")` calls. Role-play-specific keys (`story_header_roleplay`, `story_role_prompt`, `story_role_placeholder`, `story_start_role`, `story_update_role`, `story_edit_role`, `story_cancel_edit`, `story_play_target`, `story_no_role`, `story_generating_role_title`, `story_generating_role_sub`, `story_finish_role`) were added to all three language blocks in `translation.jsx`. Additional inline ternaries in the component body (demo toast, skip-unavailable toast, eval-error toast, recording-error toasts, Connecting button, sentence counter, role-play completed card) were replaced with `t(uiLang, "story_*")` / existing key lookups. The `bilingual` supportLang resolution was updated from a binary `es`/`en` gate to include `it`. `RepeatWhatYouHear.jsx` and `TranslateSentence.jsx` — which render the "Tap what you hear" and "Translate this sentence" question modes — had all bare ternaries replaced with `t("repeat_hear_*")` / `t("translate_sentence_*")` keys added to all three language blocks. `LessonFlashcard.jsx`'s local translation dict was extended with an `it` entry covering all flashcard UI strings (translate_to, show_answer, type_placeholder, submit, record, skip, etc.).
+
 ### 3.15 `src/components/JobScript.jsx`
 - `useSharedProgress` (~line 171).
 - `toBCP47` (~lines 118–137), `LLM_LANG_NAME` (~lines 80–110), `toLangKey` (~lines 116–133).
@@ -421,6 +423,7 @@ Current state (to keep this doc honest):
 | `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
 | `languageDetection.js` timezone heuristics     | Done |
 | Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
+| `Stories.jsx` (role-play UI), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; 21 new role-play + repeat-hear + translate-sentence keys added to all three language blocks; `LessonFlashcard.jsx` local dict extended with `it` entry |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
