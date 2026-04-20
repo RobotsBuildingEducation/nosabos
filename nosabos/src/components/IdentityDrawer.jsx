@@ -62,6 +62,17 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
+function supportCopy(lang, en, es, it) {
+  if (lang === "it") return it || en;
+  if (lang === "es") return es || en;
+  return en;
+}
 
 export function IdentityPanel({
   onClose,
@@ -126,6 +137,8 @@ export function IdentityPanel({
   const [displayName, setDisplayName] = useState("");
   const [displayNameInput, setDisplayNameInput] = useState("");
   const [isSavingDisplayName, setIsSavingDisplayName] = useState(false);
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const ui = useMemo(() => translations[lang] ?? translations.en, [lang]);
 
   // Load displayName from localStorage on mount
   useEffect(() => {
@@ -138,8 +151,12 @@ export function IdentityPanel({
     const trimmed = displayNameInput.trim();
     if (!trimmed) {
       toast({
-        title:
-          appLanguage === "es" ? "Ingresa un nombre" : "Enter a display name",
+        title: supportCopy(
+          lang,
+          "Enter a display name",
+          "Ingresa un nombre",
+          "Inserisci un nome visualizzato",
+        ),
         status: "warning",
         duration: 2000,
       });
@@ -170,15 +187,19 @@ export function IdentityPanel({
       }
 
       toast({
-        title:
-          appLanguage === "es" ? "Nombre actualizado" : "Display name updated",
+        title: supportCopy(
+          lang,
+          "Display name updated",
+          "Nombre actualizado",
+          "Nome visualizzato aggiornato",
+        ),
         status: "success",
         duration: 2000,
       });
     } catch (error) {
       console.error("Failed to save display name:", error);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
+        title: supportCopy(lang, "Error", "Error", "Errore"),
         description: error?.message || String(error),
         status: "error",
         duration: 3000,
@@ -187,9 +208,6 @@ export function IdentityPanel({
       setIsSavingDisplayName(false);
     }
   };
-
-  const lang = appLanguage === "es" ? "es" : "en";
-  const ui = useMemo(() => translations[lang] || translations.en, [lang]);
 
   // Mirror identity props for display
   const [currentId, setCurrentId] = useState(activeNpub || "");
@@ -283,9 +301,7 @@ export function IdentityPanel({
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
-    new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US",
-    );
+    new Date(cefrResult.updatedAt).toLocaleString(getLanguageLocale(lang));
   const installSteps = useMemo(
     () => [
       {
@@ -347,9 +363,12 @@ export function IdentityPanel({
       {showHeader ? (
         <DrawerHeader>
           {displayName
-            ? appLanguage === "es"
-              ? `Cuenta de ${displayName}`
-              : `${displayName}'s Account`
+            ? supportCopy(
+                lang,
+                `${displayName}'s Account`,
+                `Cuenta de ${displayName}`,
+                `Account di ${displayName}`,
+              )
             : t?.app_account_title || "Account"}
         </DrawerHeader>
       ) : null}
@@ -395,14 +414,20 @@ export function IdentityPanel({
             </Box>
             <VStack align="start" spacing={0} flex={1}>
               <Text fontWeight="semibold" fontSize="sm">
-                {appLanguage === "es"
-                  ? "Apóyanos en Patreon"
-                  : "Join us on Patreon"}
+                {supportCopy(
+                  lang,
+                  "Join us on Patreon",
+                  "Apóyanos en Patreon",
+                  "Sostienici su Patreon",
+                )}
               </Text>
               <Text fontSize="xs" color="gray.400">
-                {appLanguage === "es"
-                  ? "Accede a más apps educativas y contenido"
-                  : "Access more education apps and content"}
+                {supportCopy(
+                  lang,
+                  "Access more education apps and content",
+                  "Accede a más apps educativas y contenido",
+                  "Accedi a più app educative e contenuti",
+                )}
               </Text>
             </VStack>
             <Button
@@ -416,7 +441,7 @@ export function IdentityPanel({
                 )
               }
             >
-              {appLanguage === "es" ? "Unirse" : "Join"}
+              {supportCopy(lang, "Join", "Unirse", "Unisciti")}
             </Button>
           </HStack>
         </Box>
@@ -436,12 +461,18 @@ export function IdentityPanel({
               <Flex flex="1" textAlign="left" align="center">
                 <Text fontWeight="semibold" fontSize="sm">
                   {displayName
-                    ? appLanguage === "es"
-                      ? "Cambiar nombre de usuario"
-                      : "Change display name"
-                    : appLanguage === "es"
-                      ? "Crear nombre de usuario"
-                      : "Create display name"}
+                    ? supportCopy(
+                        lang,
+                        "Change display name",
+                        "Cambiar nombre de usuario",
+                        "Cambia nome visualizzato",
+                      )
+                    : supportCopy(
+                        lang,
+                        "Create display name",
+                        "Crear nombre de usuario",
+                        "Crea nome visualizzato",
+                      )}
                 </Text>
               </Flex>
               <AccordionIcon />
@@ -451,9 +482,12 @@ export function IdentityPanel({
                 value={displayNameInput}
                 onChange={(e) => setDisplayNameInput(e.target.value)}
                 placeholder={
-                  appLanguage === "es"
-                    ? "Ingresa tu nombre"
-                    : "Enter a display name"
+                  supportCopy(
+                    lang,
+                    "Enter a display name",
+                    "Ingresa tu nombre",
+                    "Inserisci un nome visualizzato",
+                  )
                 }
                 bg="gray.700"
                 mb={2}
@@ -464,9 +498,14 @@ export function IdentityPanel({
                   colorScheme="teal"
                   onClick={handleSaveDisplayName}
                   isLoading={isSavingDisplayName}
-                  loadingText={appLanguage === "es" ? "Guardando…" : "Saving…"}
+                  loadingText={supportCopy(
+                    lang,
+                    "Saving…",
+                    "Guardando…",
+                    "Salvataggio…",
+                  )}
                 >
-                  {appLanguage === "es" ? "Guardar" : "Save"}
+                  {supportCopy(lang, "Save", "Guardar", "Salva")}
                 </Button>
               </HStack>
             </AccordionPanel>
@@ -548,9 +587,12 @@ export function IdentityPanel({
               >
                 <Flex flex="1" textAlign="left" align="center" gap={3}>
                   <Text fontWeight="semibold">
-                    {appLanguage === "es"
-                      ? "Billetera Bitcoin"
-                      : "Bitcoin wallet"}
+                    {supportCopy(
+                      lang,
+                      "Bitcoin wallet",
+                      "Billetera Bitcoin",
+                      "Portafoglio Bitcoin",
+                    )}
                   </Text>
                 </Flex>
                 <AccordionIcon color={panelTheme.textSecondary} />
@@ -794,6 +836,10 @@ export function BitcoinWalletSection({
 }) {
   const toast = useToast();
   const playSound = useSoundSettings((s) => s.playSound);
+  const walletLang = normalizeSupportLanguage(
+    userLanguage,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const isPaperStyle = visualStyle === "paper";
   const shouldCenterContent =
     centerContent ||
@@ -1000,7 +1046,29 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "Your key is only used to create the wallet and is not stored.",
     };
-    return (userLanguage === "es" ? es : en)[key] ?? key;
+    const it = {
+      createWallet: "Crea portafoglio",
+      loadingWallet: "Creazione portafoglio…",
+      deposit: "Deposita",
+      loadingAddress: "Generazione indirizzo…",
+      or: "o",
+      copyAddress: "Copia indirizzo",
+      ps: "Usa un portafoglio Lightning compatibile per pagare la fattura.",
+      activeWalletTitle: "Il tuo portafoglio è attivo",
+      verifyTransactions: "Verifica le transazioni",
+      generateNew: "Genera nuovo QR",
+      balanceLabel: "Saldo",
+      cardNameLabel: "Portafoglio",
+      scholarshipNote:
+        "I tuoi depositi ci aiutano a creare borse di studio con l'apprendimento con ",
+      nip07NsecTitle: "Chiave segreta richiesta",
+      nip07NsecDescription:
+        "Hai effettuato l'accesso con un'estensione del browser, quindi non abbiamo accesso alla tua chiave privata. Per creare un portafoglio, inserisci il tuo nsec qui sotto.",
+      nip07NsecPlaceholder: "Inserisci il tuo nsec1...",
+      nip07NsecWarning:
+        "La tua chiave viene usata solo per creare il portafoglio e non viene salvata.",
+    };
+    return (walletLang === "it" ? it : walletLang === "es" ? es : en)[key] ?? key;
   };
 
   const ensureWalletConnection = useCallback(async () => {
@@ -1015,17 +1083,24 @@ export function BitcoinWalletSection({
     }
 
     toast({
-      title: userLanguage === "es" ? "Billetera no lista" : "Wallet not ready",
-      description:
-        userLanguage === "es"
-          ? "Intenta de nuevo en un momento."
-          : "Please try again in a moment.",
+      title: supportCopy(
+        walletLang,
+        "Wallet not ready",
+        "Billetera no lista",
+        "Portafoglio non pronto",
+      ),
+      description: supportCopy(
+        walletLang,
+        "Please try again in a moment.",
+        "Intenta de nuevo en un momento.",
+        "Riprova tra poco.",
+      ),
       status: "error",
       duration: 2500,
       isClosable: true,
     });
     return false;
-  }, [init, toast, userLanguage]);
+  }, [init, toast, walletLang]);
 
   const handleCreateWallet = async () => {
     playSound(submitActionSound);
@@ -1033,14 +1108,18 @@ export function BitcoinWalletSection({
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
-        title:
-          userLanguage === "es"
-            ? "Se requiere clave secreta"
-            : "Secret key required",
-        description:
-          userLanguage === "es"
-            ? "Ingresa tu nsec para crear la billetera."
-            : "Enter your nsec to create the wallet.",
+        title: supportCopy(
+          walletLang,
+          "Secret key required",
+          "Se requiere clave secreta",
+          "Chiave segreta richiesta",
+        ),
+        description: supportCopy(
+          walletLang,
+          "Enter your nsec to create the wallet.",
+          "Ingresa tu nsec para crear la billetera.",
+          "Inserisci il tuo nsec per creare il portafoglio.",
+        ),
         status: "warning",
         duration: 2500,
       });
@@ -1050,11 +1129,13 @@ export function BitcoinWalletSection({
     // Validate nsec format if provided
     if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
       toast({
-        title: userLanguage === "es" ? "Clave inválida" : "Invalid key",
-        description:
-          userLanguage === "es"
-            ? "La clave debe empezar con 'nsec'."
-            : "Key must start with 'nsec'.",
+        title: supportCopy(walletLang, "Invalid key", "Clave inválida", "Chiave non valida"),
+        description: supportCopy(
+          walletLang,
+          "Key must start with 'nsec'.",
+          "La clave debe empezar con 'nsec'.",
+          "La chiave deve iniziare con 'nsec'.",
+        ),
         status: "error",
         duration: 2500,
       });
@@ -1075,13 +1156,21 @@ export function BitcoinWalletSection({
       if (!wallet) {
         const latestError = useNostrWalletStore.getState().errorMessage;
         toast({
-          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create wallet",
+          title: supportCopy(
+            walletLang,
+            "Couldn't create wallet",
+            "No se pudo crear",
+            "Impossibile creare il portafoglio",
+          ),
           description:
             latestError ||
             errorMessage ||
-            (userLanguage === "es"
-              ? "Intenta de nuevo en un momento."
-              : "Please try again in a moment."),
+            supportCopy(
+              walletLang,
+              "Please try again in a moment.",
+              "Intenta de nuevo en un momento.",
+              "Riprova tra poco.",
+            ),
           status: "error",
           duration: 2800,
           isClosable: true,
@@ -1095,8 +1184,13 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
-        title: "Error",
-        description: "Failed to create wallet",
+        title: supportCopy(walletLang, "Error", "Error", "Errore"),
+        description: supportCopy(
+          walletLang,
+          "Failed to create wallet",
+          "No se pudo crear la billetera",
+          "Creazione del portafoglio non riuscita",
+        ),
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -1107,13 +1201,19 @@ export function BitcoinWalletSection({
   const ensureIdentitySelected = () => {
     if (!effectiveSelectedIdentity) {
       const title =
-        userLanguage === "es"
-          ? "Selecciona una identidad"
-          : "Select an identity";
+        supportCopy(
+          walletLang,
+          "Select an identity",
+          "Selecciona una identidad",
+          "Seleziona un'identità",
+        );
       const description =
-        userLanguage === "es"
-          ? "Elige un destinatario para tus depósitos."
-          : "Choose who receives your deposits before continuing.";
+        supportCopy(
+          walletLang,
+          "Choose who receives your deposits before continuing.",
+          "Elige un destinatario para tus depósitos.",
+          "Scegli chi riceve i tuoi depositi prima di continuare.",
+        );
       toast({
         title,
         description,
@@ -1133,13 +1233,21 @@ export function BitcoinWalletSection({
       if (!paymentRequest) {
         const latestError = useNostrWalletStore.getState().errorMessage;
         toast({
-          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create invoice",
+          title: supportCopy(
+            walletLang,
+            "Couldn't create invoice",
+            "No se pudo crear",
+            "Impossibile creare la fattura",
+          ),
           description:
             latestError ||
             errorMessage ||
-            (userLanguage === "es"
-              ? "Intenta de nuevo en un momento."
-              : "Please try again in a moment."),
+            supportCopy(
+              walletLang,
+              "Please try again in a moment.",
+              "Intenta de nuevo en un momento.",
+              "Riprova tra poco.",
+            ),
           status: "error",
           duration: 2800,
           isClosable: true,
@@ -1148,8 +1256,13 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: "Error",
-        description: "Failed to initiate deposit",
+        title: supportCopy(walletLang, "Error", "Error", "Errore"),
+        description: supportCopy(
+          walletLang,
+          "Failed to initiate deposit",
+          "No se pudo iniciar el depósito",
+          "Avvio del deposito non riuscito",
+        ),
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -1165,13 +1278,21 @@ export function BitcoinWalletSection({
       if (!paymentRequest) {
         const latestError = useNostrWalletStore.getState().errorMessage;
         toast({
-          title: userLanguage === "es" ? "No se pudo crear" : "Couldn't create invoice",
+          title: supportCopy(
+            walletLang,
+            "Couldn't create invoice",
+            "No se pudo crear",
+            "Impossibile creare la fattura",
+          ),
           description:
             latestError ||
             errorMessage ||
-            (userLanguage === "es"
-              ? "Intenta de nuevo en un momento."
-              : "Please try again in a moment."),
+            supportCopy(
+              walletLang,
+              "Please try again in a moment.",
+              "Intenta de nuevo en un momento.",
+              "Riprova tra poco.",
+            ),
           status: "error",
           duration: 2800,
           isClosable: true,
@@ -1180,8 +1301,13 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: "Error",
-        description: "Failed to initiate deposit",
+        title: supportCopy(walletLang, "Error", "Error", "Errore"),
+        description: supportCopy(
+          walletLang,
+          "Failed to initiate deposit",
+          "No se pudo iniciar el depósito",
+          "Avvio del deposito non riuscito",
+        ),
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -1194,11 +1320,18 @@ export function BitcoinWalletSection({
     try {
       await navigator.clipboard.writeText(invoice || "");
       toast({
-        title: userLanguage === "es" ? "Dirección copiada" : "Address copied",
-        description:
-          userLanguage === "es"
-            ? "La factura Lightning se copió al portapapeles."
-            : "Lightning invoice copied to clipboard.",
+        title: supportCopy(
+          walletLang,
+          "Address copied",
+          "Dirección copiada",
+          "Indirizzo copiato",
+        ),
+        description: supportCopy(
+          walletLang,
+          "Lightning invoice copied to clipboard.",
+          "La factura Lightning se copió al portapapeles.",
+          "Fattura Lightning copiata negli appunti.",
+        ),
         status: "warning",
         duration: 1500,
         isClosable: true,
@@ -1234,9 +1367,12 @@ export function BitcoinWalletSection({
         textAlign={shouldCenterContent ? "center" : "left"}
         color={walletTheme.text}
       >
-        {userLanguage === "es"
-          ? "Elige a quién apoyar con tus depósitos:"
-          : "Choose a recipient"}
+        {supportCopy(
+          walletLang,
+          "Choose a recipient",
+          "Elige a quién apoyar con tus depósitos:",
+          "Scegli un destinatario",
+        )}
       </Text>
       <RadioGroup
         value={selectedIdentity}
@@ -1274,7 +1410,7 @@ export function BitcoinWalletSection({
                     color={walletTheme.link}
                     lineHeight="1"
                   >
-                    {userLanguage === "es" ? "Ver sitio" : "View site"}
+                    {supportCopy(walletLang, "View site", "Ver sitio", "Vedi sito")}
                   </Link>
                 ) : null}
               </HStack>
@@ -1289,9 +1425,12 @@ export function BitcoinWalletSection({
           color={walletTheme.warning}
           textAlign={shouldCenterContent ? "center" : "left"}
         >
-          {userLanguage === "es"
-            ? "Selecciona una opción para habilitar los depósitos."
-            : "Select an option to enable deposits."}
+          {supportCopy(
+            walletLang,
+            "Select an option to enable deposits.",
+            "Selecciona una opción para habilitar los depósitos.",
+            "Seleziona un'opzione per abilitare i depositi.",
+          )}
         </Text>
       )}
     </Box>
@@ -1314,7 +1453,12 @@ export function BitcoinWalletSection({
     >
       {showSectionTitle ? (
         <Text mb={2} fontSize="sm" fontWeight="bold">
-          {userLanguage === "es" ? "Billetera Bitcoin" : "Bitcoin wallet"}
+          {supportCopy(
+            walletLang,
+            "Bitcoin wallet",
+            "Billetera Bitcoin",
+            "Portafoglio Bitcoin",
+          )}
         </Text>
       ) : null}
 
@@ -1347,7 +1491,12 @@ export function BitcoinWalletSection({
         >
           <VoiceOrb state="listening" size={24} centered={false} />
           <Text fontSize="sm" lineHeight="1">
-            {userLanguage === "es" ? "Cargando billetera…" : "Loading wallet…"}
+            {supportCopy(
+              walletLang,
+              "Loading wallet…",
+              "Cargando billetera…",
+              "Caricamento portafoglio…",
+            )}
           </Text>
         </HStack>
       )}

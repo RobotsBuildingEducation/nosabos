@@ -1796,10 +1796,10 @@ export default function RPGGame({
   );
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const objectSearchCopy =
-    OBJECT_SEARCH_TEST_COPY[targetLang === "es" ? "es" : "en"] ||
+    OBJECT_SEARCH_TEST_COPY[targetLang] ||
     OBJECT_SEARCH_TEST_COPY.en;
   const questLogCopy =
-    QUEST_LOG_COPY[supportLang === "es" ? "es" : "en"] || QUEST_LOG_COPY.en;
+    QUEST_LOG_COPY[supportLang] || QUEST_LOG_COPY.en;
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 

@@ -3,7 +3,9 @@
  * Total: 250 flashcards
  */
 
-export const FLASHCARDS_A2 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+
+export const FLASHCARDS_A2 = withItalianFlashcardText([
   {
     id: "a2-conv-1",
     concept: { en: "I don't understand", es: "No entiendo" },
@@ -1760,4 +1762,4 @@ export const FLASHCARDS_A2 = [
     category: "clothing",
     type: "word",
   }
-];
+]);

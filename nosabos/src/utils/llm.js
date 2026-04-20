@@ -190,6 +190,50 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportLang}.`,
     },
+    it: {
+      fillPrompt: `Sei un tutor di lingue disponibile che insegna ${targetLang}. Uno studente ha risposto in modo errato a una domanda di completamento.
+
+Domanda: ${question}
+Risposta dello studente: ${userAnswer}
+Risposta corretta (o suggerimento): ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportLang}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi perché la risposta non funziona o cosa è stato frainteso
+2. Chiarisca la risposta corretta e il suo significato
+3. Dia un consiglio utile per ricordarla
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportLang}.`,
+      mcPrompt: `Sei un tutor di lingue disponibile che insegna ${targetLang}. Uno studente ha risposto in modo errato a una domanda a scelta multipla.
+
+Domanda: ${question}
+Risposta dello studente: ${userAnswer}
+Risposta corretta: ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportLang}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi perché la scelta era errata
+2. Chiarisca perché la risposta corretta è quella giusta
+3. Dia un consiglio utile per ricordare la differenza
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportLang}.`,
+      maPrompt: `Sei un tutor di lingue disponibile che insegna ${targetLang}. Uno studente ha risposto in modo errato a una domanda a risposte multiple.
+
+Domanda: ${question}
+Risposte dello studente: ${userAnswer}
+Risposte corrette: ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportLang}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi quali risposte sono state omesse o selezionate per errore
+2. Chiarisca perché le risposte corrette sono giuste
+3. Dia un consiglio utile per riconoscere le risposte corrette
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportLang}.`,
+    },
   };
 
   const prompts = langMap[userLanguage] || langMap.en;

@@ -74,6 +74,7 @@ These files are the primary surface area. Any new support language MUST update e
 Language touchpoints are spread throughout. Key anchors:
 - `TARGET_LANGUAGE_LABELS` (~lines 173–217).
 - Support/practice language dropdowns (~lines 639–751, 1347–1359, 1463–1470).
+- **Mode menu / app navigation chrome** — the bottom/primary mode menu, menu label, and tab labels (`Alphabet`, `Path`, `Cards`, `Conversation`, `Mode`, `Help`, `Notes`, etc.) must be fully localized. These labels often live outside `translations.<code>` and are easy to miss because they are rendered in app-shell helpers rather than feature pages.
 - `Intl.Collator(appLanguage === "es" ? "es" : "en")` (line ~648) — generalize to the new code.
 - Firestore validation for `supportLang` (~line 3357) currently `["en", "es"].includes(...)` — must include the new code.
 - Firestore validation for `targetLang` (~lines 2413–2427 and ~2539–2555) — include the new code.
@@ -89,18 +90,28 @@ Language touchpoints are spread throughout. Key anchors:
 - Strict language instruction block (~lines 1105–1136) — add native-language "respond ONLY in X" string.
 - `languageName` ternary chain (~lines 1215–1232).
 - Inline Spanish-vs-English status text (lines 869–872, 2741, 2753, 2784–2797, 2829, 2921, 3013, 3078, 3084–3087, 3132, 3166).
+- Support-language normalization must include the new code. If the resolver only accepts `en`/`es`, the whole conversation UI will silently fall back to English even when `supportLang` is correct.
+- Visible conversation chrome includes settings button text, chat-log labels, generating-topic copy, topic shuffle aria labels, suggestion aria labels, level/XP labels, start/end buttons, replay labels, and transcript modal titles.
+
+**Italian implementation note:** `Conversations.jsx` now accepts `it`/`it-*`/Italian aliases in its local resolver and reads the visible chrome from `translations.it` keys such as `ra_conversation_settings`, `ra_chat_log`, `ra_generating_topic`, `ra_btn_start`, `ra_btn_end`, `ra_btn_replay`, and `ra_label_level`.
 
 ### 3.8 `src/components/RealTimeTest.jsx`
 - `buildLanguageInstructions` strict block (~lines 1905–1930).
 - `goalLangName` maps — BOTH occurrences (~lines 1265 and ~1473).
 - `probeText` voice-updated message (~lines 2095–2107).
 - `props` validation list (~line 964).
+- Visible lesson-realtime chrome includes goal buttons, skip/next, chat-log modal title, replay labels, auto-stop toast, translation-failed toast, free-practice toast, and loading/generating text.
+
+**Italian implementation note:** `RealTimeTest.jsx` now uses the shared `translations.it` realtime keys for these visible labels instead of local English/Spanish ternaries.
 
 ### 3.9 `src/components/HelpChatFab.jsx`
 - `nameFor` helper in TWO places (~lines 278–285 and ~580–588).
+- The **entire help chat UI** must be localized, not only language names and instructions. Audit saved-chat list copy, empty states, toast titles/descriptions, connection errors, delete/new/save actions, menu buttons, tooltip labels, morph/morpheme mode labels, message placeholders, attachment/action labels, timestamps, and any inline `appLanguage === "es" ? … : …` branches.
+- Realtime/system instructions should use the new support language, while visible help-chat chrome should read from `translations.<code>` or a local `uiText(en, es, <code>)` helper.
 
 ### 3.10 `src/components/ConversationSettingsDrawer.jsx`
 - Support language picker — ensure it reads from `getSupportLanguageOptions()` and not a hard-coded `[en, es]` list.
+- Conversation settings labels, placeholders, button text, section headings, helper copy, and reset/save actions must be localized.
 
 ### 3.11 `src/components/History.jsx`
 - `useSharedProgress` validation list (~line 309), component-level validation (~line 712).
@@ -127,8 +138,14 @@ Language touchpoints are spread throughout. Key anchors:
 - `toBCP47` (~lines 118–137), `LLM_LANG_NAME` (~lines 80–110), `toLangKey` (~lines 116–133).
 - English/Spanish prompt block — add the new language branch.
 
-### 3.16 `src/components/IdentityDrawer.jsx`
-- Inline Spanish-vs-English copy when rendering identity summary / voice persona description.
+### 3.16 Account / Settings Surfaces
+Account settings are split across multiple components and must be audited together:
+- `src/components/IdentityDrawer.jsx` — display-name form, account switcher, sign-out confirmation, install instructions, CEFR analysis controls, wallet/identity copy, toast titles/descriptions, date formatting, voice persona description, and any inline Spanish-vs-English copy.
+- `src/components/ConversationAccountDrawer.jsx` — drawer title and embedded conversation settings surface.
+- `src/components/BitcoinSupportModal.jsx` — account/wallet contribution copy, buttons, close labels, tutorial completion copy.
+- `src/components/SubscriptionGate.jsx` and adjacent account/payment UI — gate copy, loading text, submit buttons, validation/errors.
+
+Do not treat account settings as localized just because `translations.<code>` exists. Manually open the account/settings drawer in the new support language and verify every visible label.
 
 ### 3.17 `src/components/DailyGoalModal.jsx`
 - `Intl.DateTimeFormat` locale (~lines 142–143 and ~558).
@@ -138,6 +155,7 @@ Language touchpoints are spread throughout. Key anchors:
 
 ### 3.19 `src/components/AlphabetBootcamp.jsx`
 - `LANGUAGE_ALPHABETS` map (~lines 1000–1012) and `LANGUAGE_SCRIPTS` map (~lines 118–128). For Italian specifically, no new alphabet file is required (Latin), but the entry must be present.
+- Alphabet card contents are separate from the bootcamp chrome. The rendered card uses `soundIt`, `tipIt`, and `practiceWordMeaning.it` when `appLanguage === "it"`. Do not stop after localizing headings/buttons.
 
 ### 3.20 `src/components/LessonFlashcard.jsx` / `FlashcardPractice.jsx` / `FlashcardSkillTree.jsx`
 - FlashcardSkillTree: `Intl.DateTimeFormat` (lines 139, 197) — replace with shared locale helper keyed on `appLanguage`.
@@ -148,6 +166,9 @@ Language touchpoints are spread throughout. Key anchors:
 
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
+- Loader room names and interactable messages are data payloads, not regular UI strings. Add the new language to `OUTDOOR_NAMES`, every `INDOOR_ROOM_TYPES[].names`, and each message pool (`SIGN_MESSAGES`, `CHEST_MESSAGES`, `LAMP_MESSAGES`, `PLANT_MESSAGES`, `TABLE_MESSAGES`).
+
+**Italian implementation note:** the loading minigame now includes Italian room names and interaction messages so conversation/realtime loaders do not fall back to English.
 
 ### 3.23 `src/components/quiz/QuestionRenderer.jsx`
 - Inline Spanish-vs-English copy for question scaffolding.
@@ -224,6 +245,14 @@ Two shapes coexist inside the CEFR files — both must be extended:
 
 If a rendering helper reads these fields, make sure it falls back to English when the new code is missing. Do not silently fall back to Spanish — it regresses the English baseline.
 
+**Italian implementation note:** `src/data/skillTree/italianLocalizer.js` is the current Italian coverage layer for both skill-tree data paths:
+- The frontend-rendered legacy path: `src/data/skillTreeData.js`, which powers `SkillTree.jsx` through `getLearningPath(...)` / `getMultiLevelLearningPath(...)`.
+- The seven split CEFR files in `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js`.
+
+Each path applies `withItalianSkillTreeText(...)`, which recursively adds `it` to every `{ en, es }` object, including unit titles, unit descriptions, lesson titles, lesson descriptions, generated supplemental lessons, and `content.*.tutorialDescription`. `SkillTree.jsx` reads these through `getUIDisplayText(...)`, so both the skill-tree cards and `LessonDetailModal` render Italian when `appLanguage` is `it`. The CEFR level header is separate UI chrome in `CEFRLevelNavigator.jsx`; add the new language to its `CEFR_LEVEL_INFO` names/descriptions too.
+
+When adding the next support language, either author the new key directly in each CEFR file or add an equivalent centralized data-localization pass. In both cases, run a recursive audit that confirms every `{ en, es }` object in `src/data/skillTreeData.js` and `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js` resolves the new key before marking the skill tree done.
+
 ### 5.2 Flashcard decks (`src/data/flashcards/` and `flashcardData.js`)
 
 Each level file is a flat list of card objects of the shape `concept: { en, es }`.
@@ -247,6 +276,8 @@ Each level file is a flat list of card objects of the shape `concept: { en, es }
 - `getConceptText(card, supportLang)` (lines 23–42) — the bilingual branch hard-codes `["en", "es"]` at line 35. Extend this list (or accept any valid support-language code) so cards rendered in "bilingual" mode include the new language.
 - `CEFR_COLORS`, `CEFR_LEVELS`, `CEFR_LEVEL_COUNTS` — no change; they're language-agnostic.
 
+**Italian implementation note:** `src/data/flashcards/italianLocalizer.js` is the current Italian coverage layer for flashcard concepts. `src/data/flashcardData.js` and every split CEFR deck in `src/data/flashcards/{pre-a1,a1,a2,b1,b2,c1,c2}.js` applies `withItalianFlashcardText(...)`, which adds `concept.it` for the card prompt shown in flashcard mode and flashcard practice modals. Audit both the legacy dataset and split decks; the frontend can render from either path depending on initial load, lazy-load success, and fallback state.
+
 ### 5.3 Alphabet bootcamps (`src/data/<lang>Alphabet.js`)
 
 Only needed when the new language has a non-standard script or diacritics. Italian is Latin and does not need a bootcamp file, but the following exist as reference implementations:
@@ -254,6 +285,8 @@ Only needed when the new language has a non-standard script or diacritics. Itali
 - `dutchAlphabet.js`, `englishAlphabet.js`, `frenchAlphabet.js`, `germanAlphabet.js`, `greekAlphabet.js`, `irishAlphabet.js`, `italianAlphabet.js`, `japaneseAlphabet.js`, `nahuatlAlphabet.js`, `polishAlphabet.js`, `portugueseAlphabet.js`, `russianAlphabet.js`, `spanishAlphabet.js`, `yucatecMayaAlphabet.js`.
 
 Each file must be registered in `AlphabetBootcamp.jsx` (`LANGUAGE_ALPHABETS` map, ~lines 1000–1012) and `LANGUAGE_SCRIPTS` (~lines 118–128).
+
+**Italian implementation note:** `AlphabetBootcamp.jsx` has its own UI copy, language-name maps, script-name maps, and generated-practice-word prompt. It must be localized separately from `translations.<code>`. For Italian, the component now uses an Italian-aware `uiText(...)` helper, `LANGUAGE_NAMES_IT`, `LANGUAGE_SCRIPTS_IT`, and asks generated practice words for `meaning_it`. `src/data/alphabetItalianLocalizer.js` wraps every registered alphabet dataset with `soundIt`, `tipIt`, and `practiceWordMeaning.it`, so Dutch/German/Greek/etc. cards render their explanatory content in Italian instead of falling back to English. `src/data/italianAlphabet.js` still carries authored Italian card copy for the Italian bootcamp itself. When adding future support languages, audit `AlphabetBootcamp.jsx` for binary `appLanguage === "es"` branches and audit the target alphabet file/localizer for localized sound/tip/meaning fields.
 
 ### 5.4 Conversation topics (`src/data/conversationTopics.js`)
 
@@ -338,15 +371,19 @@ For each new support language, work top-to-bottom:
    - [ ] Extend `GrammarBook.jsx`, `JobScript.jsx`, and any other component-local prompt pair.
 5. **Realtime & conversation**
    - [ ] Update `Conversations.jsx`, `RealTimeTest.jsx`, `HelpChatFab.jsx`, `ConversationSettingsDrawer.jsx`.
-6. **Per-module components**
+   - [ ] Verify HelpChatFab visible UI, not just its prompt/instruction language.
+6. **App shell & settings**
+   - [ ] Localize the mode menu and primary app navigation chrome in `App.jsx`.
+   - [ ] Localize account/settings surfaces (`IdentityDrawer.jsx`, `ConversationAccountDrawer.jsx`, `BitcoinSupportModal.jsx`, subscription/payment gates).
+7. **Per-module components**
    - [ ] Update every file in `§3.11`–`§3.24` above.
-7. **Utilities & data**
+8. **Utilities & data**
    - [ ] Update every file in `§4` and `§5` above.
-8. **Audit**
+9. **Audit**
    - [ ] Run every pattern in `§8`; open a PR only when all hits are legitimate.
-9. **Verification**
+10. **Verification**
    - [ ] `npm run build` passes.
-   - [ ] Manual smoke: onboarding → practice selection → a lesson → Conversations → RealTime session.
+   - [ ] Manual smoke: onboarding → practice selection → mode menu → account/settings drawer → HelpChatFab → skill-tree card → lesson modal → a lesson → Conversations → RealTime session.
    - [ ] Confirm UI labels render in the new language and LLM respects `supportLang`.
 
 ---
@@ -364,18 +401,23 @@ Current state (to keep this doc honest):
 | `LANG_NAME` / `LLM_LANG_NAME`                  | Done   |
 | `STOPWORDS.it`                                 | Done   |
 | `language_it` / `onboarding_practice_it` keys  | Done (inside `en` and `es` blocks) |
-| `translations.it` top-level UI object          | **Missing** |
-| `supportLang` validation accepts `"it"`        | **Missing** (still `["en", "es"]` at `App.jsx` ~3357) |
-| `useLanguage.js` validation accepts `"it"`     | **Missing** (still `=== "es" \|\| === "en"`) |
-| Italian LLM prompt templates (`llm.js`, `GrammarBook.jsx`, `JobScript.jsx`) | **Missing** |
-| `Intl.DateTimeFormat` / `Intl.Collator` handles `it-IT` | **Missing** |
-| Flashcard `concept` entries include `it`       | **Missing** across all 9 flashcard files (~1,150 cards + `flashcardData.js` legacy entries) |
-| Skill-tree `{ en, es }` pairs include `it`     | **Missing** across all 7 CEFR files (~1,100 pairs in `pre-a1`/`a1`/`a2`/`b1`/`b2`/`c1`/`c2`) |
-| `conversationTopics.js` includes `it`          | **Missing** (~90+ topic entries) |
-| `flashcards/common.js` `getConceptText` bilingual list includes `it` | **Missing** (line 35 hard-codes `["en", "es"]`) |
-| `languageDetection.js` timezone heuristics     | **Missing** (Europe/Rome etc.) |
+| `translations.it` top-level UI object          | Done |
+| `supportLang` validation accepts `"it"`        | Done |
+| `useLanguage.js` validation accepts `"it"`     | Done |
+| Italian LLM prompt templates (`llm.js`, `GrammarBook.jsx`, `JobScript.jsx`) | Done |
+| `Intl.DateTimeFormat` / `Intl.Collator` handles `it-IT` | Done |
+| Mode menu / primary app navigation localized | Done |
+| Account settings menu fully localized        | Done |
+| HelpChatFab visible UI localized             | Done |
+| Conversation/realtime UI and loaders localized | Done — `Conversations.jsx`, `RealTimeTest.jsx`, realtime `translations.it` keys, and `LoadingMiniGame.jsx` loader copy |
+| Flashcard `concept` entries include `it`       | Done — `italianLocalizer.js` covers `flashcardData.js` and all seven split CEFR decks |
+| Skill-tree `{ en, es }` pairs include `it`     | Done — `italianLocalizer.js` covers `skillTreeData.js`, generated lesson data, all seven CEFR split files, and lesson modal data |
+| Alphabet bootcamp UI and all card content     | Done — `AlphabetBootcamp.jsx` UI copy plus `alphabetItalianLocalizer.js` coverage for all registered alphabet datasets |
+| `conversationTopics.js` includes `it`          | Done |
+| `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
+| `languageDetection.js` timezone heuristics     | Done |
 
-Treat the "Missing" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
+Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
 ---
 
@@ -392,10 +434,10 @@ Treat the "Missing" rows as the working TODO for Italian — they become the acc
 | Quiz & lesson wrappers                 | 3     |
 | Flashcards / skill tree                | 4     |
 | Utility helpers (tts, llm, notes, speech, flashcardReview) | 5 |
-| Skill tree data files                  | 9 (`skillTreeData.js` + `skillTree/{pre-a1,a1,a2,b1,b2,c1,c2,index}.js`) |
-| Flashcard data                         | 9 (`flashcardData.js` + `flashcards/{pre-a1,a1,a2,b1,b2,c1,c2,common,index}.js`) |
+| Skill tree data files                  | 10 (`skillTreeData.js` + `skillTree/{pre-a1,a1,a2,b1,b2,c1,c2,index,italianLocalizer}.js`) |
+| Flashcard data                         | 10 (`flashcardData.js` + `flashcards/{pre-a1,a1,a2,b1,b2,c1,c2,common,index,italianLocalizer}.js`) |
 | Conversation topics                    | 1 (`conversationTopics.js`) |
-| Alphabet bootcamp data (per-script)    | 0–1 (`<lang>Alphabet.js`, only if new script) |
+| Alphabet bootcamp data/localizers       | 1–2 (`alphabetItalianLocalizer.js`; `<lang>Alphabet.js` only if new script; Italian uses `italianAlphabet.js`) |
 | Flag icons                             | 1     |
 | Virtual keyboard (only for scripts)    | 0–1   |
 | **Total**                              | **~40 files per new support language** |

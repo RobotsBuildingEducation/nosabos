@@ -221,6 +221,7 @@ import {
   SKILL_STATUS,
 } from "../data/skillTreeData";
 import { translations } from "../utils/translation";
+import { normalizeSupportLanguage } from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import {
@@ -309,9 +310,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(localStorage.getItem("appLanguage"));
   }
-  return "en";
+  return normalizeSupportLanguage();
 };
 
 // Helper to get UI display text using appLanguage (for titles, descriptions, etc.)
@@ -326,7 +327,7 @@ const getUIDisplayText = (textObj) => {
 // Helper to get translations for UI elements - uses appLanguage for UI text
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>

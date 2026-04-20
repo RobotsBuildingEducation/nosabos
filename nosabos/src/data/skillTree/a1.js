@@ -2,7 +2,9 @@
  * A1 Level Skill Tree Data
  */
 
-export const SKILL_TREE_A1 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+
+export const SKILL_TREE_A1 = withItalianSkillTreeText([
   // Tutorial Unit - always at the very beginning
   {
     id: "unit-tutorial-a1",
@@ -2687,4 +2689,4 @@ export const SKILL_TREE_A1 = [
       },
     ],
   },
-];
+]);

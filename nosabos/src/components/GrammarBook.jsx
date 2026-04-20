@@ -74,6 +74,13 @@ import LessonFlashcard, {
 } from "./LessonFlashcard";
 import XpProgressHeader from "./XpProgressHeader";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+import {
   getQuestionAssistantPanelProps,
   getQuestionChoiceCardProps,
   getQuestionChoiceIndicatorProps,
@@ -167,7 +174,7 @@ function buildFallbackDistractors(words = [], answerLang = "en") {
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -234,33 +241,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
@@ -287,12 +280,8 @@ function difficultyHint(cefrLevel) {
 --------------------------- */
 const resolveSupportLang = (supportLang, appUILang) =>
   supportLang === "bilingual"
-    ? appUILang === "es"
-      ? "es"
-      : "en"
-    : supportLang === "es"
-      ? "es"
-      : "en";
+    ? normalizeSupportLanguage(appUILang, DEFAULT_SUPPORT_LANGUAGE)
+    : normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
 
 /* FILL — stream phases */
 function buildFillStreamPrompt({
@@ -1027,27 +1016,14 @@ export default function GrammarBook({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = [
-    "en",
-    "es",
-    "pt",
-    "nah",
-    "fr",
-    "it",
-    "nl",
-    "ja",
-    "ru",
-    "de",
-    "el",
-    "pl",
-    "ga",
-    "yua",
-  ].includes(progress.targetLang)
-    ? progress.targetLang
-    : "en";
-  const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
-    ? progress.supportLang
-    : "en";
+  const targetLang = normalizePracticeLanguage(
+    progress.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const supportLang =
+    progress.supportLang === "bilingual"
+      ? "bilingual"
+      : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations =
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
@@ -1291,7 +1267,10 @@ export default function GrammarBook({
 
       // Get the prompt template based on question type and user language
       const getLangPrompt = (type) => {
-        const langKey = userLanguage === "es" ? "es" : "en";
+        const langKey = normalizeSupportLanguage(
+          userLanguage,
+          DEFAULT_SUPPORT_LANGUAGE,
+        );
         const prompts = {
           en: {
             fill: `You are a helpful language tutor teaching ${targetName}. A student answered a fill-in-the-blank question incorrectly.
@@ -1435,8 +1414,79 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
           },
+          it: {
+            fill: `Sei un tutor di lingue disponibile che insegna ${targetName}. Uno studente ha risposto in modo errato a una domanda di completamento.
+
+Domanda: ${question}
+Risposta dello studente: ${userAnswer}
+Risposta corretta (o suggerimento): ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportName}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi perché la risposta non funziona o cosa è stato frainteso
+2. Chiarisca la risposta corretta e il suo significato
+3. Dia un consiglio utile per ricordarla
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
+            mc: `Sei un tutor di lingue disponibile che insegna ${targetName}. Uno studente ha risposto in modo errato a una domanda a scelta multipla.
+
+Domanda: ${question}
+Risposta dello studente: ${userAnswer}
+Risposta corretta: ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportName}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi perché la scelta era errata
+2. Chiarisca perché la risposta corretta è quella giusta
+3. Dia un consiglio utile per ricordare la differenza
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
+            ma: `Sei un tutor di lingue disponibile che insegna ${targetName}. Uno studente ha risposto in modo errato a una domanda a risposte multiple.
+
+Domanda: ${question}
+Risposte dello studente: ${userAnswer}
+Risposte corrette: ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportName}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi quali risposte sono state omesse o selezionate per errore
+2. Chiarisca perché le risposte corrette sono giuste
+3. Dia un consiglio utile per riconoscere le risposte corrette
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
+            speak: `Sei un tutor di lingue disponibile che insegna ${targetName}. Uno studente ha provato a dire qualcosa in ${targetName}, ma non è stato capito correttamente.
+
+Frase obiettivo: ${correctAnswer}
+Quello che ha detto: ${userAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportName}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi quali problemi di pronuncia o formulazione possono esserci stati
+2. Dia consigli su come pronunciare la frase corretta
+3. Incoraggi a riprovare
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
+            match: `Sei un tutor di lingue disponibile che insegna ${targetName}. Uno studente ha provato ad abbinare elementi ma ha fatto associazioni errate.
+
+Domanda: ${question}
+Abbinamenti dello studente: ${userAnswer}
+Suggerimento: ${correctAnswer}
+
+IMPORTANTE: Fornisci la spiegazione in ${supportName}.
+
+Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
+1. Spieghi quali abbinamenti erano errati
+2. Chiarisca le relazioni corrette
+3. Dia un consiglio per ricordare gli abbinamenti corretti
+
+Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
+          },
         };
-        return prompts[langKey][type] || prompts[langKey].fill;
+        return prompts[langKey]?.[type] || prompts.en[type] || prompts.en.fill;
       };
 
       const prompt = getLangPrompt(questionType);

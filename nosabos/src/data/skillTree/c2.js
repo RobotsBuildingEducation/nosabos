@@ -2,7 +2,9 @@
  * C2 Level Skill Tree Data
  */
 
-export const SKILL_TREE_C2 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+
+export const SKILL_TREE_C2 = withItalianSkillTreeText([
   {
     id: "unit-c2-1",
     title: {
@@ -1090,7 +1092,7 @@ export const SKILL_TREE_C2 = [
         },
       },],
   }
-];
+]);
 
 const SUB_LEVEL_SEGMENTS = {
   A1: ["A1.1", "A1.2", "A1.3"],
@@ -1578,6 +1580,10 @@ function applyCEFRScaffolding(path) {
 
   return stagedPath;
 }
+
+const baseLearningPath = {
+  C2: SKILL_TREE_C2,
+};
 
 const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
 

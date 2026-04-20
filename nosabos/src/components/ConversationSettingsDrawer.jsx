@@ -27,6 +27,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -40,64 +44,71 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 const CEFR_LEVELS = [
   {
     level: "Pre-A1",
-    name: { en: "Foundations", es: "Fundamentos" },
+    name: { en: "Foundations", es: "Fundamentos", it: "Fondamenti" },
     description: {
       en: "First words and phrases",
       es: "Primeras palabras y frases",
+      it: "Prime parole e frasi",
     },
     color: "#8B5CF6",
   },
   {
     level: "A1",
-    name: { en: "Beginner", es: "Principiante" },
+    name: { en: "Beginner", es: "Principiante", it: "Principiante" },
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
+      it: "Lingua essenziale di base",
     },
     color: "#3B82F6",
   },
   {
     level: "A2",
-    name: { en: "Elementary", es: "Elemental" },
+    name: { en: "Elementary", es: "Elemental", it: "Elementare" },
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
+      it: "Comunicazione quotidiana semplice",
     },
     color: "#8B5CF6",
   },
   {
     level: "B1",
-    name: { en: "Intermediate", es: "Intermedio" },
+    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio" },
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
+      it: "Gestire situazioni quotidiane",
     },
     color: "#A855F7",
   },
   {
     level: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    name: { en: "Upper Intermediate", es: "Intermedio Alto", it: "Intermedio alto" },
     description: {
       en: "Complex discussions",
       es: "Discusiones complejas",
+      it: "Discussioni complesse",
     },
     color: "#F97316",
   },
   {
     level: "C1",
-    name: { en: "Advanced", es: "Avanzado" },
+    name: { en: "Advanced", es: "Avanzado", it: "Avanzato" },
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
+      it: "Uso sofisticato della lingua",
     },
     color: "#EF4444",
   },
   {
     level: "C2",
-    name: { en: "Mastery", es: "Maestría" },
+    name: { en: "Mastery", es: "Maestría", it: "Padronanza" },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
+      it: "Competenza quasi nativa",
     },
     color: "#EC4899",
   },
@@ -134,6 +145,21 @@ function getConversationSettingsUi(lang) {
       save: "Guardar",
       close: "Cerrar",
     },
+    it: {
+      title: "Impostazioni conversazione",
+      proficiencyLabel: "Livello di competenza",
+      proficiencyHint:
+        "Imposta il livello di difficoltà per i temi di conversazione",
+      pronunciationLabel: "Pratica pronuncia",
+      pronunciationHint: "L'IA ti aiuterà a migliorare la pronuncia",
+      subjectLabel: "Temi personalizzati",
+      subjectHint:
+        "Definisci i temi che vuoi praticare (es. medicina, lavoro, viaggi)",
+      subjectPlaceholder:
+        "es. Sono medico e voglio praticare conversazioni con i pazienti...",
+      save: "Salva",
+      close: "Chiudi",
+    },
   }[lang];
 }
 
@@ -145,7 +171,7 @@ export function ConversationSettingsPanel({
   onSave,
   showActions = true,
 }) {
-  const lang = supportLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -369,7 +395,7 @@ export default function ConversationSettingsDrawer({
   onSettingsChange,
   supportLang = "en",
 }) {
-  const lang = supportLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const t = useMemo(() => getConversationSettingsUi(lang), [lang]);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";

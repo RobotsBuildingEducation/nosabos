@@ -3,7 +3,9 @@
  * Total: 50 flashcards
  */
 
-export const FLASHCARDS_C2 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+
+export const FLASHCARDS_C2 = withItalianFlashcardText([
   {
     id: "c2-vocab-1",
     concept: { en: "Ubiquitous", es: "Ubicuo" },
@@ -426,4 +428,4 @@ export const FLASHCARDS_C2 = [
     category: "literary",
     type: "phrase",
   }
-];
+]);

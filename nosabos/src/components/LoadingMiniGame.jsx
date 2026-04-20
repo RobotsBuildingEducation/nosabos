@@ -3,6 +3,10 @@ import { Box, Text } from "@chakra-ui/react";
 import * as Tone from "tone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const TILE = 16;
@@ -102,6 +106,8 @@ const OUTDOOR_NAMES = {
        "Moonlit Garden", "Cobblestone Square", "Whispering Grove", "Lantern Court", "Wildflower Field"],
   es: ["Plaza del Pueblo", "Jardín del Pueblo", "Claro del Bosque", "Parque del Río", "Pradera del Atardecer",
        "Jardín de Luna", "Plaza de Adoquines", "Arboleda Susurrante", "Patio de Faroles", "Campo de Flores"],
+  it: ["Piazza del paese", "Prato del villaggio", "Radura del bosco", "Parco sul fiume", "Prato del tramonto",
+       "Giardino al chiaro di luna", "Piazza di ciottoli", "Boschetto sussurrante", "Cortile delle lanterne", "Campo di fiori"],
 };
 
 const INDOOR_ROOM_TYPES = [
@@ -110,6 +116,7 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Ancient Library", "Reading Room", "Scholar's Study", "Book Nook", "Dusty Archives"],
       es: ["Biblioteca Antigua", "Sala de Lectura", "Estudio del Erudito", "Rincón de Libros", "Archivos Polvorientos"],
+      it: ["Biblioteca antica", "Sala di lettura", "Studio dello studioso", "Angolo dei libri", "Archivi polverosi"],
     },
     wallFurniture: [BOOKSHELF, WINDOW_TILE],
     centerFurniture: [TABLE, DESK, PLANT_POT],
@@ -120,6 +127,7 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Cozy Cabin", "Warm Cottage", "Traveler's Rest", "Fireside Lodge", "Mountain Hut"],
       es: ["Cabaña Acogedora", "Casita Cálida", "Descanso del Viajero", "Refugio junto al Fuego", "Cabaña de Montaña"],
+      it: ["Baita accogliente", "Casetta calda", "Riposo del viaggiatore", "Rifugio del focolare", "Capanna di montagna"],
     },
     wallFurniture: [FIREPLACE, WINDOW_TILE, BED],
     centerFurniture: [TABLE, SOFA, PLANT_POT],
@@ -130,6 +138,7 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Artisan Workshop", "Craft Room", "Maker's Space", "Tinkerer's Lab", "Inventor's Den"],
       es: ["Taller Artesanal", "Sala de Manualidades", "Espacio Creativo", "Laboratorio del Inventor", "Guarida del Creador"],
+      it: ["Bottega artigiana", "Stanza dei lavori manuali", "Spazio creativo", "Laboratorio dell'inventore", "Rifugio del creatore"],
     },
     wallFurniture: [BOOKSHELF, DESK, WINDOW_TILE],
     centerFurniture: [TABLE, PLANT_POT, DESK],
@@ -140,6 +149,7 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Guest Room", "Cozy Bedroom", "Dreamer's Chamber", "Nap Room", "Rest Haven"],
       es: ["Habitación de Huéspedes", "Dormitorio Acogedor", "Cámara del Soñador", "Sala de Siesta", "Refugio de Descanso"],
+      it: ["Camera degli ospiti", "Camera accogliente", "Stanza del sognatore", "Sala del riposo", "Rifugio tranquillo"],
     },
     wallFurniture: [BED, WINDOW_TILE, BOOKSHELF],
     centerFurniture: [DESK, PLANT_POT, TABLE],
@@ -150,6 +160,7 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Lounge", "Common Room", "Gathering Hall", "Social Corner", "Tea Room"],
       es: ["Salón", "Sala Común", "Sala de Reuniones", "Rincón Social", "Sala de Té"],
+      it: ["Salotto", "Sala comune", "Sala degli incontri", "Angolo sociale", "Sala da tè"],
     },
     wallFurniture: [WINDOW_TILE, FIREPLACE, BOOKSHELF],
     centerFurniture: [SOFA, TABLE, PLANT_POT],
@@ -187,6 +198,20 @@ const SIGN_MESSAGES = {
     "Los idiomas abren puertas a nuevos mundos. ¡Literalmente!",
     "¡Sigue explorando! Siempre hay algo nuevo que encontrar.",
   ],
+  it: [
+    "Benvenuto, avventuriero! Esplora mentre il gioco carica.",
+    "Consiglio: parla con i personaggi nel gioco per fare pratica.",
+    "Curiosità: imparare lingue è come far salire di livello il cervello.",
+    "Consiglio pro: completa missioni per guadagnare XP e sbloccare nuove lezioni.",
+    "Il ponte collega due mondi... proprio come fanno le lingue.",
+    "Prova a entrare dalle porte per scoprire nuove stanze.",
+    "Ogni parola che impari è un passo in una grande avventura.",
+    "Più esplori, più scopri.",
+    "Segreto: alcuni sentieri portano a tesori nascosti...",
+    "Lo sapevi? Questa mappa cambia ogni volta che carichi.",
+    "Le lingue aprono porte verso nuovi mondi. Letteralmente.",
+    "Continua a esplorare! C'è sempre qualcosa di nuovo da trovare.",
+  ],
 };
 
 const CHEST_MESSAGES = {
@@ -210,6 +235,16 @@ const CHEST_MESSAGES = {
     "El cofre contiene... ¡motivación! +10 voluntad.",
     "Dentro encuentras una nota: '¡Lo estás haciendo genial!'",
   ],
+  it: [
+    "Hai trovato un tesoro nascosto! ...è conoscenza.",
+    "Una pergamena dice: 'La pratica rende perfetti'",
+    "Scopri una runa luminosa... dice 'XP +100' (scherzo)",
+    "Dentro c'è una piccola mappa di tutti i mondi che esplorerai.",
+    "Una moneta d'oro! Aspetta... è un gettone di vocabolario.",
+    "Hai trovato un'antica pergamena di grammatica.",
+    "Il baule contiene... motivazione! +10 forza di volontà.",
+    "Dentro trovi una nota: 'Stai andando alla grande!'",
+  ],
 };
 
 const LAMP_MESSAGES = {
@@ -224,6 +259,12 @@ const LAMP_MESSAGES = {
     "Un brillo suave ilumina un texto antiguo... ilegible.",
     "La luz baila como pequeñas luciérnagas.",
     "Sientes un cálido resplandor de ánimo.",
+  ],
+  it: [
+    "La lampada tremola con calore. Qui si sta bene.",
+    "Una luce soffusa illumina un testo antico... illeggibile.",
+    "La luce danza come piccole scintille.",
+    "Senti un caldo bagliore di incoraggiamento.",
   ],
 };
 
@@ -240,6 +281,12 @@ const PLANT_MESSAGES = {
     "Esta planta lleva aquí más tiempo del que nadie recuerda.",
     "Una pequeña flor está floreciendo. ¡Qué bonito!",
   ],
+  it: [
+    "Una piantina felice. Sembra che le piaccia questo posto.",
+    "Le foglie frusciano dolcemente mentre passi.",
+    "Questa pianta è qui da più tempo di quanto chiunque ricordi.",
+    "Un piccolo fiore sta sbocciando. Che bello!",
+  ],
 };
 
 const TABLE_MESSAGES = {
@@ -254,6 +301,12 @@ const TABLE_MESSAGES = {
     "La mesa tiene marcas de años de sesiones de estudio.",
     "Libros y papeles están esparcidos por la superficie.",
     "Un rompecabezas a medio terminar está sobre la mesa.",
+  ],
+  it: [
+    "Un tavolo robusto. Qualcuno ha lasciato appunti sulle coniugazioni.",
+    "Il tavolo porta i segni di anni di sessioni di studio.",
+    "Libri e fogli sono sparsi sulla superficie.",
+    "Un rompicapo a metà è appoggiato sul tavolo.",
   ],
 };
 
@@ -1068,8 +1121,8 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const tile = room.map[tileY]?.[tileX];
       if (!tile || !world.messages[tile]) return;
 
-      const lang = supportLang === "es" ? "es" : "en";
-      const msgs = world.messages[tile][lang];
+      const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
+      const msgs = world.messages[tile][lang] || world.messages[tile].en || [];
       const key = `${s.currentRoom}:${tileX},${tileY}`;
       const idxKey = `${tile}`;
       if (!s.msgIdx[idxKey]) s.msgIdx[idxKey] = 0;
@@ -1308,8 +1361,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
           const door = s.transitionTarget;
           s.currentRoom = door.target; s.px = door.tx; s.py = door.ty;
           s.transitionTarget = null;
-          const lang = supportLang === "es" ? "es" : "en";
-          showRoomName(world.rooms[s.currentRoom].name[lang]);
+          const lang = normalizeSupportLanguage(
+            supportLang,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
+          const roomName =
+            world.rooms[s.currentRoom].name[lang] ||
+            world.rooms[s.currentRoom].name.en;
+          showRoomName(roomName);
         }
         if (s.transitionProgress >= 1) { s.transitioning = false; s.transitionProgress = 0; }
       }
@@ -1367,8 +1426,8 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
   }, []);
 
   useEffect(() => {
-    const lang = supportLang === "es" ? "es" : "en";
-    showRoomName(world.rooms.outdoor.name[lang]);
+    const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
+    showRoomName(world.rooms.outdoor.name[lang] || world.rooms.outdoor.name.en);
   }, [supportLang, showRoomName, world]);
 
   return (

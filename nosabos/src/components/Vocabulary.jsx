@@ -87,6 +87,13 @@ import {
   getQuestionToolButtonProps,
   questionAssistantText,
 } from "./questionUiStyles";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -169,7 +176,7 @@ function buildFallbackDistractors(words = [], answerLang = "en") {
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -236,33 +243,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
@@ -289,12 +282,8 @@ function vocabDifficulty(cefrLevel) {
 --------------------------- */
 const resolveSupportLang = (supportLang, appUILang) =>
   supportLang === "bilingual"
-    ? appUILang === "es"
-      ? "es"
-      : "en"
-    : supportLang === "es"
-      ? "es"
-      : "en";
+    ? normalizeSupportLanguage(appUILang, DEFAULT_SUPPORT_LANGUAGE)
+    : normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
 
 /* ---------------------------
    Anti-repetition helper
@@ -1151,27 +1140,14 @@ export default function Vocabulary({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = [
-    "en",
-    "es",
-    "pt",
-    "nah",
-    "fr",
-    "it",
-    "nl",
-    "ja",
-    "ru",
-    "de",
-    "el",
-    "pl",
-    "ga",
-    "yua",
-  ].includes(progress.targetLang)
-    ? progress.targetLang
-    : "en";
-  const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
-    ? progress.supportLang
-    : "en";
+  const targetLang = normalizePracticeLanguage(
+    progress.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const supportLang =
+    progress.supportLang === "bilingual"
+      ? "bilingual"
+      : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations =
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
@@ -1426,7 +1402,10 @@ export default function Vocabulary({
 
       // Get the prompt template based on question type and user language
       const getLangPrompt = (type) => {
-        const langKey = userLanguage === "es" ? "es" : "en";
+        const langKey = normalizeSupportLanguage(
+          userLanguage,
+          DEFAULT_SUPPORT_LANGUAGE,
+        );
         const prompts = {
           en: {
             fill: `You are a helpful language tutor teaching ${targetName}. A student answered a fill-in-the-blank question incorrectly.
@@ -1571,7 +1550,8 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
           },
         };
-        return prompts[langKey][type] || prompts[langKey].fill;
+        const promptSet = prompts[langKey] || prompts.en;
+        return promptSet[type] || promptSet.fill;
       };
 
       const prompt = getLangPrompt(questionType);

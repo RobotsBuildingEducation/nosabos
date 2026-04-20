@@ -13,6 +13,16 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { LockIcon } from "@chakra-ui/icons";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
+function supportCopy(lang, en, es, it) {
+  if (lang === "it") return it || en;
+  if (lang === "es") return es || en;
+  return en;
+}
 
 export default function SubscriptionGate({
   appLanguage = "en",
@@ -21,6 +31,7 @@ export default function SubscriptionGate({
   isSubmitting = false,
   error = "",
 }) {
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const [value, setValue] = useState("");
   const [localError, setLocalError] = useState("");
 
@@ -45,9 +56,12 @@ export default function SubscriptionGate({
     const normalized = (value || "").trim();
     if (!normalized) {
       setLocalError(
-        appLanguage === "es"
-          ? "Ingresa el código de acceso"
-          : "Enter the passcode"
+        supportCopy(
+          lang,
+          "Enter the passcode",
+          "Ingresa el código de acceso",
+          "Inserisci il codice di accesso",
+        ),
       );
       return;
     }
@@ -110,9 +124,14 @@ export default function SubscriptionGate({
               colorScheme="teal"
               onClick={handleSubmit}
               isLoading={isSubmitting}
-              loadingText={appLanguage === "es" ? "Verificando" : "Verifying"}
+              loadingText={supportCopy(
+                lang,
+                "Verifying",
+                "Verificando",
+                "Verifica in corso",
+              )}
             >
-              {appLanguage === "es" ? "Enviar" : "Submit"}
+              {supportCopy(lang, "Submit", "Enviar", "Invia")}
             </Button>
           </Stack>
         </VStack>

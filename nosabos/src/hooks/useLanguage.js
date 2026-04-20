@@ -1,4 +1,10 @@
 import { create } from "zustand";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  SUPPORT_LANGUAGE_CODES,
+  isSupportedSupportLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // Spanish-speaking timezone identifiers
 const spanishTimezones = [
@@ -40,25 +46,34 @@ const spanishTimezones = [
   "America/Puerto_Rico",
 ];
 
+const italianTimezones = [
+  "Europe/Rome",
+  "Europe/Vatican",
+  "Europe/San_Marino",
+];
+
 // Detect language based on timezone
 const detectLanguageFromTimezone = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (italianTimezones.includes(timezone)) {
+      return "it";
+    }
     if (spanishTimezones.includes(timezone)) {
       return "es";
     }
   } catch (e) {
     console.warn("Could not detect timezone:", e);
   }
-  return "en";
+  return DEFAULT_SUPPORT_LANGUAGE;
 };
 
 // Read language from localStorage
 const getStoredLanguage = () => {
   try {
     const stored = localStorage.getItem("appLanguage");
-    if (stored === "es" || stored === "en") {
-      return stored;
+    if (isSupportedSupportLanguage(stored)) {
+      return normalizeSupportLanguage(stored);
     }
   } catch {}
   return null;
@@ -67,8 +82,8 @@ const getStoredLanguage = () => {
 // Write language to localStorage (synchronous, immediate)
 const setStoredLanguage = (lang) => {
   try {
-    if (lang === "es" || lang === "en") {
-      localStorage.setItem("appLanguage", lang);
+    if (isSupportedSupportLanguage(lang)) {
+      localStorage.setItem("appLanguage", normalizeSupportLanguage(lang));
     }
   } catch {}
 };
@@ -98,14 +113,21 @@ const useLanguage = create((set, get) => ({
 
   // Set language explicitly (user preference)
   setLanguage: (lang) => {
-    setStoredLanguage(lang); // Write immediately
-    set({ language: lang });
+    const nextLang = normalizeSupportLanguage(lang, get().language || DEFAULT_SUPPORT_LANGUAGE);
+    setStoredLanguage(nextLang); // Write immediately
+    set({ language: nextLang });
   },
 
-  // Toggle between English and Spanish
+  // Cycle through supported app languages
   toggleLanguage: () => {
-    const currentLang = get().language || "en";
-    const newLang = currentLang === "en" ? "es" : "en";
+    const currentLang = normalizeSupportLanguage(
+      get().language,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const currentIndex = SUPPORT_LANGUAGE_CODES.indexOf(currentLang);
+    const newLang =
+      SUPPORT_LANGUAGE_CODES[(currentIndex + 1) % SUPPORT_LANGUAGE_CODES.length] ||
+      DEFAULT_SUPPORT_LANGUAGE;
     setStoredLanguage(newLang); // Write immediately
     set({ language: newLang });
   },
@@ -113,7 +135,7 @@ const useLanguage = create((set, get) => ({
   // Get translation helper
   t: (translations) => {
     const lang = get().language || "en";
-    return translations[lang] || translations.en;
+    return translations[lang] ?? translations.en;
   },
 }));
 

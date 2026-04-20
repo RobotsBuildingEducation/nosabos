@@ -35,6 +35,10 @@ import VoiceOrb from "./VoiceOrb";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import sparkleSound from "../assets/sparkle.mp3";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -181,17 +185,28 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
+function supportCopy(lang, en, es, it) {
+  if (lang === "it") return it || en;
+  if (lang === "es") return es || en;
+  return en;
+}
+
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
-    return lang === "es" ? "Listas para renovar" : "Ready to refresh";
+    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare");
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   if (h > 0) {
-    return lang === "es" ? `${h}h ${m}m restantes` : `${h}h ${m}m left`;
+    return supportCopy(
+      lang,
+      `${h}h ${m}m left`,
+      `${h}h ${m}m restantes`,
+      `${h}h ${m}m rimanenti`,
+    );
   }
-  return lang === "es" ? `${m}m restantes` : `${m}m left`;
+  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`);
 }
 
 export default function RealWorldTasksModal({
@@ -205,7 +220,7 @@ export default function RealWorldTasksModal({
   onTasksUpdated,
   onRewardClaimed,
 }) {
-  const lang = appLanguage === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const playSound = useSoundSettings((s) => s.playSound);
@@ -346,9 +361,12 @@ export default function RealWorldTasksModal({
     } catch (err) {
       console.error("Real-world task generation failed:", err);
       setErrorMsg(
-        lang === "es"
-          ? "No se pudieron generar las tareas. Intenta de nuevo."
-          : "Could not generate tasks. Please try again.",
+        supportCopy(
+          lang,
+          "Could not generate tasks. Please try again.",
+          "No se pudieron generar las tareas. Intenta de nuevo.",
+          "Impossibile generare le attività. Riprova.",
+        ),
       );
     } finally {
       setIsGenerating(false);
@@ -411,10 +429,12 @@ export default function RealWorldTasksModal({
     } catch (err) {
       console.error("Failed to claim real-world task reward:", err);
       toast({
-        title:
-          lang === "es"
-            ? "No se pudo otorgar la recompensa"
-            : "Failed to award reward",
+        title: supportCopy(
+          lang,
+          "Failed to award reward",
+          "No se pudo otorgar la recompensa",
+          "Impossibile assegnare la ricompensa",
+        ),
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -436,23 +456,40 @@ export default function RealWorldTasksModal({
     onRewardClaimed,
   ]);
 
-  const drawerTitle =
-    lang === "es" ? "Práctica de inmersión" : "Immersion Practice";
-  const subtitle =
-    lang === "es"
-      ? "3 tareas para usar tu idioma fuera de la app"
-      : "3 tasks to use your language outside the app";
-  const progressLabel = lang === "es" ? "Próximo lote en" : "Next batch in";
-  const generatingLabel =
-    lang === "es" ? "Creando tareas..." : "Creating tasks...";
+  const drawerTitle = supportCopy(
+    lang,
+    "Immersion Practice",
+    "Práctica de inmersión",
+    "Pratica di immersione",
+  );
+  const subtitle = supportCopy(
+    lang,
+    "3 tasks to use your language outside the app",
+    "3 tareas para usar tu idioma fuera de la app",
+    "3 attività per usare la lingua fuori dall'app",
+  );
+  const progressLabel = supportCopy(
+    lang,
+    "Next batch in",
+    "Próximo lote en",
+    "Prossimo gruppo tra",
+  );
+  const generatingLabel = supportCopy(
+    lang,
+    "Creating tasks...",
+    "Creando tareas...",
+    "Creazione attività...",
+  );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
     return options[Math.floor(Math.random() * options.length)];
   }, [isGenerating]);
   const claimLabel =
-    lang === "es"
-      ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-      : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
+    lang === "it"
+      ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
+      : lang === "es"
+        ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
+        : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
@@ -554,13 +591,18 @@ export default function RealWorldTasksModal({
                   colorScheme="cyan"
                   onClick={triggerGeneration}
                 >
-                  {lang === "es" ? "Reintentar" : "Try again"}
+                  {supportCopy(lang, "Try again", "Reintentar", "Riprova")}
                 </Button>
               </Flex>
             ) : tasks.length === 0 ? (
               <Flex justify="center" py={10}>
                 <Text fontSize="sm" color={ui.secondaryText}>
-                  {lang === "es" ? "No hay tareas todavía." : "No tasks yet."}
+                  {supportCopy(
+                    lang,
+                    "No tasks yet.",
+                    "No hay tareas todavía.",
+                    "Ancora nessuna attività.",
+                  )}
                 </Text>
               </Flex>
             ) : (

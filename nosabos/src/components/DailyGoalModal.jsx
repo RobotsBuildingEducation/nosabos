@@ -34,6 +34,11 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { getDailyGoalPetHealth } from "../utils/dailyGoalPet.js";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
@@ -137,7 +142,9 @@ function buildGoalHeatmapWeeks(
     Math.round((yearEnd.getTime() - yearStart.getTime()) / MS_24H) + 1;
   const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
   const completedDatesSet = new Set(completedGoalDates);
-  const locale = language === "es" ? "es-MX" : "en-US";
+  const locale = getLanguageLocale(
+    normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE),
+  );
   // Build formatters once per heatmap — not once per cell.
   const monthFormatter = new Intl.DateTimeFormat(locale, { month: "short" });
   const dateFormatter = new Intl.DateTimeFormat(locale, {
@@ -397,7 +404,7 @@ export default function DailyGoalModal({
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const resolvedLang = lang === "es" ? "es" : "en";
+  const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const resolvedTranslations = useMemo(
     () => t || allTranslations[resolvedLang] || allTranslations.en,
     [t, resolvedLang],

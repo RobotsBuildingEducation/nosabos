@@ -4,7 +4,9 @@
  * AI grades the response and determines XP reward
  */
 
-export const FLASHCARD_DATA = [
+import { withItalianFlashcardText } from "./flashcards/italianLocalizer.js";
+
+export const FLASHCARD_DATA = withItalianFlashcardText([
   // ============================================
   // A1 LEVEL - 250 Flashcards
   // Category 1: Essential Greetings & Politeness (30)
@@ -7820,7 +7822,7 @@ export const FLASHCARD_DATA = [
     category: "literary",
     type: "phrase",
   },
-];
+]);
 
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
@@ -7860,7 +7862,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es"];
+    const languages = ["en", "es", "it"];
     const selectedLang = languages[hash % languages.length];
     return card.concept[selectedLang] || card.concept.en;
   }

@@ -45,6 +45,13 @@ import {
 } from "../utils/softStopButton";
 import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -187,9 +194,10 @@ const displayLanguageName = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  return (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
-    ? "es"
-    : "en";
+  return normalizeSupportLanguage(
+    user?.appLanguage || localStorage.getItem("appLanguage"),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
 };
 
 /* ================================
@@ -212,31 +220,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: p.supportLang || "en",
+        supportLang: normalizeSupportLanguage(
+          p.supportLang,
+          DEFAULT_SUPPORT_LANGUAGE,
+        ),
         voice: p.voice || "alloy",
       });
     });
@@ -268,62 +264,87 @@ async function saveStoryTurn(npub, payload) {
 function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {
     const t = translationsObj[uiLang] || translationsObj.en;
+    const copy = (en, es, it) =>
+      uiLang === "es" ? es : uiLang === "it" ? it : en;
     return {
-      header: uiLang === "es" ? "Entrenador de guiones" : "Script Coach",
-      sub:
-        uiLang === "es"
-          ? "Sube o pega tu guion; lo convertimos al idioma meta y te damos apoyo en tu idioma."
-          : "Upload or paste your script; we convert it to the target language and show support in your language.",
-      build: uiLang === "es" ? "Crear guion" : "Create script",
-      listen: uiLang === "es" ? "Escuchar" : "Listen",
-      startPractice:
-        uiLang === "es"
-          ? "Empezar práctica por oración"
-          : "Start Sentence Practice",
-      practiceThis:
-        uiLang === "es" ? "Practica esta oración:" : "Practice this sentence:",
-      skip: uiLang === "es" ? "Saltar oración" : "Skip Sentence",
-      finish: uiLang === "es" ? "Terminar práctica" : "Finish Practice",
-      record: uiLang === "es" ? "Grabar oración" : "Record Sentence",
-      stopRecording: uiLang === "es" ? "Detener grabación" : "Stop Recording",
-      progress: uiLang === "es" ? "Progreso" : "Progress",
-      wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
-      almost:
-        uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
-      score: uiLang === "es" ? "Puntuación" : "Score",
+      header: copy("Script Coach", "Entrenador de guiones", "Coach di copioni"),
+      sub: copy(
+        "Upload or paste your script; we convert it to the target language and show support in your language.",
+        "Sube o pega tu guion; lo convertimos al idioma meta y te damos apoyo en tu idioma.",
+        "Carica o incolla il tuo copione; lo convertiamo nella lingua obiettivo e mostriamo supporto nella tua lingua.",
+      ),
+      build: copy("Create script", "Crear guion", "Crea copione"),
+      listen: copy("Listen", "Escuchar", "Ascolta"),
+      startPractice: copy(
+        "Start Sentence Practice",
+        "Empezar práctica por oración",
+        "Inizia pratica per frasi",
+      ),
+      practiceThis: copy(
+        "Practice this sentence:",
+        "Practica esta oración:",
+        "Pratica questa frase:",
+      ),
+      skip: copy("Skip Sentence", "Saltar oración", "Salta frase"),
+      finish: copy("Finish Practice", "Terminar práctica", "Termina pratica"),
+      record: copy("Record Sentence", "Grabar oración", "Registra frase"),
+      stopRecording: copy(
+        "Stop Recording",
+        "Detener grabación",
+        "Ferma registrazione",
+      ),
+      progress: copy("Progress", "Progreso", "Progressi"),
+      wellDone: copy("Well done!", "¡Bien hecho!", "Ben fatto!"),
+      almost: copy(
+        "Almost — try again",
+        "Casi — inténtalo otra vez",
+        "Ci sei quasi — riprova",
+      ),
+      score: copy("Score", "Puntuación", "Punteggio"),
       xp: t?.ra_label_xp || "XP",
-      levelLabel: uiLang === "es" ? "Nivel" : "Level",
-      iSpeak: uiLang === "es" ? "Yo hablo (apoyo)" : "I speak (support)",
-      iLearn:
-        uiLang === "es" ? "Estoy aprendiendo (meta)" : "I’m learning (target)",
-      langPH:
-        uiLang === "es"
-          ? "ej.: en, English, fr-CA"
-          : "e.g., es, Spanish, fr-CA",
-      pastePH:
-        uiLang === "es"
-          ? "Pega tu guion aquí… (soportado: .txt, .srt, .vtt, .md, .docx, .pdf)"
-          : "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)",
-      upload: uiLang === "es" ? "Subir archivo" : "Upload file",
-      builtOk:
-        uiLang === "es"
-          ? "¡Guion listo! Empieza la práctica."
-          : "Script ready! Start practicing.",
-      needText:
-        uiLang === "es"
-          ? "Necesitas al menos 1 oración."
-          : "You need at least one sentence.",
-      save: uiLang === "es" ? "Guardar" : "Save",
-      titlePH: uiLang === "es" ? "Título (opcional)" : "Title (optional)",
-      savedHeader:
-        uiLang === "es" ? "Tus guiones guardados" : "Your saved scripts",
-      open: uiLang === "es" ? "Abrir" : "Open",
-      scriptSaved: uiLang === "es" ? "Guion guardado" : "Script saved",
-      scriptLoaded: uiLang === "es" ? "Guion cargado" : "Script loaded",
-      noneSaved:
-        uiLang === "es"
-          ? "Aún no tienes guiones guardados."
-          : "You don't have any saved scripts yet.",
+      levelLabel: copy("Level", "Nivel", "Livello"),
+      iSpeak: copy("I speak (support)", "Yo hablo (apoyo)", "Parlo (supporto)"),
+      iLearn: copy(
+        "I’m learning (target)",
+        "Estoy aprendiendo (meta)",
+        "Sto imparando (obiettivo)",
+      ),
+      langPH: copy(
+        "e.g., es, Spanish, fr-CA",
+        "ej.: en, English, fr-CA",
+        "es.: es, Spanish, fr-CA",
+      ),
+      pastePH: copy(
+        "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)",
+        "Pega tu guion aquí… (soportado: .txt, .srt, .vtt, .md, .docx, .pdf)",
+        "Incolla qui il copione... (supportati: .txt, .srt, .vtt, .md, .docx, .pdf)",
+      ),
+      upload: copy("Upload file", "Subir archivo", "Carica file"),
+      builtOk: copy(
+        "Script ready! Start practicing.",
+        "¡Guion listo! Empieza la práctica.",
+        "Copione pronto! Inizia a praticare.",
+      ),
+      needText: copy(
+        "You need at least one sentence.",
+        "Necesitas al menos 1 oración.",
+        "Serve almeno una frase.",
+      ),
+      save: copy("Save", "Guardar", "Salva"),
+      titlePH: copy("Title (optional)", "Título (opcional)", "Titolo (opzionale)"),
+      savedHeader: copy(
+        "Your saved scripts",
+        "Tus guiones guardados",
+        "I tuoi copioni salvati",
+      ),
+      open: copy("Open", "Abrir", "Apri"),
+      scriptSaved: copy("Script saved", "Guion guardado", "Copione salvato"),
+      scriptLoaded: copy("Script loaded", "Guion cargado", "Copione caricato"),
+      noneSaved: copy(
+        "You don't have any saved scripts yet.",
+        "Aún no tienes guiones guardados.",
+        "Non hai ancora copioni salvati.",
+      ),
     };
   }, [uiLang, level, translationsObj]);
 }
@@ -1018,10 +1039,10 @@ export default function JobScript({
 
   // Free-form languages (inputs)
   const [practiceSupport, setPracticeSupport] = useState(
-    progress.supportLang === "en" ? "English" : "English"
+    displayLanguageName(progress.supportLang || DEFAULT_SUPPORT_LANGUAGE, uiLang),
   );
   const [practiceTarget, setPracticeTarget] = useState(
-    progress.targetLang === "es" ? "Spanish" : "Spanish"
+    displayLanguageName(progress.targetLang || DEFAULT_TARGET_LANGUAGE, uiLang),
   );
 
   // Script state
@@ -1066,8 +1087,12 @@ export default function JobScript({
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
-  const targetLang = normalizeLangCode(practiceTarget);
-  const supportLang = normalizeLangCode(practiceSupport);
+  const targetLang =
+    toLangKey(practiceTarget) ||
+    normalizePracticeLanguage(practiceTarget, DEFAULT_TARGET_LANGUAGE);
+  const supportLang =
+    toLangKey(practiceSupport) ||
+    normalizeSupportLanguage(practiceSupport, DEFAULT_SUPPORT_LANGUAGE);
 
   const prefersReducedMotion =
     typeof window !== "undefined" &&

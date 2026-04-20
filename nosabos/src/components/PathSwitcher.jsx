@@ -17,7 +17,7 @@ const getAppLanguage = () => {
 // Translation helper for UI strings
 const getTranslation = (key) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   return dict[key] || key;
 };
 

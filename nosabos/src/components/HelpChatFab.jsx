@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -87,6 +88,11 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -102,6 +108,12 @@ const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
+
+function supportCopy(lang, en, es, it) {
+  if (lang === "it") return it || en;
+  if (lang === "es") return es || en;
+  return en;
+}
 
 /**
  * Small Markdown renderer mapped to Chakra components
@@ -240,8 +252,92 @@ const HelpChatFab = forwardRef(
     const playSound = useSoundSettings((s) => s.playSound);
     const themeMode = useThemeStore((s) => s.themeMode);
     const isLightTheme = themeMode === "light";
+    const uiLang = normalizeSupportLanguage(
+      appLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
-    const ui = translations[appLanguage] || translations.en;
+    const ui = translations[uiLang] || translations.en;
+    const helpUi = useMemo(
+      () => ({
+        noMessagesTitle: supportCopy(uiLang, "No messages", "Sin mensajes", "Nessun messaggio"),
+        noMessagesDesc: supportCopy(
+          uiLang,
+          "No messages to save.",
+          "No hay mensajes para guardar.",
+          "Non ci sono messaggi da salvare.",
+        ),
+        savedChatTitle: supportCopy(uiLang, "Saved chat", "Chat guardado", "Chat salvata"),
+        chatSavedTitle: supportCopy(uiLang, "Chat saved", "Chat guardado", "Chat salvata"),
+        chatDeletedTitle: supportCopy(uiLang, "Chat deleted", "Chat eliminado", "Chat eliminata"),
+        requestFailed: supportCopy(
+          uiLang,
+          "Sorry, I couldn’t complete that request. Please try again.",
+          "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente.",
+          "Mi dispiace, non sono riuscito a completare la richiesta. Riprova.",
+        ),
+        chatErrorTitle: supportCopy(uiLang, "Chat error", "Error de chat", "Errore chat"),
+        connectionErrorTitle: supportCopy(
+          uiLang,
+          "Connection error",
+          "Error de conexión",
+          "Errore di connessione",
+        ),
+        yourChats: supportCopy(uiLang, "Your chats", "Tus chats", "Le tue chat"),
+        noSavedChats: supportCopy(
+          uiLang,
+          "No saved chats",
+          "No hay chats guardados",
+          "Nessuna chat salvata",
+        ),
+        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina"),
+        morphemeMode: supportCopy(
+          uiLang,
+          "Morpheme mode",
+          "Modo morfemas",
+          "Modalità morfemi",
+        ),
+        breakDownWords: supportCopy(
+          uiLang,
+          "Break down words",
+          "Desglosa palabras",
+          "Scomponi le parole",
+        ),
+        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat"),
+        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto"),
+        menu: supportCopy(uiLang, "Menu", "Menú", "Menu"),
+        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi"),
+        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat"),
+        emptyPrompt: supportCopy(
+          uiLang,
+          "What do you want to learn today?",
+          "¿Qué quieres aprender hoy?",
+          "Che cosa vuoi imparare oggi?",
+        ),
+        stopVoiceChat: supportCopy(
+          uiLang,
+          "Stop voice chat",
+          "Detener chat de voz",
+          "Interrompi chat vocale",
+        ),
+        startVoiceChat: supportCopy(
+          uiLang,
+          "Start voice chat",
+          "Iniciar chat de voz",
+          "Avvia chat vocale",
+        ),
+        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci"),
+        askPlaceholder: supportCopy(
+          uiLang,
+          "Ask about this lesson...",
+          "Pregunta sobre esta lección...",
+          "Chiedi qualcosa su questa lezione...",
+        ),
+        send: supportCopy(uiLang, "Send", "Enviar", "Invia"),
+        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma"),
+      }),
+      [uiLang],
+    );
 
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
@@ -486,11 +582,8 @@ const HelpChatFab = forwardRef(
       if (messages.length === 0) {
         toast({
           status: "warning",
-          title: appLanguage === "es" ? "Sin mensajes" : "No messages",
-          description:
-            appLanguage === "es"
-              ? "No hay mensajes para guardar."
-              : "No messages to save.",
+          title: helpUi.noMessagesTitle,
+          description: helpUi.noMessagesDesc,
         });
         return;
       }
@@ -500,7 +593,7 @@ const HelpChatFab = forwardRef(
         id: crypto.randomUUID?.() || String(Date.now()),
         title:
           ordered.find((m) => m.role === "user")?.text?.slice(0, 50) ||
-          (appLanguage === "es" ? "Chat guardado" : "Saved chat"),
+          helpUi.savedChatTitle,
         messages: ordered,
         savedAt: Date.now(),
         targetLang: progress?.targetLang || "es",
@@ -516,10 +609,10 @@ const HelpChatFab = forwardRef(
 
       toast({
         status: "success",
-        title: appLanguage === "es" ? "Chat guardado" : "Chat saved",
+        title: helpUi.chatSavedTitle,
         duration: 2000,
       });
-    }, [messages, savedChats, appLanguage, progress?.targetLang, toast]);
+    }, [messages, savedChats, helpUi, progress?.targetLang, toast]);
 
     const loadSavedChat = useCallback(
       (chat) => {
@@ -554,11 +647,11 @@ const HelpChatFab = forwardRef(
         }
         toast({
           status: "info",
-          title: appLanguage === "es" ? "Chat eliminado" : "Chat deleted",
+          title: helpUi.chatDeletedTitle,
           duration: 1000,
         });
       },
-      [savedChats, appLanguage, toast],
+      [savedChats, helpUi, toast],
     );
 
     const startNewChat = useCallback(() => {
@@ -587,18 +680,18 @@ const HelpChatFab = forwardRef(
 
       // Resolve support language (what the learner already speaks)
       const supportRaw =
-        ["en", "es", "bilingual"].includes(progress?.supportLang) &&
-        progress?.supportLang
-          ? progress.supportLang
-          : "en";
+        progress?.supportLang === "bilingual"
+          ? "bilingual"
+          : normalizeSupportLanguage(
+              progress?.supportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            );
       const supportLang =
         supportRaw === "bilingual"
-          ? appLanguage === "es"
-            ? "es"
-            : "en"
+          ? normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE)
           : supportRaw;
 
-      const targetLang = progress?.targetLang || "es"; // practice language
+      const targetLang = normalizePracticeLanguage(progress?.targetLang, "es"); // practice language
       const primaryLang = supportLang; // replies must follow the learner's support language
       const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
@@ -857,16 +950,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           console.error("HelpChat streaming error:", e);
           patchLastAssistant((m) => ({
             ...m,
-            text:
-              m.text ||
-              (appLanguage === "es"
-                ? "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente."
-                : "Sorry, I couldn’t complete that request. Please try again."),
+            text: m.text || helpUi.requestFailed,
             done: true,
           }));
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error de chat" : "Chat error",
+            title: helpUi.chatErrorTitle,
             description: String(e?.message || e),
           });
         } finally {
@@ -882,6 +971,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         patchLastAssistant,
         pushMessage,
         morphemeMode,
+        helpUi,
         progress?.targetLang,
         sending,
         input,
@@ -981,8 +1071,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
     const buildRealtimeInstructions = useCallback(() => {
       const lvl = progress?.level || "beginner";
-      const targetLang = progress?.targetLang || "es";
-      const supportLang = progress?.supportLang || "en";
+      const targetLang = normalizePracticeLanguage(progress?.targetLang, "es");
+      const supportLang = normalizeSupportLanguage(
+        progress?.supportLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      );
       const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
 
@@ -1353,8 +1446,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         setRealtimeStatus("disconnected");
         toast({
           status: "error",
-          title:
-            appLanguage === "es" ? "Error de conexión" : "Connection error",
+          title: helpUi.connectionErrorTitle,
           description: e?.message || String(e),
         });
       }
@@ -1365,6 +1457,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       clearRealtimeAutoStopTimer,
       handleRealtimeEvent,
       scheduleRealtimeAutoStop,
+      helpUi,
       toast,
     ]);
 
@@ -1554,14 +1647,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         {/* Saved Chats */}
         <Box flex="1" overflowY="auto">
           <Text fontWeight="bold" mb={2} fontSize="xs" color="gray.500">
-            {appLanguage === "es" ? "Tus chats" : "Your chats"}
+            {helpUi.yourChats}
           </Text>
           <VStack spacing={1} align="stretch">
             {savedChats.length === 0 ? (
               <Text fontSize="xs" color="gray.600" textAlign="center" py={4}>
-                {appLanguage === "es"
-                  ? "No hay chats guardados"
-                  : "No saved chats"}
+                {helpUi.noSavedChats}
               </Text>
             ) : (
               savedChats.map((chat) => {
@@ -1599,9 +1690,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         </Text>
                       </HStack>
                       <IconButton
-                        aria-label={
-                          appLanguage === "es" ? "Eliminar" : "Delete"
-                        }
+                        aria-label={helpUi.delete}
                         icon={<FaTrash size={10} />}
                         size="xs"
                         variant="ghost"
@@ -1635,12 +1724,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             <FormLabel htmlFor="morpheme-mode-sidebar" mb={0} flex="1">
               <VStack align="start" spacing={0}>
                 <Text fontWeight="medium" fontSize="sm">
-                  {appLanguage === "es" ? "Modo morfemas" : "Morpheme mode"}
+                  {helpUi.morphemeMode}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  {appLanguage === "es"
-                    ? "Desglosa palabras"
-                    : "Break down words"}
+                  {helpUi.breakDownWords}
                 </Text>
               </VStack>
             </FormLabel>
@@ -1673,7 +1760,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           marginBottom={6}
           padding={8}
         >
-          {appLanguage === "es" ? "Nuevo chat" : "New chat"}
+          {helpUi.newChat}
         </Button>
       </VStack>
     );
@@ -1682,9 +1769,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       <>
         {/* Floating button */}
         {showFloatingTrigger && (
-          <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
+          <Tooltip label={helpUi.help}>
             <IconButton
-              aria-label="Open help chat"
+              aria-label={helpUi.help}
               icon={<MdOutlineSupportAgent size={20} />}
               rounded="xl"
               bg="white"
@@ -1762,7 +1849,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     {/* Mobile menu button */}
                     {!isDesktop && (
                       <IconButton
-                        aria-label={appLanguage === "es" ? "Menú" : "Menu"}
+                        aria-label={helpUi.menu}
                         icon={<FaBars />}
                         variant="ghost"
                         colorScheme="gray"
@@ -1775,7 +1862,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     )}
                     {morphemeMode && (
                       <Badge colorScheme="purple" fontSize="xs">
-                        {appLanguage === "es" ? "Morfemas" : "Morphemes"}
+                        {helpUi.morphemes}
                       </Badge>
                     )}
                   </HStack>
@@ -1791,7 +1878,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       size="sm"
                       isDisabled={messages.length === 0}
                     >
-                      {appLanguage === "es" ? "Guardar" : "Save chat"}
+                      {helpUi.saveChat}
                     </Button>
                     <DrawerCloseButton
                       position="static"
@@ -1819,9 +1906,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         fontWeight="medium"
                         textAlign="center"
                       >
-                        {appLanguage === "es"
-                          ? "¿Qué quieres aprender hoy?"
-                          : "What do you want to learn today?"}
+                        {helpUi.emptyPrompt}
                       </Text>
                       {/* Centered input bar */}
                       <Box w="100%" maxW="600px" mx="auto" px={4}>
@@ -1836,12 +1921,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             <IconButton
                               aria-label={
                                 realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Detener chat de voz"
-                                    : "Stop voice chat"
-                                  : appLanguage === "es"
-                                    ? "Iniciar chat de voz"
-                                    : "Start voice chat"
+                                  ? helpUi.stopVoiceChat
+                                  : helpUi.startVoiceChat
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -1898,6 +1979,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
+                              placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -1922,6 +2004,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
+                                aria-label={helpUi.stop}
                                 onClick={() => {
                                   playSound(clickSound);
                                   handleStop();
@@ -1933,6 +2016,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
+                                aria-label={helpUi.send}
                                 onClick={() => {
                                   playSound(submitActionSound);
                                   handleSend();
@@ -2008,11 +2092,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               <Box maxW="100%" w="100%">
                                 <HStack align="flex-start" spacing={3}>
                                   <IconButton
-                                    aria-label={
-                                      appLanguage === "es"
-                                        ? "Reproducir"
-                                        : "Play"
-                                    }
+                                    aria-label={helpUi.play}
                                     icon={
                                       replayLoadingId === m.id ? (
                                         <VoiceOrb
@@ -2089,12 +2169,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             <IconButton
                               aria-label={
                                 realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Detener chat de voz"
-                                    : "Stop voice chat"
-                                  : appLanguage === "es"
-                                    ? "Iniciar chat de voz"
-                                    : "Start voice chat"
+                                  ? helpUi.stopVoiceChat
+                                  : helpUi.startVoiceChat
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -2158,6 +2234,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
+                              placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -2182,6 +2259,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
+                                aria-label={helpUi.stop}
                                 onClick={() => {
                                   playSound(clickSound);
                                   handleStop();
@@ -2193,6 +2271,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
+                                aria-label={helpUi.send}
                                 onClick={() => {
                                   playSound(submitActionSound);
                                   handleSend();
@@ -2245,7 +2324,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 py={3}
               >
                 <Text fontSize="sm">
-                  {appLanguage === "es" ? "Menú" : "Menu"}
+                  {helpUi.menu}
                 </Text>
               </DrawerHeader>
               <DrawerBody p={3}>{SidebarContent}</DrawerBody>

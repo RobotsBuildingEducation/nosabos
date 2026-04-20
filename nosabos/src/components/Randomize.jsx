@@ -14,6 +14,13 @@ import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // Lazy-load modules
 const StoryMode = React.lazy(() => import("./Stories"));
@@ -25,7 +32,7 @@ const History = React.lazy(() => import("./History"));
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -65,7 +72,10 @@ export default function Randomize() {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
   const nsec = strongNsec();
-  const uiLang = user?.appLanguage || "en";
+  const uiLang = normalizeSupportLanguage(
+    user?.appLanguage,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const t = useT(uiLang);
   const toast = useToast();
 
@@ -101,24 +111,9 @@ export default function Randomize() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
       const newXp = Number.isFinite(langXp) ? langXp : 0;
       const languageChanged = targetLangRef.current !== targetLang;

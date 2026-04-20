@@ -4,6 +4,10 @@ import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages.js";
+import {
   DAILY_GOAL_PET_DEFAULT_HEALTH,
   DAILY_GOAL_PET_HEALTH_GAIN,
   DAILY_GOAL_PET_HEALTH_LOSS,
@@ -60,6 +64,32 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "it") {
+    return {
+      title: "Il tuo compagno",
+      subtitle: "Mantieni alta la sua salute raggiungendo il tuo obiettivo XP giornaliero.",
+      health: "Salute",
+      happy: "Felice",
+      healthy: "In salute",
+      unhappy: "Triste",
+      stressed: "Stressato",
+      unhealthy: "Malaticcio",
+      dead: "Morto",
+      reward: "Obiettivo raggiunto",
+      penalty: "Obiettivo mancato",
+      rewardFooter: "La salute sale a {health}%",
+      penaltyFooter: "La salute scende a {health}%",
+      latestAchieved: "Ultimo aggiornamento: +{delta}% per aver raggiunto l'obiettivo",
+      latestMissed: "Ultimo aggiornamento: {delta}% per aver mancato l'obiettivo",
+      managementHint: "Raggiungi l'obiettivo oggi per mantenerlo forte.",
+      celebrationHint: "Il tuo cane ha ricevuto un aumento di salute.",
+      rewardBadge: "Ricompensa +{delta}%",
+      penaltyBadge: "Rischio -{delta}%",
+      previewHint:
+        "Solo anteprima. Non cambia la salute reale del cane.",
+    };
+  }
+
   if (lang === "es") {
     return {
       title: "Tu compañero",
@@ -547,7 +577,7 @@ export default function DailyGoalPetPanel({
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const resolvedLang = lang === "es" ? "es" : "en";
+  const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
   const stage = useMemo(

@@ -54,6 +54,13 @@ import {
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
 import VoiceOrb from "./VoiceOrb";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -136,24 +143,9 @@ function LANG_NAME(code) {
 }
 
 function resolveSupportLang(support, appUILang) {
-  if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return [
-    "en",
-    "es",
-    "pt",
-    "fr",
-    "it",
-    "nl",
-    "nah",
-    "ru",
-    "de",
-    "el",
-    "pl",
-    "ga",
-    "yua",
-  ].includes(support)
-    ? support
-    : "en";
+  if (!support || support === "auto")
+    return normalizeSupportLanguage(appUILang, DEFAULT_SUPPORT_LANGUAGE);
+  return normalizeSupportLanguage(support, DEFAULT_SUPPORT_LANGUAGE);
 }
 
 function quizDifficulty(cefrLevel) {
@@ -204,25 +196,13 @@ export default function LessonGroupQuiz({
       if (!snap.exists()) return;
       const data = snap.data();
       const prog = data.progress || {};
-      const tLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(prog.targetLang)
-        ? prog.targetLang
-        : "es";
-      const sLang = prog.supportLang || "auto";
+      const tLang = isSupportedPracticeLanguage(prog.targetLang)
+        ? normalizePracticeLanguage(prog.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
+      const sLang =
+        prog.supportLang === "auto" || prog.supportLang === "bilingual"
+          ? "auto"
+          : normalizeSupportLanguage(prog.supportLang, DEFAULT_SUPPORT_LANGUAGE);
       const showTr = prog.showTranslations !== false;
       const langXp = prog.languageXp?.[tLang] || prog.totalXp || 0;
 

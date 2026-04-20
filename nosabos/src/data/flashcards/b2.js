@@ -3,7 +3,9 @@
  * Total: 150 flashcards
  */
 
-export const FLASHCARDS_B2 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+
+export const FLASHCARDS_B2 = withItalianFlashcardText([
   {
     id: "b2-idiom-1",
     concept: {
@@ -1120,4 +1122,4 @@ export const FLASHCARDS_B2 = [
     category: "uncertainty",
     type: "phrase",
   }
-];
+]);

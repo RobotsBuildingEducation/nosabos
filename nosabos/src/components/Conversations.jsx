@@ -79,6 +79,11 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguagePromptName,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -866,10 +871,17 @@ function ArchiveTextAnimation({ animation }) {
 }
 
 function uiStateLabel(uiState, uiLang) {
-  if (uiState === "speaking") return uiLang === "es" ? "Hablando" : "Speaking";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (uiState === "speaking")
+    return lang === "es" ? "Hablando" : lang === "it" ? "Parlando" : "Speaking";
   if (uiState === "listening")
-    return uiLang === "es" ? "Escuchando" : "Listening";
-  if (uiState === "thinking") return uiLang === "es" ? "Pensando" : "Thinking";
+    return lang === "es"
+      ? "Escuchando"
+      : lang === "it"
+        ? "Ascoltando"
+        : "Listening";
+  if (uiState === "thinking")
+    return lang === "es" ? "Pensando" : lang === "it" ? "Pensando" : "Thinking";
   return "";
 }
 
@@ -1129,7 +1141,10 @@ export default function Conversations({
     streamingRef.current = true;
 
     // Determine the language for the response
-    const responseLang = supportLang === "es" ? "Spanish" : "English";
+    const responseLang =
+      getLanguagePromptName(
+        normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE),
+      ) || "English";
 
     // Get current settings from ref (for use in async context)
     const currentSettings = conversationSettingsRef.current;
@@ -1207,7 +1222,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const topicText = fullText.trim();
       if (topicText) {
         setCurrentGoal({
-          text: { en: topicText, es: topicText },
+          text: { en: topicText, es: topicText, it: topicText },
           completed: false,
         });
       } else {
@@ -1279,6 +1294,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   const normalizeSupportLang = (raw) => {
     const code = String(raw || "").toLowerCase();
+    if (code === "it" || code.startsWith("it-") || code === "italian" || code === "italiano")
+      return "it";
     if (code === "es" || code.startsWith("es-") || code === "spanish")
       return "es";
     if (code === "en" || code.startsWith("en-") || code === "english")
@@ -1293,7 +1310,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     "en";
 
   const uiLang = resolvedSupportLang;
-  const ui = translations[uiLang];
+  const ui = translations[uiLang] || translations.en;
+  const uiText = (key, fallback = "") =>
+    ui?.[key] || translations.en?.[key] || fallback;
   const liveUiState =
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
@@ -2124,7 +2143,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
                                 : tLang === "yua"
                                   ? "Yucatec Maya"
                                   : "English";
-      const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
+      const feedbackLanguage =
+        getLanguagePromptName(
+          normalizeSupportLanguage(sLang, DEFAULT_SUPPORT_LANGUAGE),
+        ) || "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
@@ -2193,6 +2215,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultSuccess =
           sLang === "es"
             ? "¡Bien hecho! Completaste la meta."
+            : sLang === "it"
+              ? "Ben fatto! Hai completato l'obiettivo."
             : "Great job! You completed the goal!";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
@@ -2203,6 +2227,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultGuidance =
           sLang === "es"
             ? "Intenta hablar sobre la meta."
+            : sLang === "it"
+              ? "Prova a parlare dell'obiettivo."
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
@@ -2263,7 +2289,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)"}`;
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "it": "goal in Italian (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2620,8 +2646,10 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const supportChoice = supportLangRef.current || supportLang || "en";
-    const target = supportChoice === "es" ? "es" : "en";
+    const target = normalizeSupportLanguage(
+      supportLangRef.current || supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     if ((m.lang || targetLangRef.current) === target) {
       updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
@@ -2634,6 +2662,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
 Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
 Evita responder con toda la frase en un solo fragmento.`
+        : target === "it"
+          ? `Traduci quanto segue in italiano naturale e chiaro.
+Restituisci SOLO JSON nel formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
+Dividi la frase in frammenti paralleli molto brevi (2-6 parole) dentro "pairs" per allineare le idee.
+Non restituire l'intera frase come un unico frammento.`
         : `Translate the following into natural US English.
 Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
 Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
@@ -2738,7 +2771,7 @@ Do not return the whole sentence as a single chunk.`;
                   }}
                   fontWeight="medium"
                 >
-                  {uiLang === "es" ? "Configuración" : "Conversation settings"}
+                  {uiText("ra_conversation_settings", "Conversation settings")}
                 </Button>
                 <IconButton
                   ref={chatLogButtonRef}
@@ -2750,7 +2783,7 @@ Do not return the whole sentence as a single chunk.`;
                   onClick={openTranscript}
                   _hover={{ opacity: 1 }}
                   isDisabled={!timeline.length}
-                  aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                  aria-label={uiText("ra_chat_log", "Chat log")}
                 />
               </HStack>
 
@@ -2781,9 +2814,7 @@ Do not return the whole sentence as a single chunk.`;
                         flex="1"
                       >
                         {streamingText ||
-                          (uiLang === "es"
-                            ? "Generando nuevo tema..."
-                            : "Generating new topic...")}
+                          uiText("ra_generating_topic", "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
@@ -2794,7 +2825,7 @@ Do not return the whole sentence as a single chunk.`;
                         variant="ghost"
                         color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                         aria-label={
-                          uiLang === "es" ? "Nuevo tema" : "New topic"
+                          uiText("ra_new_topic", "New topic")
                         }
                         onClick={handleShuffleTopic}
                         opacity={0.7}
@@ -2826,9 +2857,7 @@ Do not return the whole sentence as a single chunk.`;
                                   as="button"
                                   type="button"
                                   aria-label={
-                                    uiLang === "es"
-                                      ? "Mostrar sugerencia"
-                                      : "Show suggestion"
+                                    uiText("ra_show_suggestion", "Show suggestion")
                                   }
                                   ml="6px"
                                   width="12px"
@@ -2918,8 +2947,8 @@ Do not return the whole sentence as a single chunk.`;
               {/* XP Progress Bar */}
               <Box w="100%">
                 <XpProgressHeader
-                  levelText={`${uiLang === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
-                  xpText={`${ui.ra_label_xp} ${xp}`}
+                  levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
+                  xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
                   progressPct={progressPct}
                   xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
                 />
@@ -3010,7 +3039,7 @@ Do not return the whole sentence as a single chunk.`;
                     }
                     onReplay={() => playSavedClip(latestAssistantMessage.id)}
                     isReplaying={replayingId === latestAssistantMessage.id}
-                    replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                    replayLabel={uiText("ra_btn_replay", "Replay")}
                   />
                 </Box>
               </Box>
@@ -3075,18 +3104,14 @@ Do not return the whole sentence as a single chunk.`;
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {uiLang === "es" ? "Terminar" : "End"}
+                  <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? uiLang === "es"
-                      ? "Iniciando..."
-                      : "Starting..."
-                    : uiLang === "es"
-                      ? "Iniciar"
-                      : "Start"}
+                    ? uiText("ra_btn_starting", "Starting...")
+                    : uiText("ra_btn_start", "Start")}
                 </>
               )}
             </Button>
@@ -3129,7 +3154,7 @@ Do not return the whole sentence as a single chunk.`;
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg="gray.800" color="gray.100" mx={3}>
           <ModalHeader>
-            {uiLang === "es" ? "Historial de conversación" : "Conversation log"}
+            {uiText("ra_conversation_log", "Conversation log")}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={5}>
@@ -3163,7 +3188,7 @@ Do not return the whole sentence as a single chunk.`;
                       }
                       onReplay={() => playSavedClip(m.id)}
                       isReplaying={replayingId === m.id}
-                      replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                      replayLabel={uiText("ra_btn_replay", "Replay")}
                     />
                   </RowLeft>
                 );

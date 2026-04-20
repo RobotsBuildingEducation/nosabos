@@ -1,5 +1,10 @@
 // src/utils/speechEvaluation.js
 
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
 const STOPWORDS = {
   es: new Set([
     "de",
@@ -528,19 +533,42 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Incluye las palabras clave del contenido.",
     "low-confidence": "Pronuncia con claridad y reduce el ruido de fondo.",
   },
+  it: {
+    "speech-quality": "Parla un po' più forte e mantieni un ritmo regolare.",
+    "not-target-lang": (targetLabel) => `Prova a parlare in ${targetLabel}.`,
+    "low-char-sim": "Avvicinati di più al testo originale.",
+    "low-word-f1": "Includi le parole chiave del contenuto.",
+    "low-confidence": "Pronuncia con chiarezza e riduci il rumore di fondo.",
+  },
 };
 
 export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = {}) {
-  const lang = uiLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const msgs = SPEECH_REASON_MESSAGES[lang];
   const tips = [];
   reasons.forEach((reason) => {
     const msg = msgs[reason];
-    if (typeof msg === "function") tips.push(msg(targetLabel || (lang === "es" ? "el idioma objetivo" : "the target language")));
+    if (typeof msg === "function")
+      tips.push(
+        msg(
+          targetLabel ||
+            (lang === "es"
+              ? "el idioma objetivo"
+              : lang === "it"
+                ? "la lingua obiettivo"
+                : "the target language"),
+        ),
+      );
     else if (msg) tips.push(msg);
   });
   if (!tips.length) {
-    tips.push(lang === "es" ? "Vuelve a intentarlo hablando con claridad." : "Try again, speaking clearly.");
+    tips.push(
+      lang === "es"
+        ? "Vuelve a intentarlo hablando con claridad."
+        : lang === "it"
+          ? "Riprova parlando chiaramente."
+          : "Try again, speaking clearly.",
+    );
   }
   return tips;
 }

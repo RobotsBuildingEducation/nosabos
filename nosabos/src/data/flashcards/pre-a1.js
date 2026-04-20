@@ -6,7 +6,9 @@
  * Focus on recognition, single words, and survival basics.
  */
 
-export const FLASHCARDS_PRE_A1 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+
+export const FLASHCARDS_PRE_A1 = withItalianFlashcardText([
   // ============================================
   // Category 1: People & Family (12 flashcards)
   // ============================================
@@ -742,4 +744,4 @@ export const FLASHCARDS_PRE_A1 = [
     category: "foundations",
     type: "word",
   },
-];
+]);

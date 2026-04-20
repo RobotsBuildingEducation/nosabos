@@ -2,7 +2,9 @@
  * A2 Level Skill Tree Data
  */
 
-export const SKILL_TREE_A2 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+
+export const SKILL_TREE_A2 = withItalianSkillTreeText([
   {
     id: "unit-a2-1",
       title: {
@@ -2439,4 +2441,4 @@ export const SKILL_TREE_A2 = [
         },
       },],
     }
-];
+]);

@@ -155,6 +155,31 @@ const TIER_ORDER = { stable: 0, alpha: 1, beta: 2 };
 const SUPPORTED_LANGUAGE_CODES_SET = new Set(
   LANGUAGE_META.map((item) => item.value),
 );
+const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "it"];
+const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
+
+export const LANGUAGE_LOCALES = {
+  en: "en-US",
+  es: "es-MX",
+  pt: "pt-BR",
+  fr: "fr-FR",
+  it: "it-IT",
+  nl: "nl-NL",
+  nah: "es-MX",
+  ja: "ja-JP",
+  ru: "ru-RU",
+  de: "de-DE",
+  el: "el-GR",
+  pl: "pl-PL",
+  ga: "ga-IE",
+  yua: "es-MX",
+};
+
+const SORT_LOCALES = {
+  en: "en",
+  es: "es",
+  it: "it",
+};
 
 const normalizeCode = (raw) => String(raw || "").trim().toLowerCase();
 const normalizeSupportedCode = (raw) => {
@@ -167,7 +192,9 @@ const normalizeSupportedCode = (raw) => {
 };
 
 export const PRACTICE_LANGUAGE_CODES = LANGUAGE_META.map((item) => item.value);
-export const SUPPORT_LANGUAGE_CODES = [...PRACTICE_LANGUAGE_CODES];
+export const SUPPORT_LANGUAGE_CODES = SUPPORT_LANGUAGE_CODES_BASE.filter((code) =>
+  SUPPORTED_LANGUAGE_CODES_SET.has(code),
+);
 export const ALPHABET_LANGUAGE_CODES = [...PRACTICE_LANGUAGE_CODES];
 
 export function isSupportedPracticeLanguage(code) {
@@ -175,7 +202,7 @@ export function isSupportedPracticeLanguage(code) {
 }
 
 export function isSupportedSupportLanguage(code) {
-  return SUPPORTED_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
+  return SUPPORT_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
 }
 
 export function normalizeSupportLanguage(
@@ -183,7 +210,7 @@ export function normalizeSupportLanguage(
   fallback = DEFAULT_SUPPORT_LANGUAGE,
 ) {
   const normalized = normalizeSupportedCode(code);
-  if (SUPPORTED_LANGUAGE_CODES_SET.has(normalized)) return normalized;
+  if (SUPPORT_LANGUAGE_CODES_SET.has(normalized)) return normalized;
   return fallback;
 }
 
@@ -227,10 +254,21 @@ export function getLanguagePromptName(code) {
   );
 }
 
+export function getLanguageLocale(code, fallback = "en-US") {
+  const normalized = normalizeSupportedCode(code);
+  return LANGUAGE_LOCALES[normalized] || fallback;
+}
+
+export function getSortLocale(code, fallback = "en") {
+  const normalized = normalizeSupportLanguage(code, DEFAULT_SUPPORT_LANGUAGE);
+  return SORT_LOCALES[normalized] || fallback;
+}
+
 function withTierTag(label, tier, ui = {}, uiLang = "en") {
   if (tier === "alpha") {
     const alphaLabel =
-      ui.onboarding_language_tag_alpha || (uiLang === "es" ? "alfa" : "alpha");
+      ui.onboarding_language_tag_alpha ||
+      (uiLang === "es" || uiLang === "it" ? "alfa" : "alpha");
     return `${label} (${alphaLabel})`;
   }
   if (tier === "beta") {
@@ -246,32 +284,35 @@ function buildLanguageOptions({
   showJapanese = true,
   mode = "practice",
 }) {
-  const sortLocale = uiLang === "es" ? "es" : "en";
+  const sortLocale = getSortLocale(uiLang);
   const collator = new Intl.Collator(sortLocale);
 
-  const items = LANGUAGE_META.filter((item) =>
-    showJapanese ? true : item.value !== "ja",
-  ).map((item) => {
-    const baseLabel =
-      mode === "practice"
-        ? ui[item.practiceKey] ||
-          ui[item.languageKey] ||
-          LANGUAGE_FALLBACK_LABELS[item.value] ||
-          item.value.toUpperCase()
-        : ui[item.languageKey] ||
-          ui[item.practiceKey] ||
-          LANGUAGE_FALLBACK_LABELS[item.value] ||
-          item.value.toUpperCase();
+  const items = LANGUAGE_META
+    .filter((item) =>
+      mode === "support" ? SUPPORT_LANGUAGE_CODES_SET.has(item.value) : true,
+    )
+    .filter((item) => (showJapanese ? true : item.value !== "ja"))
+    .map((item) => {
+      const baseLabel =
+        mode === "practice"
+          ? ui[item.practiceKey] ||
+            ui[item.languageKey] ||
+            LANGUAGE_FALLBACK_LABELS[item.value] ||
+            item.value.toUpperCase()
+          : ui[item.languageKey] ||
+            ui[item.practiceKey] ||
+            LANGUAGE_FALLBACK_LABELS[item.value] ||
+            item.value.toUpperCase();
 
-    return {
-      value: item.value,
-      label: withTierTag(baseLabel, item.tier, ui, uiLang),
-      tier: item.tier,
-      beta: item.tier === "beta",
-      alpha: item.tier === "alpha",
-      flag: item.flag(),
-    };
-  });
+      return {
+        value: item.value,
+        label: withTierTag(baseLabel, item.tier, ui, uiLang),
+        tier: item.tier,
+        beta: item.tier === "beta",
+        alpha: item.tier === "alpha",
+        flag: item.flag(),
+      };
+    });
 
   return items.sort((a, b) => {
     const tierDelta = TIER_ORDER[a.tier] - TIER_ORDER[b.tier];

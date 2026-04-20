@@ -29,6 +29,11 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -62,9 +67,9 @@ const CEFR_TEXT_COLORS = {
 
 // Module type labels
 const MODULE_LABELS = {
-  flashcard: { en: "Flashcard", es: "Tarjeta" },
-  vocabulary: { en: "Vocabulary", es: "Vocabulario" },
-  grammar: { en: "Grammar", es: "Gramática" },
+  flashcard: { en: "Flashcard", es: "Tarjeta", it: "Scheda" },
+  vocabulary: { en: "Vocabulary", es: "Vocabulario", it: "Vocabolario" },
+  grammar: { en: "Grammar", es: "Gramática", it: "Grammatica" },
 };
 
 export default function NotesDrawer({
@@ -82,22 +87,30 @@ export default function NotesDrawer({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
-  const lang = appLanguage === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const locale = getLanguageLocale(lang);
 
   // Filter notes by current target language
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
+  const drawerTitle =
+    lang === "it" ? "Le mie note" : lang === "es" ? "Mis Notas" : "My Notes";
   const emptyMessage =
-    lang === "es"
+    lang === "it"
+      ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
+      : lang === "es"
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
-  const clearAllLabel = lang === "es" ? "Borrar todo" : "Clear all";
-  const summaryLabel = lang === "es" ? "Resumen" : "Summary";
-  const lessonLabel = lang === "es" ? "Lección" : "Lesson";
-  const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
+  const clearAllLabel =
+    lang === "it" ? "Cancella tutto" : lang === "es" ? "Borrar todo" : "Clear all";
+  const summaryLabel =
+    lang === "it" ? "Riassunto" : lang === "es" ? "Resumen" : "Summary";
+  const lessonLabel =
+    lang === "it" ? "Lezione" : lang === "es" ? "Lección" : "Lesson";
+  const noNotesLabel =
+    lang === "it" ? "Nessuna nota" : lang === "es" ? "Sin notas" : "No notes";
   const noteUi = useMemo(
     () =>
       isLightTheme
@@ -222,7 +235,7 @@ export default function NotesDrawer({
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -230,7 +243,7 @@ export default function NotesDrawer({
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
     });

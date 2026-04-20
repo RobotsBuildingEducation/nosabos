@@ -10,6 +10,8 @@
  * - Skill: Completion state for a lesson (locked, available, in_progress, completed)
  */
 
+import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
+
 export const SKILL_STATUS = {
   LOCKED: "locked",
   AVAILABLE: "available",
@@ -28,7 +30,7 @@ export const SKILL_STATUS = {
  * C1: Advanced - Flexible, sophisticated language use
  * C2: Mastery - Near-native proficiency
  */
-const baseLearningPath = {
+const baseLearningPath = withItalianSkillTreeText({
   "Pre-A1": [
     // Tutorial Unit - always at the very beginning
     {
@@ -10178,7 +10180,7 @@ const baseLearningPath = {
       ],
     },
   ],
-};
+});
 
 const LESSON_XP_RANGE = { min: 55, max: 80 };
 const LESSON_XP_STEP = 5;
@@ -11670,7 +11672,9 @@ function applyCEFRScaffolding(path) {
   return stagedPath;
 }
 
-const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+const cefrAlignedLearningPath = withItalianSkillTreeText(
+  applyCEFRScaffolding(baseLearningPath),
+);
 
 const SUPPORTED_TARGET_LANGS = new Set([
   "en",

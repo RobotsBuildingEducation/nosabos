@@ -36,6 +36,11 @@ import { GREEK_ALPHABET } from "../data/greekAlphabet";
 import { POLISH_ALPHABET } from "../data/polishAlphabet";
 import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
+import {
+  translateAlphabetInstructionToItalian,
+  translateAlphabetMeaningToItalian,
+  withItalianAlphabetSupport,
+} from "../data/alphabetItalianLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -70,6 +75,10 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -134,6 +143,29 @@ const LANGUAGE_NAMES_ES = {
   yua: "Maya yucateco",
 };
 
+const LANGUAGE_NAMES_IT = {
+  ru: "Russo",
+  ja: "Giapponese",
+  en: "Inglese",
+  es: "Spagnolo",
+  pt: "Portoghese",
+  fr: "Francese",
+  it: "Italiano",
+  nl: "Neerlandese",
+  de: "Tedesco",
+  nah: "Nahuatl",
+  el: "Greco",
+  pl: "Polacco",
+  ga: "Irlandese",
+  yua: "Maya yucateco",
+};
+
+const LANGUAGE_NAMES_BY_UI = {
+  en: LANGUAGE_NAMES_EN,
+  es: LANGUAGE_NAMES_ES,
+  it: LANGUAGE_NAMES_IT,
+};
+
 const LANGUAGE_SCRIPTS = {
   ru: "Cyrillic",
   ja: "hiragana or katakana",
@@ -151,16 +183,214 @@ const LANGUAGE_SCRIPTS = {
   yua: "Latin alphabet",
 };
 
+const LANGUAGE_SCRIPTS_IT = {
+  ru: "alfabeto cirillico",
+  ja: "hiragana o katakana",
+  en: "alfabeto latino",
+  es: "alfabeto latino",
+  pt: "alfabeto latino",
+  fr: "alfabeto latino",
+  it: "alfabeto latino",
+  nl: "alfabeto latino",
+  de: "alfabeto latino",
+  nah: "alfabeto latino",
+  el: "alfabeto greco",
+  pl: "alfabeto latino",
+  ga: "alfabeto latino",
+  yua: "alfabeto latino",
+};
+
+const LANGUAGE_SCRIPTS_BY_UI = {
+  en: LANGUAGE_SCRIPTS,
+  es: {
+    ru: "alfabeto cirílico",
+    ja: "hiragana o katakana",
+    en: "alfabeto latino",
+    es: "alfabeto latino",
+    pt: "alfabeto latino",
+    fr: "alfabeto latino",
+    it: "alfabeto latino",
+    nl: "alfabeto latino",
+    de: "alfabeto latino",
+    nah: "alfabeto latino",
+    el: "alfabeto griego",
+    pl: "alfabeto latino",
+    ga: "alfabeto latino",
+    yua: "alfabeto latino",
+  },
+  it: LANGUAGE_SCRIPTS_IT,
+};
+
+const ALPHABET_UI_TEXT = {
+  en: {
+    vowel: "Vowel",
+    consonant: "Consonant",
+    sign: "Sign",
+    practice: "Practice",
+    playSound: "Play sound",
+    playWord: "Play word",
+    close: "Close",
+    sayThisWord: "Say this word:",
+    grading: "Grading...",
+    nextWord: "Next word",
+    tryAgain: "Try again",
+    back: "Back",
+    connecting: "Connecting...",
+    stop: "Stop",
+    record: "Record",
+    recordingErrorTitle: "Recording error",
+    recordingErrorDescription: "Could not record. Please try again.",
+    gradingErrorTitle: "Grading error",
+    gradingErrorDescription: "Could not grade your answer.",
+    speechUnsupportedTitle: "Speech not supported",
+    speechUnsupportedDescription:
+      "Your browser doesn't support speech recognition.",
+    micDeniedTitle: "Microphone denied",
+    micDeniedDescription: "Please allow microphone access to record.",
+    generateWordErrorTitle: "Couldn't generate a new word",
+    level: "Level",
+    progress: "Progress",
+    alphabetHeadline: "{language} Alphabet",
+    alphabetSubhead: "Start by learning {language} letters and sounds.",
+    note: "After this, switch to Path mode in the menu to explore lessons.",
+    complete: "Congratulations! You've completed the alphabet.",
+    startSkillTree: "Start skill tree",
+    collection: "Collection",
+    loadError: "We couldn't load the alphabet. Please try again.",
+  },
+  es: {
+    vowel: "Vocal",
+    consonant: "Consonante",
+    sign: "Signo",
+    practice: "Practicar",
+    playSound: "Reproducir sonido",
+    playWord: "Reproducir palabra",
+    close: "Cerrar",
+    sayThisWord: "Di esta palabra:",
+    grading: "Evaluando...",
+    nextWord: "Siguiente palabra",
+    tryAgain: "Otra vez",
+    back: "Volver",
+    connecting: "Conectando...",
+    stop: "Detener",
+    record: "Grabar",
+    recordingErrorTitle: "Error de grabación",
+    recordingErrorDescription: "No se pudo grabar. Intenta de nuevo.",
+    gradingErrorTitle: "Error al evaluar",
+    gradingErrorDescription: "No pudimos evaluar tu respuesta.",
+    speechUnsupportedTitle: "Sin soporte de voz",
+    speechUnsupportedDescription:
+      "Tu navegador no soporta reconocimiento de voz.",
+    micDeniedTitle: "Micrófono denegado",
+    micDeniedDescription: "Permite el acceso al micrófono para grabar.",
+    generateWordErrorTitle: "No pudimos generar una palabra",
+    level: "Nivel",
+    progress: "Progreso",
+    alphabetHeadline: "Alfabeto {language}",
+    alphabetSubhead:
+      "Empieza aprendiendo las letras y sonidos del {language}.",
+    note:
+      "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
+    complete: "¡Felicidades! Has completado el alfabeto.",
+    startSkillTree: "Iniciar árbol de habilidades",
+    collection: "Colección",
+    loadError: "No pudimos cargar el alfabeto. Intenta nuevamente.",
+  },
+  it: {
+    vowel: "Vocale",
+    consonant: "Consonante",
+    sign: "Segno",
+    practice: "Esercitati",
+    playSound: "Riproduci suono",
+    playWord: "Riproduci parola",
+    close: "Chiudi",
+    sayThisWord: "Pronuncia questa parola:",
+    grading: "Valutazione...",
+    nextWord: "Prossima parola",
+    tryAgain: "Riprova",
+    back: "Indietro",
+    connecting: "Connessione...",
+    stop: "Ferma",
+    record: "Registra",
+    recordingErrorTitle: "Errore di registrazione",
+    recordingErrorDescription: "Non è stato possibile registrare. Riprova.",
+    gradingErrorTitle: "Errore di valutazione",
+    gradingErrorDescription: "Non abbiamo potuto valutare la tua risposta.",
+    speechUnsupportedTitle: "Voce non supportata",
+    speechUnsupportedDescription:
+      "Il tuo browser non supporta il riconoscimento vocale.",
+    micDeniedTitle: "Microfono negato",
+    micDeniedDescription: "Consenti l'accesso al microfono per registrare.",
+    generateWordErrorTitle: "Non abbiamo potuto generare una nuova parola",
+    level: "Livello",
+    progress: "Progressi",
+    alphabetHeadline: "Alfabeto {language}",
+    alphabetSubhead:
+      "Inizia imparando le lettere e i suoni del {language}.",
+    note:
+      "Dopo questo, passa alla modalità Percorso nel menu per esplorare le lezioni.",
+    complete: "Congratulazioni! Hai completato l'alfabeto.",
+    startSkillTree: "Inizia l'albero delle abilità",
+    collection: "Collezione",
+    loadError: "Non siamo riusciti a caricare l'alfabeto. Riprova.",
+  },
+};
+
+const uiText = (lang, key, params = {}) => {
+  const normalizedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const raw =
+    ALPHABET_UI_TEXT[normalizedLang]?.[key] ??
+    ALPHABET_UI_TEXT.en[key] ??
+    key;
+  return raw.replace(/\{(\w+)\}/g, (_, token) =>
+    params[token] != null ? String(params[token]) : `{${token}}`,
+  );
+};
+
+const getLanguageName = (code, uiLang) =>
+  LANGUAGE_NAMES_BY_UI[uiLang]?.[code] ||
+  LANGUAGE_NAMES_EN[code] ||
+  LANGUAGE_NAMES[code] ||
+  "Language";
+
+const getScriptName = (code, uiLang) =>
+  LANGUAGE_SCRIPTS_BY_UI[uiLang]?.[code] ||
+  LANGUAGE_SCRIPTS[code] ||
+  "native script";
+
+const getLetterSound = (letter, uiLang) => {
+  if (uiLang === "it") {
+    return (
+      letter.soundIt ||
+      translateAlphabetInstructionToItalian(letter.soundEs || letter.sound)
+    );
+  }
+  if (uiLang === "es") return letter.soundEs || letter.sound;
+  return letter.sound;
+};
+
+const getLetterTip = (letter, uiLang) => {
+  if (uiLang === "it") {
+    return (
+      letter.tipIt ||
+      translateAlphabetInstructionToItalian(letter.tipEs || letter.tip)
+    );
+  }
+  if (uiLang === "es") return letter.tipEs || letter.tip;
+  return letter.tip;
+};
+
 const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "" };
+  if (!meaning) return { en: "", es: "", it: "" };
   if (typeof meaning === "string") {
-    return { en: meaning, es: meaning };
+    return { en: meaning, es: meaning, it: meaning };
   }
 
   const en = meaning.en || meaning.es || "";
   const es = meaning.es || meaning.en || "";
+  const it = translateAlphabetMeaningToItalian(meaning) || en || es;
 
-  return { en, es };
+  return { en, es, it };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -336,6 +566,7 @@ function LetterCard({
   onCardCollected,
   pauseMs = 2000,
 }) {
+  const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
@@ -387,19 +618,13 @@ function LetterCard({
   }, [letter.type]);
 
   const typeLabel =
-    appLanguage === "es"
-      ? letter.type === "vowel"
-        ? "Vocal"
-        : letter.type === "consonant"
-          ? "Consonante"
-          : "Signo"
-      : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
+    uiText(uiLang, letter.type) ||
+    letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
-  const sound =
-    appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
-  const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
+  const sound = getLetterSound(letter, uiLang);
+  const tip = getLetterTip(letter, uiLang);
   const practiceWordMeaningText =
-    practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
+    practiceWordMeaningData?.[uiLang] || practiceWordMeaningData?.en || "";
   const showMeaning = Boolean(practiceWordMeaningText);
   const practiceMarker = getPracticeLetterMarker(letter);
   const highlightedPracticeWord = useMemo(
@@ -420,12 +645,8 @@ function LetterCard({
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
-          title:
-            appLanguage === "es" ? "Error de grabación" : "Recording error",
-          description:
-            appLanguage === "es"
-              ? "No se pudo grabar. Intenta de nuevo."
-              : "Could not record. Please try again.",
+          title: uiText(uiLang, "recordingErrorTitle"),
+          description: uiText(uiLang, "recordingErrorDescription"),
           status: "error",
           duration: 2500,
         });
@@ -507,11 +728,8 @@ function LetterCard({
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
-        title: appLanguage === "es" ? "Error al evaluar" : "Grading error",
-        description:
-          appLanguage === "es"
-            ? "No pudimos evaluar tu respuesta."
-            : "Could not grade your answer.",
+        title: uiText(uiLang, "gradingErrorTitle"),
+        description: uiText(uiLang, "gradingErrorDescription"),
         status: "error",
         duration: 3000,
       });
@@ -553,25 +771,15 @@ function LetterCard({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title:
-            appLanguage === "es"
-              ? "Sin soporte de voz"
-              : "Speech not supported",
-          description:
-            appLanguage === "es"
-              ? "Tu navegador no soporta reconocimiento de voz."
-              : "Your browser doesn't support speech recognition.",
+          title: uiText(uiLang, "speechUnsupportedTitle"),
+          description: uiText(uiLang, "speechUnsupportedDescription"),
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title:
-            appLanguage === "es" ? "Micrófono denegado" : "Microphone denied",
-          description:
-            appLanguage === "es"
-              ? "Permite el acceso al micrófono para grabar."
-              : "Please allow microphone access to record.",
+          title: uiText(uiLang, "micDeniedTitle"),
+          description: uiText(uiLang, "micDeniedDescription"),
           status: "error",
           duration: 3200,
         });
@@ -655,10 +863,7 @@ function LetterCard({
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
-        title:
-          appLanguage === "es"
-            ? "No pudimos generar una palabra"
-            : "Couldn't generate a new word",
+        title: uiText(uiLang, "generateWordErrorTitle"),
         status: "warning",
         duration: 2500,
       });
@@ -685,12 +890,12 @@ function LetterCard({
   const generateNewPracticeWord = useCallback(
     async (currentWord) => {
       const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
-      const scriptName = LANGUAGE_SCRIPTS[targetLang] || "native script";
+      const scriptName = getScriptName(targetLang, uiLang);
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
       const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -706,6 +911,7 @@ function LetterCard({
         const meaning = normalizeMeaning({
           en: parsed.meaning_en || parsed.meaning || "",
           es: parsed.meaning_es || parsed.meaning || "",
+          it: parsed.meaning_it || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -716,7 +922,7 @@ function LetterCard({
         return null;
       }
     },
-    [letter.letter, letter.name, targetLang],
+    [letter.letter, letter.name, targetLang, uiLang],
   );
 
   // Cleanup on unmount
@@ -788,7 +994,7 @@ function LetterCard({
                 fontSize="xs"
                 _hover={{ bg: APP_SURFACE_MUTED }}
               >
-                {appLanguage === "es" ? "Practicar" : "Practice"}
+                  {uiText(uiLang, "practice")}
               </Button>
             )}
           </HStack>
@@ -806,7 +1012,7 @@ function LetterCard({
               {onPlay && (
                 <Flex
                   as="button"
-                  aria-label="Play sound"
+                  aria-label={uiText(uiLang, "playSound")}
                   align="center"
                   justify="center"
                   bg={APP_SURFACE_MUTED}
@@ -867,7 +1073,7 @@ function LetterCard({
 
           {/* Close button */}
           <IconButton
-            aria-label={appLanguage === "es" ? "Cerrar" : "Close"}
+            aria-label={uiText(uiLang, "close")}
             icon={<RiCloseLine size={18} />}
             size="xs"
             bg="transparent"
@@ -884,7 +1090,7 @@ function LetterCard({
 
           {/* Practice Word Display */}
           <Text fontSize="xs" color={APP_TEXT_SECONDARY} fontWeight="medium">
-            {appLanguage === "es" ? "Di esta palabra:" : "Say this word:"}
+            {uiText(uiLang, "sayThisWord")}
           </Text>
 
           <HStack spacing={2} align="center">
@@ -900,7 +1106,7 @@ function LetterCard({
               ))}
             </Text>
             <IconButton
-              aria-label="Play word"
+              aria-label={uiText(uiLang, "playWord")}
               icon={
                 isLoadingTts || isPlayingWord ? (
                   <Spinner size="xs" />
@@ -935,7 +1141,7 @@ function LetterCard({
                 size={32}
               />
               <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                {appLanguage === "es" ? "Evaluando..." : "Grading..."}
+                {uiText(uiLang, "grading")}
               </Text>
             </VStack>
           ) : showResult ? (
@@ -963,7 +1169,7 @@ function LetterCard({
                     onClick={handleNextWord}
                     _hover={{ bg: "green.400" }}
                   >
-                    {appLanguage === "es" ? "Siguiente palabra" : "Next word"}
+                    {uiText(uiLang, "nextWord")}
                   </Button>
                 ) : (
                   <Button
@@ -973,7 +1179,7 @@ function LetterCard({
                     onClick={handleTryAgain}
                     _hover={{ bg: APP_SURFACE_MUTED }}
                   >
-                    {appLanguage === "es" ? "Otra vez" : "Try again"}
+                    {uiText(uiLang, "tryAgain")}
                   </Button>
                 )}
                 <Button
@@ -983,7 +1189,7 @@ function LetterCard({
                   onClick={handleFlipBack}
                   _hover={{ bg: APP_SURFACE_MUTED }}
                 >
-                  {appLanguage === "es" ? "Volver" : "Back"}
+                  {uiText(uiLang, "back")}
                 </Button>
               </HStack>
             </VStack>
@@ -1014,16 +1220,10 @@ function LetterCard({
                 }}
               >
                 {isConnecting
-                  ? appLanguage === "es"
-                    ? "Conectando..."
-                    : "Connecting..."
+                  ? uiText(uiLang, "connecting")
                   : isRecording
-                    ? appLanguage === "es"
-                      ? "Detener"
-                      : "Stop"
-                    : appLanguage === "es"
-                      ? "Grabar"
-                      : "Record"}
+                    ? uiText(uiLang, "stop")
+                    : uiText(uiLang, "record")}
               </Button>
             </VStack>
           )}
@@ -1034,20 +1234,20 @@ function LetterCard({
 }
 
 const LANGUAGE_ALPHABETS = {
-  ru: RUSSIAN_ALPHABET,
-  ja: JAPANESE_ALPHABET,
-  en: ENGLISH_ALPHABET,
-  es: SPANISH_ALPHABET,
-  pt: PORTUGUESE_ALPHABET,
-  fr: FRENCH_ALPHABET,
-  it: ITALIAN_ALPHABET,
-  nl: DUTCH_ALPHABET,
-  de: GERMAN_ALPHABET,
-  nah: NAHUATL_ALPHABET,
-  el: GREEK_ALPHABET,
-  pl: POLISH_ALPHABET,
-  ga: IRISH_ALPHABET,
-  yua: YUCATEC_MAYA_ALPHABET,
+  ru: withItalianAlphabetSupport(RUSSIAN_ALPHABET),
+  ja: withItalianAlphabetSupport(JAPANESE_ALPHABET),
+  en: withItalianAlphabetSupport(ENGLISH_ALPHABET),
+  es: withItalianAlphabetSupport(SPANISH_ALPHABET),
+  pt: withItalianAlphabetSupport(PORTUGUESE_ALPHABET),
+  fr: withItalianAlphabetSupport(FRENCH_ALPHABET),
+  it: withItalianAlphabetSupport(ITALIAN_ALPHABET),
+  nl: withItalianAlphabetSupport(DUTCH_ALPHABET),
+  de: withItalianAlphabetSupport(GERMAN_ALPHABET),
+  nah: withItalianAlphabetSupport(NAHUATL_ALPHABET),
+  el: withItalianAlphabetSupport(GREEK_ALPHABET),
+  pl: withItalianAlphabetSupport(POLISH_ALPHABET),
+  ga: withItalianAlphabetSupport(IRISH_ALPHABET),
+  yua: withItalianAlphabetSupport(YUCATEC_MAYA_ALPHABET),
 };
 
 // Fisher-Yates shuffle
@@ -1068,6 +1268,7 @@ export default function AlphabetBootcamp({
   pauseMs = 2000,
   onStartSkillTree,
 }) {
+  const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
@@ -1097,22 +1298,14 @@ export default function AlphabetBootcamp({
     onStartSkillTree?.();
   }, [onStartSkillTree, playSound]);
 
-  const targetLanguage =
-    appLanguage === "es"
-      ? LANGUAGE_NAMES_ES[targetLang]
-      : LANGUAGE_NAMES_EN[targetLang] || "Language";
-  const headline =
-    appLanguage === "es"
-      ? `Alfabeto ${targetLanguage}`
-      : `${targetLanguage} Alphabet`;
-  const subhead =
-    appLanguage === "es"
-      ? `Empieza aprendiendo las letras y sonidos del ${targetLanguage}.`
-      : `Start by learning ${targetLanguage} letters and sounds.`;
-  const note =
-    appLanguage === "es"
-      ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
-      : "After this, switch to Path mode in the menu to explore lessons.";
+  const targetLanguage = getLanguageName(targetLang, uiLang);
+  const headline = uiText(uiLang, "alphabetHeadline", {
+    language: targetLanguage,
+  });
+  const subhead = uiText(uiLang, "alphabetSubhead", {
+    language: targetLanguage,
+  });
+  const note = uiText(uiLang, "note");
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
   const isComplete =
     hasLetters &&
@@ -1315,7 +1508,7 @@ export default function AlphabetBootcamp({
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <XpProgressHeader
-          levelText={`${appLanguage === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
+          levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
           xpText={`XP ${currentXp}`}
           progressPct={nextLevelProgressPct}
           barProps={{
@@ -1362,7 +1555,7 @@ export default function AlphabetBootcamp({
               <Box w="100%" maxW="400px" mx="auto">
                 <HStack justify="space-between" mb={1}>
                   <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                    {appLanguage === "es" ? "Progreso" : "Progress"}
+                    {uiText(uiLang, "progress")}
                   </Text>
                   <Text fontSize="xs" color="yellow.300" fontWeight="bold">
                     {collectedLetters.length} / {alphabet.length}
@@ -1447,9 +1640,7 @@ export default function AlphabetBootcamp({
                 <VStack spacing={2}>
                   <Text fontSize="2xl">🎉</Text>
                   <Text color="green.200" fontWeight="bold" textAlign="center">
-                    {appLanguage === "es"
-                      ? "¡Felicidades! Has completado el alfabeto."
-                      : "Congratulations! You've completed the alphabet."}
+                    {uiText(uiLang, "complete")}
                   </Text>
                 </VStack>
               </Flex>
@@ -1459,9 +1650,7 @@ export default function AlphabetBootcamp({
                   size="lg"
                   onClick={handleStartSkillTreeClick}
                 >
-                  {appLanguage === "es"
-                    ? "Iniciar árbol de habilidades"
-                    : "Start skill tree"}
+                  {uiText(uiLang, "startSkillTree")}
                 </Button>
               )}
             </VStack>
@@ -1472,7 +1661,7 @@ export default function AlphabetBootcamp({
             <VStack spacing={4} w="100%">
               {/* <HStack spacing={2}>
                 <Badge colorScheme="green" px={3} py={1} borderRadius="full">
-                  {appLanguage === "es" ? "Colección" : "Collection"}:{" "}
+                  {uiText(uiLang, "collection")}:{" "}
                   {collectedLetters.length}
                 </Badge>
               </HStack> */}
@@ -1521,9 +1710,7 @@ export default function AlphabetBootcamp({
           boxShadow={APP_SHADOW}
         >
           <Text color={APP_TEXT_SECONDARY}>
-            {appLanguage === "es"
-              ? "No pudimos cargar el alfabeto. Intenta nuevamente."
-              : "We couldn't load the alphabet. Please try again."}
+            {uiText(uiLang, "loadError")}
           </Text>
         </Flex>
       )}

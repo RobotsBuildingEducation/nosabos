@@ -8,21 +8,22 @@ import {
 } from "react-icons/ri";
 import { motion } from "framer-motion";
 import { translations } from "../utils/translation";
+import { normalizeSupportLanguage } from "../constants/languages";
 
 const MotionBox = motion(Box);
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(localStorage.getItem("appLanguage"));
   }
-  return "en";
+  return normalizeSupportLanguage();
 };
 
 // Translation helper for UI strings
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
@@ -34,64 +35,82 @@ const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 const CEFR_LEVEL_INFO = {
   "Pre-A1": {
-    name: { en: "Ultimate Beginner", es: "Principiante Total" },
+    name: {
+      en: "Ultimate Beginner",
+      es: "Principiante Total",
+      it: "Principiante assoluto",
+    },
     displayLabel: "A0",
     color: "#8B5CF6",
     gradient: "linear(135deg, #A78BFA, #8B5CF6)",
     description: {
       en: "First words and recognition",
       es: "Primeras palabras y reconocimiento",
+      it: "Prime parole e riconoscimento",
     },
   },
   A1: {
-    name: { en: "Beginner", es: "Principiante" },
+    name: { en: "Beginner", es: "Principiante", it: "Principiante" },
     color: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6)",
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
+      it: "Lingua di sopravvivenza di base",
     },
   },
   A2: {
-    name: { en: "Elementary", es: "Elemental" },
+    name: { en: "Elementary", es: "Elemental", it: "Elementare" },
     color: "#8B5CF6",
     gradient: "linear(135deg, #A78BFA, #8B5CF6)",
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
+      it: "Comunicazione quotidiana semplice",
     },
   },
   B1: {
-    name: { en: "Intermediate", es: "Intermedio" },
+    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio" },
     color: "#A855F7",
     gradient: "linear(135deg, #C084FC, #A855F7)",
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
+      it: "Gestire situazioni quotidiane",
     },
   },
   B2: {
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    name: {
+      en: "Upper Intermediate",
+      es: "Intermedio Alto",
+      it: "Intermedio superiore",
+    },
     color: "#F97316",
     gradient: "linear(135deg, #FB923C, #F97316)",
-    description: { en: "Complex discussions", es: "Discusiones complejas" },
+    description: {
+      en: "Complex discussions",
+      es: "Discusiones complejas",
+      it: "Discussioni complesse",
+    },
   },
   C1: {
-    name: { en: "Advanced", es: "Avanzado" },
+    name: { en: "Advanced", es: "Avanzado", it: "Avanzato" },
     color: "#EF4444",
     gradient: "linear(135deg, #F87171, #EF4444)",
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
+      it: "Uso sofisticato della lingua",
     },
   },
   C2: {
-    name: { en: "Mastery", es: "Maestría" },
+    name: { en: "Mastery", es: "Maestría", it: "Padronanza" },
     color: "#EC4899",
     gradient: "linear(135deg, #F472B6, #EC4899)",
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
+      it: "Competenza quasi nativa",
     },
   },
 };

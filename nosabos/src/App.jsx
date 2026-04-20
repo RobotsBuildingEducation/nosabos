@@ -193,21 +193,19 @@ import {
   getNextDailyGoalResetAt,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
-import {
-  brazilianFlag,
-  frenchFlag,
-  germanFlag,
-  greekFlag,
-  irishFlag,
-  italianFlag,
-  japaneseFlag,
-  mexicanFlag,
-  netherlandsFlag,
-  polishFlag,
-  russianFlag,
-  usaFlag,
-} from "./components/flagsIcons/flags";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getLanguageLabel,
+  getLanguagePromptName,
+  getPracticeLanguageOptions,
+  getSortLocale,
+  getSupportLanguageOptions,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "./constants/languages";
 
 /* ---------------------------
    Small helpers
@@ -253,6 +251,8 @@ const TARGET_LANGUAGE_LABELS = {
   ga: "Irish",
   yua: "Yucatec Maya",
 };
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
 const SESSION_TIMER_STORAGE_KEY = "sessionTimerState";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -599,14 +599,18 @@ function TopBar({
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "Pre-A1");
-  const [supportLang, setSupportLang] = useState(p.supportLang || "en");
+  const [supportLang, setSupportLang] = useState(
+    normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+  );
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
     personaDefaultFor(p.supportLang || supportLang || appLanguage) ||
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
-  const [targetLang, setTargetLang] = useState(p.targetLang || "es");
+  const [targetLang, setTargetLang] = useState(
+    normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE),
+  );
   const normalizedTargetLang = String(targetLang || "").toLowerCase();
   const hasProficiencyDecisionForTargetLang =
     Object.prototype.hasOwnProperty.call(
@@ -625,133 +629,42 @@ function TopBar({
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation,
   );
-  const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
+  const vadSecondsLabel =
+    appLanguage === "it"
+      ? "secondi"
+      : appLanguage === "es"
+        ? "segundos"
+        : "seconds";
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const vadHint =
     t.onboarding_vad_hint ||
-    (appLanguage === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+    uiCopy(appLanguage, {
+      en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
+      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+    });
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
   const supportLanguageOptions = useMemo(
-    () => [
-      { value: "en", label: t.onboarding_support_en, flag: usaFlag() },
-      { value: "es", label: t.onboarding_support_es, flag: mexicanFlag() },
-    ],
-    [t],
+    () => getSupportLanguageOptions({ ui: t, uiLang: appLanguage }),
+    [appLanguage, t],
   );
 
-  const practiceLanguageOptions = useMemo(() => {
-    const collator = new Intl.Collator(appLanguage === "es" ? "es" : "en");
-    const options = [
-      {
-        value: "nl",
-        label: t.onboarding_practice_nl,
-        beta: false,
-        flag: netherlandsFlag(),
-      },
-      {
-        value: "en",
-        label: t.onboarding_practice_en,
-        beta: false,
-        flag: usaFlag(),
-      },
-      {
-        value: "fr",
-        label: t.onboarding_practice_fr,
-        beta: false,
-        flag: frenchFlag(),
-      },
-      {
-        value: "de",
-        label: t.onboarding_practice_de,
-        beta: false,
-        flag: germanFlag(),
-      },
-      {
-        value: "it",
-        label: t.onboarding_practice_it,
-        beta: false,
-        flag: italianFlag(),
-      },
-      {
-        value: "nah",
-        label: `${t.onboarding_practice_nah} (${appLanguage === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "yua",
-        label: `${t.onboarding_practice_yua} (${appLanguage === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "pt",
-        label: t.onboarding_practice_pt,
-        beta: false,
-        flag: brazilianFlag(),
-      },
-      {
-        value: "es",
-        label: t.onboarding_practice_es,
-        beta: false,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "el",
-        label: t.onboarding_practice_el,
-        beta: true,
-        flag: greekFlag(),
-      },
-      {
-        value: "ja",
-        label: t.onboarding_practice_ja,
-        beta: true,
-        hidden: !showJapanese,
-        flag: japaneseFlag(),
-      },
-      {
-        value: "ru",
-        label: t.onboarding_practice_ru,
-        beta: true,
-        flag: russianFlag(),
-      },
-      {
-        value: "pl",
-        label: t.onboarding_practice_pl,
-        beta: true,
-        flag: polishFlag(),
-      },
-      {
-        value: "ga",
-        label: t.onboarding_practice_ga,
-        beta: true,
-        flag: irishFlag(),
-      },
-    ];
-
-    const visible = options.filter((option) => !option.hidden);
-    const stable = visible
-      .filter((option) => !option.beta && !option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const alpha = visible
-      .filter((option) => option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const beta = visible
-      .filter((option) => option.beta)
-      .sort((a, b) => collator.compare(a.label, b.label));
-
-    return [...stable, ...alpha, ...beta];
-  }, [appLanguage, showJapanese, t]);
+  const practiceLanguageOptions = useMemo(
+    () =>
+      getPracticeLanguageOptions({
+        ui: t,
+        uiLang: appLanguage,
+        showJapanese,
+      }),
+    [appLanguage, showJapanese, t],
+  );
   const selectedSupportOption =
-    supportLanguageOptions.find((option) => option.value === supportLang) ||
-    supportLanguageOptions[0];
+    supportLanguageOptions.find(
+      (option) => option.value === normalizeSupportLanguage(supportLang),
+    ) || supportLanguageOptions[0];
   const selectedPracticeOption =
     practiceLanguageOptions.find((option) => option.value === targetLang) ||
     practiceLanguageOptions[0];
@@ -760,14 +673,18 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    setSupportLang(q.supportLang || "en");
+    setSupportLang(
+      normalizeSupportLanguage(q.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+    );
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ??
         personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
         translations.en.onboarding_persona_default_example,
     );
-    setTargetLang(q.targetLang || "es");
+    setTargetLang(
+      normalizePracticeLanguage(q.targetLang, DEFAULT_TARGET_LANGUAGE),
+    );
     setShowTranslations(
       typeof q.showTranslations === "boolean" ? q.showTranslations : true,
     );
@@ -781,13 +698,16 @@ function TopBar({
     const localizedDefault = personaDefaultFor(supportLang || appLanguage);
     const enDefault = personaDefaultFor("en");
     const esDefault = personaDefaultFor("es");
+    const itDefault = personaDefaultFor("it");
     const current = (voicePersona || "").trim();
 
     if (
       (!current && localizedDefault) ||
       (current &&
         current !== localizedDefault &&
-        (current === enDefault || current === esDefault))
+        (current === enDefault ||
+          current === esDefault ||
+          current === itDefault))
     ) {
       const nextPersona = localizedDefault || current;
       setVoicePersona(nextPersona);
@@ -803,7 +723,11 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title: uiCopy(appLanguage, {
+            en: "Save failed",
+            es: "Error al guardar",
+            it: "Salvataggio non riuscito",
+          }),
           description: String(e?.message || e),
         });
       }
@@ -858,7 +782,11 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title: uiCopy(appLanguage, {
+            en: "Save failed",
+            es: "Error al guardar",
+            it: "Salvataggio non riuscito",
+          }),
           description: String(e?.message || e),
         });
       }
@@ -935,9 +863,7 @@ function TopBar({
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
-    new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US",
-    );
+    new Date(cefrResult.updatedAt).toLocaleString(getSortLocale(appLanguage));
   const recentTopBarPointerRef = useRef({ key: "", at: 0 });
 
   const runTopBarAction = useCallback(
@@ -1012,9 +938,11 @@ function TopBar({
                 variant="outline"
                 colorScheme="teal"
                 icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-                aria-label={
-                  appLanguage === "es" ? "Abrir meta diaria" : "Open daily goal"
-                }
+                aria-label={uiCopy(appLanguage, {
+                  en: "Open daily goal",
+                  es: "Abrir meta diaria",
+                  it: "Apri obiettivo giornaliero",
+                })}
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
@@ -1038,9 +966,11 @@ function TopBar({
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
                 size="sm"
-                aria-label={
-                  appLanguage === "es" ? "Abrir temporizador" : "Open timer"
-                }
+                aria-label={uiCopy(appLanguage, {
+                  en: "Open timer",
+                  es: "Abrir temporizador",
+                  it: "Apri timer",
+                })}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
                 <FiClock />
@@ -1052,12 +982,16 @@ function TopBar({
                   size="sm"
                   aria-label={
                     timerPaused
-                      ? appLanguage === "es"
-                        ? "Reanudar temporizador"
-                        : "Resume timer"
-                      : appLanguage === "es"
-                        ? "Pausar temporizador"
-                        : "Pause timer"
+                      ? uiCopy(appLanguage, {
+                          en: "Resume timer",
+                          es: "Reanudar temporizador",
+                          it: "Riprendi timer",
+                        })
+                      : uiCopy(appLanguage, {
+                          en: "Pause timer",
+                          es: "Pausar temporizador",
+                          it: "Metti in pausa il timer",
+                        })
                   }
                   {...getTopBarPressProps(
                     "session-timer-toggle",
@@ -1502,9 +1436,11 @@ function TopBar({
                           }}
                           mt={4}
                         >
-                          {appLanguage === "es"
-                            ? "Iniciar prueba de nivel"
-                            : "Start proficiency test"}
+                          {uiCopy(appLanguage, {
+                            en: "Start proficiency test",
+                            es: "Iniciar prueba de nivel",
+                            it: "Inizia test di livello",
+                          })}
                         </Button>
                       )}
 
@@ -1772,19 +1708,25 @@ export default function App() {
     }
   }, []);
 
-  const normalizeSupportLang = useCallback(
-    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
-    [],
-  );
+  const normalizeSupportLang = useCallback((raw) => {
+    const normalized = normalizeSupportLanguage(raw, "");
+    return normalized || undefined;
+  }, []);
 
-  const resolvedTargetLang = (user?.progress?.targetLang || "es").toLowerCase();
+  const resolvedTargetLang = normalizePracticeLanguage(
+    user?.progress?.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
-    (storedUiLang === "es" ? "es" : "en");
+    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE);
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
-    const nextLang = resolvedSupportLang === "es" ? "es" : "en";
+    const nextLang = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
@@ -1804,8 +1746,14 @@ export default function App() {
     ).trim();
     if (!id) return;
 
-    const desiredAppLanguage = resolvedSupportLang === "es" ? "es" : "en";
-    const persistedAppLanguage = user?.appLanguage === "es" ? "es" : "en";
+    const desiredAppLanguage = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const persistedAppLanguage = normalizeSupportLanguage(
+      user?.appLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     if (persistedAppLanguage === desiredAppLanguage) return;
 
@@ -1921,9 +1869,9 @@ export default function App() {
 
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(() => {
-    if (typeof window === "undefined") return "en";
+    if (typeof window === "undefined") return DEFAULT_SUPPORT_LANGUAGE;
     const stored = localStorage.getItem("appLanguage");
-    return stored === "es" ? "es" : "en";
+    return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
   const t = translations[appLanguage] || translations.en;
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -2324,15 +2272,25 @@ export default function App() {
     if (!template) return fallback;
 
     const progress = user?.progress || {};
-    const supportLang = progress.supportLang || "en";
-    const targetLang = progress.targetLang || "es";
+    const supportLang = normalizeSupportLanguage(
+      progress.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const targetLang = normalizePracticeLanguage(
+      progress.targetLang,
+      DEFAULT_TARGET_LANGUAGE,
+    );
     const languageName = (code) =>
       translations[appLanguage]?.[
         `language_${code === "nah" ? "nah" : code}`
       ] || code;
 
     const targetNameKey =
-      targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+      targetLang === supportLang
+        ? targetLang === "en"
+          ? "es"
+          : "en"
+        : supportLang;
 
     return template.replace("{language}", languageName(targetNameKey));
   }, [appLanguage, user?.progress]);
@@ -2392,8 +2350,10 @@ export default function App() {
             local_npub: id,
             createdAt: new Date().toISOString(),
             onboarding: { completed: false, currentStep: 1 },
-            appLanguage:
-              localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+            appLanguage: normalizeSupportLanguage(
+              localStorage.getItem("appLanguage"),
+              DEFAULT_SUPPORT_LANGUAGE,
+            ),
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
@@ -2411,8 +2371,10 @@ export default function App() {
           local_npub: id,
           createdAt: new Date().toISOString(),
           onboarding: { completed: false, currentStep: 1 },
-          appLanguage:
-            localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+          appLanguage: normalizeSupportLanguage(
+            localStorage.getItem("appLanguage"),
+            DEFAULT_SUPPORT_LANGUAGE,
+          ),
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
@@ -2435,11 +2397,11 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc?.progress?.supportLang === "es"
-            ? "es"
-            : userDoc.appLanguage === "es"
-              ? "es"
-              : "en";
+          normalizeSupportLang(userDoc?.progress?.supportLang) ||
+          normalizeSupportLanguage(
+            userDoc.appLanguage,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
@@ -3206,34 +3168,19 @@ export default function App() {
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
-      supportLang: ["en", "es"].includes(
+      supportLang: normalizeSupportLanguage(
         partial.supportLang ?? prev.supportLang,
-      )
-        ? (partial.supportLang ?? prev.supportLang)
-        : "en",
+        DEFAULT_SUPPORT_LANGUAGE,
+      ),
       voice: partial.voice ?? prev.voice ?? "alloy",
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
         0,
         240,
       ),
-      targetLang: [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(partial.targetLang ?? prev.targetLang)
-        ? (partial.targetLang ?? prev.targetLang)
-        : "es",
+      targetLang: normalizePracticeLanguage(
+        partial.targetLang ?? prev.targetLang,
+        DEFAULT_TARGET_LANGUAGE,
+      ),
       showTranslations:
         typeof (partial.showTranslations ?? prev.showTranslations) === "boolean"
           ? (partial.showTranslations ?? prev.showTranslations)
@@ -3270,7 +3217,10 @@ export default function App() {
     } catch {}
 
     // Derive appLanguage from supportLang to keep them in sync
-    const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
+    const derivedAppLanguage = normalizeSupportLanguage(
+      next.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     // Strip subcollection-backed data from the progress field before writing
     // to the user document. languageLessons and languageFlashcards live in
@@ -3354,32 +3304,19 @@ export default function App() {
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
-        supportLang: ["en", "es"].includes(payload.supportLang)
-          ? payload.supportLang
-          : "en",
+        supportLang: normalizeSupportLanguage(
+          payload.supportLang,
+          DEFAULT_SUPPORT_LANGUAGE,
+        ),
         voicePersona: safe(
           payload.voicePersona,
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example,
         ),
-        targetLang: [
-          "nah",
-          "es",
-          "pt",
-          "en",
-          "fr",
-          "it",
-          "nl",
-          "ja",
-          "ru",
-          "de",
-          "el",
-          "pl",
-          "ga",
-          "yua",
-        ].includes(payload.targetLang)
-          ? payload.targetLang
-          : "es",
+        targetLang: normalizePracticeLanguage(
+          payload.targetLang,
+          DEFAULT_TARGET_LANGUAGE,
+        ),
         pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
         xp: 0,
         streak: 0,
@@ -4063,7 +4000,7 @@ export default function App() {
           updatedAt: user?.updatedAt || null,
         };
 
-        const localeName = appLanguage === "es" ? "Spanish" : "English";
+        const localeName = getLanguagePromptName(appLanguage) || "English";
         const prompt = [
           "You are an expert language placement coach.",
           "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
@@ -6638,11 +6575,20 @@ function BottomActionBar({
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
   const helpChatLabel =
-    helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
+    helpLabel ||
+    t?.app_help_chat ||
+    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto" });
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const tasksLabel =
-    appLanguage === "es" ? "Práctica de inmersión" : "Immersion practice";
-  const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
+    t?.real_world_tasks_title ||
+    uiCopy(appLanguage, {
+      en: "Immersion practice",
+      es: "Práctica de inmersión",
+      it: "Pratica di immersione",
+    });
+  const notesLabel =
+    t?.app_notes ||
+    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note" });
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -6666,24 +6612,40 @@ function BottomActionBar({
       ? [
           {
             id: "alphabet",
-            label: appLanguage === "es" ? "Alfabeto" : "Alphabet",
+            label:
+              t?.app_mode_alphabet ||
+              uiCopy(appLanguage, {
+                en: "Alphabet",
+                es: "Alfabeto",
+                it: "Alfabeto",
+              }),
             icon: LuLanguages,
           },
         ]
       : []),
     {
       id: "path",
-      label: appLanguage === "es" ? "Ruta" : "Path",
+      label:
+        t?.app_mode_path ||
+        uiCopy(appLanguage, { en: "Path", es: "Ruta", it: "Percorso" }),
       icon: PiPath,
     },
     {
       id: "flashcards",
-      label: appLanguage === "es" ? "Tarjetas" : "Cards",
+      label:
+        t?.app_mode_cards ||
+        uiCopy(appLanguage, { en: "Cards", es: "Tarjetas", it: "Schede" }),
       icon: PiCardsBold,
     },
     {
       id: "conversations",
-      label: appLanguage === "es" ? "Conversación" : "Conversation",
+      label:
+        t?.app_mode_conversation ||
+        uiCopy(appLanguage, {
+          en: "Conversation",
+          es: "Conversación",
+          it: "Conversazione",
+        }),
       icon: RiChat3Line,
     },
   ];
@@ -6691,7 +6653,9 @@ function BottomActionBar({
   const currentMode =
     PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
-  const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
+  const modeMenuLabel =
+    t?.app_mode_menu ||
+    uiCopy(appLanguage, { en: "Mode", es: "Modo", it: "Modalità" });
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";

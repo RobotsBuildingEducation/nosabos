@@ -92,7 +92,7 @@ const getAppLanguage = () => {
 // Translation helper for UI strings - uses appLanguage for UI text
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>

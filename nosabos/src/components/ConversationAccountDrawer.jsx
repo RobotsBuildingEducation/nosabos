@@ -11,6 +11,10 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import { ConversationSettingsPanel } from "./ConversationSettingsDrawer";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_BORDER = "var(--app-border)";
@@ -32,9 +36,13 @@ export default function ConversationAccountDrawer({
   });
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const lang = appLanguage === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const ui =
-    lang === "es"
+    lang === "it"
+      ? {
+          title: "Impostazioni conversazione",
+        }
+      : lang === "es"
       ? {
           title: "Configuración de conversación",
         }
