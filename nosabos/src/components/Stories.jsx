@@ -92,6 +92,13 @@ const STORY_PRIMARY_BUTTON_EDGE = "#0f766e";
 =================================== */
 const RESPONSES_URL = import.meta.env.VITE_RESPONSES_URL;
 
+const STORY_TEXT_SX = {
+  whiteSpace: "pre-wrap",
+  wordBreak: "normal",
+  overflowWrap: "normal",
+  hyphens: "none",
+};
+
 /* ================================
    Helpers / Language utils
 =================================== */
@@ -1917,6 +1924,7 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color={APP_TEXT_PRIMARY}
                                     lineHeight="1.6"
+                                    sx={STORY_TEXT_SX}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1926,6 +1934,7 @@ export default function StoryMode({
                                       color={APP_TEXT_SECONDARY}
                                       lineHeight="1.4"
                                       mt={1}
+                                      sx={STORY_TEXT_SX}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1963,6 +1972,7 @@ export default function StoryMode({
                             color={APP_TEXT_PRIMARY}
                             mb={3}
                             lineHeight="1.8"
+                            sx={STORY_TEXT_SX}
                           >
                             {storyData.fullStory?.tgt || ""}
                           </Text>
@@ -1972,6 +1982,7 @@ export default function StoryMode({
                               fontSize="md"
                               color={APP_TEXT_SECONDARY}
                               lineHeight="1.6"
+                              sx={STORY_TEXT_SX}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -2011,6 +2022,7 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      sx={STORY_TEXT_SX}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -2020,6 +2032,7 @@ export default function StoryMode({
                         color={APP_TEXT_SECONDARY}
                         lineHeight="1.5"
                         textAlign="center"
+                        sx={STORY_TEXT_SX}
                       >
                         {currentSentence?.sup}
                       </Text>
