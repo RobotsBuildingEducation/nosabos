@@ -3098,7 +3098,7 @@ Supported object types: ${supportedObjects}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3178,7 +3178,7 @@ ${reviewContextBlock.lessonTerms.join(", ")}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3336,9 +3336,9 @@ function normalizeScenario({
   return {
     id: mapId,
     name: {
-      en: String(raw?.name?.en || environment?.names?.en || getMapName(mapId, "en")),
-      es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
-      it: String(raw?.name?.it || environment?.names?.it || getMapName(mapId, "it")),
+      en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
+      es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
+      it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
