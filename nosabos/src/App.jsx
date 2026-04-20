@@ -583,6 +583,8 @@ function TopBar({
   // 🆕 mobile detection prop
   isMobile,
   postNostrContent,
+  onSupportLangChange,
+  pendingLangRef,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -602,10 +604,6 @@ function TopBar({
   const [supportLang, setSupportLang] = useState(
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
-  // Tracks a locally-chosen support lang so stale Firestore snapshots (arriving
-  // before the write is confirmed) cannot revert the UI during the write window.
-  const pendingLangRef = useRef(null);
-  const pendingLangTimeoutRef = useRef(null);
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
@@ -1287,16 +1285,8 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
-                                  // Pin the pending lang so stale Firestore snapshots
-                                  // can't revert the UI before the write is confirmed.
-                                  pendingLangRef.current = normalized;
-                                  if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
-                                  pendingLangTimeoutRef.current = setTimeout(() => {
-                                    pendingLangRef.current = null;
-                                  }, 5000);
                                   setSupportLang(normalized);
-                                  setAppLanguage(normalized);
-                                  localStorage.setItem("appLanguage", normalized);
+                                  onSupportLangChange?.(normalized);
                                   setTimeout(() => {
                                     persistSettings({ supportLang: normalized });
                                   }, 0);
@@ -1888,6 +1878,16 @@ export default function App() {
     const stored = localStorage.getItem("appLanguage");
     return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
+  // Guards stale Firestore snapshots from reverting an in-flight language change.
+  const pendingLangRef = useRef(null);
+  const pendingLangTimeoutRef = useRef(null);
+  const onSupportLangChange = useCallback((normalized) => {
+    pendingLangRef.current = normalized;
+    if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
+    pendingLangTimeoutRef.current = setTimeout(() => { pendingLangRef.current = null; }, 5000);
+    setAppLanguage(normalized);
+    try { localStorage.setItem("appLanguage", normalized); } catch {}
+  }, []);
   const t = translations[appLanguage] || translations.en;
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
@@ -5776,6 +5776,8 @@ export default function App() {
           testSound={submitActionSound}
           isMobile={isMobile}
           postNostrContent={postNostrContent}
+          onSupportLangChange={onSupportLangChange}
+          pendingLangRef={pendingLangRef}
         />
       )}
 
