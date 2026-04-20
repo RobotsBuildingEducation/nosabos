@@ -6280,12 +6280,16 @@ export default function App() {
             <VStack spacing={{ base: 4, md: 5 }} textAlign="center">
               <VStack spacing={2}>
                 <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
-                  {appLanguage === "es"
+                  {appLanguage === "it"
+                    ? "Obiettivo giornaliero raggiunto!"
+                    : appLanguage === "es"
                     ? "¡Meta diaria alcanzada!"
                     : "Daily Goal Complete!"}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
-                  {appLanguage === "es"
+                  {appLanguage === "it"
+                    ? "Hai raggiunto il tuo obiettivo XP di oggi."
+                    : appLanguage === "es"
                     ? "Alcanzaste tu objetivo de XP de hoy."
                     : "You hit today’s XP target."}
                 </Text>
@@ -6304,7 +6308,11 @@ export default function App() {
                   <HStack spacing={6} justify="center">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "es" ? "Meta" : "Goal"}
+                        {appLanguage === "it"
+                          ? "Obiettivo"
+                          : appLanguage === "es"
+                          ? "Meta"
+                          : "Goal"}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -6312,7 +6320,9 @@ export default function App() {
                     </VStack>
                   </HStack>
                   <Text fontSize="sm" opacity={0.85}>
-                    {appLanguage === "es"
+                    {appLanguage === "it"
+                      ? "Mantieni la serie e torna domani per un nuovo obiettivo!"
+                      : appLanguage === "es"
                       ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
                       : "Keep the streak going and come back tomorrow for a new goal!"}
                   </Text>
@@ -6337,7 +6347,11 @@ export default function App() {
                 fontSize={{ base: "md", md: "lg" }}
                 py={{ base: 5, md: 6 }}
               >
-                {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
+                {appLanguage === "it"
+                  ? "Continua ad imparare"
+                  : appLanguage === "es"
+                  ? "Seguir practicando"
+                  : "Keep learning"}
               </Button>
             </VStack>
           </ModalBody>
