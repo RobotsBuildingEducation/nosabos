@@ -27,6 +27,17 @@ import {
   FaSun,
 } from "react-icons/fa";
 
+import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+  HStack,
+  Text as ChakraText,
+  Button as ChakraButton,
+} from "@chakra-ui/react";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import VoiceOrb from "./VoiceOrb";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
@@ -37,6 +48,7 @@ import { useThemeStore } from "../useThemeStore";
 import {
   LANGUAGE_FALLBACK_LABELS,
   getPracticeLanguageOptions,
+  getSupportLanguageOptions,
 } from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -424,11 +436,79 @@ const translations = {
   },
 };
 
-const LANG_OPTIONS = [
-  { value: "en", label: "English" },
-  { value: "es", label: "Español" },
-  { value: "it", label: "Italiano" },
-];
+// ═══════════════════════════════════════════════════════════════════════════════
+// LANGUAGE MENU COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LanguageMenu = ({ lang, setLang, playSound }) => {
+  const options = getSupportLanguageOptions({ uiLang: lang });
+  const selected = options.find((o) => o.value === lang) || options[0];
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
+      <Menu autoSelect={false} isLazy>
+        <MenuButton
+          as={ChakraButton}
+          rightIcon={<ChevronDownIcon />}
+          variant="outline"
+          size="sm"
+          borderColor="var(--app-border)"
+          bg="var(--app-glass-bg)"
+          color="var(--app-text-primary)"
+          _hover={{ bg: "var(--app-glass-bg-soft)" }}
+          _active={{ bg: "var(--app-glass-bg-soft)" }}
+          backdropFilter="blur(20px)"
+          rounded="xl"
+          px={4}
+          py={5}
+          minW="150px"
+          textAlign="left"
+          onClick={() => playSound(selectSound)}
+        >
+          <HStack spacing={2}>
+            {selected?.flag}
+            <ChakraText as="span" fontSize="sm" fontWeight="semibold">
+              {selected?.label}
+            </ChakraText>
+          </HStack>
+        </MenuButton>
+        <MenuList
+          borderColor="var(--app-border)"
+          bg="var(--app-surface)"
+          shadow="xl"
+          minW="160px"
+        >
+          <MenuOptionGroup
+            type="radio"
+            value={lang}
+            onChange={(value) => {
+              playSound(selectSound);
+              setLang(value);
+            }}
+          >
+            {options.map((opt) => (
+              <MenuItemOption
+                key={opt.value}
+                value={opt.value}
+                bg="transparent"
+                _hover={{ bg: "var(--app-surface-elevated)" }}
+                _checked={{ fontWeight: "semibold" }}
+                py={3}
+              >
+                <HStack spacing={2}>
+                  {opt.flag}
+                  <ChakraText as="span" fontSize="sm">
+                    {opt.label}
+                  </ChakraText>
+                </HStack>
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
+    </div>
+  );
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // GLOBAL STYLES
@@ -1469,47 +1549,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
 
             {/* Language Menu */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                marginTop: "8px",
-              }}
-            >
-              <select
-                value={lang}
-                onChange={(e) => {
-                  playSound(selectSound);
-                  setLang(e.target.value);
-                }}
-                style={{
-                  background: theme.colors.bg.elevated,
-                  color: theme.colors.text.primary,
-                  border: `1px solid ${theme.colors.border.accent}`,
-                  borderRadius: "12px",
-                  padding: "10px 36px 10px 16px",
-                  fontSize: "0.875rem",
-                  fontFamily: theme.fonts.body,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  outline: "none",
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%232dd4bf' d='M6 8L0 0h12z'/%3E%3C/svg%3E")`,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 12px center",
-                  backdropFilter: "blur(20px)",
-                  boxShadow: "var(--app-shadow-soft)",
-                  minWidth: "130px",
-                }}
-              >
-                {LANG_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value} style={{ background: "var(--app-page-bg)", color: "var(--app-text-primary)" }}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <LanguageMenu lang={lang} setLang={setLang} playSound={playSound} />
           </motion.div>
         </div>
       </section>
