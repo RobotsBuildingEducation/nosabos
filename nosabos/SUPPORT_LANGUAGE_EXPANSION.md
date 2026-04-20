@@ -220,6 +220,20 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Italian implementation note:** Done — `it` entries added to all 6 button configs; `|| .en` fallback guards added to both JSX reads; Previous/Next/Done ternaries updated to include `"it"` branch.
 
+### 3.21g `src/components/LinksPage.jsx` + `src/translations/linksPage.jsx`
+
+**`linksPage.jsx`**: has a standalone `linksPageTranslations` object (separate from `src/utils/translation.jsx`). Only `en` and `es` blocks existed; add a full `it` block covering every key including the JSX `aboutContent` value. The `en` block is the authoritative key list — any key missing from `es` or `it` falls back to `en` via the `useLanguage` hook's `t()` helper (`translations[lang] ?? translations.en`).
+
+**`LinksPage.jsx`**: consumes `useLanguage` for state; the old language picker was a Chakra `Switch` between "ENGLISH" / "SPANISH" labels centered in the page body — this is a binary control that cannot represent three languages. Replace the entire `<HStack>` + `<Switch>` block with a **fixed top-left Chakra `Menu`** component:
+- `position: fixed; top: 18px; left: 16px; zIndex: 121` (positioned left of the existing theme-toggle at top-right).
+- `MenuButton` shows only the selected language's flag emoji (from `getSupportLanguageOptions()`); no visible label text when collapsed.
+- `MenuList` expands downward with `MenuOptionGroup` + `MenuItemOption` for each supported language (flag + label), matching the style used in `Onboarding.jsx` / `LandingPage.jsx`.
+- Uses `setLanguage` from `useLanguage` (not `toggleLanguage`) so clicking any option sets the language directly.
+- Import `Menu, MenuButton, MenuList, MenuOptionGroup, MenuItemOption` from `@chakra-ui/react` and `getSupportLanguageOptions` from `../constants/languages`.
+- Remove the `Switch` import (no longer used).
+
+**Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
+
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
 - Loader room names and interactable messages are data payloads, not regular UI strings. Add the new language to `OUTDOOR_NAMES`, every `INDOOR_ROOM_TYPES[].names`, and each message pool (`SIGN_MESSAGES`, `CHEST_MESSAGES`, `LAMP_MESSAGES`, `PLANT_MESSAGES`, `TABLE_MESSAGES`).
@@ -481,6 +495,7 @@ Current state (to keep this doc honest):
 | `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
 | `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
 | `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added |
+| `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
