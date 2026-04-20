@@ -215,34 +215,24 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
-    <Box
-      style={{
-        position: "fixed",
-        top: "18px",
-        right: "16px",
-        zIndex: 120,
-      }}
-    >
-      <IconButton
-        type="button"
-        aria-label={label}
-        title={label}
-        onClick={() => onModeChange(nextMode)}
-        icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
-        size="sm"
-        minW="40px"
-        h="40px"
-        rounded="full"
-        bg={APP_SURFACE_ELEVATED}
-        border="1px solid"
-        borderColor={APP_BORDER}
-        boxShadow={APP_SHADOW}
-        backdropFilter="blur(20px)"
-        color="linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-        _hover={{ bg: APP_SURFACE_MUTED }}
-        _active={{ bg: APP_SURFACE_MUTED }}
-      />
-    </Box>
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => onModeChange(nextMode)}
+      icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+      size="sm"
+      minW="40px"
+      h="40px"
+      rounded="full"
+      bg={APP_SURFACE_ELEVATED}
+      border="1px solid"
+      borderColor={APP_BORDER}
+      boxShadow={APP_SHADOW}
+      backdropFilter="blur(20px)"
+      _hover={{ bg: APP_SURFACE_MUTED }}
+      _active={{ bg: APP_SURFACE_MUTED }}
+    />
   );
 };
 
@@ -1211,10 +1201,6 @@ export default function LinksPage() {
         onSelect={setLanguage}
         playSound={handleSelectSound}
       />
-      <ThemeModeToggle
-        themeMode={themeMode}
-        onModeChange={handleThemeModeChange}
-      />
 
       <Container
         maxW="container.md"
@@ -1224,6 +1210,13 @@ export default function LinksPage() {
         pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
+          {/* Top-right theme toggle */}
+          <Box w="100%" display="flex" justifyContent="flex-end" pr={1}>
+            <ThemeModeToggle
+              themeMode={themeMode}
+              onModeChange={handleThemeModeChange}
+            />
+          </Box>
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
             <Box
