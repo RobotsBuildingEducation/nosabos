@@ -269,6 +269,7 @@ export default function LessonFlashcard({
         deck_label: "Deck",
         next: "Next question",
         added_to_deck: "Added to deck",
+        generating: "Generating flashcard...",
       },
       es: {
         translate_to: `Traduce al ${LANG_NAME(targetLang)}`,
@@ -291,6 +292,7 @@ export default function LessonFlashcard({
         deck_label: "Mazo",
         next: "Siguiente pregunta",
         added_to_deck: "Añadida al mazo",
+        generating: "Generando tarjeta...",
       },
       it: {
         translate_to: `Traduci in ${LANG_NAME(targetLang)}`,
@@ -313,6 +315,7 @@ export default function LessonFlashcard({
         deck_label: "Mazzo",
         next: "Prossima domanda",
         added_to_deck: "Aggiunta al mazzo",
+        generating: "Generazione scheda...",
       },
     };
     return (dict[userLanguage] || dict.en)[key] || key;
@@ -668,9 +671,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
               size={32}
             />
             <Text color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"} fontSize="sm">
-              {userLanguage === "es"
-                ? "Generando tarjeta..."
-                : "Generating flashcard..."}
+              {t("generating")}
             </Text>
           </VStack>
         </Box>

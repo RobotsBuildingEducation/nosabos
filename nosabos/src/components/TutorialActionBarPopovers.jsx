@@ -55,10 +55,11 @@ const BUTTON_EXPLANATIONS = [
     id: "back",
     tutorialId: "back",
     icon: ArrowBackIcon,
-    label: { en: "Back Button", es: "Botón Atrás" },
+    label: { en: "Back Button", es: "Botón Atrás", it: "Tasto Indietro" },
     description: {
       en: "Returns you to the skill tree to choose another lesson",
       es: "Te regresa al árbol de habilidades para elegir otra lección",
+      it: "Ti riporta all'albero delle abilità per scegliere un'altra lezione",
     },
     position: 0,
   },
@@ -66,10 +67,11 @@ const BUTTON_EXPLANATIONS = [
     id: "realWorldTasks",
     tutorialId: "teams",
     icon: FiCompass,
-    label: { en: "Immersion Practice", es: "Práctica de Inmersión" },
+    label: { en: "Immersion Practice", es: "Práctica de Inmersión", it: "Pratica di Immersione" },
     description: {
       en: "Complete tasks outside of the app to immerse and practice the language.",
       es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
+      it: "Completa attività fuori dall'app per immergerti e praticare la lingua.",
     },
     position: 1,
   },
@@ -77,10 +79,11 @@ const BUTTON_EXPLANATIONS = [
     id: "settings",
     tutorialId: "settings",
     icon: SettingsIcon,
-    label: { en: "Settings", es: "Configuración" },
+    label: { en: "Settings", es: "Configuración", it: "Impostazioni" },
     description: {
       en: "Open settings and account tabs for your learning preferences, voice, and account details",
       es: "Abre las pestañas de configuración y cuenta para tus preferencias, voz y detalles de cuenta",
+      it: "Apri le schede impostazioni e account per le preferenze, la voce e i dettagli dell'account",
     },
     position: 2,
   },
@@ -88,10 +91,11 @@ const BUTTON_EXPLANATIONS = [
     id: "notes",
     tutorialId: "notes",
     icon: RiBookmarkLine,
-    label: { en: "Notes", es: "Notas" },
+    label: { en: "Notes", es: "Notas", it: "Note" },
     description: {
       en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
+      it: "Visualizza le tue note di studio. Le note si creano quando esegui o completi esercizi e schede.",
     },
     position: 3,
   },
@@ -99,10 +103,11 @@ const BUTTON_EXPLANATIONS = [
     id: "help",
     tutorialId: "help",
     icon: MdOutlineSupportAgent,
-    label: { en: "Assistant", es: "Asistente" },
+    label: { en: "Assistant", es: "Asistente", it: "Assistente" },
     description: {
       en: "Get instant help and answers from our learning assistant",
       es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
+      it: "Ottieni aiuto immediato e risposte dal nostro assistente di apprendimento",
     },
     position: 5,
   },
@@ -110,10 +115,11 @@ const BUTTON_EXPLANATIONS = [
     id: "mode",
     tutorialId: "mode",
     icon: PiPath,
-    label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje", it: "Modalità di Apprendimento" },
     description: {
       en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
       es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
+      it: "Passa tra percorso di apprendimento, schede di pratica e modalità di conversazione libera. L'icona cambia in base alla modalità attuale.",
     },
     position: 6,
   },
@@ -337,7 +343,7 @@ export default function TutorialActionBarPopovers({
                 )}
               </Box>
               <Text fontSize="lg" fontWeight="bold" color={headingColor}>
-                {currentButton.label[lang]}
+                {currentButton.label[lang] || currentButton.label.en}
               </Text>
             </HStack>
 
@@ -355,7 +361,7 @@ export default function TutorialActionBarPopovers({
                 textAlign="center"
                 lineHeight="1.5"
               >
-                {currentButton.description[lang]}
+                {currentButton.description[lang] || currentButton.description.en}
               </Text>
             </Box>
 
@@ -379,7 +385,7 @@ export default function TutorialActionBarPopovers({
                 icon={<ChevronLeftIcon boxSize={5} />}
                 onClick={handlePrevious}
                 isDisabled={isFirstStep}
-                aria-label={lang === "es" ? "Anterior" : "Previous"}
+                aria-label={lang === "es" ? "Anterior" : lang === "it" ? "Precedente" : "Previous"}
                 size="sm"
                 {...navButtonStyles}
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
@@ -401,13 +407,13 @@ export default function TutorialActionBarPopovers({
                   px={4}
                   {...doneButtonStyles}
                 >
-                  {lang === "es" ? "Listo" : "Done"}
+                  {lang === "es" ? "Listo" : lang === "it" ? "Fatto" : "Done"}
                 </Button>
               ) : (
                 <IconButton
                   icon={<ChevronRightIcon boxSize={5} />}
                   onClick={handleNext}
-                  aria-label={lang === "es" ? "Siguiente" : "Next"}
+                  aria-label={lang === "es" ? "Siguiente" : lang === "it" ? "Avanti" : "Next"}
                   size="sm"
                   {...navButtonStyles}
                 />

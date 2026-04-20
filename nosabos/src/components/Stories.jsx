@@ -194,11 +194,8 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  console.log("USER", user);
-  return user?.appLanguage === "es" ||
-    localStorage.getItem("appLanguage") === "es"
-    ? "es"
-    : "en";
+  const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
+  return ["es", "it"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
