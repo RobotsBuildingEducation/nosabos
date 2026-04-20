@@ -1345,7 +1345,7 @@ export default function LinksPage() {
         </VStack>
 
         {/* Links List */}
-        <VStack spacing={6} w="100%">
+        <VStack spacing={6} w="100%" mt={6}>
           {links.map((link) => (
             <LinkCard
               key={link.title}
