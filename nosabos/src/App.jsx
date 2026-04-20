@@ -1281,12 +1281,12 @@ function TopBar({
                                 value={supportLang}
                                 onChange={(value) => {
                                   playSound(selectSound);
-                                  setSupportLang(value);
-                                  // Defer the Zustand user-store update so the
-                                  // cascade of App-wide re-renders happens
-                                  // after paint, not while the menu is closing.
+                                  const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
+                                  setSupportLang(normalized);
+                                  setAppLanguage(normalized);
+                                  localStorage.setItem("appLanguage", normalized);
                                   setTimeout(() => {
-                                    persistSettings({ supportLang: value });
+                                    persistSettings({ supportLang: normalized });
                                   }, 0);
                                 }}
                               >
