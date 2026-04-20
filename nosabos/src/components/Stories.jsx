@@ -266,7 +266,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "it", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
