@@ -136,8 +136,9 @@ Language touchpoints are spread throughout. Key anchors:
 - `BCP47` map (~lines 131–145).
 - `LLM_LANG_NAME` (~lines 114–129).
 - `toLangKey` (~lines 147–181) — add native/English name aliases.
+- `getAppUILang()` helper — was binary `appLanguage === "es" ? "es" : "en"`; must be extended to return the new code.
 
-**Italian implementation note:** The `useUIText` hook's entire role-play string object has been migrated from binary `uiLang === "es" ? ... : ...` ternaries to `t(uiLang, "story_*")` calls. Role-play-specific keys (`story_header_roleplay`, `story_role_prompt`, `story_role_placeholder`, `story_start_role`, `story_update_role`, `story_edit_role`, `story_cancel_edit`, `story_play_target`, `story_no_role`, `story_generating_role_title`, `story_generating_role_sub`, `story_finish_role`) were added to all three language blocks in `translation.jsx`. Additional inline ternaries in the component body (demo toast, skip-unavailable toast, eval-error toast, recording-error toasts, Connecting button, sentence counter, role-play completed card) were replaced with `t(uiLang, "story_*")` / existing key lookups. The `bilingual` supportLang resolution was updated from a binary `es`/`en` gate to include `it`. `RepeatWhatYouHear.jsx` and `TranslateSentence.jsx` — which render the "Tap what you hear" and "Translate this sentence" question modes — had all bare ternaries replaced with `t("repeat_hear_*")` / `t("translate_sentence_*")` keys added to all three language blocks. `LessonFlashcard.jsx`'s local translation dict was extended with an `it` entry covering all flashcard UI strings (translate_to, show_answer, type_placeholder, submit, record, skip, etc.).
+**Italian implementation note:** The `useUIText` hook's entire role-play string object has been migrated from binary `uiLang === "es" ? ... : ...` ternaries to `t(uiLang, "story_*")` calls. Role-play-specific keys (`story_header_roleplay`, `story_role_prompt`, `story_role_placeholder`, `story_start_role`, `story_update_role`, `story_edit_role`, `story_cancel_edit`, `story_play_target`, `story_no_role`, `story_generating_role_title`, `story_generating_role_sub`, `story_finish_role`) were added to all three language blocks in `translation.jsx`. Additional inline ternaries in the component body (demo toast, skip-unavailable toast, eval-error toast, recording-error toasts, Connecting button, sentence counter, role-play completed card) were replaced with `t(uiLang, "story_*")` / existing key lookups. The `bilingual` supportLang resolution was updated from a binary `es`/`en` gate to include `it`. `getAppUILang()` was updated from a binary `appLanguage === "es"` check to `["es", "it"].includes(lang) ? lang : "en"` — this was the root cause of all Stories UI text displaying in English for Italian users. `RepeatWhatYouHear.jsx` and `TranslateSentence.jsx` — which render the "Tap what you hear" and "Translate this sentence" question modes — had all bare ternaries replaced with `t("repeat_hear_*")` / `t("translate_sentence_*")` keys added to all three language blocks. `LessonFlashcard.jsx`'s local translation dict was extended with an `it` entry covering all flashcard UI strings (translate_to, show_answer, type_placeholder, submit, record, skip, etc.).
 
 ### 3.15 `src/components/JobScript.jsx`
 - `useSharedProgress` (~line 171).
@@ -166,9 +167,40 @@ Do not treat account settings as localized just because `translations.<code>` ex
 ### 3.20 `src/components/LessonFlashcard.jsx` / `FlashcardPractice.jsx` / `FlashcardSkillTree.jsx`
 - FlashcardSkillTree: `Intl.DateTimeFormat` (lines 139, 197) — replace with shared locale helper keyed on `appLanguage`.
 - LessonFlashcard / FlashcardPractice: practice-language normalization must stay independent from support-language normalization — use `normalizeSupportLanguage` / `normalizePracticeLanguage` helpers.
+- LessonFlashcard has a **component-local `t()` dict** (not the shared `translation.jsx` helper) — add the new language entry to all keys in that dict, including the `generating` loading-state key.
+
+**Italian implementation note:** `LessonFlashcard.jsx`'s local dict was extended with an `it` entry for all flashcard UI strings and a new `generating` key (en: "Generating flashcard...", es: "Generando tarjeta...", it: "Generazione scheda..."). The loading text ternary `userLanguage === "es" ? ... : ...` was replaced with `t("generating")`.
 
 ### 3.21 `src/components/ProficiencyTest.jsx`
-- Same pattern: practice vs support language normalization and inline ternaries.
+- `const isEs = supportLang === "es"` and `ui = translations[isEs ? "es" : "en"]` — change to `ui = translations[supportLang] || translations.en`. This single line propagates correct Italian to every `ui.*` lookup in the file.
+- `uiStateLabel(uiState, isEs)` helper — change signature to accept `ui` dict object; use `ui.proficiency_speaking/listening/thinking` keys.
+- All remaining `isEs ? ... : ...` JSX ternaries (40+) — replace with `ui.proficiency_test_*` keys.
+- Data-driven `[isEs ? "es" : "en"]` accesses for `levelInfo.name`, `criterion`, rubric `row`, and `CEFR_LEVEL_OFFERINGS` — change to `[supportLang] || .en` pattern.
+
+**Italian implementation note:** Done — `ui = translations[supportLang] || translations.en` one-line fix, `uiStateLabel` updated, all 40+ `isEs` ternaries replaced with `ui.*` lookups, data-driven language keys updated. 43+ new `proficiency_test_*` and `proficiency_*` keys added to `translations.en/es/it`.
+
+### 3.21b `src/components/ProficiencyTestModal.jsx`
+- Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.
+
+**Italian implementation note:** Done — `tFn` imported, `isEs` replaced with `ui` helper, all 6 visible-copy ternaries replaced.
+
+### 3.21c `src/components/GettingStartedModal.jsx`
+- Same `isEs` pattern; install step texts are in a `useMemo` array that hard-codes en/es copy.
+- `handleCopyKey` toast title is a bare ternary.
+
+**Italian implementation note:** Done — `tFn` imported, `isEs` removed, `installSteps` array uses `tFn(lang, "app_install_step*")`, toast uses `app_install_copied`, all JSX ternaries replaced. New keys: `app_install_subtitle`, `app_install_step6`, `app_install_got_it`, `app_install_copied` added to all three blocks.
+
+### 3.21d `src/components/TutorialStepper.jsx`
+- `MODULE_CONFIG` constant has `label`, `shortLabel`, and `description` objects with only `en` and `es` keys — add `it` to every entry.
+
+**Italian implementation note:** Done — `it` added to all 6 module entries (vocabulary, grammar, reading, stories, realtime, game) for all three fields.
+
+### 3.21e `src/components/TutorialActionBarPopovers.jsx`
+- `BUTTON_EXPLANATIONS` array has `label` and `description` objects with only `en` and `es` keys — Italian users see a completely blank card body.
+- `aria-label` / "Done" button copy uses binary `lang === "es"` ternaries.
+- JSX reads `currentButton.label[lang]` / `currentButton.description[lang]` with no fallback — `undefined` for unknown languages.
+
+**Italian implementation note:** Done — `it` entries added to all 6 button configs; `|| .en` fallback guards added to both JSX reads; Previous/Next/Done ternaries updated to include `"it"` branch.
 
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
@@ -423,7 +455,13 @@ Current state (to keep this doc honest):
 | `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
 | `languageDetection.js` timezone heuristics     | Done |
 | Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
-| `Stories.jsx` (role-play UI), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; 21 new role-play + repeat-hear + translate-sentence keys added to all three language blocks; `LessonFlashcard.jsx` local dict extended with `it` entry |
+| `Stories.jsx` (role-play UI + loader lang detection), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; `getAppUILang()` fixed to return `"it"`; 21+ role-play/repeat-hear/translate-sentence keys added; flashcard local dict extended with `it` entry + `generating` key |
+| `ProficiencyTestModal.jsx` localized | Done — `isEs` removed; all 6 visible-copy ternaries replaced with `tFn(lang, key)` |
+| `ProficiencyTest.jsx` localized | Done — `ui = translations[supportLang] \|\| translations.en`; `uiStateLabel` updated; all 40+ `isEs` ternaries replaced; data-driven language key accesses updated; 43+ `proficiency_test_*` keys added to all three blocks |
+| `GettingStartedModal.jsx` localized | Done — `isEs` removed; installSteps array, toast, and JSX ternaries replaced with `tFn(lang, key)`; 4 new `app_install_*` keys added |
+| `LessonGroupQuiz.jsx` generating-question loader | Done — binary ternary replaced with `t(userLanguage, "history_generating_question")` |
+| `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
+| `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
