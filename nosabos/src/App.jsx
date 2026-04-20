@@ -6396,7 +6396,9 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
+                  {appLanguage === "it"
+                    ? "Lezione Completata!"
+                    : appLanguage === "es"
                     ? "¡Lección Completada!"
                     : "Lesson Complete!"}
                 </Text>
@@ -6423,13 +6425,19 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
+                    {appLanguage === "it"
+                      ? "XP Guadagnato"
+                      : appLanguage === "es"
+                      ? "XP Ganado"
+                      : "XP Earned"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "es"
+                    {appLanguage === "it"
+                      ? "Punti Esperienza"
+                      : appLanguage === "es"
                       ? "Puntos de Experiencia"
                       : "Experience Points"}
                   </Text>
@@ -6449,7 +6457,11 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "es" ? "Continuar" : "Continue"}
+                {appLanguage === "it"
+                  ? "Continua"
+                  : appLanguage === "es"
+                  ? "Continuar"
+                  : "Continue"}
               </Button>
             </VStack>
           </ModalBody>
