@@ -13,6 +13,11 @@ import {
   HStack,
   Input,
   Link,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -21,7 +26,6 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-  Switch,
   Text,
   IconButton,
   useDisclosure,
@@ -52,6 +56,7 @@ import { analytics, database } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
+import { getSupportLanguageOptions } from "../constants/languages";
 
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
@@ -129,78 +134,98 @@ const LINKS_PAPER_PAGE_SX = {
   },
 };
 
-const ThemeModeToggle = ({ themeMode, onModeChange }) => {
-  const modes = [
-    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
-    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
-  ];
+const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
+  const langOptions = getSupportLanguageOptions();
+  const selected = langOptions.find((o) => o.value === language) || langOptions[0];
 
   return (
-    <Box
-      style={{
-        position: "fixed",
-        top: "18px",
-        right: "16px",
-        left: "auto",
-        bottom: "auto",
-        width: "fit-content",
-        maxWidth: "calc(100vw - 32px)",
-        zIndex: 120,
-      }}
-    >
-      <HStack
-        spacing="3px"
-        p="3px"
-        rounded="full"
-        bg={APP_SURFACE_ELEVATED}
-        border="1px solid"
-        borderColor={APP_BORDER}
-        boxShadow={APP_SHADOW}
-        backdropFilter="blur(20px)"
-        display="inline-flex"
-        width="fit-content"
-        flexShrink={0}
-      >
-        {modes.map((mode) => {
-          const isActive = themeMode === mode.id;
-          return (
-            <IconButton
-              key={mode.id}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={mode.label}
-              title={mode.label}
-              onClick={() => onModeChange(mode.id)}
-              icon={mode.icon}
-              size="sm"
-              minW="34px"
-              h="34px"
-              rounded="full"
-              border="none"
-              bg={
-                isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : "transparent"
-              }
-              color={isActive ? "#ffffff" : APP_TEXT_SECONDARY}
-              boxShadow={
-                isActive ? "0 8px 18px rgba(20, 184, 166, 0.18)" : "none"
-              }
-              _hover={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-              _active={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-            />
-          );
-        })}
-      </HStack>
+    <Box>
+      <Menu placement="bottom-start">
+        <MenuButton
+          as={IconButton}
+          aria-label="Select language"
+          icon={
+            <Text fontSize="xl" lineHeight="1">
+              {selected?.flag}
+            </Text>
+          }
+          size="sm"
+          minW="40px"
+          h="40px"
+          rounded="full"
+          bg={APP_SURFACE_ELEVATED}
+          border="1px solid"
+          borderColor={APP_BORDER}
+          boxShadow={APP_SHADOW}
+          backdropFilter="blur(20px)"
+          _hover={{ bg: APP_SURFACE_MUTED }}
+          _active={{ bg: APP_SURFACE_MUTED }}
+        />
+        <MenuList
+          bg={APP_SURFACE_ELEVATED}
+          borderColor={APP_BORDER}
+          boxShadow={APP_SHADOW}
+          minW="160px"
+          py={1}
+          zIndex={122}
+        >
+          <MenuOptionGroup
+            value={language}
+            type="radio"
+            onChange={(val) => {
+              playSound?.();
+              onSelect(val);
+            }}
+          >
+            {langOptions.map((opt) => (
+              <MenuItemOption
+                key={opt.value}
+                value={opt.value}
+                bg="transparent"
+                _hover={{ bg: APP_SURFACE_MUTED }}
+                _checked={{ fontWeight: "bold" }}
+                fontSize="sm"
+                fontFamily="monospace"
+              >
+                <HStack spacing={2}>
+                  <Text fontSize="lg" lineHeight="1">
+                    {opt.flag}
+                  </Text>
+                  <Text color={APP_TEXT_PRIMARY}>{opt.label}</Text>
+                </HStack>
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
     </Box>
+  );
+};
+
+const ThemeModeToggle = ({ themeMode, onModeChange }) => {
+  const isDark = themeMode === "dark";
+  const nextMode = isDark ? "light" : "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+
+  return (
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => onModeChange(nextMode)}
+      icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+      size="sm"
+      minW="40px"
+      h="40px"
+      rounded="full"
+      bg={APP_SURFACE_ELEVATED}
+      border="1px solid"
+      borderColor={APP_BORDER}
+      boxShadow={APP_SHADOW}
+      backdropFilter="blur(20px)"
+      _hover={{ bg: APP_SURFACE_MUTED }}
+      _active={{ bg: APP_SURFACE_MUTED }}
+    />
   );
 };
 
@@ -539,7 +564,7 @@ export default function LinksPage() {
   const isLightTheme = themeMode === "light";
 
   // Language state
-  const { language, initLanguage, toggleLanguage, t } = useLanguage();
+  const { language, initLanguage, setLanguage, t } = useLanguage();
   const translations = t(linksPageTranslations);
   const [npub, setNpub] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -1164,11 +1189,6 @@ export default function LinksPage() {
       }}
     >
       <RetroStarfield isLightTheme={isLightTheme} />
-      <ThemeModeToggle
-        themeMode={themeMode}
-        onModeChange={handleThemeModeChange}
-      />
-
       <Container
         maxW="container.md"
         position="relative"
@@ -1177,6 +1197,18 @@ export default function LinksPage() {
         pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
+          {/* Top bar: language menu left, theme toggle right */}
+          <Box w="100%" display="flex" justifyContent="space-between" alignItems="center">
+            <LanguageMenuFixed
+              language={language}
+              onSelect={setLanguage}
+              playSound={handleSelectSound}
+            />
+            <ThemeModeToggle
+              themeMode={themeMode}
+              onModeChange={handleThemeModeChange}
+            />
+          </Box>
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
             <Box
@@ -1257,48 +1289,10 @@ export default function LinksPage() {
             </Button>
           </HStack>
 
-          {/* Language Toggle */}
-          <HStack
-            spacing={3}
-            justify="center"
-            bg="transparent"
-            px={4}
-            py={2}
-            borderRadius="md"
-            mb={4}
-          >
-            <Text
-              fontSize="sm"
-              color={language === "en" ? primaryAccent : helperColor}
-              fontWeight={language === "en" ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.english}
-            </Text>
-            <Switch
-              isChecked={language === "es"}
-              onChange={() => {
-                handleSelectSound();
-                toggleLanguage();
-              }}
-              colorScheme="cyan"
-              size="md"
-            />
-            <Text
-              fontSize="sm"
-              color={language === "es" ? primaryAccent : helperColor}
-              fontWeight={language === "es" ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.spanish}
-            </Text>
-          </HStack>
         </VStack>
 
         {/* Links List */}
-        <VStack spacing={6} w="100%">
+        <VStack spacing={6} w="100%" mt={6}>
           {links.map((link) => (
             <LinkCard
               key={link.title}

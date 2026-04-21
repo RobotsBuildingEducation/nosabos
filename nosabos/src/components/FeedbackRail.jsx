@@ -71,10 +71,8 @@ const FeedbackRail = React.memo(
     if (ok === null) return null;
 
     // Note button labels
-    const createNoteLabel =
-      userLanguage === "es" ? "Crear nota" : "Create note";
-    const noteSavedLabel =
-      userLanguage === "es" ? "¡Nota guardada!" : "Note saved!";
+    const createNoteLabel = t?.("vocab_create_note") || "Create note";
+    const noteSavedLabel = t?.("vocab_note_saved") || "Note saved!";
 
     const label = ok
       ? t?.("correct") || "Correct!"
@@ -196,9 +194,7 @@ const FeedbackRail = React.memo(
                 py={6}
                 size="lg"
               >
-                {userLanguage === "es"
-                  ? "Explicar mi respuesta"
-                  : "Explain the answer"}
+                {t?.("flashcard_explain_answer") || "Explain the answer"}
               </Button>
             )}
 
@@ -230,7 +226,7 @@ const FeedbackRail = React.memo(
               <HStack spacing={2} mb={2}>
                 <FiHelpCircle color="var(--question-tool-accent)" />
                 <Text fontWeight="semibold" color={questionToneText.primary}>
-                  {userLanguage === "es" ? "Explicación" : "Explanation"}
+                  {t?.("flashcard_explanation_heading") || "Explanation"}
                 </Text>
               </HStack>
               <Box

@@ -1008,10 +1008,7 @@ export default function GrammarBook({
           pct: lessonProgressPct,
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
-          label:
-            userLanguage === "es"
-              ? "Progreso de la lección"
-              : "Lesson progress",
+          label: t("vocab_lesson_progress"),
         }
       : null;
 
@@ -1109,10 +1106,10 @@ export default function GrammarBook({
     const lines = [];
     if (q?.trim()) lines.push(q.trim());
     if (h?.trim())
-      lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
+      lines.push((t("vocab_speak_hint_label") + ": ") + h.trim());
     if (tr?.trim())
       lines.push(
-        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim(),
+        (t("vocab_speak_translation_label") + ": ") + tr.trim(),
       );
     return lines.join("\n");
   }
@@ -1200,19 +1197,12 @@ export default function GrammarBook({
           input: prompt,
         });
         setAssistantSupportText(
-          response ||
-            (userLanguage === "es"
-              ? "No se pudo generar una respuesta en este momento."
-              : "Could not generate a response at this time."),
+          response || t("vocab_assistant_error"),
         );
       }
     } catch (error) {
       console.error("Failed to generate assistant support:", error);
-      setAssistantSupportText(
-        userLanguage === "es"
-          ? "No se pudo generar una respuesta en este momento."
-          : "Could not generate a response at this time.",
-      );
+      setAssistantSupportText(t("vocab_assistant_error"));
     } finally {
       setIsLoadingAssistantSupport(false);
     }
@@ -1522,19 +1512,12 @@ Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutt
           input: prompt,
         });
         setExplanationText(
-          explanation ||
-            (userLanguage === "es"
-              ? "No se pudo generar una explicación en este momento."
-              : "Could not generate an explanation at this time."),
+          explanation || t("vocab_explanation_error"),
         );
       }
     } catch (error) {
       console.error("Failed to generate explanation:", error);
-      setExplanationText(
-        userLanguage === "es"
-          ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time.",
-      );
+      setExplanationText(t("vocab_explanation_error"));
     } finally {
       setIsLoadingExplanation(false);
     }
@@ -1605,10 +1588,7 @@ Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutt
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
-        title:
-          userLanguage === "es"
-            ? "Error al crear nota"
-            : "Could not create note",
+        title: t("vocab_create_note_error"),
         status: "error",
         duration: 2500,
       });
@@ -3779,12 +3759,8 @@ Return JSON ONLY:
       if (!sTarget) return;
       if (error) {
         toast({
-          title:
-            userLanguage === "es" ? "No se pudo evaluar" : "Could not evaluate",
-          description:
-            userLanguage === "es"
-              ? "Revisa permisos de micrófono e inténtalo otra vez."
-              : "Check microphone permissions and try again.",
+          title: t("flashcard_eval_error_title"),
+          description: t("vocab_eval_error_mic_desc"),
           status: "error",
           duration: 2600,
         });
@@ -4022,7 +3998,7 @@ Return JSON ONLY:
     if (!has) return null;
     return (
       <IconButton
-        aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
+        aria-label={t("vocab_ask_assistant")}
         icon={
           isLoadingAssistantSupport ? (
             <VoiceOrb
@@ -4059,7 +4035,7 @@ Return JSON ONLY:
         <HStack spacing={2} mb={2}>
           <MdOutlineSupportAgent color={questionAssistantText.accent} />
           <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-            {userLanguage === "es" ? "Asistente" : "Assistant"}
+            {t("vocab_assistant")}
           </Text>
           {isLoadingAssistantSupport && (
             <VoiceOrb
@@ -4107,10 +4083,8 @@ Return JSON ONLY:
   const skipLabel =
     t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
   const canSkip = !isFinalQuiz && !quizCompleted;
-  const questionListenLabel =
-    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
-  const speakListenLabel =
-    userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+  const questionListenLabel = t("vocab_listen_question");
+  const speakListenLabel = t("vocab_listen_example");
   const speakVariantLabel =
     t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
   const nextQuestionLabel = t("practice_next_question") || "Next question";
@@ -4611,7 +4585,7 @@ Return JSON ONLY:
               <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
-                    {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                    {t("vocab_final_quiz")}
                   </Badge>
                   <Badge
                     colorScheme={
@@ -4687,9 +4661,7 @@ Return JSON ONLY:
                 </HStack>
 
                 <Text fontSize="xs" color="gray.400" textAlign="center">
-                  {userLanguage === "es"
-                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
-                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                  {t("vocab_quiz_score_failed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
                 </Text>
               </VStack>
             ) : (
@@ -4709,9 +4681,7 @@ Return JSON ONLY:
         {mode === "fill" && (question || loadingQ) ? (
           <VStack align="stretch" spacing={4}>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-              {userLanguage === "es"
-                ? "Completa el espacio"
-                : "Fill in the blank"}
+              {t("vocab_btn_fill")}
             </Text>
             <Box
               bg={APP_SURFACE_ELEVATED}
@@ -4788,13 +4758,7 @@ Return JSON ONLY:
                   px={{ base: 4, md: 6 }}
                   py={{ base: 3, md: 4 }}
                 >
-                  {showKeyboard
-                    ? userLanguage === "es"
-                      ? "Cerrar teclado"
-                      : "Close keyboard"
-                    : userLanguage === "es"
-                      ? "Abrir teclado"
-                      : "Open keyboard"}
+                  {showKeyboard ? t("history_keyboard_close") : t("history_keyboard_open")}
                 </Button>
               )}
               {canSkip && (
@@ -4861,9 +4825,7 @@ Return JSON ONLY:
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
-              {userLanguage === "es"
-                ? "Elige la respuesta correcta"
-                : "Choose the correct answer"}
+              {t("vocab_mc_instruction")}
             </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
@@ -5140,9 +5102,7 @@ Return JSON ONLY:
         {mode === "ma" && (maQ || loadingMAQ) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
-              {userLanguage === "es"
-                ? "Selecciona todas las respuestas correctas"
-                : "Select all correct answers"}
+              {t("vocab_ma_instruction")}
             </Text>
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
@@ -5432,15 +5392,13 @@ Return JSON ONLY:
         {mode === "speak" && (sTarget || loadingSpeakQ) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
-              {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+              {t("vocab_say_it_aloud")}
             </Text>
             {loadingSpeakQ ? (
               <Box textAlign="center" py={12}>
                 <VoiceOrb />
                 <Text mt={4} fontSize="sm" opacity={0.7}>
-                  {userLanguage === "es"
-                    ? "Generando pregunta..."
-                    : "Generating question..."}
+                  {t("history_generating_question")}
                 </Text>
               </Box>
             ) : (
@@ -5538,36 +5496,21 @@ Return JSON ONLY:
                           (userLanguage === "es"
                             ? "Reconocimiento de voz no disponible"
                             : "Speech recognition unavailable"),
-                        description:
-                          userLanguage === "es"
-                            ? "Usa un navegador Chromium con acceso al micrófono."
-                            : "Use a Chromium-based browser with microphone access.",
+                        description: t("flashcard_speech_unavailable_desc"),
                         status: "warning",
                         duration: 3200,
                       });
                     } else if (code === "mic-denied") {
                       toast({
-                        title:
-                          userLanguage === "es"
-                            ? "Permiso de micrófono denegado"
-                            : "Microphone denied",
-                        description:
-                          userLanguage === "es"
-                            ? "Activa el micrófono en la configuración del navegador."
-                            : "Enable microphone access in your browser settings.",
+                        title: t("flashcard_mic_denied_title"),
+                        description: t("flashcard_mic_denied_desc"),
                         status: "error",
                         duration: 3200,
                       });
                     } else {
                       toast({
-                        title:
-                          userLanguage === "es"
-                            ? "No se pudo iniciar la grabación"
-                            : "Recording failed",
-                        description:
-                          userLanguage === "es"
-                            ? "Inténtalo de nuevo."
-                            : "Please try again.",
+                        title: t("vocab_recording_failed"),
+                        description: t("vocab_recording_failed_desc"),
                         status: "error",
                         duration: 2500,
                       });
@@ -5660,13 +5603,10 @@ Return JSON ONLY:
               {/* Header */}
               <HStack justify="space-between" align="center" mb={2}>
                 <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
-                  {userLanguage === "es"
-                    ? "Empareja las palabras"
-                    : "Match the words"}
+                  {t("vocab_match_instruction")}
                 </Text>
                 <IconButton
-                  aria-label={
-                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  aria-label={t("vocab_ask_assistant")
                   }
                   icon={
                     isLoadingAssistantSupport ? (
@@ -5718,11 +5658,7 @@ Return JSON ONLY:
                         flexShrink={0}
                       >
                         <IconButton
-                          aria-label={
-                            userLanguage === "es"
-                              ? "Escuchar palabra"
-                              : "Listen to word"
-                          }
+                          aria-label={t("vocab_listen_word")}
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"

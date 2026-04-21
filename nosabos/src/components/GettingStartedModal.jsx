@@ -21,6 +21,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
+import { t as tFn } from "../utils/translation";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -41,7 +42,7 @@ export default function GettingStartedModal({
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
-  const isEs = lang === "es";
+  const ui = (key) => tFn(lang, key);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const deferPostAction = useCallback((task) => {
@@ -70,20 +71,20 @@ export default function GettingStartedModal({
     if (!secretKey) return;
     navigator.clipboard.writeText(secretKey);
     toast({
-      title: isEs ? "¡Copiada!" : "Copied!",
+      title: ui("app_install_copied"),
       status: "success",
       duration: 2000,
       isClosable: true,
       position: "top",
     });
-  }, [secretKey, isEs, toast]);
+  }, [secretKey, lang, toast]);
 
   const installSteps = useMemo(
     () => [
       {
         id: "step1",
         icon: <IoIosMore size={28} />,
-        text: isEs ? "Abre el menú del navegador." : "Open the browser menu.",
+        text: tFn(lang, "app_install_step1"),
       },
       {
         id: "step2",
@@ -92,29 +93,25 @@ export default function GettingStartedModal({
             <RxExternalLink size={20} />
           </Box>
         ),
-        text: isEs ? "Abre en el navegador." : "Open in browser.",
+        text: tFn(lang, "app_install_step2"),
       },
       {
         id: "step3",
         icon: <MdOutlineFileUpload size={28} />,
-        text: isEs
-          ? "Elige 'Compartir' o 'Instalar'."
-          : "Choose 'Share' or 'Install'.",
+        text: tFn(lang, "app_install_step3"),
       },
       {
         id: "step4",
         icon: <CiSquarePlus size={28} />,
-        text: isEs ? "Agregar a la pantalla de inicio." : "Add to home screen.",
+        text: tFn(lang, "app_install_step4"),
       },
       {
         id: "step5",
         icon: <LuBadgeCheck size={28} />,
-        text: isEs
-          ? "Abre desde tu pantalla de inicio."
-          : "Launch from your home screen.",
+        text: tFn(lang, "app_install_step5"),
       },
     ],
-    [isEs],
+    [lang],
   );
 
   return (
@@ -159,7 +156,7 @@ export default function GettingStartedModal({
               color="white"
               textShadow="0 1px 10px rgba(0,0,0,0.18)"
             >
-              {isEs ? "Instalar como app" : "Install as app"}
+              {ui("app_install_title")}
             </Text>
             <Text
               fontSize="xs"
@@ -169,9 +166,7 @@ export default function GettingStartedModal({
               lineHeight="1.6"
               maxW="320px"
             >
-              {isEs
-                ? "Para la mejor experiencia, instala la app en tu dispositivo."
-                : "For the best experience, install the app on your device."}
+              {ui("app_install_subtitle")}
             </Text>
           </VStack>
         </Box>
@@ -241,9 +236,7 @@ export default function GettingStartedModal({
                       color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                     >
                       6.{" "}
-                      {isEs
-                        ? "Copia la llave secreta para iniciar sesión."
-                        : "Copy secret key to sign in."}{" "}
+                      {ui("app_install_step6")}{" "}
                       <Box
                         as="span"
                         display="inline-block"
@@ -267,7 +260,7 @@ export default function GettingStartedModal({
               rounded="xl"
               py={6}
             >
-              {isEs ? "¡Entendido!" : "Got it!"}
+              {ui("app_install_got_it")}
             </Button>
           </VStack>
         </ModalBody>

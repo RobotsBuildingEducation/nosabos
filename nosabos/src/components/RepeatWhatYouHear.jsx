@@ -277,16 +277,11 @@ export default function RepeatWhatYouHear({
     wordBank,
   ]);
 
-  const headingLabel =
-    userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
-  const instructionLabel =
-    userLanguage === "es"
-      ? "Escucha y toca las palabras en orden"
-      : "Listen and tap the words in order";
-  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
-  const nextLabel =
-    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
+  const headingLabel = t("repeat_hear_heading");
+  const instructionLabel = t("repeat_hear_instruction");
+  const skipLabel = t("practice_skip_question");
+  const submitLabel = t("quiz_submit");
+  const nextLabel = t("practice_next_question");
 
   const handleManualPlay = useCallback(async () => {
     // Claim playback immediately so the mount auto-play effect can't fire a

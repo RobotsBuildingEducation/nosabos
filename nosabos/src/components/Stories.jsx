@@ -194,11 +194,8 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  console.log("USER", user);
-  return user?.appLanguage === "es" ||
-    localStorage.getItem("appLanguage") === "es"
-    ? "es"
-    : "en";
+  const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
+  return ["es", "it"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -269,7 +266,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "it", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -319,66 +316,39 @@ async function saveStoryTurn(npub, payload) {
 function useUIText(uiLang, level) {
   return useMemo(() => {
     return {
-      header: uiLang === "es" ? "Juego de roles" : "Role Play",
-      rolePrompt:
-        uiLang === "es"
-          ? "¿Con qué personaje quieres jugar a los roles?"
-          : "Who do you want to role play as?",
-      rolePlaceholder:
-        uiLang === "es"
-          ? "Por ejemplo: una doctora ayudando a pacientes"
-          : "e.g. a teacher helping new students",
-      startRole: uiLang === "es" ? "Comenzar" : "Start role play",
-      updateRole: uiLang === "es" ? "Actualizar rol" : "Update",
-      editRole: uiLang === "es" ? "Editar" : "Edit",
-      cancelEdit: uiLang === "es" ? "Cancelar" : "Cancel",
-      playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
-      playTarget: (name) =>
-        uiLang === "es" ? `Reproducir ${name}` : `Play ${name}`,
-      listen: uiLang === "es" ? "Escuchar" : "Listen",
-      stop: uiLang === "es" ? "Detener" : "Stop",
-      startPractice:
-        uiLang === "es"
-          ? "Empezar práctica por oración"
-          : "Start Sentence Practice",
-      practiceThis:
-        uiLang === "es" ? "Practica esta oración:" : "Practice this sentence:",
-      skip: uiLang === "es" ? "Saltar oración" : "Skip Sentence",
-      finish: uiLang === "es" ? "Terminar juego" : "Finish Role Play",
-      record: uiLang === "es" ? "Grabar oración" : "Record Sentence",
-      stopRecording: uiLang === "es" ? "Detener grabación" : "Stop Recording",
-      progress: uiLang === "es" ? "Progreso" : "Progress",
-      noStory:
-        uiLang === "es"
-          ? "Define un rol para comenzar a jugar."
-          : "Set a role to kick off your role play.",
-      generatingTitle:
-        uiLang === "es" ? "Generando tu narrativo" : "Preparing your story…",
-      generatingSub:
-        uiLang === "es"
-          ? "Preparando una escena basada en tu rol."
-          : "Shaping a role play scene around your role.",
-      almost:
-        uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
-      wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
-      score: uiLang === "es" ? "Puntuación" : "Score",
+      header: t(uiLang, "story_header_roleplay"),
+      rolePrompt: t(uiLang, "story_role_prompt"),
+      rolePlaceholder: t(uiLang, "story_role_placeholder"),
+      startRole: t(uiLang, "story_start_role"),
+      updateRole: t(uiLang, "story_update_role"),
+      editRole: t(uiLang, "story_edit_role"),
+      cancelEdit: t(uiLang, "story_cancel_edit"),
+      playing: t(uiLang, "story_playing"),
+      playTarget: (name) => t(uiLang, "story_play_target").replace("{name}", name),
+      listen: t(uiLang, "story_listen"),
+      stop: t(uiLang, "story_stop"),
+      startPractice: t(uiLang, "story_start_practice"),
+      practiceThis: t(uiLang, "story_practice_this"),
+      skip: t(uiLang, "story_skip"),
+      finish: t(uiLang, "story_finish_role"),
+      record: t(uiLang, "story_record"),
+      stopRecording: t(uiLang, "story_stop_recording"),
+      progress: t(uiLang, "story_progress"),
+      noStory: t(uiLang, "story_no_role"),
+      generatingTitle: t(uiLang, "story_generating_role_title"),
+      generatingSub: t(uiLang, "story_generating_role_sub"),
+      almost: t(uiLang, "story_almost"),
+      wellDone: t(uiLang, "story_well_done"),
+      score: t(uiLang, "story_score"),
       xp: t(uiLang, "ra_label_xp") || "XP",
-      levelLabel: uiLang === "es" ? "Nivel" : "Level",
+      levelLabel: t(uiLang, "story_level"),
       levelValue:
-        uiLang === "es"
-          ? {
-              beginner: t("es", "onboarding_level_beginner"),
-              intermediate: t("es", "onboarding_level_intermediate"),
-              advanced: t("es", "onboarding_level_advanced"),
-            }[level] || level
-          : {
-              beginner: t("en", "onboarding_level_beginner"),
-              intermediate: t("en", "onboarding_level_intermediate"),
-              advanced: t("en", "onboarding_level_advanced"),
-            }[level] || level,
-      tts_synthesizing:
-        t(uiLang, "tts_synthesizing") ||
-        (uiLang === "es" ? "Sintetizando…" : "Synthesizing…"),
+        {
+          beginner: t(uiLang, "onboarding_level_beginner"),
+          intermediate: t(uiLang, "onboarding_level_intermediate"),
+          advanced: t(uiLang, "onboarding_level_advanced"),
+        }[level] || level,
+      tts_synthesizing: t(uiLang, "tts_synthesizing"),
     };
   }, [uiLang, level]);
 }
@@ -424,9 +394,7 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? uiLang === "es"
-        ? "es"
-        : "en"
+      ? (["es", "it"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
@@ -853,14 +821,8 @@ export default function StoryMode({
       setStoryData(fallback);
       storyCacheRef.current = fallback;
       toast({
-        title:
-          uiLang === "es"
-            ? "Usando juego de roles de demo"
-            : "Using Demo Role Play",
-        description:
-          uiLang === "es"
-            ? "API no disponible. Usando juego de roles de demo para pruebas."
-            : "API unavailable. Using demo role play for testing.",
+        title: t(uiLang, "story_demo_title"),
+        description: t(uiLang, "story_demo_desc"),
         status: "info",
         duration: 3000,
       });
@@ -1205,11 +1167,8 @@ export default function StoryMode({
 
     // Not in lesson mode - show a message
     toast({
-      title: uiLang === "es" ? "No disponible" : "Not available",
-      description:
-        uiLang === "es"
-          ? "Solo puedes saltar cuando estás en un modo de lección."
-          : "You can only skip when in lesson mode.",
+      title: t(uiLang, "story_skip_unavailable_title"),
+      description: t(uiLang, "story_skip_unavailable_desc"),
       status: "info",
       duration: 3000,
     });
@@ -1390,11 +1349,8 @@ export default function StoryMode({
 
       if (error) {
         toast({
-          title: uiLang === "es" ? "No se pudo evaluar" : "Could not evaluate",
-          description:
-            uiLang === "es"
-              ? "Vuelve a intentarlo con una conexión estable."
-              : "Please try again with a stable connection.",
+          title: t(uiLang, "story_audio_eval_error_title"),
+          description: t(uiLang, "story_audio_eval_error_desc"),
           status: "error",
           duration: 2500,
         });
@@ -1511,38 +1467,22 @@ export default function StoryMode({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title:
-            uiLang === "es"
-              ? "Reconocimiento de voz no disponible"
-              : "Speech recognition unavailable",
-          description:
-            uiLang === "es"
-              ? "Para calificar, usa un navegador Chromium con acceso al micrófono."
-              : "For grading, please use a Chromium-based browser with microphone access.",
+          title: t(uiLang, "story_speech_unavailable_title"),
+          description: t(uiLang, "story_speech_unavailable_desc"),
           status: "warning",
           duration: 3500,
         });
       } else if (code === "mic-denied") {
         toast({
-          title:
-            uiLang === "es"
-              ? "Permiso de micrófono denegado"
-              : "Microphone denied",
-          description:
-            uiLang === "es"
-              ? "Activa el micrófono en la configuración del navegador."
-              : "Enable microphone access in your browser settings.",
+          title: t(uiLang, "flashcard_mic_denied_title"),
+          description: t(uiLang, "flashcard_mic_denied_desc"),
           status: "error",
           duration: 3200,
         });
       } else {
         toast({
-          title:
-            uiLang === "es"
-              ? "No se pudo iniciar la grabación"
-              : "Recording failed",
-          description:
-            uiLang === "es" ? "Inténtalo nuevamente." : "Please try again.",
+          title: t(uiLang, "vocab_recording_failed"),
+          description: t(uiLang, "vocab_recording_failed_desc"),
           status: "error",
           duration: 2500,
         });
@@ -1787,7 +1727,7 @@ export default function StoryMode({
                   // padding={6}
                   width="fit-content"
                 >
-                  {uiLang === "es" ? "Saltar" : "Skip"}
+                  {t(uiLang, "practice_skip_question")}
                 </Button>
               </Box>
             )}
@@ -2030,8 +1970,8 @@ export default function StoryMode({
                       textAlign="center"
                       mt={2}
                     >
-                      {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {t(uiLang, "story_sentence_label")}{" "}
+                      {currentSentenceIndex + 1} {t(uiLang, "story_of")}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>
@@ -2082,9 +2022,7 @@ export default function StoryMode({
                           transition="all 0.2s ease"
                         >
                           {isConnecting
-                            ? uiLang === "es"
-                              ? "Conectando..."
-                              : "Connecting..."
+                            ? t(uiLang, "vocab_connecting")
                             : isRecording
                               ? uiText.stopRecording
                               : uiText.record}
@@ -2217,14 +2155,10 @@ export default function StoryMode({
                     sessionXp > 0 &&
                     sessionSummary.total > 0 ? (
                       <SpeakSuccessCard
-                        title={
-                          uiLang === "es"
-                            ? "¡Juego de roles completado!"
-                            : "Role play completed!"
-                        }
+                        title={t(uiLang, "story_roleplay_completed")}
                         scoreLabel={`${sessionSummary.passed}/${
                           sessionSummary.total
-                        } ${uiLang === "es" ? "oraciones" : "sentences"}`}
+                        } ${t(uiLang, "story_sentences")}`}
                         xp={sessionXp}
                         t={t}
                         userLanguage={uiLang}

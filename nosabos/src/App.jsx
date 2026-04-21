@@ -583,6 +583,8 @@ function TopBar({
   // 🆕 mobile detection prop
   isMobile,
   postNostrContent,
+  onSupportLangChange,
+  pendingLangRef,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -673,9 +675,13 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    setSupportLang(
-      normalizeSupportLanguage(q.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+    const incomingLang = normalizeSupportLanguage(
+      q.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
     );
+    if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
+      setSupportLang(incomingLang);
+    }
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ??
@@ -1280,13 +1286,18 @@ function TopBar({
                                 type="radio"
                                 value={supportLang}
                                 onChange={(value) => {
-                                  playSound(selectSound);
-                                  setSupportLang(value);
-                                  // Defer the Zustand user-store update so the
-                                  // cascade of App-wide re-renders happens
-                                  // after paint, not while the menu is closing.
+                                  const normalized = normalizeSupportLanguage(
+                                    value,
+                                    DEFAULT_SUPPORT_LANGUAGE,
+                                  );
+                                  onSupportLangChange?.(
+                                    normalized,
+                                    setSupportLang,
+                                  );
                                   setTimeout(() => {
-                                    persistSettings({ supportLang: value });
+                                    persistSettings({
+                                      supportLang: normalized,
+                                    });
                                   }, 0);
                                 }}
                               >
@@ -1295,6 +1306,7 @@ function TopBar({
                                     key={option.value}
                                     value={option.value}
                                     padding={5}
+                                    onPointerDown={() => playSound(selectSound)}
                                   >
                                     <HStack spacing={2}>
                                       {option.flag}
@@ -1727,6 +1739,9 @@ export default function App() {
       resolvedSupportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
+    // Ignore incoming Firestore value if it differs from a pending local selection
+    // (stale snapshot arriving before the write is confirmed).
+    if (pendingLangRef.current && nextLang !== pendingLangRef.current) return;
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
@@ -1873,6 +1888,22 @@ export default function App() {
     const stored = localStorage.getItem("appLanguage");
     return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
+  // Guards stale Firestore snapshots from reverting an in-flight language change.
+  const pendingLangRef = useRef(null);
+  const pendingLangTimeoutRef = useRef(null);
+  const onSupportLangChange = useCallback((normalized, setSupportLangFn) => {
+    pendingLangRef.current = normalized;
+    if (pendingLangTimeoutRef.current)
+      clearTimeout(pendingLangTimeoutRef.current);
+    pendingLangTimeoutRef.current = setTimeout(() => {
+      pendingLangRef.current = null;
+    }, 5000);
+    setAppLanguage(normalized);
+    setSupportLangFn?.(normalized);
+    try {
+      localStorage.setItem("appLanguage", normalized);
+    } catch {}
+  }, []);
   const t = translations[appLanguage] || translations.en;
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
@@ -2957,9 +2988,11 @@ export default function App() {
       const expected = (subscriptionPasscode || "").trim();
       if (!expected) {
         const msg =
-          appLanguage === "es"
-            ? "El código de acceso no está configurado"
-            : "Subscription passcode is not configured";
+          appLanguage === "it"
+            ? "Il codice abbonamento non è configurato"
+            : appLanguage === "es"
+              ? "El código de acceso no está configurado"
+              : "Subscription passcode is not configured";
         setPasscodeError(msg);
         setLocalError?.(msg);
         return;
@@ -2998,14 +3031,21 @@ export default function App() {
         patchUser?.({ subscriptionPasscodeVerified: true });
         toast({
           status: "success",
-          title: appLanguage === "es" ? "Código aceptado" : "Passcode accepted",
+          title:
+            appLanguage === "it"
+              ? "Codice accettato"
+              : appLanguage === "es"
+                ? "Código aceptado"
+                : "Passcode accepted",
         });
       } catch (error) {
         console.error("Failed to save subscription passcode", error);
         const msg =
-          appLanguage === "es"
-            ? "No se pudo guardar el código"
-            : "Failed to save passcode";
+          appLanguage === "it"
+            ? "Impossibile salvare il codice"
+            : appLanguage === "es"
+              ? "No se pudo guardar el código"
+              : "Failed to save passcode";
         setPasscodeError(msg);
         setLocalError?.(msg);
       } finally {
@@ -5752,6 +5792,8 @@ export default function App() {
           testSound={submitActionSound}
           isMobile={isMobile}
           postNostrContent={postNostrContent}
+          onSupportLangChange={onSupportLangChange}
+          pendingLangRef={pendingLangRef}
         />
       )}
 
@@ -6271,14 +6313,18 @@ export default function App() {
             <VStack spacing={{ base: 4, md: 5 }} textAlign="center">
               <VStack spacing={2}>
                 <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Meta diaria alcanzada!"
-                    : "Daily Goal Complete!"}
+                  {appLanguage === "it"
+                    ? "Obiettivo giornaliero raggiunto!"
+                    : appLanguage === "es"
+                      ? "¡Meta diaria alcanzada!"
+                      : "Daily Goal Complete!"}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
-                  {appLanguage === "es"
-                    ? "Alcanzaste tu objetivo de XP de hoy."
-                    : "You hit today’s XP target."}
+                  {appLanguage === "it"
+                    ? "Hai raggiunto il tuo obiettivo XP di oggi."
+                    : appLanguage === "es"
+                      ? "Alcanzaste tu objetivo de XP de hoy."
+                      : "You hit today’s XP target."}
                 </Text>
               </VStack>
 
@@ -6295,7 +6341,11 @@ export default function App() {
                   <HStack spacing={6} justify="center">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "es" ? "Meta" : "Goal"}
+                        {appLanguage === "it"
+                          ? "Obiettivo"
+                          : appLanguage === "es"
+                            ? "Meta"
+                            : "Goal"}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -6303,9 +6353,11 @@ export default function App() {
                     </VStack>
                   </HStack>
                   <Text fontSize="sm" opacity={0.85}>
-                    {appLanguage === "es"
-                      ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
-                      : "Keep the streak going and come back tomorrow for a new goal!"}
+                    {appLanguage === "it"
+                      ? "Mantieni la serie e torna domani per un nuovo obiettivo!"
+                      : appLanguage === "es"
+                        ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
+                        : "Keep the streak going and come back tomorrow for a new goal!"}
                   </Text>
                 </VStack>
               </Box>
@@ -6328,7 +6380,11 @@ export default function App() {
                 fontSize={{ base: "md", md: "lg" }}
                 py={{ base: 5, md: 6 }}
               >
-                {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
+                {appLanguage === "it"
+                  ? "Continua ad imparare"
+                  : appLanguage === "es"
+                    ? "Seguir practicando"
+                    : "Keep learning"}
               </Button>
             </VStack>
           </ModalBody>
@@ -6373,9 +6429,11 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Lección Completada!"
-                    : "Lesson Complete!"}
+                  {appLanguage === "it"
+                    ? "Lezione Completata!"
+                    : appLanguage === "es"
+                      ? "¡Lección Completada!"
+                      : "Lesson Complete!"}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {completedLessonData?.title?.[appLanguage] ||
@@ -6400,15 +6458,21 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
+                    {appLanguage === "it"
+                      ? "XP Guadagnato"
+                      : appLanguage === "es"
+                        ? "XP Ganado"
+                        : "XP Earned"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "es"
-                      ? "Puntos de Experiencia"
-                      : "Experience Points"}
+                    {appLanguage === "it"
+                      ? "Punti Esperienza"
+                      : appLanguage === "es"
+                        ? "Puntos de Experiencia"
+                        : "Experience Points"}
                   </Text>
                 </VStack>
               </Box>
@@ -6426,7 +6490,11 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "es" ? "Continuar" : "Continue"}
+                {appLanguage === "it"
+                  ? "Continua"
+                  : appLanguage === "es"
+                    ? "Continuar"
+                    : "Continue"}
               </Button>
             </VStack>
           </ModalBody>

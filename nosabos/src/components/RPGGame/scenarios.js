@@ -35,11 +35,11 @@ export const MAP_CHOICES = [
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado" },
-  livingRoom: { en: "Living Room", es: "Sala" },
-  park: { en: "Park", es: "Parque" },
-  airport: { en: "Airport", es: "Aeropuerto" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato" },
+  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno" },
+  park: { en: "Park", es: "Parque", it: "Parco" },
+  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -393,9 +393,11 @@ function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
 
 function normalizeQuestions(questions, supportLang) {
   const basePrompt =
-    supportLang === "es"
-      ? "Elige la opción correcta."
-      : "Choose the correct option.";
+    supportLang === "it"
+      ? "Scegli l'opzione corretta."
+      : supportLang === "es"
+        ? "Elige la opción correcta."
+        : "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
     .slice(0, 20)
@@ -1325,7 +1327,24 @@ function normalizeQuest(
     },
   };
 
-  const t = L[tl] || L.en;
+  const t = L[tl] || {
+    ...L.en,
+    // For target languages with no template, use LLM-generated content directly
+    // to avoid prepending/appending English text to target-language dialogue
+    firstGreetings: [(seed) => seed],
+    midGreetings: [(fromNpc) => `${fromNpc}!`],
+    finalGreetings: [(fromNpc) => `${fromNpc}!`],
+    // Terminal nodes: NPC name only, no English narrative
+    npcHandoff: (nextNpc) => `${nextNpc}!`,
+    questComplete: "✓",
+    // Player connector lines: NPC name reference only
+    playerBridge: (fromNpc) => `${fromNpc}.`,
+    // Speech fallbacks: null so index.jsx falls through to ui.* (support language)
+    fallbackSpeech: null,
+    speechContinue: null,
+    // Follow-up NPC prompts in speech mode
+    speechPrompts: [() => "…"],
+  };
 
   const storySeed = rawStorySeed || t.defaultSeed;
   const intro =
@@ -1662,21 +1681,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   home: [
     {
       slug: "kitchen",
-      name: { en: "Kitchen", es: "Cocina" },
+      name: { en: "Kitchen", es: "Cocina", it: "Cucina" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "shelf"],
     },
     {
       slug: "study",
-      name: { en: "Study", es: "Estudio" },
+      name: { en: "Study", es: "Estudio", it: "Studio" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["bookshelf", "desk", "lamp"],
     },
     {
       slug: "garden-patio",
-      name: { en: "Garden Patio", es: "Patio del Jardin" },
+      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "table"],
@@ -1685,21 +1704,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   market: [
     {
       slug: "prep-room",
-      name: { en: "Prep Room", es: "Sala de Preparacion" },
+      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "fridge"],
     },
     {
       slug: "pantry",
-      name: { en: "Pantry", es: "Despensa" },
+      name: { en: "Pantry", es: "Despensa", it: "Dispensa" },
       markerType: "building",
       shape: "offset",
       objects: ["shelf", "shelf", "counter"],
     },
     {
       slug: "cafe-patio",
-      name: { en: "Cafe Patio", es: "Patio del Cafe" },
+      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["table", "bench", "plant"],
@@ -1708,21 +1727,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   library: [
     {
       slug: "archive-wing",
-      name: { en: "Archive Wing", es: "Ala de Archivo" },
+      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio" },
       markerType: "doorway",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "lamp"],
     },
     {
       slug: "reading-nook",
-      name: { en: "Reading Nook", es: "Rincon de Lectura" },
+      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["table", "bench", "lamp"],
     },
     {
       slug: "front-office",
-      name: { en: "Front Office", es: "Oficina Principal" },
+      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "bookshelf", "plant"],
@@ -1731,21 +1750,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   transit: [
     {
       slug: "ticket-office",
-      name: { en: "Ticket Office", es: "Oficina de Boletos" },
+      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "register", "sign"],
     },
     {
       slug: "gate-lounge",
-      name: { en: "Gate Lounge", es: "Sala de Embarque" },
+      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco" },
       markerType: "gate",
       shape: "courtyard",
       objects: ["bench", "sign", "suitcaseStack"],
     },
     {
       slug: "travel-desk",
-      name: { en: "Travel Desk", es: "Mesa de Viaje" },
+      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "plant", "sign"],
@@ -1754,21 +1773,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   nature: [
     {
       slug: "garden-pavilion",
-      name: { en: "Garden Pavilion", es: "Pabellon del Jardin" },
+      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
     },
     {
       slug: "glasshouse",
-      name: { en: "Glasshouse", es: "Invernadero" },
+      name: { en: "Glasshouse", es: "Invernadero", it: "Serra" },
       markerType: "greenhouse",
       shape: "offset",
       objects: ["plant", "plant", "table"],
     },
     {
       slug: "ranger-station",
-      name: { en: "Ranger Station", es: "Estacion del Guardabosques" },
+      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "shelf", "bench"],
@@ -1777,21 +1796,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   civic: [
     {
       slug: "council-room",
-      name: { en: "Council Room", es: "Sala del Consejo" },
+      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "table", "lamp"],
     },
     {
       slug: "records-room",
-      name: { en: "Records Room", es: "Sala de Registros" },
+      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi" },
       markerType: "building",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "desk"],
     },
     {
       slug: "courtyard-pavilion",
-      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio" },
+      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
@@ -1800,21 +1819,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   lab: [
     {
       slug: "prep-lab",
-      name: { en: "Prep Lab", es: "Laboratorio de Preparacion" },
+      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione" },
       markerType: "doorway",
       shape: "annex",
       objects: ["freezer", "table", "lamp"],
     },
     {
       slug: "analysis-booth",
-      name: { en: "Analysis Booth", es: "Cabina de Analisis" },
+      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "shelf", "lamp"],
     },
     {
       slug: "equipment-store",
-      name: { en: "Equipment Store", es: "Deposito de Equipo" },
+      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature" },
       markerType: "building",
       shape: "alcove",
       objects: ["shelf", "freezer", "desk"],
@@ -1823,21 +1842,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   festival: [
     {
       slug: "performance-stage",
-      name: { en: "Performance Stage", es: "Escenario" },
+      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["speaker", "speaker", "balloons"],
     },
     {
       slug: "food-stall",
-      name: { en: "Food Stall", es: "Puesto de Comida" },
+      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "table", "sign"],
     },
     {
       slug: "craft-tent",
-      name: { en: "Craft Tent", es: "Taller Creativo" },
+      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa" },
       markerType: "pavilion",
       shape: "annex",
       objects: ["table", "bench", "balloons"],
@@ -2831,7 +2850,7 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it") };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2960,6 +2979,7 @@ async function fallbackScenario(
     name: environment?.names || {
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
+      it: getMapName(mapId, "it"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3078,7 +3098,7 @@ Supported object types: ${supportedObjects}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3158,7 +3178,7 @@ ${reviewContextBlock.lessonTerms.join(", ")}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3258,6 +3278,7 @@ function normalizeScenario({
       name: {
         en: String(raw?.name?.en || getMapName(mapId, "en")),
         es: String(raw?.name?.es || getMapName(mapId, "es")),
+        it: String(raw?.name?.it || getMapName(mapId, "it")),
       },
       tileSize: 32,
       mapWidth,
@@ -3312,12 +3333,16 @@ function normalizeScenario({
   });
   const hubMap = reviewMaps.maps[0];
 
+  const processedName = {
+    en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
+    es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
+    it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
+  };
+  hubMap.name = processedName;
+
   return {
     id: mapId,
-    name: {
-      en: String(raw?.name?.en || environment?.names?.en || getMapName(mapId, "en")),
-      es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
-    },
+    name: processedName,
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
     mapHeight: hubMap.mapHeight,

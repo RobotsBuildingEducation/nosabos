@@ -70,6 +70,16 @@ These files are the primary surface area. Any new support language MUST update e
 ### 3.4 `src/utils/languageDetection.js`
 - `SPANISH_TIMEZONES`, `isSpanishTimezone`, `isSpanishBrowserLanguage`, `detectUserLanguage` (lines 3–139) — Replace the binary Spanish-vs-English logic with a multi-language resolver, or add a parallel `ITALIAN_TIMEZONES` set plus priority ordering.
 
+**Italian implementation note:** Done. `languageDetection.js` already contains a full multi-language resolver:
+1. **Stored preference** — if `localStorage.appLanguage` is a valid support language code, it is returned immediately (respects explicit user choice).
+2. **Italian timezone** — `ITALIAN_TIMEZONES = ['Europe/Rome', 'Europe/Vatican', 'Europe/San_Marino']` checked first; returns `'it'`.
+3. **Spanish timezone** — returns `'es'`.
+4. **Italian browser language** — `ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA']` checked against `navigator.languages`; returns `'it'`.
+5. **Spanish browser language** — returns `'es'`.
+6. **Default** — returns `DEFAULT_SUPPORT_LANGUAGE` (`'en'`).
+
+`LandingPage.jsx` calls `detectUserLanguage()` in its `useState` initializer — so Italian-timezone and Italian-browser-language users land on the page in Italian automatically. The prerequisite was `translations.it` existing in `LandingPage.jsx`, which was added in §3.21f. For any future support language, add its timezone set + browser language codes to this file in the same pattern.
+
 ### 3.5 `src/App.jsx`
 Language touchpoints are spread throughout. Key anchors:
 - `TARGET_LANGUAGE_LABELS` (~lines 173–217).
@@ -123,15 +133,22 @@ Language touchpoints are spread throughout. Key anchors:
 - `LANG_NAME` (~lines 155–165), `localizedLangName` (~lines 955–966).
 - English/Spanish prompt template pair (~lines 1187–1423). Add a parallel `userLanguage === "<code>"` branch with translated `fillPrompt` / `mcPrompt` / `maPrompt` / `speakPrompt` / `matchPrompt`.
 
+**Italian implementation note:** All visible UI binary ternaries (`userLanguage === "es" ? … : …`) in `GrammarBook.jsx` have been replaced with `t("key")` calls that resolve through `translations.it` when `userLanguage === "it"`. This includes: mode instruction headers (fill/MC/MA/match/speak), quiz result modals (pass/fail titles, score strings, action buttons), keyboard toggle labels, lesson progress label, speech error toast titles/descriptions, and the ask-assistant aria label. The `isSpanishUI` flag near LLM prompt construction is intentionally preserved — it gates AI-prompt text (not visible chrome) and only needs extending when the Italian AI prompt branch is authored. 27 new `vocab_*` translation keys were added to `translations.en`, `translations.es`, and `translations.it` in `translation.jsx` to support these lookups. Several lookups reuse existing keys (`story_score`, `flashcard_continue`, `try_again`, `flashcard_try_again`, `history_keyboard_close`, `history_keyboard_open`, `flashcard_mic_denied_title`, `flashcard_mic_denied_desc`, `flashcard_speech_unavailable_desc`) rather than duplicating strings.
+
 ### 3.13 `src/components/Vocabulary.jsx`
 - `useSharedProgress` (~line 207) and component validation (~line 1025).
 - `LANG_NAME` (~lines 156–166), `localizedLangName` (~lines 1041–1052).
+
+**Italian implementation note:** All visible UI binary ternaries in `Vocabulary.jsx` have been replaced with `t("key")` calls, matching the same treatment as `GrammarBook.jsx`. Covered areas: mode instruction headers, quiz result modals, keyboard toggle, lesson progress label (`vocab_lesson_progress`), speak-mode header (`vocab_say_it_aloud`), listen labels (`vocab_listen_question`, `vocab_listen_example`, `vocab_listen_word`), LLM hint prefix label (`vocab_speak_hint_label`), and all speech error toasts. `FeedbackRail.jsx` was also updated: the note-button labels (`vocab_create_note`, `vocab_note_saved`) and the explain/explanation strings (`flashcard_explain_answer`, `flashcard_explanation_heading`) now use the `t` prop passed from parents instead of hardcoded `userLanguage === "es"` ternaries.
 
 ### 3.14 `src/components/Stories.jsx`
 - `useSharedProgress` (~lines 202–214).
 - `BCP47` map (~lines 131–145).
 - `LLM_LANG_NAME` (~lines 114–129).
 - `toLangKey` (~lines 147–181) — add native/English name aliases.
+- `getAppUILang()` helper — was binary `appLanguage === "es" ? "es" : "en"`; must be extended to return the new code.
+
+**Italian implementation note:** The `useUIText` hook's entire role-play string object has been migrated from binary `uiLang === "es" ? ... : ...` ternaries to `t(uiLang, "story_*")` calls. Role-play-specific keys (`story_header_roleplay`, `story_role_prompt`, `story_role_placeholder`, `story_start_role`, `story_update_role`, `story_edit_role`, `story_cancel_edit`, `story_play_target`, `story_no_role`, `story_generating_role_title`, `story_generating_role_sub`, `story_finish_role`) were added to all three language blocks in `translation.jsx`. Additional inline ternaries in the component body (demo toast, skip-unavailable toast, eval-error toast, recording-error toasts, Connecting button, sentence counter, role-play completed card) were replaced with `t(uiLang, "story_*")` / existing key lookups. The `bilingual` supportLang resolution was updated from a binary `es`/`en` gate to include `it`. `getAppUILang()` was updated from a binary `appLanguage === "es"` check to `["es", "it"].includes(lang) ? lang : "en"` — this was the root cause of all Stories UI text displaying in English for Italian users. `RepeatWhatYouHear.jsx` and `TranslateSentence.jsx` — which render the "Tap what you hear" and "Translate this sentence" question modes — had all bare ternaries replaced with `t("repeat_hear_*")` / `t("translate_sentence_*")` keys added to all three language blocks. `LessonFlashcard.jsx`'s local translation dict was extended with an `it` entry covering all flashcard UI strings (translate_to, show_answer, type_placeholder, submit, record, skip, etc.). **Per-sentence translation language**: the `supportLang` validation allow-list inside `setProgress` (line ~269) was `["en","es","bilingual"]` — `"it"` was missing, causing the LLM prompt to request English translations regardless of the user's app language. Fixed by adding `"it"` to the list.
 
 ### 3.15 `src/components/JobScript.jsx`
 - `useSharedProgress` (~line 171).
@@ -160,9 +177,125 @@ Do not treat account settings as localized just because `translations.<code>` ex
 ### 3.20 `src/components/LessonFlashcard.jsx` / `FlashcardPractice.jsx` / `FlashcardSkillTree.jsx`
 - FlashcardSkillTree: `Intl.DateTimeFormat` (lines 139, 197) — replace with shared locale helper keyed on `appLanguage`.
 - LessonFlashcard / FlashcardPractice: practice-language normalization must stay independent from support-language normalization — use `normalizeSupportLanguage` / `normalizePracticeLanguage` helpers.
+- LessonFlashcard has a **component-local `t()` dict** (not the shared `translation.jsx` helper) — add the new language entry to all keys in that dict, including the `generating` loading-state key.
+
+**Italian implementation note:** `LessonFlashcard.jsx`'s local dict was extended with an `it` entry for all flashcard UI strings and a new `generating` key (en: "Generating flashcard...", es: "Generando tarjeta...", it: "Generazione scheda..."). The loading text ternary `userLanguage === "es" ? ... : ...` was replaced with `t("generating")`.
 
 ### 3.21 `src/components/ProficiencyTest.jsx`
-- Same pattern: practice vs support language normalization and inline ternaries.
+- `const isEs = supportLang === "es"` and `ui = translations[isEs ? "es" : "en"]` — change to `ui = translations[supportLang] || translations.en`. This single line propagates correct Italian to every `ui.*` lookup in the file.
+- `uiStateLabel(uiState, isEs)` helper — change signature to accept `ui` dict object; use `ui.proficiency_speaking/listening/thinking` keys.
+- All remaining `isEs ? ... : ...` JSX ternaries (40+) — replace with `ui.proficiency_test_*` keys.
+- Data-driven `[isEs ? "es" : "en"]` accesses for `levelInfo.name`, `criterion`, rubric `row`, and `CEFR_LEVEL_OFFERINGS` — change to `[supportLang] || .en` pattern.
+
+**Italian implementation note:** Done — `ui = translations[supportLang] || translations.en` one-line fix, `uiStateLabel` updated, all 40+ `isEs` ternaries replaced with `ui.*` lookups, data-driven language keys updated. 43+ new `proficiency_test_*` and `proficiency_*` keys added to `translations.en/es/it`.
+
+### 3.21b `src/components/ProficiencyTestModal.jsx`
+- Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.
+
+**Italian implementation note:** Done — `tFn` imported, `isEs` replaced with `ui` helper, all 6 visible-copy ternaries replaced.
+
+### 3.21c `src/components/GettingStartedModal.jsx`
+- Same `isEs` pattern; install step texts are in a `useMemo` array that hard-codes en/es copy.
+- `handleCopyKey` toast title is a bare ternary.
+
+**Italian implementation note:** Done — `tFn` imported, `isEs` removed, `installSteps` array uses `tFn(lang, "app_install_step*")`, toast uses `app_install_copied`, all JSX ternaries replaced. New keys: `app_install_subtitle`, `app_install_step6`, `app_install_got_it`, `app_install_copied` added to all three blocks.
+
+### 3.21d `src/components/TutorialStepper.jsx`
+- `MODULE_CONFIG` constant has `label`, `shortLabel`, and `description` objects with only `en` and `es` keys — add `it` to every entry.
+
+**Italian implementation note:** Done — `it` added to all 6 module entries (vocabulary, grammar, reading, stories, realtime, game) for all three fields.
+
+### 3.21f `src/components/LandingPage.jsx`
+- Contains its own **component-local `translations` object** (completely separate from `src/utils/translation.jsx`) with only `en` and `es` entries.
+- `copy = translations[lang]` has no fallback — crashes when `detectUserLanguage()` returns `"it"`.
+- Language picker was a two-button `en`/`es` toggle — must be replaced with a menu/select supporting all supported UI languages.
+- Add `language_it` key to `en` and `es` blocks, and author a complete `it` entry for all ~60 keys.
+
+**Italian implementation note:** Done — full `it` block added covering all landing-page copy (nav, hero, features, values, scholarship, FAQ, CTA, sign-in, footer). `copy = translations[lang] || translations.en` fallback guard added. Language two-button toggle replaced with a styled `<select>` dropdown listing all three options (English / Español / Italiano) using a `LANG_OPTIONS` constant. `language_it` added to `en` and `es` blocks.
+
+### 3.21e `src/components/TutorialActionBarPopovers.jsx`
+- `BUTTON_EXPLANATIONS` array has `label` and `description` objects with only `en` and `es` keys — Italian users see a completely blank card body.
+- `aria-label` / "Done" button copy uses binary `lang === "es"` ternaries.
+- JSX reads `currentButton.label[lang]` / `currentButton.description[lang]` with no fallback — `undefined` for unknown languages.
+
+**Italian implementation note:** Done — `it` entries added to all 6 button configs; `|| .en` fallback guards added to both JSX reads; Previous/Next/Done ternaries updated to include `"it"` branch.
+
+### 3.21g `src/components/LinksPage.jsx` + `src/translations/linksPage.jsx`
+
+**`linksPage.jsx`**: has a standalone `linksPageTranslations` object (separate from `src/utils/translation.jsx`). Only `en` and `es` blocks existed; add a full `it` block covering every key including the JSX `aboutContent` value. The `en` block is the authoritative key list — any key missing from `es` or `it` falls back to `en` via the `useLanguage` hook's `t()` helper (`translations[lang] ?? translations.en`).
+
+**`LinksPage.jsx`**: consumes `useLanguage` for state; the old language picker was a Chakra `Switch` between "ENGLISH" / "SPANISH" labels centered in the page body — this is a binary control that cannot represent three languages. Replace the entire `<HStack>` + `<Switch>` block with a **fixed top-left Chakra `Menu`** component:
+- `position: fixed; top: 18px; left: 16px; zIndex: 121` (positioned left of the existing theme-toggle at top-right).
+- `MenuButton` shows only the selected language's flag emoji (from `getSupportLanguageOptions()`); no visible label text when collapsed.
+- `MenuList` expands downward with `MenuOptionGroup` + `MenuItemOption` for each supported language (flag + label), matching the style used in `Onboarding.jsx` / `LandingPage.jsx`.
+- Uses `setLanguage` from `useLanguage` (not `toggleLanguage`) so clicking any option sets the language directly.
+- Import `Menu, MenuButton, MenuList, MenuOptionGroup, MenuItemOption` from `@chakra-ui/react` and `getSupportLanguageOptions` from `../constants/languages`.
+- Remove the `Switch` import (no longer used).
+
+**Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
+
+### 3.21i `src/components/RPGGame/index.jsx` + `scenarios.js`
+
+The RPGGame has its own isolated UI text system — it does **not** use `translation.jsx`. All UI strings live in component-local dictionaries that must each have an `it` entry.
+
+**Dictionaries in `index.jsx`** — add `it` block to each:
+- `UI_TEXT` — all game-chrome strings (Skip, Continue, Correct, Incorrect, quest, mic, movement hints, music, Inventory, Drop, Thinking, translate/undo aria-labels, speech-continue fallback, wrong-item name, chooseCorrect prompt).
+- `QUEST_LOG_COPY` — quest log title, button, task strings (all are functions or strings).
+- `OBJECT_SEARCH_TEST_COPY` — NPC object-search dialogue (intro, wrongItem, success, chooseItem, foundItem, alreadyChecked, nothingFound, continueSearching).
+- `GAME_LOADING_MESSAGES` — loading-screen messages array.
+
+**Hardcoded `targetLang === "es"` / `supportLang === "es"` ternaries in `index.jsx`** — replace with `ui.*` lookups (all keys now in `UI_TEXT`):
+- `chooseItem` / `continueSearching` fallbacks (use `objectSearchCopy.*` directly)
+- `wrongItem` name in gather quest
+- `speechContinue` fallback reply
+- `aria-label` on Help button
+- Inventory modal header, empty-inventory text, Drop button
+- translate/undo-translation `aria-label`
+- "Thinking..." text during NPC reply
+
+**`scenarios.js` `normalizeQuestions()`** (line ~396) — `supportLang === "es" ? "Elige..." : "Choose..."` extended to three-way including `"it"`.
+
+**Italian implementation note:** Done — `it` entries added to all four dictionaries; all 10 hardcoded ternaries replaced with `ui.*` lookups; `normalizeQuestions` extended to three-way. The LLM prompt construction in `scenarios.js` already used `getLanguagePromptName()` and worked for any language code — no changes needed there. The `GATHER_ITEMS_BY_MAP` gather-quest item pools (`en`/`es` only) remain English as a fallback since item names are target-language content, not support-language chrome.
+
+### 3.21j RPGGame room names (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`)
+
+Room/area names displayed in the game HUD and loader are stored as `{ en, es }` name objects and looked up by `supportLang`. Adding `it` requires changes in three files:
+
+**`scenarios.js` `MAP_NAME_BY_ID`** — static map names for the 5 built-in maps:
+```js
+{ en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti" }
+// likewise for livingRoom, park, airport, REVIEW_WORLD_ID
+```
+
+**`scenarios.js` — 4 call sites that build the `name` object** (lines ~2836, ~2963, ~3261, ~3320):
+```js
+{ en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it") }
+```
+
+**`worldGen.js` `WORLD_BLUEPRINTS`** — 8 blueprints (`home`, `market`, `library`, `transit`, `nature`, `civic`, `lab`, `festival`) each had `names: { en, es }` — `it` array added to all 8.
+
+**`LoadingMiniGame.jsx` world generation** (lines ~571–591) — `outdoorName`, `indoor1Name`, `indoor2Name` objects were built with only `en`/`es` keys even though `OUTDOOR_NAMES` and `INDOOR_ROOM_TYPES[].names` already had `it` arrays. Added `it: pick(rng, ...)` to all three.
+
+**`index.jsx` object-examine `mapName`** — was looking up `map.name?.[targetLang]` (the practice language) for LLM context. Changed to `map.name?.en` since the LLM prompt is in English regardless of target language.
+
+**`activeAreaLabel`** in `index.jsx` already correctly reads `activeMap.name?.[supportLang]` — no change needed; it works automatically once the upstream name objects include the `it` key.
+
+### 3.21h `src/components/SubscriptionGate.jsx` + `/subscribe` route
+
+`SubscriptionGate.jsx` already uses a `supportCopy(lang, en, es, it)` helper and has inline Italian strings for the empty-input error, submit button text, and loading text. The gaps are in `translation.jsx` and `App.jsx`:
+
+**`translation.jsx` `it` block** — add:
+- `"passcode.instructions"` — JSX with intro sentence, benefit `<ol>`, and "Abbonati" / "Paga una volta" `<Button>` pair (mirroring the `en` block structure exactly).
+- `invalid` — invalid-passcode message.
+- `bannedTitle` / `bannedBody` — access-denied strings.
+- `goToPatreon` / `passcodeLink` — Patreon link labels.
+
+**`App.jsx` passcode submit handler** (~line 2958) — three binary `appLanguage === "es" ? "..." : "..."` ternaries that must be extended to three-way `"it" / "es" / default`:
+1. "Subscription passcode is not configured" message.
+2. "Passcode accepted" success toast title.
+3. "Failed to save passcode" error message.
+
+**Italian implementation note:** Done — all five `it` translation keys added; three App.jsx ternaries extended to include Italian.
 
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
@@ -415,7 +548,29 @@ Current state (to keep this doc honest):
 | Alphabet bootcamp UI and all card content     | Done — `AlphabetBootcamp.jsx` UI copy plus `alphabetItalianLocalizer.js` coverage for all registered alphabet datasets |
 | `conversationTopics.js` includes `it`          | Done |
 | `flashcards/common.js` `getConceptText` bilingual list includes `it` | Done |
-| `languageDetection.js` timezone heuristics     | Done |
+| `languageDetection.js` timezone + browser-language heuristics | Done — `ITALIAN_TIMEZONES` (`Europe/Rome`, `Europe/Vatican`, `Europe/San_Marino`) and `ITALIAN_LANGUAGE_CODES` already present; `detectUserLanguage()` returns `'it'` before falling back to `'es'` or `'en'`; `LandingPage.jsx` calls it on mount so Italian-locale users auto-land in Italian |
+| Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
+| `Stories.jsx` (role-play UI + loader lang detection), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; `getAppUILang()` fixed to return `"it"`; 21+ role-play/repeat-hear/translate-sentence keys added; flashcard local dict extended with `it` entry + `generating` key. **Per-sentence support translation**: `supportLang` validation allow-list in `setProgress` (line ~269) was `["en","es","bilingual"]` — `"it"` added so the LLM is instructed to translate into Italian instead of silently falling back to English. |
+| `ProficiencyTestModal.jsx` localized | Done — `isEs` removed; all 6 visible-copy ternaries replaced with `tFn(lang, key)` |
+| `ProficiencyTest.jsx` localized | Done — `ui = translations[supportLang] \|\| translations.en`; `uiStateLabel` updated; all 40+ `isEs` ternaries replaced; data-driven language key accesses updated; 43+ `proficiency_test_*` keys added to all three blocks |
+| `GettingStartedModal.jsx` localized | Done — `isEs` removed; installSteps array, toast, and JSX ternaries replaced with `tFn(lang, key)`; 4 new `app_install_*` keys added |
+| `LessonGroupQuiz.jsx` generating-question loader | Done — binary ternary replaced with `t(userLanguage, "history_generating_question")` |
+| `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
+| `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
+| `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added |
+| `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook |
+| `SubscriptionGate.jsx` + `/subscribe` route fully localized | Done — `"passcode.instructions"` JSX added to `translations.it` (intro text, benefit list, Abbonati/Paga una volta buttons); `invalid`, `bannedTitle`, `bannedBody`, `goToPatreon`, `passcodeLink` added to `it` block; three binary `appLanguage === "es"` ternaries in `App.jsx` passcode handler extended to include Italian (`"it"` branch: not-configured msg, accepted toast, save-failed msg) |
+| `RPGGame/index.jsx` + `scenarios.js` UI fully localized | Done — `it` block added to `UI_TEXT`, `QUEST_LOG_COPY`, `OBJECT_SEARCH_TEST_COPY`, `GAME_LOADING_MESSAGES`; all 10 hardcoded `=== "es"` ternaries replaced with `ui.*` lookups; `normalizeQuestions` `chooseCorrect` string extended to three-way |
+| RPGGame room/area names in Italian (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`) | Done — `it` added to `MAP_NAME_BY_ID` + 4 call sites in `scenarios.js`; `it` arrays added to all 8 `WORLD_BLUEPRINTS` in `worldGen.js`; `LoadingMiniGame.jsx` world-gen now picks `it` from existing pools; object-examine `mapName` fixed to use `en` for LLM context |
+| `LoadingMiniGame.jsx` object interaction messages | Done — world-gen message shuffle loop was building `{ en, es }` objects only; `it` key added so Italian sign/chest/lamp/plant/table messages are shown |
+| RPGGame NPC dialogue language mixing (non-en/es targets) | Done — `scenarios.js` `L[tl] \|\| L.en` fallback replaced with a target-language-neutral object: `firstGreetings` uses LLM `storySeed` directly; `midGreetings`/`finalGreetings`/`npcHandoff` use NPC name only; `questComplete` → `"✓"`; `fallbackSpeech`/`speechContinue` → `null` so `index.jsx` falls through to `ui.noSpeechMatch`/`ui.speechContinue` (support language) |
+| Daily goal celebration modal (`App.jsx`) | Done — 5 binary `appLanguage === "es"` ternaries extended to three-way: title, subtitle, "Goal" label, streak message, "Keep learning" button |
+| Lesson complete celebration modal (`App.jsx`) | Done — 4 binary `appLanguage === "es"` ternaries extended to three-way: "Lesson Complete!", "XP Earned", "Experience Points", "Continue" |
+| `LandingPage.jsx` sign-in "or" divider | Done — hardcoded `"or"` replaced with `{copy.signin_or}`; `signin_or` key added to `en` ("or"), `es` ("o"), `it` ("o") translation blocks |
+| `SkillTree.jsx` game review loader messages | Done — `GAME_LOADING_MESSAGES` extended with `it` array (8 Italian messages); loader header gradient always dark (removed light-theme white override); text color fixed to `blue.100` regardless of theme |
+| RPGGame LLM-generated map/room names in support language (`scenarios.js`) | Done — both `generateScenarioWithAI` prompt JSON shapes now include `"${supportLang}": "..."` in the `name` field when support lang is not `en`/`es` (so the LLM generates Italian names directly); `environment.names[lang]` array fallback fixed to use `[0]` instead of `String(array)` to avoid comma-joined names |
+| `REVIEW_ROOM_BLUEPRINTS` static sub-room names (`scenarios.js`) | Done — all 24 static review-world sub-room specs (home, market, library, transit, nature, civic, lab, festival × 3 rooms each) now include `it` translations so the HUD area label shows Italian names instead of falling back to English |
+| RPGGame hub room name (`scenarios.js`) | Done — `generateScenarioWithAI` was computing a correct `processedName` (with `it`) on the outer scenario object but leaving `hubMap.name` pointing at raw `environment.names` (blueprint arrays). Fixed by extracting `processedName` first and assigning it to `hubMap.name` before the return, so both the outer scenario and the in-`maps[]` hub map share the same resolved string object |
 
 Treat the "Partial" rows as the working TODO for Italian — they become the acceptance criteria for shipping Italian as a full support language.
 
