@@ -2317,7 +2317,7 @@ Return ONLY valid JSON:
                               ) : (
                                 <>
                                   <Button
-                                    size="md"
+                                    size="sm"
                                     bg={SOFT_STOP_BUTTON_BG}
                                     color="white"
                                     boxShadow={`0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`}
@@ -2331,12 +2331,11 @@ Return ONLY valid JSON:
                                       transform: "translateY(2px)",
                                       boxShadow: "none",
                                     }}
-                                    minW="168px"
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
                                   <Button
-                                    size="md"
+                                    size="sm"
                                     variant={isLightTheme ? "solid" : "outline"}
                                     bg={
                                       isLightTheme
@@ -2371,7 +2370,6 @@ Return ONLY valid JSON:
                                           }
                                         : undefined
                                     }
-                                    minW="168px"
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
