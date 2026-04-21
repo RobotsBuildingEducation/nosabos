@@ -38,7 +38,11 @@ export default function ConversationAccountDrawer({
   const isLightTheme = themeMode === "light";
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const ui =
-    lang === "it"
+    lang === "fr"
+      ? {
+          title: "Parametres de conversation",
+        }
+      : lang === "it"
       ? {
           title: "Impostazioni conversazione",
         }

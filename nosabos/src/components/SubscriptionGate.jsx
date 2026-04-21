@@ -18,7 +18,8 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it) {
+function supportCopy(lang, en, es, it, fr) {
+  if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
   return en;
@@ -61,6 +62,7 @@ export default function SubscriptionGate({
           "Enter the passcode",
           "Ingresa el código de acceso",
           "Inserisci il codice di accesso",
+          "Entre le code d'acces",
         ),
       );
       return;
@@ -129,9 +131,10 @@ export default function SubscriptionGate({
                 "Verifying",
                 "Verificando",
                 "Verifica in corso",
+                "Verification",
               )}
             >
-              {supportCopy(lang, "Submit", "Enviar", "Invia")}
+              {supportCopy(lang, "Submit", "Enviar", "Invia", "Envoyer")}
             </Button>
           </Stack>
         </VStack>

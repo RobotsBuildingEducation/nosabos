@@ -123,10 +123,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Cozy Living Room", "Family Apartment", "Neighborhood Home"],
       es: ["Sala Acogedora", "Apartamento Familiar", "Casa del Barrio"],
       it: ["Salotto Accogliente", "Appartamento di Famiglia", "Casa del Quartiere"],
+      fr: ["Salon douillet", "Appartement familial", "Maison du quartier"],
     },
     summary: {
       en: "a warm home full of everyday objects and lived-in details",
       es: "un hogar calido lleno de objetos cotidianos y detalles reales",
+      fr: "un foyer chaleureux rempli d'objets quotidiens et de details vecus",
     },
     decorKinds: ["wood_scraps", "paper_bits"],
     suggestedObjects: [
@@ -170,10 +172,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Busy Food Hall", "Neighborhood Kitchen", "Market Cafe"],
       es: ["Comedor Animado", "Cocina del Barrio", "Cafe del Mercado"],
       it: ["Sala da Pranzo Animata", "Cucina del Quartiere", "Caffe del Mercato"],
+      fr: ["Halle gourmande animee", "Cuisine du quartier", "Cafe du marche"],
     },
     summary: {
       en: "a lively food space with counters, appliances, and practical props",
       es: "un espacio de comida con mostradores, aparatos y objetos utiles",
+      fr: "un espace de restauration vivant avec comptoirs, appareils et accessoires pratiques",
     },
     decorKinds: ["paper_bits", "floor_marks"],
     suggestedObjects: [
@@ -218,10 +222,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Quiet Library Hall", "Reading Room", "Writers' Archive"],
       es: ["Sala de Biblioteca", "Sala de Lectura", "Archivo de Escritores"],
       it: ["Sala della Biblioteca", "Sala di Lettura", "Archivio degli Scrittori"],
+      fr: ["Salle de bibliotheque", "Salle de lecture", "Archives des ecrivains"],
     },
     summary: {
       en: "a book-filled study space with shelves, desks, and reading corners",
       es: "un espacio de estudio con estantes, escritorios y rincones de lectura",
+      fr: "un espace d'etude rempli de livres avec etageres, bureaux et coins lecture",
     },
     decorKinds: ["book_pages", "paper_bits"],
     suggestedObjects: [
@@ -266,10 +272,12 @@ const WORLD_BLUEPRINTS = [
       en: ["International Terminal", "Transit Concourse", "Travel Hub"],
       es: ["Terminal Internacional", "Pasillo de Transito", "Centro de Viaje"],
       it: ["Terminal Internazionale", "Corridoio di Transito", "Centro Viaggi"],
+      fr: ["Terminal international", "Hall de transit", "Centre de voyage"],
     },
     summary: {
       en: "an international travel space with gates, signs, and waiting areas",
       es: "un espacio de viaje internacional con puertas, letreros y zonas de espera",
+      fr: "un espace de voyage international avec portes, panneaux et zones d'attente",
     },
     decorKinds: ["floor_marks", "paper_bits"],
     suggestedObjects: [
@@ -314,10 +322,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Forest Path", "Garden Walk", "Park Clearing"],
       es: ["Sendero del Bosque", "Paseo del Jardin", "Claro del Parque"],
       it: ["Sentiero del Bosco", "Passeggiata nel Giardino", "Radura del Parco"],
+      fr: ["Sentier forestier", "Promenade du jardin", "Clairiere du parc"],
     },
     summary: {
       en: "an open natural area with winding paths, greenery, and landmarks",
       es: "una zona natural abierta con senderos, vegetacion y puntos de referencia",
+      fr: "un espace naturel ouvert avec chemins sinueux, verdure et reperes",
     },
     decorKinds: ["grass_tuft", "flower_patch", "leaf_litter", "stones"],
     suggestedObjects: [
@@ -361,10 +371,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Civic Hall", "Conference Atrium", "Public Forum"],
       es: ["Salon Civico", "Atrio de Conferencias", "Foro Publico"],
       it: ["Sala Civica", "Atrio Conferenze", "Foro Pubblico"],
+      fr: ["Salle civique", "Atrium de conference", "Forum public"],
     },
     summary: {
       en: "a polished public space with desks, signs, and formal meeting points",
       es: "un espacio publico elegante con escritorios, letreros y zonas formales",
+      fr: "un espace public soigne avec bureaux, panneaux et points de rencontre formels",
     },
     decorKinds: ["paper_bits", "floor_marks", "stones"],
     suggestedObjects: [
@@ -407,10 +419,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Research Lab", "Innovation Studio", "Science Workshop"],
       es: ["Laboratorio de Investigacion", "Estudio de Innovacion", "Taller Cientifico"],
       it: ["Laboratorio di Ricerca", "Studio di Innovazione", "Laboratorio Scientifico"],
+      fr: ["Laboratoire de recherche", "Studio d'innovation", "Atelier scientifique"],
     },
     summary: {
       en: "a clean technical space with equipment, storage, and study stations",
       es: "un espacio tecnico con equipo, almacenamiento y estaciones de trabajo",
+      fr: "un espace technique propre avec equipement, rangement et postes d'etude",
     },
     decorKinds: ["floor_marks", "paper_bits"],
     suggestedObjects: [
@@ -453,10 +467,12 @@ const WORLD_BLUEPRINTS = [
       en: ["Festival Plaza", "Celebration Terrace", "Street Party"],
       es: ["Plaza del Festival", "Terraza de Celebracion", "Fiesta en la Calle"],
       it: ["Piazza del Festival", "Terrazza delle Celebrazioni", "Festa in Strada"],
+      fr: ["Place du festival", "Terrasse des celebrations", "Fete de rue"],
     },
     summary: {
       en: "a colorful social space with sound, decorations, and event energy",
       es: "un espacio social colorido con sonido, decoracion y energia de evento",
+      fr: "un espace social colore avec musique, decorations et energie d'evenement",
     },
     decorKinds: ["confetti", "flower_patch", "paper_bits"],
     suggestedObjects: [
@@ -945,6 +961,12 @@ export function buildScenarioEnvironment(
   const themeLabelEs =
     String(rawEnvironment?.themeLabel?.es || rawEnvironment?.name?.es || "")
       .trim() || pickRandom(seed.names.es);
+  const themeLabelIt =
+    String(rawEnvironment?.themeLabel?.it || rawEnvironment?.name?.it || "")
+      .trim() || pickRandom(seed.names.it || seed.names.en);
+  const themeLabelFr =
+    String(rawEnvironment?.themeLabel?.fr || rawEnvironment?.name?.fr || "")
+      .trim() || pickRandom(seed.names.fr || seed.names.en);
 
   return {
     blueprintId: seed.id,
@@ -953,6 +975,8 @@ export function buildScenarioEnvironment(
     names: {
       en: themeLabelEn,
       es: themeLabelEs,
+      it: themeLabelIt,
+      fr: themeLabelFr,
     },
     summary: {
       en:
@@ -960,6 +984,14 @@ export function buildScenarioEnvironment(
         seed.summary.en,
       es:
         String(rawEnvironment?.summary?.es || "").trim() || seed.summary.es,
+      it:
+        String(rawEnvironment?.summary?.it || "").trim() ||
+        seed.summary.it ||
+        seed.summary.en,
+      fr:
+        String(rawEnvironment?.summary?.fr || "").trim() ||
+        seed.summary.fr ||
+        seed.summary.en,
     },
     details,
     decorKinds: rawDecorKinds.length ? rawDecorKinds : seed.decorKinds,

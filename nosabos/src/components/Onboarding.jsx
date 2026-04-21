@@ -79,7 +79,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "it"].some(
+  return ["en", "es", "it", "fr"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||

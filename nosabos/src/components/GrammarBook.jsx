@@ -1475,6 +1475,77 @@ Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
 
 Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportName}.`,
           },
+          fr: {
+            fill: `Tu es un tuteur de langues serviable qui enseigne ${targetName}. Un eleve a mal repondu a une question a trou.
+
+Question : ${question}
+Reponse de l'eleve : ${userAnswer}
+Reponse correcte (ou indice) : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportName}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique pourquoi sa reponse ne convient pas ou ce qu'il a mal compris
+2. Clarifie la bonne reponse et son sens
+3. Donne une astuce utile pour s'en souvenir
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+            mc: `Tu es un tuteur de langues serviable qui enseigne ${targetName}. Un eleve a mal repondu a une question a choix multiple.
+
+Question : ${question}
+Reponse de l'eleve : ${userAnswer}
+Bonne reponse : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportName}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique pourquoi son choix etait incorrect
+2. Clarifie pourquoi la bonne reponse est correcte
+3. Donne une astuce utile pour retenir la difference
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+            ma: `Tu es un tuteur de langues serviable qui enseigne ${targetName}. Un eleve a mal repondu a une question a reponses multiples.
+
+Question : ${question}
+Reponses de l'eleve : ${userAnswer}
+Bonnes reponses : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportName}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique quelles reponses il a oubliees ou selectionnees par erreur
+2. Clarifie pourquoi les bonnes reponses sont correctes
+3. Donne une astuce utile pour identifier les bonnes reponses
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+            speak: `Tu es un tuteur de langues serviable qui enseigne ${targetName}. Un eleve a essaye de dire quelque chose en ${targetName}, mais n'a pas ete compris correctement.
+
+Phrase cible : ${correctAnswer}
+Ce qu'il a dit : ${userAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportName}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique les problemes possibles de prononciation ou de formulation
+2. Donne des conseils pour prononcer la phrase correcte
+3. Encourage a reessayer
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+            match: `Tu es un tuteur de langues serviable qui enseigne ${targetName}. Un eleve a essaye d'associer des elements mais a fait des correspondances incorrectes.
+
+Question : ${question}
+Associations de l'eleve : ${userAnswer}
+Indice : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportName}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique quelles associations etaient incorrectes
+2. Clarifie les relations correctes
+3. Donne une astuce pour retenir les bonnes associations
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+          },
         };
         return prompts[langKey]?.[type] || prompts.en[type] || prompts.en.fill;
       };
@@ -1569,7 +1640,13 @@ Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutt
         moduleType: "grammar",
       });
 
-      const lessonTitle = lesson?.title || { en: "Grammar", es: "Gramática" };
+      const lessonTitle =
+        lesson?.title || {
+          en: "Grammar",
+          es: "Gramática",
+          it: "Grammatica",
+          fr: "Grammaire",
+        };
 
       const note = buildNoteObject({
         lessonTitle,
@@ -3942,27 +4019,42 @@ Return JSON ONLY:
 
   const sendMatchHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
+    const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      isSpanishUI
+      isFrenchUI
+        ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
+        : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde emparejando cada elemento de la columna izquierda con la opción correcta del banco de palabras."
         : "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
       mStem
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Invite ou consigne : ${mStem}`
+          : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
         : null,
       mLeft.length
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Colonne gauche : ${mLeft.join(" | ")}`
+          : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
         : null,
       mRight.length
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Banque de mots : ${mRight.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
         : null,
-      mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
+      mHint
+        ? isFrenchUI
+          ? `Indice : ${mHint}`
+          : isSpanishUI
+          ? `Pista: ${mHint}`
+          : `Hint: ${mHint}`
+        : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
   }, [

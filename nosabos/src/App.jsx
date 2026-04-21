@@ -234,7 +234,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "it"].some(
+  return ["en", "es", "it", "fr"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -687,12 +687,12 @@ function TopBar({
     },
     [],
   );
-  const vadSecondsLabel =
-    appLanguage === "it"
-      ? "secondi"
-      : appLanguage === "es"
-        ? "segundos"
-        : "seconds";
+  const vadSecondsLabel = uiCopy(appLanguage, {
+    en: "seconds",
+    es: "segundos",
+    it: "secondi",
+    fr: "secondes",
+  });
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const vadHint =
     t.onboarding_vad_hint ||
@@ -700,6 +700,7 @@ function TopBar({
       en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
       es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -2423,8 +2424,12 @@ export default function App() {
   const showTranslationsEnabled = user?.progress?.showTranslations !== false;
 
   const translationToggleLabel = useMemo(() => {
-    const fallback =
-      appLanguage === "es" ? "Mostrar traducción" : "Show translation";
+    const fallback = uiCopy(appLanguage, {
+      en: "Show translation",
+      es: "Mostrar traducción",
+      it: "Mostra traduzione",
+      fr: "Afficher la traduction",
+    });
     const template = translations[appLanguage]?.onboarding_translations_toggle;
     if (!template) return fallback;
 
@@ -3139,12 +3144,12 @@ export default function App() {
       const normalized = (input || "").trim();
       const expected = (subscriptionPasscode || "").trim();
       if (!expected) {
-        const msg =
-          appLanguage === "it"
-            ? "Il codice abbonamento non è configurato"
-            : appLanguage === "es"
-              ? "El código de acceso no está configurado"
-              : "Subscription passcode is not configured";
+        const msg = uiCopy(appLanguage, {
+          en: "Subscription passcode is not configured",
+          es: "El código de acceso no está configurado",
+          it: "Il codice abbonamento non è configurato",
+          fr: "Le code abonne n'est pas configure",
+        });
         setPasscodeError(msg);
         setLocalError?.(msg);
         return;
@@ -3183,21 +3188,21 @@ export default function App() {
         patchUser?.({ subscriptionPasscodeVerified: true });
         toast({
           status: "success",
-          title:
-            appLanguage === "it"
-              ? "Codice accettato"
-              : appLanguage === "es"
-                ? "Código aceptado"
-                : "Passcode accepted",
+          title: uiCopy(appLanguage, {
+            en: "Passcode accepted",
+            es: "Código aceptado",
+            it: "Codice accettato",
+            fr: "Code accepte",
+          }),
         });
       } catch (error) {
         console.error("Failed to save subscription passcode", error);
-        const msg =
-          appLanguage === "it"
-            ? "Impossibile salvare il codice"
-            : appLanguage === "es"
-              ? "No se pudo guardar el código"
-              : "Failed to save passcode";
+        const msg = uiCopy(appLanguage, {
+          en: "Failed to save passcode",
+          es: "No se pudo guardar el código",
+          it: "Impossibile salvare il codice",
+          fr: "Impossible d'enregistrer le code",
+        });
         setPasscodeError(msg);
         setLocalError?.(msg);
       } finally {
@@ -3247,10 +3252,12 @@ export default function App() {
       const id = resolveNpub();
       if (!id) {
         setAllowPosts(previous);
-        const message =
-          appLanguage === "es"
-            ? "Conecta tu cuenta para usar esta función."
-            : "Connect your account to use this feature.";
+        const message = uiCopy(appLanguage, {
+          en: "Connect your account to use this feature.",
+          es: "Conecta tu cuenta para usar esta función.",
+          it: "Collega il tuo account per usare questa funzione.",
+          fr: "Connecte ton compte pour utiliser cette fonction.",
+        });
         throw new Error(message);
       }
       try {
@@ -3279,10 +3286,12 @@ export default function App() {
       if (!id) {
         setSoundEnabled(previous);
         setSoundSettingsEnabled(previous);
-        const message =
-          appLanguage === "es"
-            ? "Conecta tu cuenta para usar esta función."
-            : "Connect your account to use this feature.";
+        const message = uiCopy(appLanguage, {
+          en: "Connect your account to use this feature.",
+          es: "Conecta tu cuenta para usar esta función.",
+          it: "Collega il tuo account per usare questa funzione.",
+          fr: "Connecte ton compte pour utiliser cette fonction.",
+        });
         throw new Error(message);
       }
       try {
@@ -3710,11 +3719,13 @@ export default function App() {
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
-        description:
-          appLanguage === "es"
-            ? "No se pudo iniciar la lección"
-            : "Failed to start lesson",
+        title: "Error",
+        description: uiCopy(appLanguage, {
+          en: "Failed to start lesson",
+          es: "No se pudo iniciar la lección",
+          it: "Impossibile avviare la lezione",
+          fr: "Impossible de demarrer la lecon",
+        }),
         status: "error",
         duration: 3000,
       });
@@ -3799,11 +3810,13 @@ export default function App() {
       } catch (error) {
         console.error("Failed to save flashcard review:", error);
         toast({
-          title: appLanguage === "es" ? "Error" : "Error",
-          description:
-            appLanguage === "es"
-              ? "No se pudo guardar el progreso"
-              : "Failed to save progress",
+          title: "Error",
+          description: uiCopy(appLanguage, {
+            en: "Failed to save progress",
+            es: "No se pudo guardar el progreso",
+            it: "Impossibile salvare i progressi",
+            fr: "Impossible d'enregistrer la progression",
+          }),
           status: "error",
           duration: 3000,
         });
@@ -4164,12 +4177,20 @@ export default function App() {
       if (!activeNpub) {
         const title =
           t.app_cefr_need_account_title ||
-          (appLanguage === "es" ? "Cuenta requerida" : "Account required");
+          uiCopy(appLanguage, {
+            en: "Account required",
+            es: "Cuenta requerida",
+            it: "Account richiesto",
+            fr: "Compte requis",
+          });
         const description =
           t.app_cefr_need_account ||
-          (appLanguage === "es"
-            ? "Conéctate para analizar tu nivel con la IA."
-            : "Connect your account to analyze your level.");
+          uiCopy(appLanguage, {
+            en: "Connect your account to analyze your level.",
+            es: "Conéctate para analizar tu nivel con la IA.",
+            it: "Collega il tuo account per analizzare il tuo livello con l'IA.",
+            fr: "Connecte ton compte pour analyser ton niveau avec l'IA.",
+          });
         toast({ title, description, status: "info", duration: 2200 });
         return;
       }
@@ -4249,12 +4270,20 @@ export default function App() {
 
         const successTitle =
           t.app_cefr_success_title ||
-          (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
+          uiCopy(appLanguage, {
+            en: "Analysis complete",
+            es: "Análisis completado",
+            it: "Analisi completata",
+            fr: "Analyse terminee",
+          });
         const successDescTemplate =
           t.app_cefr_success_desc ||
-          (appLanguage === "es"
-            ? "Nivel asignado: {level}."
-            : "Assigned level: {level}.");
+          uiCopy(appLanguage, {
+            en: "Assigned level: {level}.",
+            es: "Nivel asignado: {level}.",
+            it: "Livello assegnato: {level}.",
+            fr: "Niveau attribue : {level}.",
+          });
 
         toast({
           title: successTitle,
@@ -4266,12 +4295,20 @@ export default function App() {
         console.error("CEFR analysis failed:", err);
         const errorTitle =
           t.app_cefr_error_title ||
-          (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
+          uiCopy(appLanguage, {
+            en: "Analysis failed",
+            es: "No se pudo analizar",
+            it: "Analisi non riuscita",
+            fr: "Analyse impossible",
+          });
         const errorDesc =
           t.app_cefr_error ||
-          (appLanguage === "es"
-            ? "Vuelve a intentarlo más tarde."
-            : "Please try again later.");
+          uiCopy(appLanguage, {
+            en: "Please try again later.",
+            es: "Vuelve a intentarlo más tarde.",
+            it: "Riprova piu tardi.",
+            fr: "Reessaie plus tard.",
+          });
         setCefrError(errorDesc);
         toast({
           title: errorTitle,
@@ -4383,11 +4420,18 @@ export default function App() {
         if (!activeNpub) {
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
-            description:
-              appLanguage === "es"
-                ? "No se encontró el usuario actual."
-                : "Couldn't find the current user.",
+            title: uiCopy(appLanguage, {
+              en: "Save failed",
+              es: "Error al guardar",
+              it: "Salvataggio non riuscito",
+              fr: "Echec de l'enregistrement",
+            }),
+            description: uiCopy(appLanguage, {
+              en: "Couldn't find the current user.",
+              es: "No se encontró el usuario actual.",
+              it: "Impossibile trovare l'utente corrente.",
+              fr: "Impossible de trouver l'utilisateur actuel.",
+            }),
           });
           return;
         }
@@ -4412,7 +4456,12 @@ export default function App() {
           console.error("Failed to save daily goal:", error);
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+            title: uiCopy(appLanguage, {
+              en: "Save failed",
+              es: "Error al guardar",
+              it: "Salvataggio non riuscito",
+              fr: "Echec de l'enregistrement",
+            }),
             description: String(error?.message || error),
           });
         });
@@ -4843,12 +4892,20 @@ export default function App() {
         if (currentTab === "random") {
           const title =
             t?.random_toast_title ??
-            (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
+            uiCopy(appLanguage, {
+              en: "Nice job!",
+              es: "¡Buen trabajo!",
+              it: "Ottimo lavoro!",
+              fr: "Bien joue !",
+            });
           const descTpl =
             t?.random_toast_desc ??
-            (appLanguage === "es"
-              ? "Ganaste +{xp} XP."
-              : "You earned +{xp} XP.");
+            uiCopy(appLanguage, {
+              en: "You earned +{xp} XP.",
+              es: "Ganaste +{xp} XP.",
+              it: "Hai guadagnato +{xp} XP.",
+              fr: "Tu as gagne +{xp} XP.",
+            });
           const description = descTpl.replace("{xp}", String(diff));
 
           toast({
@@ -5075,63 +5132,90 @@ export default function App() {
 
   const CEFR_LEVEL_INFO = {
     "Pre-A1": {
-      name: { en: "Ultimate Beginner", es: "Principiante Total" },
+      name: {
+        en: "Ultimate Beginner",
+        es: "Principiante Total",
+        it: "Principiante assoluto",
+        fr: "Grand debutant",
+      },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
       description: {
         en: "First words and recognition",
         es: "Primeras palabras y reconocimiento",
+        it: "Prime parole e riconoscimento",
+        fr: "Premiers mots et reconnaissance",
       },
     },
     A1: {
-      name: { en: "Beginner", es: "Principiante" },
+      name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" },
       color: "#3B82F6",
       gradient: "linear(135deg, #60A5FA, #3B82F6)",
       description: {
         en: "Basic survival language",
         es: "Lenguaje básico de supervivencia",
+        it: "Lingua essenziale di base",
+        fr: "Langue essentielle de base",
       },
     },
     A2: {
-      name: { en: "Elementary", es: "Elemental" },
+      name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
       description: {
         en: "Simple everyday communication",
         es: "Comunicación cotidiana simple",
+        it: "Comunicazione quotidiana semplice",
+        fr: "Communication simple du quotidien",
       },
     },
     B1: {
-      name: { en: "Intermediate", es: "Intermedio" },
+      name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" },
       color: "#A855F7",
       gradient: "linear(135deg, #C084FC, #A855F7)",
       description: {
         en: "Handle everyday situations",
         es: "Manejo de situaciones cotidianas",
+        it: "Gestire situazioni quotidiane",
+        fr: "Gerer les situations quotidiennes",
       },
     },
     B2: {
-      name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+      name: {
+        en: "Upper Intermediate",
+        es: "Intermedio Alto",
+        it: "Intermedio alto",
+        fr: "Intermediaire avance",
+      },
       color: "#F97316",
       gradient: "linear(135deg, #FB923C, #F97316)",
-      description: { en: "Complex discussions", es: "Discusiones complejas" },
+      description: {
+        en: "Complex discussions",
+        es: "Discusiones complejas",
+        it: "Discussioni complesse",
+        fr: "Discussions complexes",
+      },
     },
     C1: {
-      name: { en: "Advanced", es: "Avanzado" },
+      name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" },
       color: "#EF4444",
       gradient: "linear(135deg, #F87171, #EF4444)",
       description: {
         en: "Sophisticated language use",
         es: "Uso sofisticado del idioma",
+        it: "Uso sofisticato della lingua",
+        fr: "Usage sophistique de la langue",
       },
     },
     C2: {
-      name: { en: "Mastery", es: "Maestría" },
+      name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" },
       color: "#EC4899",
       gradient: "linear(135deg, #F472B6, #EC4899)",
       description: {
         en: "Near-native proficiency",
         es: "Competencia casi nativa",
+        it: "Competenza quasi nativa",
+        fr: "Competence quasi native",
       },
     },
   };
@@ -6469,18 +6553,20 @@ export default function App() {
             <VStack spacing={{ base: 4, md: 5 }} textAlign="center">
               <VStack spacing={2}>
                 <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
-                  {appLanguage === "it"
-                    ? "Obiettivo giornaliero raggiunto!"
-                    : appLanguage === "es"
-                      ? "¡Meta diaria alcanzada!"
-                      : "Daily Goal Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Daily Goal Complete!",
+                    es: "¡Meta diaria alcanzada!",
+                    it: "Obiettivo giornaliero raggiunto!",
+                    fr: "Objectif quotidien atteint !",
+                  })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
-                  {appLanguage === "it"
-                    ? "Hai raggiunto il tuo obiettivo XP di oggi."
-                    : appLanguage === "es"
-                      ? "Alcanzaste tu objetivo de XP de hoy."
-                      : "You hit today’s XP target."}
+                  {uiCopy(appLanguage, {
+                    en: "You hit today’s XP target.",
+                    es: "Alcanzaste tu objetivo de XP de hoy.",
+                    it: "Hai raggiunto il tuo obiettivo XP di oggi.",
+                    fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
+                  })}
                 </Text>
               </VStack>
 
@@ -6497,11 +6583,12 @@ export default function App() {
                   <HStack spacing={6} justify="center">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "it"
-                          ? "Obiettivo"
-                          : appLanguage === "es"
-                            ? "Meta"
-                            : "Goal"}
+                        {uiCopy(appLanguage, {
+                          en: "Goal",
+                          es: "Meta",
+                          it: "Obiettivo",
+                          fr: "Objectif",
+                        })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -6509,11 +6596,12 @@ export default function App() {
                     </VStack>
                   </HStack>
                   <Text fontSize="sm" opacity={0.85}>
-                    {appLanguage === "it"
-                      ? "Mantieni la serie e torna domani per un nuovo obiettivo!"
-                      : appLanguage === "es"
-                        ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
-                        : "Keep the streak going and come back tomorrow for a new goal!"}
+                    {uiCopy(appLanguage, {
+                      en: "Keep the streak going and come back tomorrow for a new goal!",
+                      es: "¡Sigue la racha y vuelve mañana para un nuevo objetivo!",
+                      it: "Mantieni la serie e torna domani per un nuovo obiettivo!",
+                      fr: "Garde la serie et reviens demain pour un nouvel objectif !",
+                    })}
                   </Text>
                 </VStack>
               </Box>
@@ -6536,11 +6624,12 @@ export default function App() {
                 fontSize={{ base: "md", md: "lg" }}
                 py={{ base: 5, md: 6 }}
               >
-                {appLanguage === "it"
-                  ? "Continua ad imparare"
-                  : appLanguage === "es"
-                    ? "Seguir practicando"
-                    : "Keep learning"}
+                {uiCopy(appLanguage, {
+                  en: "Keep learning",
+                  es: "Seguir practicando",
+                  it: "Continua ad imparare",
+                  fr: "Continuer a apprendre",
+                })}
               </Button>
             </VStack>
           </ModalBody>
@@ -6585,11 +6674,12 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "it"
-                    ? "Lezione Completata!"
-                    : appLanguage === "es"
-                      ? "¡Lección Completada!"
-                      : "Lesson Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Lesson Complete!",
+                    es: "¡Lección Completada!",
+                    it: "Lezione Completata!",
+                    fr: "Lecon terminee !",
+                  })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {completedLessonData?.title?.[appLanguage] ||
@@ -6614,21 +6704,23 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "it"
-                      ? "XP Guadagnato"
-                      : appLanguage === "es"
-                        ? "XP Ganado"
-                        : "XP Earned"}
+                    {uiCopy(appLanguage, {
+                      en: "XP Earned",
+                      es: "XP Ganado",
+                      it: "XP Guadagnato",
+                      fr: "XP gagne",
+                    })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "it"
-                      ? "Punti Esperienza"
-                      : appLanguage === "es"
-                        ? "Puntos de Experiencia"
-                        : "Experience Points"}
+                    {uiCopy(appLanguage, {
+                      en: "Experience Points",
+                      es: "Puntos de Experiencia",
+                      it: "Punti Esperienza",
+                      fr: "Points d'experience",
+                    })}
                   </Text>
                 </VStack>
               </Box>
@@ -6646,11 +6738,12 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "it"
-                  ? "Continua"
-                  : appLanguage === "es"
-                    ? "Continuar"
-                    : "Continue"}
+                {uiCopy(appLanguage, {
+                  en: "Continue",
+                  es: "Continuar",
+                  it: "Continua",
+                  fr: "Continuer",
+                })}
               </Button>
             </VStack>
           </ModalBody>
@@ -6690,16 +6783,20 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Nivel Completado!"
-                    : "Level Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Level Complete!",
+                    es: "¡Nivel Completado!",
+                    it: "Livello completato!",
+                    fr: "Niveau termine !",
+                  })}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
                   {completedProficiencyData?.level} -{" "}
                   {
                     CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
                       appLanguage
-                    ]
+                    ] ||
+                      CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name.en
                   }
                 </Text>
               </VStack>
@@ -6716,18 +6813,27 @@ export default function App() {
               >
                 <VStack spacing={3}>
                   <Text fontSize="lg" fontWeight="bold">
-                    {appLanguage === "es"
-                      ? "¡Felicitaciones!"
-                      : "Congratulations!"}
+                    {uiCopy(appLanguage, {
+                      en: "Congratulations!",
+                      es: "¡Felicitaciones!",
+                      it: "Congratulazioni!",
+                      fr: "Felicitations !",
+                    })}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
                     {completedProficiencyData?.nextLevel
-                      ? appLanguage === "es"
-                        ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
-                        : `You've unlocked level ${completedProficiencyData.nextLevel}`
-                      : appLanguage === "es"
-                        ? "¡Has completado todos los niveles!"
-                        : "You've completed all levels!"}
+                      ? uiCopy(appLanguage, {
+                          en: `You've unlocked level ${completedProficiencyData.nextLevel}`,
+                          es: `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`,
+                          it: `Hai sbloccato il livello ${completedProficiencyData.nextLevel}`,
+                          fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
+                        })
+                      : uiCopy(appLanguage, {
+                          en: "You've completed all levels!",
+                          es: "¡Has completado todos los niveles!",
+                          it: "Hai completato tutti i livelli!",
+                          fr: "Tu as termine tous les niveaux !",
+                        })}
                   </Text>
                 </VStack>
               </Box>
@@ -6751,12 +6857,18 @@ export default function App() {
                 py={6}
               >
                 {completedProficiencyData?.nextLevel
-                  ? appLanguage === "es"
-                    ? "Ir al Siguiente Nivel"
-                    : "Go to Next Level"
-                  : appLanguage === "es"
-                    ? "Continuar"
-                    : "Continue"}
+                  ? uiCopy(appLanguage, {
+                      en: "Go to Next Level",
+                      es: "Ir al Siguiente Nivel",
+                      it: "Vai al livello successivo",
+                      fr: "Aller au niveau suivant",
+                    })
+                  : uiCopy(appLanguage, {
+                      en: "Continue",
+                      es: "Continuar",
+                      it: "Continua",
+                      fr: "Continuer",
+                    })}
               </Button>
             </VStack>
           </ModalBody>

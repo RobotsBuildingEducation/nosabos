@@ -261,11 +261,52 @@ async function saveStoryTurn(npub, payload) {
 /* ================================
    UI text (driven by APP UI language only)
 =================================== */
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
 function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {
     const t = translationsObj[uiLang] || translationsObj.en;
-    const copy = (en, es, it) =>
-      uiLang === "es" ? es : uiLang === "it" ? it : en;
+    const frCopy = {
+      "Script Coach": "Coach de scripts",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "Televerse ou colle ton script ; nous le convertissons vers la langue cible et affichons l'aide dans ta langue.",
+      "Create script": "Creer le script",
+      Listen: "Ecouter",
+      "Start Sentence Practice": "Commencer la pratique par phrase",
+      "Practice this sentence:": "Pratique cette phrase :",
+      "Skip Sentence": "Passer la phrase",
+      "Finish Practice": "Terminer la pratique",
+      "Record Sentence": "Enregistrer la phrase",
+      "Stop Recording": "Arreter l'enregistrement",
+      Progress: "Progres",
+      "Well done!": "Bien joue !",
+      "Almost — try again": "Presque - reessaie",
+      Score: "Score",
+      Level: "Niveau",
+      "I speak (support)": "Je parle (support)",
+      "I’m learning (target)": "J'apprends (cible)",
+      "e.g., es, Spanish, fr-CA": "ex. : es, Spanish, fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "Colle ton script ici... (pris en charge : .txt, .srt, .vtt, .md, .docx, .pdf)",
+      "Upload file": "Televerser un fichier",
+      "Script ready! Start practicing.": "Script pret ! Commence la pratique.",
+      "You need at least one sentence.": "Il faut au moins une phrase.",
+      Save: "Enregistrer",
+      "Title (optional)": "Titre (facultatif)",
+      "Your saved scripts": "Tes scripts enregistres",
+      Open: "Ouvrir",
+      "Script saved": "Script enregistre",
+      "Script loaded": "Script charge",
+      "You don't have any saved scripts yet.": "Tu n'as pas encore de scripts enregistres.",
+    };
+    const copy = (en, es, it, fr) =>
+      uiCopy(uiLang, {
+        en,
+        es,
+        it,
+        fr: fr || frCopy[en] || en,
+      });
     return {
       header: copy("Script Coach", "Entrenador de guiones", "Coach di copioni"),
       sub: copy(
@@ -984,38 +1025,43 @@ const isInsecureContext = () => {
 };
 
 function micErrorToMessage(err, uiLang) {
-  const es = uiLang === "es";
-  const t = (en, esx) => (es ? esx : en);
+  const t = (en, es, fr, it = en) => uiCopy(uiLang, { en, es, it, fr });
   switch (err?.name) {
     case "NotAllowedError":
       return t(
         "Browser is blocking the mic for this site. Click the lock icon → Site settings → Microphone → Allow, then reload.",
-        "El navegador está bloqueando el micrófono para este sitio. Haz clic en el candado → Configuración del sitio → Micrófono → Permitir y recarga."
+        "El navegador está bloqueando el micrófono para este sitio. Haz clic en el candado → Configuración del sitio → Micrófono → Permitir y recarga.",
+        "Le navigateur bloque le micro pour ce site. Clique sur le cadenas → Parametres du site → Microphone → Autoriser, puis recharge."
       );
     case "SecurityError":
       return t(
         "Microphone requires HTTPS (or localhost). Open the app over https:// and try again.",
-        "El micrófono requiere HTTPS (o localhost). Abre la app en https:// e inténtalo de nuevo."
+        "El micrófono requiere HTTPS (o localhost). Abre la app en https:// e inténtalo de nuevo.",
+        "Le micro necessite HTTPS (ou localhost). Ouvre l'app en https:// et reessaie."
       );
     case "NotReadableError":
       return t(
         "The microphone is busy (Zoom/Teams/Discord). Close other apps using the mic and try again.",
-        "El micrófono está en uso (Zoom/Teams/Discord). Cierra otras apps que lo usen e inténtalo de nuevo."
+        "El micrófono está en uso (Zoom/Teams/Discord). Cierra otras apps que lo usen e inténtalo de nuevo.",
+        "Le micro est occupe (Zoom/Teams/Discord). Ferme les autres apps qui l'utilisent et reessaie."
       );
     case "NotFoundError":
       return t(
         "No microphone was found or it’s disabled at the OS level.",
-        "No se encontró micrófono o está deshabilitado en el sistema."
+        "No se encontró micrófono o está deshabilitado en el sistema.",
+        "Aucun micro trouve ou il est desactive dans le systeme."
       );
     case "OverconstrainedError":
       return t(
         "Requested audio constraints are not supported by your mic.",
-        "Las restricciones de audio solicitadas no son compatibles con tu micrófono."
+        "Las restricciones de audio solicitadas no son compatibles con tu micrófono.",
+        "Les contraintes audio demandees ne sont pas prises en charge par ton micro."
       );
     default:
       return t(
         "Microphone error. If permissions look allowed, reload the page and try again.",
-        "Error de micrófono. Si los permisos están en 'Permitir', recarga la página e inténtalo de nuevo."
+        "Error de micrófono. Si los permisos están en 'Permitir', recarga la página e inténtalo de nuevo.",
+        "Erreur de micro. Si les autorisations semblent correctes, recharge la page et reessaie."
       );
   }
 }
@@ -1141,14 +1187,24 @@ export default function JobScript({
         setScriptText(text || "");
         setLastFileName(name);
         toast({
-          title: uiLang === "es" ? "Archivo cargado" : "File loaded",
+          title: uiCopy(uiLang, {
+            en: "File loaded",
+            es: "Archivo cargado",
+            it: "File caricato",
+            fr: "Fichier charge",
+          }),
           status: "success",
           duration: 1200,
         });
       } catch (e) {
         console.error(e);
         toast({
-          title: uiLang === "es" ? "Error al leer archivo" : "File read error",
+          title: uiCopy(uiLang, {
+            en: "File read error",
+            es: "Error al leer archivo",
+            it: "Errore di lettura del file",
+            fr: "Erreur de lecture du fichier",
+          }),
           description: String(e?.message || e),
           status: "error",
         });
@@ -1266,10 +1322,12 @@ export default function JobScript({
     } catch (e) {
       console.error(e);
       toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo crear el guion"
-            : "Couldn’t create script",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t create script",
+          es: "No se pudo crear el guion",
+          it: "Impossibile creare il copione",
+          fr: "Impossible de creer le script",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1282,7 +1340,12 @@ export default function JobScript({
   const saveCurrentScript = async () => {
     if (!npub || !storyData) {
       toast({
-        title: uiLang === "es" ? "Nada que guardar" : "Nothing to save",
+        title: uiCopy(uiLang, {
+          en: "Nothing to save",
+          es: "Nada que guardar",
+          it: "Niente da salvare",
+          fr: "Rien a enregistrer",
+        }),
         status: "warning",
       });
       return;
@@ -1313,7 +1376,12 @@ export default function JobScript({
       toast({ title: uiText.scriptSaved, status: "success", duration: 1400 });
     } catch (e) {
       toast({
-        title: uiLang === "es" ? "No se pudo guardar" : "Couldn’t save",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t save",
+          es: "No se pudo guardar",
+          it: "Impossibile salvare",
+          fr: "Impossible d'enregistrer",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1337,7 +1405,12 @@ export default function JobScript({
       toast({ title: uiText.scriptLoaded, status: "success", duration: 1200 });
     } catch (e) {
       toast({
-        title: uiLang === "es" ? "No se pudo abrir" : "Couldn’t open",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t open",
+          es: "No se pudo abrir",
+          it: "Impossibile aprire",
+          fr: "Impossible d'ouvrir",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1623,11 +1696,18 @@ export default function JobScript({
     } catch {}
 
     toast({
-      title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-      description:
-        uiLang === "es"
-          ? `¡Completaste la práctica! Ganaste ${awardedXp} ${uiText.xp}.`
-          : `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
+      title: uiCopy(uiLang, {
+        en: "Congrats!",
+        es: "¡Felicidades!",
+        it: "Congratulazioni!",
+        fr: "Felicitations !",
+      }),
+      description: uiCopy(uiLang, {
+        en: `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
+        es: `¡Completaste la práctica! Ganaste ${awardedXp} ${uiText.xp}.`,
+        it: `Pratica completata! Hai guadagnato ${awardedXp} ${uiText.xp}.`,
+        fr: `Pratique terminee ! Tu as gagne ${awardedXp} ${uiText.xp}.`,
+      }),
       status: "success",
       duration: 3000,
     });
@@ -1650,7 +1730,12 @@ export default function JobScript({
     // Insecure context guard
     if (isInsecureContext()) {
       toast({
-        title: uiLang === "es" ? "Micrófono bloqueado" : "Microphone blocked",
+        title: uiCopy(uiLang, {
+          en: "Microphone blocked",
+          es: "Micrófono bloqueado",
+          it: "Microfono bloccato",
+          fr: "Micro bloque",
+        }),
         description: micErrorToMessage({ name: "SecurityError" }, uiLang),
         status: "warning",
         duration: 4500,
@@ -1663,7 +1748,12 @@ export default function JobScript({
       const perm = await navigator.permissions?.query?.({ name: "microphone" });
       if (perm?.state === "denied") {
         toast({
-          title: uiLang === "es" ? "Micrófono bloqueado" : "Microphone blocked",
+          title: uiCopy(uiLang, {
+            en: "Microphone blocked",
+            es: "Micrófono bloqueado",
+            it: "Microfono bloccato",
+            fr: "Micro bloque",
+          }),
           description: micErrorToMessage({ name: "NotAllowedError" }, uiLang),
           status: "error",
           duration: 5000,
@@ -1735,8 +1825,12 @@ export default function JobScript({
       // If we can still start SR-only, do it
       const msg = micErrorToMessage(err, uiLang);
       toast({
-        title:
-          uiLang === "es" ? "Problema con el micrófono" : "Microphone issue",
+        title: uiCopy(uiLang, {
+          en: "Microphone issue",
+          es: "Problema con el micrófono",
+          it: "Problema con il microfono",
+          fr: "Probleme de micro",
+        }),
         description: msg,
         status: "warning",
         duration: 6000,
@@ -1783,14 +1877,18 @@ export default function JobScript({
       }
 
       toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo usar el micrófono"
-            : "Couldn’t use microphone",
-        description:
-          uiLang === "es"
-            ? "Prueba en Chrome/Edge con https://, revisa el candado (Micrófono: Permitir) y que ninguna app esté usando el micrófono."
-            : "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t use microphone",
+          es: "No se pudo usar el micrófono",
+          it: "Impossibile usare il microfono",
+          fr: "Impossible d'utiliser le micro",
+        }),
+        description: uiCopy(uiLang, {
+          en: "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
+          es: "Prueba en Chrome/Edge con https://, revisa el candado (Micrófono: Permitir) y que ninguna app esté usando el micrófono.",
+          it: "Prova Chrome/Edge su https://, controlla il lucchetto (Microfono: Consenti) e assicurati che nessun'altra app usi il microfono.",
+          fr: "Essaie Chrome/Edge en https://, verifie le cadenas (Microphone : Autoriser) et assure-toi qu'aucune autre app n'utilise le micro.",
+        }),
         status: "error",
         duration: 7000,
       });
@@ -1937,7 +2035,12 @@ export default function JobScript({
     } catch (e) {
       console.error("Recording setup failed:", e);
       toast({
-        title: uiLang === "es" ? "Error de micrófono" : "Microphone error",
+        title: uiCopy(uiLang, {
+          en: "Microphone error",
+          es: "Error de micrófono",
+          it: "Errore del microfono",
+          fr: "Erreur de micro",
+        }),
         description: micErrorToMessage(e, uiLang),
         status: "error",
         duration: 6000,
@@ -2269,8 +2372,19 @@ export default function JobScript({
                       textAlign="center"
                       mt={2}
                     >
-                      {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {uiCopy(uiLang, {
+                        en: "Sentence",
+                        es: "Oración",
+                        it: "Frase",
+                        fr: "Phrase",
+                      })}{" "}
+                      {currentSentenceIndex + 1}{" "}
+                      {uiCopy(uiLang, {
+                        en: "of",
+                        es: "de",
+                        it: "di",
+                        fr: "sur",
+                      })}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>

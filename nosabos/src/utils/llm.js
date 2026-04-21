@@ -234,6 +234,50 @@ Fornisci una breve spiegazione incoraggiante (2-3 frasi) che:
 
 Mantieni un tono conciso, di supporto e orientato all'apprendimento. Scrivi tutta la risposta in ${supportLang}.`,
     },
+    fr: {
+      fillPrompt: `Tu es un tuteur de langues serviable qui enseigne ${targetLang}. Un eleve a mal repondu a une question a trou.
+
+Question : ${question}
+Reponse de l'eleve : ${userAnswer}
+Reponse correcte (ou indice) : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportLang}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique pourquoi sa reponse ne convient pas ou ce qu'il a mal compris
+2. Clarifie la bonne reponse et son sens
+3. Donne une astuce utile pour s'en souvenir
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
+      mcPrompt: `Tu es un tuteur de langues serviable qui enseigne ${targetLang}. Un eleve a mal repondu a une question a choix multiple.
+
+Question : ${question}
+Reponse de l'eleve : ${userAnswer}
+Bonne reponse : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportLang}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique pourquoi son choix etait incorrect
+2. Clarifie pourquoi la bonne reponse est correcte
+3. Donne une astuce utile pour retenir la difference
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
+      maPrompt: `Tu es un tuteur de langues serviable qui enseigne ${targetLang}. Un eleve a mal repondu a une question a reponses multiples.
+
+Question : ${question}
+Reponses de l'eleve : ${userAnswer}
+Bonnes reponses : ${correctAnswer}
+
+IMPORTANT : Fournis ton explication en ${supportLang}.
+
+Fournis une breve explication encourageante (2-3 phrases) qui :
+1. Explique quelles reponses il a oubliees ou selectionnees par erreur
+2. Clarifie pourquoi les bonnes reponses sont correctes
+3. Donne une astuce utile pour identifier les bonnes reponses
+
+Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
+    },
   };
 
   const prompts = langMap[userLanguage] || langMap.en;

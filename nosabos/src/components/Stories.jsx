@@ -144,6 +144,9 @@ const BCP47 = {
   yua: { stt: "es-MX", tts: "es-MX" },
 };
 
+const supportStoryText = (lang, values) =>
+  values?.[lang] || values?.en || "";
+
 const toLangKey = (value) => {
   const raw = String(value ?? "")
     .trim()
@@ -195,7 +198,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "it"].includes(lang) ? lang : "en";
+  return ["es", "it", "fr"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -266,7 +269,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "it", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "it", "fr", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -394,7 +397,7 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? (["es", "it"].includes(uiLang) ? uiLang : "en")
+      ? (["es", "it", "fr"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
@@ -700,7 +703,7 @@ export default function StoryMode({
       setHighlightedWordIndex(-1);
       setLastSuccessInfo(null);
     } catch (error) {
-      // Bilingual fallback (ES/EN) that respects target/support languages
+      // Bilingual fallback that respects target/support languages
       setStoryType("paragraph"); // Fallback is always a paragraph story
       const fallback = isTutorial
         ? {
@@ -710,36 +713,71 @@ export default function StoryMode({
                 targetLang === "en"
                   ? "Hello. Hi. Goodbye."
                   : "Hola. Hola. Adiós.",
-              sup:
-                supportLang === "es"
-                  ? "Hola. Hola. Adiós."
-                  : "Hello. Hi. Goodbye.",
+              sup: supportStoryText(supportLang, {
+                en: "Hello. Hi. Goodbye.",
+                es: "Hola. Hola. Adiós.",
+                it: "Ciao. Ciao. Arrivederci.",
+                fr: "Bonjour. Salut. Au revoir.",
+              }),
             },
             sentences:
               targetLang === "en"
                 ? [
                     {
                       tgt: "Hello.",
-                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hello.",
+                        es: "Hola.",
+                        it: "Ciao.",
+                        fr: "Bonjour.",
+                      }),
                     },
-                    { tgt: "Hi.", sup: supportLang === "es" ? "Hola." : "Hi." },
+                    {
+                      tgt: "Hi.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hi.",
+                        es: "Hola.",
+                        it: "Ciao.",
+                        fr: "Salut.",
+                      }),
+                    },
                     {
                       tgt: "Goodbye.",
-                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Goodbye.",
+                        es: "Adiós.",
+                        it: "Arrivederci.",
+                        fr: "Au revoir.",
+                      }),
                     },
                   ]
                 : [
                     {
                       tgt: "Hola.",
-                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hello.",
+                        es: "Hola.",
+                        it: "Ciao.",
+                        fr: "Bonjour.",
+                      }),
                     },
                     {
                       tgt: "Hola.",
-                      sup: supportLang === "es" ? "Hola." : "Hi.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hi.",
+                        es: "Hola.",
+                        it: "Ciao.",
+                        fr: "Salut.",
+                      }),
                     },
                     {
                       tgt: "Adiós.",
-                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Goodbye.",
+                        es: "Adiós.",
+                        it: "Arrivederci.",
+                        fr: "Au revoir.",
+                      }),
                     },
                   ],
           }
@@ -750,71 +788,89 @@ export default function StoryMode({
                 targetLang === "en"
                   ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
                   : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-              sup:
-                supportLang === "es"
-                  ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                  : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+              sup: supportStoryText(supportLang, {
+                en: "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+                es: "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
+                fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+              }),
             },
             sentences:
               targetLang === "en"
                 ? [
                     {
                       tgt: "Once upon a time, there was a small town called San Miguel.",
-                      sup:
-                        supportLang === "es"
-                          ? "Había una vez un pequeño pueblo llamado San Miguel."
-                          : "Once upon a time, there was a small town called San Miguel.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Once upon a time, there was a small town called San Miguel.",
+                        es: "Había una vez un pequeño pueblo llamado San Miguel.",
+                        it: "C'era una volta un piccolo paese chiamato San Miguel.",
+                        fr: "Il etait une fois un petit village appele San Miguel.",
+                      }),
                     },
                     {
                       tgt: "The town had a lovely square where kids played every day.",
-                      sup:
-                        supportLang === "es"
-                          ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                          : "The town had a lovely square where kids played every day.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The town had a lovely square where kids played every day.",
+                        es: "El pueblo tenía una plaza bonita donde los niños jugaban a diario.",
+                        it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
+                        fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
+                      }),
                     },
                     {
                       tgt: "In the square, an old fountain always had fresh water.",
-                      sup:
-                        supportLang === "es"
-                          ? "En la plaza, una fuente antigua siempre tenía agua fresca."
-                          : "In the square, an old fountain always had fresh water.",
+                      sup: supportStoryText(supportLang, {
+                        en: "In the square, an old fountain always had fresh water.",
+                        es: "En la plaza, una fuente antigua siempre tenía agua fresca.",
+                        it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
+                        fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
+                      }),
                     },
                     {
                       tgt: "Adults sat around it to talk and rest after work.",
-                      sup:
-                        supportLang === "es"
-                          ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                          : "Adults sat around it to talk and rest after work.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Adults sat around it to talk and rest after work.",
+                        es: "Los adultos se sentaban alrededor para hablar y descansar después del trabajo.",
+                        it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
+                        fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
+                      }),
                     },
                   ]
                 : [
                     {
                       tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                      sup:
-                        supportLang === "es"
-                          ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                          : "Once upon a time, there was a small town in Mexico called San Miguel.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Once upon a time, there was a small town in Mexico called San Miguel.",
+                        es: "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                        it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
+                        fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
+                      }),
                     },
                     {
                       tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                      sup:
-                        supportLang === "es"
-                          ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                          : "The town had a very beautiful square where the children played every day.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The town had a very beautiful square where the children played every day.",
+                        es: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                        it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
+                        fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
+                      }),
                     },
                     {
                       tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                      sup:
-                        supportLang === "es"
-                          ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                          : "In the square, there was an old fountain that always had fresh water.",
+                      sup: supportStoryText(supportLang, {
+                        en: "In the square, there was an old fountain that always had fresh water.",
+                        es: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                        it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
+                        fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
+                      }),
                     },
                     {
                       tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                      sup:
-                        supportLang === "es"
-                          ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                          : "The adults sat around the fountain to talk and rest after work.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The adults sat around the fountain to talk and rest after work.",
+                        es: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                        it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
+                        fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                      }),
                     },
                   ],
           };
@@ -1330,9 +1386,20 @@ export default function StoryMode({
 
   const nextSentenceLabel =
     t(uiLang, "stories_next_sentence") ||
-    (uiLang === "es" ? "Siguiente Oración" : "Next Sentence");
+    supportStoryText(uiLang, {
+      en: "Next Sentence",
+      es: "Siguiente Oración",
+      it: "Frase successiva",
+      fr: "Phrase suivante",
+    });
   const finishLabel =
-    t(uiLang, "stories_finish") || (uiLang === "es" ? "Terminar" : "Finish");
+    t(uiLang, "stories_finish") ||
+    supportStoryText(uiLang, {
+      en: "Finish",
+      es: "Terminar",
+      it: "Fine",
+      fr: "Terminer",
+    });
 
   const handleEvaluationResult = useCallback(
     async ({
@@ -2101,9 +2168,12 @@ export default function StoryMode({
                                       ) ||
                                       `${uiText.score}: ${lastSuccessInfo.score}%`
                                     : t(uiLang, "practice_next_ready") ||
-                                      (uiLang === "es"
-                                        ? "¡Listo para continuar!"
-                                        : "Ready to continue!")}
+                                      supportStoryText(uiLang, {
+                                        en: "Ready to continue!",
+                                        es: "¡Listo para continuar!",
+                                        it: "Pronto per continuare!",
+                                        fr: "Pret pour continuer !",
+                                      })}
                                 </Text>
                               </Box>
                             </HStack>

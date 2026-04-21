@@ -558,6 +558,7 @@ export function formatRelativeReviewTime(
   if (!reviewDate) {
     if (lang === "es") return "Sin programar";
     if (lang === "it") return "Non programmato";
+    if (lang === "fr") return "Non programme";
     return "Unscheduled";
   }
 
@@ -598,6 +599,7 @@ export function formatAbsoluteReviewTime(
   if (!reviewDate) {
     if (lang === "es") return "Sin programar";
     if (lang === "it") return "Non programmato";
+    if (lang === "fr") return "Non programme";
     return "Unscheduled";
   }
 
@@ -610,6 +612,7 @@ export function formatAbsoluteReviewTime(
   if (isSameLocalDay(reviewDate, now)) {
     if (lang === "es") return `Hoy a las ${timeLabel}`;
     if (lang === "it") return `Oggi alle ${timeLabel}`;
+    if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
     return `Today at ${timeLabel}`;
   }
 
@@ -618,6 +621,7 @@ export function formatAbsoluteReviewTime(
   if (isSameLocalDay(reviewDate, tomorrow)) {
     if (lang === "es") return `Mañana a las ${timeLabel}`;
     if (lang === "it") return `Domani alle ${timeLabel}`;
+    if (lang === "fr") return `Demain a ${timeLabel}`;
     return `Tomorrow at ${timeLabel}`;
   }
 
@@ -631,6 +635,7 @@ export function formatAbsoluteReviewTime(
 
   if (lang === "es") return `${dateLabel} a las ${timeLabel}`;
   if (lang === "it") return `${dateLabel} alle ${timeLabel}`;
+  if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
   return `${dateLabel} at ${timeLabel}`;
 }
 

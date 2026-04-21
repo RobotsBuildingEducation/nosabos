@@ -5,8 +5,12 @@
  */
 
 import { withItalianFlashcardText } from "./flashcards/italianLocalizer.js";
+import { withFrenchFlashcardText } from "./flashcards/frenchLocalizer.js";
 
-export const FLASHCARD_DATA = withItalianFlashcardText([
+const withLocalizedFlashcardText = (cards) =>
+  withFrenchFlashcardText(withItalianFlashcardText(cards));
+
+export const FLASHCARD_DATA = withLocalizedFlashcardText([
   // ============================================
   // A1 LEVEL - 250 Flashcards
   // Category 1: Essential Greetings & Politeness (30)
@@ -7862,7 +7866,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "it"];
+    const languages = ["en", "es", "it", "fr"];
     const selectedLang = languages[hash % languages.length];
     return card.concept[selectedLang] || card.concept.en;
   }

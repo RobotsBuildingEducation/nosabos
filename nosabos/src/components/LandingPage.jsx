@@ -212,6 +212,7 @@ const translations = {
     back_button: "Back",
     language_en: "English",
     language_es: "Español",
+    language_fr: "Français",
     language_it: "Italiano",
   },
   es: {
@@ -325,6 +326,7 @@ const translations = {
     back_button: "Regresar",
     language_en: "English",
     language_es: "Español",
+    language_fr: "Français",
     language_it: "Italiano",
   },
   it: {
@@ -436,8 +438,121 @@ const translations = {
     back_button: "Indietro",
     language_en: "English",
     language_es: "Español",
+    language_fr: "Français",
     language_it: "Italiano",
   },
+};
+
+translations.fr = {
+  ...translations.en,
+  nav_signin: "Connexion",
+  hero_title: "Ton Tuteur",
+  hero_title_accent: "Linguistique Personnel",
+  hero_subtitle:
+    "Utilise des outils intelligents pour pratiquer et apprendre de nouvelles langues.",
+  cta_start: "Commencer",
+  cta_signin: "J'ai deja une cle",
+  languages_label: "LANGUES",
+  languages_title: "Pratique en",
+  languages_title_accent: "14 Langues",
+  languages_stable: "Stable",
+  languages_beta: "Beta",
+  languages_alpha: "Alpha",
+  features_label: "FONCTIONNALITES",
+  features_title: "Tout ce qu'il faut pour",
+  features_title_accent: "Devenir Fluide",
+  feature_conversations: "Conversations en Temps Reel",
+  feature_conversations_desc:
+    "Des dialogues immersifs qui s'adaptent a ton niveau et t'accompagnent en expression orale et comprehension en temps reel.",
+  feature_stories: "Histoires Interactives",
+  feature_stories_desc:
+    "Des recits engageants qui t'invitent a lire a voix haute, resumer et jouer des roles dans ta langue cible.",
+  feature_reading: "Pratique de Lecture",
+  feature_reading_desc:
+    "Des lectures thematiques qui developpent ton vocabulaire et ta culture avec des exercices de comprehension.",
+  feature_grammar: "Livre de Grammaire",
+  feature_grammar_desc:
+    "References rapides, exercices de notions et revisions adaptatives pour renforcer tes bases.",
+  feature_skilltree: "Arbre de Competences",
+  feature_skilltree_desc:
+    "Des parcours structures qui construisent tes competences etape par etape avec une visualisation claire des progres.",
+  feature_flashcards: "Vocabulaire",
+  feature_flashcards_desc:
+    "Pratique de nouveaux mots selon ton niveau et des situations courantes.",
+  feature_goals: "Objectifs Quotidiens",
+  feature_goals_desc:
+    "Des cibles personnalisees qui suivent tes progres et celebrent tes series.",
+  feature_notes: "Generer des Notes",
+  feature_notes_desc:
+    "Cree des notes d'etude completes depuis tes lecons pour les revoir plus tard.",
+  feature_immersion: "Pratique d'Immersion",
+  feature_immersion_desc:
+    "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
+  feature_assistant: "Assistant Personnel",
+  feature_assistant_desc:
+    "Obtiens une aide et des recommandations personnalisees quand tu en as besoin.",
+  feature_flashcards_spaced: "Flashcards Espacees",
+  feature_flashcards_spaced_desc:
+    "Maitrise plus de 1 000 mots et phrases avec des flashcards a repetition espacee par niveau CEFR.",
+  feature_game_review: "RPG de Revision",
+  feature_game_review_desc:
+    "Explore des mondes a quetes, parle a des PNJ et collecte des objets dans ta langue cible pour reviser le vocabulaire.",
+  feature_proficiency_test: "Test de Niveau",
+  feature_proficiency_test_desc:
+    "Passe une conversation vocale de 10 echanges avec une IA qui s'adapte en temps reel pour te placer au bon niveau CEFR.",
+  feature_phonics: "Phonetique",
+  feature_phonics_desc:
+    "Pratique les sons et les mots avec le mode Alphabet pour maitriser la prononciation depuis les bases.",
+  value_label: "POURQUOI NO SABOS",
+  value_title: "Un apprentissage qui",
+  value_title_accent: "Fonctionne Vraiment",
+  value_1:
+    "Une IA qui s'adapte en temps reel - conversations, exercices et retours ajustes a ton niveau exact",
+  value_2:
+    "Six modes de pratique pour tous les styles : parler, lire, ecrire, ecouter, grammaire et vocabulaire",
+  value_3:
+    "Progression CEFR structuree de A1 debutant a C2 maitrise avec 324 lecons et jalons clairs",
+  value_4:
+    "Coaching de prononciation en temps reel qui ecoute, corrige et renforce ta confiance a l'oral",
+  scholarship_label: "REDONNER",
+  scholarship_title: "Creer des Bourses",
+  scholarship_title_accent: "avec Bitcoin",
+  scholarship_desc:
+    "Recharge ton portefeuille Bitcoin dans l'app pour aider a creer des bourses grace a l'apprentissage avec",
+  scholarship_note:
+    "Choisis une identite communautaire dans l'app afin que chaque satoshi depense soutienne de vraies personnes.",
+  faq_label: "QUESTIONS",
+  faq_title: "Questions Frequentes",
+  faq_q1: "Que se passe-t-il quand je cree un compte ?",
+  faq_a1:
+    "Nous generons une cle securisee qui debloque ton espace d'etude personnel. Garde-la bien : c'est le seul moyen de te connecter depuis un autre appareil.",
+  faq_q2: "Dois-je connaitre les blockchains ou Nostr ?",
+  faq_a2:
+    "Non. Nous gerons les details techniques pour toi. Tu as seulement besoin de ta cle pour revenir a tes lecons.",
+  faq_q3: "Quelles langues puis-je pratiquer ?",
+  faq_a3:
+    "Commence avec l'espagnol, l'anglais, le portugais, le francais ou l'italien, puis explore les modules culturels inspires du nahuatl.",
+  faq_q4: "Est-ce payant ?",
+  faq_a4:
+    "Les outils principaux sont gratuits. Certains laboratoires avances peuvent demander une bourse ou un acces payant.",
+  cta_final_title: "Pret a commencer ton",
+  cta_final_accent: "Voyage Linguistique ?",
+  cta_final_subtitle:
+    "Cree ton profil securise en quelques secondes, sauvegarde ta cle et debloque un monde d'apprentissage linguistique.",
+  placeholder_name: "Ton nom d'affichage",
+  footer_tagline: "Rendre l'apprentissage des langues accessible a tous.",
+  signin_title: "Bon retour",
+  signin_subtitle:
+    "Colle la cle secrete que tu as sauvegardee lors de la creation du compte.",
+  signin_placeholder: "Colle ta cle secrete",
+  signin_button: "Connexion",
+  signin_extension: "Connexion avec extension",
+  signin_or: "ou",
+  back_button: "Retour",
+  language_en: "English",
+  language_es: "Español",
+  language_fr: "Français",
+  language_it: "Italiano",
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

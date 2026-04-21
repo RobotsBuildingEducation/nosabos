@@ -44,71 +44,78 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 const CEFR_LEVELS = [
   {
     level: "Pre-A1",
-    name: { en: "Foundations", es: "Fundamentos", it: "Fondamenti" },
+    name: { en: "Foundations", es: "Fundamentos", it: "Fondamenti", fr: "Fondations" },
     description: {
       en: "First words and phrases",
       es: "Primeras palabras y frases",
       it: "Prime parole e frasi",
+      fr: "Premiers mots et phrases",
     },
     color: "#8B5CF6",
   },
   {
     level: "A1",
-    name: { en: "Beginner", es: "Principiante", it: "Principiante" },
+    name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" },
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
       it: "Lingua essenziale di base",
+      fr: "Langue essentielle de base",
     },
     color: "#3B82F6",
   },
   {
     level: "A2",
-    name: { en: "Elementary", es: "Elemental", it: "Elementare" },
+    name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" },
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
       it: "Comunicazione quotidiana semplice",
+      fr: "Communication simple du quotidien",
     },
     color: "#8B5CF6",
   },
   {
     level: "B1",
-    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio" },
+    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" },
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
       it: "Gestire situazioni quotidiane",
+      fr: "Gerer les situations quotidiennes",
     },
     color: "#A855F7",
   },
   {
     level: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto", it: "Intermedio alto" },
+    name: { en: "Upper Intermediate", es: "Intermedio Alto", it: "Intermedio alto", fr: "Intermediaire avance" },
     description: {
       en: "Complex discussions",
       es: "Discusiones complejas",
       it: "Discussioni complesse",
+      fr: "Discussions complexes",
     },
     color: "#F97316",
   },
   {
     level: "C1",
-    name: { en: "Advanced", es: "Avanzado", it: "Avanzato" },
+    name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" },
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
       it: "Uso sofisticato della lingua",
+      fr: "Usage sophistique de la langue",
     },
     color: "#EF4444",
   },
   {
     level: "C2",
-    name: { en: "Mastery", es: "Maestría", it: "Padronanza" },
+    name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
       it: "Competenza quasi nativa",
+      fr: "Competence quasi native",
     },
     color: "#EC4899",
   },
@@ -159,6 +166,21 @@ function getConversationSettingsUi(lang) {
         "es. Sono medico e voglio praticare conversazioni con i pazienti...",
       save: "Salva",
       close: "Chiudi",
+    },
+    fr: {
+      title: "Parametres de conversation",
+      proficiencyLabel: "Niveau de competence",
+      proficiencyHint:
+        "Definis le niveau de difficulte des sujets de conversation",
+      pronunciationLabel: "Pratique de prononciation",
+      pronunciationHint: "L'IA t'aidera a ameliorer ta prononciation",
+      subjectLabel: "Sujets personnalises",
+      subjectHint:
+        "Definis les sujets que tu veux pratiquer (ex. medecine, travail, voyage)",
+      subjectPlaceholder:
+        "ex. Je suis medecin et je veux pratiquer des conversations avec des patients...",
+      save: "Enregistrer",
+      close: "Fermer",
     },
   }[lang];
 }

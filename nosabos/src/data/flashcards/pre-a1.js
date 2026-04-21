@@ -7,8 +7,12 @@
  */
 
 import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
 
-export const FLASHCARDS_PRE_A1 = withItalianFlashcardText([
+const withLocalizedFlashcardText = (cards) =>
+  withFrenchFlashcardText(withItalianFlashcardText(cards));
+
+export const FLASHCARDS_PRE_A1 = withLocalizedFlashcardText([
   // ============================================
   // Category 1: People & Family (12 flashcards)
   // ============================================

@@ -64,6 +64,32 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "fr") {
+    return {
+      title: "Ton compagnon",
+      subtitle: "Garde sa sante elevee en atteignant ton objectif XP quotidien.",
+      health: "Sante",
+      happy: "Heureux",
+      healthy: "En forme",
+      unhappy: "Triste",
+      stressed: "Stresse",
+      unhealthy: "Fragile",
+      dead: "Epuise",
+      reward: "Objectif atteint",
+      penalty: "Objectif manque",
+      rewardFooter: "La sante monte a {health}%",
+      penaltyFooter: "La sante descend a {health}%",
+      latestAchieved: "Derniere mise a jour : +{delta}% pour l'objectif atteint",
+      latestMissed: "Derniere mise a jour : {delta}% pour l'objectif manque",
+      managementHint: "Atteins l'objectif aujourd'hui pour le garder fort.",
+      celebrationHint: "Ton compagnon a recu un bonus de sante.",
+      rewardBadge: "Recompense +{delta}%",
+      penaltyBadge: "Risque -{delta}%",
+      previewHint:
+        "Apercu seulement. Cela ne change pas sa vraie sante.",
+    };
+  }
+
   if (lang === "it") {
     return {
       title: "Il tuo compagno",

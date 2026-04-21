@@ -100,6 +100,9 @@ function useT(uiLang = "en") {
   };
 }
 
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
 /* ---------------------------
    LLM plumbing (backend for XP scoring + fallback)
 --------------------------- */
@@ -230,7 +233,7 @@ const LANGUAGE_LABELS = {
     "Brazilian Portuguese",
     "Portugués brasileño",
   ],
-  fr: ["French", "Francés"],
+  fr: ["French", "Francés", "Français", "Francais"],
   it: ["Italian", "Italiano"],
   nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Eastern Huasteca Nahuatl", "Náhuatl huasteco oriental"],
@@ -763,12 +766,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione" },
-  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension" },
 ];
 
 function speechScoreColor(score) {
@@ -1228,19 +1231,31 @@ export default function History({
             ? "An important phase unfolded as communities consolidated agriculture, ritual life, and trade networks..."
             : "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura, la vida ritual y las redes de intercambio...",
         support:
-          supportLang === "es"
-            ? "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura..."
-            : "An important phase unfolded as communities consolidated agriculture...",
+          uiCopy(supportLang, {
+            en: "An important phase unfolded as communities consolidated agriculture...",
+            es: "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura...",
+            it: "Una fase importante si sviluppo quando le comunita consolidarono l'agricoltura...",
+            fr: "Une phase importante s'est developpee lorsque les communautes ont consolide l'agriculture...",
+          }),
         takeaways: [
-          supportLang === "es"
-            ? "Intercambios y aldeas más fuertes."
-            : "Stronger villages and exchanges.",
-          supportLang === "es"
-            ? "Nuevas identidades y creencias."
-            : "New identities and beliefs.",
-          supportLang === "es"
-            ? "La tecnología se difundió en la región."
-            : "Technology spread regionally.",
+          uiCopy(supportLang, {
+            en: "Stronger villages and exchanges.",
+            es: "Intercambios y aldeas más fuertes.",
+            it: "Villaggi e scambi piu forti.",
+            fr: "Villages et echanges plus solides.",
+          }),
+          uiCopy(supportLang, {
+            en: "New identities and beliefs.",
+            es: "Nuevas identidades y creencias.",
+            it: "Nuove identita e credenze.",
+            fr: "Nouvelles identites et croyances.",
+          }),
+          uiCopy(supportLang, {
+            en: "Technology spread regionally.",
+            es: "La tecnología se difundió en la región.",
+            it: "La tecnologia si diffuse nella regione.",
+            fr: "La technologie s'est diffusee dans la region.",
+          }),
         ],
       };
     }
@@ -1793,12 +1808,12 @@ Return ONLY valid JSON:
     } catch (e) {
       console.error("Speech grading failed", e);
       setSpeechFeedback({
-        summary:
-          supportLang === "es"
-            ? "No se pudo generar retroalimentación. ¡Sigue practicando!"
-            : supportLang === "it"
-              ? "Impossibile generare il feedback. Continua a praticare!"
-              : "Could not generate feedback. Keep practicing!",
+        summary: uiCopy(supportLang, {
+          en: "Could not generate feedback. Keep practicing!",
+          es: "No se pudo generar retroalimentación. ¡Sigue practicando!",
+          it: "Impossibile generare il feedback. Continua a praticare!",
+          fr: "Impossible de generer un retour. Continue a pratiquer !",
+        }),
         scores: {},
       });
     } finally {

@@ -109,7 +109,8 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it) {
+function supportCopy(lang, en, es, it, fr) {
+  if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
   return en;

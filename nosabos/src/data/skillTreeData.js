@@ -11,6 +11,10 @@
  */
 
 import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./skillTree/frenchLocalizer.js";
+
+const withLocalizedSkillTreeText = (skillTree) =>
+  withFrenchSkillTreeText(withItalianSkillTreeText(skillTree));
 
 export const SKILL_STATUS = {
   LOCKED: "locked",
@@ -30,7 +34,7 @@ export const SKILL_STATUS = {
  * C1: Advanced - Flexible, sophisticated language use
  * C2: Mastery - Near-native proficiency
  */
-const baseLearningPath = withItalianSkillTreeText({
+const baseLearningPath = withLocalizedSkillTreeText({
   "Pre-A1": [
     // Tutorial Unit - always at the very beginning
     {
@@ -11672,7 +11676,7 @@ function applyCEFRScaffolding(path) {
   return stagedPath;
 }
 
-const cefrAlignedLearningPath = withItalianSkillTreeText(
+const cefrAlignedLearningPath = withLocalizedSkillTreeText(
   applyCEFRScaffolding(baseLearningPath),
 );
 

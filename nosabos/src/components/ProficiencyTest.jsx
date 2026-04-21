@@ -151,18 +151,28 @@ const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 const CEFR_LEVEL_INFO = {
   "Pre-A1": {
-    name: { en: "Ultimate Beginner", es: "Principiante Total" },
+    name: {
+      en: "Ultimate Beginner",
+      es: "Principiante Total",
+      it: "Principiante assoluto",
+      fr: "Grand debutant",
+    },
     color: "#8B5CF6",
   },
-  A1: { name: { en: "Beginner", es: "Principiante" }, color: "#3B82F6" },
-  A2: { name: { en: "Elementary", es: "Elemental" }, color: "#8B5CF6" },
-  B1: { name: { en: "Intermediate", es: "Intermedio" }, color: "#A855F7" },
+  A1: { name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" }, color: "#3B82F6" },
+  A2: { name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" }, color: "#8B5CF6" },
+  B1: { name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" }, color: "#A855F7" },
   B2: {
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    name: {
+      en: "Upper Intermediate",
+      es: "Intermedio Alto",
+      it: "Intermedio alto",
+      fr: "Intermediaire avance",
+    },
     color: "#F97316",
   },
-  C1: { name: { en: "Advanced", es: "Avanzado" }, color: "#EF4444" },
-  C2: { name: { en: "Mastery", es: "Maestría" }, color: "#EC4899" },
+  C1: { name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" }, color: "#EF4444" },
+  C2: { name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" }, color: "#EC4899" },
 };
 
 const CEFR_LEVEL_OFFERINGS = {
@@ -253,12 +263,12 @@ const CEFR_LEVEL_OFFERINGS = {
 };
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia" },
-  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension" },
 ];
 
 function scoreColor(score) {
@@ -1909,6 +1919,7 @@ Return ONLY valid JSON:
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
       it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
+      fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
     },
     {
       level: "A1",
@@ -1917,6 +1928,7 @@ Return ONLY valid JSON:
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
       it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
+      fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
     },
     {
       level: "A2",
@@ -1925,6 +1937,7 @@ Return ONLY valid JSON:
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
       it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
+      fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
     },
     {
       level: "B1",
@@ -1933,6 +1946,7 @@ Return ONLY valid JSON:
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
       it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
+      fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
     },
     {
       level: "B2",
@@ -1941,6 +1955,7 @@ Return ONLY valid JSON:
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
       it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
+      fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
     },
     {
       level: "C1",
@@ -1949,6 +1964,7 @@ Return ONLY valid JSON:
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
       it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
+      fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
     },
     {
       level: "C2",
@@ -1957,6 +1973,7 @@ Return ONLY valid JSON:
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
       it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
+      fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
     },
   ];
 

@@ -3,8 +3,12 @@
  */
 
 import { withItalianSkillTreeText } from "./italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
 
-export const SKILL_TREE_C1 = withItalianSkillTreeText([
+const withLocalizedSkillTreeText = (skillTree) =>
+  withFrenchSkillTreeText(withItalianSkillTreeText(skillTree));
+
+export const SKILL_TREE_C1 = withLocalizedSkillTreeText([
   {
     id: "unit-c1-1",
       title: {

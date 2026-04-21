@@ -4,8 +4,12 @@
  */
 
 import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
 
-export const FLASHCARDS_C1 = withItalianFlashcardText([
+const withLocalizedFlashcardText = (cards) =>
+  withFrenchFlashcardText(withItalianFlashcardText(cards));
+
+export const FLASHCARDS_C1 = withLocalizedFlashcardText([
   {
     id: "c1-vocab-1",
     concept: { en: "Comprehend", es: "Comprender" },

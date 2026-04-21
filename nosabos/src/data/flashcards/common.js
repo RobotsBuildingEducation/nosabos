@@ -32,7 +32,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "it"];
+    const languages = ["en", "es", "it", "fr"];
     const selectedLang = languages[hash % languages.length];
     return card.concept[selectedLang] || card.concept.en;
   }

@@ -185,7 +185,8 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it) {
+function supportCopy(lang, en, es, it, fr) {
+  if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
   return en;
@@ -193,7 +194,7 @@ function supportCopy(lang, en, es, it) {
 
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
-    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare");
+    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare", "Pret a renouveler");
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
@@ -204,9 +205,10 @@ function formatRemaining(ms, lang) {
       `${h}h ${m}m left`,
       `${h}h ${m}m restantes`,
       `${h}h ${m}m rimanenti`,
+      `${h}h ${m}m restantes`,
     );
   }
-  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`);
+  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`, `${m}m restantes`);
 }
 
 export default function RealWorldTasksModal({
