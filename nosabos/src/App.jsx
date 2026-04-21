@@ -2998,9 +2998,7 @@ export default function App() {
       const parsedMinutes = Math.max(
         1,
         Math.round(
-          Number.isFinite(parsedSource) && parsedSource > 0
-            ? parsedSource
-            : 10,
+          Number.isFinite(parsedSource) && parsedSource > 0 ? parsedSource : 10,
         ),
       );
       const shouldOpenProficiency = shouldShowProficiencyAfterTimer;

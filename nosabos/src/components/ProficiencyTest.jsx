@@ -253,12 +253,12 @@ const CEFR_LEVEL_OFFERINGS = {
 };
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
-  { key: "grammar", en: "Grammar", es: "Gramática" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario" },
-  { key: "fluency", en: "Fluency", es: "Fluidez" },
-  { key: "confidence", en: "Confidence", es: "Confianza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione" },
 ];
 
 function scoreColor(score) {
@@ -1328,23 +1328,28 @@ export default function ProficiencyTest() {
       speechTurnsRef.current || [],
     );
 
-    const langName =
-      {
-        es: "Spanish",
-        pt: "Portuguese",
-        fr: "French",
-        it: "Italian",
-        nl: "Dutch",
-        ja: "Japanese",
-        ru: "Russian",
-        de: "German",
-        el: "Greek",
-        pl: "Polish",
-        ga: "Irish",
-        nah: "Nahuatl",
-        yua: "Yucatec Maya",
-        en: "English",
-      }[targetLang] || "the target language";
+    const LANG_MAP = {
+      es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
+      nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
+      el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
+      yua: "Yucatec Maya", en: "English",
+    };
+    const langName = LANG_MAP[targetLang] || "the target language";
+    const supportName = LANG_MAP[supportLang] || "English";
+
+    const insufficientAudioMsg = {
+      es: "Evidencia de audio insuficiente.",
+      it: "Prove audio insufficienti.",
+      pt: "Evidência de áudio insuficiente.",
+      fr: "Preuves audio insuffisantes.",
+      de: "Unzureichende Audiobeweise.",
+      nl: "Onvoldoende audiobewijs.",
+      ja: "音声証拠が不十分です。",
+      ru: "Недостаточно аудиодоказательств.",
+      el: "Ανεπαρκή ηχητικά στοιχεία.",
+      pl: "Niewystarczające dowody audio.",
+      ga: "Fianaise fuaime neamhleor.",
+    }[supportLang] || "Insufficient audio evidence.";
 
     const prompt = `You are an EXTREMELY STRICT CEFR language proficiency assessor for ${langName}. Your job is to accurately place learners — most test-takers are beginners and should score low.
 
@@ -1372,7 +1377,7 @@ CRITICAL ANTI-INFLATION RULES:
 - Do NOT inflate scores to be nice. Accurate placement helps the learner.
 - Grammar/vocabulary/comprehension should be scored mainly from transcript content.
 - Pronunciation/fluency/confidence MUST use AUDIO EVIDENCE whenever available.
-- If hasAudioEvidence is false, set pronunciation note exactly to "Insufficient audio evidence." and keep pronunciation score conservative (1-2).
+- If hasAudioEvidence is false, set pronunciation note exactly to "${insufficientAudioMsg}" and keep pronunciation score conservative (1-2).
 
 LEVEL PLACEMENT GUIDE:
 - Pre-A1: Cannot communicate in ${langName}. Wrong language, gibberish, or only isolated words.
@@ -1382,8 +1387,10 @@ LEVEL PLACEMENT GUIDE:
 - B2: Can argue, discuss abstract topics, self-correct. Varied grammar and vocabulary.
 - C1/C2: Near-native precision, idioms, register control, complex argumentation.
 
+LANGUAGE REQUIREMENT: Write the "summary" and every criterion "note" in ${supportName}, not English.
+
 Return ONLY valid JSON:
-{"level":"Pre-A1","summary":"2-3 sentence assessment.","scores":{"pronunciation":{"score":1,"note":"reason"},"grammar":{"score":1,"note":"reason"},"vocabulary":{"score":1,"note":"reason"},"fluency":{"score":1,"note":"reason"},"confidence":{"score":1,"note":"reason"},"comprehension":{"score":1,"note":"reason"}}}`;
+{"level":"Pre-A1","summary":"[2-3 sentence assessment in ${supportName}]","scores":{"pronunciation":{"score":1,"note":"[reason in ${supportName}]"},"grammar":{"score":1,"note":"[reason in ${supportName}]"},"vocabulary":{"score":1,"note":"[reason in ${supportName}]"},"fluency":{"score":1,"note":"[reason in ${supportName}]"},"confidence":{"score":1,"note":"[reason in ${supportName}]"},"comprehension":{"score":1,"note":"[reason in ${supportName}]"}}}`;
 
     try {
       const resp = await gradingModel.generateContent({
@@ -1901,6 +1908,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
+      it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
     },
     {
       level: "A1",
@@ -1908,6 +1916,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
+      it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
     },
     {
       level: "A2",
@@ -1915,6 +1924,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
+      it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
     },
     {
       level: "B1",
@@ -1922,6 +1932,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
+      it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
     },
     {
       level: "B2",
@@ -1929,6 +1940,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
+      it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
     },
     {
       level: "C1",
@@ -1936,6 +1948,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
+      it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
     },
     {
       level: "C2",
@@ -1943,6 +1956,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
+      it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
     },
   ];
 
