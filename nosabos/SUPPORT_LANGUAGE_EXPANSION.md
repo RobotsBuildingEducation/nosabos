@@ -205,10 +205,11 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - The generated assessment content is only partially localized. The grading prompt is still authored in English and only produces a generic JSON schema with English placeholders; it does not require `summary` or `scores.*.note` to be written in `supportLang`. Add a `supportName`/support-language instruction block and require all learner-facing generated text in the assessment JSON to be in the support language.
 - The pronunciation fallback phrase is hardcoded as the exact English string `"Insufficient audio evidence."`. Add a localized fallback per support language or avoid exact English text in learner-facing fields.
 
-**Italian implementation note:** Done — visible UI chrome was already localized; generated assessment prose is now also localized:
+**Italian implementation note:** Done — visible UI chrome was already localized; generated assessment prose and rubric rows are now also localized:
 1. `ASSESSMENT_CRITERIA` updated with `it` labels for all six entries (`Pronuncia`, `Grammatica`, `Vocabolario`, `Fluidità`, `Sicurezza`, `Comprensione`); the existing `criterion[supportLang] || criterion.en` lookup in JSX picks them up automatically.
 2. `runAssessment()` now derives `supportName` from a shared `LANG_MAP` constant (consolidated from the old separate `langName` map), then injects a `LANGUAGE REQUIREMENT` block into the prompt instructing the LLM to write the `summary` and every criterion `note` in `${supportName}`; JSON example placeholders updated to `"[reason in ${supportName}]"`.
 3. `insufficientAudioMsg` lookup table added for all supported languages; the hardcoded English `"Insufficient audio evidence."` string in the prompt replaced with `${insufficientAudioMsg}`.
+4. `rubricRows` array (the CEFR level description table rendered in the rubric drawer) — each of the 7 rows had only `en`/`es` keys; `it` added to all entries. The existing `row[supportLang] || row.en` JSX lookup picks them up without further changes. For future support languages, add a key to every `rubricRows` entry alongside `en` and `es`.
 
 ### 3.21b `src/components/ProficiencyTestModal.jsx`
 - Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.

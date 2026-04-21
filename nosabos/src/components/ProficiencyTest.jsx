@@ -1908,6 +1908,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
+      it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
     },
     {
       level: "A1",
@@ -1915,6 +1916,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
+      it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
     },
     {
       level: "A2",
@@ -1922,6 +1924,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
+      it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
     },
     {
       level: "B1",
@@ -1929,6 +1932,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
+      it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
     },
     {
       level: "B2",
@@ -1936,6 +1940,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
+      it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
     },
     {
       level: "C1",
@@ -1943,6 +1948,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
+      it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
     },
     {
       level: "C2",
@@ -1950,6 +1956,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
+      it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
     },
   ];
 
