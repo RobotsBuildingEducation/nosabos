@@ -156,6 +156,7 @@ export default function BitcoinSupportModal({
       primaryButtonBg: "#319795",
       primaryButtonHoverBg: "#2c7a7b",
       primaryButtonActiveBg: "#285e61",
+      primaryButtonShadow: "#1f6f68",
       ghostHoverBg: "#ead7b8",
       ghostActiveBg: "#dfc499",
     }),
@@ -169,6 +170,7 @@ export default function BitcoinSupportModal({
       "Create Scholarships",
       "Crea becas con aprendizaje",
       "Crea borse di studio con l'apprendimento",
+      "Creer des bourses",
     );
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
@@ -177,6 +179,7 @@ export default function BitcoinSupportModal({
       "Send Bitcoin to educators any time you gain XP",
       "Envía Bitcoin a educadores cada vez que ganes XP",
       "Invia Bitcoin agli educatori ogni volta che guadagni XP",
+      "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
     );
   const footerNote =
     ui.tutorial_bitcoin_modal_body ||
@@ -185,13 +188,20 @@ export default function BitcoinSupportModal({
       "This can be done later in your settings.",
       "Esto se puede hacer después en tus ajustes.",
       "Puoi farlo più tardi dalle impostazioni.",
+      "Tu pourras le faire plus tard dans les parametres.",
     );
   const skipLabel =
     ui.tutorial_bitcoin_modal_skip ||
-    supportCopy(lang, "Maybe later", "Tal vez después", "Forse più tardi");
+    supportCopy(
+      lang,
+      "Maybe later",
+      "Tal vez después",
+      "Forse più tardi",
+      "Peut-etre plus tard",
+    );
   const closeLabel =
     ui.tutorial_bitcoin_modal_done ||
-    supportCopy(lang, "Done", "Listo", "Fatto");
+    supportCopy(lang, "Done", "Listo", "Fatto", "Termine");
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
@@ -316,7 +326,13 @@ export default function BitcoinSupportModal({
                       onClick={(event) => event.stopPropagation()}
                       onPointerDown={(event) => event.stopPropagation()}
                     >
-                      {supportCopy(lang, "View site", "Ver sitio", "Vedi sito")}
+                      {supportCopy(
+                        lang,
+                        "View site",
+                        "Ver sitio",
+                        "Vedi sito",
+                        "Voir le site",
+                      )}
                     </Link>
                   ) : null}
                 </HStack>
@@ -332,6 +348,7 @@ export default function BitcoinSupportModal({
             "Select an option to enable deposits.",
             "Selecciona una opción para habilitar los depósitos.",
             "Seleziona un'opzione per abilitare i depositi.",
+            "Selectionne une option pour activer les depots.",
           )}
         </Text>
       ) : null}
@@ -401,7 +418,7 @@ export default function BitcoinSupportModal({
         }}
       >
         <IconButton
-          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi")}
+          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer")}
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
@@ -520,6 +537,7 @@ export default function BitcoinSupportModal({
                             "Choose a recipient",
                             "Elige un destinatario",
                             "Scegli un destinatario",
+                            "Choisis un destinataire",
                           )}
                         </Text>
                         {selectedRecipient ? (
@@ -552,6 +570,7 @@ export default function BitcoinSupportModal({
                       "Choose a recipient",
                       "Elige un destinatario",
                       "Scegli un destinatario",
+                      "Choisis un destinataire",
                     )}
                   </Text>
                   {recipientSelectorContent}
@@ -582,8 +601,16 @@ export default function BitcoinSupportModal({
               <Button
                 bg={paperTheme.primaryButtonBg}
                 color="white"
-                _hover={{ bg: paperTheme.primaryButtonHoverBg }}
-                _active={{ bg: paperTheme.primaryButtonActiveBg }}
+                boxShadow={`0 4px 0 ${paperTheme.primaryButtonShadow}`}
+                _hover={{
+                  bg: paperTheme.primaryButtonHoverBg,
+                  boxShadow: `0 4px 0 ${paperTheme.primaryButtonShadow}`,
+                }}
+                _active={{
+                  bg: paperTheme.primaryButtonActiveBg,
+                  boxShadow: "none",
+                  transform: "translateY(4px)",
+                }}
                 onClick={handleConfirm}
               >
                 {closeLabel}

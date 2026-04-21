@@ -2403,7 +2403,7 @@ Return ONLY valid JSON:
                                   letterSpacing="0.04em"
                                   opacity={0.8}
                                 >
-                                  Listening...
+                                  {t("history_speech_listening")}
                                 </Text>
                               </VStack>
                             )}

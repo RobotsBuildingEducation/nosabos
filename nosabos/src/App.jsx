@@ -5148,7 +5148,12 @@ export default function App() {
       },
     },
     A1: {
-      name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" },
+      name: {
+        en: "Beginner",
+        es: "Principiante",
+        it: "Principiante",
+        fr: "Debutant",
+      },
       color: "#3B82F6",
       gradient: "linear(135deg, #60A5FA, #3B82F6)",
       description: {
@@ -5159,7 +5164,12 @@ export default function App() {
       },
     },
     A2: {
-      name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" },
+      name: {
+        en: "Elementary",
+        es: "Elemental",
+        it: "Elementare",
+        fr: "Elementaire",
+      },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
       description: {
@@ -5170,7 +5180,12 @@ export default function App() {
       },
     },
     B1: {
-      name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" },
+      name: {
+        en: "Intermediate",
+        es: "Intermedio",
+        it: "Intermedio",
+        fr: "Intermediaire",
+      },
       color: "#A855F7",
       gradient: "linear(135deg, #C084FC, #A855F7)",
       description: {
@@ -6792,12 +6807,10 @@ export default function App() {
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
                   {completedProficiencyData?.level} -{" "}
-                  {
-                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
-                      appLanguage
-                    ] ||
-                      CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name.en
-                  }
+                  {CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
+                    appLanguage
+                  ] ||
+                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name.en}
                 </Text>
               </VStack>
 
@@ -7408,6 +7421,17 @@ function BottomActionBar({
                 bg="white"
                 color="blue"
                 boxShadow="0 4px 0 blue"
+                _hover={{
+                  bg: "rgba(255, 255, 255, 0.92)",
+                  color: "blue.500",
+                  boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
+                }}
+                _active={{
+                  bg: "rgba(255, 255, 255, 0.78)",
+                  color: "blue.600",
+                  boxShadow: "none",
+                  transform: "translateY(4px)",
+                }}
                 zIndex={50}
                 flexShrink={0}
               />

@@ -80,6 +80,8 @@ const TEXT_TRANSLATIONS = {
     "Revise ce que tu as appris avec un jeu interactif.",
   "finish the tutorial by playing a short game review.":
     "Termine le tutoriel avec une courte revision sous forme de jeu.",
+  "the learner says hello.": "L'apprenant dit bonjour.",
+  "the learner says hello to you.": 'L\'apprenant te dit "bonjour".',
 };
 
 export const translateSkillTreeTextToFrench = (value) => {
@@ -107,6 +109,16 @@ const addFrenchText = (value) => {
     typeof value.fr !== "string"
   ) {
     next.fr = translateSkillTreeTextToFrench(value.en);
+  }
+
+  if (
+    typeof value.successCriteria === "string" &&
+    typeof value.successCriteria_fr !== "string"
+  ) {
+    const translated = translateSkillTreeTextToFrench(value.successCriteria);
+    if (translated && translated !== value.successCriteria) {
+      next.successCriteria_fr = translated;
+    }
   }
 
   return next;

@@ -267,6 +267,7 @@ export default function Onboarding({
       en: "Pause between replies",
       es: "Pausa entre turnos",
       it: "Pausa tra le risposte",
+      fr: "Pause entre les reponses",
     });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
@@ -274,12 +275,14 @@ export default function Onboarding({
       en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
       es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
     });
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const secondsLabel = uiCopy(supportLang, {
     en: "seconds",
     es: "segundos",
     it: "secondi",
+    fr: "secondes",
   });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -291,6 +294,7 @@ export default function Onboarding({
     en: ["Languages", "Voice", "Effects"],
     es: ["Idiomas", "Voz", "Efectos"],
     it: ["Lingue", "Voce", "Effetti"],
+    fr: ["Langues", "Voix", "Effets"],
   });
 
   return (
@@ -770,6 +774,7 @@ export default function Onboarding({
                       en: "Back",
                       es: "Atrás",
                       it: "Indietro",
+                      fr: "Retour",
                     })}
                   </Button>
                 )}

@@ -107,6 +107,7 @@ export const translations = {
     history_format_question: "Question",
     history_format_speech: "Read aloud",
     history_speech_heading: "Reading practice",
+    history_speech_listening: "Listening...",
     history_speech_instructions:
       "Read the paragraph above out loud. You'll get feedback on your reading!",
     history_speech_start_mic: "Start reading",
@@ -1250,6 +1251,7 @@ export const translations = {
     history_format_question: "Pregunta",
     history_format_speech: "Leer en voz alta",
     history_speech_heading: "Práctica de lectura",
+    history_speech_listening: "Escuchando...",
     history_speech_instructions:
       "Intenta leer el párrafo de arriba en voz alta. ¡Recibirás retroalimentación!",
     history_speech_start_mic: "Empezar a leer",
@@ -1852,6 +1854,7 @@ translations.it = {
   history_format_question: "Domanda",
   history_format_speech: "Leggi ad alta voce",
   history_speech_heading: "Pratica di lettura",
+  history_speech_listening: "Ascolto...",
   history_speech_instructions:
     "Leggi ad alta voce il paragrafo qui sopra. Riceverai un feedback sulla lettura.",
   history_speech_start_mic: "Inizia a leggere",
@@ -2678,6 +2681,7 @@ translations.fr = {
   history_format_question: "Question",
   history_format_speech: "Lire a voix haute",
   history_speech_heading: "Pratique de lecture",
+  history_speech_listening: "Ecoute...",
   history_speech_instructions:
     "Lis le paragraphe ci-dessus a voix haute. Tu recevras un retour sur ta lecture.",
   history_speech_start_mic: "Commencer la lecture",

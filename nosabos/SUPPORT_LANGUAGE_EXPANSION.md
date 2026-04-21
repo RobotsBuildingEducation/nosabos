@@ -97,6 +97,10 @@ Language touchpoints are spread throughout. Key anchors:
 ### 3.6 `src/components/Onboarding.jsx`
 - Support language selector (lines 89–147) — use `getSupportLanguageOptions()` and drop the binary `supportLang === "es" ? "es" : "en"` collation on line 147.
 - Practice language menu — ensure new language is rendered with its tier tag.
+- Onboarding step tabs / section labels are visible chrome and must be localized: `LANGUAGES`, `VOICE`, `EFFECTS`, progress labels, card titles, card descriptions, and any aria labels/tooltips attached to the tabs.
+- Navigation buttons must be localized through shared translations or local `uiText(...)`: `Back`, `Next`, `Finish`, disabled/loading variants, and aria labels. Do not leave the bottom button row in English when the page body is localized.
+- Voice activation / VAD slider copy must localize both the setting label and the live value suffix. Audit strings such as `seconds`, `(seconds)`, and `1.2 seconds` separately; value suffixes are often built outside normal translation keys.
+- If onboarding has component-local copy, keep it in lockstep with `translations.<code>` and test the whole onboarding flow in the new support language, not just the first language-picker screen.
 
 ### 3.7 `src/components/Conversations.jsx`
 - `languageNameFor` (~lines 743–754) — handle the new code.
@@ -120,6 +124,7 @@ Language touchpoints are spread throughout. Key anchors:
 ### 3.9 `src/components/HelpChatFab.jsx`
 - `nameFor` helper in TWO places (~lines 278–285 and ~580–588).
 - The **entire help chat UI** must be localized, not only language names and instructions. Audit saved-chat list copy, empty states, toast titles/descriptions, connection errors, delete/new/save actions, menu buttons, tooltip labels, morph/morpheme mode labels, message placeholders, attachment/action labels, timestamps, and any inline `appLanguage === "es" ? … : …` branches.
+- Required visible-string smoke targets: `Your chats`, `No saved chats`, `Save chat`, `New chat`, `Morpheme mode`, `Break down words`, `What do you want to learn today?`, `Ask about this lesson...`, close/save/delete tooltips, microphone/send labels, and any collapsed FAB labels.
 - Realtime/system instructions should use the new support language, while visible help-chat chrome should read from `translations.<code>` or a local `uiText(en, es, <code>)` helper.
 
 ### 3.10 `src/components/ConversationSettingsDrawer.jsx`
@@ -130,6 +135,7 @@ Language touchpoints are spread throughout. Key anchors:
 - `useSharedProgress` validation list (~line 309), component-level validation (~line 712).
 - `LANG_NAME` (~lines 156–166), `localizedLangName` (~lines 741–752).
 - BCP47 mapping (~line 681+).
+- History/reading voice-orb loaders must be localized independently from the speech-evaluation rubric. Audit all `VoiceOrb` / read-aloud state captions such as `Listening...`, `Reading...`, `Thinking...`, `Generating...`, retry/error labels, and any `uiStateLabel(...)` helpers used by the reading module.
 - Reading/speech evaluation is only partially localized. `SPEECH_CRITERIA` still defines `en`/`es` labels only, and the rendered criterion label still uses `criterion[userLanguage === "es" ? "es" : "en"]`, so Italian falls back to English labels (`Accuracy`, `Completeness`, etc.). Add `it` labels and switch the lookup to `criterion[supportLang] || criterion.en`.
 - The `gradeSpeechAttempt()` LLM prompt asks for the summary in `supportName`, but the per-criterion `scores.*.note` fields are not explicitly required to be in the support language and the JSON example uses English placeholders. Update the prompt so `summary` **and every criterion note** are written in the support language, and localize the fallback error summary beyond the current English/Spanish ternary.
 
@@ -172,6 +178,9 @@ Account settings are split across multiple components and must be audited togeth
 - `src/components/ConversationAccountDrawer.jsx` — drawer title and embedded conversation settings surface.
 - `src/components/BitcoinSupportModal.jsx` — account/wallet contribution copy, buttons, close labels, tutorial completion copy.
 - `src/components/SubscriptionGate.jsx` and adjacent account/payment UI — gate copy, loading text, submit buttons, validation/errors.
+- Patreon/support card copy is part of the settings surface. Localize `Join us on Patreon`, its subtitle/helper text, `Join` button, loading/disabled states, and external-link aria labels.
+- Display-name accordion copy must be fully localized: accordion heading, input label/placeholder, `Save` button, save/loading/error/success toasts, and validation text.
+- Bitcoin wallet accordion/modal copy must be fully localized: `Bitcoin wallet`, contribution explanation, `Choose a recipient`, recipient labels, `Select an option to enable deposits.`, `Create wallet`, wallet-created/loading/error states, and every helper line shown before/after wallet creation.
 
 Do not treat account settings as localized just because `translations.<code>` exists. Manually open the account/settings drawer in the new support language and verify every visible label.
 
@@ -182,6 +191,11 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 ### 3.18 `src/components/Randomize.jsx`
 - `useSharedProgress` (~line 105) — include new code in validation list.
+
+### 3.18a `src/components/RealWorldTasksModal.jsx` / Immersion drawer
+- Immersion practice chrome must be localized separately from the task data. Audit drawer title/header (`Immersion Practice`), subtitle/count copy (`3 tasks to use your language outside the app`), timer labels (`Next batch in`, remaining time), progress labels, empty states, error states, loading states, and refresh/retry copy.
+- Task titles/descriptions may come from localized data or the LLM, but the surrounding controls cannot fall back to English. Localize checkbox aria labels, completed-state copy, disabled reasons, and any claim/reward copy.
+- Claim flow is a required smoke target: `Claim +50 XP`, claim-loading text, already-claimed text, success toast, failure toast, and disabled-button text must all resolve through support-language-aware copy.
 
 ### 3.19 `src/components/AlphabetBootcamp.jsx`
 - `LANGUAGE_ALPHABETS` map (~lines 1000–1012) and `LANGUAGE_SCRIPTS` map (~lines 118–128). For Italian specifically, no new alphabet file is required (Latin), but the entry must be present.
@@ -400,6 +414,8 @@ Two shapes coexist inside the CEFR files — both must be extended:
 
 If a rendering helper reads these fields, make sure it falls back to English when the new code is missing. Do not silently fall back to Spanish — it regresses the English baseline.
 
+Tutorial / realtime goal UI is a separate required audit. Any learner-visible goal, objective, or criteria line must read the localized suffix field (`successCriteria_<code>`, localized goal text, or equivalent) before falling back to English. Search for renderers that print `successCriteria`, `criteria`, `goal`, or tutorial objective text directly; a localized UI can still leak English data strings such as `The learner says hello.` if the renderer ignores `successCriteria_fr`.
+
 **Italian implementation note:** `src/data/skillTree/italianLocalizer.js` is the current Italian coverage layer for both skill-tree data paths:
 - The frontend-rendered legacy path: `src/data/skillTreeData.js`, which powers `SkillTree.jsx` through `getLearningPath(...)` / `getMultiLevelLearningPath(...)`.
 - The seven split CEFR files in `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js`.
@@ -498,6 +514,13 @@ new Intl\.\w+\(["'](en|es)
 lang === "es" \? "es-(MX|ES)" : "en-US"
 concept\[supportLang\] \|\| concept\.en
 \{\s*en:\s*".*",\s*es:\s*".*"\s*\}
+Back|Next|Finish|seconds|\(seconds\)
+LANGUAGES|VOICE|EFFECTS
+Immersion Practice|Claim \+|Next batch in|tasks to use your language
+Join us on Patreon|Change display name|Bitcoin wallet|Create wallet|Choose a recipient
+Your chats|No saved chats|Save chat|New chat|Morpheme mode|Break down words|What do you want to learn today\?
+Listening\.\.\.|Reading\.\.\.|Thinking\.\.\.|Generating
+The learner says|successCriteria|Critères:\s*The learner
 ```
 
 Replace hits with either:
@@ -528,20 +551,39 @@ For each new support language, work top-to-bottom:
    - [ ] Extend `GrammarBook.jsx`, `JobScript.jsx`, and any other component-local prompt pair.
 5. **Realtime & conversation**
    - [ ] Update `Conversations.jsx`, `RealTimeTest.jsx`, `HelpChatFab.jsx`, `ConversationSettingsDrawer.jsx`.
-   - [ ] Verify HelpChatFab visible UI, not just its prompt/instruction language.
+   - [ ] Verify HelpChatFab visible UI, not just its prompt/instruction language: saved-chat sidebar, empty state, save/new actions, Morpheme mode, center prompt, input placeholder, send/mic buttons, close/delete tooltips.
 6. **App shell & settings**
    - [ ] Localize the mode menu and primary app navigation chrome in `App.jsx`.
+   - [ ] Localize onboarding step tabs, Back/Next/Finish controls, voice/effects section labels, and voice-activation slider units/value suffixes.
    - [ ] Localize account/settings surfaces (`IdentityDrawer.jsx`, `ConversationAccountDrawer.jsx`, `BitcoinSupportModal.jsx`, subscription/payment gates).
+   - [ ] Verify Patreon card, display-name accordion, and Bitcoin wallet creation flow inside account/settings.
 7. **Per-module components**
    - [ ] Update every file in `§3.11`–`§3.24` above.
+   - [ ] Verify History/Reading `VoiceOrb` loader captions and realtime/tutorial goal criteria render in the new support language.
 8. **Utilities & data**
    - [ ] Update every file in `§4` and `§5` above.
+   - [ ] Confirm localized `successCriteria_<code>` / goal text is actually consumed by tutorial/realtime renderers.
 9. **Audit**
    - [ ] Run every pattern in `§8`; open a PR only when all hits are legitimate.
 10. **Verification**
    - [ ] `npm run build` passes.
-   - [ ] Manual smoke: onboarding → practice selection → mode menu → account/settings drawer → HelpChatFab → skill-tree card → lesson modal → a lesson → Conversations → RealTime session.
+   - [ ] Manual smoke: onboarding tabs/buttons/VAD slider → practice selection → mode menu → account/settings drawer (Patreon/display name/Bitcoin wallet) → HelpChatFab full screen → immersion drawer/claim flow → skill-tree card → lesson modal/tutorial goal UI → a lesson → History/Reading voice orb → Conversations → RealTime session.
    - [ ] Confirm UI labels render in the new language and LLM respects `supportLang`.
+
+---
+
+### 9.1 First-Pass French Regression Targets
+
+These misses came from the French rollout and must be treated as acceptance tests for French and every future support language:
+
+- Onboarding tabs and section labels (`LANGUAGES`, `VOICE`, `EFFECTS`) render in the support language.
+- Onboarding voice-activation slider localizes both the label and the value suffix (`seconds`).
+- Onboarding navigation localizes `Back` and all neighboring button states.
+- Immersion drawer localizes header/subtitle, loading/empty/error text, timer labels, and `Claim +50 XP`.
+- Account settings localizes the Patreon card, display-name accordion, and Bitcoin wallet card/modal end to end.
+- HelpChatFab localizes its full visible UI: saved-chat sidebar, empty state, save/new actions, Morpheme mode, center prompt, input placeholder, and tooltips.
+- History/Reading module localizes `VoiceOrb` loader captions such as `Listening...`.
+- Tutorial/realtime goal UI renders localized success criteria; it must not show English strings like `The learner says hello.` under localized labels such as `Critères`.
 
 ---
 

@@ -1605,13 +1605,16 @@ export default function RealTimeTest({
       title_en: "Say hello",
       title_es: "Di hola",
       title_it: "Di' ciao",
+      title_fr: "Dis bonjour",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
       rubric_it: "Lo studente dice ciao.",
+      rubric_fr: "L'apprenant dit bonjour.",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
       successCriteria_it: "Lo studente dice ciao.",
+      successCriteria_fr: "L'apprenant dit bonjour.",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1943,6 +1946,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       it:
         translations.it.onboarding_challenge_default ||
         "Fai una richiesta cortese.",
+      fr:
+        translations.fr.onboarding_challenge_default ||
+        "Fais une demande polie.",
     };
   }
   async function ensureCurrentGoalSeed(npub, userData) {
@@ -1985,9 +1991,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     return (
       goal[`rubric_${gLang}`] ||
       goal[`successCriteria_${gLang}`] ||
+      goal.successCriteria ||
       goal.rubric_en ||
       goal.rubric_es ||
-      goal.successCriteria ||
       ""
     );
   }

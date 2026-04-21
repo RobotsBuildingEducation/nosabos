@@ -80,6 +80,7 @@ export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
             prompt: "Practice saying hello in a live chat",
             successCriteria: "The learner says hello.",
             successCriteria_es: 'El estudiante dice "hola".',
+            successCriteria_fr: 'L\'apprenant dit "bonjour".',
             tutorialDescription: {
               en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
               es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
