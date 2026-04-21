@@ -108,6 +108,8 @@ const OUTDOOR_NAMES = {
        "Jardín de Luna", "Plaza de Adoquines", "Arboleda Susurrante", "Patio de Faroles", "Campo de Flores"],
   it: ["Piazza del paese", "Prato del villaggio", "Radura del bosco", "Parco sul fiume", "Prato del tramonto",
        "Giardino al chiaro di luna", "Piazza di ciottoli", "Boschetto sussurrante", "Cortile delle lanterne", "Campo di fiori"],
+  fr: ["Place du village", "Prairie du village", "Clairiere de la foret", "Parc de la riviere", "Prairie du couchant",
+       "Jardin au clair de lune", "Place pavee", "Bosquet murmureur", "Cour des lanternes", "Champ de fleurs"],
 };
 
 const INDOOR_ROOM_TYPES = [
@@ -117,6 +119,7 @@ const INDOOR_ROOM_TYPES = [
       en: ["Ancient Library", "Reading Room", "Scholar's Study", "Book Nook", "Dusty Archives"],
       es: ["Biblioteca Antigua", "Sala de Lectura", "Estudio del Erudito", "Rincón de Libros", "Archivos Polvorientos"],
       it: ["Biblioteca antica", "Sala di lettura", "Studio dello studioso", "Angolo dei libri", "Archivi polverosi"],
+      fr: ["Bibliotheque ancienne", "Salle de lecture", "Bureau du savant", "Coin des livres", "Archives poussiereuses"],
     },
     wallFurniture: [BOOKSHELF, WINDOW_TILE],
     centerFurniture: [TABLE, DESK, PLANT_POT],
@@ -128,6 +131,7 @@ const INDOOR_ROOM_TYPES = [
       en: ["Cozy Cabin", "Warm Cottage", "Traveler's Rest", "Fireside Lodge", "Mountain Hut"],
       es: ["Cabaña Acogedora", "Casita Cálida", "Descanso del Viajero", "Refugio junto al Fuego", "Cabaña de Montaña"],
       it: ["Baita accogliente", "Casetta calda", "Riposo del viaggiatore", "Rifugio del focolare", "Capanna di montagna"],
+      fr: ["Cabane douillette", "Maison chaleureuse", "Repos du voyageur", "Refuge du foyer", "Cabane de montagne"],
     },
     wallFurniture: [FIREPLACE, WINDOW_TILE, BED],
     centerFurniture: [TABLE, SOFA, PLANT_POT],
@@ -139,6 +143,7 @@ const INDOOR_ROOM_TYPES = [
       en: ["Artisan Workshop", "Craft Room", "Maker's Space", "Tinkerer's Lab", "Inventor's Den"],
       es: ["Taller Artesanal", "Sala de Manualidades", "Espacio Creativo", "Laboratorio del Inventor", "Guarida del Creador"],
       it: ["Bottega artigiana", "Stanza dei lavori manuali", "Spazio creativo", "Laboratorio dell'inventore", "Rifugio del creatore"],
+      fr: ["Atelier artisanal", "Salle de creation", "Espace creatif", "Laboratoire de l'inventeur", "Repaire du createur"],
     },
     wallFurniture: [BOOKSHELF, DESK, WINDOW_TILE],
     centerFurniture: [TABLE, PLANT_POT, DESK],
@@ -150,6 +155,7 @@ const INDOOR_ROOM_TYPES = [
       en: ["Guest Room", "Cozy Bedroom", "Dreamer's Chamber", "Nap Room", "Rest Haven"],
       es: ["Habitación de Huéspedes", "Dormitorio Acogedor", "Cámara del Soñador", "Sala de Siesta", "Refugio de Descanso"],
       it: ["Camera degli ospiti", "Camera accogliente", "Stanza del sognatore", "Sala del riposo", "Rifugio tranquillo"],
+      fr: ["Chambre d'amis", "Chambre douillette", "Chambre du reveur", "Salle de sieste", "Havre de repos"],
     },
     wallFurniture: [BED, WINDOW_TILE, BOOKSHELF],
     centerFurniture: [DESK, PLANT_POT, TABLE],
@@ -161,6 +167,7 @@ const INDOOR_ROOM_TYPES = [
       en: ["Lounge", "Common Room", "Gathering Hall", "Social Corner", "Tea Room"],
       es: ["Salón", "Sala Común", "Sala de Reuniones", "Rincón Social", "Sala de Té"],
       it: ["Salotto", "Sala comune", "Sala degli incontri", "Angolo sociale", "Sala da tè"],
+      fr: ["Salon", "Salle commune", "Hall de rencontre", "Coin social", "Salon de the"],
     },
     wallFurniture: [WINDOW_TILE, FIREPLACE, BOOKSHELF],
     centerFurniture: [SOFA, TABLE, PLANT_POT],
@@ -212,6 +219,20 @@ const SIGN_MESSAGES = {
     "Le lingue aprono porte verso nuovi mondi. Letteralmente.",
     "Continua a esplorare! C'è sempre qualcosa di nuovo da trovare.",
   ],
+  fr: [
+    "Bienvenue, aventurier ! Explore pendant que ton jeu charge.",
+    "Astuce : parle aux PNJ dans le vrai jeu pour pratiquer le vocabulaire.",
+    "Le savais-tu ? Apprendre une langue, c'est comme faire monter ton cerveau de niveau.",
+    "Astuce pro : termine des quetes pour gagner de l'XP et debloquer des lecons.",
+    "Le pont relie deux mondes... comme les langues.",
+    "Essaie d'entrer par les portes pour decouvrir de nouvelles salles.",
+    "Chaque mot appris est un pas dans une grande aventure.",
+    "Plus tu explores, plus tu decouvres.",
+    "Secret : certains chemins menent a des tresors caches...",
+    "Le savais-tu ? Cette carte change a chaque chargement.",
+    "Les langues ouvrent des portes vers de nouveaux mondes. Litteralement.",
+    "Continue a explorer ! Il y a toujours quelque chose de nouveau.",
+  ],
 };
 
 const CHEST_MESSAGES = {
@@ -245,6 +266,16 @@ const CHEST_MESSAGES = {
     "Il baule contiene... motivazione! +10 forza di volontà.",
     "Dentro trovi una nota: 'Stai andando alla grande!'",
   ],
+  fr: [
+    "Tu as trouve un tresor cache ! ...c'est de la connaissance.",
+    "Un parchemin indique : 'C'est en pratiquant qu'on progresse'",
+    "Tu decouvres une rune brillante... elle dit 'XP +100' (je plaisante)",
+    "Dedans : une petite carte de tous les mondes que tu exploreras.",
+    "Une piece d'or ! Attends... c'est un jeton de vocabulaire.",
+    "Tu as trouve un ancien parchemin de grammaire.",
+    "Le coffre contient... de la motivation ! +10 volonte.",
+    "Dedans tu trouves une note : 'Tu t'en sors tres bien !'",
+  ],
 };
 
 const LAMP_MESSAGES = {
@@ -265,6 +296,12 @@ const LAMP_MESSAGES = {
     "Una luce soffusa illumina un testo antico... illeggibile.",
     "La luce danza come piccole scintille.",
     "Senti un caldo bagliore di incoraggiamento.",
+  ],
+  fr: [
+    "La lampe vacille doucement. L'endroit semble accueillant.",
+    "Une lueur douce eclaire un texte ancien... illisible.",
+    "La lumiere danse comme de petites etincelles.",
+    "Tu ressens une douce lueur d'encouragement.",
   ],
 };
 
@@ -287,6 +324,12 @@ const PLANT_MESSAGES = {
     "Questa pianta è qui da più tempo di quanto chiunque ricordi.",
     "Un piccolo fiore sta sbocciando. Che bello!",
   ],
+  fr: [
+    "Une petite plante heureuse. Elle semble aimer cet endroit.",
+    "Les feuilles frissonnent doucement quand tu passes.",
+    "Cette plante est ici depuis plus longtemps que personne ne s'en souvient.",
+    "Une petite fleur est en train d'eclore. Comme c'est joli !",
+  ],
 };
 
 const TABLE_MESSAGES = {
@@ -307,6 +350,12 @@ const TABLE_MESSAGES = {
     "Il tavolo porta i segni di anni di sessioni di studio.",
     "Libri e fogli sono sparsi sulla superficie.",
     "Un rompicapo a metà è appoggiato sul tavolo.",
+  ],
+  fr: [
+    "Une table robuste. Quelqu'un a laisse des notes sur les conjugaisons.",
+    "La table porte des marques de nombreuses sessions d'etude.",
+    "Des livres et papiers sont eparpilles sur la surface.",
+    "Un puzzle a moitie termine est pose sur la table.",
   ],
 };
 
@@ -572,6 +621,7 @@ function generateWorld(seed) {
     en: pick(rng, OUTDOOR_NAMES.en),
     es: pick(rng, OUTDOOR_NAMES.es),
     it: pick(rng, OUTDOOR_NAMES.it),
+    fr: pick(rng, OUTDOOR_NAMES.fr),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -584,6 +634,7 @@ function generateWorld(seed) {
     en: pick(rng, roomType1.names.en),
     es: pick(rng, roomType1.names.es),
     it: pick(rng, roomType1.names.it),
+    fr: pick(rng, roomType1.names.fr),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
@@ -591,6 +642,7 @@ function generateWorld(seed) {
     en: pick(rng, roomType2.names.en),
     es: pick(rng, roomType2.names.es),
     it: pick(rng, roomType2.names.it),
+    fr: pick(rng, roomType2.names.fr),
   };
 
   // Build rooms object
@@ -643,6 +695,7 @@ function generateWorld(seed) {
       en: shuffle(rng, msgs.en),
       es: shuffle(rng, msgs.es),
       it: shuffle(rng, msgs.it || msgs.en),
+      fr: shuffle(rng, msgs.fr || msgs.en),
     };
   }
 

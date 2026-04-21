@@ -131,6 +131,18 @@ const OBJECT_SEARCH_TEST_COPY = {
     nothingFound: "Niente di utile qui.",
     continueSearching: "Continua a cercare",
   },
+  fr: {
+    intro: (itemName) =>
+      `J'ai besoin de ${itemName}. Fouille les objets dans n'importe quelle salle de cette carte. Chacun cache un objet. Rapporte-moi le bon.`,
+    wrongItem: (wrongName, correctName) =>
+      `C'est ${wrongName}. J'ai encore besoin de ${correctName}. Continue a verifier les objets.`,
+    success: (itemName) => `Parfait. ${itemName} est exactement ce qu'il me fallait.`,
+    chooseItem: "Choisis un objet a donner :",
+    foundItem: (itemName) => `Trouve : ${itemName}`,
+    alreadyChecked: "Tu as deja verifie cet objet.",
+    nothingFound: "Rien d'utile ici.",
+    continueSearching: "Continuer a chercher",
+  },
 };
 
 const QUEST_LOG_COPY = {
@@ -188,6 +200,24 @@ const QUEST_LOG_COPY = {
     choiceTask: (npcName) => `Parla con ${npcName} e scegli una risposta.`,
     speechTask: (npcName) => `Parla con ${npcName} e rispondi con la tua voce.`,
     continueTask: (npcName) => `Parla con ${npcName} per continuare.`,
+  },
+  fr: {
+    title: "Journal de quetes",
+    button: "Journal de quetes",
+    currentTask: "Tache actuelle",
+    progress: (done, total) => `Progres : ${done}/${total}`,
+    complete: "Quete terminee ! Beau travail.",
+    defaultTask: "Continue a explorer et parle au prochain personnage.",
+    startObjectSearch: (npcName, itemName) =>
+      `Parle a ${npcName} pour commencer la recherche de ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Fouille les objets examinables dans n'importe quelle salle pour trouver ${itemName}. Chaque objet cache un element.`,
+    returnItem: (itemName, npcName) => `Rapporte ${itemName} a ${npcName}.`,
+    gatherSearch: (itemName) => `Cherche ${itemName} dans cette zone.`,
+    gatherHint: (hint) => `Indice : ${hint}`,
+    choiceTask: (npcName) => `Parle a ${npcName} et choisis une reponse.`,
+    speechTask: (npcName) => `Parle a ${npcName} et reponds avec ta voix.`,
+    continueTask: (npcName) => `Parle a ${npcName} pour continuer.`,
   },
 };
 
@@ -1553,6 +1583,47 @@ const UI_TEXT = {
     undoTranslation: "Annulla traduzione",
     chooseCorrect: "Scegli l'opzione corretta.",
   },
+  fr: {
+    talkHint: "Appuie sur ESPACE ou touche pour parler",
+    correct: "Correct !",
+    incorrect: "Reessaie !",
+    completed: "Felicitations ! Tu as repondu correctement a toutes les questions !",
+    playAgain: "Rejouer",
+    back: "Retour",
+    progress: "Progres",
+    answeredOf: "sur",
+    moveHint: "Fleches ou WASD pour bouger",
+    touchMove: "Touche pour bouger, touche un PNJ pour parler",
+    chooseScenario: "Choisis un scenario",
+    scenario: "Scenario",
+    newWorld: "Nouveau monde",
+    quest: "Quete",
+    lockedNpc: "Tu devrais commencer par",
+    response: "Reponse",
+    micStart: "Demarrer le micro",
+    micStop: "Arreter le micro",
+    heardYou: "J'ai entendu",
+    speechUnavailable: "Voix indisponible dans ce navigateur",
+    noSpeechMatch: "Je n'ai pas compris. Reessaie.",
+    continue: "Continuer",
+    skip: "Passer",
+    loadingTutorialScene: "Chargement de la scene tutoriel...",
+    loadingGeneratingGame: "Generation de ton jeu...",
+    enableMusic: "Activer la musique",
+    disableMusic: "Desactiver la musique",
+    musicOn: "Musique activee",
+    musicOff: "Musique desactivee",
+    help: "Aide",
+    inventory: "Inventaire",
+    noItems: "Aucun objet.",
+    dropItem: "Jeter",
+    wrongItem: "le mauvais objet",
+    speechContinue: "Je comprends. Continuons.",
+    thinking: "Reflexion...",
+    translateText: "Traduire le texte",
+    undoTranslation: "Annuler la traduction",
+    chooseCorrect: "Choisis la bonne option.",
+  },
 };
 
 const SCENARIO_EMOJIS = {
@@ -1590,6 +1661,16 @@ const GAME_LOADING_MESSAGES = {
     "Preparando i puzzle linguistici...",
     "Ambientando la scena...",
     "Creando la tua avventura...",
+  ],
+  fr: [
+    "Construction de ton monde...",
+    "Placement des PNJ...",
+    "Ecriture des dialogues de quete...",
+    "Generation des defis de vocabulaire...",
+    "Conception de la carte...",
+    "Preparation des enigmes linguistiques...",
+    "Mise en place de la scene...",
+    "Creation de ton aventure...",
   ],
 };
 

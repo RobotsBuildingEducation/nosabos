@@ -67,9 +67,9 @@ const CEFR_TEXT_COLORS = {
 
 // Module type labels
 const MODULE_LABELS = {
-  flashcard: { en: "Flashcard", es: "Tarjeta", it: "Scheda" },
-  vocabulary: { en: "Vocabulary", es: "Vocabulario", it: "Vocabolario" },
-  grammar: { en: "Grammar", es: "Gramática", it: "Grammatica" },
+  flashcard: { en: "Flashcard", es: "Tarjeta", it: "Scheda", fr: "Carte" },
+  vocabulary: { en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire" },
+  grammar: { en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire" },
 };
 
 export default function NotesDrawer({
@@ -96,21 +96,53 @@ export default function NotesDrawer({
   }, [notes, targetLang]);
 
   const drawerTitle =
-    lang === "it" ? "Le mie note" : lang === "es" ? "Mis Notas" : "My Notes";
+    lang === "fr"
+      ? "Mes notes"
+      : lang === "it"
+      ? "Le mie note"
+      : lang === "es"
+      ? "Mis Notas"
+      : "My Notes";
   const emptyMessage =
-    lang === "it"
+    lang === "fr"
+      ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
+      : lang === "it"
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
       : lang === "es"
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
   const clearAllLabel =
-    lang === "it" ? "Cancella tutto" : lang === "es" ? "Borrar todo" : "Clear all";
+    lang === "fr"
+      ? "Tout effacer"
+      : lang === "it"
+      ? "Cancella tutto"
+      : lang === "es"
+      ? "Borrar todo"
+      : "Clear all";
   const summaryLabel =
-    lang === "it" ? "Riassunto" : lang === "es" ? "Resumen" : "Summary";
+    lang === "fr"
+      ? "Resume"
+      : lang === "it"
+      ? "Riassunto"
+      : lang === "es"
+      ? "Resumen"
+      : "Summary";
   const lessonLabel =
-    lang === "it" ? "Lezione" : lang === "es" ? "Lección" : "Lesson";
+    lang === "fr"
+      ? "Lecon"
+      : lang === "it"
+      ? "Lezione"
+      : lang === "es"
+      ? "Lección"
+      : "Lesson";
   const noNotesLabel =
-    lang === "it" ? "Nessuna nota" : lang === "es" ? "Sin notas" : "No notes";
+    lang === "fr"
+      ? "Aucune note"
+      : lang === "it"
+      ? "Nessuna nota"
+      : lang === "es"
+      ? "Sin notas"
+      : "No notes";
   const noteUi = useMemo(
     () =>
       isLightTheme

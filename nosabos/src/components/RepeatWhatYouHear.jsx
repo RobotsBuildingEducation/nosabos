@@ -249,22 +249,35 @@ export default function RepeatWhatYouHear({
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
       return;
+    const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      isSpanishUI
+      isFrenchUI
+        ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
+        : isSpanishUI
         ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
         : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
       sourceSentence
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Phrase prononcee : ${sourceSentence}`
+          : isSpanishUI
           ? `Frase pronunciada: ${sourceSentence}`
           : `Spoken sentence: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
+      hint
+        ? isFrenchUI
+          ? `Indice : ${hint}`
+          : isSpanishUI
+          ? `Pista: ${hint}`
+          : `Hint: ${hint}`
+        : null,
     ].filter(Boolean);
     onAskAssistant(promptLines.join("\n"));
   }, [

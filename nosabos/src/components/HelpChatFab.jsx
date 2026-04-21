@@ -109,7 +109,8 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it) {
+function supportCopy(lang, en, es, it, fr) {
+  if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
   return en;
@@ -260,81 +261,127 @@ const HelpChatFab = forwardRef(
     const ui = translations[uiLang] || translations.en;
     const helpUi = useMemo(
       () => ({
-        noMessagesTitle: supportCopy(uiLang, "No messages", "Sin mensajes", "Nessun messaggio"),
+        noMessagesTitle: supportCopy(
+          uiLang,
+          "No messages",
+          "Sin mensajes",
+          "Nessun messaggio",
+          "Aucun message",
+        ),
         noMessagesDesc: supportCopy(
           uiLang,
           "No messages to save.",
           "No hay mensajes para guardar.",
           "Non ci sono messaggi da salvare.",
+          "Aucun message a enregistrer.",
         ),
-        savedChatTitle: supportCopy(uiLang, "Saved chat", "Chat guardado", "Chat salvata"),
-        chatSavedTitle: supportCopy(uiLang, "Chat saved", "Chat guardado", "Chat salvata"),
-        chatDeletedTitle: supportCopy(uiLang, "Chat deleted", "Chat eliminado", "Chat eliminata"),
+        savedChatTitle: supportCopy(
+          uiLang,
+          "Saved chat",
+          "Chat guardado",
+          "Chat salvata",
+          "Chat enregistre",
+        ),
+        chatSavedTitle: supportCopy(
+          uiLang,
+          "Chat saved",
+          "Chat guardado",
+          "Chat salvata",
+          "Chat enregistre",
+        ),
+        chatDeletedTitle: supportCopy(
+          uiLang,
+          "Chat deleted",
+          "Chat eliminado",
+          "Chat eliminata",
+          "Chat supprime",
+        ),
         requestFailed: supportCopy(
           uiLang,
           "Sorry, I couldn’t complete that request. Please try again.",
           "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente.",
           "Mi dispiace, non sono riuscito a completare la richiesta. Riprova.",
+          "Desole, je n'ai pas pu terminer cette demande. Reessaie.",
         ),
-        chatErrorTitle: supportCopy(uiLang, "Chat error", "Error de chat", "Errore chat"),
+        chatErrorTitle: supportCopy(
+          uiLang,
+          "Chat error",
+          "Error de chat",
+          "Errore chat",
+          "Erreur de chat",
+        ),
         connectionErrorTitle: supportCopy(
           uiLang,
           "Connection error",
           "Error de conexión",
           "Errore di connessione",
+          "Erreur de connexion",
         ),
-        yourChats: supportCopy(uiLang, "Your chats", "Tus chats", "Le tue chat"),
+        yourChats: supportCopy(
+          uiLang,
+          "Your chats",
+          "Tus chats",
+          "Le tue chat",
+          "Tes chats",
+        ),
         noSavedChats: supportCopy(
           uiLang,
           "No saved chats",
           "No hay chats guardados",
           "Nessuna chat salvata",
+          "Aucun chat enregistre",
         ),
-        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina"),
+        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina", "Supprimer"),
         morphemeMode: supportCopy(
           uiLang,
           "Morpheme mode",
           "Modo morfemas",
           "Modalità morfemi",
+          "Mode morphemes",
         ),
         breakDownWords: supportCopy(
           uiLang,
           "Break down words",
           "Desglosa palabras",
           "Scomponi le parole",
+          "Decomposer les mots",
         ),
-        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat"),
-        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto"),
-        menu: supportCopy(uiLang, "Menu", "Menú", "Menu"),
-        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi"),
-        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat"),
+        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat", "Nouveau chat"),
+        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto", "Aide"),
+        menu: supportCopy(uiLang, "Menu", "Menú", "Menu", "Menu"),
+        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi", "Morphemes"),
+        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat", "Enregistrer le chat"),
         emptyPrompt: supportCopy(
           uiLang,
           "What do you want to learn today?",
           "¿Qué quieres aprender hoy?",
           "Che cosa vuoi imparare oggi?",
+          "Qu'est-ce que tu veux apprendre aujourd'hui ?",
         ),
         stopVoiceChat: supportCopy(
           uiLang,
           "Stop voice chat",
           "Detener chat de voz",
           "Interrompi chat vocale",
+          "Arreter le chat vocal",
         ),
         startVoiceChat: supportCopy(
           uiLang,
           "Start voice chat",
           "Iniciar chat de voz",
           "Avvia chat vocale",
+          "Demarrer le chat vocal",
         ),
-        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci"),
+        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci", "Lire"),
         askPlaceholder: supportCopy(
           uiLang,
           "Ask about this lesson...",
           "Pregunta sobre esta lección...",
           "Chiedi qualcosa su questa lezione...",
+          "Pose une question sur cette lecon...",
         ),
-        send: supportCopy(uiLang, "Send", "Enviar", "Invia"),
-        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma"),
+        send: supportCopy(uiLang, "Send", "Enviar", "Invia", "Envoyer"),
+        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma", "Arreter"),
       }),
       [uiLang],
     );
@@ -1777,6 +1824,17 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               bg="white"
               color="blue"
               boxShadow="0 4px 0 blue"
+              _hover={{
+                bg: "rgba(255, 255, 255, 0.92)",
+                color: "blue.500",
+                boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
+              }}
+              _active={{
+                bg: "rgba(255, 255, 255, 0.78)",
+                color: "blue.600",
+                boxShadow: "none",
+                transform: "translateY(4px)",
+              }}
               size="lg"
               position="fixed"
               bottom={{ base: "4", md: "4" }}

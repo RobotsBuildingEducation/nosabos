@@ -185,7 +185,8 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it) {
+function supportCopy(lang, en, es, it, fr) {
+  if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
   return en;
@@ -193,7 +194,7 @@ function supportCopy(lang, en, es, it) {
 
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
-    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare");
+    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare", "Pret a renouveler");
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
@@ -204,9 +205,10 @@ function formatRemaining(ms, lang) {
       `${h}h ${m}m left`,
       `${h}h ${m}m restantes`,
       `${h}h ${m}m rimanenti`,
+      `${h}h ${m}m restantes`,
     );
   }
-  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`);
+  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`, `${m}m restantes`);
 }
 
 export default function RealWorldTasksModal({
@@ -366,6 +368,7 @@ export default function RealWorldTasksModal({
           "Could not generate tasks. Please try again.",
           "No se pudieron generar las tareas. Intenta de nuevo.",
           "Impossibile generare le attività. Riprova.",
+          "Impossible de generer les taches. Reessaie.",
         ),
       );
     } finally {
@@ -434,6 +437,7 @@ export default function RealWorldTasksModal({
           "Failed to award reward",
           "No se pudo otorgar la recompensa",
           "Impossibile assegnare la ricompensa",
+          "Impossible d'attribuer la recompense",
         ),
         status: "error",
         duration: 3000,
@@ -461,31 +465,37 @@ export default function RealWorldTasksModal({
     "Immersion Practice",
     "Práctica de inmersión",
     "Pratica di immersione",
+    "Pratique d'immersion",
   );
   const subtitle = supportCopy(
     lang,
     "3 tasks to use your language outside the app",
     "3 tareas para usar tu idioma fuera de la app",
     "3 attività per usare la lingua fuori dall'app",
+    "3 taches pour utiliser ta langue hors de l'app",
   );
   const progressLabel = supportCopy(
     lang,
     "Next batch in",
     "Próximo lote en",
     "Prossimo gruppo tra",
+    "Prochaine serie dans",
   );
   const generatingLabel = supportCopy(
     lang,
     "Creating tasks...",
     "Creando tareas...",
     "Creazione attività...",
+    "Creation des taches...",
   );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
     return options[Math.floor(Math.random() * options.length)];
   }, [isGenerating]);
   const claimLabel =
-    lang === "it"
+    lang === "fr"
+      ? `Reclamer +${REAL_WORLD_TASKS_REWARD_XP} XP`
+      : lang === "it"
       ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
       : lang === "es"
         ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
@@ -591,7 +601,13 @@ export default function RealWorldTasksModal({
                   colorScheme="cyan"
                   onClick={triggerGeneration}
                 >
-                  {supportCopy(lang, "Try again", "Reintentar", "Riprova")}
+                  {supportCopy(
+                    lang,
+                    "Try again",
+                    "Reintentar",
+                    "Riprova",
+                    "Reessayer",
+                  )}
                 </Button>
               </Flex>
             ) : tasks.length === 0 ? (
@@ -602,6 +618,7 @@ export default function RealWorldTasksModal({
                     "No tasks yet.",
                     "No hay tareas todavía.",
                     "Ancora nessuna attività.",
+                    "Aucune tache pour l'instant.",
                   )}
                 </Text>
               </Flex>

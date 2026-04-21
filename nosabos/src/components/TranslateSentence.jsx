@@ -221,23 +221,38 @@ export default function TranslateSentence({
 
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
+    const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      isSpanishUI
+      isFrenchUI
+        ? "Traduis cette phrase avec la banque de mots fournie."
+        : isSpanishUI
         ? "Traduce esta oración usando el banco de palabras proporcionado."
         : "Translate this sentence using the provided word bank.",
       sourceSentence
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Phrase a traduire : ${sourceSentence}`
+          : isSpanishUI
           ? `Oración para traducir: ${sourceSentence}`
           : `Sentence to translate: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isSpanishUI
+        ? isFrenchUI
+          ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
-      isSpanishUI
+      hint
+        ? isFrenchUI
+          ? `Indice : ${hint}`
+          : isSpanishUI
+          ? `Pista: ${hint}`
+          : `Hint: ${hint}`
+        : null,
+      isFrenchUI
+        ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
+        : isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
         : "Respond with the correct translation assembled from the word bank options.",
     ].filter(Boolean);

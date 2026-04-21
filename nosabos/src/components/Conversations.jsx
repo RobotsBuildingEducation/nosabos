@@ -873,15 +873,29 @@ function ArchiveTextAnimation({ animation }) {
 function uiStateLabel(uiState, uiLang) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   if (uiState === "speaking")
-    return lang === "es" ? "Hablando" : lang === "it" ? "Parlando" : "Speaking";
+    return lang === "fr"
+      ? "Parle"
+      : lang === "es"
+      ? "Hablando"
+      : lang === "it"
+      ? "Parlando"
+      : "Speaking";
   if (uiState === "listening")
-    return lang === "es"
+    return lang === "fr"
+      ? "Ecoute"
+      : lang === "es"
       ? "Escuchando"
       : lang === "it"
         ? "Ascoltando"
         : "Listening";
   if (uiState === "thinking")
-    return lang === "es" ? "Pensando" : lang === "it" ? "Pensando" : "Thinking";
+    return lang === "fr"
+      ? "Reflechit"
+      : lang === "es"
+      ? "Pensando"
+      : lang === "it"
+      ? "Pensando"
+      : "Thinking";
   return "";
 }
 
@@ -1242,7 +1256,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const topicText = fullText.trim();
       if (topicText) {
         setCurrentGoal({
-          text: { en: topicText, es: topicText, it: topicText },
+          text: { en: topicText, es: topicText, it: topicText, fr: topicText },
           completed: false,
         });
       } else {
@@ -1314,6 +1328,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   const normalizeSupportLang = (raw) => {
     const code = String(raw || "").toLowerCase();
+    if (code === "fr" || code.startsWith("fr-") || code === "french" || code === "francais" || code === "français")
+      return "fr";
     if (code === "it" || code.startsWith("it-") || code === "italian" || code === "italiano")
       return "it";
     if (code === "es" || code.startsWith("es-") || code === "spanish")

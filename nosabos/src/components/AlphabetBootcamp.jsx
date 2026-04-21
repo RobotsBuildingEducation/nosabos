@@ -41,6 +41,11 @@ import {
   translateAlphabetMeaningToItalian,
   withItalianAlphabetSupport,
 } from "../data/alphabetItalianLocalizer";
+import {
+  translateAlphabetInstructionToFrench,
+  translateAlphabetMeaningToFrench,
+  withFrenchAlphabetSupport,
+} from "../data/alphabetFrenchLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -160,10 +165,28 @@ const LANGUAGE_NAMES_IT = {
   yua: "Maya yucateco",
 };
 
+const LANGUAGE_NAMES_FR = {
+  ru: "Russe",
+  ja: "Japonais",
+  en: "Anglais",
+  es: "Espagnol",
+  pt: "Portugais",
+  fr: "Francais",
+  it: "Italien",
+  nl: "Neerlandais",
+  de: "Allemand",
+  nah: "Nahuatl",
+  el: "Grec",
+  pl: "Polonais",
+  ga: "Irlandais",
+  yua: "Maya yucateque",
+};
+
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
   it: LANGUAGE_NAMES_IT,
+  fr: LANGUAGE_NAMES_FR,
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -200,6 +223,23 @@ const LANGUAGE_SCRIPTS_IT = {
   yua: "alfabeto latino",
 };
 
+const LANGUAGE_SCRIPTS_FR = {
+  ru: "alphabet cyrillique",
+  ja: "hiragana ou katakana",
+  en: "alphabet latin",
+  es: "alphabet latin",
+  pt: "alphabet latin",
+  fr: "alphabet latin",
+  it: "alphabet latin",
+  nl: "alphabet latin",
+  de: "alphabet latin",
+  nah: "alphabet latin",
+  el: "alphabet grec",
+  pl: "alphabet latin",
+  ga: "alphabet latin",
+  yua: "alphabet latin",
+};
+
 const LANGUAGE_SCRIPTS_BY_UI = {
   en: LANGUAGE_SCRIPTS,
   es: {
@@ -219,6 +259,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
     yua: "alfabeto latino",
   },
   it: LANGUAGE_SCRIPTS_IT,
+  fr: LANGUAGE_SCRIPTS_FR,
 };
 
 const ALPHABET_UI_TEXT = {
@@ -334,6 +375,44 @@ const ALPHABET_UI_TEXT = {
     collection: "Collezione",
     loadError: "Non siamo riusciti a caricare l'alfabeto. Riprova.",
   },
+  fr: {
+    vowel: "Voyelle",
+    consonant: "Consonne",
+    sign: "Signe",
+    practice: "Pratiquer",
+    playSound: "Lire le son",
+    playWord: "Lire le mot",
+    close: "Fermer",
+    sayThisWord: "Dis ce mot :",
+    grading: "Evaluation...",
+    nextWord: "Mot suivant",
+    tryAgain: "Reessaie",
+    back: "Retour",
+    connecting: "Connexion...",
+    stop: "Arreter",
+    record: "Enregistrer",
+    recordingErrorTitle: "Erreur d'enregistrement",
+    recordingErrorDescription: "Impossible d'enregistrer. Reessaie.",
+    gradingErrorTitle: "Erreur d'evaluation",
+    gradingErrorDescription: "Impossible d'evaluer ta reponse.",
+    speechUnsupportedTitle: "Voix non prise en charge",
+    speechUnsupportedDescription:
+      "Ton navigateur ne prend pas en charge la reconnaissance vocale.",
+    micDeniedTitle: "Micro refuse",
+    micDeniedDescription: "Autorise l'acces au micro pour enregistrer.",
+    generateWordErrorTitle: "Impossible de generer un nouveau mot",
+    level: "Niveau",
+    progress: "Progres",
+    alphabetHeadline: "Alphabet {language}",
+    alphabetSubhead:
+      "Commence par apprendre les lettres et les sons du {language}.",
+    note:
+      "Ensuite, passe au mode Parcours dans le menu pour explorer les lecons.",
+    complete: "Felicitations ! Tu as termine l'alphabet.",
+    startSkillTree: "Commencer l'arbre",
+    collection: "Collection",
+    loadError: "Impossible de charger l'alphabet. Reessaie.",
+  },
 };
 
 const uiText = (lang, key, params = {}) => {
@@ -365,7 +444,15 @@ const getLetterSound = (letter, uiLang) => {
       translateAlphabetInstructionToItalian(letter.soundEs || letter.sound)
     );
   }
-  if (uiLang === "es") return letter.soundEs || letter.sound;
+  if (uiLang === "fr") {
+    return (
+      letter.soundFr ||
+      translateAlphabetInstructionToFrench(letter.soundEs || letter.sound)
+    );
+  }
+  if (["es"].includes(uiLang)) {
+    return letter.soundEs || letter.sound;
+  }
   return letter.sound;
 };
 
@@ -376,21 +463,30 @@ const getLetterTip = (letter, uiLang) => {
       translateAlphabetInstructionToItalian(letter.tipEs || letter.tip)
     );
   }
-  if (uiLang === "es") return letter.tipEs || letter.tip;
+  if (uiLang === "fr") {
+    return (
+      letter.tipFr ||
+      translateAlphabetInstructionToFrench(letter.tipEs || letter.tip)
+    );
+  }
+  if (["es"].includes(uiLang)) {
+    return letter.tipEs || letter.tip;
+  }
   return letter.tip;
 };
 
 const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "", it: "" };
+  if (!meaning) return { en: "", es: "", it: "", fr: "" };
   if (typeof meaning === "string") {
-    return { en: meaning, es: meaning, it: meaning };
+    return { en: meaning, es: meaning, it: meaning, fr: meaning };
   }
 
   const en = meaning.en || meaning.es || "";
   const es = meaning.es || meaning.en || "";
   const it = translateAlphabetMeaningToItalian(meaning) || en || es;
+  const fr = translateAlphabetMeaningToFrench(meaning) || en || es;
 
-  return { en, es, it };
+  return { en, es, it, fr };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -895,7 +991,7 @@ function LetterCard({
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
       const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>"}
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -912,6 +1008,7 @@ function LetterCard({
           en: parsed.meaning_en || parsed.meaning || "",
           es: parsed.meaning_es || parsed.meaning || "",
           it: parsed.meaning_it || parsed.meaning || "",
+          fr: parsed.meaning_fr || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -1233,21 +1330,24 @@ function LetterCard({
   );
 }
 
+const withLocalizedAlphabetSupport = (letters) =>
+  withFrenchAlphabetSupport(withItalianAlphabetSupport(letters));
+
 const LANGUAGE_ALPHABETS = {
-  ru: withItalianAlphabetSupport(RUSSIAN_ALPHABET),
-  ja: withItalianAlphabetSupport(JAPANESE_ALPHABET),
-  en: withItalianAlphabetSupport(ENGLISH_ALPHABET),
-  es: withItalianAlphabetSupport(SPANISH_ALPHABET),
-  pt: withItalianAlphabetSupport(PORTUGUESE_ALPHABET),
-  fr: withItalianAlphabetSupport(FRENCH_ALPHABET),
-  it: withItalianAlphabetSupport(ITALIAN_ALPHABET),
-  nl: withItalianAlphabetSupport(DUTCH_ALPHABET),
-  de: withItalianAlphabetSupport(GERMAN_ALPHABET),
-  nah: withItalianAlphabetSupport(NAHUATL_ALPHABET),
-  el: withItalianAlphabetSupport(GREEK_ALPHABET),
-  pl: withItalianAlphabetSupport(POLISH_ALPHABET),
-  ga: withItalianAlphabetSupport(IRISH_ALPHABET),
-  yua: withItalianAlphabetSupport(YUCATEC_MAYA_ALPHABET),
+  ru: withLocalizedAlphabetSupport(RUSSIAN_ALPHABET),
+  ja: withLocalizedAlphabetSupport(JAPANESE_ALPHABET),
+  en: withLocalizedAlphabetSupport(ENGLISH_ALPHABET),
+  es: withLocalizedAlphabetSupport(SPANISH_ALPHABET),
+  pt: withLocalizedAlphabetSupport(PORTUGUESE_ALPHABET),
+  fr: withLocalizedAlphabetSupport(FRENCH_ALPHABET),
+  it: withLocalizedAlphabetSupport(ITALIAN_ALPHABET),
+  nl: withLocalizedAlphabetSupport(DUTCH_ALPHABET),
+  de: withLocalizedAlphabetSupport(GERMAN_ALPHABET),
+  nah: withLocalizedAlphabetSupport(NAHUATL_ALPHABET),
+  el: withLocalizedAlphabetSupport(GREEK_ALPHABET),
+  pl: withLocalizedAlphabetSupport(POLISH_ALPHABET),
+  ga: withLocalizedAlphabetSupport(IRISH_ALPHABET),
+  yua: withLocalizedAlphabetSupport(YUCATEC_MAYA_ALPHABET),
 };
 
 // Fisher-Yates shuffle

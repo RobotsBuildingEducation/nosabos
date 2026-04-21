@@ -155,7 +155,7 @@ const TIER_ORDER = { stable: 0, alpha: 1, beta: 2 };
 const SUPPORTED_LANGUAGE_CODES_SET = new Set(
   LANGUAGE_META.map((item) => item.value),
 );
-const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "it"];
+const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "it", "fr"];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 
 export const LANGUAGE_LOCALES = {
@@ -179,6 +179,7 @@ const SORT_LOCALES = {
   en: "en",
   es: "es",
   it: "it",
+  fr: "fr",
 };
 
 const normalizeCode = (raw) => String(raw || "").trim().toLowerCase();
@@ -268,7 +269,7 @@ function withTierTag(label, tier, ui = {}, uiLang = "en") {
   if (tier === "alpha") {
     const alphaLabel =
       ui.onboarding_language_tag_alpha ||
-      (uiLang === "es" || uiLang === "it" ? "alfa" : "alpha");
+      (["es", "it", "fr"].includes(uiLang) ? "alfa" : "alpha");
     return `${label} (${alphaLabel})`;
   }
   if (tier === "beta") {

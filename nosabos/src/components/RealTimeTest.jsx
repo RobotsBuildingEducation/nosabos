@@ -157,15 +157,29 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 function uiStateLabel(uiState, uiLang = "en") {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   if (uiState === "speaking")
-    return lang === "es" ? "Hablando" : lang === "it" ? "Parlando" : "Speaking";
+    return lang === "fr"
+      ? "Parle"
+      : lang === "es"
+      ? "Hablando"
+      : lang === "it"
+      ? "Parlando"
+      : "Speaking";
   if (uiState === "listening")
-    return lang === "es"
+    return lang === "fr"
+      ? "Ecoute"
+      : lang === "es"
       ? "Escuchando"
       : lang === "it"
         ? "Ascoltando"
         : "Listening";
   if (uiState === "thinking")
-    return lang === "es" ? "Pensando" : lang === "it" ? "Pensando" : "Thinking";
+    return lang === "fr"
+      ? "Reflechit"
+      : lang === "es"
+      ? "Pensando"
+      : lang === "it"
+      ? "Pensando"
+      : "Thinking";
   return "";
 }
 const isoNow = () => {
@@ -813,6 +827,8 @@ export default function RealTimeTest({
 
   const normalizeSupportLang = (raw) => {
     const code = String(raw || "").toLowerCase();
+    if (code === "fr" || code.startsWith("fr-") || code === "french" || code === "francais" || code === "français")
+      return "fr";
     if (code === "it" || code.startsWith("it-") || code === "italian" || code === "italiano")
       return "it";
     if (code === "es" || code.startsWith("es-") || code === "spanish")
@@ -838,11 +854,12 @@ export default function RealTimeTest({
       "{language}",
       translations[uiLang][`language_${secondaryPref}`],
     ) ||
-    (uiLang === "es"
-      ? "Mostrar traducción"
-      : uiLang === "it"
-        ? "Mostra traduzione"
-        : "Show translation");
+    ({
+      en: "Show translation",
+      es: "Mostrar traducción",
+      it: "Mostra traduzione",
+      fr: "Afficher la traduction",
+    }[uiLang] || "Show translation");
 
   /* ---------------------------
      Replay playback helpers
@@ -922,13 +939,19 @@ export default function RealTimeTest({
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it"].includes(t)) return t;
+    if (["en", "es", "it", "fr"].includes(t)) return t;
     return uiLang;
   })();
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
     translations[goalUiLang]?.ra_goal_label ||
-    (goalUiLang === "es" ? "Meta" : goalUiLang === "it" ? "Obiettivo" : "Goal");
+    (goalUiLang === "fr"
+      ? "Objectif"
+      : goalUiLang === "es"
+      ? "Meta"
+      : goalUiLang === "it"
+      ? "Obiettivo"
+      : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es"
@@ -938,7 +961,13 @@ export default function RealTimeTest({
         : "Goal completed!");
   const tGoalSkip =
     gtr?.ra_goal_skip ||
-    (goalUiLang === "es" ? "Saltar" : goalUiLang === "it" ? "Salta" : "Skip");
+    (goalUiLang === "fr"
+      ? "Passer"
+      : goalUiLang === "es"
+      ? "Saltar"
+      : goalUiLang === "it"
+      ? "Salta"
+      : "Skip");
   const tGoalCriteria = gtr?.ra_goal_criteria || "";
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
@@ -958,7 +987,7 @@ export default function RealTimeTest({
       supportLangRef.current || supportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
-    const needsBackfill = goalLang === "es" || goalLang === "it";
+    const needsBackfill = goalLang === "es" || goalLang === "it" || goalLang === "fr";
     const goal = currentGoal;
     if (!needsBackfill || !goal) return;
     if (goalLocalizationBusyRef.current) return;
@@ -1556,25 +1585,36 @@ export default function RealTimeTest({
       DEFAULT_SUPPORT_LANGUAGE,
     );
     const scenario =
-      goalLang === "es" ? "Di hola" : goalLang === "it" ? "Di' ciao" : "Say hello";
+      goalLang === "fr"
+        ? "Dis bonjour"
+        : goalLang === "es"
+        ? "Di hola"
+        : goalLang === "it"
+        ? "Di' ciao"
+        : "Say hello";
     const successCriteria =
       goalLang === "es"
         ? "El estudiante dice hola."
         : goalLang === "it"
           ? "Lo studente dice ciao."
+          : goalLang === "fr"
+            ? "L'apprenant dit bonjour."
           : "The learner says hello.";
     return {
       id: `goal_tutorial_${Date.now()}`,
       title_en: "Say hello",
       title_es: "Di hola",
       title_it: "Di' ciao",
+      title_fr: "Dis bonjour",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
       rubric_it: "Lo studente dice ciao.",
+      rubric_fr: "L'apprenant dit bonjour.",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
       successCriteria_it: "Lo studente dice ciao.",
+      successCriteria_fr: "L'apprenant dit bonjour.",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1906,6 +1946,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       it:
         translations.it.onboarding_challenge_default ||
         "Fai una richiesta cortese.",
+      fr:
+        translations.fr.onboarding_challenge_default ||
+        "Fais une demande polie.",
     };
   }
   async function ensureCurrentGoalSeed(npub, userData) {
@@ -1927,7 +1970,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it"].includes(t)) return t;
+    if (["en", "es", "it", "fr"].includes(t)) return t;
     return uiLang;
   }
   function goalTitleForUI(goal) {
@@ -1948,9 +1991,9 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     return (
       goal[`rubric_${gLang}`] ||
       goal[`successCriteria_${gLang}`] ||
+      goal.successCriteria ||
       goal.rubric_en ||
       goal.rubric_es ||
-      goal.successCriteria ||
       ""
     );
   }
@@ -2194,7 +2237,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     const gLang = goalUiLangCode();
     const uiLangName = getLanguagePromptName(gLang) || "English";
     const uiLangNativeName =
-      gLang === "es" ? "español" : gLang === "it" ? "italiano" : "inglés";
+      gLang === "fr"
+        ? "français"
+        : gLang === "es"
+        ? "español"
+        : gLang === "it"
+        ? "italiano"
+        : "inglés";
 
     const judgePrompt =
       targetLangRef.current === "es"

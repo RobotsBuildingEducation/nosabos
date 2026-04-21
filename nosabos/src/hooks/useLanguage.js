@@ -52,12 +52,44 @@ const italianTimezones = [
   "Europe/San_Marino",
 ];
 
+const frenchTimezones = [
+  "Europe/Paris",
+  "Europe/Monaco",
+  "America/Martinique",
+  "America/Guadeloupe",
+  "America/Cayenne",
+  "America/Miquelon",
+  "Indian/Reunion",
+  "Indian/Mayotte",
+  "Pacific/Noumea",
+  "Pacific/Tahiti",
+  "Pacific/Marquesas",
+  "Pacific/Wallis",
+  "Africa/Abidjan",
+  "Africa/Algiers",
+  "Africa/Bamako",
+  "Africa/Bangui",
+  "Africa/Brazzaville",
+  "Africa/Dakar",
+  "Africa/Douala",
+  "Africa/Kinshasa",
+  "Africa/Libreville",
+  "Africa/Lome",
+  "Africa/Ndjamena",
+  "Africa/Niamey",
+  "Africa/Porto-Novo",
+  "Africa/Tunis",
+];
+
 // Detect language based on timezone
 const detectLanguageFromTimezone = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (italianTimezones.includes(timezone)) {
       return "it";
+    }
+    if (frenchTimezones.includes(timezone)) {
+      return "fr";
     }
     if (spanishTimezones.includes(timezone)) {
       return "es";

@@ -94,7 +94,15 @@ export default function ProficiencyTestModal({
               color="white"
             >
               {tFn(lang, "proficiency_modal_already_know", {
-                lang: targetLangLabel || (lang === "it" ? "questa lingua" : lang === "es" ? "el idioma" : "the language"),
+                lang:
+                  targetLangLabel ||
+                  (lang === "fr"
+                    ? "cette langue"
+                    : lang === "it"
+                    ? "questa lingua"
+                    : lang === "es"
+                    ? "el idioma"
+                    : "the language"),
               })}
             </Text>
           </VStack>

@@ -29,17 +29,22 @@ export { REVIEW_WORLD_ID };
 export const MAP_CHOICES = [
   {
     id: REVIEW_WORLD_ID,
-    name: { en: "Generated World", es: "Mundo generado" },
+    name: {
+      en: "Generated World",
+      es: "Mundo generado",
+      it: "Mondo generato",
+      fr: "Monde genere",
+    },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato" },
-  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno" },
-  park: { en: "Park", es: "Parque", it: "Parco" },
-  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato", fr: "Monde genere" },
+  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno", fr: "Salon" },
+  park: { en: "Park", es: "Parque", it: "Parco", fr: "Parc" },
+  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto", fr: "Aeroport" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti", fr: "Place des salutations" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -393,11 +398,12 @@ function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
 
 function normalizeQuestions(questions, supportLang) {
   const basePrompt =
-    supportLang === "it"
-      ? "Scegli l'opzione corretta."
-      : supportLang === "es"
-        ? "Elige la opción correcta."
-        : "Choose the correct option.";
+    {
+      en: "Choose the correct option.",
+      es: "Elige la opción correcta.",
+      it: "Scegli l'opzione corretta.",
+      fr: "Choisis la bonne option.",
+    }[supportLang] || "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
     .slice(0, 20)
@@ -1681,21 +1687,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   home: [
     {
       slug: "kitchen",
-      name: { en: "Kitchen", es: "Cocina", it: "Cucina" },
+      name: { en: "Kitchen", es: "Cocina", it: "Cucina", fr: "Cuisine" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "shelf"],
     },
     {
       slug: "study",
-      name: { en: "Study", es: "Estudio", it: "Studio" },
+      name: { en: "Study", es: "Estudio", it: "Studio", fr: "Bureau" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["bookshelf", "desk", "lamp"],
     },
     {
       slug: "garden-patio",
-      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino" },
+      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino", fr: "Patio du jardin" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "table"],
@@ -1704,21 +1710,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   market: [
     {
       slug: "prep-room",
-      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione" },
+      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione", fr: "Salle de preparation" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "fridge"],
     },
     {
       slug: "pantry",
-      name: { en: "Pantry", es: "Despensa", it: "Dispensa" },
+      name: { en: "Pantry", es: "Despensa", it: "Dispensa", fr: "Garde-manger" },
       markerType: "building",
       shape: "offset",
       objects: ["shelf", "shelf", "counter"],
     },
     {
       slug: "cafe-patio",
-      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè" },
+      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè", fr: "Patio du cafe" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["table", "bench", "plant"],
@@ -1727,21 +1733,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   library: [
     {
       slug: "archive-wing",
-      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio" },
+      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio", fr: "Aile des archives" },
       markerType: "doorway",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "lamp"],
     },
     {
       slug: "reading-nook",
-      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura" },
+      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura", fr: "Coin lecture" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["table", "bench", "lamp"],
     },
     {
       slug: "front-office",
-      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale" },
+      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale", fr: "Accueil" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "bookshelf", "plant"],
@@ -1750,21 +1756,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   transit: [
     {
       slug: "ticket-office",
-      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria" },
+      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria", fr: "Billetterie" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "register", "sign"],
     },
     {
       slug: "gate-lounge",
-      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco" },
+      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco", fr: "Salon d'embarquement" },
       markerType: "gate",
       shape: "courtyard",
       objects: ["bench", "sign", "suitcaseStack"],
     },
     {
       slug: "travel-desk",
-      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi" },
+      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi", fr: "Comptoir voyage" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "plant", "sign"],
@@ -1773,21 +1779,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   nature: [
     {
       slug: "garden-pavilion",
-      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino" },
+      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino", fr: "Pavillon du jardin" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
     },
     {
       slug: "glasshouse",
-      name: { en: "Glasshouse", es: "Invernadero", it: "Serra" },
+      name: { en: "Glasshouse", es: "Invernadero", it: "Serra", fr: "Serre" },
       markerType: "greenhouse",
       shape: "offset",
       objects: ["plant", "plant", "table"],
     },
     {
       slug: "ranger-station",
-      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi" },
+      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi", fr: "Poste du garde" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "shelf", "bench"],
@@ -1796,21 +1802,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   civic: [
     {
       slug: "council-room",
-      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio" },
+      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio", fr: "Salle du conseil" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "table", "lamp"],
     },
     {
       slug: "records-room",
-      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi" },
+      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi", fr: "Salle des dossiers" },
       markerType: "building",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "desk"],
     },
     {
       slug: "courtyard-pavilion",
-      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile" },
+      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile", fr: "Pavillon de la cour" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
@@ -1819,21 +1825,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   lab: [
     {
       slug: "prep-lab",
-      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione" },
+      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione", fr: "Labo de preparation" },
       markerType: "doorway",
       shape: "annex",
       objects: ["freezer", "table", "lamp"],
     },
     {
       slug: "analysis-booth",
-      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi" },
+      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi", fr: "Cabine d'analyse" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "shelf", "lamp"],
     },
     {
       slug: "equipment-store",
-      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature" },
+      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature", fr: "Reserve d'equipement" },
       markerType: "building",
       shape: "alcove",
       objects: ["shelf", "freezer", "desk"],
@@ -1842,21 +1848,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   festival: [
     {
       slug: "performance-stage",
-      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni" },
+      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni", fr: "Scene" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["speaker", "speaker", "balloons"],
     },
     {
       slug: "food-stall",
-      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo" },
+      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo", fr: "Stand de nourriture" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "table", "sign"],
     },
     {
       slug: "craft-tent",
-      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa" },
+      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa", fr: "Tente d'artisanat" },
       markerType: "pavilion",
       shape: "annex",
       objects: ["table", "bench", "balloons"],
@@ -2850,7 +2856,7 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it") };
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr") };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2980,6 +2986,7 @@ async function fallbackScenario(
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
       it: getMapName(mapId, "it"),
+      fr: getMapName(mapId, "fr"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3279,6 +3286,7 @@ function normalizeScenario({
         en: String(raw?.name?.en || getMapName(mapId, "en")),
         es: String(raw?.name?.es || getMapName(mapId, "es")),
         it: String(raw?.name?.it || getMapName(mapId, "it")),
+        fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
       },
       tileSize: 32,
       mapWidth,
@@ -3337,6 +3345,7 @@ function normalizeScenario({
     en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
     es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
     it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
+    fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
   };
   hubMap.name = processedName;
 
