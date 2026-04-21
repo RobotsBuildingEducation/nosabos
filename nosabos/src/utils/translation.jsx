@@ -168,8 +168,7 @@ export const translations = {
       "In free mode, use the Connect button to practice conversation.",
     ra_toast_translation_failed_title: "Translation failed",
     ra_toast_no_audio_replay: "No audio available to replay.",
-    ra_auto_stop_desc:
-      "The session closed automatically after 15 seconds.",
+    ra_auto_stop_desc: "The session closed automatically after 15 seconds.",
     ra_delete_confirm:
       "Delete all saved turns for this account? This cannot be undone.",
     ra_toast_no_account_title: "No account",
@@ -547,16 +546,21 @@ export const translations = {
     story_roleplay_completed: "Role play completed!",
     story_sentences: "sentences",
     proficiency_modal_already_know: "Already know some {lang}?",
-    proficiency_modal_description: "We can have a quick conversation to figure out your level and place you in the right spot.",
-    proficiency_modal_exchange_info: "A short 10-exchange chat — we'll assess your pronunciation, grammar, and confidence.",
+    proficiency_modal_description:
+      "We can have a quick conversation to figure out your level and place you in the right spot.",
+    proficiency_modal_exchange_info:
+      "A short 10-exchange chat — we'll assess your pronunciation, grammar, and confidence.",
     proficiency_modal_take_test: "Let's do it",
     proficiency_modal_skip: "No thanks",
-    proficiency_modal_skip_note: '"No thanks" will start you from the beginner level.',
+    proficiency_modal_skip_note:
+      '"No thanks" will start you from the beginner level.',
     proficiency_test_title: "Proficiency Test",
-    proficiency_test_instruction: "Speak naturally — we're assessing your level",
+    proficiency_test_instruction:
+      "Speak naturally — we're assessing your level",
     proficiency_test_rubric: "Grading rubric",
     proficiency_test_evaluating: "Evaluating",
-    proficiency_test_analyzing: "Analyzing your conversation to determine your level...",
+    proficiency_test_analyzing:
+      "Analyzing your conversation to determine your level...",
     proficiency_test_assessor: "Assessor",
     proficiency_test_start: "Start",
     proficiency_test_you: "You",
@@ -566,27 +570,38 @@ export const translations = {
     proficiency_test_breakdown: "Breakdown",
     proficiency_test_composite: "Composite score",
     proficiency_test_level_label: "Level {level}",
-    proficiency_test_eval_error: "There was a problem with automatic evaluation. You can try again.",
+    proficiency_test_eval_error:
+      "There was a problem with automatic evaluation. You can try again.",
     proficiency_test_return_app: "Return to app",
-    proficiency_test_rubric_desc: "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability.",
+    proficiency_test_rubric_desc:
+      "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability.",
     proficiency_test_what_scored: "What gets scored",
-    proficiency_test_what_scored_desc: "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension.",
+    proficiency_test_what_scored_desc:
+      "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension.",
     proficiency_test_scoring_heading: "Scoring mechanism",
-    proficiency_test_scoring_1: "Comprehension and fluency are weighted more heavily than confidence.",
-    proficiency_test_scoring_2: "Very short or low-substance responses cap the result at Pre-A1/A1.",
-    proficiency_test_scoring_3: "Frequent filler or \"I don't know\" responses automatically lower the placement.",
-    proficiency_test_scoring_4: "Final placement never exceeds what your conversation evidence supports.",
+    proficiency_test_scoring_1:
+      "Comprehension and fluency are weighted more heavily than confidence.",
+    proficiency_test_scoring_2:
+      "Very short or low-substance responses cap the result at Pre-A1/A1.",
+    proficiency_test_scoring_3:
+      'Frequent filler or "I don\'t know" responses automatically lower the placement.',
+    proficiency_test_scoring_4:
+      "Final placement never exceeds what your conversation evidence supports.",
     proficiency_test_got_it: "Got it",
     proficiency_test_exit_title: "Exit proficiency test?",
-    proficiency_test_exit_desc: "Your progress won't be saved. You can retake the test later from settings.",
+    proficiency_test_exit_desc:
+      "Your progress won't be saved. You can retake the test later from settings.",
     proficiency_test_yes_exit: "Yes, exit",
     proficiency_test_continue: "Continue test",
-    proficiency_test_assess_fallback: "Assessment complete. Review your results below.",
-    proficiency_test_assess_error: "Assessment error. Conservatively placing you at Pre-A1/A0.",
+    proficiency_test_assess_fallback:
+      "Assessment complete. Review your results below.",
+    proficiency_test_assess_error:
+      "Assessment error. Conservatively placing you at Pre-A1/A0.",
     proficiency_speaking: "Speaking",
     proficiency_listening: "Listening",
     proficiency_thinking: "Thinking",
-    app_install_subtitle: "For the best experience, install the app on your device.",
+    app_install_subtitle:
+      "For the best experience, install the app on your device.",
     app_install_step6: "Copy secret key to sign in.",
     app_install_got_it: "Got it!",
     app_install_copied: "Copied!",
@@ -1007,22 +1022,29 @@ export const translations = {
     repeat_hear_heading: "Toca lo que escuchas",
     repeat_hear_instruction: "Escucha y toca las palabras en orden",
     translate_sentence_heading: "Traduce esta frase",
-    translate_sentence_instruction: "Toca las palabras para formar tu respuesta",
+    translate_sentence_instruction:
+      "Toca las palabras para formar tu respuesta",
     story_skip_unavailable_title: "No disponible",
-    story_skip_unavailable_desc: "Solo puedes saltar cuando estás en un modo de lección.",
+    story_skip_unavailable_desc:
+      "Solo puedes saltar cuando estás en un modo de lección.",
     story_roleplay_completed: "¡Juego de roles completado!",
     story_sentences: "oraciones",
     proficiency_modal_already_know: "¿Ya conoces algo de {lang}?",
-    proficiency_modal_description: "Podemos tener una conversación rápida para determinar tu nivel y colocarte en el lugar correcto.",
-    proficiency_modal_exchange_info: "Una charla breve de 10 intercambios — evaluaremos tu pronunciación, gramática y confianza.",
+    proficiency_modal_description:
+      "Podemos tener una conversación rápida para determinar tu nivel y colocarte en el lugar correcto.",
+    proficiency_modal_exchange_info:
+      "Una charla breve de 10 intercambios — evaluaremos tu pronunciación, gramática y confianza.",
     proficiency_modal_take_test: "¡Hagámoslo!",
     proficiency_modal_skip: "No gracias",
-    proficiency_modal_skip_note: '"No gracias" te iniciará desde el nivel principiante.',
+    proficiency_modal_skip_note:
+      '"No gracias" te iniciará desde el nivel principiante.',
     proficiency_test_title: "Prueba de Nivel",
-    proficiency_test_instruction: "Habla naturalmente — estamos evaluando tu nivel",
+    proficiency_test_instruction:
+      "Habla naturalmente — estamos evaluando tu nivel",
     proficiency_test_rubric: "Rúbrica",
     proficiency_test_evaluating: "Evaluando",
-    proficiency_test_analyzing: "Analizando tu conversación para determinar tu nivel...",
+    proficiency_test_analyzing:
+      "Analizando tu conversación para determinar tu nivel...",
     proficiency_test_assessor: "Evaluador",
     proficiency_test_start: "Comenzar",
     proficiency_test_you: "Tú",
@@ -1032,27 +1054,38 @@ export const translations = {
     proficiency_test_breakdown: "Desglose",
     proficiency_test_composite: "Puntaje compuesto",
     proficiency_test_level_label: "Nivel {level}",
-    proficiency_test_eval_error: "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo.",
+    proficiency_test_eval_error:
+      "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo.",
     proficiency_test_return_app: "Volver a la aplicación",
-    proficiency_test_rubric_desc: "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio.",
+    proficiency_test_rubric_desc:
+      "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio.",
     proficiency_test_what_scored: "Qué puntúa el sistema",
-    proficiency_test_what_scored_desc: "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión.",
+    proficiency_test_what_scored_desc:
+      "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión.",
     proficiency_test_scoring_heading: "Mecanismo de calificación",
-    proficiency_test_scoring_1: "Comprensión y fluidez pesan más que confianza.",
-    proficiency_test_scoring_2: "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1.",
-    proficiency_test_scoring_3: "Si hay muchos \"no sé\"/relleno, el nivel baja automáticamente.",
-    proficiency_test_scoring_4: "El nivel final nunca supera la evidencia real de tu conversación.",
+    proficiency_test_scoring_1:
+      "Comprensión y fluidez pesan más que confianza.",
+    proficiency_test_scoring_2:
+      "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1.",
+    proficiency_test_scoring_3:
+      'Si hay muchos "no sé"/relleno, el nivel baja automáticamente.',
+    proficiency_test_scoring_4:
+      "El nivel final nunca supera la evidencia real de tu conversación.",
     proficiency_test_got_it: "Entendido",
     proficiency_test_exit_title: "¿Salir de la prueba de nivel?",
-    proficiency_test_exit_desc: "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración.",
+    proficiency_test_exit_desc:
+      "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración.",
     proficiency_test_yes_exit: "Sí, salir",
     proficiency_test_continue: "Continuar la prueba",
-    proficiency_test_assess_fallback: "Evaluación completada. Revisa tus resultados abajo.",
-    proficiency_test_assess_error: "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad.",
+    proficiency_test_assess_fallback:
+      "Evaluación completada. Revisa tus resultados abajo.",
+    proficiency_test_assess_error:
+      "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad.",
     proficiency_speaking: "Hablando",
     proficiency_listening: "Escuchando",
     proficiency_thinking: "Pensando",
-    app_install_subtitle: "Para la mejor experiencia, instala la app en tu dispositivo.",
+    app_install_subtitle:
+      "Para la mejor experiencia, instala la app en tu dispositivo.",
     app_install_step6: "Copia la llave secreta para iniciar sesión.",
     app_install_got_it: "¡Entendido!",
     app_install_copied: "¡Copiada!",
@@ -1449,8 +1482,7 @@ export const translations = {
       "En modo libre, usa el botón Conectar para practicar conversación.",
     ra_toast_translation_failed_title: "Error de traducción",
     ra_toast_no_audio_replay: "No hay audio para reproducir.",
-    ra_auto_stop_desc:
-      "La sesión se cerró automáticamente tras 15 segundos.",
+    ra_auto_stop_desc: "La sesión se cerró automáticamente tras 15 segundos.",
     ra_progress_header: "Progreso",
     ra_progress_xp_to_level: "{remaining} XP para subir de nivel",
     ra_translating: "Traduciendo…",
@@ -1746,17 +1778,20 @@ export const translations = {
     vocab_quiz_congratulations: "¡Felicitaciones!",
     vocab_quiz_not_passed: "Prueba No Aprobada",
     vocab_quiz_score_passed: "{correct} correctas • Necesitabas {needed}",
-    vocab_quiz_score_failed: "{correct} correctas • Necesitas {needed} para aprobar",
+    vocab_quiz_score_failed:
+      "{correct} correctas • Necesitas {needed} para aprobar",
     vocab_back_to_skill_tree: "Volver al Árbol",
     vocab_mc_instruction: "Elige la respuesta correcta",
     vocab_ma_instruction: "Selecciona todas las respuestas correctas",
     vocab_match_instruction: "Empareja las palabras",
     vocab_assistant_error: "No se pudo generar una respuesta en este momento.",
-    vocab_explanation_error: "No se pudo generar una explicación en este momento.",
+    vocab_explanation_error:
+      "No se pudo generar una explicación en este momento.",
     vocab_create_note_error: "Error al crear nota",
     vocab_recording_failed: "No se pudo iniciar la grabación",
     vocab_recording_failed_desc: "Inténtalo de nuevo.",
-    vocab_eval_error_mic_desc: "Revisa permisos de micrófono e inténtalo otra vez.",
+    vocab_eval_error_mic_desc:
+      "Revisa permisos de micrófono e inténtalo otra vez.",
     vocab_create_note: "Crear nota",
     vocab_note_saved: "¡Nota guardada!",
     vocab_lesson_progress: "Progreso de la lección",
@@ -1915,8 +1950,7 @@ translations.it = {
     "In modalità libera, usa il pulsante Connetti per fare pratica di conversazione.",
   ra_toast_translation_failed_title: "Traduzione non riuscita",
   ra_toast_no_audio_replay: "Nessun audio disponibile da riprodurre.",
-  ra_auto_stop_desc:
-    "La sessione si è chiusa automaticamente dopo 15 secondi.",
+  ra_auto_stop_desc: "La sessione si è chiusa automaticamente dopo 15 secondi.",
   ra_delete_confirm:
     "Eliminare tutti i turni salvati per questo account? L'azione non può essere annullata.",
   ra_toast_no_account_title: "Nessun account",
@@ -2060,7 +2094,8 @@ translations.it = {
   app_cefr_heading: "Analisi CEFR",
   app_cefr_subtitle: "Chiedi all'IA di valutare il tuo livello attuale.",
   app_cefr_level_label: "Livello {level}",
-  app_cefr_empty: "Nessuna analisi. Avvia la valutazione per vedere il livello.",
+  app_cefr_empty:
+    "Nessuna analisi. Avvia la valutazione per vedere il livello.",
   app_cefr_updated: "Ultima analisi {timestamp}",
   app_cefr_run: "Analizza livello",
   app_cefr_loading: "Analisi...",
@@ -2217,16 +2252,21 @@ translations.it = {
   story_roleplay_completed: "Gioco di ruolo completato!",
   story_sentences: "frasi",
   proficiency_modal_already_know: "Conosci già un po' di {lang}?",
-  proficiency_modal_description: "Possiamo fare una breve conversazione per determinare il tuo livello e collocarti nel posto giusto.",
-  proficiency_modal_exchange_info: "Una breve chat di 10 scambi — valuteremo la tua pronuncia, grammatica e sicurezza.",
+  proficiency_modal_description:
+    "Possiamo fare una breve conversazione per determinare il tuo livello e collocarti nel posto giusto.",
+  proficiency_modal_exchange_info:
+    "Una breve chat di 10 scambi — valuteremo la tua pronuncia, grammatica e sicurezza.",
   proficiency_modal_take_test: "Facciamolo!",
   proficiency_modal_skip: "No grazie",
-  proficiency_modal_skip_note: '"No grazie" ti farà iniziare dal livello principiante.',
+  proficiency_modal_skip_note:
+    '"No grazie" ti farà iniziare dal livello principiante.',
   proficiency_test_title: "Test di livello",
-  proficiency_test_instruction: "Parla naturalmente — stiamo valutando il tuo livello",
+  proficiency_test_instruction:
+    "Parla naturalmente — stiamo valutando il tuo livello",
   proficiency_test_rubric: "Rubrica di valutazione",
   proficiency_test_evaluating: "Valutazione",
-  proficiency_test_analyzing: "Analisi della conversazione per determinare il tuo livello...",
+  proficiency_test_analyzing:
+    "Analisi della conversazione per determinare il tuo livello...",
   proficiency_test_assessor: "Valutatore",
   proficiency_test_start: "Inizia",
   proficiency_test_you: "Tu",
@@ -2236,27 +2276,38 @@ translations.it = {
   proficiency_test_breakdown: "Ripartizione",
   proficiency_test_composite: "Punteggio complessivo",
   proficiency_test_level_label: "Livello {level}",
-  proficiency_test_eval_error: "Si è verificato un problema con la valutazione automatica. Puoi riprovare.",
+  proficiency_test_eval_error:
+    "Si è verificato un problema con la valutazione automatica. Puoi riprovare.",
   proficiency_test_return_app: "Torna all'app",
-  proficiency_test_rubric_desc: "Ecco come viene calcolato il tuo livello. La valutazione è rigorosa per evitare di sovrastimare le abilità.",
+  proficiency_test_rubric_desc:
+    "Ecco come viene calcolato il tuo livello. La valutazione è rigorosa per evitare di sovrastimare le abilità.",
   proficiency_test_what_scored: "Cosa viene valutato",
-  proficiency_test_what_scored_desc: "Vengono valutate 6 categorie (1-10): pronuncia, grammatica, vocabolario, fluidità, sicurezza e comprensione.",
+  proficiency_test_what_scored_desc:
+    "Vengono valutate 6 categorie (1-10): pronuncia, grammatica, vocabolario, fluidità, sicurezza e comprensione.",
   proficiency_test_scoring_heading: "Meccanismo di punteggio",
-  proficiency_test_scoring_1: "Comprensione e fluidità pesano più della sicurezza.",
-  proficiency_test_scoring_2: "Risposte molto brevi o senza contenuto limitano il risultato a Pre-A1/A1.",
-  proficiency_test_scoring_3: "Risposte frequenti con filler o \"non so\" abbassano automaticamente il livello.",
-  proficiency_test_scoring_4: "Il livello finale non supera mai ciò che la conversazione dimostra.",
+  proficiency_test_scoring_1:
+    "Comprensione e fluidità pesano più della sicurezza.",
+  proficiency_test_scoring_2:
+    "Risposte molto brevi o senza contenuto limitano il risultato a Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    'Risposte frequenti con filler o "non so" abbassano automaticamente il livello.',
+  proficiency_test_scoring_4:
+    "Il livello finale non supera mai ciò che la conversazione dimostra.",
   proficiency_test_got_it: "Capito",
   proficiency_test_exit_title: "Uscire dal test di livello?",
-  proficiency_test_exit_desc: "I tuoi progressi non verranno salvati. Puoi ripetere il test più tardi dalle impostazioni.",
+  proficiency_test_exit_desc:
+    "I tuoi progressi non verranno salvati. Puoi ripetere il test più tardi dalle impostazioni.",
   proficiency_test_yes_exit: "Sì, esci",
   proficiency_test_continue: "Continua il test",
-  proficiency_test_assess_fallback: "Valutazione completata. Controlla i risultati qui sotto.",
-  proficiency_test_assess_error: "Errore di valutazione. Ti collochiamo a Pre-A1/A0 per sicurezza.",
+  proficiency_test_assess_fallback:
+    "Valutazione completata. Controlla i risultati qui sotto.",
+  proficiency_test_assess_error:
+    "Errore di valutazione. Ti collochiamo a Pre-A1/A0 per sicurezza.",
   proficiency_speaking: "Parlando",
   proficiency_listening: "Ascoltando",
   proficiency_thinking: "Pensando",
-  app_install_subtitle: "Per la migliore esperienza, installa l'app sul tuo dispositivo.",
+  app_install_subtitle:
+    "Per la migliore esperienza, installa l'app sul tuo dispositivo.",
   app_install_step6: "Copia la chiave segreta per accedere.",
   app_install_got_it: "Capito!",
   app_install_copied: "Copiato!",
@@ -2514,7 +2565,8 @@ translations.it = {
   teams_feed_copy_fallback: "Impossibile copiare la chiave.",
   teams_create_error: "Errore",
   teams_create_invalid: "Inserisci un npub valido da invitare",
-  teams_create_invalid_format: "Formato npub non valido. Gli npub iniziano con 'npub'",
+  teams_create_invalid_format:
+    "Formato npub non valido. Gli npub iniziano con 'npub'",
   teams_create_duplicate: "Questo npub è già nella lista",
   teams_create_missing_name: "Scegli un nome per il team",
   teams_create_missing_member: "Aggiungi almeno un compagno prima di creare",
@@ -2742,7 +2794,8 @@ translations.fr = {
     "En mode libre, utilise le bouton Connecter pour pratiquer la conversation.",
   ra_toast_translation_failed_title: "Echec de la traduction",
   ra_toast_no_audio_replay: "Aucun audio disponible a rejouer.",
-  ra_auto_stop_desc: "La session s'est fermee automatiquement apres 15 secondes.",
+  ra_auto_stop_desc:
+    "La session s'est fermee automatiquement apres 15 secondes.",
   ra_delete_confirm:
     "Supprimer tous les tours sauvegardes pour ce compte ? Cette action est definitive.",
   ra_toast_no_account_title: "Aucun compte",
@@ -2832,7 +2885,8 @@ translations.fr = {
   tutorial_bitcoin_modal_title: "Creer des bourses",
   tutorial_bitcoin_modal_subtitle:
     "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
-  tutorial_bitcoin_modal_body: "Tu pourras le faire plus tard dans les parametres.",
+  tutorial_bitcoin_modal_body:
+    "Tu pourras le faire plus tard dans les parametres.",
   tutorial_bitcoin_modal_skip: "Peut-etre plus tard",
   tutorial_bitcoin_modal_done: "Termine",
   bitcoin_modal_reload_note:
@@ -3009,7 +3063,8 @@ translations.fr = {
   story_story_label: "Histoire",
   story_back_aria: "Retour a la pratique",
   story_demo_title: "Histoire demo utilisee",
-  story_demo_desc: "API indisponible. Utilisation d'une histoire demo pour les tests.",
+  story_demo_desc:
+    "API indisponible. Utilisation d'une histoire demo pour les tests.",
   story_speech_unavailable_title: "Reconnaissance vocale indisponible",
   story_speech_unavailable_desc:
     "Pour l'evaluation, utilise un navigateur Chromium avec acces au micro.",
@@ -3053,7 +3108,8 @@ translations.fr = {
   proficiency_modal_skip_note:
     '"Non merci" te fera commencer au niveau debutant.',
   proficiency_test_title: "Test de niveau",
-  proficiency_test_instruction: "Parle naturellement - nous evaluons ton niveau",
+  proficiency_test_instruction:
+    "Parle naturellement - nous evaluons ton niveau",
   proficiency_test_rubric: "Grille d'evaluation",
   proficiency_test_evaluating: "Evaluation",
   proficiency_test_analyzing:
@@ -3097,7 +3153,8 @@ translations.fr = {
   proficiency_speaking: "Parle",
   proficiency_listening: "Ecoute",
   proficiency_thinking: "Reflechit",
-  app_install_subtitle: "Pour la meilleure experience, installe l'app sur ton appareil.",
+  app_install_subtitle:
+    "Pour la meilleure experience, installe l'app sur ton appareil.",
   app_install_step6: "Copie la cle secrete pour te reconnecter.",
   app_install_got_it: "Compris !",
   app_install_copied: "Copie !",
@@ -3355,7 +3412,8 @@ translations.fr = {
   teams_feed_copy_fallback: "Impossible de copier la cle.",
   teams_create_error: "Erreur",
   teams_create_invalid: "Saisis un npub valide a inviter",
-  teams_create_invalid_format: "Format npub invalide. Les npub commencent par 'npub'",
+  teams_create_invalid_format:
+    "Format npub invalide. Les npub commencent par 'npub'",
   teams_create_duplicate: "Ce npub est deja dans la liste",
   teams_create_missing_name: "Choisis un nom d'equipe",
   teams_create_missing_member: "Ajoute au moins un camarade avant de creer",
@@ -3415,13 +3473,15 @@ translations.fr = {
   vocab_quiz_congratulations: "Felicitations !",
   vocab_quiz_not_passed: "Quiz non reussi",
   vocab_quiz_score_passed: "{correct} correctes • Il fallait {needed}",
-  vocab_quiz_score_failed: "{correct} correctes • Il faut {needed} pour reussir",
+  vocab_quiz_score_failed:
+    "{correct} correctes • Il faut {needed} pour reussir",
   vocab_back_to_skill_tree: "Retour a l'arbre",
   vocab_mc_instruction: "Choisis la bonne reponse",
   vocab_ma_instruction: "Selectionne toutes les bonnes reponses",
   vocab_match_instruction: "Associe les mots",
   vocab_assistant_error: "Impossible de generer une reponse pour l'instant.",
-  vocab_explanation_error: "Impossible de generer une explication pour l'instant.",
+  vocab_explanation_error:
+    "Impossible de generer une explication pour l'instant.",
   vocab_create_note_error: "Impossible de creer la note",
   vocab_recording_failed: "Echec de l'enregistrement",
   vocab_recording_failed_desc: "Reessaie.",

@@ -180,6 +180,7 @@ export const linksPageTranslations = {
     invoiceCopied: "Lightning invoice copied to clipboard.",
     language_en: "English",
     language_es: "Spanish",
+    language_fr: "French",
     language_it: "Italian",
   },
   it: {
@@ -363,6 +364,7 @@ export const linksPageTranslations = {
     invoiceCopied: "Fattura Lightning copiata negli appunti.",
     language_en: "Inglese",
     language_es: "Spagnolo",
+    language_fr: "Francese",
     language_it: "Italiano",
   },
   es: {
@@ -549,6 +551,7 @@ export const linksPageTranslations = {
     invoiceCopied: "Factura Lightning copiada al portapapeles.",
     language_en: "Inglés",
     language_es: "Español",
+    language_fr: "Francés",
     language_it: "Italiano",
   },
 };
@@ -709,4 +712,8 @@ linksPageTranslations.fr = {
   failedDeposit: "Echec du lancement du depot",
   addressCopied: "Adresse copiee",
   invoiceCopied: "Facture Lightning copiee dans le presse-papiers.",
+  language_en: "Anglais",
+  language_es: "Espagnol",
+  language_fr: "Français",
+  language_it: "Italien",
 };

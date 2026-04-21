@@ -46,11 +46,7 @@ const spanishTimezones = [
   "America/Puerto_Rico",
 ];
 
-const italianTimezones = [
-  "Europe/Rome",
-  "Europe/Vatican",
-  "Europe/San_Marino",
-];
+const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
 
 const frenchTimezones = [
   "Europe/Paris",
@@ -145,7 +141,10 @@ const useLanguage = create((set, get) => ({
 
   // Set language explicitly (user preference)
   setLanguage: (lang) => {
-    const nextLang = normalizeSupportLanguage(lang, get().language || DEFAULT_SUPPORT_LANGUAGE);
+    const nextLang = normalizeSupportLanguage(
+      lang,
+      get().language || DEFAULT_SUPPORT_LANGUAGE,
+    );
     setStoredLanguage(nextLang); // Write immediately
     set({ language: nextLang });
   },
@@ -158,8 +157,9 @@ const useLanguage = create((set, get) => ({
     );
     const currentIndex = SUPPORT_LANGUAGE_CODES.indexOf(currentLang);
     const newLang =
-      SUPPORT_LANGUAGE_CODES[(currentIndex + 1) % SUPPORT_LANGUAGE_CODES.length] ||
-      DEFAULT_SUPPORT_LANGUAGE;
+      SUPPORT_LANGUAGE_CODES[
+        (currentIndex + 1) % SUPPORT_LANGUAGE_CODES.length
+      ] || DEFAULT_SUPPORT_LANGUAGE;
     setStoredLanguage(newLang); // Write immediately
     set({ language: newLang });
   },
