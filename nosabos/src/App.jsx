@@ -1282,20 +1282,20 @@ function TopBar({
                               <MenuOptionGroup
                                 type="radio"
                                 value={supportLang}
-                                onChange={(value) => {
-                                  playSound(selectSound);
-                                  const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
-                                  onSupportLangChange?.(normalized, setSupportLang);
-                                  setTimeout(() => {
-                                    persistSettings({ supportLang: normalized });
-                                  }, 0);
-                                }}
                               >
                                 {supportLanguageOptions.map((option) => (
                                   <MenuItemOption
                                     key={option.value}
                                     value={option.value}
                                     padding={5}
+                                    onPointerDown={() => {
+                                      playSound(selectSound);
+                                      const normalized = normalizeSupportLanguage(option.value, DEFAULT_SUPPORT_LANGUAGE);
+                                      onSupportLangChange?.(normalized, setSupportLang);
+                                      setTimeout(() => {
+                                        persistSettings({ supportLang: normalized });
+                                      }, 0);
+                                    }}
                                   >
                                     <HStack spacing={2}>
                                       {option.flag}
