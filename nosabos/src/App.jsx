@@ -1,6 +1,5 @@
 // src/App.jsx
 import React, {
-  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -1885,12 +1884,8 @@ export default function App() {
     pendingLangRef.current = normalized;
     if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
     pendingLangTimeoutRef.current = setTimeout(() => { pendingLangRef.current = null; }, 5000);
-    // Both setters in the same startTransition so they commit together —
-    // no split render where the dropdown shows the new language in the old locale.
-    startTransition(() => {
-      setAppLanguage(normalized);
-      setSupportLangFn?.(normalized);
-    });
+    setAppLanguage(normalized);
+    setSupportLangFn?.(normalized);
     try { localStorage.setItem("appLanguage", normalized); } catch {}
   }, []);
   const t = translations[appLanguage] || translations.en;
