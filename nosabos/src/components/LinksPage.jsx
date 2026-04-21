@@ -145,9 +145,18 @@ const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
           as={IconButton}
           aria-label="Select language"
           icon={
-            <Text fontSize="xl" lineHeight="1">
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="24px"
+              h="24px"
+              flexShrink={0}
+              sx={{ "& svg": { width: "24px", height: "24px", display: "block" } }}
+            >
               {selected?.flag}
-            </Text>
+            </Box>
           }
           size="sm"
           minW="40px"
