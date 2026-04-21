@@ -211,9 +211,8 @@ const translations = {
     signin_or: "or",
     back_button: "Back",
     language_en: "English",
-    language_es: "Español",
-    language_fr: "Français",
-    language_it: "Italiano",
+    language_es: "Spanish",
+    language_it: "Italian",
   },
   es: {
     nav_signin: "Iniciar Sesión",
@@ -324,7 +323,7 @@ const translations = {
     signin_extension: "Iniciar con Extensión",
     signin_or: "o",
     back_button: "Regresar",
-    language_en: "English",
+    language_en: "Inglés",
     language_es: "Español",
     language_fr: "Français",
     language_it: "Italiano",
@@ -436,9 +435,8 @@ const translations = {
     signin_extension: "Accedi con Estensione",
     signin_or: "o",
     back_button: "Indietro",
-    language_en: "English",
-    language_es: "Español",
-    language_fr: "Français",
+    language_en: "Inglese",
+    language_es: "Spagnolo",
     language_it: "Italiano",
   },
 };
@@ -560,7 +558,10 @@ translations.fr = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const LanguageMenu = ({ lang, setLang, playSound }) => {
-  const options = getSupportLanguageOptions({ uiLang: lang });
+  const options = getSupportLanguageOptions({
+    ui: translations[lang] || translations.en,
+    uiLang: lang,
+  });
   const selected = options.find((o) => o.value === lang) || options[0];
 
   return (

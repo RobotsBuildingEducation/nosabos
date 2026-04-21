@@ -134,8 +134,11 @@ const LINKS_PAPER_PAGE_SX = {
   },
 };
 
-const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
-  const langOptions = getSupportLanguageOptions();
+const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
+  const langOptions = getSupportLanguageOptions({
+    ui: translations,
+    uiLang: language,
+  });
   const selected = langOptions.find((o) => o.value === language) || langOptions[0];
 
   return (
@@ -145,9 +148,18 @@ const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
           as={IconButton}
           aria-label="Select language"
           icon={
-            <Text fontSize="xl" lineHeight="1">
+            <Box
+              as="span"
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="24px"
+              h="24px"
+              flexShrink={0}
+              sx={{ "& svg": { width: "24px", height: "24px", display: "block" } }}
+            >
               {selected?.flag}
-            </Text>
+            </Box>
           }
           size="sm"
           minW="40px"
@@ -1203,6 +1215,7 @@ export default function LinksPage() {
               language={language}
               onSelect={setLanguage}
               playSound={handleSelectSound}
+              translations={translations}
             />
             <ThemeModeToggle
               themeMode={themeMode}
