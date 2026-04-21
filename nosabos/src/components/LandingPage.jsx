@@ -36,6 +36,7 @@ import {
   HStack,
   Text as ChakraText,
   Button as ChakraButton,
+  IconButton,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import VoiceOrb from "./VoiceOrb";
@@ -684,68 +685,34 @@ const Logo = ({ size = 48 }) => (
 );
 
 const ThemeModeToggle = ({ themeMode, onModeChange }) => {
-  const modes = [
-    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
-    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
-  ];
+  const isDark = themeMode === "dark";
+  const nextMode = isDark ? "light" : "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "18px",
-        right: "20px",
-        zIndex: 120,
-      }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "3px",
-          padding: "3px",
-          borderRadius: "999px",
-          background: theme.colors.bg.elevated,
-          backdropFilter: "blur(20px)",
-          border: `1px solid ${theme.colors.border.subtle}`,
-          boxShadow: "var(--app-shadow-soft)",
-        }}
-      >
-        {modes.map((mode) => {
-          const isActive = themeMode === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={mode.label}
-              title={mode.label}
-              onClick={() => onModeChange(mode.id)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "34px",
-                height: "34px",
-                borderRadius: "999px",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                background: isActive
-                  ? `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`
-                  : "transparent",
-                color: isActive ? "#ffffff" : theme.colors.text.secondary,
-                boxShadow: isActive
-                  ? "0 8px 18px rgba(20, 184, 166, 0.18)"
-                  : "none",
-              }}
-            >
-              {mode.icon}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => onModeChange(nextMode)}
+      icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+      size="sm"
+      minW="40px"
+      h="40px"
+      rounded="full"
+      position="fixed"
+      top="18px"
+      right="20px"
+      zIndex={120}
+      bg="var(--app-surface-elevated)"
+      color="var(--app-text-primary)"
+      border="1px solid"
+      borderColor="var(--app-border)"
+      boxShadow="var(--app-shadow-soft)"
+      backdropFilter="blur(20px)"
+      _hover={{ bg: "var(--app-surface-muted)" }}
+      _active={{ bg: "var(--app-surface-muted)" }}
+    />
   );
 };
 

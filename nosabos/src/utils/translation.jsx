@@ -612,6 +612,7 @@ export const translations = {
     skill_tree_learning_activities: "Learning Activities:",
     skill_tree_xp_reward: "XP to complete:",
     skill_tree_start_lesson: "Start Lesson",
+    skill_tree_starting_lesson: "Starting lesson...",
     skill_tree_unlock_at: "Unlock at {xpRequired} XP",
     skill_tree_unlock_sequential: "Complete the previous lesson to unlock",
     skill_tree_level: "Level {level}",
@@ -1480,6 +1481,7 @@ export const translations = {
     skill_tree_learning_activities: "Actividades de Aprendizaje:",
     skill_tree_xp_reward: "XP para terminar:",
     skill_tree_start_lesson: "Comenzar Lección",
+    skill_tree_starting_lesson: "Iniciando lección...",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
     skill_tree_unlock_sequential:
       "Completa la lección anterior para desbloquear",
@@ -2049,6 +2051,7 @@ translations.it = {
   app_nsec_placeholder: "Incolla una chiave nsec per cambiare",
   app_switch: "Cambia",
   app_switching: "Cambio...",
+  generic_loading: "Caricamento...",
   app_switch_note:
     "Deriveremo la chiave pubblica (npub) dal segreto e cambieremo in modo sicuro.",
   app_cefr_heading: "Analisi CEFR",
@@ -2317,6 +2320,7 @@ translations.it = {
   skill_tree_learning_activities: "Attività di apprendimento:",
   skill_tree_xp_reward: "XP per completare:",
   skill_tree_start_lesson: "Inizia lezione",
+  skill_tree_starting_lesson: "Avvio lezione...",
   skill_tree_unlock_at: "Sblocca a {xpRequired} XP",
   skill_tree_unlock_sequential: "Completa la lezione precedente per sbloccare",
   skill_tree_level: "Livello {level}",

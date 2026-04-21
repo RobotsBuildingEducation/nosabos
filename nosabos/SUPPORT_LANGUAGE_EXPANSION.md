@@ -130,6 +130,8 @@ Language touchpoints are spread throughout. Key anchors:
 - `useSharedProgress` validation list (~line 309), component-level validation (~line 712).
 - `LANG_NAME` (~lines 156–166), `localizedLangName` (~lines 741–752).
 - BCP47 mapping (~line 681+).
+- Reading/speech evaluation is only partially localized. `SPEECH_CRITERIA` still defines `en`/`es` labels only, and the rendered criterion label still uses `criterion[userLanguage === "es" ? "es" : "en"]`, so Italian falls back to English labels (`Accuracy`, `Completeness`, etc.). Add `it` labels and switch the lookup to `criterion[supportLang] || criterion.en`.
+- The `gradeSpeechAttempt()` LLM prompt asks for the summary in `supportName`, but the per-criterion `scores.*.note` fields are not explicitly required to be in the support language and the JSON example uses English placeholders. Update the prompt so `summary` **and every criterion note** are written in the support language, and localize the fallback error summary beyond the current English/Spanish ternary.
 
 ### 3.12 `src/components/GrammarBook.jsx`
 - `useSharedProgress` validation (~line 196), component validation (~line 939).
@@ -194,8 +196,10 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - `uiStateLabel(uiState, isEs)` helper — change signature to accept `ui` dict object; use `ui.proficiency_speaking/listening/thinking` keys.
 - All remaining `isEs ? ... : ...` JSX ternaries (40+) — replace with `ui.proficiency_test_*` keys.
 - Data-driven `[isEs ? "es" : "en"]` accesses for `levelInfo.name`, `criterion`, rubric `row`, and `CEFR_LEVEL_OFFERINGS` — change to `[supportLang] || .en` pattern.
+- The generated assessment content is only partially localized. The grading prompt is still authored in English and only produces a generic JSON schema with English placeholders; it does not require `summary` or `scores.*.note` to be written in `supportLang`. Add a `supportName`/support-language instruction block and require all learner-facing generated text in the assessment JSON to be in the support language.
+- The pronunciation fallback phrase is hardcoded as the exact English string `"Insufficient audio evidence."`. Add a localized fallback per support language or avoid exact English text in learner-facing fields.
 
-**Italian implementation note:** Done — `ui = translations[supportLang] || translations.en` one-line fix, `uiStateLabel` updated, all 40+ `isEs` ternaries replaced with `ui.*` lookups, data-driven language keys updated. 43+ new `proficiency_test_*` and `proficiency_*` keys added to `translations.en/es/it`.
+**Italian implementation note:** Partial — visible UI chrome is localized (`ui = translations[supportLang] || translations.en`, `uiStateLabel`, 40+ JSX ternaries, data-driven labels, and 43+ `proficiency_test_*` / `proficiency_*` keys), but generated assessment prose still needs support-language enforcement for the summary and score notes.
 
 ### 3.21b `src/components/ProficiencyTestModal.jsx`
 - Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.
@@ -392,6 +396,8 @@ If a rendering helper reads these fields, make sure it falls back to English whe
 
 Each path applies `withItalianSkillTreeText(...)`, which recursively adds `it` to every `{ en, es }` object, including unit titles, unit descriptions, lesson titles, lesson descriptions, generated supplemental lessons, and `content.*.tutorialDescription`. `SkillTree.jsx` reads these through `getUIDisplayText(...)`, so both the skill-tree cards and `LessonDetailModal` render Italian when `appLanguage` is `it`. The CEFR level header is separate UI chrome in `CEFRLevelNavigator.jsx`; add the new language to its `CEFR_LEVEL_INFO` names/descriptions too.
 
+`LessonDetailModal` also has action/loading chrome outside the data-localized lesson objects. The standard lesson start button must use a dedicated translation key (`skill_tree_starting_lesson`) for its loading state and resolve it from `supportLang`; otherwise Italian users can see English/generic loading text while the lesson is starting. Keep `generic_loading` present in every support-language block as a fallback for shared loaders.
+
 When adding the next support language, either author the new key directly in each CEFR file or add an equivalent centralized data-localization pass. In both cases, run a recursive audit that confirms every `{ en, es }` object in `src/data/skillTreeData.js` and `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js` resolves the new key before marking the skill tree done.
 
 ### 5.2 Flashcard decks (`src/data/flashcards/` and `flashcardData.js`)
@@ -562,7 +568,8 @@ Current state (to keep this doc honest):
 | Question UI in `Vocabulary.jsx`, `GrammarBook.jsx`, `FeedbackRail.jsx` fully localized | Done — all `userLanguage === "es" ? … : …` visible-chrome ternaries replaced with `t("key")` calls; 27 new `vocab_*` keys added to `translations.en/es/it` |
 | `Stories.jsx` (role-play UI + loader lang detection), `RepeatWhatYouHear.jsx`, `TranslateSentence.jsx`, `LessonFlashcard.jsx` localized | Done — `useUIText` hook migrated to `t(uiLang, "story_*")` calls; `getAppUILang()` fixed to return `"it"`; 21+ role-play/repeat-hear/translate-sentence keys added; flashcard local dict extended with `it` entry + `generating` key. **Per-sentence support translation**: `supportLang` validation allow-list in `setProgress` (line ~269) was `["en","es","bilingual"]` — `"it"` added so the LLM is instructed to translate into Italian instead of silently falling back to English. |
 | `ProficiencyTestModal.jsx` localized | Done — `isEs` removed; all 6 visible-copy ternaries replaced with `tFn(lang, key)` |
-| `ProficiencyTest.jsx` localized | Done — `ui = translations[supportLang] \|\| translations.en`; `uiStateLabel` updated; all 40+ `isEs` ternaries replaced; data-driven language key accesses updated; 43+ `proficiency_test_*` keys added to all three blocks |
+| `ProficiencyTest.jsx` visible UI localized | Partial — visible chrome is done, but generated assessment summary/score notes still need explicit support-language enforcement in the grading prompt |
+| `History.jsx` / reading speech evaluation localized | Partial — reading UI keys exist, but speech-evaluation labels/notes still fall back to English for Italian; `SPEECH_CRITERIA`, prompt instructions, and fallback summary need support-language coverage |
 | `GettingStartedModal.jsx` localized | Done — `isEs` removed; installSteps array, toast, and JSX ternaries replaced with `tFn(lang, key)`; 4 new `app_install_*` keys added |
 | `LessonGroupQuiz.jsx` generating-question loader | Done — binary ternary replaced with `t(userLanguage, "history_generating_question")` |
 | `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
@@ -578,6 +585,7 @@ Current state (to keep this doc honest):
 | Lesson complete celebration modal (`App.jsx`) | Done — 4 binary `appLanguage === "es"` ternaries extended to three-way: "Lesson Complete!", "XP Earned", "Experience Points", "Continue" |
 | `LandingPage.jsx` sign-in "or" divider | Done — hardcoded `"or"` replaced with `{copy.signin_or}`; `signin_or` key added to `en` ("or"), `es` ("o"), `it` ("o") translation blocks |
 | `SkillTree.jsx` game review loader messages | Done — `GAME_LOADING_MESSAGES` extended with `it` array (8 Italian messages); loader header gradient always dark (removed light-theme white override); text color fixed to `blue.100` regardless of theme |
+| `SkillTree.jsx` standard lesson start loader | Done — `LessonDetailModal` loading button now uses `skill_tree_starting_lesson` from `supportLang`; `translations.en/es/it` include the key and Italian also has `generic_loading` fallback |
 | RPGGame LLM-generated map/room names in support language (`scenarios.js`) | Done — both `generateScenarioWithAI` prompt JSON shapes now include `"${supportLang}": "..."` in the `name` field when support lang is not `en`/`es` (so the LLM generates Italian names directly); `environment.names[lang]` array fallback fixed to use `[0]` instead of `String(array)` to avoid comma-joined names |
 | `REVIEW_ROOM_BLUEPRINTS` static sub-room names (`scenarios.js`) | Done — all 24 static review-world sub-room specs (home, market, library, transit, nature, civic, lab, festival × 3 rooms each) now include `it` translations so the HUD area label shows Italian names instead of falling back to English |
 | RPGGame hub room name (`scenarios.js`) | Done — `generateScenarioWithAI` was computing a correct `processedName` (with `it`) on the outer scenario object but leaving `hubMap.name` pointing at raw `environment.names` (blueprint arrays). Fixed by extracting `processedName` first and assigning it to `hubMap.name` before the return, so both the outer scenario and the in-`maps[]` hub map share the same resolved string object |

@@ -1755,6 +1755,8 @@ export default function App() {
   const initRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+  const isSubscriptionRoute = location.pathname.startsWith("/subscribe");
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
@@ -2692,7 +2694,7 @@ export default function App() {
      (start, pause, reset, time-up).
   ----------------------------------- */
   const [timerModalOpen, setTimerModalOpen] = useState(false);
-  const [timerMinutes, setTimerMinutes] = useState("20");
+  const [timerMinutes, setTimerMinutes] = useState("10");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
@@ -2845,7 +2847,7 @@ export default function App() {
       }
 
       const stored = JSON.parse(raw);
-      const storedMinutes = String(stored?.minutes || "20");
+      const storedMinutes = String(stored?.minutes || "10");
       const storedDuration = Number(stored?.durationSeconds);
       const storedRemaining = Number(stored?.remainingSeconds);
       const storedEndsAt = Number(stored?.endsAt);
@@ -2953,6 +2955,26 @@ export default function App() {
     [subscriptionXp, subscriptionVerified],
   );
 
+  useEffect(() => {
+    if (
+      isLoadingApp ||
+      !user ||
+      needsOnboarding ||
+      needsSubscriptionPasscode ||
+      !isOnboardingRoute
+    ) {
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [
+    isLoadingApp,
+    isOnboardingRoute,
+    navigate,
+    needsOnboarding,
+    needsSubscriptionPasscode,
+    user,
+  ]);
+
   const handleResetTimer = useCallback(() => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -2972,7 +2994,15 @@ export default function App() {
       // The modal may pass its local draft value here — prefer it over the
       // parent state to avoid any staleness if the user hadn't blurred yet.
       const source = minutesArg ?? timerMinutes;
-      const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
+      const parsedSource = Number(source);
+      const parsedMinutes = Math.max(
+        1,
+        Math.round(
+          Number.isFinite(parsedSource) && parsedSource > 0
+            ? parsedSource
+            : 10,
+        ),
+      );
       const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
 
       flushSync(() => {
@@ -5811,8 +5841,6 @@ export default function App() {
     );
   }
 
-  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const isSubscriptionRoute = location.pathname.startsWith("/subscribe");
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
@@ -5836,9 +5864,9 @@ export default function App() {
     );
   }
 
-  if (isOnboardingRoute) {
-    return <Navigate to="/" replace />;
-  }
+  // When onboarding completes, the route may still be /onboarding for one
+  // paint. Render the app immediately and let the effect above replace the
+  // URL, avoiding a blank Navigate-only frame on mobile.
 
   if (isSubscriptionRoute) {
     if (!needsSubscriptionPasscode) {

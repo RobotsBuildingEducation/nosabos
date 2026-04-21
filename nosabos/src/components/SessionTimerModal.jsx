@@ -39,6 +39,14 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_OVERLAY = "var(--app-overlay)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+const DEFAULT_TIMER_MINUTES = "10";
+
+const normalizeTimerMinutesDraft = (value) => {
+  if (value === undefined || value === null || String(value).trim() === "") {
+    return DEFAULT_TIMER_MINUTES;
+  }
+  return String(value);
+};
 
 // Helper: get angle in degrees (0=12 o'clock, clockwise) from pointer to element center
 function getAngleFromCenter(clientX, clientY, rect) {
@@ -461,7 +469,7 @@ export default function SessionTimerModal({
   t = {},
   useSharedBackdrop = false,
 }) {
-  const presets = [20, 30, 45, 60, 90, 120, 150, 180, 240];
+  const presets = [10, 20, 30, 45, 60, 90, 120, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -471,9 +479,11 @@ export default function SessionTimerModal({
   // so interactions stay instant. The parent App is synced at commit points:
   // close and start. This avoids an App re-render on every drag tick or
   // preset click.
-  const [localMinutes, setLocalMinutes] = useState(() => minutes);
+  const [localMinutes, setLocalMinutes] = useState(() =>
+    normalizeTimerMinutesDraft(minutes),
+  );
   useEffect(() => {
-    if (isOpen) setLocalMinutes(minutes);
+    if (isOpen) setLocalMinutes(normalizeTimerMinutesDraft(minutes));
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const deferPostAction = useCallback((task) => {
@@ -502,20 +512,22 @@ export default function SessionTimerModal({
   }, []);
 
   const handleClose = useCallback(() => {
+    const nextMinutes = normalizeTimerMinutesDraft(localMinutes);
     onClose?.();
     void playSound(selectSound);
 
-    if (onMinutesChange && localMinutes !== minutes) {
+    if (onMinutesChange && nextMinutes !== minutes) {
       startTransition(() => {
-        onMinutesChange(localMinutes);
+        onMinutesChange(nextMinutes);
       });
     }
   }, [localMinutes, minutes, onClose, onMinutesChange, playSound]);
 
   const handleStart = useCallback(() => {
-    onStart?.(localMinutes);
+    const nextMinutes = normalizeTimerMinutesDraft(localMinutes);
+    onStart?.(nextMinutes);
     deferPostAction(() => {
-      onMinutesChange?.(localMinutes);
+      onMinutesChange?.(nextMinutes);
       void playSound(submitActionSound);
     });
   }, [deferPostAction, onMinutesChange, onStart, localMinutes, playSound]);

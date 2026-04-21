@@ -325,8 +325,8 @@ const getUIDisplayText = (textObj) => {
 };
 
 // Helper to get translations for UI elements - uses appLanguage for UI text
-const getTranslation = (key, params = {}) => {
-  const lang = getAppLanguage();
+const getTranslation = (key, params = {}, languageOverride) => {
+  const lang = normalizeSupportLanguage(languageOverride || getAppLanguage());
   const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
@@ -1675,8 +1675,14 @@ function LessonDetailModal({
   const generationTokenRef = useRef(0);
   const isTransitioningToLesson = gameLoading || lessonLoading;
   const blockModalClose = useCallback(() => undefined, []);
+  const resolvedSupportLang = normalizeSupportLanguage(supportLang);
+  const t = useCallback(
+    (key, params = {}) => getTranslation(key, params, resolvedSupportLang),
+    [resolvedSupportLang],
+  );
 
-  const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+  const loadingMessages =
+    GAME_LOADING_MESSAGES[resolvedSupportLang] || GAME_LOADING_MESSAGES.en;
 
   const captureModalSize = useCallback(() => {
     if (!isDesktop || !modalContentRef.current) return;
@@ -1935,7 +1941,7 @@ function LessonDetailModal({
                         : "whiteAlpha.300",
                     }}
                   >
-                    {getTranslation("practice_skip_question")}
+                    {t("practice_skip_question")}
                   </Button>
                 ) : null}
               </Flex>
@@ -2018,15 +2024,15 @@ function LessonDetailModal({
                     color={isLightTheme ? "var(--app-text-primary)" : "white"}
                     fontSize="sm"
                   >
-                    {getTranslation("skill_tree_learning_activities")}
+                    {t("skill_tree_learning_activities")}
                   </Text>
                   <Flex gap={2} flexWrap="wrap">
                     {lesson.modes.map((mode) => {
                       const Icon = MODE_ICONS[mode] || RiStarLine;
                       const modeKey = `mode_${mode}`;
                       const modeName =
-                        getTranslation(modeKey) !== modeKey
-                          ? getTranslation(modeKey)
+                        t(modeKey) !== modeKey
+                          ? t(modeKey)
                           : mode;
                       return (
                         <Badge
@@ -2174,13 +2180,13 @@ function LessonDetailModal({
                         fontSize="md"
                       >
                         {lesson.isTutorial
-                          ? getTranslation("skill_tree_tutorial_goal")
+                          ? t("skill_tree_tutorial_goal")
                           : lesson.isGame
-                            ? getTranslation("skill_tree_game_reward") ||
+                            ? t("skill_tree_game_reward") ||
                               "Game Reward"
                             : lesson.isFinalQuiz
-                              ? getTranslation("skill_tree_passing_score")
-                              : getTranslation("skill_tree_xp_reward")}
+                              ? t("skill_tree_passing_score")
+                              : t("skill_tree_xp_reward")}
                       </Text>
                     </HStack>
                     <Text
@@ -2198,7 +2204,7 @@ function LessonDetailModal({
                       maxW={{ base: "140px", sm: "200px", md: "none" }}
                     >
                       {lesson.isTutorial
-                        ? getTranslation("skill_tree_tutorial_activities")
+                        ? t("skill_tree_tutorial_activities")
                         : lesson.isGame
                           ? `+${lesson.xpReward} XP`
                           : lesson.isFinalQuiz
@@ -2224,7 +2230,7 @@ function LessonDetailModal({
                     }
                   }}
                   isLoading={lessonLoading}
-                  loadingText={getTranslation("generic_loading")}
+                  loadingText={t("skill_tree_starting_lesson")}
                   bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
                   color="white"
                   fontSize="lg"
@@ -2241,7 +2247,7 @@ function LessonDetailModal({
                   }}
                   transition="all 0.2s"
                 >
-                  {getTranslation("skill_tree_start_lesson")}
+                  {t("skill_tree_start_lesson")}
                 </Button>
               </VStack>
             </ModalBody>
