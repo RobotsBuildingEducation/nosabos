@@ -2209,8 +2209,9 @@ function LessonDetailModal({
                           ? `+${lesson.xpReward} XP`
                           : lesson.isFinalQuiz
                             ? `${Math.round(
-                                (lesson.quizConfig?.passingScore /
-                                  lesson.quizConfig?.questionsRequired) *
+                                ((lesson.quizConfig?.passingScore ?? 8) /
+                                  (lesson.quizConfig?.questionsRequired ??
+                                    10)) *
                                   100,
                               )}%`
                             : `+${lesson.xpReward} XP`}

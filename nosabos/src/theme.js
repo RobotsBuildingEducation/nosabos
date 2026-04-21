@@ -98,10 +98,23 @@ const duoSolid = defineStyle((props) => {
     getColor(theme, `${colorScheme}.500`) ??
     getColor(theme, "gray.500") ??
     "#4A5568";
+  const hoverBg =
+    getColor(theme, `${colorScheme}.600`) ?? darken(bg, 8) ?? bg;
+  const activeBg =
+    getColor(theme, `${colorScheme}.700`) ?? darken(bg, 16) ?? hoverBg;
 
   return {
     bg,
     color: "white",
+    _hover: {
+      bg: hoverBg,
+      color: "white",
+      _disabled: { bg },
+    },
+    _active: {
+      bg: activeBg,
+      color: "white",
+    },
   };
 });
 
