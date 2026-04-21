@@ -1286,8 +1286,7 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
-                                  setSupportLang(normalized);
-                                  onSupportLangChange?.(normalized);
+                                  onSupportLangChange?.(normalized, setSupportLang);
                                   setTimeout(() => {
                                     persistSettings({ supportLang: normalized });
                                   }, 0);
@@ -1882,11 +1881,16 @@ export default function App() {
   // Guards stale Firestore snapshots from reverting an in-flight language change.
   const pendingLangRef = useRef(null);
   const pendingLangTimeoutRef = useRef(null);
-  const onSupportLangChange = useCallback((normalized) => {
+  const onSupportLangChange = useCallback((normalized, setSupportLangFn) => {
     pendingLangRef.current = normalized;
     if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
     pendingLangTimeoutRef.current = setTimeout(() => { pendingLangRef.current = null; }, 5000);
-    startTransition(() => { setAppLanguage(normalized); });
+    // Both setters in the same startTransition so they commit together —
+    // no split render where the dropdown shows the new language in the old locale.
+    startTransition(() => {
+      setAppLanguage(normalized);
+      setSupportLangFn?.(normalized);
+    });
     try { localStorage.setItem("appLanguage", normalized); } catch {}
   }, []);
   const t = translations[appLanguage] || translations.en;
