@@ -899,7 +899,7 @@ function normalizeMap(map, len) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function GrammarBook({
+function GrammarBook({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
@@ -6081,3 +6081,5 @@ Return JSON ONLY:
     </Box>
   );
 }
+
+export default React.memo(GrammarBook);

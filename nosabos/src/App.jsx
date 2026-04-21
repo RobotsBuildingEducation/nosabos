@@ -1,5 +1,7 @@
 // src/App.jsx
 import React, {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -114,15 +116,15 @@ import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import * as Tone from "tone";
 import useSoundSettings from "./hooks/useSoundSettings";
 
-import GrammarBook from "./components/GrammarBook";
+const GrammarBook = lazy(() => import("./components/GrammarBook"));
 import Onboarding from "./components/Onboarding";
 import VoiceOrb from "./components/VoiceOrb";
-import RealTimeTest from "./components/RealTimeTest";
+const RealTimeTest = lazy(() => import("./components/RealTimeTest"));
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
 
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
-import Vocabulary from "./components/Vocabulary";
+const Vocabulary = lazy(() => import("./components/Vocabulary"));
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import RPGGame from "./components/RPGGame/index.jsx";
@@ -212,8 +214,38 @@ import {
 --------------------------- */
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
+// Fast structural equality used to skip no-op Firestore snapshot updates
+// without the main-thread cost of JSON.stringify on 100KB+ payloads.
+const structuralEqual = (a, b) => {
+  if (a === b) return true;
+  if (a == null || b == null) return false;
+  if (typeof a !== "object" || typeof b !== "object") return false;
+  const aIsArr = Array.isArray(a);
+  const bIsArr = Array.isArray(b);
+  if (aIsArr !== bIsArr) return false;
+  if (aIsArr) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!structuralEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  const aKeys = Object.keys(a);
+  const bKeys = Object.keys(b);
+  if (aKeys.length !== bKeys.length) return false;
+  for (let i = 0; i < aKeys.length; i++) {
+    const k = aKeys[i];
+    if (!Object.prototype.hasOwnProperty.call(b, k)) return false;
+    if (!structuralEqual(a[k], b[k])) return false;
+  }
+  return true;
+};
+
 const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
+const DEFAULT_QUIZ_CONFIG = { questionsRequired: 10, passingScore: 8 };
+
+const LazyScreenFallback = <Box minH="240px" />;
 const TEST_UNLOCK_NSEC =
   "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
@@ -2570,6 +2602,17 @@ export default function App() {
     }
   };
 
+  const connectDIDRef = useRef(connectDID);
+  connectDIDRef.current = connectDID;
+
+  const handleSwitchedAccount = useCallback(async (id, sec) => {
+    if (id) localStorage.setItem("local_npub", id);
+    if (typeof sec === "string") localStorage.setItem("local_nsec", sec);
+    await connectDIDRef.current?.();
+    setActiveNpub(localStorage.getItem("local_npub") || "");
+    setActiveNsec(localStorage.getItem("local_nsec") || "");
+  }, []);
+
   useEffect(() => {
     console.log("RUNNING");
     if (initRef.current) return;
@@ -4798,11 +4841,7 @@ export default function App() {
       const patchHasChanges = Object.entries(patch).some(([key, value]) => {
         const current = latestUser?.[key];
         if (value && typeof value === "object") {
-          try {
-            return JSON.stringify(current) !== JSON.stringify(value);
-          } catch {
-            return true;
-          }
+          return !structuralEqual(current, value);
         }
         return current !== value;
       });
@@ -4939,28 +4978,23 @@ export default function App() {
         return (
           <>
             {RandomHeader}
-            <RealTimeTest
-              auth={auth}
-              activeNpub={activeNpub}
-              activeNsec={activeNsec}
-              level={user?.progress?.level}
-              supportLang={user?.progress?.supportLang}
-              voice={user?.progress?.voice}
-              voicePersona={user?.progress?.voicePersona}
-              targetLang={user?.progress?.targetLang}
-              showTranslations={user?.progress?.showTranslations}
-              pauseMs={user?.progress?.pauseMs}
-              helpRequest={user?.progress?.helpRequest}
-              practicePronunciation={user?.progress?.practicePronunciation}
-              onSwitchedAccount={async (id, sec) => {
-                if (id) localStorage.setItem("local_npub", id);
-                if (typeof sec === "string")
-                  localStorage.setItem("local_nsec", sec);
-                await connectDID();
-                setActiveNpub(localStorage.getItem("local_npub") || "");
-                setActiveNsec(localStorage.getItem("local_nsec") || "");
-              }}
-            />
+            <Suspense fallback={LazyScreenFallback}>
+              <RealTimeTest
+                auth={auth}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+                level={user?.progress?.level}
+                supportLang={user?.progress?.supportLang}
+                voice={user?.progress?.voice}
+                voicePersona={user?.progress?.voicePersona}
+                targetLang={user?.progress?.targetLang}
+                showTranslations={user?.progress?.showTranslations}
+                pauseMs={user?.progress?.pauseMs}
+                helpRequest={user?.progress?.helpRequest}
+                practicePronunciation={user?.progress?.practicePronunciation}
+                onSwitchedAccount={handleSwitchedAccount}
+              />
+            </Suspense>
           </>
         );
       case "stories":
@@ -4986,12 +5020,14 @@ export default function App() {
         return (
           <>
             {RandomHeader}
-            <GrammarBook
-              userLanguage={appLanguage}
-              activeNpub={activeNpub}
-              activeNsec={activeNsec}
-              onSendHelpRequest={handleSendToHelpChat}
-            />
+            <Suspense fallback={LazyScreenFallback}>
+              <GrammarBook
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+                onSendHelpRequest={handleSendToHelpChat}
+              />
+            </Suspense>
           </>
         );
       case "vocabulary":
@@ -4999,13 +5035,15 @@ export default function App() {
         return (
           <>
             {RandomHeader}
-            <Vocabulary
-              userLanguage={appLanguage}
-              activeNpub={activeNpub}
-              activeNsec={activeNsec}
-              onExitQuiz={handleReturnToSkillTree}
-              onSendHelpRequest={handleSendToHelpChat}
-            />
+            <Suspense fallback={LazyScreenFallback}>
+              <Vocabulary
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+                onExitQuiz={handleReturnToSkillTree}
+                onSendHelpRequest={handleSendToHelpChat}
+              />
+            </Suspense>
           </>
         );
     }
@@ -6149,37 +6187,28 @@ export default function App() {
                   case "realtime":
                     return (
                       <TabPanel key="realtime" px={0}>
-                        <RealTimeTest
-                          auth={auth}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          level={user?.progress?.level}
-                          supportLang={resolvedSupportLang}
-                          voice={user?.progress?.voice}
-                          voicePersona={user?.progress?.voicePersona}
-                          targetLang={user?.progress?.targetLang}
-                          showTranslations={user?.progress?.showTranslations}
-                          pauseMs={user?.progress?.pauseMs}
-                          helpRequest={user?.progress?.helpRequest}
-                          practicePronunciation={
-                            user?.progress?.practicePronunciation
-                          }
-                          lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.realtime}
-                          onSkip={switchToRandomLessonMode}
-                          onSwitchedAccount={async (id, sec) => {
-                            if (id) localStorage.setItem("local_npub", id);
-                            if (typeof sec === "string")
-                              localStorage.setItem("local_nsec", sec);
-                            await connectDID();
-                            setActiveNpub(
-                              localStorage.getItem("local_npub") || "",
-                            );
-                            setActiveNsec(
-                              localStorage.getItem("local_nsec") || "",
-                            );
-                          }}
-                        />
+                        <Suspense fallback={LazyScreenFallback}>
+                          <RealTimeTest
+                            auth={auth}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            level={user?.progress?.level}
+                            supportLang={resolvedSupportLang}
+                            voice={user?.progress?.voice}
+                            voicePersona={user?.progress?.voicePersona}
+                            targetLang={user?.progress?.targetLang}
+                            showTranslations={user?.progress?.showTranslations}
+                            pauseMs={user?.progress?.pauseMs}
+                            helpRequest={user?.progress?.helpRequest}
+                            practicePronunciation={
+                              user?.progress?.practicePronunciation
+                            }
+                            lesson={activeLesson}
+                            lessonContent={activeLesson?.content?.realtime}
+                            onSkip={switchToRandomLessonMode}
+                            onSwitchedAccount={handleSwitchedAccount}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "stories":
@@ -6211,48 +6240,42 @@ export default function App() {
                   case "grammar":
                     return (
                       <TabPanel key="grammar" px={0}>
-                        <GrammarBook
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
-                          lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.grammar}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
-                            }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonStartXp={lessonStartXp}
-                        />
+                        <Suspense fallback={LazyScreenFallback}>
+                          <GrammarBook
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={user?.progress?.pauseMs}
+                            lesson={activeLesson}
+                            lessonContent={activeLesson?.content?.grammar}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={activeLesson?.quizConfig || DEFAULT_QUIZ_CONFIG}
+                            onSkip={switchToRandomLessonMode}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonStartXp={lessonStartXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "vocabulary":
                     return (
                       <TabPanel key="vocabulary" px={0}>
-                        <Vocabulary
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
-                          lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.vocabulary}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
-                            }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onExitQuiz={handleReturnToSkillTree}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonStartXp={lessonStartXp}
-                        />
+                        <Suspense fallback={LazyScreenFallback}>
+                          <Vocabulary
+                            userLanguage={appLanguage}
+                            activeNpub={activeNpub}
+                            activeNsec={activeNsec}
+                            pauseMs={user?.progress?.pauseMs}
+                            lesson={activeLesson}
+                            lessonContent={activeLesson?.content?.vocabulary}
+                            isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                            quizConfig={activeLesson?.quizConfig || DEFAULT_QUIZ_CONFIG}
+                            onSkip={switchToRandomLessonMode}
+                            onExitQuiz={handleReturnToSkillTree}
+                            onSendHelpRequest={handleSendToHelpChat}
+                            lessonStartXp={lessonStartXp}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "game":

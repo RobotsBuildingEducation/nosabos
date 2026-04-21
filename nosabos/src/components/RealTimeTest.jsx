@@ -620,7 +620,7 @@ async function idbGetClip(id) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function RealTimeTest({
+function RealTimeTest({
   auth,
   activeNpub = "",
   activeNsec = "",
@@ -3644,3 +3644,5 @@ Do not return the whole sentence as a single chunk.`;
     </>
   );
 }
+
+export default React.memo(RealTimeTest);
