@@ -763,12 +763,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión" },
-  { key: "completeness", en: "Completeness", es: "Completitud" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
-  { key: "fluency", en: "Fluency", es: "Fluidez" },
-  { key: "confidence", en: "Confidence", es: "Confianza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione" },
 ];
 
 function speechScoreColor(score) {
@@ -1768,10 +1768,10 @@ SCORING GUIDELINES:
 
 BE ENCOURAGING but HONEST. This is practice, not a test. Highlight what they did well and what to work on.
 
-Provide a brief 2-3 sentence summary of feedback in ${supportName}.
+LANGUAGE REQUIREMENT: Write ALL text in ${supportName}. The summary AND every criterion note must be in ${supportName}, not English.
 
 Return ONLY valid JSON:
-{"summary":"brief feedback","scores":{"accuracy":{"score":5,"note":"reason"},"completeness":{"score":5,"note":"reason"},"pronunciation":{"score":5,"note":"reason"},"fluency":{"score":5,"note":"reason"},"confidence":{"score":5,"note":"reason"},"comprehension":{"score":5,"note":"reason"}}}`;
+{"summary":"[2-3 sentence summary in ${supportName}]","scores":{"accuracy":{"score":5,"note":"[reason in ${supportName}]"},"completeness":{"score":5,"note":"[reason in ${supportName}]"},"pronunciation":{"score":5,"note":"[reason in ${supportName}]"},"fluency":{"score":5,"note":"[reason in ${supportName}]"},"confidence":{"score":5,"note":"[reason in ${supportName}]"},"comprehension":{"score":5,"note":"[reason in ${supportName}]"}}}`;
 
     try {
       const resp = await gradingModel.generateContent({
@@ -1794,9 +1794,11 @@ Return ONLY valid JSON:
       console.error("Speech grading failed", e);
       setSpeechFeedback({
         summary:
-          userLanguage === "es"
+          supportLang === "es"
             ? "No se pudo generar retroalimentación. ¡Sigue practicando!"
-            : "Could not generate feedback. Keep practicing!",
+            : supportLang === "it"
+              ? "Impossibile generare il feedback. Continua a praticare!"
+              : "Could not generate feedback. Keep practicing!",
         scores: {},
       });
     } finally {
@@ -2692,11 +2694,7 @@ Return ONLY valid JSON:
                                                     opacity={isLightTheme ? 1 : 0.85}
                                                   >
                                                     {
-                                                      criterion[
-                                                        userLanguage === "es"
-                                                          ? "es"
-                                                          : "en"
-                                                      ]
+                                                      criterion[supportLang] || criterion.en
                                                     }
                                                   </Text>
                                                   <Text

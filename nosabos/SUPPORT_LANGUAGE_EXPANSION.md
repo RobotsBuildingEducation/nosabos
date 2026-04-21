@@ -133,55 +133,11 @@ Language touchpoints are spread throughout. Key anchors:
 - Reading/speech evaluation is only partially localized. `SPEECH_CRITERIA` still defines `en`/`es` labels only, and the rendered criterion label still uses `criterion[userLanguage === "es" ? "es" : "en"]`, so Italian falls back to English labels (`Accuracy`, `Completeness`, etc.). Add `it` labels and switch the lookup to `criterion[supportLang] || criterion.en`.
 - The `gradeSpeechAttempt()` LLM prompt asks for the summary in `supportName`, but the per-criterion `scores.*.note` fields are not explicitly required to be in the support language and the JSON example uses English placeholders. Update the prompt so `summary` **and every criterion note** are written in the support language, and localize the fallback error summary beyond the current English/Spanish ternary.
 
-**Italian implementation note — speech evaluation (remaining work):**
-
-1. **`SPEECH_CRITERIA` Italian labels** (~line 765): Add `it` to every entry:
-   ```js
-   { key: "accuracy",      en: "Accuracy",      es: "Precisión",    it: "Precisione" },
-   { key: "completeness",  en: "Completeness",  es: "Completitud",  it: "Completezza" },
-   { key: "pronunciation", en: "Pronunciation", es: "Pronunciación",it: "Pronuncia" },
-   { key: "fluency",       en: "Fluency",       es: "Fluidez",      it: "Fluidità" },
-   { key: "confidence",    en: "Confidence",    es: "Confianza",    it: "Sicurezza" },
-   { key: "comprehension", en: "Comprehension", es: "Comprensión",  it: "Comprensione" },
-   ```
-
-2. **Criterion label lookup** (~line 2698): Change
-   ```js
-   criterion[userLanguage === "es" ? "es" : "en"]
-   ```
-   to
-   ```js
-   criterion[supportLang] || criterion.en
-   ```
-   `supportLang` is already in scope at that point in the component.
-
-3. **`gradeSpeechAttempt()` LLM prompt** (~line 1771): The prompt currently ends with:
-   ```
-   Provide a brief 2-3 sentence summary of feedback in ${supportName}.
-   Return ONLY valid JSON:
-   {"summary":"brief feedback","scores":{"accuracy":{"score":5,"note":"reason"},...}}
-   ```
-   Replace with:
-   ```
-   Provide a brief 2-3 sentence summary of feedback in ${supportName}.
-   Write ALL text fields — the summary AND every criterion note — in ${supportName}.
-   Return ONLY valid JSON:
-   {"summary":"brief feedback in ${supportName}","scores":{"accuracy":{"score":5,"note":"reason in ${supportName}"},...}}
-   ```
-   This ensures `scores.*.note` values are produced in the support language, not English.
-
-4. **Error fallback** (~line 1797): The `catch` block uses a binary `userLanguage === "es" ? ... : ...` ternary. Replace with:
-   ```js
-   setSpeechFeedback({
-     summary: supportLang === "es"
-       ? "No se pudo generar retroalimentación. ¡Sigue practicando!"
-       : supportLang === "it"
-         ? "Impossibile generare il feedback. Continua a praticare!"
-         : "Could not generate feedback. Keep practicing!",
-     scores: {},
-   });
-   ```
-   Or, better, add a `history_speech_grade_error` translation key to `translation.jsx` and use `t("history_speech_grade_error")`.
+**Italian implementation note — speech evaluation:** Done.
+1. `SPEECH_CRITERIA` now includes `it` for all six entries (`Precisione`, `Completezza`, `Pronuncia`, `Fluidità`, `Sicurezza`, `Comprensione`).
+2. Criterion label lookup changed from `criterion[userLanguage === "es" ? "es" : "en"]` to `criterion[supportLang] || criterion.en`.
+3. `gradeSpeechAttempt()` prompt updated with an explicit `LANGUAGE REQUIREMENT` block instructing the LLM to write the summary and every criterion note in `${supportName}`; the JSON example placeholders updated to say `"[reason in ${supportName}]"` so the LLM cannot default to English.
+4. Error fallback changed from `userLanguage === "es"` binary ternary to a three-way `supportLang` check covering `es`, `it`, and English default.
 
 ### 3.12 `src/components/GrammarBook.jsx`
 - `useSharedProgress` validation (~line 196), component validation (~line 939).
@@ -249,51 +205,10 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - The generated assessment content is only partially localized. The grading prompt is still authored in English and only produces a generic JSON schema with English placeholders; it does not require `summary` or `scores.*.note` to be written in `supportLang`. Add a `supportName`/support-language instruction block and require all learner-facing generated text in the assessment JSON to be in the support language.
 - The pronunciation fallback phrase is hardcoded as the exact English string `"Insufficient audio evidence."`. Add a localized fallback per support language or avoid exact English text in learner-facing fields.
 
-**Italian implementation note:** Partial — visible UI chrome is localized (`ui = translations[supportLang] || translations.en`, `uiStateLabel`, 40+ JSX ternaries, data-driven labels, and 43+ `proficiency_test_*` / `proficiency_*` keys), but generated assessment prose still needs support-language enforcement for the summary and score notes.
-
-**Italian implementation note — generated assessment (remaining work):**
-
-1. **`runAssessment()` prompt** (~line 1349): The prompt does not pass `supportLang`/`supportName` at all — the LLM never receives any instruction to write the `summary` or `scores.*.note` fields in anything other than its default (English). Fix:
-
-   a. Derive `supportName` at the top of `runAssessment()` using the same lookup map that already exists for `langName`:
-   ```js
-   const supportName = {
-     es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
-     nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
-     el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
-     yua: "Yucatec Maya", en: "English",
-   }[supportLang] || "English";
-   ```
-
-   b. Append a language instruction line to the prompt (just before the `Return ONLY valid JSON` line):
-   ```
-   Write the "summary" and every "note" value in ${supportName}.
-   ```
-
-   c. Update the JSON example so its placeholder strings reflect the language requirement:
-   ```
-   {"level":"Pre-A1","summary":"2-3 sentence assessment in ${supportName}.","scores":{"pronunciation":{"score":1,"note":"reason in ${supportName}"},...}}
-   ```
-
-2. **Hardcoded `"Insufficient audio evidence."` string** (~line 1375): This English literal is placed verbatim into the `pronunciation.note` field as a visible learner-facing string. Replace with a localized lookup table inside `runAssessment()`:
-   ```js
-   const insufficientAudioMsg = {
-     es: "Evidencia de audio insuficiente.",
-     it: "Prove audio insufficienti.",
-     pt: "Evidência de áudio insuficiente.",
-     fr: "Preuves audio insuffisantes.",
-     de: "Unzureichende Audiobeweise.",
-     nl: "Onvoldoende audiobewijs.",
-     ja: "音声証拠が不十分です。",
-     ru: "Недостаточно аудиодоказательств.",
-     el: "Ανεπαρκή ηχητικά στοιχεία.",
-     pl: "Niewystarczające dowody audio.",
-     ga: "Fianaise fuaime neamhleor.",
-   }[supportLang] || "Insufficient audio evidence.";
-   ```
-   Then replace the two occurrences of the literal string in the prompt with `${insufficientAudioMsg}`.
-
-3. **`criterion` data-driven label lookup** (~line 2551): Already correct — `criterion[supportLang] || criterion.en` — no further change needed here. Confirm that every CEFR criterion object in the rubric data includes an `it` key; if any are missing, add them.
+**Italian implementation note:** Done — visible UI chrome was already localized; generated assessment prose is now also localized:
+1. `ASSESSMENT_CRITERIA` updated with `it` labels for all six entries (`Pronuncia`, `Grammatica`, `Vocabolario`, `Fluidità`, `Sicurezza`, `Comprensione`); the existing `criterion[supportLang] || criterion.en` lookup in JSX picks them up automatically.
+2. `runAssessment()` now derives `supportName` from a shared `LANG_MAP` constant (consolidated from the old separate `langName` map), then injects a `LANGUAGE REQUIREMENT` block into the prompt instructing the LLM to write the `summary` and every criterion `note` in `${supportName}`; JSON example placeholders updated to `"[reason in ${supportName}]"`.
+3. `insufficientAudioMsg` lookup table added for all supported languages; the hardcoded English `"Insufficient audio evidence."` string in the prompt replaced with `${insufficientAudioMsg}`.
 
 ### 3.21b `src/components/ProficiencyTestModal.jsx`
 - Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.
