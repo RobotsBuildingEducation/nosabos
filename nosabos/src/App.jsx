@@ -675,7 +675,10 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    const incomingLang = normalizeSupportLanguage(q.supportLang, DEFAULT_SUPPORT_LANGUAGE);
+    const incomingLang = normalizeSupportLanguage(
+      q.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
     if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
       setSupportLang(incomingLang);
     }
@@ -1283,10 +1286,18 @@ function TopBar({
                                 type="radio"
                                 value={supportLang}
                                 onChange={(value) => {
-                                  const normalized = normalizeSupportLanguage(value, DEFAULT_SUPPORT_LANGUAGE);
-                                  onSupportLangChange?.(normalized, setSupportLang);
+                                  const normalized = normalizeSupportLanguage(
+                                    value,
+                                    DEFAULT_SUPPORT_LANGUAGE,
+                                  );
+                                  onSupportLangChange?.(
+                                    normalized,
+                                    setSupportLang,
+                                  );
                                   setTimeout(() => {
-                                    persistSettings({ supportLang: normalized });
+                                    persistSettings({
+                                      supportLang: normalized,
+                                    });
                                   }, 0);
                                 }}
                               >
@@ -1882,11 +1893,16 @@ export default function App() {
   const pendingLangTimeoutRef = useRef(null);
   const onSupportLangChange = useCallback((normalized, setSupportLangFn) => {
     pendingLangRef.current = normalized;
-    if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
-    pendingLangTimeoutRef.current = setTimeout(() => { pendingLangRef.current = null; }, 5000);
+    if (pendingLangTimeoutRef.current)
+      clearTimeout(pendingLangTimeoutRef.current);
+    pendingLangTimeoutRef.current = setTimeout(() => {
+      pendingLangRef.current = null;
+    }, 5000);
     setAppLanguage(normalized);
     setSupportLangFn?.(normalized);
-    try { localStorage.setItem("appLanguage", normalized); } catch {}
+    try {
+      localStorage.setItem("appLanguage", normalized);
+    } catch {}
   }, []);
   const t = translations[appLanguage] || translations.en;
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -6300,15 +6316,15 @@ export default function App() {
                   {appLanguage === "it"
                     ? "Obiettivo giornaliero raggiunto!"
                     : appLanguage === "es"
-                    ? "¡Meta diaria alcanzada!"
-                    : "Daily Goal Complete!"}
+                      ? "¡Meta diaria alcanzada!"
+                      : "Daily Goal Complete!"}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
                   {appLanguage === "it"
                     ? "Hai raggiunto il tuo obiettivo XP di oggi."
                     : appLanguage === "es"
-                    ? "Alcanzaste tu objetivo de XP de hoy."
-                    : "You hit today’s XP target."}
+                      ? "Alcanzaste tu objetivo de XP de hoy."
+                      : "You hit today’s XP target."}
                 </Text>
               </VStack>
 
@@ -6328,8 +6344,8 @@ export default function App() {
                         {appLanguage === "it"
                           ? "Obiettivo"
                           : appLanguage === "es"
-                          ? "Meta"
-                          : "Goal"}
+                            ? "Meta"
+                            : "Goal"}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -6340,8 +6356,8 @@ export default function App() {
                     {appLanguage === "it"
                       ? "Mantieni la serie e torna domani per un nuovo obiettivo!"
                       : appLanguage === "es"
-                      ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
-                      : "Keep the streak going and come back tomorrow for a new goal!"}
+                        ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
+                        : "Keep the streak going and come back tomorrow for a new goal!"}
                   </Text>
                 </VStack>
               </Box>
@@ -6367,8 +6383,8 @@ export default function App() {
                 {appLanguage === "it"
                   ? "Continua ad imparare"
                   : appLanguage === "es"
-                  ? "Seguir practicando"
-                  : "Keep learning"}
+                    ? "Seguir practicando"
+                    : "Keep learning"}
               </Button>
             </VStack>
           </ModalBody>
@@ -6416,8 +6432,8 @@ export default function App() {
                   {appLanguage === "it"
                     ? "Lezione Completata!"
                     : appLanguage === "es"
-                    ? "¡Lección Completada!"
-                    : "Lesson Complete!"}
+                      ? "¡Lección Completada!"
+                      : "Lesson Complete!"}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {completedLessonData?.title?.[appLanguage] ||
@@ -6445,8 +6461,8 @@ export default function App() {
                     {appLanguage === "it"
                       ? "XP Guadagnato"
                       : appLanguage === "es"
-                      ? "XP Ganado"
-                      : "XP Earned"}
+                        ? "XP Ganado"
+                        : "XP Earned"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
@@ -6455,8 +6471,8 @@ export default function App() {
                     {appLanguage === "it"
                       ? "Punti Esperienza"
                       : appLanguage === "es"
-                      ? "Puntos de Experiencia"
-                      : "Experience Points"}
+                        ? "Puntos de Experiencia"
+                        : "Experience Points"}
                   </Text>
                 </VStack>
               </Box>
@@ -6477,8 +6493,8 @@ export default function App() {
                 {appLanguage === "it"
                   ? "Continua"
                   : appLanguage === "es"
-                  ? "Continuar"
-                  : "Continue"}
+                    ? "Continuar"
+                    : "Continue"}
               </Button>
             </VStack>
           </ModalBody>
