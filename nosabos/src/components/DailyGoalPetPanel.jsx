@@ -551,11 +551,9 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, T, T);
-    ctx.fillStyle = canvasBackground;
-    ctx.fillRect(0, 0, T, T);
 
     drawDogCharacter(ctx, frame, stage);
-  }, [canvasBackground, frame, stage]);
+  }, [frame, stage]);
 
   return (
     <Box
@@ -572,13 +570,7 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
             ? "rgba(91, 75, 58, 0.12)"
             : "whiteAlpha.300"
       }
-      bg={
-        isCelebration
-          ? canvasBackground
-          : isLightTheme
-            ? "rgba(255, 253, 249, 0.38)"
-            : "blackAlpha.250"
-      }
+      bg={canvasBackground}
       sx={{ imageRendering: "pixelated" }}
     />
   );
