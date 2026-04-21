@@ -178,6 +178,9 @@ export const linksPageTranslations = {
     failedDeposit: "Failed to initiate deposit",
     addressCopied: "Address copied",
     invoiceCopied: "Lightning invoice copied to clipboard.",
+    language_en: "English",
+    language_es: "Español",
+    language_it: "Italiano",
   },
   it: {
     roadmapCashTitle: "Roadmap.Cash (gratuito)",
@@ -358,6 +361,9 @@ export const linksPageTranslations = {
     failedDeposit: "Avvio deposito non riuscito",
     addressCopied: "Indirizzo copiato",
     invoiceCopied: "Fattura Lightning copiata negli appunti.",
+    language_en: "English",
+    language_es: "Español",
+    language_it: "Italiano",
   },
   es: {
     roadmapCashTitle: "Roadmap.Cash (gratis)",
@@ -541,5 +547,8 @@ export const linksPageTranslations = {
     failedDeposit: "Error al iniciar el deposito",
     addressCopied: "Direccion copiada",
     invoiceCopied: "Factura Lightning copiada al portapapeles.",
+    language_en: "English",
+    language_es: "Español",
+    language_it: "Italiano",
   },
 };

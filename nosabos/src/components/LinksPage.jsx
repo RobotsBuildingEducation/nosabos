@@ -134,8 +134,11 @@ const LINKS_PAPER_PAGE_SX = {
   },
 };
 
-const LanguageMenuFixed = ({ language, onSelect, playSound }) => {
-  const langOptions = getSupportLanguageOptions();
+const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
+  const langOptions = getSupportLanguageOptions({
+    ui: translations,
+    uiLang: language,
+  });
   const selected = langOptions.find((o) => o.value === language) || langOptions[0];
 
   return (
@@ -1212,6 +1215,7 @@ export default function LinksPage() {
               language={language}
               onSelect={setLanguage}
               playSound={handleSelectSound}
+              translations={translations}
             />
             <ThemeModeToggle
               themeMode={themeMode}

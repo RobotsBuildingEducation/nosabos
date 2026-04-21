@@ -445,7 +445,10 @@ const translations = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const LanguageMenu = ({ lang, setLang, playSound }) => {
-  const options = getSupportLanguageOptions({ uiLang: lang });
+  const options = getSupportLanguageOptions({
+    ui: translations[lang] || translations.en,
+    uiLang: lang,
+  });
   const selected = options.find((o) => o.value === lang) || options[0];
 
   return (
