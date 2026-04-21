@@ -90,6 +90,9 @@ Language touchpoints are spread throughout. Key anchors:
 - Firestore validation for `targetLang` (~lines 2413–2427 and ~2539–2555) — include the new code.
 - `ALPHABET_LANGS` arrays — both occurrences (~lines 1604–1616 and ~5012–5024).
 - Inline `appLanguage === "es" ? … : …` ternaries scattered across the file (629, 682, 689, 938, 1016, 1042, 1055–1058, 1505, 1669–1670, 1807–1808, 2322, 2337–2342, …). Convert to translation keys or a `uiText(en, es, it)` helper.
+- Default settings that are stored as user-editable strings, especially the voice/persona prompt, must be treated as localized defaults. When the support language changes, swap the default persona to the new language immediately; if the user has edited the persona to a custom value, preserve it exactly.
+
+**Voice/persona implementation note:** `App.jsx` and `Onboarding.jsx` now detect the known default persona strings across `en`/`es`/`it` and localize those defaults before rendering, refilling, onboarding-save, and settings persistence. Empty strings are treated as intentional custom edits instead of "restore the default." The settings drawer also keeps active text drafts for debounced persona/help-request saves so a delayed user-progress refresh cannot revert partially deleted text while the user is typing.
 
 ### 3.6 `src/components/Onboarding.jsx`
 - Support language selector (lines 89–147) — use `getSupportLanguageOptions()` and drop the binary `supportLang === "es" ? "es" : "en"` collation on line 147.
@@ -164,6 +167,8 @@ Account settings are split across multiple components and must be audited togeth
 
 Do not treat account settings as localized just because `translations.<code>` exists. Manually open the account/settings drawer in the new support language and verify every visible label.
 
+**Italian implementation note:** `Account` is acceptable Italian product terminology for the settings account tab. Deeper identity drawer copy still uses Italian strings for actions, warnings, and helper text.
+
 ### 3.17 `src/components/DailyGoalModal.jsx`
 - `Intl.DateTimeFormat` locale (~lines 142–143 and ~558).
 
@@ -178,8 +183,11 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - FlashcardSkillTree: `Intl.DateTimeFormat` (lines 139, 197) — replace with shared locale helper keyed on `appLanguage`.
 - LessonFlashcard / FlashcardPractice: practice-language normalization must stay independent from support-language normalization — use `normalizeSupportLanguage` / `normalizePracticeLanguage` helpers.
 - LessonFlashcard has a **component-local `t()` dict** (not the shared `translation.jsx` helper) — add the new language entry to all keys in that dict, including the `generating` loading-state key.
+- FlashcardPractice correct-answer footer must localize the progress strip (`Level {level}` / `Total XP {xp}`) through `translations.<code>` keys instead of hardcoded English.
 
 **Italian implementation note:** `LessonFlashcard.jsx`'s local dict was extended with an `it` entry for all flashcard UI strings and a new `generating` key (en: "Generating flashcard...", es: "Generando tarjeta...", it: "Generazione scheda..."). The loading text ternary `userLanguage === "es" ? ... : ...` was replaced with `t("generating")`.
+
+**Italian flashcard footer note:** `FlashcardPractice.jsx` now uses `flashcard_xp_level` and `flashcard_total_xp` translation keys for the correct-answer level/XP strip, so Italian renders `Livello {level} • XP totali {xp}` rather than hardcoded `Level … • Total XP …`.
 
 ### 3.21 `src/components/ProficiencyTest.jsx`
 - `const isEs = supportLang === "es"` and `ui = translations[isEs ? "es" : "en"]` — change to `ui = translations[supportLang] || translations.en`. This single line propagates correct Italian to every `ui.*` lookup in the file.
@@ -540,10 +548,12 @@ Current state (to keep this doc honest):
 | Italian LLM prompt templates (`llm.js`, `GrammarBook.jsx`, `JobScript.jsx`) | Done |
 | `Intl.DateTimeFormat` / `Intl.Collator` handles `it-IT` | Done |
 | Mode menu / primary app navigation localized | Done |
-| Account settings menu fully localized        | Done |
+| Support-language switching updates default voice/persona without flicker | Done — `App.jsx` and `Onboarding.jsx` detect known default personas across `en`/`es`/`it`, localize them before render/refill/persist, and preserve custom persona text |
+| Account settings menu fully localized        | Done — Italian intentionally keeps `Account` for the tab label |
 | HelpChatFab visible UI localized             | Done |
 | Conversation/realtime UI and loaders localized | Done — `Conversations.jsx`, `RealTimeTest.jsx`, realtime `translations.it` keys, and `LoadingMiniGame.jsx` loader copy |
 | Flashcard `concept` entries include `it`       | Done — `italianLocalizer.js` covers `flashcardData.js` and all seven split CEFR decks |
+| Flashcard correct-answer level/XP footer localized | Done — `flashcard_xp_level` / `flashcard_total_xp` keys added to `translations.en/es/it` and used in `FlashcardPractice.jsx` |
 | Skill-tree `{ en, es }` pairs include `it`     | Done — `italianLocalizer.js` covers `skillTreeData.js`, generated lesson data, all seven CEFR split files, and lesson modal data |
 | Alphabet bootcamp UI and all card content     | Done — `AlphabetBootcamp.jsx` UI copy plus `alphabetItalianLocalizer.js` coverage for all registered alphabet datasets |
 | `conversationTopics.js` includes `it`          | Done |

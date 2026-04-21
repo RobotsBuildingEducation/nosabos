@@ -223,6 +223,36 @@ const personaDefaultFor = (lang) =>
   translations?.en?.onboarding_persona_default_example ||
   "";
 
+const normalizePersonaValue = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/g, "")
+    .toLocaleLowerCase();
+
+const isDefaultPersonaValue = (value) => {
+  if (value === undefined || value === null) return true;
+  const normalized = normalizePersonaValue(value);
+  if (!normalized) return false;
+  return ["en", "es", "it"].some(
+    (lang) =>
+      normalized ===
+        normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
+      normalized ===
+        normalizePersonaValue(
+          translations?.[lang]?.onboarding_persona_default_example,
+        ),
+  );
+};
+
+const personaForSupportLanguage = (currentPersona, supportLang) => {
+  if (currentPersona === undefined || currentPersona === null) {
+    return personaDefaultFor(supportLang) || "";
+  }
+  if (!isDefaultPersonaValue(currentPersona)) return currentPersona;
+  return personaDefaultFor(supportLang) || currentPersona || "";
+};
+
 /**
  * Migrate old level values to CEFR levels
  * beginner -> Pre-A1, intermediate -> B1, advanced -> C1
@@ -605,9 +635,10 @@ function TopBar({
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
   const [voice, setVoice] = useState(p.voice || "alloy");
+  const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
-    p.voicePersona ||
-    personaDefaultFor(p.supportLang || supportLang || appLanguage) ||
+    personaForSupportLanguage(p.voicePersona, defaultPersonaSupportLang) ??
+    personaDefaultFor(defaultPersonaSupportLang) ??
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(
@@ -626,10 +657,35 @@ function TopBar({
     Number.isFinite(p.pauseMs) ? p.pauseMs : 1200,
   );
   const [helpRequest, setHelpRequest] = useState(
-    (p.helpRequest || user?.helpRequest || "").trim(),
+    p.helpRequest ?? user?.helpRequest ?? "",
   );
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation,
+  );
+  const textDraftRef = useRef({ voicePersona: null, helpRequest: null });
+  const textDraftClearTimersRef = useRef({});
+  const rememberTextDraft = useCallback((key, value) => {
+    clearTimeout(textDraftClearTimersRef.current[key]);
+    textDraftRef.current[key] = { value, at: Date.now() };
+  }, []);
+  const releaseTextDraftSoon = useCallback((key, value) => {
+    clearTimeout(textDraftClearTimersRef.current[key]);
+    textDraftClearTimersRef.current[key] = setTimeout(() => {
+      const draft = textDraftRef.current[key];
+      if (draft && draft.value === value) {
+        textDraftRef.current[key] = null;
+      }
+    }, 6000);
+  }, []);
+  const preferTextDraft = useCallback((key, savedValue) => {
+    const draft = textDraftRef.current[key];
+    return draft ? draft.value : savedValue;
+  }, []);
+  useEffect(
+    () => () => {
+      Object.values(textDraftClearTimersRef.current).forEach(clearTimeout);
+    },
+    [],
   );
   const vadSecondsLabel =
     appLanguage === "it"
@@ -683,11 +739,13 @@ function TopBar({
       setSupportLang(incomingLang);
     }
     setVoice(q.voice || "alloy");
-    setVoicePersona(
-      q.voicePersona ??
-        personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
-        translations.en.onboarding_persona_default_example,
-    );
+    const draftSupportLang =
+      pendingLangRef.current || incomingLang || supportLang || appLanguage;
+    const nextVoicePersona =
+      personaForSupportLanguage(q.voicePersona, draftSupportLang) ??
+      personaDefaultFor(draftSupportLang) ??
+      translations.en.onboarding_persona_default_example;
+    setVoicePersona(preferTextDraft("voicePersona", nextVoicePersona));
     setTargetLang(
       normalizePracticeLanguage(q.targetLang, DEFAULT_TARGET_LANGUAGE),
     );
@@ -695,29 +753,23 @@ function TopBar({
       typeof q.showTranslations === "boolean" ? q.showTranslations : true,
     );
     setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 1200);
-    setHelpRequest((q.helpRequest || user?.helpRequest || "").trim());
+    const nextHelpRequest = String(q.helpRequest ?? user?.helpRequest ?? "");
+    setHelpRequest(preferTextDraft("helpRequest", nextHelpRequest));
     setPracticePronunciation(!!q.practicePronunciation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress, user?.helpRequest]);
 
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang || appLanguage);
-    const enDefault = personaDefaultFor("en");
-    const esDefault = personaDefaultFor("es");
-    const itDefault = personaDefaultFor("it");
     const current = (voicePersona || "").trim();
 
     if (
-      (!current && localizedDefault) ||
-      (current &&
-        current !== localizedDefault &&
-        (current === enDefault ||
-          current === esDefault ||
-          current === itDefault))
+      isDefaultPersonaValue(current) &&
+      localizedDefault &&
+      current !== localizedDefault
     ) {
-      const nextPersona = localizedDefault || current;
-      setVoicePersona(nextPersona);
-      persistSettings({ voicePersona: nextPersona });
+      setVoicePersona(localizedDefault);
+      persistSettings({ voicePersona: localizedDefault });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLanguage, supportLang]);
@@ -740,17 +792,39 @@ function TopBar({
     },
     [onPatchSettings, toast, appLanguage],
   );
+  const persistSettingsAfterPaint = useCallback(
+    (partial = {}) => {
+      const run = () => {
+        void persistSettings(partial);
+      };
+
+      if (typeof window === "undefined" || !window.requestAnimationFrame) {
+        setTimeout(run, 0);
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(run);
+      });
+    },
+    [persistSettings],
+  );
 
   // Debounced persist for text inputs (voicePersona, helpRequest)
   const debounceRef = useRef(null);
   const debouncedPersist = useCallback(
     (partial, delay = 400) => {
       clearTimeout(debounceRef.current);
+      const textKeys = ["voicePersona", "helpRequest"].filter((key) =>
+        Object.prototype.hasOwnProperty.call(partial, key),
+      );
       debounceRef.current = setTimeout(() => {
-        persistSettings(partial);
+        void persistSettings(partial).finally(() => {
+          textKeys.forEach((key) => releaseTextDraftSoon(key, partial[key]));
+        });
       }, delay);
     },
-    [persistSettings],
+    [persistSettings, releaseTextDraftSoon],
   );
 
   useEffect(() => {
@@ -1290,15 +1364,32 @@ function TopBar({
                                     value,
                                     DEFAULT_SUPPORT_LANGUAGE,
                                   );
+                                  playSound(selectSound);
+                                  const shouldLocalizePersona =
+                                    isDefaultPersonaValue(voicePersona);
+                                  const nextPersona = shouldLocalizePersona
+                                    ? personaForSupportLanguage(
+                                        voicePersona,
+                                        normalized,
+                                      )
+                                    : voicePersona;
+                                  if (
+                                    shouldLocalizePersona &&
+                                    nextPersona &&
+                                    nextPersona !== voicePersona
+                                  ) {
+                                    setVoicePersona(nextPersona);
+                                  }
                                   onSupportLangChange?.(
                                     normalized,
                                     setSupportLang,
                                   );
-                                  setTimeout(() => {
-                                    persistSettings({
-                                      supportLang: normalized,
-                                    });
-                                  }, 0);
+                                  persistSettingsAfterPaint({
+                                    supportLang: normalized,
+                                    ...(shouldLocalizePersona && nextPersona
+                                      ? { voicePersona: nextPersona }
+                                      : {}),
+                                  });
                                 }}
                               >
                                 {supportLanguageOptions.map((option) => (
@@ -1401,9 +1492,9 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setTargetLang(value);
-                                  setTimeout(() => {
-                                    persistSettings({ targetLang: value });
-                                  }, 0);
+                                  persistSettingsAfterPaint({
+                                    targetLang: value,
+                                  });
                                 }}
                               >
                                 {practiceLanguageOptions.map((option) => (
@@ -1465,6 +1556,7 @@ function TopBar({
                           onChange={(e) => {
                             const next = e.target.value.slice(0, 240);
                             setVoicePersona(next);
+                            rememberTextDraft("voicePersona", next);
                             debouncedPersist({ voicePersona: next });
                           }}
                           bg="gray.700"
@@ -1891,19 +1983,51 @@ export default function App() {
   // Guards stale Firestore snapshots from reverting an in-flight language change.
   const pendingLangRef = useRef(null);
   const pendingLangTimeoutRef = useRef(null);
-  const onSupportLangChange = useCallback((normalized, setSupportLangFn) => {
-    pendingLangRef.current = normalized;
-    if (pendingLangTimeoutRef.current)
-      clearTimeout(pendingLangTimeoutRef.current);
-    pendingLangTimeoutRef.current = setTimeout(() => {
-      pendingLangRef.current = null;
-    }, 5000);
-    setAppLanguage(normalized);
-    setSupportLangFn?.(normalized);
-    try {
-      localStorage.setItem("appLanguage", normalized);
-    } catch {}
-  }, []);
+  const onSupportLangChange = useCallback(
+    (normalized, setSupportLangFn) => {
+      pendingLangRef.current = normalized;
+      if (pendingLangTimeoutRef.current)
+        clearTimeout(pendingLangTimeoutRef.current);
+      pendingLangTimeoutRef.current = setTimeout(() => {
+        pendingLangRef.current = null;
+      }, 5000);
+
+      try {
+        localStorage.setItem("appLanguage", normalized);
+      } catch {}
+
+      const applyOptimisticLanguage = () => {
+        setAppLanguage(normalized);
+        setSupportLangFn?.(normalized);
+        if (user) {
+          const currentProgress = user.progress || {};
+          const nextVoicePersona = personaForSupportLanguage(
+            currentProgress.voicePersona,
+            normalized,
+          );
+          setUser?.({
+            ...user,
+            appLanguage: normalized,
+            progress: {
+              ...currentProgress,
+              supportLang: normalized,
+              ...(isDefaultPersonaValue(currentProgress.voicePersona) &&
+              nextVoicePersona
+                ? { voicePersona: nextVoicePersona }
+                : {}),
+            },
+          });
+        }
+      };
+
+      try {
+        flushSync(applyOptimisticLanguage);
+      } catch {
+        applyOptimisticLanguage();
+      }
+    },
+    [setUser, user],
+  );
   const t = translations[appLanguage] || translations.en;
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
@@ -3204,19 +3328,22 @@ export default function App() {
       helpRequest: "",
       practicePronunciation: false,
     };
+    const nextSupportLang = normalizeSupportLanguage(
+      partial.supportLang ?? prev.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const nextVoicePersona =
+      personaForSupportLanguage(
+        partial.voicePersona ?? prev.voicePersona,
+        nextSupportLang,
+      ) ?? "";
 
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
-      supportLang: normalizeSupportLanguage(
-        partial.supportLang ?? prev.supportLang,
-        DEFAULT_SUPPORT_LANGUAGE,
-      ),
+      supportLang: nextSupportLang,
       voice: partial.voice ?? prev.voice ?? "alloy",
-      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
-        0,
-        240,
-      ),
+      voicePersona: nextVoicePersona.slice(0, 240),
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? prev.targetLang,
         DEFAULT_TARGET_LANGUAGE,
@@ -3340,19 +3467,22 @@ export default function App() {
 
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
+      const normalizedSupportLang = normalizeSupportLanguage(
+        payload.supportLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      );
+      const incomingPersona = safe(
+        payload.voicePersona,
+        personaDefaultFor(normalizedSupportLang),
+      );
 
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
-        supportLang: normalizeSupportLanguage(
-          payload.supportLang,
-          DEFAULT_SUPPORT_LANGUAGE,
-        ),
-        voicePersona: safe(
-          payload.voicePersona,
-          translations[appLanguage]?.onboarding_persona_default_example ||
-            translations.en.onboarding_persona_default_example,
-        ),
+        supportLang: normalizedSupportLang,
+        voicePersona:
+          personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
+          personaDefaultFor(normalizedSupportLang),
         targetLang: normalizePracticeLanguage(
           payload.targetLang,
           DEFAULT_TARGET_LANGUAGE,

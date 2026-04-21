@@ -655,6 +655,8 @@ export const translations = {
     flashcard_try_again: "Try Again",
     flashcard_explain_answer: "Explain my answer",
     flashcard_explanation_heading: "Explanation",
+    flashcard_xp_level: "Level {level}",
+    flashcard_total_xp: "Total XP {xp}",
     flashcard_error_loading: "Error loading answer",
     flashcard_eval_error_title: "Could not evaluate",
     flashcard_eval_error_desc: "Please try again with a stable connection.",
@@ -1100,15 +1102,12 @@ export const translations = {
     app_switch: "Cambiar",
     app_switch_note:
       "Si la cuenta no existe, la crearemos en tu colección de usuarios.",
-    app_install_title: "Instalar App",
-    app_install_step1:
-      "1. Abre esta página en tu navegador con el botón de Más Opciones",
-    app_install_step2: "2. Abre en el navegador.",
-    app_install_step3: "3. Presiona el botón de Compartir",
-    app_install_step4:
-      "4. Presiona el botón de Agregar a la pantalla de inicio",
-    app_install_step5:
-      "5. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
+    app_install_title: "Instalar como app",
+    app_install_step1: "Abre el menú del navegador.",
+    app_install_step2: "Abre en el navegador.",
+    app_install_step3: "Elige 'Compartir' o 'Instalar'.",
+    app_install_step4: "Agregar a la pantalla de inicio.",
+    app_install_step5: "Abre desde tu pantalla de inicio.",
     app_close: "Cerrar",
     app_sign_out: "Cerrar sesión",
     app_sign_out_confirm_title: "¿Cerrar sesión?",
@@ -1526,6 +1525,8 @@ export const translations = {
     flashcard_try_again: "Intentar de Nuevo",
     flashcard_explain_answer: "Explica mi respuesta",
     flashcard_explanation_heading: "Explicación",
+    flashcard_xp_level: "Nivel {level}",
+    flashcard_total_xp: "XP total {xp}",
     flashcard_error_loading: "Error al cargar respuesta",
     flashcard_eval_error_title: "No se pudo evaluar",
     flashcard_eval_error_desc:
@@ -2359,6 +2360,8 @@ translations.it = {
   flashcard_try_again: "Riprova",
   flashcard_explain_answer: "Spiega la mia risposta",
   flashcard_explanation_heading: "Spiegazione",
+  flashcard_xp_level: "Livello {level}",
+  flashcard_total_xp: "XP totali {xp}",
   flashcard_error_loading: "Errore nel caricamento della risposta",
   flashcard_eval_error_title: "Impossibile valutare",
   flashcard_eval_error_desc: "Riprova con una connessione stabile.",

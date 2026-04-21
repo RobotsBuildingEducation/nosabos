@@ -521,9 +521,14 @@ function drawDogCharacter(ctx, frame, stage) {
   drawAliveDog(ctx, frame, stage);
 }
 
-function DogCanvas({ stage, isLightTheme }) {
+function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
+  const canvasBackground = isCelebration
+    ? isLightTheme
+      ? "rgba(255, 253, 249, 0.52)"
+      : "rgba(255, 255, 255, 0.22)"
+    : stage.background;
 
   useEffect(() => {
     if (stage.key === "dead") {
@@ -546,11 +551,11 @@ function DogCanvas({ stage, isLightTheme }) {
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, T, T);
-    ctx.fillStyle = stage.background;
+    ctx.fillStyle = canvasBackground;
     ctx.fillRect(0, 0, T, T);
 
     drawDogCharacter(ctx, frame, stage);
-  }, [frame, stage]);
+  }, [canvasBackground, frame, stage]);
 
   return (
     <Box
@@ -560,8 +565,20 @@ function DogCanvas({ stage, isLightTheme }) {
       h={{ base: "96px", md: "144px" }}
       borderRadius={{ base: "lg", md: "xl" }}
       border="1px solid"
-      borderColor={isLightTheme ? "rgba(91, 75, 58, 0.12)" : "whiteAlpha.300"}
-      bg={isLightTheme ? "rgba(255, 253, 249, 0.38)" : "blackAlpha.250"}
+      borderColor={
+        isCelebration
+          ? "rgba(255, 255, 255, 0.38)"
+          : isLightTheme
+            ? "rgba(91, 75, 58, 0.12)"
+            : "whiteAlpha.300"
+      }
+      bg={
+        isCelebration
+          ? canvasBackground
+          : isLightTheme
+            ? "rgba(255, 253, 249, 0.38)"
+            : "blackAlpha.250"
+      }
       sx={{ imageRendering: "pixelated" }}
     />
   );
@@ -588,12 +605,22 @@ export default function DailyGoalPetPanel({
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
+  const panelBg = isCelebration
+    ? isLightTheme
+      ? stage.background
+      : "rgba(255, 255, 255, 0.18)"
+    : stage.background;
+  const panelBorderColor = isCelebration
+    ? "rgba(255, 255, 255, 0.38)"
+    : isLightTheme
+      ? APP_BORDER
+      : "transparent";
 
   return (
     <Box
-      bg={stage.background}
+      bg={panelBg}
       border="1px solid"
-      borderColor={isLightTheme ? APP_BORDER : "transparent"}
+      borderColor={panelBorderColor}
       borderRadius="2xl"
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
@@ -606,7 +633,11 @@ export default function DailyGoalPetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <DogCanvas stage={stage} isLightTheme={isLightTheme} />
+            <DogCanvas
+              stage={stage}
+              isLightTheme={isLightTheme}
+              isCelebration={isCelebration}
+            />
             <Badge
               colorScheme={stage.colorScheme}
               bg={isLightTheme ? stage.badgeBg : undefined}

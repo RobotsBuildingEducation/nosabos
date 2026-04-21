@@ -1379,10 +1379,42 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                             <Button
                               size="lg"
-                              colorScheme={isLightTheme ? undefined : "pink"}
-                              bg={isLightTheme ? "#d8a4b6" : undefined}
+                              colorScheme={undefined}
+                              bg={isLightTheme ? "#d8a4b6" : "#d45b88"}
                               color={isLightTheme ? "#432b33" : "white"}
                               variant="solid"
+                              border="1px solid"
+                              borderColor={
+                                isLightTheme
+                                  ? "rgba(176, 94, 122, 0.28)"
+                                  : "rgba(255, 227, 237, 0.36)"
+                              }
+                              boxShadow={
+                                isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950"
+                              }
+                              _hover={{
+                                bg: isLightTheme ? "#d3a0b2" : "#dc7098",
+                                boxShadow: isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950",
+                                transform: "translateY(-1px)",
+                              }}
+                              _active={{
+                                bg: isLightTheme ? "#c992a6" : "#c54d79",
+                                boxShadow: isLightTheme
+                                  ? "0px 2px 0px #c08aa0"
+                                  : "0px 2px 0px #8f2950",
+                                transform: "translateY(2px)",
+                              }}
+                              _disabled={{
+                                opacity: 0.7,
+                                cursor: "not-allowed",
+                                boxShadow: isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950",
+                              }}
                               onClick={handleExplainAnswer}
                               isDisabled={
                                 isLoadingExplanation ||
@@ -1571,6 +1603,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         explanationText ? (
                           <Box
                             w="100%"
+                            mb={{ base: 5, md: 6 }}
                             p={4}
                             borderRadius="md"
                             bg={
@@ -1601,9 +1634,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                               fontSize="sm"
                               lineHeight="1.6"
+                              pb={{ base: 3, md: 4 }}
                               sx={{
                                 "& p": { mb: 2 },
-                                "& p:last-child": { mb: 0 },
+                                "& p:last-child": { mb: 2 },
                                 "& strong": {
                                   fontWeight: "bold",
                                   color: isLightTheme ? "#7a3f52" : "pink.100",
@@ -1634,7 +1668,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                               textAlign="center"
                             >
-                              {`Level ${xpLevelNumber} • Total XP ${updatedTotalXp}`}
+                              {`${getTranslation("flashcard_xp_level", {
+                                level: xpLevelNumber,
+                              })} • ${getTranslation("flashcard_total_xp", {
+                                xp: updatedTotalXp,
+                              })}`}
                             </Text>
 
                             <WaveBar value={nextLevelProgressPct} />

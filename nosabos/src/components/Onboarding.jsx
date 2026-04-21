@@ -68,6 +68,36 @@ const personaDefaultFor = (lang) =>
   translations?.en?.onboarding_persona_default_example ||
   "";
 
+const normalizePersonaValue = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/g, "")
+    .toLocaleLowerCase();
+
+const isDefaultPersonaValue = (value) => {
+  if (value === undefined || value === null) return true;
+  const normalized = normalizePersonaValue(value);
+  if (!normalized) return false;
+  return ["en", "es", "it"].some(
+    (lang) =>
+      normalized ===
+        normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
+      normalized ===
+        normalizePersonaValue(
+          translations?.[lang]?.onboarding_persona_default_example,
+        ),
+  );
+};
+
+const personaForSupportLanguage = (currentPersona, supportLang) => {
+  if (currentPersona === undefined || currentPersona === null) {
+    return personaDefaultFor(supportLang) || "";
+  }
+  if (!isDefaultPersonaValue(currentPersona)) return currentPersona;
+  return personaDefaultFor(supportLang) || currentPersona || "";
+};
+
 const STEPS = ["languages", "voice", "extra"];
 const uiCopy = (lang, copy) =>
   copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
@@ -104,8 +134,11 @@ export default function Onboarding({
         getDefaultTargetForSupport(initialSupportLang),
       ),
       voicePersona:
-        initialDraft.voicePersona ||
-        personaDefaultFor(initialSupportLang) ||
+        personaForSupportLanguage(
+          initialDraft.voicePersona,
+          initialSupportLang,
+        ) ??
+        personaDefaultFor(initialSupportLang) ??
         translations.en.onboarding_persona_default_example,
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
@@ -163,13 +196,25 @@ export default function Onboarding({
     [supportLang, ui, showJapanese],
   );
 
+  const handleSupportLanguageChange = (value) => {
+    playSound(selectSound);
+    const normalized = normalizeSupportLanguage(
+      value,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const nextPersona = personaForSupportLanguage(voicePersona, normalized);
+
+    setSupportLang(normalized);
+    if (nextPersona && nextPersona !== voicePersona) {
+      setVoicePersona(nextPersona);
+    }
+  };
+
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang);
-    const enDefault = personaDefaultFor("en");
-    const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
 
-    if (!current || current === enDefault || current === esDefault) {
+    if (isDefaultPersonaValue(current)) {
       const next = localizedDefault || current;
       if (next && next !== current) {
         setVoicePersona(next);
@@ -367,18 +412,30 @@ export default function Onboarding({
                 justifyContent="center"
                 mb={{ base: 4, md: 5 }}
                 animation={`${stepContentReveal} 0.28s ease`}
-                key={`${supportLang}-${step}`}
+                key={step}
               >
                 <VStack align="stretch" spacing={4} w="100%">
                   {/* ── Step 1: Languages ── */}
                   {step === 0 && (
                     <>
                       {/* Support Language */}
-                      <Box bg="gray.800" p={3} rounded="md">
+                      <Box
+                        bg="gray.800"
+                        p={3}
+                        rounded="md"
+                        minH={{ base: "158px", md: "146px" }}
+                        display="flex"
+                        flexDirection="column"
+                      >
                         <Text fontSize="sm" fontWeight="semibold" mb={1}>
                           {ui.onboarding_support_language_title}
                         </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
+                        <Text
+                          fontSize="xs"
+                          opacity={0.7}
+                          mb={3}
+                          minH={{ base: "42px", md: "36px" }}
+                        >
                           {ui.onboarding_support_language_desc}
                         </Text>
                         <Menu autoSelect={false} isLazy>
@@ -394,6 +451,7 @@ export default function Onboarding({
                             w="100%"
                             textAlign="left"
                             padding={5}
+                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>
@@ -415,15 +473,7 @@ export default function Onboarding({
                             <MenuOptionGroup
                               type="radio"
                               value={supportLang}
-                              onChange={(value) => {
-                                playSound(selectSound);
-                                setSupportLang(
-                                  normalizeSupportLanguage(
-                                    value,
-                                    DEFAULT_SUPPORT_LANGUAGE,
-                                  ),
-                                );
-                              }}
+                              onChange={handleSupportLanguageChange}
                             >
                               {supportLanguageOptions.map((option) => (
                                 <MenuItemOption
@@ -444,11 +494,23 @@ export default function Onboarding({
                       </Box>
 
                       {/* Practice Language */}
-                      <Box bg="gray.800" p={3} rounded="md">
+                      <Box
+                        bg="gray.800"
+                        p={3}
+                        rounded="md"
+                        minH={{ base: "158px", md: "146px" }}
+                        display="flex"
+                        flexDirection="column"
+                      >
                         <Text fontSize="sm" fontWeight="semibold" mb={1}>
                           {ui.onboarding_practice_language_title}
                         </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
+                        <Text
+                          fontSize="xs"
+                          opacity={0.7}
+                          mb={3}
+                          minH={{ base: "42px", md: "36px" }}
+                        >
                           {ui.onboarding_practice_language_desc}
                         </Text>
                         <Menu autoSelect={false} isLazy>
@@ -465,6 +527,7 @@ export default function Onboarding({
                             textAlign="left"
                             title={ui.onboarding_practice_label_title}
                             padding={5}
+                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>

@@ -187,7 +187,27 @@ const FeedbackRail = React.memo(
                     <FiHelpCircle />
                   )
                 }
-                colorScheme="pink"
+                colorScheme={undefined}
+                bg="#d8a4b6"
+                color="#432b33"
+                border="1px solid"
+                borderColor="rgba(176, 94, 122, 0.28)"
+                boxShadow="0px 4px 0px #c08aa0"
+                _hover={{
+                  bg: "#d3a0b2",
+                  boxShadow: "0px 4px 0px #c08aa0",
+                  transform: "translateY(-1px)",
+                }}
+                _active={{
+                  bg: "#c992a6",
+                  boxShadow: "0px 2px 0px #c08aa0",
+                  transform: "translateY(2px)",
+                }}
+                _disabled={{
+                  opacity: 0.7,
+                  cursor: "not-allowed",
+                  boxShadow: "0px 4px 0px #c08aa0",
+                }}
                 onClick={onExplainAnswer}
                 isDisabled={isLoadingExplanation || !!explanationText}
                 width="full"
@@ -217,6 +237,7 @@ const FeedbackRail = React.memo(
           {!ok && explanationText && (
             <Box
               p={4}
+              mb={6}
               borderRadius="lg"
               bg={APP_SURFACE_ELEVATED}
               borderWidth="1px"
@@ -233,9 +254,10 @@ const FeedbackRail = React.memo(
                 fontSize="md"
                 color={questionToneText.primary}
                 lineHeight="1.6"
+                pb={4}
                 sx={{
                   "& p": { mb: 2 },
-                  "& p:last-child": { mb: 0 },
+                  "& p:last-child": { mb: 2 },
                   "& strong": {
                     fontWeight: "bold",
                     color: "var(--question-tool-accent)",

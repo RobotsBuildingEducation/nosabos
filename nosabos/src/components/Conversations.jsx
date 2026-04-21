@@ -1014,6 +1014,8 @@ export default function Conversations({
     conversationSubjects: user?.progress?.conversationSubjects || "",
   });
   const conversationSettingsRef = useRef(conversationSettings);
+  const conversationSubjectsDraftRef = useRef(null);
+  const conversationSubjectsClearTimerRef = useRef(null);
 
   // Settings drawer
   const {
@@ -1071,6 +1073,13 @@ export default function Conversations({
   const handleSettingsChange = useCallback(
     async (newSettings) => {
       const previousSettings = conversationSettingsRef.current;
+      const subjectsChanged =
+        previousSettings.conversationSubjects !==
+        newSettings.conversationSubjects;
+      if (subjectsChanged) {
+        clearTimeout(conversationSubjectsClearTimerRef.current);
+        conversationSubjectsDraftRef.current = newSettings.conversationSubjects;
+      }
       setConversationSettings(newSettings);
 
       // Persist to Firebase
@@ -1085,6 +1094,17 @@ export default function Conversations({
         } catch (e) {
           console.error("Failed to save conversation settings:", e);
         }
+      }
+      if (subjectsChanged) {
+        clearTimeout(conversationSubjectsClearTimerRef.current);
+        conversationSubjectsClearTimerRef.current = setTimeout(() => {
+          if (
+            conversationSubjectsDraftRef.current ===
+            newSettings.conversationSubjects
+          ) {
+            conversationSubjectsDraftRef.current = null;
+          }
+        }, 6000);
       }
 
       // Mark for goal regeneration if proficiency level or subjects changed
@@ -1653,17 +1673,26 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             setPauseMs(data.progress.pauseMs);
           }
           // Load conversation settings
-          setConversationSettings((prev) => ({
-            proficiencyLevel:
-              data.progress?.conversationProficiencyLevel ||
-              maxProficiencyLevel ||
-              prev.proficiencyLevel,
-            practicePronunciation:
-              data.progress?.practicePronunciation ??
-              prev.practicePronunciation,
-            conversationSubjects:
-              data.progress?.conversationSubjects || prev.conversationSubjects,
-          }));
+          setConversationSettings((prev) => {
+            const savedSubjects =
+              typeof data.progress?.conversationSubjects === "string"
+                ? data.progress.conversationSubjects
+                : prev.conversationSubjects;
+            const draftSubjects = conversationSubjectsDraftRef.current;
+            return {
+              proficiencyLevel:
+                data.progress?.conversationProficiencyLevel ||
+                maxProficiencyLevel ||
+                prev.proficiencyLevel,
+              practicePronunciation:
+                data.progress?.practicePronunciation ??
+                prev.practicePronunciation,
+              conversationSubjects:
+                draftSubjects !== null && draftSubjects !== savedSubjects
+                  ? draftSubjects
+                  : savedSubjects,
+            };
+          });
         }
       } catch {}
     }
@@ -1671,7 +1700,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }, [currentNpub, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
-  useEffect(() => () => stop(), []);
+  useEffect(
+    () => () => {
+      clearTimeout(conversationSubjectsClearTimerRef.current);
+      stop();
+    },
+    [],
+  );
   useEffect(
     () => () => {
       stopReplayAudio();
