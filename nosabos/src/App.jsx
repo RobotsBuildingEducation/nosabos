@@ -1,5 +1,6 @@
 // src/App.jsx
 import React, {
+  startTransition,
   useCallback,
   useEffect,
   useMemo,
@@ -1885,7 +1886,7 @@ export default function App() {
     pendingLangRef.current = normalized;
     if (pendingLangTimeoutRef.current) clearTimeout(pendingLangTimeoutRef.current);
     pendingLangTimeoutRef.current = setTimeout(() => { pendingLangRef.current = null; }, 5000);
-    setAppLanguage(normalized);
+    startTransition(() => { setAppLanguage(normalized); });
     try { localStorage.setItem("appLanguage", normalized); } catch {}
   }, []);
   const t = translations[appLanguage] || translations.en;
