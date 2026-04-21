@@ -47,7 +47,6 @@ import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import {
-  LANGUAGE_FALLBACK_LABELS,
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
 } from "../constants/languages";
@@ -210,9 +209,20 @@ const translations = {
     signin_extension: "Sign in with Extension",
     signin_or: "or",
     back_button: "Back",
+    language_nl: "Dutch",
     language_en: "English",
-    language_es: "Spanish",
+    language_fr: "French",
+    language_de: "German",
     language_it: "Italian",
+    language_pt: "Portuguese",
+    language_es: "Spanish",
+    language_nah: "Eastern Huasteca Nahuatl",
+    language_yua: "Yucatec Maya",
+    language_el: "Greek",
+    language_ja: "Japanese",
+    language_ru: "Russian",
+    language_pl: "Polish",
+    language_ga: "Irish",
   },
   es: {
     nav_signin: "Iniciar Sesión",
@@ -323,10 +333,20 @@ const translations = {
     signin_extension: "Iniciar con Extensión",
     signin_or: "o",
     back_button: "Regresar",
+    language_nl: "Holandés",
     language_en: "Inglés",
-    language_es: "Español",
-    language_fr: "Français",
+    language_fr: "Francés",
+    language_de: "Alemán",
     language_it: "Italiano",
+    language_pt: "Portugués",
+    language_es: "Español",
+    language_nah: "Náhuatl huasteco oriental",
+    language_yua: "Maya yucateco",
+    language_el: "Griego",
+    language_ja: "Japonés",
+    language_ru: "Ruso",
+    language_pl: "Polaco",
+    language_ga: "Irlandés",
   },
   it: {
     nav_signin: "Accedi",
@@ -435,9 +455,20 @@ const translations = {
     signin_extension: "Accedi con Estensione",
     signin_or: "o",
     back_button: "Indietro",
+    language_nl: "Olandese",
     language_en: "Inglese",
-    language_es: "Spagnolo",
+    language_fr: "Francese",
+    language_de: "Tedesco",
     language_it: "Italiano",
+    language_pt: "Portoghese",
+    language_es: "Spagnolo",
+    language_nah: "Nahuatl huasteco orientale",
+    language_yua: "Maya yucateco",
+    language_el: "Greco",
+    language_ja: "Giapponese",
+    language_ru: "Russo",
+    language_pl: "Polacco",
+    language_ga: "Irlandese",
   },
 };
 
@@ -547,10 +578,20 @@ translations.fr = {
   signin_extension: "Connexion avec extension",
   signin_or: "ou",
   back_button: "Retour",
-  language_en: "English",
-  language_es: "Español",
+  language_nl: "Néerlandais",
+  language_en: "Anglais",
   language_fr: "Français",
-  language_it: "Italiano",
+  language_de: "Allemand",
+  language_it: "Italien",
+  language_pt: "Portugais",
+  language_es: "Espagnol",
+  language_nah: "Nahuatl huastèque oriental",
+  language_yua: "Maya yucatèque",
+  language_el: "Grec",
+  language_ja: "Japonais",
+  language_ru: "Russe",
+  language_pl: "Polonais",
+  language_ga: "Irlandais",
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1680,7 +1721,10 @@ const LandingPage = ({ onAuthenticated }) => {
               justifyItems: "center",
             }}
           >
-            {getPracticeLanguageOptions({ uiLang: lang }).map(
+            {getPracticeLanguageOptions({
+              ui: translations[lang] || translations.en,
+              uiLang: lang,
+            }).map(
               (langOption, i) => (
                 <motion.div
                   key={langOption.value}
@@ -1713,9 +1757,7 @@ const LandingPage = ({ onAuthenticated }) => {
                       textAlign: "center",
                     }}
                   >
-                    {langOption.value === "nah"
-                      ? "Huasteca Nahuatl"
-                      : LANGUAGE_FALLBACK_LABELS[langOption.value]}
+                    {langOption.label}
                   </span>
                   <span
                     style={{

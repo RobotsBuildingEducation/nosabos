@@ -2,7 +2,7 @@
 
 This document is the authoritative catalog of every file, function, component, and data structure that must be touched to add a new **support / app UI language** (the language the app chrome, instructions, feedback, and LLM meta-prompts are rendered in) to Nosabos.
 
-It is intentionally exhaustive so the same playbook can be reused for every future language. The current goal is Italian (`it`), but the patterns apply to any additional BCP-47 code (`de`, `el`, `pl`, `ga`, `yua`, …).
+It is intentionally exhaustive so the same playbook can be reused for every future language. Italian (`it`) is the reference completed rollout, French (`fr`) is the first regression-hardening pass, and the patterns apply to any additional BCP-47 code (`de`, `el`, `pl`, `ga`, `yua`, …).
 
 > Support language ≠ practice (target) language. Practice language breadth is already wide; support language is historically only `en` and `es`. Adding a new support language means the UI can be rendered and the AI can explain in that language — not just be selectable for practice.
 
@@ -245,11 +245,12 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - Contains its own **component-local `translations` object** (completely separate from `src/utils/translation.jsx`) with only `en` and `es` entries.
 - `copy = translations[lang]` has no fallback — crashes when `detectUserLanguage()` returns `"it"`.
 - Language picker was a two-button `en`/`es` toggle — must be replaced with a menu/select supporting all supported UI languages.
-- Add `language_it` key to `en` and `es` blocks, and author a complete `it` entry for all ~60 keys.
+- Add `language_<code>` keys for **every practice-language card** (`nl`, `en`, `fr`, `de`, `it`, `pt`, `es`, `nah`, `yua`, `el`, `ja`, `ru`, `pl`, `ga`) in every support-language block. The landing-page practice grid is a separate surface from the support-language dropdown; localizing only the dropdown still leaves the 14-card language list in English.
+- Author a complete `<code>` entry for all ~60 landing-page copy keys.
 
 **Italian implementation note:** Done — full `it` block added covering all landing-page copy (nav, hero, features, values, scholarship, FAQ, CTA, sign-in, footer). `copy = translations[lang] || translations.en` fallback guard added. Language two-button toggle replaced with a styled `<select>` dropdown listing all three options (English / Español / Italiano) using a `LANG_OPTIONS` constant. `language_it` added to `en` and `es` blocks.
 
-**Label-localization wiring note:** `LanguageMenu` must pass the active locale dictionary to `getSupportLanguageOptions` so the option labels are localized, not just the selected language code. Use `getSupportLanguageOptions({ ui: translations[lang] || translations.en, uiLang: lang })`. Without the `ui` argument, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the menu reads "English / Spanish / Italian" regardless of `lang`. Label convention matches `src/utils/translation.jsx`: each locale spells every language name in *its own* language (`en` → `English` / `Spanish` / `Italian`; `es` → `Inglés` / `Español` / `Italiano`; `it` → `Inglese` / `Spagnolo` / `Italiano`). Do **not** use native names (e.g. `Español` inside the English block) — those were reverted because the convention across the rest of the app is "write language names in the UI language."
+**Label-localization wiring note:** `LanguageMenu` must pass the active locale dictionary to `getSupportLanguageOptions` so the option labels are localized, not just the selected language code. Use `getSupportLanguageOptions({ ui: translations[lang] || translations.en, uiLang: lang })`. The practice-language grid must do the same with `getPracticeLanguageOptions({ ui: translations[lang] || translations.en, uiLang: lang })` and render `langOption.label`, not `LANGUAGE_FALLBACK_LABELS[langOption.value]`. Without the `ui` argument, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the dropdown/cards read "English / Spanish / Italian" regardless of `lang`. Label convention matches `src/utils/translation.jsx`: each locale spells every language name in *its own* language (`en` → `English` / `Spanish` / `Italian`; `es` → `Inglés` / `Español` / `Italiano`; `it` → `Inglese` / `Spagnolo` / `Italiano`; `fr` → `Anglais` / `Espagnol` / `Italien`). Do **not** use native names (e.g. `Español` inside the English block) unless the design explicitly asks for native display names.
 
 ### 3.21e `src/components/TutorialActionBarPopovers.jsx`
 - `BUTTON_EXPLANATIONS` array has `label` and `description` objects with only `en` and `es` keys — Italian users see a completely blank card body.
@@ -272,7 +273,7 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
 
-**Label-localization wiring note:** `LanguageMenuFixed` must receive the active locale dictionary and forward it to `getSupportLanguageOptions`. `LinksPage` already computes `translations = t(linksPageTranslations)` via `useLanguage().t`; pass it as a `translations` prop (alongside `language`) and call `getSupportLanguageOptions({ ui: translations, uiLang: language })` inside the menu. Required dictionary keys on every locale block in `src/translations/linksPage.jsx`: `language_en`, `language_es`, `language_it`, spelled in the *UI* language — `en` block: `English / Spanish / Italian`; `es` block: `Inglés / Español / Italiano`; `it` block: `Inglese / Spagnolo / Italiano`. This matches the convention in `src/utils/translation.jsx`. Without these keys, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the dropdown displays `English / Spanish / Italian` on every UI locale.
+**Label-localization wiring note:** `LanguageMenuFixed` must receive the active locale dictionary and forward it to `getSupportLanguageOptions`. `LinksPage` already computes `translations = t(linksPageTranslations)` via `useLanguage().t`; pass it as a `translations` prop (alongside `language`) and call `getSupportLanguageOptions({ ui: translations, uiLang: language })` inside the menu. Required dictionary keys on every locale block in `src/translations/linksPage.jsx`: `language_en`, `language_es`, `language_fr`, `language_it`, spelled in the *UI* language — `en` block: `English / Spanish / French / Italian`; `es` block: `Inglés / Español / Francés / Italiano`; `it` block: `Inglese / Spagnolo / Francese / Italiano`; `fr` block: `Anglais / Espagnol / Français / Italien`. This matches the convention in `src/utils/translation.jsx`. Without these keys, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the dropdown displays English labels on every UI locale.
 
 **Language icon rendering note (mobile):** Do not wrap the flag SVG in a Chakra `<Text>` inside the `IconButton`'s `icon` prop. `Text` renders as `<p>`, which is invalid inside `<button>` and causes the icon to intermittently fail to paint on mobile WebKit. Wrap in `<Box as="span" display="inline-flex" …>` with an explicit 24×24 size and `"& svg": { width, height, display: "block" }` so the SVG always lays out.
 
@@ -428,6 +429,8 @@ Tutorial / realtime goal UI is a separate required audit. Any learner-visible go
 
 Each path applies `withItalianSkillTreeText(...)`, which recursively adds `it` to every `{ en, es }` object, including unit titles, unit descriptions, lesson titles, lesson descriptions, generated supplemental lessons, and `content.*.tutorialDescription`. `SkillTree.jsx` reads these through `getUIDisplayText(...)`, so both the skill-tree cards and `LessonDetailModal` render Italian when `appLanguage` is `it`. The CEFR level header is separate UI chrome in `CEFRLevelNavigator.jsx`; add the new language to its `CEFR_LEVEL_INFO` names/descriptions too.
 
+**French implementation note:** `src/data/skillTree/frenchLocalizer.js` must be treated as a full coverage layer, not a small phrase glossary. The French rollout originally left most Pre-A1 through C2 unit/lesson titles in English (`People & Family`, `My Family`, etc.). The corrected localizer now recursively covers all seven split CEFR files and adds `fr` to 1,100 `{ en, es }` objects plus all 13 `successCriteria_fr` strings. For the next support language, run the audit in §8 and require `frSame/newCodeSame = 0` for skill-tree objects before calling the tree complete.
+
 `LessonDetailModal` also has action/loading chrome outside the data-localized lesson objects. The standard lesson start button must use a dedicated translation key (`skill_tree_starting_lesson`) for its loading state and resolve it from `supportLang`; otherwise Italian users can see English/generic loading text while the lesson is starting. Keep `generic_loading` present in every support-language block as a fallback for shared loaders.
 
 When adding the next support language, either author the new key directly in each CEFR file or add an equivalent centralized data-localization pass. In both cases, run a recursive audit that confirms every `{ en, es }` object in `src/data/skillTreeData.js` and `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js` resolves the new key before marking the skill tree done.
@@ -456,6 +459,8 @@ Each level file is a flat list of card objects of the shape `concept: { en, es }
 - `CEFR_COLORS`, `CEFR_LEVELS`, `CEFR_LEVEL_COUNTS` — no change; they're language-agnostic.
 
 **Italian implementation note:** `src/data/flashcards/italianLocalizer.js` is the current Italian coverage layer for flashcard concepts. `src/data/flashcardData.js` and every split CEFR deck in `src/data/flashcards/{pre-a1,a1,a2,b1,b2,c1,c2}.js` applies `withItalianFlashcardText(...)`, which adds `concept.it` for the card prompt shown in flashcard mode and flashcard practice modals. Audit both the legacy dataset and split decks; the frontend can render from either path depending on initial load, lazy-load success, and fallback state.
+
+**French implementation note:** `src/data/flashcards/frenchLocalizer.js` now covers all 1,150 split CEFR cards from Pre-A1 through C2, including the B2 idiom deck that was visibly falling back to English (`It costs an arm and a leg`, `Break a leg`, etc.). Equality-based audits will still flag true French cognates and unchanged forms (`taxi`, `visa`, `culture`, `six`, `orange`, etc.), so verify either that the key is explicitly present in the localizer or that the identical spelling is intentional. Do not mark the rollout complete while the first card in any level still displays its English `concept.en` as the support-language prompt.
 
 ### 5.3 Alphabet bootcamps (`src/data/<lang>Alphabet.js`)
 
@@ -529,6 +534,14 @@ Listening\.\.\.|Reading\.\.\.|Thinking\.\.\.|Generating
 The learner says|successCriteria|Critères:\s*The learner
 ```
 
+For the data layer, also run a runtime audit against the localized modules instead of only grepping source files. Grep finds raw `{ en, es }` authoring data by design; the localizer pass is what matters. Use a tiny Node ESM script that imports the exact named exports (`SKILL_TREE_PRE_A1`, `SKILL_TREE_A1`, ..., `FLASHCARDS_C2`) and counts:
+
+- skill-tree objects where `typeof value.en === "string" && typeof value.es === "string"` but `value[code]` is missing or equals `value.en`;
+- `successCriteria` strings without `successCriteria_<code>`;
+- flashcards where `card.concept[code]` is missing or unintentionally equals `card.concept.en`.
+
+For French after the regression pass, the skill-tree audit is `0` missing / `0` English fallbacks across 1,100 objects and `0` missing across 13 success criteria. Flashcards cover all 1,150 split CEFR cards; identical-spelling hits are acceptable only when they are true cognates or unchanged French forms.
+
 Replace hits with either:
 
 - a translation-key lookup (`t(lang, "…")`), or
@@ -582,6 +595,10 @@ For each new support language, work top-to-bottom:
 
 These misses came from the French rollout and must be treated as acceptance tests for French and every future support language:
 
+- Landing page practice-language cards render the localized `langOption.label` for all 14 cards. Selecting French should show labels such as `Anglais`, `Allemand`, `Italien`, `Portugais`, etc.; it must not render the English fallback list.
+- `/links` support-language dropdown labels come from the active `linksPageTranslations` locale and include `language_fr` in every support-language block.
+- Skill-tree data is not complete until Pre-A1 through C2 unit/lesson titles, descriptions, tutorial descriptions, and `successCriteria_<code>` pass the runtime audit. Smoke target: French Pre-A1 People & Family should render `Personnes et famille`, `Ma famille`, `Plus de famille`, and `Les gens autour de moi`, not English.
+- Flashcard data is not complete until all 1,150 split CEFR concepts resolve `concept.<code>`. Smoke target: French B2 idiom cards should render `Ca coute les yeux de la tete`, `Bonne chance`, `Il pleut des cordes`, etc., not English idioms.
 - Onboarding tabs and section labels (`LANGUAGES`, `VOICE`, `EFFECTS`) render in the support language.
 - Onboarding voice-activation slider localizes both the label and the value suffix (`seconds`).
 - Onboarding navigation localizes `Back` and all neighboring button states.
