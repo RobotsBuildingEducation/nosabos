@@ -48,6 +48,30 @@ const spanishTimezones = [
 
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
 
+const portugueseTimezones = [
+  "Europe/Lisbon",
+  "Atlantic/Madeira",
+  "Atlantic/Azores",
+  "America/Sao_Paulo",
+  "America/Rio_Branco",
+  "America/Manaus",
+  "America/Belem",
+  "America/Fortaleza",
+  "America/Recife",
+  "America/Bahia",
+  "America/Maceio",
+  "America/Araguaina",
+  "America/Cuiaba",
+  "America/Campo_Grande",
+  "America/Porto_Velho",
+  "Africa/Maputo",
+  "Africa/Luanda",
+  "Atlantic/Cape_Verde",
+  "Africa/Bissau",
+  "Africa/Sao_Tome",
+  "Asia/Dili",
+];
+
 const japaneseTimezones = ["Asia/Tokyo"];
 
 const frenchTimezones = [
@@ -88,6 +112,9 @@ const detectLanguageFromTimezone = () => {
     }
     if (frenchTimezones.includes(timezone)) {
       return "fr";
+    }
+    if (portugueseTimezones.includes(timezone)) {
+      return "pt";
     }
     if (japaneseTimezones.includes(timezone)) {
       return "ja";

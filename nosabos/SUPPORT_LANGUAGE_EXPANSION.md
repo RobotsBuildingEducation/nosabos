@@ -346,7 +346,11 @@ Room/area names displayed in the game HUD and loader are stored as `{ en, es }` 
 
 **`LoadingMiniGame.jsx` world generation** (lines ~571–591) — `outdoorName`, `indoor1Name`, `indoor2Name` objects were built with only `en`/`es` keys even though `OUTDOOR_NAMES` and `INDOOR_ROOM_TYPES[].names` already had `it` arrays. Added `it: pick(rng, ...)` to all three.
 
+**`LoadingMiniGame.jsx` runtime message map** — do not stop at the authored `SIGN_MESSAGES` / `CHEST_MESSAGES` / `LAMP_MESSAGES` / `PLANT_MESSAGES` / `TABLE_MESSAGES` pools. The generated `world.messages` object must also carry **every support language key** at runtime. A previous regression left Portuguese out of this shuffle step, so the authored `pt` strings existed on disk while review loaders still fell back to English in production. Prefer iterating over `SUPPORT_LANGUAGE_CODES` instead of hand-writing `{ en, es, it, ... }` objects here.
+
 **`index.jsx` object-examine `mapName`** — was looking up `map.name?.[targetLang]` (the practice language) for LLM context. Changed to `map.name?.en` since the LLM prompt is in English regardless of target language.
+
+**`index.jsx` object-examine fallback copy** — `buildFallbackObjectExamineText(...)` is a learner-visible support-language surface. Localizing the generated `supportName` / `supportText` prompt is not enough; if generation fails or omits those fields, the fallback/merge path must still populate `supportName` and `supportText` in the support language instead of leaking English.
 
 **`activeAreaLabel`** in `index.jsx` already correctly reads `activeMap.name?.[supportLang]` — no change needed; it works automatically once the upstream name objects include the `it` key.
 
@@ -370,6 +374,7 @@ Room/area names displayed in the game HUD and loader are stored as `{ en, es }` 
 ### 3.22 `src/components/LoadingMiniGame.jsx`
 - Inline language-dependent copy.
 - Loader room names and interactable messages are data payloads, not regular UI strings. Add the new language to `OUTDOOR_NAMES`, every `INDOOR_ROOM_TYPES[].names`, and each message pool (`SIGN_MESSAGES`, `CHEST_MESSAGES`, `LAMP_MESSAGES`, `PLANT_MESSAGES`, `TABLE_MESSAGES`).
+- Regression note: the authored message pools are not the full contract. The generated `world.messages` shuffle loop must also preserve the new support language. If that loop only rebuilds `{ en, es, it }`, Portuguese/French/Japanese loaders will still show English even though their message arrays exist above.
 
 **Italian implementation note:** the loading minigame now includes Italian room names and interaction messages so conversation/realtime loaders do not fall back to English.
 
@@ -455,6 +460,8 @@ Tutorial / realtime goal UI is a separate required audit. Any learner-visible go
 - The seven split CEFR files in `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js`.
 
 Each path applies `withItalianSkillTreeText(...)`, which recursively adds `it` to every `{ en, es }` object, including unit titles, unit descriptions, lesson titles, lesson descriptions, generated supplemental lessons, and `content.*.tutorialDescription`. `SkillTree.jsx` reads these through `getUIDisplayText(...)`, so both the skill-tree cards and `LessonDetailModal` render Italian when `appLanguage` is `it`. The CEFR level header is separate UI chrome in `CEFRLevelNavigator.jsx`; add the new language to its `CEFR_LEVEL_INFO` names/descriptions too.
+
+`SkillTree.jsx` also has a separate review-game loader surface inside `LessonDetailModal`: its local `GAME_LOADING_MESSAGES` table is independent from `LoadingMiniGame.jsx`. Audit that table for every support language (`pt`, `fr`, `ja`, and future additions) instead of assuming the loading minigame copy covers the review modal too.
 
 **French implementation note:** `src/data/skillTree/frenchLocalizer.js` must be treated as a full coverage layer, not a small phrase glossary. The French rollout originally left most Pre-A1 through C2 unit/lesson titles in English (`People & Family`, `My Family`, etc.). The corrected localizer now recursively covers all seven split CEFR files and adds `fr` to 1,100 `{ en, es }` objects plus all 13 `successCriteria_fr` strings. For the next support language, run the audit in §8 and require `frSame/newCodeSame = 0` for skill-tree objects before calling the tree complete.
 

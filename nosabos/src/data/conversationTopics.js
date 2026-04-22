@@ -82,57 +82,59 @@ export function getRandomSkillTreeTopics(
  * Fallback topics in case API fails
  * Simple prompts appropriate for each level
  */
-export const fallbackTopics = {
+const baseFallbackTopics = {
   "Pre-A1": [
-    { en: "Say hello", es: "Di hola", it: "Di' ciao", fr: "Dis bonjour", ja: "こんにちはと言う" },
-    { en: "Count to ten", es: "Cuenta hasta diez", it: "Conta fino a dieci", fr: "Compte jusqu'a dix", ja: "10まで数える" },
-    { en: "Name a color", es: "Nombra un color", it: "Nomina un colore", fr: "Nomme une couleur", ja: "色を1つ言う" },
-    { en: "Say your name", es: "Di tu nombre", it: "Di' il tuo nome", fr: "Dis ton nom", ja: "自分の名前を言う" },
-    { en: "Say thank you", es: "Di gracias", it: "Di' grazie", fr: "Dis merci", ja: "ありがとうと言う" },
+    { en: "Say hello", es: "Di hola", pt: "Diga olá", it: "Di' ciao", fr: "Dis bonjour", ja: "こんにちはと言う" },
+    { en: "Count to ten", es: "Cuenta hasta diez", pt: "Conte até dez", it: "Conta fino a dieci", fr: "Compte jusqu'a dix", ja: "10まで数える" },
+    { en: "Name a color", es: "Nombra un color", pt: "Diga uma cor", it: "Nomina un colore", fr: "Nomme une couleur", ja: "色を1つ言う" },
+    { en: "Say your name", es: "Di tu nombre", pt: "Diga seu nome", it: "Di' il tuo nome", fr: "Dis ton nom", ja: "自分の名前を言う" },
+    { en: "Say thank you", es: "Di gracias", pt: "Diga obrigado", it: "Di' grazie", fr: "Dis merci", ja: "ありがとうと言う" },
   ],
   A1: [
-    { en: "Introduce yourself", es: "Preséntate", it: "Presentati", fr: "Presente-toi", ja: "自己紹介する" },
-    { en: "Talk about your family", es: "Habla sobre tu familia", it: "Parla della tua famiglia", fr: "Parle de ta famille", ja: "家族について話す" },
-    { en: "Describe your daily routine", es: "Describe tu rutina diaria", it: "Descrivi la tua routine quotidiana", fr: "Decris ta routine quotidienne", ja: "日課を説明する" },
-    { en: "Talk about your favorite food", es: "Habla sobre tu comida favorita", it: "Parla del tuo cibo preferito", fr: "Parle de ton plat prefere", ja: "好きな食べ物について話す" },
-    { en: "Describe the weather today", es: "Describe el clima de hoy", it: "Descrivi il tempo di oggi", fr: "Decris la meteo d'aujourd'hui", ja: "今日の天気を説明する" },
+    { en: "Introduce yourself", es: "Preséntate", pt: "Apresente-se", it: "Presentati", fr: "Presente-toi", ja: "自己紹介する" },
+    { en: "Talk about your family", es: "Habla sobre tu familia", pt: "Fale sobre sua família", it: "Parla della tua famiglia", fr: "Parle de ta famille", ja: "家族について話す" },
+    { en: "Describe your daily routine", es: "Describe tu rutina diaria", pt: "Descreva sua rotina diária", it: "Descrivi la tua routine quotidiana", fr: "Decris ta routine quotidienne", ja: "日課を説明する" },
+    { en: "Talk about your favorite food", es: "Habla sobre tu comida favorita", pt: "Fale sobre sua comida favorita", it: "Parla del tuo cibo preferito", fr: "Parle de ton plat prefere", ja: "好きな食べ物について話す" },
+    { en: "Describe the weather today", es: "Describe el clima de hoy", pt: "Descreva o clima de hoje", it: "Descrivi il tempo di oggi", fr: "Decris la meteo d'aujourd'hui", ja: "今日の天気を説明する" },
   ],
   A2: [
-    { en: "Describe your neighborhood", es: "Describe tu vecindario", it: "Descrivi il tuo quartiere", fr: "Decris ton quartier", ja: "近所について説明する" },
-    { en: "Talk about your hobbies", es: "Habla sobre tus pasatiempos", it: "Parla dei tuoi hobby", fr: "Parle de tes loisirs", ja: "趣味について話す" },
-    { en: "Describe what you did yesterday", es: "Describe lo que hiciste ayer", it: "Descrivi cosa hai fatto ieri", fr: "Decris ce que tu as fait hier", ja: "昨日したことを説明する" },
-    { en: "Talk about your job or studies", es: "Habla sobre tu trabajo o estudios", it: "Parla del tuo lavoro o studio", fr: "Parle de ton travail ou de tes etudes", ja: "仕事や勉強について話す" },
-    { en: "Make plans for the weekend", es: "Haz planes para el fin de semana", it: "Fai piani per il weekend", fr: "Fais des projets pour le week-end", ja: "週末の予定を立てる" },
+    { en: "Describe your neighborhood", es: "Describe tu vecindario", pt: "Descreva seu bairro", it: "Descrivi il tuo quartiere", fr: "Decris ton quartier", ja: "近所について説明する" },
+    { en: "Talk about your hobbies", es: "Habla sobre tus pasatiempos", pt: "Fale sobre seus passatempos", it: "Parla dei tuoi hobby", fr: "Parle de tes loisirs", ja: "趣味について話す" },
+    { en: "Describe what you did yesterday", es: "Describe lo que hiciste ayer", pt: "Descreva o que você fez ontem", it: "Descrivi cosa hai fatto ieri", fr: "Decris ce que tu as fait hier", ja: "昨日したことを説明する" },
+    { en: "Talk about your job or studies", es: "Habla sobre tu trabajo o estudios", pt: "Fale sobre seu trabalho ou seus estudos", it: "Parla del tuo lavoro o studio", fr: "Parle de ton travail ou de tes etudes", ja: "仕事や勉強について話す" },
+    { en: "Make plans for the weekend", es: "Haz planes para el fin de semana", pt: "Faça planos para o fim de semana", it: "Fai piani per il weekend", fr: "Fais des projets pour le week-end", ja: "週末の予定を立てる" },
   ],
   B1: [
-    { en: "Share a memorable experience", es: "Comparte una experiencia memorable", it: "Condividi un'esperienza memorabile", fr: "Partage une experience memorable", ja: "思い出に残る経験を共有する" },
-    { en: "Give advice about learning languages", es: "Da consejos sobre aprender idiomas", it: "Dai consigli per imparare le lingue", fr: "Donne des conseils pour apprendre les langues", ja: "言語学習について助言する" },
-    { en: "Discuss your future goals", es: "Habla sobre tus metas futuras", it: "Parla dei tuoi obiettivi futuri", fr: "Parle de tes objectifs futurs", ja: "将来の目標について話す" },
-    { en: "Compare two places you know", es: "Compara dos lugares que conoces", it: "Confronta due luoghi che conosci", fr: "Compare deux endroits que tu connais", ja: "知っている2つの場所を比較する" },
-    { en: "Talk about a person who inspires you", es: "Habla sobre una persona que te inspira", it: "Parla di una persona che ti ispira", fr: "Parle d'une personne qui t'inspire", ja: "尊敬する人について話す" },
+    { en: "Share a memorable experience", es: "Comparte una experiencia memorable", pt: "Compartilhe uma experiência marcante", it: "Condividi un'esperienza memorabile", fr: "Partage une experience memorable", ja: "思い出に残る経験を共有する" },
+    { en: "Give advice about learning languages", es: "Da consejos sobre aprender idiomas", pt: "Dê conselhos sobre aprender idiomas", it: "Dai consigli per imparare le lingue", fr: "Donne des conseils pour apprendre les langues", ja: "言語学習について助言する" },
+    { en: "Discuss your future goals", es: "Habla sobre tus metas futuras", pt: "Fale sobre suas metas futuras", it: "Parla dei tuoi obiettivi futuri", fr: "Parle de tes objectifs futurs", ja: "将来の目標について話す" },
+    { en: "Compare two places you know", es: "Compara dos lugares que conoces", pt: "Compare dois lugares que você conhece", it: "Confronta due luoghi che conosci", fr: "Compare deux endroits que tu connais", ja: "知っている2つの場所を比較する" },
+    { en: "Talk about a person who inspires you", es: "Habla sobre una persona que te inspira", pt: "Fale sobre uma pessoa que inspira você", it: "Parla di una persona che ti ispira", fr: "Parle d'une personne qui t'inspire", ja: "尊敬する人について話す" },
   ],
   B2: [
-    { en: "Discuss the impact of technology", es: "Habla sobre el impacto de la tecnología", it: "Discuti l'impatto della tecnologia", fr: "Discute l'impact de la technologie", ja: "テクノロジーの影響について話し合う" },
-    { en: "Debate work-life balance", es: "Debate el equilibrio trabajo-vida", it: "Dibatti l'equilibrio lavoro-vita", fr: "Debats de l'equilibre travail-vie personnelle", ja: "仕事と生活のバランスについて議論する" },
-    { en: "Analyze a current event", es: "Analiza un evento actual", it: "Analizza un evento attuale", fr: "Analyse un evenement actuel", ja: "時事問題を分析する" },
-    { en: "Discuss environmental challenges", es: "Habla sobre desafíos ambientales", it: "Discuti le sfide ambientali", fr: "Discute les defis environnementaux", ja: "環境問題について話し合う" },
-    { en: "Share your views on education", es: "Comparte tus opiniones sobre la educación", it: "Condividi le tue opinioni sull'istruzione", fr: "Partage ton avis sur l'education", ja: "教育について意見を共有する" },
+    { en: "Discuss the impact of technology", es: "Habla sobre el impacto de la tecnología", pt: "Discuta o impacto da tecnologia", it: "Discuti l'impatto della tecnologia", fr: "Discute l'impact de la technologie", ja: "テクノロジーの影響について話し合う" },
+    { en: "Debate work-life balance", es: "Debate el equilibrio trabajo-vida", pt: "Debata o equilíbrio entre trabalho e vida", it: "Dibatti l'equilibrio lavoro-vita", fr: "Debats de l'equilibre travail-vie personnelle", ja: "仕事と生活のバランスについて議論する" },
+    { en: "Analyze a current event", es: "Analiza un evento actual", pt: "Analise um acontecimento atual", it: "Analizza un evento attuale", fr: "Analyse un evenement actuel", ja: "時事問題を分析する" },
+    { en: "Discuss environmental challenges", es: "Habla sobre desafíos ambientales", pt: "Discuta desafios ambientais", it: "Discuti le sfide ambientali", fr: "Discute les defis environnementaux", ja: "環境問題について話し合う" },
+    { en: "Share your views on education", es: "Comparte tus opiniones sobre la educación", pt: "Compartilhe sua opinião sobre educação", it: "Condividi le tue opinioni sull'istruzione", fr: "Partage ton avis sur l'education", ja: "教育について意見を共有する" },
   ],
   C1: [
-    { en: "Analyze ethical implications of AI", es: "Analiza las implicaciones éticas de la IA", it: "Analizza le implicazioni etiche dell'IA", fr: "Analyse les implications ethiques de l'IA", ja: "AIの倫理的影響を分析する" },
-    { en: "Discuss cultural identity", es: "Habla sobre identidad cultural", it: "Discuti l'identità culturale", fr: "Discute l'identite culturelle", ja: "文化的アイデンティティについて話し合う" },
-    { en: "Critique a social policy", es: "Critica una política social", it: "Critica una politica sociale", fr: "Critique une politique sociale", ja: "社会政策を批評する" },
-    { en: "Debate privacy in the digital age", es: "Debate la privacidad en la era digital", it: "Dibatti la privacy nell'era digitale", fr: "Debats de la vie privee a l'ere numerique", ja: "デジタル時代のプライバシーを議論する" },
-    { en: "Discuss economic inequality", es: "Habla sobre la desigualdad económica", it: "Discuti la disuguaglianza economica", fr: "Discute les inegalites economiques", ja: "経済的不平等について話し合う" },
+    { en: "Analyze ethical implications of AI", es: "Analiza las implicaciones éticas de la IA", pt: "Analise as implicações éticas da IA", it: "Analizza le implicazioni etiche dell'IA", fr: "Analyse les implications ethiques de l'IA", ja: "AIの倫理的影響を分析する" },
+    { en: "Discuss cultural identity", es: "Habla sobre identidad cultural", pt: "Discuta identidade cultural", it: "Discuti l'identità culturale", fr: "Discute l'identite culturelle", ja: "文化的アイデンティティについて話し合う" },
+    { en: "Critique a social policy", es: "Critica una política social", pt: "Critique uma política social", it: "Critica una politica sociale", fr: "Critique une politique sociale", ja: "社会政策を批評する" },
+    { en: "Debate privacy in the digital age", es: "Debate la privacidad en la era digital", pt: "Debata a privacidade na era digital", it: "Dibatti la privacy nell'era digitale", fr: "Debats de la vie privee a l'ere numerique", ja: "デジタル時代のプライバシーを議論する" },
+    { en: "Discuss economic inequality", es: "Habla sobre la desigualdad económica", pt: "Discuta a desigualdade econômica", it: "Discuti la disuguaglianza economica", fr: "Discute les inegalites economiques", ja: "経済的不平等について話し合う" },
   ],
   C2: [
-    { en: "Explore the nature of consciousness", es: "Explora la naturaleza de la conciencia", it: "Esplora la natura della coscienza", fr: "Explore la nature de la conscience", ja: "意識の本質を探る" },
-    { en: "Analyze media influence on society", es: "Analiza la influencia de los medios en la sociedad", it: "Analizza l'influenza dei media sulla società", fr: "Analyse l'influence des medias sur la societe", ja: "メディアが社会に与える影響を分析する" },
-    { en: "Discuss philosophical perspectives on truth", es: "Habla sobre perspectivas filosóficas de la verdad", it: "Discuti prospettive filosofiche sulla verità", fr: "Discute des perspectives philosophiques sur la verite", ja: "真理に関する哲学的視点を話し合う" },
-    { en: "Debate the future of human agency", es: "Debate el futuro de la agencia humana", it: "Dibatti il futuro dell'agire umano", fr: "Debats de l'avenir de l'action humaine", ja: "人間の主体性の未来を議論する" },
-    { en: "Analyze geopolitical trends", es: "Analiza tendencias geopolíticas", it: "Analizza tendenze geopolitiche", fr: "Analyse les tendances geopolitiques", ja: "地政学的な傾向を分析する" },
+    { en: "Explore the nature of consciousness", es: "Explora la naturaleza de la conciencia", pt: "Explore a natureza da consciência", it: "Esplora la natura della coscienza", fr: "Explore la nature de la conscience", ja: "意識の本質を探る" },
+    { en: "Analyze media influence on society", es: "Analiza la influencia de los medios en la sociedad", pt: "Analise a influência da mídia na sociedade", it: "Analizza l'influenza dei media sulla società", fr: "Analyse l'influence des medias sur la societe", ja: "メディアが社会に与える影響を分析する" },
+    { en: "Discuss philosophical perspectives on truth", es: "Habla sobre perspectivas filosóficas de la verdad", pt: "Discuta perspectivas filosóficas sobre a verdade", it: "Discuti prospettive filosofiche sulla verità", fr: "Discute des perspectives philosophiques sur la verite", ja: "真理に関する哲学的視点を話し合う" },
+    { en: "Debate the future of human agency", es: "Debate el futuro de la agencia humana", pt: "Debata o futuro da ação humana", it: "Dibatti il futuro dell'agire umano", fr: "Debats de l'avenir de l'action humaine", ja: "人間の主体性の未来を議論する" },
+    { en: "Analyze geopolitical trends", es: "Analiza tendencias geopolíticas", pt: "Analise tendências geopolíticas", it: "Analizza tendenze geopolitiche", fr: "Analyse les tendances geopolitiques", ja: "地政学的な傾向を分析する" },
   ],
 };
+
+export const fallbackTopics = baseFallbackTopics;
 
 /**
  * Get a random fallback topic for the given level

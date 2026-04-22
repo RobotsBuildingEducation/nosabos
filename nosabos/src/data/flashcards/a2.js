@@ -6,10 +6,13 @@
 import { withItalianFlashcardText } from "./italianLocalizer.js";
 import { withFrenchFlashcardText } from "./frenchLocalizer.js";
 import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
   withJapaneseFlashcardText(
-    withFrenchFlashcardText(withItalianFlashcardText(cards)),
+    withFrenchFlashcardText(
+      withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+    ),
   );
 
 export const FLASHCARDS_A2 = withLocalizedFlashcardText([

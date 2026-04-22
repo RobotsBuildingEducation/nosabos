@@ -156,36 +156,13 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 
 function uiStateLabel(uiState, uiLang = "en") {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const ui = translations[lang] || translations.en;
   if (uiState === "speaking")
-    return lang === "ja"
-      ? "話しています"
-      : lang === "fr"
-      ? "Parle"
-      : lang === "es"
-      ? "Hablando"
-      : lang === "it"
-      ? "Parlando"
-      : "Speaking";
+    return ui?.proficiency_speaking || translations.en.proficiency_speaking;
   if (uiState === "listening")
-    return lang === "ja"
-      ? "聞き取り中"
-      : lang === "fr"
-      ? "Ecoute"
-      : lang === "es"
-      ? "Escuchando"
-      : lang === "it"
-        ? "Ascoltando"
-        : "Listening";
+    return ui?.proficiency_listening || translations.en.proficiency_listening;
   if (uiState === "thinking")
-    return lang === "ja"
-      ? "考え中"
-      : lang === "fr"
-      ? "Reflechit"
-      : lang === "es"
-      ? "Pensando"
-      : lang === "it"
-      ? "Pensando"
-      : "Thinking";
+    return ui?.proficiency_thinking || translations.en.proficiency_thinking;
   return "";
 }
 const isoNow = () => {
@@ -932,7 +909,7 @@ export default function RealTimeTest({
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it", "fr", "ja"].includes(t)) return t;
+    if (["en", "es", "pt", "it", "fr", "ja"].includes(t)) return t;
     return uiLang;
   })();
   const gtr = translations[goalUiLang] || translations.en;
@@ -942,6 +919,8 @@ export default function RealTimeTest({
       ? "Objectif"
       : goalUiLang === "es"
       ? "Meta"
+      : goalUiLang === "pt"
+      ? "Meta"
       : goalUiLang === "it"
       ? "Obiettivo"
       : "Goal");
@@ -949,6 +928,8 @@ export default function RealTimeTest({
     gtr?.ra_goal_completed ||
     (goalUiLang === "es"
       ? "¡Meta lograda!"
+      : goalUiLang === "pt"
+      ? "Meta concluída!"
       : goalUiLang === "it"
         ? "Obiettivo completato!"
         : "Goal completed!");
@@ -958,6 +939,8 @@ export default function RealTimeTest({
       ? "Passer"
       : goalUiLang === "es"
       ? "Saltar"
+      : goalUiLang === "pt"
+      ? "Pular"
       : goalUiLang === "it"
       ? "Salta"
       : "Skip");
@@ -1588,6 +1571,8 @@ export default function RealTimeTest({
         ? "Dis bonjour"
         : goalLang === "es"
         ? "Di hola"
+        : goalLang === "pt"
+        ? "Diga olá"
         : goalLang === "it"
         ? "Di' ciao"
         : "Say hello";
@@ -1596,6 +1581,8 @@ export default function RealTimeTest({
         ? "学習者がこんにちはと言う。"
         : goalLang === "es"
         ? "El estudiante dice hola."
+        : goalLang === "pt"
+        ? 'O aluno diz "olá".'
         : goalLang === "it"
           ? "Lo studente dice ciao."
           : goalLang === "fr"
@@ -1605,17 +1592,20 @@ export default function RealTimeTest({
       id: `goal_tutorial_${Date.now()}`,
       title_en: "Say hello",
       title_es: "Di hola",
+      title_pt: "Diga olá",
       title_it: "Di' ciao",
       title_fr: "Dis bonjour",
       title_ja: "こんにちはと言う",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
+      rubric_pt: 'O aluno diz "olá".',
       rubric_it: "Lo studente dice ciao.",
       rubric_fr: "L'apprenant dit bonjour.",
       rubric_ja: "学習者がこんにちはと言う。",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
+      successCriteria_pt: 'O aluno diz "olá".',
       successCriteria_it: "Lo studente dice ciao.",
       successCriteria_fr: "L'apprenant dit bonjour.",
       successCriteria_ja: "学習者がこんにちはと言う。",
@@ -1733,7 +1723,10 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: parsed.scenario,
           prompt: parsed.prompt,
           successCriteria:
-            parsed.successCriteria || `Complete the ${topic} task`,
+            parsed.successCriteria ||
+            (goalLangCode === "pt"
+              ? `Conclua a tarefa sobre ${topic}`
+              : `Complete the ${topic} task`),
         };
       }
     } catch (err) {
@@ -1743,59 +1736,132 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Fallback if AI fails - use topic-specific defaults
     const topicFallbacks = {
       greetings: {
-        scenario: "Say hello and ask how someone is",
-        prompt:
-          "Greet the learner and have them respond with a proper greeting exchange.",
-        successCriteria:
-          "User says hello and responds appropriately to 'how are you'",
+        en: {
+          scenario: "Say hello and ask how someone is",
+          prompt:
+            "Greet the learner and have them respond with a proper greeting exchange.",
+          successCriteria:
+            "User says hello and responds appropriately to 'how are you'",
+        },
+        pt: {
+          scenario: "Diga olá e pergunte como a pessoa está",
+          prompt:
+            "Cumprimente o aluno e faça com que ele responda com uma troca de cumprimentos adequada.",
+          successCriteria:
+            'O aluno diz "olá" e responde adequadamente a "como vai?"',
+        },
       },
       numbers: {
-        scenario: "Give your phone number or age",
-        prompt:
-          "Ask the learner for their phone number, age, or another number in context.",
-        successCriteria:
-          "User correctly produces numbers in a meaningful context",
+        en: {
+          scenario: "Give your phone number or age",
+          prompt:
+            "Ask the learner for their phone number, age, or another number in context.",
+          successCriteria:
+            "User correctly produces numbers in a meaningful context",
+        },
+        pt: {
+          scenario: "Diga seu número de telefone ou sua idade",
+          prompt:
+            "Peça ao aluno o número de telefone, a idade ou outro número em contexto.",
+          successCriteria:
+            "O aluno produz números corretamente em um contexto com significado",
+        },
       },
       food: {
-        scenario: "Order something to eat or drink",
-        prompt:
-          "You are a waiter/barista. Take the learner's order for food or drinks.",
-        successCriteria:
-          "User successfully orders at least one item using appropriate phrases",
+        en: {
+          scenario: "Order something to eat or drink",
+          prompt:
+            "You are a waiter/barista. Take the learner's order for food or drinks.",
+          successCriteria:
+            "User successfully orders at least one item using appropriate phrases",
+        },
+        pt: {
+          scenario: "Peça algo para comer ou beber",
+          prompt:
+            "Você é um garçom/barista. Anote o pedido de comida ou bebida do aluno.",
+          successCriteria:
+            "O aluno faz pelo menos um pedido usando expressões adequadas",
+        },
       },
       places: {
-        scenario: "Describe where you live or want to visit",
-        prompt:
-          "Ask the learner about a place - where they live, want to visit, or their favorite place.",
-        successCriteria: "User describes a location with at least 2-3 details",
+        en: {
+          scenario: "Describe where you live or want to visit",
+          prompt:
+            "Ask the learner about a place - where they live, want to visit, or their favorite place.",
+          successCriteria:
+            "User describes a location with at least 2-3 details",
+        },
+        pt: {
+          scenario: "Descreva onde você mora ou quer visitar",
+          prompt:
+            "Pergunte ao aluno sobre um lugar: onde mora, quer visitar ou seu lugar favorito.",
+          successCriteria:
+            "O aluno descreve um lugar com pelo menos 2 ou 3 detalhes",
+        },
       },
       shopping: {
-        scenario: "Buy something at a store",
-        prompt:
-          "You are a shopkeeper. Help the learner buy an item, discussing price and options.",
-        successCriteria:
-          "User asks about an item and completes a simple transaction",
+        en: {
+          scenario: "Buy something at a store",
+          prompt:
+            "You are a shopkeeper. Help the learner buy an item, discussing price and options.",
+          successCriteria:
+            "User asks about an item and completes a simple transaction",
+        },
+        pt: {
+          scenario: "Compre algo em uma loja",
+          prompt:
+            "Você é um vendedor. Ajude o aluno a comprar um item, falando sobre preço e opções.",
+          successCriteria:
+            "O aluno pergunta sobre um item e conclui uma transação simples",
+        },
       },
       travel: {
-        scenario: "Ask for or give directions",
-        prompt:
-          "Either give directions to a place or ask the learner how to get somewhere.",
-        successCriteria:
-          "User understands or produces directions with location vocabulary",
+        en: {
+          scenario: "Ask for or give directions",
+          prompt:
+            "Either give directions to a place or ask the learner how to get somewhere.",
+          successCriteria:
+            "User understands or produces directions with location vocabulary",
+        },
+        pt: {
+          scenario: "Peça ou dê direções",
+          prompt:
+            "Dê direções para um lugar ou pergunte ao aluno como chegar a algum lugar.",
+          successCriteria:
+            "O aluno entende ou produz direções com vocabulário de localização",
+        },
       },
       family: {
-        scenario: "Describe your family members",
-        prompt:
-          "Ask the learner about their family - who is in it, ages, names, etc.",
-        successCriteria:
-          "User describes at least 2 family members with some details",
+        en: {
+          scenario: "Describe your family members",
+          prompt:
+            "Ask the learner about their family - who is in it, ages, names, etc.",
+          successCriteria:
+            "User describes at least 2 family members with some details",
+        },
+        pt: {
+          scenario: "Descreva seus familiares",
+          prompt:
+            "Pergunte ao aluno sobre a família: quem faz parte dela, idades, nomes etc.",
+          successCriteria:
+            "O aluno descreve pelo menos 2 familiares com alguns detalhes",
+        },
       },
       time: {
-        scenario: "Discuss your daily schedule",
-        prompt:
-          "Ask the learner what they do at different times of day - morning routine, meals, etc.",
-        successCriteria:
-          "User describes activities connected to specific times",
+        en: {
+          scenario: "Discuss your daily schedule",
+          prompt:
+            "Ask the learner what they do at different times of day - morning routine, meals, etc.",
+          successCriteria:
+            "User describes activities connected to specific times",
+        },
+        pt: {
+          scenario: "Fale sobre sua rotina diária",
+          prompt:
+            "Pergunte ao aluno o que faz em diferentes momentos do dia: rotina da manhã, refeições etc.",
+          successCriteria:
+            "O aluno descreve atividades ligadas a horários específicos",
+        },
       },
     };
 
@@ -1805,7 +1871,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     );
 
     if (matchedFallback) {
-      return matchedFallback[1];
+      return matchedFallback[1][goalLangCode] || matchedFallback[1].en;
     }
 
     // Generic fallback with focus points if available
@@ -1813,6 +1879,21 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       focusPoints.length > 0
         ? `Use ${focusPoints[0]} in a real situation`
         : `Share something about ${topic}`;
+
+    if (goalLangCode === "pt") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `Use ${focusPoints[0]} em uma situação real`
+            : `Compartilhe algo sobre ${topic}`,
+        prompt: `Crie um cenário realista em que o aluno precise usar vocabulário sobre ${topic}. ${
+          focusPoints.length
+            ? `Pratique especificamente: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "Faça perguntas de acompanhamento para incentivar respostas mais longas."
+        }`,
+        successCriteria: `O aluno produz várias palavras ou expressões relevantes sobre ${topic} em contexto`,
+      };
+    }
 
     return {
       scenario: focusAction,
@@ -1910,12 +1991,25 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
       const goalText = fullText.trim();
       if (goalText) {
+        const goalLang = goalUiLangCode();
+        const localizedTitleKey = `title_${goalLang}`;
+        const localizedRubricKey = `rubric_${goalLang}`;
         const newGoal = {
           id: `goal_${Date.now()}`,
-          title_en: goalText,
-          title_es: goalText,
+          title_en: goalLang === "en" ? goalText : "",
+          title_es: goalLang === "es" ? goalText : "",
+          title_pt: goalLang === "pt" ? goalText : "",
+          title_it: goalLang === "it" ? goalText : "",
+          title_fr: goalLang === "fr" ? goalText : "",
+          title_ja: goalLang === "ja" ? goalText : "",
           rubric_en: "",
           rubric_es: "",
+          rubric_pt: "",
+          rubric_it: "",
+          rubric_fr: "",
+          rubric_ja: "",
+          [localizedTitleKey]: goalText,
+          [localizedRubricKey]: "",
           lessonScenario: goalText,
           successCriteria: "",
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
@@ -1974,7 +2068,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it", "fr", "ja"].includes(t)) return t;
+    if (["en", "es", "pt", "it", "fr", "ja"].includes(t)) return t;
     return uiLang;
   }
   function goalTitleForUI(goal) {

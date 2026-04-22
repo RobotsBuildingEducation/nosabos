@@ -872,36 +872,13 @@ function ArchiveTextAnimation({ animation }) {
 
 function uiStateLabel(uiState, uiLang) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const ui = translations[lang] || translations.en;
   if (uiState === "speaking")
-    return lang === "ja"
-      ? "話しています"
-      : lang === "fr"
-      ? "Parle"
-      : lang === "es"
-      ? "Hablando"
-      : lang === "it"
-      ? "Parlando"
-      : "Speaking";
+    return ui?.proficiency_speaking || translations.en.proficiency_speaking;
   if (uiState === "listening")
-    return lang === "ja"
-      ? "聞き取り中"
-      : lang === "fr"
-      ? "Ecoute"
-      : lang === "es"
-      ? "Escuchando"
-      : lang === "it"
-        ? "Ascoltando"
-        : "Listening";
+    return ui?.proficiency_listening || translations.en.proficiency_listening;
   if (uiState === "thinking")
-    return lang === "ja"
-      ? "考え中"
-      : lang === "fr"
-      ? "Reflechit"
-      : lang === "es"
-      ? "Pensando"
-      : lang === "it"
-      ? "Pensando"
-      : "Thinking";
+    return ui?.proficiency_thinking || translations.en.proficiency_thinking;
   return "";
 }
 

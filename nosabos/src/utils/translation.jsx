@@ -1,6 +1,7 @@
 // src/utils/translation.jsx
 
 import { Button, HStack } from "@chakra-ui/react";
+import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
 
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
@@ -4350,6 +4351,192 @@ translations.ja = {
   vocab_create_note: "メモを作成",
   vocab_note_saved: "メモを保存しました！",
   vocab_lesson_progress: "レッスン進捗",
+};
+
+translations.pt = {
+  ...TRANSLATION_PT_STATIC,
+  daily_goal_title: "Gerenciador de metas",
+  daily_goal_xp_unit: "XP / dia",
+  app_mode_cards: "Cartões",
+  story_story_label: "História",
+  story_demo_title: "Usando história de demonstração",
+  story_demo_desc:
+    "API indisponível. Usando uma história de demonstração para testes.",
+  story_speech_unavailable_title: "Reconhecimento de voz indisponível",
+  story_speech_unavailable_desc:
+    "Para avaliar, use um navegador Chromium com acesso ao microfone.",
+  story_sentence_label: "Frase",
+  story_congrats_title: "Parabéns!",
+  story_congrats_done:
+    "Você concluiu a história! Ganhou {xp} XP nesta sessão.",
+  story_play_target: "Reproduzir {name}",
+  repeat_hear_heading: "Toque no que ouvir",
+  translate_sentence_heading: "Traduza esta frase",
+  translate_sentence_instruction:
+    "Toque nas palavras para formar sua resposta",
+  proficiency_modal_already_know: "Você já sabe um pouco de {lang}?",
+  proficiency_modal_description:
+    "Podemos ter uma conversa rápida para determinar seu nível e colocá-lo no lugar certo.",
+  proficiency_modal_exchange_info:
+    "Uma conversa breve de 10 trocas — avaliaremos sua pronúncia, gramática e confiança.",
+  proficiency_modal_take_test: "Vamos lá!",
+  proficiency_modal_skip: "Agora não",
+  proficiency_modal_skip_note:
+    '"Agora não" vai iniciar você no nível iniciante.',
+  proficiency_test_title: "Teste de nível",
+  proficiency_test_instruction:
+    "Fale naturalmente — estamos avaliando seu nível",
+  proficiency_test_evaluating: "Avaliando",
+  proficiency_test_analyzing:
+    "Analisando sua conversa para determinar seu nível...",
+  proficiency_test_rubric: "Rubrica de avaliação",
+  proficiency_test_assessor: "Avaliador",
+  proficiency_test_start: "Começar",
+  proficiency_test_final_result: "Resultado final",
+  proficiency_test_complete: "Avaliação concluída",
+  proficiency_test_summary: "Resumo da avaliação",
+  proficiency_test_breakdown: "Detalhamento",
+  proficiency_test_composite: "Pontuação composta",
+  proficiency_test_level_label: "Nível {level}",
+  proficiency_test_return_app: "Voltar ao aplicativo",
+  proficiency_test_what_scored: "O que o sistema avalia",
+  proficiency_test_what_scored_desc:
+    "Avaliamos 6 áreas (1-10): pronúncia, gramática, vocabulário, fluência, confiança e compreensão.",
+  proficiency_test_scoring_heading: "Como a pontuação funciona",
+  proficiency_test_scoring_1:
+    "Compreensão e fluência pesam mais do que confiança.",
+  proficiency_test_scoring_2:
+    "Respostas muito curtas ou com pouco conteúdo limitam o resultado a Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    'Se houver muitos "não sei"/muletas, o nível cai automaticamente.',
+  proficiency_test_scoring_4:
+    "O nível final nunca supera a evidência real da sua conversa.",
+  proficiency_test_got_it: "Entendi",
+  proficiency_test_exit_title: "Sair do teste de nível?",
+  proficiency_test_exit_desc:
+    "Seu progresso não será salvo. Você pode refazer o teste mais tarde nas configurações.",
+  proficiency_test_eval_error:
+    "Houve um problema ao avaliar automaticamente. Você pode tentar novamente.",
+  proficiency_test_assess_fallback:
+    "Avaliação concluída. Veja seus resultados abaixo.",
+  proficiency_test_assess_error:
+    "Erro na avaliação. Nós o colocamos em Pre-A1/A0 por segurança.",
+  proficiency_test_you: "Você",
+  proficiency_test_yes_exit: "Sim, sair",
+  proficiency_test_continue: "Continuar teste",
+  proficiency_speaking: "Falando",
+  proficiency_listening: "Ouvindo",
+  proficiency_thinking: "Pensando",
+  app_install_subtitle:
+    "Para a melhor experiência, instale o app no seu dispositivo.",
+  app_install_step1: "Abra o menu do navegador.",
+  app_install_step2: "Abra no navegador.",
+  app_install_step6: "Copie a chave secreta para entrar.",
+  onboarding_final_step_title:
+    "Copie sua chave secreta para entrar na sua conta",
+  onboarding_go_back: "Voltar",
+  onboarding_copy_key: "Copiar chave",
+  ra_btn_replay: "Reproduzir novamente",
+  ra_toast_no_audio_replay: "Não há áudio disponível para reproduzir.",
+  ra_help_help: "Descreva sua meta ou contexto (isso orienta a experiência).",
+  flashcard_session_title: "Fluxo de cartões",
+  flashcard_new_queue: "Cartões novos",
+  flashcard_mastered_cards: "Cartões aprendidos",
+  flashcard_cards_done_today: "{count}/{target} cartões concluídos hoje",
+  flashcard_strengthen_weak: "Revisar cartões fracos",
+  flashcard_due_subtitle:
+    "Esses cartões já estão prontos para revisão. Resolver isso primeiro fortalece o espaçamento e protege lembranças anteriores.",
+  flashcard_weak_queue: "Cartões fracos",
+  path_switcher_flashcards: "Cartões",
+  teams_feed_copy_title: "Chave copiada",
+  app_sign_out: "Encerrar sessão",
+  app_sign_out_confirm_title: "Encerrar sessão?",
+  app_sign_out_confirm_body:
+    "Tem certeza de que deseja sair? Verifique se sua chave secreta está salva antes de encerrar a sessão.",
+  app_sign_out_confirm: "Encerrar sessão",
+  app_copy_secret: "Copiar chave secreta",
+  toast_copy_failed: "Falha ao copiar",
+  toast_paste_nsec: "Cole seu nsec primeiro",
+  toast_must_start_nsec: "Deve começar com nsec…",
+  toast_switch_failed: "Falha ao trocar de conta",
+  grammar_input_placeholder_answer: "Escreva sua resposta…",
+  quiz_placeholder_open: "Escreva sua resposta…",
+  history_answer_placeholder: "Sua resposta...",
+  history_speech_listening: "Ouvindo...",
+  history_speech_submitting: "Avaliando...",
+  app_cefr_loading: "Analisando…",
+  flashcard_grading: "Avaliando sua resposta...",
+  flashcard_speech_unavailable_desc:
+    "Use um navegador baseado em Chromium com acesso ao microfone.",
+  flashcard_mic_denied_desc:
+    "Habilite o acesso ao microfone nas configurações do seu navegador.",
+  theme_mode_description:
+    "Escolha como o app aparece. O modo claro usa uma paleta quente, com aparência de papel.",
+  vocab_match_instruction: "Associe as palavras",
+  "passcode.instructions": (
+    <div>
+      Digite o código de assinatura para continuar.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>Ao assinar, você recebe:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Acesso a vários aplicativos educacionais com IA.
+          </li>
+          <li style={{ marginBottom: 8 }}>Suporte pessoal.</li>
+          <li style={{ marginBottom: 8 }}>
+            Uma coleção crescente de conteúdo para assinantes sobre engenharia
+            de startups, negócios e investimentos.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            A chance de apoiar a missão de criar bolsas de estudo por meio da
+            aprendizagem.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            Assinar
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Pagar uma vez
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
 };
 
 export default translations;

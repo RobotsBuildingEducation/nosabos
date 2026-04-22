@@ -3,6 +3,7 @@
  */
 
 import { translateFlashcardConceptToJapanese } from "./japaneseLocalizer.js";
+import { translateFlashcardConceptToPortuguese } from "./portugueseLocalizer.js";
 
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
@@ -34,12 +35,25 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "it", "fr", "ja"];
+    const languages = ["en", "es", "pt", "it", "fr", "ja"];
     const selectedLang = languages[hash % languages.length];
+    if (selectedLang === "pt" && !card.concept.pt) {
+      return translateFlashcardConceptToPortuguese(
+        card.concept.en,
+        card.concept.es,
+      );
+    }
     if (selectedLang === "ja" && !card.concept.ja) {
       return translateFlashcardConceptToJapanese(card.concept.en);
     }
     return card.concept[selectedLang] || card.concept.en;
+  }
+
+  if (supportLang === "pt" && !card.concept.pt) {
+    return translateFlashcardConceptToPortuguese(
+      card.concept.en,
+      card.concept.es,
+    );
   }
 
   if (supportLang === "ja" && !card.concept.ja) {

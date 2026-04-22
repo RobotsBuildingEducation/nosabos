@@ -50,6 +50,7 @@ import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
 } from "../constants/languages";
+import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -471,6 +472,8 @@ const translations = {
     language_ga: "Irlandese",
   },
 };
+
+translations.pt = LANDING_PAGE_PT_STATIC;
 
 translations.fr = {
   ...translations.en,

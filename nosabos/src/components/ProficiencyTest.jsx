@@ -154,27 +154,29 @@ const CEFR_LEVEL_INFO = {
     name: {
       en: "Ultimate Beginner",
       es: "Principiante Total",
+      pt: "Iniciante absoluto",
       it: "Principiante assoluto",
       fr: "Grand debutant",
       ja: "完全初心者",
     },
     color: "#8B5CF6",
   },
-  A1: { name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant", ja: "初心者" }, color: "#3B82F6" },
-  A2: { name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire", ja: "初級" }, color: "#8B5CF6" },
-  B1: { name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire", ja: "中級" }, color: "#A855F7" },
+  A1: { name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者" }, color: "#3B82F6" },
+  A2: { name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級" }, color: "#8B5CF6" },
+  B1: { name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級" }, color: "#A855F7" },
   B2: {
     name: {
       en: "Upper Intermediate",
       es: "Intermedio Alto",
+      pt: "Intermediário avançado",
       it: "Intermedio alto",
       fr: "Intermediaire avance",
       ja: "中上級",
     },
     color: "#F97316",
   },
-  C1: { name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance", ja: "上級" }, color: "#EF4444" },
-  C2: { name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
+  C1: { name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級" }, color: "#EF4444" },
+  C2: { name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
 };
 
 const CEFR_LEVEL_OFFERINGS = {
@@ -188,6 +190,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Lecciones guiadas con palabras y frases básicas.",
       "Ejercicios muy cortos con mucha repetición.",
       "Enfoque en confianza y comprensión inicial.",
+    ],
+    pt: [
+      "Lições bem guiadas com palavras e frases básicas.",
+      "Exercícios muito curtos com bastante repetição.",
+      "Foco na confiança e na compreensão inicial.",
     ],
     ja: [
       "基本単語とフレーズを使う手厚いガイド付きレッスン。",
@@ -206,6 +213,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Prácticas simples de conversación con apoyo frecuente.",
       "Vocabulario esencial y estructuras básicas.",
     ],
+    pt: [
+      "Módulos iniciais de cumprimentos, informações pessoais e rotina.",
+      "Práticas simples de conversa com apoio frequente.",
+      "Vocabulário essencial e estruturas básicas.",
+    ],
     ja: [
       "あいさつ、個人情報、日常の基礎を扱う初心者モジュール。",
       "頻繁なサポート付きの簡単な会話練習。",
@@ -222,6 +234,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Lecciones de situaciones cotidianas (compras, planes, rutina).",
       "Respuestas más largas y mejor manejo de tiempos verbales.",
       "Vocabulario práctico ampliado para interacciones reales.",
+    ],
+    pt: [
+      "Lições de situações cotidianas (compras, planos, rotina).",
+      "Respostas mais longas e melhor controle dos tempos verbais.",
+      "Vocabulário prático ampliado para interações reais.",
     ],
     ja: [
       "買い物、予定、日課などの日常場面レッスン。",
@@ -240,6 +257,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Práctica narrando eventos pasados/futuros con detalle.",
       "Gramática más matizada y mejor uso de conectores.",
     ],
+    pt: [
+      "Conversas intermediárias com opiniões e explicações.",
+      "Prática ao narrar eventos passados e futuros com detalhes.",
+      "Gramática mais refinada e melhor uso de conectores.",
+    ],
     ja: [
       "意見や説明を含む中級の話し合い。",
       "過去や未来の出来事を詳しく語る練習。",
@@ -256,6 +278,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Producción oral de nivel intermedio alto con argumentación.",
       "Contextos complejos de escucha/lectura y temas abstractos.",
       "Mayor enfoque en fluidez natural y control de estilo.",
+    ],
+    pt: [
+      "Produção oral de nível intermediário avançado com argumentação.",
+      "Contextos complexos de escuta/leitura e temas abstratos.",
+      "Maior foco em fluência natural e controle de estilo.",
     ],
     ja: [
       "論証と正確さを伴う中上級のスピーキング。",
@@ -274,6 +301,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Uso idiomático y profesional del idioma.",
       "Tareas de alto nivel sobre tono, matiz y persuasión.",
     ],
+    pt: [
+      "Cenários avançados que exigem precisão e flexibilidade.",
+      "Uso idiomático e profissional do idioma.",
+      "Tarefas de alto nível sobre tom, nuance e persuasão.",
+    ],
     ja: [
       "正確さと柔軟さが必要な上級シナリオ。",
       "慣用的・専門的な言語使用。",
@@ -290,6 +322,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Tareas de maestría con control de matices complejos.",
       "Velocidad, complejidad y adaptabilidad casi nativas.",
       "Enfoque en refinamiento, registro y amplitud expresiva.",
+    ],
+    pt: [
+      "Tarefas de domínio com controle de nuances complexas.",
+      "Velocidade, complexidade e adaptabilidade quase nativas.",
+      "Foco em refinamento, registro e amplitude expressiva.",
     ],
     ja: [
       "微妙な意味を制御する熟達レベルのタスク。",
@@ -1955,6 +1992,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
+      pt: "Palavras soltas, muletas ou respostas muito curtas. Falhas frequentes de compreensão.",
       it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
       fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
       ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
@@ -1965,6 +2003,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
+      pt: "Consegue lidar com cumprimentos e informações pessoais básicas com padrões simples memorizados.",
       it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
       fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
       ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
@@ -1975,6 +2014,7 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
+      pt: "Consegue falar sobre temas rotineiros e responder perguntas diretas com poucos detalhes.",
       it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
       fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
       ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
@@ -1985,6 +2025,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
+      pt: "Consegue explicar opiniões, narrar acontecimentos e manter conversas curtas com alguns erros.",
       it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
       fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
       ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
@@ -1995,6 +2036,7 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
+      pt: "Consegue se comunicar com clareza sobre temas familiares e abstratos, com bom controle e fluência.",
       it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
       fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
       ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
@@ -2005,6 +2047,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
+      pt: "Consegue produzir linguagem flexível e cheia de nuances em respostas mais longas, com forte compreensão.",
       it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
       fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
       ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
@@ -2015,6 +2058,7 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
+      pt: "Precisão, rapidez e adaptabilidade quase nativas em temas complexos.",
       it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
       fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
       ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",

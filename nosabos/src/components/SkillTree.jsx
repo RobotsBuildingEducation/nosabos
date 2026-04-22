@@ -1660,6 +1660,36 @@ const GAME_LOADING_MESSAGES = {
     "Ambientando la scena...",
     "Creando la tua avventura...",
   ],
+  pt: [
+    "Construindo o seu mundo...",
+    "Posicionando NPCs...",
+    "Escrevendo diálogos da missão...",
+    "Gerando desafios de vocabulário...",
+    "Desenhando o mapa...",
+    "Preparando enigmas de idioma...",
+    "Montando a cena...",
+    "Criando a sua aventura...",
+  ],
+  fr: [
+    "Construction de votre monde...",
+    "Placement des PNJ...",
+    "Ecriture des dialogues de quete...",
+    "Generation des defis de vocabulaire...",
+    "Conception de la carte...",
+    "Preparation des enigmes de langue...",
+    "Mise en scene...",
+    "Creation de votre aventure...",
+  ],
+  ja: [
+    "あなたの世界を作っています...",
+    "NPCを配置しています...",
+    "クエストの会話を書いています...",
+    "語彙チャレンジを生成しています...",
+    "マップを設計しています...",
+    "言語パズルを準備しています...",
+    "場面を整えています...",
+    "冒険を組み立てています...",
+  ],
 };
 
 function LessonDetailModal({

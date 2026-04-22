@@ -118,6 +118,30 @@ const FRENCH_TIMEZONES = [
   'Africa/Tunis',
 ];
 
+const PORTUGUESE_TIMEZONES = [
+  'Europe/Lisbon',
+  'Atlantic/Madeira',
+  'Atlantic/Azores',
+  'America/Sao_Paulo',
+  'America/Rio_Branco',
+  'America/Manaus',
+  'America/Belem',
+  'America/Fortaleza',
+  'America/Recife',
+  'America/Bahia',
+  'America/Maceio',
+  'America/Araguaina',
+  'America/Cuiaba',
+  'America/Campo_Grande',
+  'America/Porto_Velho',
+  'Africa/Maputo',
+  'Africa/Luanda',
+  'Atlantic/Cape_Verde',
+  'Africa/Bissau',
+  'Africa/Sao_Tome',
+  'Asia/Dili',
+];
+
 const JAPANESE_TIMEZONES = [
   'Asia/Tokyo',
 ];
@@ -128,6 +152,7 @@ const JAPANESE_TIMEZONES = [
 const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL', 'es-PE', 'es-VE'];
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
 const FRENCH_LANGUAGE_CODES = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
+const PORTUGUESE_LANGUAGE_CODES = ['pt', 'pt-BR', 'pt-PT', 'pt-AO', 'pt-MZ', 'pt-CV', 'pt-GW', 'pt-ST', 'pt-TL'];
 const JAPANESE_LANGUAGE_CODES = ['ja', 'ja-JP'];
 
 /**
@@ -158,6 +183,16 @@ export function isFrenchTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return FRENCH_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isPortugueseTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return PORTUGUESE_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -216,6 +251,20 @@ export function isFrenchBrowserLanguage() {
   }
 }
 
+export function isPortugueseBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      PORTUGUESE_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
 export function isJapaneseBrowserLanguage() {
   try {
     const languages = navigator.languages?.length
@@ -252,6 +301,10 @@ export function detectUserLanguage() {
     return 'fr';
   }
 
+  if (isPortugueseTimezone()) {
+    return 'pt';
+  }
+
   if (isJapaneseTimezone()) {
     return 'ja';
   }
@@ -267,6 +320,10 @@ export function detectUserLanguage() {
 
   if (isFrenchBrowserLanguage()) {
     return 'fr';
+  }
+
+  if (isPortugueseBrowserLanguage()) {
+    return 'pt';
   }
 
   if (isJapaneseBrowserLanguage()) {

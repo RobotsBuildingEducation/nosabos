@@ -45,6 +45,10 @@ import {
   withFrenchAlphabetSupport,
 } from "../data/alphabetFrenchLocalizer";
 import {
+  translateAlphabetMeaningToPortuguese,
+  withPortugueseAlphabetSupport,
+} from "../data/alphabetPortugueseLocalizer";
+import {
   translateAlphabetMeaningToJapanese,
   withJapaneseAlphabetSupport,
 } from "../data/alphabetJapaneseLocalizer";
@@ -167,6 +171,23 @@ const LANGUAGE_NAMES_IT = {
   yua: "Maya yucateco",
 };
 
+const LANGUAGE_NAMES_PT = {
+  ru: "Russo",
+  ja: "Japonês",
+  en: "Inglês",
+  es: "Espanhol",
+  pt: "Português",
+  fr: "Francês",
+  it: "Italiano",
+  nl: "Holandês",
+  de: "Alemão",
+  nah: "Náuatle",
+  el: "Grego",
+  pl: "Polonês",
+  ga: "Irlandês",
+  yua: "Maia iucateque",
+};
+
 const LANGUAGE_NAMES_FR = {
   ru: "Russe",
   ja: "Japonais",
@@ -204,6 +225,7 @@ const LANGUAGE_NAMES_JA = {
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
+  pt: LANGUAGE_NAMES_PT,
   it: LANGUAGE_NAMES_IT,
   fr: LANGUAGE_NAMES_FR,
   ja: LANGUAGE_NAMES_JA,
@@ -238,6 +260,23 @@ const LANGUAGE_SCRIPTS_IT = {
   de: "alfabeto latino",
   nah: "alfabeto latino",
   el: "alfabeto greco",
+  pl: "alfabeto latino",
+  ga: "alfabeto latino",
+  yua: "alfabeto latino",
+};
+
+const LANGUAGE_SCRIPTS_PT = {
+  ru: "alfabeto cirílico",
+  ja: "hiragana ou katakana",
+  en: "alfabeto latino",
+  es: "alfabeto latino",
+  pt: "alfabeto latino",
+  fr: "alfabeto latino",
+  it: "alfabeto latino",
+  nl: "alfabeto latino",
+  de: "alfabeto latino",
+  nah: "alfabeto latino",
+  el: "alfabeto grego",
   pl: "alfabeto latino",
   ga: "alfabeto latino",
   yua: "alfabeto latino",
@@ -295,6 +334,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
     ga: "alfabeto latino",
     yua: "alfabeto latino",
   },
+  pt: LANGUAGE_SCRIPTS_PT,
   it: LANGUAGE_SCRIPTS_IT,
   fr: LANGUAGE_SCRIPTS_FR,
   ja: LANGUAGE_SCRIPTS_JA,
@@ -489,6 +529,48 @@ const ALPHABET_UI_TEXT = {
   },
 };
 
+ALPHABET_UI_TEXT.pt = {
+  title: "Modo Alfabeto",
+  vowel: "Vogal",
+  consonant: "Consoante",
+  sign: "Sinal",
+  practice: "Praticar",
+  playSound: "Reproduzir som",
+  playWord: "Reproduzir palavra",
+  close: "Fechar",
+  sayThisWord: "Diga esta palavra:",
+  grading: "Avaliando...",
+  nextWord: "Próxima palavra",
+  tryAgain: "Tentar novamente",
+  back: "Voltar",
+  connecting: "Conectando...",
+  stop: "Parar",
+  record: "Gravar",
+  recordingErrorTitle: "Erro de gravação",
+  recordingErrorDescription: "Não foi possível gravar. Tente novamente.",
+  gradingErrorTitle: "Erro de avaliação",
+  gradingErrorDescription: "Não foi possível avaliar a resposta.",
+  speechUnsupportedTitle: "Fala não suportada",
+  speechUnsupportedDescription:
+    "Este navegador não oferece suporte a reconhecimento de voz.",
+  micDeniedTitle: "Microfone bloqueado",
+  micDeniedDescription:
+    "Permita o acesso ao microfone para gravar.",
+  generateWordErrorTitle: "Não foi possível gerar uma nova palavra",
+  level: "Nível",
+  progress: "Progresso",
+  alphabetHeadline: "Alfabeto {language}",
+  alphabetSubhead:
+    "Comece aprendendo as letras e os sons do {language}.",
+  note:
+    "Depois disso, mude para o modo Caminho no menu para explorar as lições.",
+  complete: "Parabéns! Você concluiu a prática do alfabeto.",
+  startSkillTree: "Iniciar árvore de habilidades",
+  collection: "Coleção",
+  loadError:
+    "Não foi possível carregar os dados do alfabeto. Tente novamente.",
+};
+
 const uiText = (lang, key, params = {}) => {
   const normalizedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const raw =
@@ -514,6 +596,7 @@ const getScriptName = (code, uiLang) =>
 const LOCALIZED_FIELD_SUFFIX = {
   en: "",
   es: "Es",
+  pt: "Pt",
   it: "It",
   fr: "Fr",
   ja: "Ja",
@@ -535,6 +618,7 @@ const getMeaningText = (meaning, uiLang) => {
     return (
       meaning.en ||
       meaning.es ||
+      meaning.pt ||
       meaning.it ||
       meaning.fr ||
       meaning.ja ||
@@ -569,12 +653,13 @@ const getLetterTip = (letter, uiLang) =>
   getLocalizedLetterField(letter, uiLang, "tip");
 
 const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "", it: "", fr: "", ja: "" };
+  if (!meaning) return { en: "", es: "", pt: "", it: "", fr: "", ja: "" };
   if (typeof meaning === "string") {
     const source = String(meaning || "").trim();
     return {
       en: source,
       es: "",
+      pt: translateAlphabetMeaningToPortuguese(source) || "",
       it: translateAlphabetMeaningToItalian(source) || "",
       fr: translateAlphabetMeaningToFrench(source) || "",
       ja: translateAlphabetMeaningToJapanese(source) || "",
@@ -584,16 +669,18 @@ const normalizeMeaning = (meaning) => {
   const en =
     meaning.en ||
     meaning.es ||
+    meaning.pt ||
     meaning.it ||
     meaning.fr ||
     meaning.ja ||
     "";
   const es = meaning.es || "";
+  const pt = meaning.pt || translateAlphabetMeaningToPortuguese(meaning) || "";
   const it = meaning.it || translateAlphabetMeaningToItalian(meaning) || "";
   const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
   const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
 
-  return { en, es, it, fr, ja };
+  return { en, es, pt, it, fr, ja };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -1447,7 +1534,9 @@ function LetterCard({
 
 const withLocalizedAlphabetSupport = (letters) =>
   withJapaneseAlphabetSupport(
-    withFrenchAlphabetSupport(withItalianAlphabetSupport(letters)),
+    withFrenchAlphabetSupport(
+      withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+    ),
   );
 
 const LANGUAGE_ALPHABETS = {
@@ -1774,7 +1863,7 @@ export default function AlphabetBootcamp({
                   <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
                     {uiText(uiLang, "progress")}
                   </Text>
-                  <Text fontSize="xs" color="yellow.300" fontWeight="bold">
+                  <Text fontSize="xs" color={APP_TEXT_PRIMARY} fontWeight="bold">
                     {collectedLetters.length} / {alphabet.length}
                   </Text>
                 </HStack>

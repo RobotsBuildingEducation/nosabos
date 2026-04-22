@@ -46,6 +46,10 @@ export default function ConversationAccountDrawer({
       ? {
           title: "Parametres de conversation",
         }
+      : lang === "pt"
+      ? {
+          title: "Configuracoes da conversa",
+        }
       : lang === "it"
       ? {
           title: "Impostazioni conversazione",

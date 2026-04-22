@@ -852,6 +852,8 @@ export default function History({
           label:
             userLanguage === "ja"
               ? "レッスンの進捗"
+              : userLanguage === "pt"
+              ? "Progresso da licao"
               : userLanguage === "es"
               ? "Progreso de la lección"
               : "Lesson progress",

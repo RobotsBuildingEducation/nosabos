@@ -100,6 +100,8 @@ export default function ProficiencyTestModal({
                     ? "この言語"
                     : lang === "fr"
                     ? "cette langue"
+                    : lang === "pt"
+                    ? "este idioma"
                     : lang === "it"
                     ? "questa lingua"
                     : lang === "es"

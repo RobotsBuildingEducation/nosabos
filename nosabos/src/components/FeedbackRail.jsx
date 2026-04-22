@@ -115,7 +115,9 @@ const FeedbackRail = React.memo(
                     ? t?.("practice_next_ready") ||
                       "Great work! Keep the streak going."
                     : t?.("practice_try_again_hint") ||
-                      (userLanguage === "es"
+                      (userLanguage === "pt"
+                        ? "Revise e tente novamente."
+                        : userLanguage === "es"
                         ? "Repasa y vuelve a intentarlo."
                         : userLanguage === "ja"
                         ? "復習してもう一度試しましょう。"

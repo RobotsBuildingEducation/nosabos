@@ -222,6 +222,7 @@ export default function TranslateSentence({
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
     const isFrenchUI = userLanguage === "fr";
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
@@ -229,6 +230,8 @@ export default function TranslateSentence({
         ? "提供された単語バンクを使って、この文を翻訳してください。"
         : isFrenchUI
         ? "Traduis cette phrase avec la banque de mots fournie."
+        : isPortugueseUI
+        ? "Traduza esta frase usando o banco de palavras fornecido."
         : isSpanishUI
         ? "Traduce esta oración usando el banco de palabras proporcionado."
         : "Translate this sentence using the provided word bank.",
@@ -237,6 +240,8 @@ export default function TranslateSentence({
           ? `翻訳する文: ${sourceSentence}`
           : isFrenchUI
           ? `Phrase a traduire : ${sourceSentence}`
+          : isPortugueseUI
+          ? `Frase para traduzir: ${sourceSentence}`
           : isSpanishUI
           ? `Oración para traducir: ${sourceSentence}`
           : `Sentence to translate: ${sourceSentence}`
@@ -246,6 +251,8 @@ export default function TranslateSentence({
           ? `単語バンク: ${wordBank.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
@@ -255,6 +262,8 @@ export default function TranslateSentence({
           ? `ヒント: ${hint}`
           : isFrenchUI
           ? `Indice : ${hint}`
+          : isPortugueseUI
+          ? `Dica: ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
           : `Hint: ${hint}`
@@ -263,6 +272,8 @@ export default function TranslateSentence({
         ? "単語バンクの選択肢を組み合わせて、正しい翻訳で答えてください。"
         : isFrenchUI
         ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
+        : isPortugueseUI
+        ? "Responda com a traducao correta montada com as opcoes do banco de palavras."
         : isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
         : "Respond with the correct translation assembled from the word bank options.",
@@ -382,6 +393,8 @@ export default function TranslateSentence({
                       aria-label={
                         userLanguage === "ja"
                           ? "アシスタントに聞く"
+                          : userLanguage === "pt"
+                          ? "Pedir ajuda"
                           : userLanguage === "es"
                           ? "Pedir ayuda"
                           : "Ask the assistant"
@@ -399,6 +412,8 @@ export default function TranslateSentence({
                     aria-label={
                       userLanguage === "ja"
                         ? "聞く"
+                        : userLanguage === "pt"
+                          ? "Ouvir"
                         : userLanguage === "es"
                           ? "Escuchar"
                           : "Listen"
@@ -437,6 +452,8 @@ export default function TranslateSentence({
               <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
                 {userLanguage === "ja"
                   ? "アシスタント"
+                  : userLanguage === "pt"
+                    ? "Assistente"
                   : userLanguage === "es"
                     ? "Asistente"
                     : "Assistant"}

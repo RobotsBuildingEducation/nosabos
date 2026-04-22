@@ -6,6 +6,7 @@ import selectSound from "../assets/select.mp3";
 
 const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const WEEKDAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const WEEKDAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
 
 const MONTHS_EN = [
@@ -15,6 +16,10 @@ const MONTHS_EN = [
 const MONTHS_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+const MONTHS_PT = [
+  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 const MONTHS_JA = [
   "1月", "2月", "3月", "4月", "5月", "6月",
@@ -76,9 +81,21 @@ export default function GoalCalendar({
   const displayMonth = month ?? today.getMonth();
 
   const weekdays =
-    lang === "ja" ? WEEKDAYS_JA : lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
+    lang === "ja"
+      ? WEEKDAYS_JA
+      : lang === "pt"
+        ? WEEKDAYS_PT
+        : lang === "es"
+          ? WEEKDAYS_ES
+          : WEEKDAYS_EN;
   const months =
-    lang === "ja" ? MONTHS_JA : lang === "es" ? MONTHS_ES : MONTHS_EN;
+    lang === "ja"
+      ? MONTHS_JA
+      : lang === "pt"
+        ? MONTHS_PT
+        : lang === "es"
+          ? MONTHS_ES
+          : MONTHS_EN;
 
   // Parse startDate if provided
   const goalStartDate = useMemo(() => {
@@ -189,6 +206,8 @@ export default function GoalCalendar({
             aria-label={
               lang === "ja"
                 ? "前の月"
+                : lang === "pt"
+                ? "Mes anterior"
                 : lang === "es"
                 ? "Mes anterior"
                 : "Previous month"
@@ -217,6 +236,8 @@ export default function GoalCalendar({
             aria-label={
               lang === "ja"
                 ? "次の月"
+                : lang === "pt"
+                ? "Proximo mes"
                 : lang === "es"
                 ? "Mes siguiente"
                 : "Next month"
@@ -306,6 +327,8 @@ export default function GoalCalendar({
             {completedLabel ||
               (lang === "ja"
                 ? "完了"
+                : lang === "pt"
+                ? "Concluido"
                 : lang === "es"
                 ? "Completado"
                 : "Completed")}
@@ -317,6 +340,8 @@ export default function GoalCalendar({
             {incompleteLabel ||
               (lang === "ja"
                 ? "未完了"
+                : lang === "pt"
+                ? "Pendente"
                 : lang === "es"
                 ? "Pendiente"
                 : "Incomplete")}
@@ -332,7 +357,13 @@ export default function GoalCalendar({
             borderColor={colors.todayBorder}
           />
           <Text fontSize="xs" color={colors.legendText}>
-            {lang === "ja" ? "今日" : lang === "es" ? "Hoy" : "Today"}
+            {lang === "ja"
+              ? "今日"
+              : lang === "pt"
+                ? "Hoje"
+                : lang === "es"
+                  ? "Hoy"
+                  : "Today"}
           </Text>
         </HStack>
       </HStack>

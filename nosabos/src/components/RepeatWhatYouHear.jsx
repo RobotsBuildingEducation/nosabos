@@ -250,6 +250,7 @@ export default function RepeatWhatYouHear({
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
       return;
     const isFrenchUI = userLanguage === "fr";
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
@@ -257,6 +258,8 @@ export default function RepeatWhatYouHear({
         ? "「聞こえたものを繰り返す」練習です。単語バンクを使って、聞こえた文どおりに答えてください。"
         : isFrenchUI
         ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
+        : isPortugueseUI
+        ? "Exercicio de repetir o que voce ouve. Responda com a frase exatamente como foi dita usando o banco de palavras."
         : isSpanishUI
         ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
         : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
@@ -265,6 +268,8 @@ export default function RepeatWhatYouHear({
           ? `聞こえた文: ${sourceSentence}`
           : isFrenchUI
           ? `Phrase prononcee : ${sourceSentence}`
+          : isPortugueseUI
+          ? `Frase falada: ${sourceSentence}`
           : isSpanishUI
           ? `Frase pronunciada: ${sourceSentence}`
           : `Spoken sentence: ${sourceSentence}`
@@ -274,6 +279,8 @@ export default function RepeatWhatYouHear({
           ? `単語バンク: ${wordBank.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
@@ -283,6 +290,8 @@ export default function RepeatWhatYouHear({
           ? `ヒント: ${hint}`
           : isFrenchUI
           ? `Indice : ${hint}`
+          : isPortugueseUI
+          ? `Dica: ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
           : `Hint: ${hint}`
@@ -367,6 +376,8 @@ export default function RepeatWhatYouHear({
                           aria-label={
                             userLanguage === "ja"
                               ? "アシスタントに聞く"
+                              : userLanguage === "pt"
+                              ? "Pedir ajuda"
                               : userLanguage === "es"
                               ? "Pedir ayuda"
                               : "Ask the assistant"
@@ -392,6 +403,8 @@ export default function RepeatWhatYouHear({
                         aria-label={
                           userLanguage === "ja"
                             ? "聞く"
+                            : userLanguage === "pt"
+                              ? "Ouvir"
                             : userLanguage === "es"
                               ? "Escuchar"
                               : "Listen"
@@ -534,12 +547,14 @@ export default function RepeatWhatYouHear({
           >
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
-              <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
+                <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
                 {userLanguage === "ja"
                   ? "アシスタント"
-                  : userLanguage === "es"
-                    ? "Asistente"
-                    : "Assistant"}
+                  : userLanguage === "pt"
+                    ? "Assistente"
+                    : userLanguage === "es"
+                      ? "Asistente"
+                      : "Assistant"}
               </Text>
               {isLoadingAssistantSupport && (
                 <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />

@@ -109,10 +109,11 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it, fr, ja) {
+function supportCopy(lang, en, es, it, fr, ja, pt = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -269,6 +270,7 @@ const HelpChatFab = forwardRef(
           "Nessun messaggio",
           "Aucun message",
           "メッセージなし",
+          "Sem mensagens",
         ),
         noMessagesDesc: supportCopy(
           uiLang,
@@ -277,6 +279,7 @@ const HelpChatFab = forwardRef(
           "Non ci sono messaggi da salvare.",
           "Aucun message a enregistrer.",
           "保存するメッセージがありません。",
+          "Nenhuma mensagem para salvar.",
         ),
         savedChatTitle: supportCopy(
           uiLang,
@@ -285,6 +288,7 @@ const HelpChatFab = forwardRef(
           "Chat salvata",
           "Chat enregistre",
           "チャットを保存しました",
+          "Chat salvo",
         ),
         chatSavedTitle: supportCopy(
           uiLang,
@@ -293,6 +297,7 @@ const HelpChatFab = forwardRef(
           "Chat salvata",
           "Chat enregistre",
           "チャットを保存しました",
+          "Chat salvo",
         ),
         chatDeletedTitle: supportCopy(
           uiLang,
@@ -301,6 +306,7 @@ const HelpChatFab = forwardRef(
           "Chat eliminata",
           "Chat supprime",
           "チャットを削除しました",
+          "Chat excluído",
         ),
         requestFailed: supportCopy(
           uiLang,
@@ -309,6 +315,7 @@ const HelpChatFab = forwardRef(
           "Mi dispiace, non sono riuscito a completare la richiesta. Riprova.",
           "Desole, je n'ai pas pu terminer cette demande. Reessaie.",
           "すみません、そのリクエストを完了できませんでした。もう一度お試しください。",
+          "Desculpe, não consegui concluir essa solicitação. Tente novamente.",
         ),
         chatErrorTitle: supportCopy(
           uiLang,
@@ -317,6 +324,7 @@ const HelpChatFab = forwardRef(
           "Errore chat",
           "Erreur de chat",
           "チャットエラー",
+          "Erro no chat",
         ),
         connectionErrorTitle: supportCopy(
           uiLang,
@@ -325,6 +333,7 @@ const HelpChatFab = forwardRef(
           "Errore di connessione",
           "Erreur de connexion",
           "接続エラー",
+          "Erro de conexão",
         ),
         yourChats: supportCopy(
           uiLang,
@@ -333,6 +342,7 @@ const HelpChatFab = forwardRef(
           "Le tue chat",
           "Tes chats",
           "あなたのチャット",
+          "Seus chats",
         ),
         noSavedChats: supportCopy(
           uiLang,
@@ -341,8 +351,17 @@ const HelpChatFab = forwardRef(
           "Nessuna chat salvata",
           "Aucun chat enregistre",
           "保存済みチャットはありません",
+          "Nenhum chat salvo",
         ),
-        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina", "Supprimer", "削除"),
+        delete: supportCopy(
+          uiLang,
+          "Delete",
+          "Eliminar",
+          "Elimina",
+          "Supprimer",
+          "削除",
+          "Excluir",
+        ),
         morphemeMode: supportCopy(
           uiLang,
           "Morpheme mode",
@@ -350,6 +369,7 @@ const HelpChatFab = forwardRef(
           "Modalità morfemi",
           "Mode morphemes",
           "形態素モード",
+          "Modo morfemas",
         ),
         breakDownWords: supportCopy(
           uiLang,
@@ -358,12 +378,53 @@ const HelpChatFab = forwardRef(
           "Scomponi le parole",
           "Decomposer les mots",
           "単語を分解",
+          "Quebrar palavras",
         ),
-        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat", "Nouveau chat", "新しいチャット"),
-        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto", "Aide", "ヘルプ"),
-        menu: supportCopy(uiLang, "Menu", "Menú", "Menu", "Menu", "メニュー"),
-        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi", "Morphemes", "形態素"),
-        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat", "Enregistrer le chat", "チャットを保存"),
+        newChat: supportCopy(
+          uiLang,
+          "New chat",
+          "Nuevo chat",
+          "Nuova chat",
+          "Nouveau chat",
+          "新しいチャット",
+          "Novo chat",
+        ),
+        help: supportCopy(
+          uiLang,
+          "Help",
+          "Ayuda",
+          "Aiuto",
+          "Aide",
+          "ヘルプ",
+          "Ajuda",
+        ),
+        menu: supportCopy(
+          uiLang,
+          "Menu",
+          "Menú",
+          "Menu",
+          "Menu",
+          "メニュー",
+          "Menu",
+        ),
+        morphemes: supportCopy(
+          uiLang,
+          "Morphemes",
+          "Morfemas",
+          "Morfemi",
+          "Morphemes",
+          "形態素",
+          "Morfemas",
+        ),
+        saveChat: supportCopy(
+          uiLang,
+          "Save chat",
+          "Guardar",
+          "Salva chat",
+          "Enregistrer le chat",
+          "チャットを保存",
+          "Salvar chat",
+        ),
         emptyPrompt: supportCopy(
           uiLang,
           "What do you want to learn today?",
@@ -371,6 +432,7 @@ const HelpChatFab = forwardRef(
           "Che cosa vuoi imparare oggi?",
           "Qu'est-ce que tu veux apprendre aujourd'hui ?",
           "今日は何を学びたいですか？",
+          "O que você quer aprender hoje?",
         ),
         stopVoiceChat: supportCopy(
           uiLang,
@@ -379,6 +441,7 @@ const HelpChatFab = forwardRef(
           "Interrompi chat vocale",
           "Arreter le chat vocal",
           "音声チャットを停止",
+          "Encerrar chat por voz",
         ),
         startVoiceChat: supportCopy(
           uiLang,
@@ -387,8 +450,17 @@ const HelpChatFab = forwardRef(
           "Avvia chat vocale",
           "Demarrer le chat vocal",
           "音声チャットを開始",
+          "Iniciar chat por voz",
         ),
-        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci", "Lire", "再生"),
+        play: supportCopy(
+          uiLang,
+          "Play",
+          "Reproducir",
+          "Riproduci",
+          "Lire",
+          "再生",
+          "Reproduzir",
+        ),
         askPlaceholder: supportCopy(
           uiLang,
           "Ask about this lesson...",
@@ -396,9 +468,26 @@ const HelpChatFab = forwardRef(
           "Chiedi qualcosa su questa lezione...",
           "Pose une question sur cette lecon...",
           "このレッスンについて質問...",
+          "Pergunte sobre esta lição...",
         ),
-        send: supportCopy(uiLang, "Send", "Enviar", "Invia", "Envoyer", "送信"),
-        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma", "Arreter", "停止"),
+        send: supportCopy(
+          uiLang,
+          "Send",
+          "Enviar",
+          "Invia",
+          "Envoyer",
+          "送信",
+          "Enviar",
+        ),
+        stop: supportCopy(
+          uiLang,
+          "Stop",
+          "Detener",
+          "Ferma",
+          "Arreter",
+          "停止",
+          "Parar",
+        ),
       }),
       [uiLang],
     );
@@ -782,6 +871,13 @@ const HelpChatFab = forwardRef(
               ? "Sé conciso y natural."
               : "Sé muy breve y con tono nativo.";
         }
+        if (primaryLang === "pt") {
+          return lvl === "beginner"
+            ? "Use frases curtas e simples."
+            : lvl === "intermediate"
+              ? "Seja conciso e natural."
+              : "Seja bem breve e com tom nativo.";
+        }
         if (primaryLang === "en") {
           return lvl === "beginner"
             ? "Use short, simple sentences."
@@ -801,13 +897,22 @@ const HelpChatFab = forwardRef(
         showTranslations && targetLang !== primaryLang ? targetLang : null;
 
       const glossHuman = glossLang ? nameForLanguage(glossLang) : "";
-      const supportNote = `Explica y guía en ${nameForLanguage(
-        primaryLang,
-      )}. Incluye ejemplos o frases en ${nameForLanguage(
-        targetLang,
-      )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
-        primaryLang,
-      )}.`;
+      const supportNote =
+        primaryLang === "pt"
+          ? `Explique e oriente em ${nameForLanguage(
+              primaryLang,
+            )}. Inclua exemplos ou frases em ${nameForLanguage(
+              targetLang,
+            )} apenas quando ajudarem, mas mantenha a explicação em ${nameForLanguage(
+              primaryLang,
+            )}.`
+          : `Explica y guía en ${nameForLanguage(
+              primaryLang,
+            )}. Incluye ejemplos o frases en ${nameForLanguage(
+              targetLang,
+            )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
+              primaryLang,
+            )}.`;
 
       // Morpheme mode instructions - placed at START for priority
       const morphemePrefix = morphemeMode
@@ -833,8 +938,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         : "";
 
       const glossLine = glossLang
-        ? `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
-        : "No añadas traducciones adicionales.";
+        ? primaryLang === "pt"
+          ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
+          : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
+        : primaryLang === "pt"
+          ? "Não adicione traduções extras."
+          : "No añadas traducciones adicionales.";
 
       return [
         morphemePrefix,

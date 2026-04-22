@@ -36,10 +36,11 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr, ja) {
+function supportCopy(lang, en, es, pt, it, fr, ja) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -170,6 +171,7 @@ export default function BitcoinSupportModal({
       lang,
       "Create Scholarships",
       "Crea becas con aprendizaje",
+      "Criar bolsas de estudo com aprendizagem",
       "Crea borse di studio con l'apprendimento",
       "Creer des bourses",
       "奨学金を作る",
@@ -180,6 +182,7 @@ export default function BitcoinSupportModal({
       lang,
       "Send Bitcoin to educators any time you gain XP",
       "Envía Bitcoin a educadores cada vez que ganes XP",
+      "Envie Bitcoin para educadores sempre que você ganhar XP",
       "Invia Bitcoin agli educatori ogni volta che guadagni XP",
       "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
       "XPを獲得するたびに教育者へBitcoinを送れます",
@@ -190,6 +193,7 @@ export default function BitcoinSupportModal({
       lang,
       "This can be done later in your settings.",
       "Esto se puede hacer después en tus ajustes.",
+      "Isso pode ser feito depois nas suas configurações.",
       "Puoi farlo più tardi dalle impostazioni.",
       "Tu pourras le faire plus tard dans les parametres.",
       "これは後で設定から行えます。",
@@ -200,13 +204,14 @@ export default function BitcoinSupportModal({
       lang,
       "Maybe later",
       "Tal vez después",
+      "Talvez depois",
       "Forse più tardi",
       "Peut-etre plus tard",
       "後で",
     );
   const closeLabel =
     ui.tutorial_bitcoin_modal_done ||
-    supportCopy(lang, "Done", "Listo", "Fatto", "Termine", "完了");
+    supportCopy(lang, "Done", "Listo", "Concluído", "Fatto", "Termine", "完了");
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {

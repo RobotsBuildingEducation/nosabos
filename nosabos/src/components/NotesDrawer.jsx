@@ -67,9 +67,27 @@ const CEFR_TEXT_COLORS = {
 
 // Module type labels
 const MODULE_LABELS = {
-  flashcard: { en: "Flashcard", es: "Tarjeta", it: "Scheda", fr: "Carte" },
-  vocabulary: { en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire" },
-  grammar: { en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire" },
+  flashcard: {
+    en: "Flashcard",
+    es: "Tarjeta",
+    pt: "Cartao",
+    it: "Scheda",
+    fr: "Carte",
+  },
+  vocabulary: {
+    en: "Vocabulary",
+    es: "Vocabulario",
+    pt: "Vocabulario",
+    it: "Vocabolario",
+    fr: "Vocabulaire",
+  },
+  grammar: {
+    en: "Grammar",
+    es: "Gramatica",
+    pt: "Gramatica",
+    it: "Grammatica",
+    fr: "Grammaire",
+  },
 };
 
 export default function NotesDrawer({
@@ -100,6 +118,8 @@ export default function NotesDrawer({
       ? "マイメモ"
       : lang === "fr"
       ? "Mes notes"
+      : lang === "pt"
+      ? "Minhas notas"
       : lang === "it"
       ? "Le mie note"
       : lang === "es"
@@ -110,6 +130,8 @@ export default function NotesDrawer({
       ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
       : lang === "fr"
       ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
+      : lang === "pt"
+      ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
       : lang === "it"
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
       : lang === "es"
@@ -120,6 +142,8 @@ export default function NotesDrawer({
       ? "すべて削除"
       : lang === "fr"
       ? "Tout effacer"
+      : lang === "pt"
+      ? "Limpar tudo"
       : lang === "it"
       ? "Cancella tutto"
       : lang === "es"
@@ -130,6 +154,8 @@ export default function NotesDrawer({
       ? "要約"
       : lang === "fr"
       ? "Resume"
+      : lang === "pt"
+      ? "Resumo"
       : lang === "it"
       ? "Riassunto"
       : lang === "es"
@@ -140,6 +166,8 @@ export default function NotesDrawer({
       ? "レッスン"
       : lang === "fr"
       ? "Lecon"
+      : lang === "pt"
+      ? "Licao"
       : lang === "it"
       ? "Lezione"
       : lang === "es"
@@ -150,6 +178,8 @@ export default function NotesDrawer({
       ? "メモなし"
       : lang === "fr"
       ? "Aucune note"
+      : lang === "pt"
+      ? "Sem notas"
       : lang === "it"
       ? "Nessuna nota"
       : lang === "es"
@@ -390,6 +420,8 @@ export default function NotesDrawer({
                 aria-label={
                   lang === "ja"
                     ? "聞く"
+                    : lang === "pt"
+                    ? "Ouvir"
                     : lang === "es"
                     ? "Escuchar"
                     : "Listen"
@@ -408,6 +440,8 @@ export default function NotesDrawer({
                 aria-label={
                   lang === "ja"
                     ? "メモを削除"
+                    : lang === "pt"
+                    ? "Excluir nota"
                     : lang === "es"
                     ? "Eliminar nota"
                     : "Delete note"
@@ -546,11 +580,15 @@ export default function NotesDrawer({
                                     levelNotes.length === 1
                                       ? lang === "ja"
                                         ? "件のメモ"
+                                        : lang === "pt"
+                                        ? "nota"
                                         : lang === "es"
                                         ? "nota"
                                         : "note"
                                       : lang === "ja"
                                         ? "件のメモ"
+                                        : lang === "pt"
+                                        ? "notas"
                                         : lang === "es"
                                         ? "notas"
                                         : "notes"
