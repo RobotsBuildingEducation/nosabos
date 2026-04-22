@@ -134,6 +134,72 @@ const LINKS_PAPER_PAGE_SX = {
   },
 };
 
+const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
+  en: {
+    bg:
+      "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
+    canton: "#3c3b6e",
+  },
+  es: {
+    bg: "linear-gradient(90deg, #006847 0 33.33%, #fff 33.33% 66.66%, #ce1126 66.66% 100%)",
+    emblem: "#c79a2b",
+  },
+  fr: {
+    bg: "linear-gradient(90deg, #0055a4 0 33.33%, #fff 33.33% 66.66%, #ef4135 66.66% 100%)",
+  },
+  it: {
+    bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
+  },
+};
+
+const SupportLanguageFlagSwatch = ({ value }) => {
+  const flag = SUPPORT_LANGUAGE_FLAG_SWATCHES[value] || SUPPORT_LANGUAGE_FLAG_SWATCHES.en;
+
+  return (
+    <Box
+      as="span"
+      aria-hidden="true"
+      display="inline-flex"
+      position="relative"
+      w="24px"
+      h="24px"
+      flexShrink={0}
+      overflow="hidden"
+      rounded="full"
+      bg={flag.bg}
+      boxShadow="inset 0 0 0 1px rgba(255,255,255,0.2)"
+      _before={
+        flag.canton
+          ? {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              w: "52%",
+              h: "54%",
+              bg: flag.canton,
+            }
+          : undefined
+      }
+      _after={
+        flag.emblem
+          ? {
+              content: '""',
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              w: "4px",
+              h: "4px",
+              rounded: "full",
+              bg: flag.emblem,
+              transform: "translate(-50%, -50%)",
+            }
+          : undefined
+      }
+    />
+  );
+};
+
 const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
   const activeLanguage = language || "en";
   const langOptions = getSupportLanguageOptions({
@@ -167,19 +233,7 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
           _hover={{ bg: APP_SURFACE_MUTED }}
           _active={{ bg: APP_SURFACE_MUTED }}
         >
-          <Box
-            key={selected?.value || activeLanguage}
-            as="span"
-            display="inline-flex"
-            alignItems="center"
-            justifyContent="center"
-            w="24px"
-            h="24px"
-            flexShrink={0}
-            sx={{ "& svg": { width: "24px", height: "24px", display: "block" } }}
-          >
-            {selected?.flag}
-          </Box>
+          <SupportLanguageFlagSwatch value={selected?.value || activeLanguage} />
         </MenuButton>
         <MenuList
           bg={APP_SURFACE_ELEVATED}
@@ -208,9 +262,7 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
                 fontFamily="monospace"
               >
                 <HStack spacing={2}>
-                  <Text fontSize="lg" lineHeight="1">
-                    {opt.flag}
-                  </Text>
+                  <SupportLanguageFlagSwatch value={opt.value} />
                   <Text color={APP_TEXT_PRIMARY}>{opt.label}</Text>
                 </HStack>
               </MenuItemOption>
@@ -1218,7 +1270,14 @@ export default function LinksPage() {
       >
         <VStack spacing={6} textAlign="center">
           {/* Top bar: language menu left, theme toggle right */}
-          <Box w="100%" display="flex" justifyContent="space-between" alignItems="center">
+          <Box
+            w="100%"
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            px={{ base: 3, sm: 4, md: 0 }}
+            pt={{ base: 3, md: 1 }}
+          >
             <LanguageMenuFixed
               language={language}
               onSelect={setLanguage}
