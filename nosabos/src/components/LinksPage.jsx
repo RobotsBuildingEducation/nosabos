@@ -135,35 +135,29 @@ const LINKS_PAPER_PAGE_SX = {
 };
 
 const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
+  const activeLanguage = language || "en";
   const langOptions = getSupportLanguageOptions({
     ui: translations,
-    uiLang: language,
+    uiLang: activeLanguage,
   });
-  const selected = langOptions.find((o) => o.value === language) || langOptions[0];
+  const selected =
+    langOptions.find((o) => o.value === activeLanguage) ||
+    langOptions.find((o) => o.value === "en") ||
+    langOptions[0];
 
   return (
     <Box>
       <Menu placement="bottom-start">
         <MenuButton
-          as={IconButton}
-          aria-label="Select language"
-          icon={
-            <Box
-              as="span"
-              display="inline-flex"
-              alignItems="center"
-              justifyContent="center"
-              w="24px"
-              h="24px"
-              flexShrink={0}
-              sx={{ "& svg": { width: "24px", height: "24px", display: "block" } }}
-            >
-              {selected?.flag}
-            </Box>
-          }
+          as={Button}
+          type="button"
+          aria-label={`Select language${selected?.label ? `: ${selected.label}` : ""}`}
           size="sm"
           minW="40px"
+          w="40px"
           h="40px"
+          p={0}
+          lineHeight="1"
           rounded="full"
           bg={APP_SURFACE_ELEVATED}
           border="1px solid"
@@ -172,7 +166,21 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
           backdropFilter="blur(20px)"
           _hover={{ bg: APP_SURFACE_MUTED }}
           _active={{ bg: APP_SURFACE_MUTED }}
-        />
+        >
+          <Box
+            key={selected?.value || activeLanguage}
+            as="span"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            w="24px"
+            h="24px"
+            flexShrink={0}
+            sx={{ "& svg": { width: "24px", height: "24px", display: "block" } }}
+          >
+            {selected?.flag}
+          </Box>
+        </MenuButton>
         <MenuList
           bg={APP_SURFACE_ELEVATED}
           borderColor={APP_BORDER}
@@ -182,7 +190,7 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
           zIndex={122}
         >
           <MenuOptionGroup
-            value={language}
+            value={activeLanguage}
             type="radio"
             onChange={(val) => {
               playSound?.();

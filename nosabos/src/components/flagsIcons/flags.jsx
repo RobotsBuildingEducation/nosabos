@@ -117,7 +117,7 @@ export const frenchFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#FR_svg__a)">
+      <g clipPath="url(#FR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -149,7 +149,7 @@ export const germanFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#DE_svg__a)">
+      <g clipPath="url(#DE_svg__a)">
         <path
           d="M.746 16.175C2.442 20.745 6.84 24 12 24c5.16 0 9.558-3.257 11.253-7.826L12 15.132.746 16.175Z"
           fill="#FFDA44"
@@ -181,7 +181,7 @@ export const italianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#IT_svg__a)">
+      <g clipPath="url(#IT_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -213,7 +213,7 @@ export const brazilianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#BR_svg__a)">
+      <g clipPath="url(#BR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#6DA544"
@@ -249,7 +249,7 @@ export const greekFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#GR_svg__a)">
+      <g clipPath="url(#GR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -281,7 +281,7 @@ export const japaneseFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#JP_svg__a)">
+      <g clipPath="url(#JP_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -309,7 +309,7 @@ export const russianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#RU_svg__a)">
+      <g clipPath="url(#RU_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
