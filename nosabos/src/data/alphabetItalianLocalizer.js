@@ -812,14 +812,90 @@ const applyWordTranslationsOutsideQuotes = (text) =>
     })
     .join("");
 
+const ITALIAN_NAME_PATTERNS = [
+  [/^(.+)\s+fada$/i, (base) => `${base.toUpperCase()} con fada`],
+  [/^(.+)\s+met trema$/i, (base) => `${base.toUpperCase()} con trema`],
+  [/^(.+)\s+tréma$/i, (base) => `${base.toUpperCase()} con trema`],
+  [/^(.+)\s+accent aigu$/i, (base) => `${base.toUpperCase()} con accento acuto`],
+  [/^(.+)\s+accent grave$/i, (base) => `${base.toUpperCase()} con accento grave`],
+  [/^(.+)\s+accent circonflexe$/i, (base) => `${base.toUpperCase()} con circonflesso`],
+  [/^(.+)\s+ogonek$/i, (base) => `${base.toUpperCase()} con ogonek`],
+  [/^(.+)-umlaut$/i, (base) => `${base.toUpperCase()} con umlaut`],
+];
+
+const ITALIAN_SOURCE_LEAK_PATTERN =
+  /\b(?:como|sonido|sonidos|suena|suenan|usado|salud|significa|respuesta|delgada|delgadas|ancha|anchas|circundantes|palabras?|prestadas|extranjeras|siempre|nunca|igual|letra|letras|fuerte|suave|corta|larga|before|after|like|sound|used|literally|slender|broad|surrounding|consonants?|greeting|response|health)\b/i;
+
+const finalizeItalianInstruction = (translated, source) => {
+  const candidate = String(translated || "").trim();
+  if (!candidate) return "";
+  if (normalizeKey(candidate) === normalizeKey(source)) return "";
+  if (ITALIAN_SOURCE_LEAK_PATTERN.test(candidate)) return "";
+  return candidate;
+};
+
+const EXACT_INSTRUCTION_TRANSLATIONS = {
+  "o corta. una vocal ancha (a, o, u).":
+    "O breve. Una vocale ampia (a, o, u).",
+  "u corta. una vocal ancha.":
+    "U breve. Una vocale ampia.",
+  "i corta. una vocal delgada que afecta las consonantes circundantes.":
+    "I breve. Una vocale sottile che influenza le consonanti vicine.",
+  "sonido e corto. una de las vocales delgadas (e, i).":
+    "Suono E breve. Una delle vocali sottili (e, i).",
+  "a corta es común. puede ser ancha o delgada según el contexto.":
+    "La A breve e comune. Puo essere ampia o sottile a seconda del contesto.",
+  "'dee-ah gwit' - dios esté contigo":
+    "'Dee-ah gwit' - Dio sia con te.",
+  "el saludo más común. literalmente 'dios a ti'. respuesta: 'dia is muire duit'.":
+    "E il saluto piu comune. Significa letteralmente « Dio a te ». Risposta: « Dia is Muire duit ».",
+  "'slawn-cha' - salud!":
+    "'Slawn-cha' - Salute!",
+  "usado como brindis. literalmente significa 'salud'.":
+    "Usato per brindare. Significa letteralmente « salute ».",
+  "'sa' con s sorda": "'sa' con s sorda.",
+  "'ta' con t dental": "'ta' con t dentale.",
+  "'na'": "'na'.",
+  "'ma'": "'ma'.",
+  "'ya'": "'ya'.",
+  "'wa'": "'wa'.",
+  "como 'g' en 'gato' - siempre fuerte":
+    "Come la 'g' di 'gatto', sempre dura.",
+  "siempre g fuerte, nunca suave como en 'gema'.":
+    "Sempre G dura, mai dolce come in 'gema'.",
+  "como 'l' al inicio; como 'w' al final en brasil":
+    "Come la 'l' all'inizio; in Brasile, a fine sillaba puo suonare come 'w'.",
+  "como 's' al inicio; como 'z' entre vocales; como 'sh' en río":
+    "Come la 's' all'inizio, come la 'z' tra vocali e come 'sh' a Rio.",
+  "r vibrante": "R vibrante.",
+  "como la 'j' fuerte en 'jamón' o la 'ch' alemana en 'bach'":
+    "Come la 'j' forte di 'jamon' o la 'ch' tedesca di 'Bach'.",
+  "como 'j' en 'jamón', fuerte y gutural":
+    "Come la 'j' di 'jamon', forte e gutturale.",
+  "r vibrante múltiple": "R vibrante multipla.",
+  "marca el acento o distingue palabras: 'el' vs 'él'.":
+    "Segna l'accento o distingue parole: 'el' vs 'el'.",
+  "una 'r' vibrante o simple": "Una R vibrante o un colpo singolo.",
+  "sigma final usa la forma ς.": "Il sigma finale usa la forma ς.",
+  "sustituye c/qu del clásico.": "Sostituisce c/qu del classico.",
+  "sustituye hu/uh.": "Sostituisce hu/uh.",
+  "africada lateral sorda": "Affricata laterale sorda.",
+  "sustituye tz.": "Sostituisce tz.",
+  "oclusiva glotal (corte breve)": "Occlusiva glottale (breve interruzione).",
+  "kal- + -li → kali.": "kal- + -li -> kali.",
+};
+
 export const translateAlphabetInstructionToItalian = (text) => {
   if (!text || typeof text !== "string") return text;
+
+  const exact = EXACT_INSTRUCTION_TRANSLATIONS[normalizeKey(text)];
+  if (exact) return exact;
 
   const withoutInvertedPunctuation = text.replace(/[¡¿]/g, "");
   const phraseTranslated = applyPhraseTranslations(withoutInvertedPunctuation);
   const wordTranslated = applyWordTranslationsOutsideQuotes(phraseTranslated);
 
-  return wordTranslated
+  const cleaned = wordTranslated
     .replace(/\bIL\b/g, "Il")
     .replace(/\bIl (inglese|irlandese|olandese)/g, "L'$1")
     .replace(/\bdel inglese\b/g, "dell'inglese")
@@ -841,6 +917,8 @@ export const translateAlphabetInstructionToItalian = (text) => {
     .replace(/\s+([.,;:!?])/g, "$1")
     .replace(/\s{2,}/g, " ")
     .trim();
+
+  return finalizeItalianInstruction(cleaned, text);
 };
 
 const translateKnownMeaning = (text) => {
@@ -872,17 +950,36 @@ const translateKnownMeaning = (text) => {
 export const translateAlphabetMeaningToItalian = (meaning) => {
   if (!meaning) return "";
   if (typeof meaning === "string") {
-    return translateKnownMeaning(meaning) || meaning;
+    return translateKnownMeaning(meaning) || "";
   }
 
   return (
     meaning.it ||
     translateKnownMeaning(meaning.en) ||
     translateKnownMeaning(meaning.es) ||
-    meaning.es ||
-    meaning.en ||
     ""
   );
+};
+
+export const translateAlphabetNameToItalian = (value, letter = null) => {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  if (/^[A-ZÀ-ÖØ-Þ]$/u.test(source)) return "";
+
+  if (letter?.type === "phrase") {
+    const phraseMeaning = translateAlphabetMeaningToItalian(letter.practiceWordMeaning);
+    if (phraseMeaning) return phraseMeaning;
+  }
+
+  const directMeaning = translateKnownMeaning(source);
+  if (directMeaning) return directMeaning;
+
+  for (const [pattern, formatter] of ITALIAN_NAME_PATTERNS) {
+    const match = source.match(pattern);
+    if (match) return formatter(match[1]);
+  }
+
+  return "";
 };
 
 const addItalianAlphabetCopy = (letter) => {
@@ -894,6 +991,7 @@ const addItalianAlphabetCopy = (letter) => {
 
   return {
     ...letter,
+    nameIt: letter.nameIt || translateAlphabetNameToItalian(letter.name, letter),
     soundIt: letter.soundIt || translateAlphabetInstructionToItalian(sourceSound),
     tipIt: letter.tipIt || translateAlphabetInstructionToItalian(sourceTip),
     practiceWordMeaning: {

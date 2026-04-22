@@ -1452,7 +1452,9 @@ function TopBar({
                             >
                               <HStack spacing={2}>
                                 {selectedPracticeOption?.flag}
-                                <Text as="span">{selectedPracticeOption?.label}</Text>
+                                <Text as="span">
+                                  {selectedPracticeOption?.label}
+                                </Text>
                               </HStack>
                             </MenuButton>
                             <MenuList
@@ -7013,14 +7015,24 @@ function BottomActionBar({
       id: "path",
       label:
         t?.app_mode_path ||
-        uiCopy(appLanguage, { en: "Path", es: "Ruta", it: "Percorso", ja: "学習パス" }),
+        uiCopy(appLanguage, {
+          en: "Path",
+          es: "Ruta",
+          it: "Percorso",
+          ja: "学習パス",
+        }),
       icon: PiPath,
     },
     {
       id: "flashcards",
       label:
         t?.app_mode_cards ||
-        uiCopy(appLanguage, { en: "Cards", es: "Tarjetas", it: "Schede", ja: "カード" }),
+        uiCopy(appLanguage, {
+          en: "Cards",
+          es: "Tarjetas",
+          it: "Schede",
+          ja: "カード",
+        }),
       icon: PiCardsBold,
     },
     {
@@ -7042,7 +7054,12 @@ function BottomActionBar({
   const CurrentModeIcon = currentMode.icon;
   const modeMenuLabel =
     t?.app_mode_menu ||
-    uiCopy(appLanguage, { en: "Mode", es: "Modo", it: "Modalità", ja: "モード" });
+    uiCopy(appLanguage, {
+      en: "Mode",
+      es: "Modo",
+      it: "Modalità",
+      ja: "モード",
+    });
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";

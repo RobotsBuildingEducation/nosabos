@@ -132,7 +132,7 @@ const PAPER_PAGE_SX = {
     opacity: 0.4,
     pointerEvents: "none",
   },
-  "& > *": {
+  "& > :not([data-proficiency-bottom-dock='true'])": {
     position: "relative",
     zIndex: 1,
   },
@@ -2045,7 +2045,7 @@ Return ONLY valid JSON:
             mixBlendMode: "screen",
             pointerEvents: "none",
           },
-          "& > *": {
+          "& > :not([data-proficiency-bottom-dock='true'])": {
             position: "relative",
             zIndex: 1,
           },
@@ -2257,6 +2257,7 @@ Return ONLY valid JSON:
 
         {/* Bottom dock */}
         <Center
+          data-proficiency-bottom-dock="true"
           position="fixed"
           bottom="22px"
           left="0"

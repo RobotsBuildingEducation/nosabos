@@ -37,17 +37,14 @@ import { POLISH_ALPHABET } from "../data/polishAlphabet";
 import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
 import {
-  translateAlphabetInstructionToItalian,
   translateAlphabetMeaningToItalian,
   withItalianAlphabetSupport,
 } from "../data/alphabetItalianLocalizer";
 import {
-  translateAlphabetInstructionToFrench,
   translateAlphabetMeaningToFrench,
   withFrenchAlphabetSupport,
 } from "../data/alphabetFrenchLocalizer";
 import {
-  translateAlphabetInstructionToJapanese,
   translateAlphabetMeaningToJapanese,
   withJapaneseAlphabetSupport,
 } from "../data/alphabetJapaneseLocalizer";
@@ -514,67 +511,87 @@ const getScriptName = (code, uiLang) =>
   LANGUAGE_SCRIPTS[code] ||
   "native script";
 
-const getLetterSound = (letter, uiLang) => {
-  if (uiLang === "it") {
-    return (
-      letter.soundIt ||
-      translateAlphabetInstructionToItalian(letter.soundEs || letter.sound)
-    );
-  }
-  if (uiLang === "fr") {
-    return (
-      letter.soundFr ||
-      translateAlphabetInstructionToFrench(letter.soundEs || letter.sound)
-    );
-  }
-  if (uiLang === "ja") {
-    return (
-      letter.soundJa ||
-      translateAlphabetInstructionToJapanese(letter.soundEs || letter.sound)
-    );
-  }
-  if (["es"].includes(uiLang)) {
-    return letter.soundEs || letter.sound;
-  }
-  return letter.sound;
+const LOCALIZED_FIELD_SUFFIX = {
+  en: "",
+  es: "Es",
+  it: "It",
+  fr: "Fr",
+  ja: "Ja",
 };
 
-const getLetterTip = (letter, uiLang) => {
-  if (uiLang === "it") {
-    return (
-      letter.tipIt ||
-      translateAlphabetInstructionToItalian(letter.tipEs || letter.tip)
-    );
-  }
-  if (uiLang === "fr") {
-    return (
-      letter.tipFr ||
-      translateAlphabetInstructionToFrench(letter.tipEs || letter.tip)
-    );
-  }
-  if (uiLang === "ja") {
-    return (
-      letter.tipJa ||
-      translateAlphabetInstructionToJapanese(letter.tipEs || letter.tip)
-    );
-  }
-  if (["es"].includes(uiLang)) {
-    return letter.tipEs || letter.tip;
-  }
-  return letter.tip;
+const getLocalizedLetterField = (letter, uiLang, baseKey) => {
+  if (!letter || !baseKey) return "";
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const suffix = LOCALIZED_FIELD_SUFFIX[normalizedLang];
+  const fieldName = suffix ? `${baseKey}${suffix}` : baseKey;
+  const value = letter[fieldName];
+  return typeof value === "string" ? value.trim() : "";
 };
+
+const getMeaningText = (meaning, uiLang) => {
+  if (!meaning || typeof meaning !== "object") return "";
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (normalizedLang === "en") {
+    return (
+      meaning.en ||
+      meaning.es ||
+      meaning.it ||
+      meaning.fr ||
+      meaning.ja ||
+      ""
+    );
+  }
+  return meaning[normalizedLang] || "";
+};
+
+const getLetterName = (letter, uiLang) => {
+  const localizedName = getLocalizedLetterField(letter, uiLang, "name");
+  if (localizedName) {
+    return localizedName;
+  }
+
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (normalizedLang === "en") {
+    return letter.name || "";
+  }
+
+  if (letter?.type === "phrase") {
+    return getMeaningText(normalizeMeaning(letter.practiceWordMeaning), normalizedLang);
+  }
+
+  return "";
+};
+
+const getLetterSound = (letter, uiLang) =>
+  getLocalizedLetterField(letter, uiLang, "sound");
+
+const getLetterTip = (letter, uiLang) =>
+  getLocalizedLetterField(letter, uiLang, "tip");
 
 const normalizeMeaning = (meaning) => {
   if (!meaning) return { en: "", es: "", it: "", fr: "", ja: "" };
   if (typeof meaning === "string") {
-    return { en: meaning, es: meaning, it: meaning, fr: meaning, ja: meaning };
+    const source = String(meaning || "").trim();
+    return {
+      en: source,
+      es: "",
+      it: translateAlphabetMeaningToItalian(source) || "",
+      fr: translateAlphabetMeaningToFrench(source) || "",
+      ja: translateAlphabetMeaningToJapanese(source) || "",
+    };
   }
 
-  const en = meaning.en || meaning.es || "";
-  const es = meaning.es || meaning.en || "";
-  const it = translateAlphabetMeaningToItalian(meaning) || en || es;
-  const fr = translateAlphabetMeaningToFrench(meaning) || en || es;
-  const ja = translateAlphabetMeaningToJapanese(meaning) || en || es;
+  const en =
+    meaning.en ||
+    meaning.es ||
+    meaning.it ||
+    meaning.fr ||
+    meaning.ja ||
+    "";
+  const es = meaning.es || "";
+  const it = meaning.it || translateAlphabetMeaningToItalian(meaning) || "";
+  const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
+  const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
 
   return { en, es, it, fr, ja };
 };
@@ -807,10 +824,10 @@ function LetterCard({
     uiText(uiLang, letter.type) ||
     letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
+  const displayName = getLetterName(letter, uiLang);
   const sound = getLetterSound(letter, uiLang);
   const tip = getLetterTip(letter, uiLang);
-  const practiceWordMeaningText =
-    practiceWordMeaningData?.[uiLang] || practiceWordMeaningData?.en || "";
+  const practiceWordMeaningText = getMeaningText(practiceWordMeaningData, uiLang);
   const showMeaning = Boolean(practiceWordMeaningText);
   const practiceMarker = getPracticeLetterMarker(letter);
   const highlightedPracticeWord = useMemo(
@@ -1077,10 +1094,11 @@ function LetterCard({
     async (currentWord) => {
       const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
       const scriptName = getScriptName(targetLang, uiLang);
+      const letterNameForPrompt = getLetterName(letter, uiLang) || letter.name || letter.letter;
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
+      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
@@ -1110,7 +1128,7 @@ function LetterCard({
         return null;
       }
     },
-    [letter.letter, letter.name, targetLang, uiLang],
+    [letter.letter, letter.name, letter.nameJa, targetLang, uiLang],
   );
 
   // Cleanup on unmount
@@ -1193,9 +1211,11 @@ function LetterCard({
                 <Text fontSize="2xl" fontWeight="bold">
                   {letter.letter}
                 </Text>
-                <Text fontSize="lg" fontWeight="semibold">
-                  {letter.name}
-                </Text>
+                {displayName ? (
+                  <Text fontSize="lg" fontWeight="semibold">
+                    {displayName}
+                  </Text>
+                ) : null}
               </VStack>
               {onPlay && (
                 <Flex
@@ -1221,12 +1241,16 @@ function LetterCard({
               )}
             </Flex>
 
-            <Text color={APP_TEXT_PRIMARY} fontSize="sm">
-              {sound}
-            </Text>
-            <Text fontSize="2xs" color={APP_TEXT_SECONDARY}>
-              {tip}
-            </Text>
+            {sound ? (
+              <Text color={APP_TEXT_PRIMARY} fontSize="sm">
+                {sound}
+              </Text>
+            ) : null}
+            {tip ? (
+              <Text fontSize="2xs" color={APP_TEXT_SECONDARY}>
+                {tip}
+              </Text>
+            ) : null}
           </VStack>
         </VStack>
 
