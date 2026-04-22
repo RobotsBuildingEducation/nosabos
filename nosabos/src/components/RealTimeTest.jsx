@@ -157,7 +157,9 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 function uiStateLabel(uiState, uiLang = "en") {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   if (uiState === "speaking")
-    return lang === "fr"
+    return lang === "ja"
+      ? "話しています"
+      : lang === "fr"
       ? "Parle"
       : lang === "es"
       ? "Hablando"
@@ -165,7 +167,9 @@ function uiStateLabel(uiState, uiLang = "en") {
       ? "Parlando"
       : "Speaking";
   if (uiState === "listening")
-    return lang === "fr"
+    return lang === "ja"
+      ? "聞き取り中"
+      : lang === "fr"
       ? "Ecoute"
       : lang === "es"
       ? "Escuchando"
@@ -173,7 +177,9 @@ function uiStateLabel(uiState, uiLang = "en") {
         ? "Ascoltando"
         : "Listening";
   if (uiState === "thinking")
-    return lang === "fr"
+    return lang === "ja"
+      ? "考え中"
+      : lang === "fr"
       ? "Reflechit"
       : lang === "es"
       ? "Pensando"
@@ -825,22 +831,9 @@ export default function RealTimeTest({
     }
   }, []);
 
-  const normalizeSupportLang = (raw) => {
-    const code = String(raw || "").toLowerCase();
-    if (code === "fr" || code.startsWith("fr-") || code === "french" || code === "francais" || code === "français")
-      return "fr";
-    if (code === "it" || code.startsWith("it-") || code === "italian" || code === "italiano")
-      return "it";
-    if (code === "es" || code.startsWith("es-") || code === "spanish")
-      return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english")
-      return "en";
-    return undefined;
-  };
-
   const uiLang =
-    normalizeSupportLang(supportLangRef.current || supportLang) ||
-    normalizeSupportLang(storedUiLang) ||
+    normalizeSupportLanguage(supportLangRef.current || supportLang, "") ||
+    normalizeSupportLanguage(storedUiLang, "") ||
     DEFAULT_SUPPORT_LANGUAGE;
   const ui = translations[uiLang] || translations.en;
   const uiText = (key, fallback = "") =>
@@ -939,7 +932,7 @@ export default function RealTimeTest({
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it", "fr"].includes(t)) return t;
+    if (["en", "es", "it", "fr", "ja"].includes(t)) return t;
     return uiLang;
   })();
   const gtr = translations[goalUiLang] || translations.en;
@@ -987,7 +980,11 @@ export default function RealTimeTest({
       supportLangRef.current || supportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
-    const needsBackfill = goalLang === "es" || goalLang === "it" || goalLang === "fr";
+    const needsBackfill =
+      goalLang === "es" ||
+      goalLang === "it" ||
+      goalLang === "fr" ||
+      goalLang === "ja";
     const goal = currentGoal;
     if (!needsBackfill || !goal) return;
     if (goalLocalizationBusyRef.current) return;
@@ -1585,7 +1582,9 @@ export default function RealTimeTest({
       DEFAULT_SUPPORT_LANGUAGE,
     );
     const scenario =
-      goalLang === "fr"
+      goalLang === "ja"
+        ? "こんにちはと言う"
+        : goalLang === "fr"
         ? "Dis bonjour"
         : goalLang === "es"
         ? "Di hola"
@@ -1593,7 +1592,9 @@ export default function RealTimeTest({
         ? "Di' ciao"
         : "Say hello";
     const successCriteria =
-      goalLang === "es"
+      goalLang === "ja"
+        ? "学習者がこんにちはと言う。"
+        : goalLang === "es"
         ? "El estudiante dice hola."
         : goalLang === "it"
           ? "Lo studente dice ciao."
@@ -1606,15 +1607,18 @@ export default function RealTimeTest({
       title_es: "Di hola",
       title_it: "Di' ciao",
       title_fr: "Dis bonjour",
+      title_ja: "こんにちはと言う",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
       rubric_it: "Lo studente dice ciao.",
       rubric_fr: "L'apprenant dit bonjour.",
+      rubric_ja: "学習者がこんにちはと言う。",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
       successCriteria_it: "Lo studente dice ciao.",
       successCriteria_fr: "L'apprenant dit bonjour.",
+      successCriteria_ja: "学習者がこんにちはと言う。",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1970,7 +1974,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       targetLangRef.current || targetLang,
       DEFAULT_TARGET_LANGUAGE,
     );
-    if (["en", "es", "it", "fr"].includes(t)) return t;
+    if (["en", "es", "it", "fr", "ja"].includes(t)) return t;
     return uiLang;
   }
   function goalTitleForUI(goal) {

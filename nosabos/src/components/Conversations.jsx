@@ -873,7 +873,9 @@ function ArchiveTextAnimation({ animation }) {
 function uiStateLabel(uiState, uiLang) {
   const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   if (uiState === "speaking")
-    return lang === "fr"
+    return lang === "ja"
+      ? "話しています"
+      : lang === "fr"
       ? "Parle"
       : lang === "es"
       ? "Hablando"
@@ -881,7 +883,9 @@ function uiStateLabel(uiState, uiLang) {
       ? "Parlando"
       : "Speaking";
   if (uiState === "listening")
-    return lang === "fr"
+    return lang === "ja"
+      ? "聞き取り中"
+      : lang === "fr"
       ? "Ecoute"
       : lang === "es"
       ? "Escuchando"
@@ -889,7 +893,9 @@ function uiStateLabel(uiState, uiLang) {
         ? "Ascoltando"
         : "Listening";
   if (uiState === "thinking")
-    return lang === "fr"
+    return lang === "ja"
+      ? "考え中"
+      : lang === "fr"
       ? "Reflechit"
       : lang === "es"
       ? "Pensando"
@@ -1326,24 +1332,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }
   })();
 
-  const normalizeSupportLang = (raw) => {
-    const code = String(raw || "").toLowerCase();
-    if (code === "fr" || code.startsWith("fr-") || code === "french" || code === "francais" || code === "français")
-      return "fr";
-    if (code === "it" || code.startsWith("it-") || code === "italian" || code === "italiano")
-      return "it";
-    if (code === "es" || code.startsWith("es-") || code === "spanish")
-      return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english")
-      return "en";
-    return undefined;
-  };
-
   const resolvedSupportLang =
-    normalizeSupportLang(supportLangRef.current || supportLang) ||
-    normalizeSupportLang(user?.progress?.supportLang) ||
-    normalizeSupportLang(storedUiLang) ||
-    "en";
+    normalizeSupportLanguage(supportLangRef.current || supportLang, "") ||
+    normalizeSupportLanguage(user?.progress?.supportLang, "") ||
+    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE) ||
+    DEFAULT_SUPPORT_LANGUAGE;
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
@@ -2340,7 +2333,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "it": "goal in Italian (max 15 words)"}`;
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "ja": "goal in Japanese (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,

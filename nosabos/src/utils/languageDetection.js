@@ -118,12 +118,17 @@ const FRENCH_TIMEZONES = [
   'Africa/Tunis',
 ];
 
+const JAPANESE_TIMEZONES = [
+  'Asia/Tokyo',
+];
+
 /**
  * Spanish language codes (ISO 639-1)
  */
 const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL', 'es-PE', 'es-VE'];
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
 const FRENCH_LANGUAGE_CODES = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
+const JAPANESE_LANGUAGE_CODES = ['ja', 'ja-JP'];
 
 /**
  * Detects if the user's timezone is in a Spanish-speaking region
@@ -153,6 +158,16 @@ export function isFrenchTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return FRENCH_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isJapaneseTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return JAPANESE_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -201,6 +216,20 @@ export function isFrenchBrowserLanguage() {
   }
 }
 
+export function isJapaneseBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      JAPANESE_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
 /**
  * Determines if the user should default to Spanish based on timezone and/or browser language
  * @returns {"es" | "en"} The detected language code
@@ -223,6 +252,10 @@ export function detectUserLanguage() {
     return 'fr';
   }
 
+  if (isJapaneseTimezone()) {
+    return 'ja';
+  }
+
   if (isSpanishTimezone()) {
     return 'es';
   }
@@ -234,6 +267,10 @@ export function detectUserLanguage() {
 
   if (isFrenchBrowserLanguage()) {
     return 'fr';
+  }
+
+  if (isJapaneseBrowserLanguage()) {
+    return 'ja';
   }
 
   if (isSpanishBrowserLanguage()) {

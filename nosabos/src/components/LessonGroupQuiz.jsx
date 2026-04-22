@@ -75,6 +75,134 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
+const LESSON_QUIZ_UI = {
+  en: {
+    listenQuestion: "Listen to question",
+    quizPassedToast: "Quiz Passed!",
+    quizPassed: "Quiz Passed! 🎉",
+    quizFailed: "Quiz Failed 😔",
+    score: "Score",
+    passedDesc: (correct, xp) =>
+      `Congratulations! You passed with ${correct} correct answers. You earned ${xp} XP!`,
+    failedDesc: (needed, correct) =>
+      `You need ${needed} correct answers to pass. You got ${correct}. Try again!`,
+    retry: "Retry Quiz",
+    continue: "Continue",
+    question: "Question",
+    correct: "Correct",
+    answerPlaceholder: "Type your answer...",
+    stopRecording: "Stop Recording",
+    startSpeaking: "Start Speaking",
+    youSaid: "You said",
+    matchWords: "Match the words with their definitions",
+    clickDefinitions: "(Click definitions to match them)",
+    unknownQuestionType: "Unknown question type",
+    feedbackCorrect: "✓ Correct!",
+    feedbackIncorrect: "✗ Incorrect",
+    submitAnswer: "Submit Answer",
+  },
+  es: {
+    listenQuestion: "Escuchar pregunta",
+    quizPassedToast: "¡Examen aprobado!",
+    quizPassed: "¡Examen Aprobado! 🎉",
+    quizFailed: "Examen Fallido 😔",
+    score: "Puntuación",
+    passedDesc: (correct, xp) =>
+      `¡Felicitaciones! Aprobaste con ${correct} respuestas correctas. Ganaste ${xp} XP!`,
+    failedDesc: (needed, correct) =>
+      `Necesitas ${needed} respuestas correctas para aprobar. Obtuviste ${correct}. ¡Inténtalo de nuevo!`,
+    retry: "Reintentar",
+    continue: "Continuar",
+    question: "Pregunta",
+    correct: "Correctas",
+    answerPlaceholder: "Escribe tu respuesta...",
+    stopRecording: "Parar Grabación",
+    startSpeaking: "Empezar a Hablar",
+    youSaid: "Dijiste",
+    matchWords: "Empareja las palabras con sus definiciones",
+    clickDefinitions: "(Haz clic en las definiciones para emparejarlas)",
+    unknownQuestionType: "Tipo de pregunta desconocida",
+    feedbackCorrect: "✓ ¡Correcto!",
+    feedbackIncorrect: "✗ Incorrecto",
+    submitAnswer: "Enviar Respuesta",
+  },
+  it: {
+    listenQuestion: "Ascolta la domanda",
+    quizPassedToast: "Quiz superato!",
+    quizPassed: "Quiz superato! 🎉",
+    quizFailed: "Quiz non superato 😔",
+    score: "Punteggio",
+    passedDesc: (correct, xp) =>
+      `Congratulazioni! Hai superato il quiz con ${correct} risposte corrette. Hai guadagnato ${xp} XP!`,
+    failedDesc: (needed, correct) =>
+      `Servono ${needed} risposte corrette per superare il quiz. Ne hai ottenute ${correct}. Riprova!`,
+    retry: "Riprova il quiz",
+    continue: "Continua",
+    question: "Domanda",
+    correct: "Corrette",
+    answerPlaceholder: "Scrivi la risposta...",
+    stopRecording: "Ferma registrazione",
+    startSpeaking: "Inizia a parlare",
+    youSaid: "Hai detto",
+    matchWords: "Abbina le parole alle definizioni",
+    clickDefinitions: "(Fai clic sulle definizioni per abbinarle)",
+    unknownQuestionType: "Tipo di domanda sconosciuto",
+    feedbackCorrect: "✓ Corretto!",
+    feedbackIncorrect: "✗ Errato",
+    submitAnswer: "Invia risposta",
+  },
+  fr: {
+    listenQuestion: "Ecouter la question",
+    quizPassedToast: "Quiz reussi !",
+    quizPassed: "Quiz reussi ! 🎉",
+    quizFailed: "Quiz echoue 😔",
+    score: "Score",
+    passedDesc: (correct, xp) =>
+      `Felicitations ! Tu as reussi avec ${correct} bonnes reponses. Tu as gagne ${xp} XP !`,
+    failedDesc: (needed, correct) =>
+      `Il te faut ${needed} bonnes reponses pour reussir. Tu en as obtenu ${correct}. Reessaie !`,
+    retry: "Reessayer le quiz",
+    continue: "Continuer",
+    question: "Question",
+    correct: "Correctes",
+    answerPlaceholder: "Ecris ta reponse...",
+    stopRecording: "Arreter l'enregistrement",
+    startSpeaking: "Commencer a parler",
+    youSaid: "Tu as dit",
+    matchWords: "Associe les mots a leurs definitions",
+    clickDefinitions: "(Clique sur les definitions pour les associer)",
+    unknownQuestionType: "Type de question inconnu",
+    feedbackCorrect: "✓ Correct !",
+    feedbackIncorrect: "✗ Incorrect",
+    submitAnswer: "Envoyer la reponse",
+  },
+  ja: {
+    listenQuestion: "問題を聞く",
+    quizPassedToast: "クイズ合格！",
+    quizPassed: "クイズ合格！🎉",
+    quizFailed: "クイズ不合格 😔",
+    score: "スコア",
+    passedDesc: (correct, xp) =>
+      `おめでとうございます！${correct}問正解で合格しました。${xp} XPを獲得しました！`,
+    failedDesc: (needed, correct) =>
+      `合格には${needed}問の正解が必要です。今回は${correct}問でした。もう一度試しましょう！`,
+    retry: "クイズを再挑戦",
+    continue: "続ける",
+    question: "問題",
+    correct: "正解",
+    answerPlaceholder: "答えを入力...",
+    stopRecording: "録音を停止",
+    startSpeaking: "話し始める",
+    youSaid: "あなたの発話",
+    matchWords: "単語と定義を組み合わせてください",
+    clickDefinitions: "（定義をクリックして組み合わせます）",
+    unknownQuestionType: "不明な問題形式",
+    feedbackCorrect: "✓ 正解！",
+    feedbackIncorrect: "✗ 不正解",
+    submitAnswer: "答えを送信",
+  },
+};
+
 /* ---------------------------
    Streaming helpers (Gemini)
 --------------------------- */
@@ -139,6 +267,7 @@ function LANG_NAME(code) {
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
+    ja: "Japanese",
   };
   return map[code] || code;
 }
@@ -216,6 +345,10 @@ export default function LessonGroupQuiz({
   }, []);
 
   const supportCode = resolveSupportLang(supportLang, userLanguage);
+  const quizUi =
+    LESSON_QUIZ_UI[
+      normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE)
+    ] || LESSON_QUIZ_UI.en;
   const diff = quizDifficulty(cefrLevel);
 
   // Quiz tracking
@@ -1196,8 +1329,7 @@ YES or NO
     [isQuestionPlaying, targetLang, toast, userLanguage]
   );
 
-  const questionListenLabel =
-    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
+  const questionListenLabel = quizUi.listenQuestion;
 
   function handleSubmit() {
     if (mode === "fill") checkFill();
@@ -1226,11 +1358,8 @@ YES or NO
         await awardXp(npub, xpReward, targetLang);
 
         toast({
-          title: userLanguage === "es" ? "¡Examen aprobado!" : "Quiz Passed!",
-          description:
-            userLanguage === "es"
-              ? `Puntuación: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`
-              : `Score: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`,
+          title: quizUi.quizPassedToast,
+          description: `${quizUi.score}: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`,
           status: "success",
           duration: 4000,
         });
@@ -1255,18 +1384,12 @@ YES or NO
         <ModalOverlay />
         <ModalContent bg="#1a1e2e" color="white">
           <ModalHeader textAlign="center">
-            {userLanguage === "es"
-              ? passed
-                ? "¡Examen Aprobado! 🎉"
-                : "Examen Fallido 😔"
-              : passed
-              ? "Quiz Passed! 🎉"
-              : "Quiz Failed 😔"}
+            {passed ? quizUi.quizPassed : quizUi.quizFailed}
           </ModalHeader>
           <ModalBody>
             <VStack spacing={4}>
               <Text fontSize="2xl">
-                {userLanguage === "es" ? "Puntuación" : "Score"}:{" "}
+                {quizUi.score}:{" "}
                 {correctAnswers}/{TOTAL_QUESTIONS}
               </Text>
               <Progress
@@ -1278,12 +1401,8 @@ YES or NO
               />
               <Text textAlign="center">
                 {passed
-                  ? userLanguage === "es"
-                    ? `¡Felicitaciones! Aprobaste con ${correctAnswers} respuestas correctas. Ganaste ${xpReward} XP!`
-                    : `Congratulations! You passed with ${correctAnswers} correct answers. You earned ${xpReward} XP!`
-                  : userLanguage === "es"
-                  ? `Necesitas ${PASS_SCORE} respuestas correctas para aprobar. Obtuviste ${correctAnswers}. ¡Inténtalo de nuevo!`
-                  : `You need ${PASS_SCORE} correct answers to pass. You got ${correctAnswers}. Try again!`}
+                  ? quizUi.passedDesc(correctAnswers, xpReward)
+                  : quizUi.failedDesc(PASS_SCORE, correctAnswers)}
               </Text>
             </VStack>
           </ModalBody>
@@ -1291,11 +1410,11 @@ YES or NO
             <HStack spacing={4} w="full" justify="center">
               {!passed && (
                 <Button colorScheme="teal" onClick={handleRetry}>
-                  {userLanguage === "es" ? "Reintentar" : "Retry Quiz"}
+                  {quizUi.retry}
                 </Button>
               )}
               <Button onClick={handleComplete}>
-                {userLanguage === "es" ? "Continuar" : "Continue"}
+                {quizUi.continue}
               </Button>
             </HStack>
           </ModalFooter>
@@ -1320,11 +1439,11 @@ YES or NO
         <Box w="full">
           <HStack justify="space-between" mb={2}>
             <Badge colorScheme="teal">
-              {userLanguage === "es" ? "Pregunta" : "Question"}{" "}
+              {quizUi.question}{" "}
               {questionsAnswered + 1}/{TOTAL_QUESTIONS}
             </Badge>
             <Badge colorScheme="purple">
-              {userLanguage === "es" ? "Correctas" : "Correct"}:{" "}
+              {quizUi.correct}:{" "}
               {correctAnswers}/{questionsAnswered}
             </Badge>
           </HStack>
@@ -1382,9 +1501,7 @@ YES or NO
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
                 placeholder={
-                  userLanguage === "es"
-                    ? "Escribe tu respuesta..."
-                    : "Type your answer..."
+                  quizUi.answerPlaceholder
                 }
                 size="lg"
                 bg={APP_SURFACE}
@@ -1523,28 +1640,18 @@ YES or NO
                   isListening ? { bg: SOFT_STOP_BUTTON_HOVER_BG } : undefined
                 }
               >
-                {isListening
-                  ? userLanguage === "es"
-                    ? "Parar Grabación"
-                    : "Stop Recording"
-                  : userLanguage === "es"
-                  ? "Empezar a Hablar"
-                  : "Start Speaking"}
+                {isListening ? quizUi.stopRecording : quizUi.startSpeaking}
               </Button>
               {transcript && (
                 <Text color={APP_TEXT_PRIMARY} fontSize="sm">
-                  {userLanguage === "es" ? "Dijiste" : "You said"}: "
-                  {transcript}"
+                  {quizUi.youSaid}: "{transcript}"
                 </Text>
               )}
             </VStack>
           ) : mode === "match" ? (
             <VStack spacing={4} align="stretch">
               <Text fontSize="lg" color={APP_TEXT_PRIMARY}>
-                {mStem ||
-                  (userLanguage === "es"
-                    ? "Empareja las palabras con sus definiciones"
-                    : "Match the words with their definitions")}
+                {mStem || quizUi.matchWords}
               </Text>
               {mHint && (
                 <Text fontSize="sm" color="gray.400">
@@ -1599,16 +1706,12 @@ YES or NO
                 </VStack>
               </HStack>
               <Text fontSize="xs" color="gray.500">
-                {userLanguage === "es"
-                  ? "(Haz clic en las definiciones para emparejarlas)"
-                  : "(Click definitions to match them)"}
+                {quizUi.clickDefinitions}
               </Text>
             </VStack>
           ) : (
             <Text color={APP_TEXT_PRIMARY}>
-              {userLanguage === "es"
-                ? "Tipo de pregunta desconocida"
-                : "Unknown question type"}
+              {quizUi.unknownQuestionType}
             </Text>
           )}
 
@@ -1623,12 +1726,8 @@ YES or NO
               textAlign="center"
             >
               {lastOk
-                ? userLanguage === "es"
-                  ? "✓ ¡Correcto!"
-                  : "✓ Correct!"
-                : userLanguage === "es"
-                ? "✗ Incorrecto"
-                : "✗ Incorrect"}
+                ? quizUi.feedbackCorrect
+                : quizUi.feedbackIncorrect}
             </Box>
           )}
 
@@ -1652,7 +1751,7 @@ YES or NO
                 (mode === "match" && !mSlots.every((s) => s !== null))
               }
             >
-              {userLanguage === "es" ? "Enviar Respuesta" : "Submit Answer"}
+              {quizUi.submitAnswer}
             </Button>
           )}
         </Box>

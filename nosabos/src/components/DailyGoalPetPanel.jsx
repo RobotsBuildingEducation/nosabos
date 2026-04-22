@@ -64,6 +64,32 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "ja") {
+    return {
+      title: "あなたの相棒",
+      subtitle: "毎日のXP目標を達成して元気を保ちましょう。",
+      health: "健康",
+      happy: "ごきげん",
+      healthy: "元気",
+      unhappy: "悲しい",
+      stressed: "ストレス",
+      unhealthy: "弱っています",
+      dead: "力尽きた",
+      reward: "目標達成",
+      penalty: "目標未達",
+      rewardFooter: "健康度が{health}%に上がります",
+      penaltyFooter: "健康度が{health}%に下がります",
+      latestAchieved: "最新更新: 目標達成で+{delta}%",
+      latestMissed: "最新更新: 目標未達で{delta}%",
+      managementHint: "今日の目標を達成して元気を保ちましょう。",
+      celebrationHint: "相棒の健康度が上がりました。",
+      rewardBadge: "報酬 +{delta}%",
+      penaltyBadge: "リスク -{delta}%",
+      previewHint:
+        "プレビューのみです。実際の健康度は変わりません。",
+    };
+  }
+
   if (lang === "fr") {
     return {
       title: "Ton compagnon",

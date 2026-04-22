@@ -201,6 +201,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -1545,6 +1546,77 @@ Fournis une breve explication encourageante (2-3 phrases) qui :
 3. Donne une astuce pour retenir les bonnes associations
 
 Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+          },
+          ja: {
+            fill: `あなたは${targetName}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解（またはヒント）: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その答えが合わない理由、または誤解している点
+2. 正しい答えとその意味
+3. 覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            mc: `あなたは${targetName}を教える親切な語学チューターです。学習者が選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その選択が間違いだった理由
+2. 正解が正しい理由
+3. 違いを覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            ma: `あなたは${targetName}を教える親切な語学チューターです。学習者が複数選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. 選び忘れた答え、または誤って選んだ答え
+2. 正解が正しい理由
+3. 正しい答えを見分けるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            speak: `あなたは${targetName}を教える親切な語学チューターです。学習者が${targetName}で発話しようとしましたが、正しく理解されませんでした。
+
+目標フレーズ: ${correctAnswer}
+学習者の発話: ${userAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. 発音や言い方で起きた可能性のある問題
+2. 正しいフレーズの発音のコツ
+3. もう一度挑戦する励まし
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            match: `あなたは${targetName}を教える親切な語学チューターです。学習者がマッチング問題で誤った組み合わせをしました。
+
+問題: ${question}
+学習者の組み合わせ: ${userAnswer}
+ヒント: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. どの組み合わせが違っていたか
+2. 正しい関係
+3. 正しい組み合わせを覚えるコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
           },
         };
         return prompts[langKey]?.[type] || prompts.en[type] || prompts.en.fill;
@@ -4021,35 +4093,46 @@ Return JSON ONLY:
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
-      isFrenchUI
+      isJapaneseUI
+        ? "単語マッチング練習です。左の項目を単語バンクの正しい選択肢と組み合わせて答えてください。"
+        : isFrenchUI
         ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
         : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde emparejando cada elemento de la columna izquierda con la opción correcta del banco de palabras."
         : "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
       mStem
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `指示: ${mStem}`
+          : isFrenchUI
           ? `Invite ou consigne : ${mStem}`
           : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
         : null,
       mLeft.length
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `左の列: ${mLeft.join(" | ")}`
+          : isFrenchUI
           ? `Colonne gauche : ${mLeft.join(" | ")}`
           : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
         : null,
       mRight.length
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `単語バンク: ${mRight.join(" | ")}`
+          : isFrenchUI
           ? `Banque de mots : ${mRight.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
         : null,
       mHint
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `ヒント: ${mHint}`
+          : isFrenchUI
           ? `Indice : ${mHint}`
           : isSpanishUI
           ? `Pista: ${mHint}`

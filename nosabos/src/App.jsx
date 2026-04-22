@@ -234,7 +234,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "it", "fr"].some(
+  return ["en", "es", "it", "fr", "ja"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -692,6 +692,7 @@ function TopBar({
     es: "segundos",
     it: "secondi",
     fr: "secondes",
+    ja: "秒",
   });
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const vadHint =
@@ -701,6 +702,7 @@ function TopBar({
       es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -786,6 +788,7 @@ function TopBar({
             en: "Save failed",
             es: "Error al guardar",
             it: "Salvataggio non riuscito",
+            ja: "保存に失敗しました",
           }),
           description: String(e?.message || e),
         });
@@ -867,6 +870,7 @@ function TopBar({
             en: "Save failed",
             es: "Error al guardar",
             it: "Salvataggio non riuscito",
+            ja: "保存に失敗しました",
           }),
           description: String(e?.message || e),
         });
@@ -1023,6 +1027,7 @@ function TopBar({
                   en: "Open daily goal",
                   es: "Abrir meta diaria",
                   it: "Apri obiettivo giornaliero",
+                  ja: "デイリー目標を開く",
                 })}
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
@@ -1051,6 +1056,7 @@ function TopBar({
                   en: "Open timer",
                   es: "Abrir temporizador",
                   it: "Apri timer",
+                  ja: "タイマーを開く",
                 })}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
@@ -1067,11 +1073,13 @@ function TopBar({
                           en: "Resume timer",
                           es: "Reanudar temporizador",
                           it: "Riprendi timer",
+                          ja: "タイマーを再開",
                         })
                       : uiCopy(appLanguage, {
                           en: "Pause timer",
                           es: "Pausar temporizador",
                           it: "Metti in pausa il timer",
+                          ja: "タイマーを一時停止",
                         })
                   }
                   {...getTopBarPressProps(
@@ -1444,12 +1452,7 @@ function TopBar({
                             >
                               <HStack spacing={2}>
                                 {selectedPracticeOption?.flag}
-                                <Text as="span">
-                                  {selectedPracticeOption?.label}
-                                  {selectedPracticeOption?.beta
-                                    ? " (beta)"
-                                    : ""}
-                                </Text>
+                                <Text as="span">{selectedPracticeOption?.label}</Text>
                               </HStack>
                             </MenuButton>
                             <MenuList
@@ -1506,10 +1509,7 @@ function TopBar({
                                   >
                                     <HStack spacing={2}>
                                       {option.flag}
-                                      <Text as="span">
-                                        {option.label}
-                                        {option.beta ? " (beta)" : ""}
-                                      </Text>
+                                      <Text as="span">{option.label}</Text>
                                     </HStack>
                                   </MenuItemOption>
                                 ))}
@@ -1544,6 +1544,7 @@ function TopBar({
                             en: "Start proficiency test",
                             es: "Iniciar prueba de nivel",
                             it: "Inizia test di livello",
+                            ja: "レベルテストを始める",
                           })}
                         </Button>
                       )}
@@ -2429,6 +2430,7 @@ export default function App() {
       es: "Mostrar traducción",
       it: "Mostra traduzione",
       fr: "Afficher la traduction",
+      ja: "翻訳を表示",
     });
     const template = translations[appLanguage]?.onboarding_translations_toggle;
     if (!template) return fallback;
@@ -3149,6 +3151,7 @@ export default function App() {
           es: "El código de acceso no está configurado",
           it: "Il codice abbonamento non è configurato",
           fr: "Le code abonne n'est pas configure",
+          ja: "サブスクリプションのパスコードが設定されていません",
         });
         setPasscodeError(msg);
         setLocalError?.(msg);
@@ -3193,6 +3196,7 @@ export default function App() {
             es: "Código aceptado",
             it: "Codice accettato",
             fr: "Code accepte",
+            ja: "パスコードを確認しました",
           }),
         });
       } catch (error) {
@@ -3202,6 +3206,7 @@ export default function App() {
           es: "No se pudo guardar el código",
           it: "Impossibile salvare il codice",
           fr: "Impossible d'enregistrer le code",
+          ja: "パスコードを保存できませんでした",
         });
         setPasscodeError(msg);
         setLocalError?.(msg);
@@ -3257,6 +3262,7 @@ export default function App() {
           es: "Conecta tu cuenta para usar esta función.",
           it: "Collega il tuo account per usare questa funzione.",
           fr: "Connecte ton compte pour utiliser cette fonction.",
+          ja: "この機能を使うにはアカウントを接続してください。",
         });
         throw new Error(message);
       }
@@ -3291,6 +3297,7 @@ export default function App() {
           es: "Conecta tu cuenta para usar esta función.",
           it: "Collega il tuo account per usare questa funzione.",
           fr: "Connecte ton compte pour utiliser cette fonction.",
+          ja: "この機能を使うにはアカウントを接続してください。",
         });
         throw new Error(message);
       }
@@ -3725,6 +3732,7 @@ export default function App() {
           es: "No se pudo iniciar la lección",
           it: "Impossibile avviare la lezione",
           fr: "Impossible de demarrer la lecon",
+          ja: "レッスンを開始できませんでした",
         }),
         status: "error",
         duration: 3000,
@@ -3816,6 +3824,7 @@ export default function App() {
             es: "No se pudo guardar el progreso",
             it: "Impossibile salvare i progressi",
             fr: "Impossible d'enregistrer la progression",
+            ja: "進捗を保存できませんでした",
           }),
           status: "error",
           duration: 3000,
@@ -4182,6 +4191,7 @@ export default function App() {
             es: "Cuenta requerida",
             it: "Account richiesto",
             fr: "Compte requis",
+            ja: "アカウントが必要です",
           });
         const description =
           t.app_cefr_need_account ||
@@ -4190,6 +4200,7 @@ export default function App() {
             es: "Conéctate para analizar tu nivel con la IA.",
             it: "Collega il tuo account per analizzare il tuo livello con l'IA.",
             fr: "Connecte ton compte pour analyser ton niveau avec l'IA.",
+            ja: "AIでレベルを分析するにはアカウントを接続してください。",
           });
         toast({ title, description, status: "info", duration: 2200 });
         return;
@@ -4275,6 +4286,7 @@ export default function App() {
             es: "Análisis completado",
             it: "Analisi completata",
             fr: "Analyse terminee",
+            ja: "分析が完了しました",
           });
         const successDescTemplate =
           t.app_cefr_success_desc ||
@@ -4283,6 +4295,7 @@ export default function App() {
             es: "Nivel asignado: {level}.",
             it: "Livello assegnato: {level}.",
             fr: "Niveau attribue : {level}.",
+            ja: "判定レベル: {level}",
           });
 
         toast({
@@ -4300,6 +4313,7 @@ export default function App() {
             es: "No se pudo analizar",
             it: "Analisi non riuscita",
             fr: "Analyse impossible",
+            ja: "分析できませんでした",
           });
         const errorDesc =
           t.app_cefr_error ||
@@ -4308,6 +4322,7 @@ export default function App() {
             es: "Vuelve a intentarlo más tarde.",
             it: "Riprova piu tardi.",
             fr: "Reessaie plus tard.",
+            ja: "あとでもう一度試してください。",
           });
         setCefrError(errorDesc);
         toast({
@@ -4425,12 +4440,14 @@ export default function App() {
               es: "Error al guardar",
               it: "Salvataggio non riuscito",
               fr: "Echec de l'enregistrement",
+              ja: "保存に失敗しました",
             }),
             description: uiCopy(appLanguage, {
               en: "Couldn't find the current user.",
               es: "No se encontró el usuario actual.",
               it: "Impossibile trovare l'utente corrente.",
               fr: "Impossible de trouver l'utilisateur actuel.",
+              ja: "現在のユーザーが見つかりませんでした。",
             }),
           });
           return;
@@ -4461,6 +4478,7 @@ export default function App() {
               es: "Error al guardar",
               it: "Salvataggio non riuscito",
               fr: "Echec de l'enregistrement",
+              ja: "保存に失敗しました",
             }),
             description: String(error?.message || error),
           });
@@ -4897,6 +4915,7 @@ export default function App() {
               es: "¡Buen trabajo!",
               it: "Ottimo lavoro!",
               fr: "Bien joue !",
+              ja: "よくできました！",
             });
           const descTpl =
             t?.random_toast_desc ??
@@ -4905,6 +4924,7 @@ export default function App() {
               es: "Ganaste +{xp} XP.",
               it: "Hai guadagnato +{xp} XP.",
               fr: "Tu as gagne +{xp} XP.",
+              ja: "+{xp} XPを獲得しました。",
             });
           const description = descTpl.replace("{xp}", String(diff));
 
@@ -6573,6 +6593,7 @@ export default function App() {
                     es: "¡Meta diaria alcanzada!",
                     it: "Obiettivo giornaliero raggiunto!",
                     fr: "Objectif quotidien atteint !",
+                    ja: "デイリー目標達成！",
                   })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
@@ -6581,6 +6602,7 @@ export default function App() {
                     es: "Alcanzaste tu objetivo de XP de hoy.",
                     it: "Hai raggiunto il tuo obiettivo XP di oggi.",
                     fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
+                    ja: "今日のXP目標を達成しました。",
                   })}
                 </Text>
               </VStack>
@@ -6603,6 +6625,7 @@ export default function App() {
                           es: "Meta",
                           it: "Obiettivo",
                           fr: "Objectif",
+                          ja: "目標",
                         })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
@@ -6616,6 +6639,7 @@ export default function App() {
                       es: "¡Sigue la racha y vuelve mañana para un nuevo objetivo!",
                       it: "Mantieni la serie e torna domani per un nuovo obiettivo!",
                       fr: "Garde la serie et reviens demain pour un nouvel objectif !",
+                      ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
                     })}
                   </Text>
                 </VStack>
@@ -6644,6 +6668,7 @@ export default function App() {
                   es: "Seguir practicando",
                   it: "Continua ad imparare",
                   fr: "Continuer a apprendre",
+                  ja: "学習を続ける",
                 })}
               </Button>
             </VStack>
@@ -6694,6 +6719,7 @@ export default function App() {
                     es: "¡Lección Completada!",
                     it: "Lezione Completata!",
                     fr: "Lecon terminee !",
+                    ja: "レッスン完了！",
                   })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
@@ -6724,6 +6750,7 @@ export default function App() {
                       es: "XP Ganado",
                       it: "XP Guadagnato",
                       fr: "XP gagne",
+                      ja: "獲得XP",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -6735,6 +6762,7 @@ export default function App() {
                       es: "Puntos de Experiencia",
                       it: "Punti Esperienza",
                       fr: "Points d'experience",
+                      ja: "経験値",
                     })}
                   </Text>
                 </VStack>
@@ -6758,6 +6786,7 @@ export default function App() {
                   es: "Continuar",
                   it: "Continua",
                   fr: "Continuer",
+                  ja: "続ける",
                 })}
               </Button>
             </VStack>
@@ -6803,6 +6832,7 @@ export default function App() {
                     es: "¡Nivel Completado!",
                     it: "Livello completato!",
                     fr: "Niveau termine !",
+                    ja: "レベル完了！",
                   })}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
@@ -6831,6 +6861,7 @@ export default function App() {
                       es: "¡Felicitaciones!",
                       it: "Congratulazioni!",
                       fr: "Felicitations !",
+                      ja: "おめでとうございます！",
                     })}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
@@ -6840,12 +6871,14 @@ export default function App() {
                           es: `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`,
                           it: `Hai sbloccato il livello ${completedProficiencyData.nextLevel}`,
                           fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
+                          ja: `レベル${completedProficiencyData.nextLevel}が開放されました`,
                         })
                       : uiCopy(appLanguage, {
                           en: "You've completed all levels!",
                           es: "¡Has completado todos los niveles!",
                           it: "Hai completato tutti i livelli!",
                           fr: "Tu as termine tous les niveaux !",
+                          ja: "すべてのレベルを完了しました！",
                         })}
                   </Text>
                 </VStack>
@@ -6875,12 +6908,14 @@ export default function App() {
                       es: "Ir al Siguiente Nivel",
                       it: "Vai al livello successivo",
                       fr: "Aller au niveau suivant",
+                      ja: "次のレベルへ",
                     })
                   : uiCopy(appLanguage, {
                       en: "Continue",
                       es: "Continuar",
                       it: "Continua",
                       fr: "Continuer",
+                      ja: "続ける",
                     })}
               </Button>
             </VStack>
@@ -6926,7 +6961,7 @@ function BottomActionBar({
   const helpChatLabel =
     helpLabel ||
     t?.app_help_chat ||
-    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto" });
+    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto", ja: "ヘルプ" });
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const tasksLabel =
     t?.real_world_tasks_title ||
@@ -6934,10 +6969,11 @@ function BottomActionBar({
       en: "Immersion practice",
       es: "Práctica de inmersión",
       it: "Pratica di immersione",
+      ja: "イマージョン練習",
     });
   const notesLabel =
     t?.app_notes ||
-    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note" });
+    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note", ja: "ノート" });
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -6967,6 +7003,7 @@ function BottomActionBar({
                 en: "Alphabet",
                 es: "Alfabeto",
                 it: "Alfabeto",
+                ja: "文字",
               }),
             icon: LuLanguages,
           },
@@ -6976,14 +7013,14 @@ function BottomActionBar({
       id: "path",
       label:
         t?.app_mode_path ||
-        uiCopy(appLanguage, { en: "Path", es: "Ruta", it: "Percorso" }),
+        uiCopy(appLanguage, { en: "Path", es: "Ruta", it: "Percorso", ja: "学習パス" }),
       icon: PiPath,
     },
     {
       id: "flashcards",
       label:
         t?.app_mode_cards ||
-        uiCopy(appLanguage, { en: "Cards", es: "Tarjetas", it: "Schede" }),
+        uiCopy(appLanguage, { en: "Cards", es: "Tarjetas", it: "Schede", ja: "カード" }),
       icon: PiCardsBold,
     },
     {
@@ -6994,6 +7031,7 @@ function BottomActionBar({
           en: "Conversation",
           es: "Conversación",
           it: "Conversazione",
+          ja: "会話",
         }),
       icon: RiChat3Line,
     },
@@ -7004,7 +7042,7 @@ function BottomActionBar({
   const CurrentModeIcon = currentMode.icon;
   const modeMenuLabel =
     t?.app_mode_menu ||
-    uiCopy(appLanguage, { en: "Mode", es: "Modo", it: "Modalità" });
+    uiCopy(appLanguage, { en: "Mode", es: "Modo", it: "Modalità", ja: "モード" });
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
@@ -7143,7 +7181,7 @@ function BottomActionBar({
         >
           <ChevronUpIcon boxSize={4} color="gray.300" />
           <Box as="span" fontSize="xs" color="gray.400" fontWeight="medium">
-            Menu
+            {modeMenuLabel}
           </Box>
         </Box>
       </Box>

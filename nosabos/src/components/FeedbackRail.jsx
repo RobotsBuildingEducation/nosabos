@@ -117,6 +117,8 @@ const FeedbackRail = React.memo(
                     : t?.("practice_try_again_hint") ||
                       (userLanguage === "es"
                         ? "Repasa y vuelve a intentarlo."
+                        : userLanguage === "ja"
+                        ? "復習してもう一度試しましょう。"
                         : "Review and try again.")}
                 </Text>
               </Box>

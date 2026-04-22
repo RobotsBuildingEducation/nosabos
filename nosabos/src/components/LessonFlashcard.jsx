@@ -270,6 +270,11 @@ export default function LessonFlashcard({
         next: "Next question",
         added_to_deck: "Added to deck",
         generating: "Generating flashcard...",
+        connecting: "Connecting...",
+        recognized: "Recognized:",
+        deck_review: "Deck Review",
+        prev: "Prev",
+        close: "Close",
       },
       es: {
         translate_to: `Traduce al ${LANG_NAME(targetLang)}`,
@@ -293,6 +298,11 @@ export default function LessonFlashcard({
         next: "Siguiente pregunta",
         added_to_deck: "Añadida al mazo",
         generating: "Generando tarjeta...",
+        connecting: "Conectando...",
+        recognized: "Reconocido:",
+        deck_review: "Repaso del mazo",
+        prev: "Anterior",
+        close: "Cerrar",
       },
       it: {
         translate_to: `Traduci in ${LANG_NAME(targetLang)}`,
@@ -316,6 +326,11 @@ export default function LessonFlashcard({
         next: "Prossima domanda",
         added_to_deck: "Aggiunta al mazzo",
         generating: "Generazione scheda...",
+        connecting: "Connessione...",
+        recognized: "Riconosciuto:",
+        deck_review: "Ripasso del mazzo",
+        prev: "Precedente",
+        close: "Chiudi",
       },
       fr: {
         translate_to: `Traduis en ${LANG_NAME(targetLang)}`,
@@ -339,6 +354,39 @@ export default function LessonFlashcard({
         next: "Question suivante",
         added_to_deck: "Ajoutee au deck",
         generating: "Generation de la carte...",
+        connecting: "Connexion...",
+        recognized: "Reconnu :",
+        deck_review: "Revision du deck",
+        prev: "Precedent",
+        close: "Fermer",
+      },
+      ja: {
+        translate_to: `${LANG_NAME(targetLang)}に翻訳`,
+        show_answer: "答えを表示",
+        tap_to_flip: "タップして戻る",
+        answer_label: "答え",
+        type_placeholder: "翻訳を入力...",
+        submit: "送信",
+        record: "答えを録音",
+        stop_recording: "停止",
+        grading: "確認中...",
+        correct: "正解！",
+        incorrect: "惜しい",
+        try_again: "もう一度",
+        explain: "答えを説明して",
+        explanation_heading: "説明",
+        skip: "スキップ",
+        collect: "カードを保存",
+        collected: "保存しました！",
+        deck_label: "デッキ",
+        next: "次の質問",
+        added_to_deck: "デッキに追加しました",
+        generating: "フラッシュカードを生成中...",
+        connecting: "接続中...",
+        recognized: "認識結果:",
+        deck_review: "デッキ復習",
+        prev: "前へ",
+        close: "閉じる",
       },
     };
     return (dict[userLanguage] || dict.en)[key] || key;
@@ -965,9 +1013,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       }
                     >
                       {isConnecting
-                        ? userLanguage === "es"
-                          ? "Conectando..."
-                          : "Connecting..."
+                        ? t("connecting")
                         : isRecording
                           ? t("stop_recording")
                           : t("record")}
@@ -984,9 +1030,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         w="100%"
                       >
                         <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={1}>
-                          {userLanguage === "es"
-                            ? "Reconocido:"
-                            : "Recognized:"}
+                          {t("recognized")}
                         </Text>
                         <Text fontSize="sm" color="teal.200">
                           {recognizedText}
@@ -1278,7 +1322,7 @@ export function FlashcardDeckReview({
         <VStack spacing={4} p={6}>
           <HStack justify="space-between" w="100%">
             <Badge colorScheme="blue" fontSize="md">
-              {userLanguage === "es" ? "Repaso del mazo" : "Deck Review"}
+              {t("deck_review")}
             </Badge>
             <Badge colorScheme="gray" fontSize="sm">
               {currentIndex + 1} / {cards.length}
@@ -1377,7 +1421,7 @@ export function FlashcardDeckReview({
                   position="relative"
                   zIndex={1}
                 >
-                  {userLanguage === "es" ? "Toca para voltear" : "Tap to flip"}
+                  {t("tap_to_flip")}
                 </Text>
               </Box>
               {/* Back */}
@@ -1431,7 +1475,7 @@ export function FlashcardDeckReview({
               onClick={handlePrev}
               isDisabled={cards.length <= 1}
             >
-              {userLanguage === "es" ? "Anterior" : "Prev"}
+              {t("prev")}
             </Button>
             <Button
               size="sm"
@@ -1440,12 +1484,12 @@ export function FlashcardDeckReview({
               onClick={handleNext}
               isDisabled={cards.length <= 1}
             >
-              {userLanguage === "es" ? "Siguiente" : "Next"}
+              {t("next")}
             </Button>
           </HStack>
 
           <Button size="sm" variant="ghost" color="gray.400" onClick={onClose}>
-            {userLanguage === "es" ? "Cerrar" : "Close"}
+            {t("close")}
           </Button>
         </VStack>
       </Box>

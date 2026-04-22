@@ -105,6 +105,7 @@ export default function Randomize() {
           es: "Narrativos",
           it: "Storie",
           fr: "Histoires",
+          ja: "ストーリー",
         }),
       grammar:
         t("tabs_grammar") ||
@@ -113,6 +114,7 @@ export default function Randomize() {
           es: "Gramática",
           it: "Grammatica",
           fr: "Grammaire",
+          ja: "文法",
         }),
       vocab:
         t("tabs_vocab") ||
@@ -121,6 +123,7 @@ export default function Randomize() {
           es: "Vocabulario",
           it: "Vocabolario",
           fr: "Vocabulaire",
+          ja: "語彙",
         }),
       reading:
         t("tabs_reading") ||
@@ -129,6 +132,7 @@ export default function Randomize() {
           es: "Lectura",
           it: "Lettura",
           fr: "Lecture",
+          ja: "読解",
         }),
     }),
     [t, uiLang]
@@ -184,6 +188,7 @@ export default function Randomize() {
             es: "¡Buen trabajo!",
             it: "Ottimo lavoro!",
             fr: "Bien joue !",
+            ja: "よくできました！",
           });
         const desc =
           t("random_toast_desc", { xp: diff }) ||
@@ -192,6 +197,7 @@ export default function Randomize() {
             es: `Ganaste +${diff} XP.`,
             it: `Hai guadagnato +${diff} XP.`,
             fr: `Tu as gagne +${diff} XP.`,
+            ja: `+${diff} XPを獲得しました。`,
           });
 
         toast({
@@ -244,6 +250,7 @@ export default function Randomize() {
         es: `Nivel ${levelNumber}`,
         it: `Livello ${levelNumber}`,
         fr: `Niveau ${levelNumber}`,
+        ja: `レベル ${levelNumber}`,
       }),
     xpBadge:
       t("grammar_badge_xp", { xp }) ||
@@ -252,6 +259,7 @@ export default function Randomize() {
         es: `XP ${xp}`,
         it: `XP ${xp}`,
         fr: `XP ${xp}`,
+        ja: `XP ${xp}`,
       }),
     shuffle:
       t("random_shuffle") ||
@@ -260,6 +268,7 @@ export default function Randomize() {
         es: "Mezclar",
         it: "Mescola",
         fr: "Melanger",
+        ja: "シャッフル",
       }),
     picking:
       t("randomize_picking_surprise") ||
@@ -268,6 +277,7 @@ export default function Randomize() {
         es: "Eligiendo una sorpresa para ti...",
         it: "Scelta di una sorpresa per te...",
         fr: "Choix d'une surprise pour toi...",
+        ja: "サプライズを選んでいます...",
       }),
     loading:
       t("generic_loading") ||
@@ -276,6 +286,7 @@ export default function Randomize() {
         es: "Cargando...",
         it: "Caricamento...",
         fr: "Chargement...",
+        ja: "読み込み中...",
       }),
   };
 

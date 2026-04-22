@@ -2,6 +2,8 @@
  * Common flashcard utilities and constants
  */
 
+import { translateFlashcardConceptToJapanese } from "./japaneseLocalizer.js";
+
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
   "Pre-A1": {
@@ -32,9 +34,16 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "it", "fr"];
+    const languages = ["en", "es", "it", "fr", "ja"];
     const selectedLang = languages[hash % languages.length];
+    if (selectedLang === "ja" && !card.concept.ja) {
+      return translateFlashcardConceptToJapanese(card.concept.en);
+    }
     return card.concept[selectedLang] || card.concept.en;
+  }
+
+  if (supportLang === "ja" && !card.concept.ja) {
+    return translateFlashcardConceptToJapanese(card.concept.en);
   }
 
   // Otherwise use the specified language, fallback to English

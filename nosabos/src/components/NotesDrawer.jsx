@@ -96,7 +96,9 @@ export default function NotesDrawer({
   }, [notes, targetLang]);
 
   const drawerTitle =
-    lang === "fr"
+    lang === "ja"
+      ? "マイメモ"
+      : lang === "fr"
       ? "Mes notes"
       : lang === "it"
       ? "Le mie note"
@@ -104,7 +106,9 @@ export default function NotesDrawer({
       ? "Mis Notas"
       : "My Notes";
   const emptyMessage =
-    lang === "fr"
+    lang === "ja"
+      ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
+      : lang === "fr"
       ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
       : lang === "it"
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
@@ -112,7 +116,9 @@ export default function NotesDrawer({
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
   const clearAllLabel =
-    lang === "fr"
+    lang === "ja"
+      ? "すべて削除"
+      : lang === "fr"
       ? "Tout effacer"
       : lang === "it"
       ? "Cancella tutto"
@@ -120,7 +126,9 @@ export default function NotesDrawer({
       ? "Borrar todo"
       : "Clear all";
   const summaryLabel =
-    lang === "fr"
+    lang === "ja"
+      ? "要約"
+      : lang === "fr"
       ? "Resume"
       : lang === "it"
       ? "Riassunto"
@@ -128,7 +136,9 @@ export default function NotesDrawer({
       ? "Resumen"
       : "Summary";
   const lessonLabel =
-    lang === "fr"
+    lang === "ja"
+      ? "レッスン"
+      : lang === "fr"
       ? "Lecon"
       : lang === "it"
       ? "Lezione"
@@ -136,7 +146,9 @@ export default function NotesDrawer({
       ? "Lección"
       : "Lesson";
   const noNotesLabel =
-    lang === "fr"
+    lang === "ja"
+      ? "メモなし"
+      : lang === "fr"
       ? "Aucune note"
       : lang === "it"
       ? "Nessuna nota"
@@ -375,7 +387,13 @@ export default function NotesDrawer({
                     <RiVolumeUpLine size={16} />
                   )
                 }
-                aria-label={lang === "es" ? "Escuchar" : "Listen"}
+                aria-label={
+                  lang === "ja"
+                    ? "聞く"
+                    : lang === "es"
+                    ? "Escuchar"
+                    : "Listen"
+                }
                 size="sm"
                 variant="ghost"
                 colorScheme="blue"
@@ -387,7 +405,13 @@ export default function NotesDrawer({
               />
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
-                aria-label={lang === "es" ? "Eliminar nota" : "Delete note"}
+                aria-label={
+                  lang === "ja"
+                    ? "メモを削除"
+                    : lang === "es"
+                    ? "Eliminar nota"
+                    : "Delete note"
+                }
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
@@ -520,10 +544,14 @@ export default function NotesDrawer({
                               {hasNotes
                                 ? `${levelNotes.length} ${
                                     levelNotes.length === 1
-                                      ? lang === "es"
+                                      ? lang === "ja"
+                                        ? "件のメモ"
+                                        : lang === "es"
                                         ? "nota"
                                         : "note"
-                                      : lang === "es"
+                                      : lang === "ja"
+                                        ? "件のメモ"
+                                        : lang === "es"
                                         ? "notas"
                                         : "notes"
                                   }`

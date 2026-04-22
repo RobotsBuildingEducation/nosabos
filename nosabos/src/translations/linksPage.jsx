@@ -182,6 +182,7 @@ export const linksPageTranslations = {
     language_es: "Spanish",
     language_fr: "French",
     language_it: "Italian",
+    language_ja: "Japanese",
   },
   it: {
     roadmapCashTitle: "Roadmap.Cash (gratuito)",
@@ -366,6 +367,7 @@ export const linksPageTranslations = {
     language_es: "Spagnolo",
     language_fr: "Francese",
     language_it: "Italiano",
+    language_ja: "Giapponese",
   },
   es: {
     roadmapCashTitle: "Roadmap.Cash (gratis)",
@@ -553,6 +555,7 @@ export const linksPageTranslations = {
     language_es: "Español",
     language_fr: "Francés",
     language_it: "Italiano",
+    language_ja: "Japonés",
   },
 };
 
@@ -716,4 +719,137 @@ linksPageTranslations.fr = {
   language_es: "Espagnol",
   language_fr: "Français",
   language_it: "Italien",
+  language_ja: "Japonais",
+};
+
+linksPageTranslations.ja = {
+  ...linksPageTranslations.en,
+  welcome: "ようこそ",
+  customizeProfile: "プロフィールをカスタマイズ",
+  profile: "プロフィール",
+  about: "概要",
+  aboutTitle: "概要",
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>私の活動を見てくれてありがとうございます！</p>
+
+      <p style={{ marginBottom: 12 }}>
+        私はSheilferです。コンピューターサイエンスを学び、教育技術を作るために
+        ソフトウェアエンジニアリングを身につけたいと考えてきました。学ぶこと、
+        教えること、教育が好きで、そこに自分の力を一番活かせると信じています。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          Robots Building Educationというアイデアは、教育技術がインターネットの可能性に
+          追いついていないと感じた2015年に始めました。
+        </span>{" "}
+        オンラインゲームや掲示板は、楽しく、夢中になれて、人の注意を強く引きつけていました。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Robots Building Educationは、学習と進歩の瞬間に本当の影響が生まれるようにする
+        という考えです。今は「学習で奨学金を作る」と表現していますが、長期的には
+        学校、先生、学生を国境なく支えられる教育技術を目指しています。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        改めて、私の活動を見てくれてありがとうございます。心から感謝しています。
+      </p>
+    </div>
+  ),
+  english: "英語",
+  spanish: "スペイン語",
+  list: "リスト",
+  carousel: "カルーセル",
+  previousLink: "前のリンク",
+  nextLink: "次のリンク",
+  launchApp: "アプリを開く",
+  subscribe: "購読",
+  buyApps: "アプリを購入",
+  noSabosTitle: "No Sabos",
+  noSabosDescription:
+    "あなた専用の言語チューター。インテリジェントなツールで新しい言語を学び、練習できます。",
+  rbeTitle: "Robots Building Education",
+  rbeDescription:
+    "あなた専用のコーディングチューター。ソフトウェアエンジニアリングの基礎を素早く学び、AIコーディングツールでアイデアを形にできます。",
+  patreonTitle: "Patreon",
+  patreonDescription:
+    "一度支払ってアプリを所有するか、購読してソフトウェア工学、ビジネス、金融などの追加コンテンツを解放できます。",
+  rbeModalTitle: "Robots Building Education",
+  rbeModalDescription:
+    "アカウントにサインインするにはシークレットキーを使います。SNS経由で入った場合も、一度だけで大丈夫です。",
+  copySecretKey: "シークレットキーをコピー",
+  goToApp: "アプリへ",
+  close: "閉じる",
+  roadmapCashTitle: "Roadmap.Cash（無料）",
+  roadmapCashDescription:
+    "個人向けの無料ファイナンシャルプランニングツールです。データを入力すると、目標達成に向けた可視化、計画、コーチングを生成します。",
+  roadmapCashModalTitle: "Roadmap.Cash",
+  roadmapCashModalDescription:
+    "メニューからアカウントを切り替えるにはシークレットキーを使います。SNS経由で入った場合も一度だけで大丈夫です。",
+  customizeProfileTitle: "プロフィールをカスタマイズ",
+  username: "ユーザー名",
+  enterUsername: "ユーザー名を入力",
+  profilePictureUrl: "プロフィール画像URL",
+  profilePicturePlaceholder: "https://example.com/your-image.jpg",
+  saveProfile: "プロフィールを保存",
+  secretKey: "シークレットキー",
+  secretKeyWarning:
+    "シークレットキーは分散型アプリにアクセスするためのパスワードです。安全に保管し、誰にも共有しないでください。",
+  switchAccount: "アカウントを切り替え",
+  pasteNsec: "nsecキーをここに貼り付け",
+  switchAccountHelp: "別のNostrアカウントに切り替えるには別のnsecを入力します",
+  bitcoinWallet: "Bitcoinウォレット",
+  walletDescription1:
+    "あなたの入金は学習による奨学金づくりを支援します。",
+  walletDescription2:
+    "アプリで問題に答えると、選んだ受取先へ送られます。",
+  loadingWallet: "ウォレットを読み込み中...",
+  secretKeyRequired: "シークレットキーが必要です",
+  nip07Warning:
+    "ブラウザ拡張機能でサインインしているため、秘密鍵にアクセスできません。ウォレットを作成するには下にnsecを入力してください。",
+  enterNsec: "nsec1...を入力",
+  keyNotStored: "キーはウォレット作成にのみ使われ、保存されません。",
+  createWallet: "ウォレットを作成",
+  creatingWallet: "ウォレットを作成中...",
+  deposit: "入金",
+  copyAddress: "アドレスをコピー",
+  or: "または",
+  lightningInstructions:
+    "対応するLightningウォレットで請求書を支払ってください。",
+  cashApp: "Cash App",
+  generateNewQR: "新しいQRを生成",
+  wallet: "ウォレット",
+  balance: "残高",
+  sats: "sats",
+  noChanges: "変更はありません",
+  enterUsernameOrPicture: "ユーザー名またはプロフィール画像URLを入力してください",
+  profileUpdated: "プロフィールを更新しました",
+  profileSaved: "プロフィールをNostrに保存しました",
+  error: "エラー",
+  failedUpdateProfile: "プロフィールの更新に失敗しました",
+  noSecretKey: "シークレットキーがありません",
+  usingExtension: "ブラウザ拡張機能で署名しています",
+  copied: "コピーしました！",
+  secretKeyCopied: "シークレットキーをクリップボードにコピーしました",
+  failedCopy: "コピーに失敗しました",
+  invalidKey: "無効なキー",
+  enterValidNsec: "有効なnsecキーを入力してください",
+  accountSwitched: "アカウントを切り替えました",
+  loginSuccess: "新しいアカウントでログインしました",
+  authFailed: "シークレットキーが無効、または認証に失敗しました",
+  secretKeyRequiredToast: "ウォレットを作成するにはnsecを入力してください。",
+  keyMustStartNsec: "キーは「nsec」で始まる必要があります。",
+  walletCreated: "ウォレットを作成しました",
+  walletReady: "Bitcoinウォレットの準備ができました。",
+  failedCreateWallet: "ウォレットを作成できませんでした",
+  failedDeposit: "入金を開始できませんでした",
+  addressCopied: "アドレスをコピーしました",
+  invoiceCopied: "Lightning請求書をクリップボードにコピーしました。",
+  language_en: "英語",
+  language_es: "スペイン語",
+  language_fr: "フランス語",
+  language_it: "イタリア語",
+  language_ja: "日本語",
 };

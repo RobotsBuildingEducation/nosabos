@@ -48,6 +48,8 @@ const spanishTimezones = [
 
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
 
+const japaneseTimezones = ["Asia/Tokyo"];
+
 const frenchTimezones = [
   "Europe/Paris",
   "Europe/Monaco",
@@ -86,6 +88,9 @@ const detectLanguageFromTimezone = () => {
     }
     if (frenchTimezones.includes(timezone)) {
       return "fr";
+    }
+    if (japaneseTimezones.includes(timezone)) {
+      return "ja";
     }
     if (spanishTimezones.includes(timezone)) {
       return "es";

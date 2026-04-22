@@ -19,10 +19,18 @@ export function SpeakSuccessCard({
       : "";
   const saidLabel =
     t("practice_speak_banner_you_said") ||
-    (userLanguage === "es" ? "Dijiste" : "You said");
+    (userLanguage === "ja"
+      ? "あなたの発話"
+      : userLanguage === "es"
+      ? "Dijiste"
+      : "You said");
   const translationLabel =
     t("practice_speak_banner_translation") ||
-    (userLanguage === "es" ? "Significado" : "Meaning");
+    (userLanguage === "ja"
+      ? "意味"
+      : userLanguage === "es"
+      ? "Significado"
+      : "Meaning");
 
   return (
     <Box

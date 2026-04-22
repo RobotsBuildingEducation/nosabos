@@ -203,6 +203,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -1538,6 +1539,67 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 3. Proporcione un consejo para recordar los emparejamientos correctos
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+          },
+          ja: {
+            fill: `あなたは${targetName}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解（またはヒント）: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その答えが合わない理由、または誤解している点
+2. 正しい答えとその意味
+3. 覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            mc: `あなたは${targetName}を教える親切な語学チューターです。学習者が選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その選択が間違いだった理由
+2. 正解が正しい理由
+3. 違いを覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            ma: `あなたは${targetName}を教える親切な語学チューターです。学習者が複数選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. 選び忘れた答え、または誤って選んだ答え
+2. 正解が正しい理由
+3. 正しい答えを見分けるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            speak: `あなたは${targetName}を教える親切な語学チューターです。学習者が${targetName}で発話しようとしましたが、正しく理解されませんでした。
+
+目標フレーズ: ${correctAnswer}
+学習者の発話: ${userAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、発音や言い方の問題、正しい発音のコツ、再挑戦への励ましを含めてください。回答全体を${supportName}で書いてください。`,
+            match: `あなたは${targetName}を教える親切な語学チューターです。学習者がマッチング問題で誤った組み合わせをしました。
+
+問題: ${question}
+学習者の組み合わせ: ${userAnswer}
+ヒント: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、違っていた組み合わせ、正しい関係、覚えるコツを含めてください。回答全体を${supportName}で書いてください。`,
           },
         };
         const promptSet = prompts[langKey] || prompts.en;
@@ -3222,7 +3284,12 @@ Return JSON ONLY:
           fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
         setSVariant(normalizeSpeakVariant(fallbackVariant));
         if (fallbackVariant === "translate") {
-          const supportWord = supportCode === "es" ? "bosque" : "forest";
+          const supportWord =
+            supportCode === "ja"
+              ? "森"
+              : supportCode === "es"
+              ? "bosque"
+              : "forest";
           setSStimulus(supportWord);
           setSTarget(
             targetLang === "es"
@@ -3239,13 +3306,17 @@ Return JSON ONLY:
                 : `Translate aloud: ${supportWord}.`,
           );
           setSHint(
-            supportCode === "es"
+            supportCode === "ja"
+              ? "目標言語で言いましょう"
+              : supportCode === "es"
               ? "Di la versión en español"
               : "Say it in the target language",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "森"
+                : supportCode === "es"
                 ? "bosque"
                 : "forest"
               : "",
@@ -3273,13 +3344,17 @@ Return JSON ONLY:
                 : "Say the full sentence with the missing word.",
           );
           setSHint(
-            supportCode === "es"
+            supportCode === "ja"
+              ? "動詞は「歌う」です"
+              : supportCode === "es"
               ? "El verbo es 'cantar'"
               : "The verb is 'to sing'",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "女の子が歌を歌います。"
+                : supportCode === "es"
                 ? "La niña canta una canción."
                 : "The girl sings a song."
               : "",
@@ -3301,11 +3376,17 @@ Return JSON ONLY:
                 : "Say this word out loud: harmony.",
           );
           setSHint(
-            supportCode === "es" ? "significa felicidad" : "means happiness",
+            supportCode === "ja"
+              ? "幸せという意味です"
+              : supportCode === "es"
+              ? "significa felicidad"
+              : "means happiness",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "調和"
+                : supportCode === "es"
                 ? "sonrisa"
                 : "harmony"
               : "",
@@ -4168,26 +4249,41 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const sendMatchHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
-      isSpanishUI
+      isJapaneseUI
+        ? "単語マッチング練習です。単語を単語バンクの選択肢と組み合わせて答えてください。"
+        : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
         : "Match the words exercise. Respond by matching the words with the word bank options.",
       mStem
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `指示: ${mStem}`
+          : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
         : null,
       mLeft.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `左の列: ${mLeft.join(" | ")}`
+          : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
         : null,
       mRight.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `単語バンク: ${mRight.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
         : null,
-      mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
+      mHint
+        ? isJapaneseUI
+          ? `ヒント: ${mHint}`
+          : isSpanishUI
+            ? `Pista: ${mHint}`
+            : `Hint: ${mHint}`
+        : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
   }, [
@@ -4203,34 +4299,53 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const sendSpeakHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
     const base =
       sVariant === "translate"
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? "声に出して言う（翻訳）。与えられた単語を練習言語に翻訳して答えてください。"
+          : isSpanishUI
           ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
           : "Say it aloud (translate). Provide the target language translation for the given word."
-        : isSpanishUI
+        : isJapaneseUI
+          ? "声に出して言う（完成）。学習者が欠けている単語を入れて文全体を言えるよう助けてください。"
+          : isSpanishUI
           ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
           : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
 
     const details = [
       sPrompt
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `指示: ${sPrompt}`
+          : isSpanishUI
           ? `Consigna o indicación: ${sPrompt}`
           : `Prompt: ${sPrompt}`
         : null,
       sStimulus
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `学習者に表示: ${sStimulus}`
+          : isSpanishUI
           ? `Mostrado al estudiante: ${sStimulus}`
           : `Shown to learner: ${sStimulus}`
         : null,
       sTarget
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `期待される発話答え: ${sTarget}`
+          : isSpanishUI
           ? `Respuesta hablada esperada: ${sTarget}`
           : `Expected spoken answer: ${sTarget}`
         : null,
-      sHint ? (isSpanishUI ? `Pista: ${sHint}` : `Hint: ${sHint}`) : null,
+      sHint
+        ? isJapaneseUI
+          ? `ヒント: ${sHint}`
+          : isSpanishUI
+            ? `Pista: ${sHint}`
+            : `Hint: ${sHint}`
+        : null,
       sTranslation
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `サポート翻訳/文脈: ${sTranslation}`
+          : isSpanishUI
           ? `Traducción o contexto de apoyo: ${sTranslation}`
           : `Support translation/context: ${sTranslation}`
         : null,

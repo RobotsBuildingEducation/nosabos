@@ -40,6 +40,7 @@ const CEFR_LEVEL_INFO = {
       es: "Principiante Total",
       it: "Principiante assoluto",
       fr: "Grand debutant",
+      ja: "完全初心者",
     },
     displayLabel: "A0",
     color: "#8B5CF6",
@@ -49,10 +50,11 @@ const CEFR_LEVEL_INFO = {
       es: "Primeras palabras y reconocimiento",
       it: "Prime parole e riconoscimento",
       fr: "Premiers mots et reconnaissance",
+      ja: "最初の単語と認識",
     },
   },
   A1: {
-    name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" },
+    name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant", ja: "初心者" },
     color: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6)",
     description: {
@@ -60,10 +62,11 @@ const CEFR_LEVEL_INFO = {
       es: "Lenguaje básico de supervivencia",
       it: "Lingua di sopravvivenza di base",
       fr: "Langue de survie de base",
+      ja: "基本的なサバイバル表現",
     },
   },
   A2: {
-    name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" },
+    name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire", ja: "初級" },
     color: "#8B5CF6",
     gradient: "linear(135deg, #A78BFA, #8B5CF6)",
     description: {
@@ -71,10 +74,11 @@ const CEFR_LEVEL_INFO = {
       es: "Comunicación cotidiana simple",
       it: "Comunicazione quotidiana semplice",
       fr: "Communication simple du quotidien",
+      ja: "簡単な日常コミュニケーション",
     },
   },
   B1: {
-    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" },
+    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire", ja: "中級" },
     color: "#A855F7",
     gradient: "linear(135deg, #C084FC, #A855F7)",
     description: {
@@ -82,6 +86,7 @@ const CEFR_LEVEL_INFO = {
       es: "Manejo de situaciones cotidianas",
       it: "Gestire situazioni quotidiane",
       fr: "Gerer les situations quotidiennes",
+      ja: "日常場面に対応",
     },
   },
   B2: {
@@ -90,6 +95,7 @@ const CEFR_LEVEL_INFO = {
       es: "Intermedio Alto",
       it: "Intermedio superiore",
       fr: "Intermediaire avance",
+      ja: "中上級",
     },
     color: "#F97316",
     gradient: "linear(135deg, #FB923C, #F97316)",
@@ -98,10 +104,11 @@ const CEFR_LEVEL_INFO = {
       es: "Discusiones complejas",
       it: "Discussioni complesse",
       fr: "Discussions complexes",
+      ja: "複雑な話し合い",
     },
   },
   C1: {
-    name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" },
+    name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance", ja: "上級" },
     color: "#EF4444",
     gradient: "linear(135deg, #F87171, #EF4444)",
     description: {
@@ -109,10 +116,11 @@ const CEFR_LEVEL_INFO = {
       es: "Uso sofisticado del idioma",
       it: "Uso sofisticato della lingua",
       fr: "Usage sophistique de la langue",
+      ja: "洗練された言語運用",
     },
   },
   C2: {
-    name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" },
+    name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise", ja: "熟達" },
     color: "#EC4899",
     gradient: "linear(135deg, #F472B6, #EC4899)",
     description: {
@@ -120,6 +128,7 @@ const CEFR_LEVEL_INFO = {
       es: "Competencia casi nativa",
       it: "Competenza quasi nativa",
       fr: "Competence quasi native",
+      ja: "ネイティブに近い熟達度",
     },
   },
 };

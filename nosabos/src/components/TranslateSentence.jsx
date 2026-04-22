@@ -223,34 +223,45 @@ export default function TranslateSentence({
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
     const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
-      isFrenchUI
+      isJapaneseUI
+        ? "提供された単語バンクを使って、この文を翻訳してください。"
+        : isFrenchUI
         ? "Traduis cette phrase avec la banque de mots fournie."
         : isSpanishUI
         ? "Traduce esta oración usando el banco de palabras proporcionado."
         : "Translate this sentence using the provided word bank.",
       sourceSentence
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `翻訳する文: ${sourceSentence}`
+          : isFrenchUI
           ? `Phrase a traduire : ${sourceSentence}`
           : isSpanishUI
           ? `Oración para traducir: ${sourceSentence}`
           : `Sentence to translate: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `単語バンク: ${wordBank.join(" | ")}`
+          : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
       hint
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `ヒント: ${hint}`
+          : isFrenchUI
           ? `Indice : ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
           : `Hint: ${hint}`
         : null,
-      isFrenchUI
+      isJapaneseUI
+        ? "単語バンクの選択肢を組み合わせて、正しい翻訳で答えてください。"
+        : isFrenchUI
         ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
         : isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
@@ -369,7 +380,9 @@ export default function TranslateSentence({
                   {onAskAssistant && (
                     <IconButton
                       aria-label={
-                        userLanguage === "es"
+                        userLanguage === "ja"
+                          ? "アシスタントに聞く"
+                          : userLanguage === "es"
                           ? "Pedir ayuda"
                           : "Ask the assistant"
                       }
@@ -383,7 +396,13 @@ export default function TranslateSentence({
                     />
                   )}
                   <IconButton
-                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
+                    aria-label={
+                      userLanguage === "ja"
+                        ? "聞く"
+                        : userLanguage === "es"
+                          ? "Escuchar"
+                          : "Listen"
+                    }
                     icon={renderSpeakerIcon(isSynthesizing)}
                     size="sm"
                     fontSize="lg"
@@ -416,7 +435,11 @@ export default function TranslateSentence({
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
               <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {userLanguage === "es" ? "Asistente" : "Assistant"}
+                {userLanguage === "ja"
+                  ? "アシスタント"
+                  : userLanguage === "es"
+                    ? "Asistente"
+                    : "Assistant"}
               </Text>
               {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
             </HStack>

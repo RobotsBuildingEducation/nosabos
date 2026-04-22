@@ -110,6 +110,8 @@ const OUTDOOR_NAMES = {
        "Giardino al chiaro di luna", "Piazza di ciottoli", "Boschetto sussurrante", "Cortile delle lanterne", "Campo di fiori"],
   fr: ["Place du village", "Prairie du village", "Clairiere de la foret", "Parc de la riviere", "Prairie du couchant",
        "Jardin au clair de lune", "Place pavee", "Bosquet murmureur", "Cour des lanternes", "Champ de fleurs"],
+  ja: ["町の広場", "村の緑地", "森の空き地", "川辺の公園", "夕焼けの草原",
+       "月明かりの庭", "石畳の広場", "ささやく木立", "ランタンの中庭", "野花の野原"],
 };
 
 const INDOOR_ROOM_TYPES = [
@@ -120,6 +122,7 @@ const INDOOR_ROOM_TYPES = [
       es: ["Biblioteca Antigua", "Sala de Lectura", "Estudio del Erudito", "Rincón de Libros", "Archivos Polvorientos"],
       it: ["Biblioteca antica", "Sala di lettura", "Studio dello studioso", "Angolo dei libri", "Archivi polverosi"],
       fr: ["Bibliotheque ancienne", "Salle de lecture", "Bureau du savant", "Coin des livres", "Archives poussiereuses"],
+      ja: ["古い図書館", "読書室", "学者の書斎", "本の小部屋", "ほこりっぽい資料室"],
     },
     wallFurniture: [BOOKSHELF, WINDOW_TILE],
     centerFurniture: [TABLE, DESK, PLANT_POT],
@@ -132,6 +135,7 @@ const INDOOR_ROOM_TYPES = [
       es: ["Cabaña Acogedora", "Casita Cálida", "Descanso del Viajero", "Refugio junto al Fuego", "Cabaña de Montaña"],
       it: ["Baita accogliente", "Casetta calda", "Riposo del viaggiatore", "Rifugio del focolare", "Capanna di montagna"],
       fr: ["Cabane douillette", "Maison chaleureuse", "Repos du voyageur", "Refuge du foyer", "Cabane de montagne"],
+      ja: ["居心地のよい小屋", "暖かなコテージ", "旅人の休憩所", "暖炉のロッジ", "山小屋"],
     },
     wallFurniture: [FIREPLACE, WINDOW_TILE, BED],
     centerFurniture: [TABLE, SOFA, PLANT_POT],
@@ -144,6 +148,7 @@ const INDOOR_ROOM_TYPES = [
       es: ["Taller Artesanal", "Sala de Manualidades", "Espacio Creativo", "Laboratorio del Inventor", "Guarida del Creador"],
       it: ["Bottega artigiana", "Stanza dei lavori manuali", "Spazio creativo", "Laboratorio dell'inventore", "Rifugio del creatore"],
       fr: ["Atelier artisanal", "Salle de creation", "Espace creatif", "Laboratoire de l'inventeur", "Repaire du createur"],
+      ja: ["職人の工房", "クラフトルーム", "ものづくり空間", "発明家のラボ", "創作者の隠れ家"],
     },
     wallFurniture: [BOOKSHELF, DESK, WINDOW_TILE],
     centerFurniture: [TABLE, PLANT_POT, DESK],
@@ -156,6 +161,7 @@ const INDOOR_ROOM_TYPES = [
       es: ["Habitación de Huéspedes", "Dormitorio Acogedor", "Cámara del Soñador", "Sala de Siesta", "Refugio de Descanso"],
       it: ["Camera degli ospiti", "Camera accogliente", "Stanza del sognatore", "Sala del riposo", "Rifugio tranquillo"],
       fr: ["Chambre d'amis", "Chambre douillette", "Chambre du reveur", "Salle de sieste", "Havre de repos"],
+      ja: ["客室", "居心地のよい寝室", "夢見る人の部屋", "昼寝の部屋", "休息の隠れ家"],
     },
     wallFurniture: [BED, WINDOW_TILE, BOOKSHELF],
     centerFurniture: [DESK, PLANT_POT, TABLE],
@@ -168,6 +174,7 @@ const INDOOR_ROOM_TYPES = [
       es: ["Salón", "Sala Común", "Sala de Reuniones", "Rincón Social", "Sala de Té"],
       it: ["Salotto", "Sala comune", "Sala degli incontri", "Angolo sociale", "Sala da tè"],
       fr: ["Salon", "Salle commune", "Hall de rencontre", "Coin social", "Salon de the"],
+      ja: ["ラウンジ", "談話室", "集会ホール", "交流コーナー", "ティールーム"],
     },
     wallFurniture: [WINDOW_TILE, FIREPLACE, BOOKSHELF],
     centerFurniture: [SOFA, TABLE, PLANT_POT],
@@ -233,6 +240,20 @@ const SIGN_MESSAGES = {
     "Les langues ouvrent des portes vers de nouveaux mondes. Litteralement.",
     "Continue a explorer ! Il y a toujours quelque chose de nouveau.",
   ],
+  ja: [
+    "ようこそ、冒険者！ゲームの読み込み中に探索しましょう。",
+    "ヒント: 本編ではNPCと話して語彙を練習できます。",
+    "豆知識: 言語学習は脳のレベルアップに似ています。",
+    "プロのヒント: クエストを完了してXPを獲得し、新しいレッスンを開放しましょう。",
+    "橋は2つの世界をつなぎます。言語と同じです。",
+    "入口に入って新しい部屋を見つけてみましょう。",
+    "覚える単語はどれも大冒険の一歩です。",
+    "探索するほど、発見が増えます。",
+    "秘密: 隠された宝物へ続く道もあります...",
+    "知っていましたか？このマップは読み込むたびに変わります。",
+    "言語は新しい世界への扉を開きます。文字通りです。",
+    "探索を続けましょう！いつも新しい発見があります。",
+  ],
 };
 
 const CHEST_MESSAGES = {
@@ -276,6 +297,16 @@ const CHEST_MESSAGES = {
     "Le coffre contient... de la motivation ! +10 volonte.",
     "Dedans tu trouves une note : 'Tu t'en sors tres bien !'",
   ],
+  ja: [
+    "隠された宝物を見つけました！それは知識です！",
+    "中の巻物には「練習は力なり」と書かれています。",
+    "光るルーンを見つけました...「XP +100」と書いてあります（冗談です）。",
+    "中には、これから探索するすべての世界の小さな地図があります！",
+    "金貨です！待って...語彙トークンでした。",
+    "古代の文法の巻物を見つけました！",
+    "箱の中身は...やる気です！意志力+10。",
+    "中にメモがあります。「とてもよくできています！」",
+  ],
 };
 
 const LAMP_MESSAGES = {
@@ -302,6 +333,12 @@ const LAMP_MESSAGES = {
     "Une lueur douce eclaire un texte ancien... illisible.",
     "La lumiere danse comme de petites etincelles.",
     "Tu ressens une douce lueur d'encouragement.",
+  ],
+  ja: [
+    "ランプが暖かくゆらめいています。ここは居心地がよさそうです。",
+    "柔らかな光が古い文字を照らしています...読めません。",
+    "光が小さな火花のように踊っています。",
+    "励ましの暖かな光を感じます。",
   ],
 };
 
@@ -330,6 +367,12 @@ const PLANT_MESSAGES = {
     "Cette plante est ici depuis plus longtemps que personne ne s'en souvient.",
     "Une petite fleur est en train d'eclore. Comme c'est joli !",
   ],
+  ja: [
+    "幸せそうな小さな植物です。この場所が気に入っているようです。",
+    "通り過ぎると葉がやさしく揺れます。",
+    "この植物は誰の記憶よりも長くここにあります。",
+    "小さな花が咲いています。素敵ですね！",
+  ],
 };
 
 const TABLE_MESSAGES = {
@@ -356,6 +399,12 @@ const TABLE_MESSAGES = {
     "La table porte des marques de nombreuses sessions d'etude.",
     "Des livres et papiers sont eparpilles sur la surface.",
     "Un puzzle a moitie termine est pose sur la table.",
+  ],
+  ja: [
+    "丈夫な木のテーブルです。誰かが動詞の活用メモを残しています。",
+    "テーブルには長年の勉強会でできた傷があります。",
+    "本や紙が表面に散らばっています。",
+    "途中まで解いたパズルがテーブルに置かれています。",
   ],
 };
 
@@ -622,6 +671,7 @@ function generateWorld(seed) {
     es: pick(rng, OUTDOOR_NAMES.es),
     it: pick(rng, OUTDOOR_NAMES.it),
     fr: pick(rng, OUTDOOR_NAMES.fr),
+    ja: pick(rng, OUTDOOR_NAMES.ja),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -635,6 +685,7 @@ function generateWorld(seed) {
     es: pick(rng, roomType1.names.es),
     it: pick(rng, roomType1.names.it),
     fr: pick(rng, roomType1.names.fr),
+    ja: pick(rng, roomType1.names.ja),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
@@ -643,6 +694,7 @@ function generateWorld(seed) {
     es: pick(rng, roomType2.names.es),
     it: pick(rng, roomType2.names.it),
     fr: pick(rng, roomType2.names.fr),
+    ja: pick(rng, roomType2.names.ja),
   };
 
   // Build rooms object
@@ -696,6 +748,7 @@ function generateWorld(seed) {
       es: shuffle(rng, msgs.es),
       it: shuffle(rng, msgs.it || msgs.en),
       fr: shuffle(rng, msgs.fr || msgs.en),
+      ja: shuffle(rng, msgs.ja || msgs.en),
     };
   }
 

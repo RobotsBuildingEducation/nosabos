@@ -12,9 +12,12 @@
 
 import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
 import { withFrenchSkillTreeText } from "./skillTree/frenchLocalizer.js";
+import { withJapaneseSkillTreeText } from "./skillTree/japaneseLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
-  withFrenchSkillTreeText(withItalianSkillTreeText(skillTree));
+  withJapaneseSkillTreeText(
+    withFrenchSkillTreeText(withItalianSkillTreeText(skillTree)),
+  );
 
 export const SKILL_STATUS = {
   LOCKED: "locked",

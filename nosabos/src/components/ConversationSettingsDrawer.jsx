@@ -44,78 +44,85 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 const CEFR_LEVELS = [
   {
     level: "Pre-A1",
-    name: { en: "Foundations", es: "Fundamentos", it: "Fondamenti", fr: "Fondations" },
+    name: { en: "Foundations", es: "Fundamentos", it: "Fondamenti", fr: "Fondations", ja: "基礎" },
     description: {
       en: "First words and phrases",
       es: "Primeras palabras y frases",
       it: "Prime parole e frasi",
       fr: "Premiers mots et phrases",
+      ja: "最初の単語とフレーズ",
     },
     color: "#8B5CF6",
   },
   {
     level: "A1",
-    name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" },
+    name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant", ja: "初心者" },
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
       it: "Lingua essenziale di base",
       fr: "Langue essentielle de base",
+      ja: "基本的なサバイバル表現",
     },
     color: "#3B82F6",
   },
   {
     level: "A2",
-    name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" },
+    name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire", ja: "初級" },
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
       it: "Comunicazione quotidiana semplice",
       fr: "Communication simple du quotidien",
+      ja: "簡単な日常コミュニケーション",
     },
     color: "#8B5CF6",
   },
   {
     level: "B1",
-    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" },
+    name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire", ja: "中級" },
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
       it: "Gestire situazioni quotidiane",
       fr: "Gerer les situations quotidiennes",
+      ja: "日常場面に対応",
     },
     color: "#A855F7",
   },
   {
     level: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto", it: "Intermedio alto", fr: "Intermediaire avance" },
+    name: { en: "Upper Intermediate", es: "Intermedio Alto", it: "Intermedio alto", fr: "Intermediaire avance", ja: "中上級" },
     description: {
       en: "Complex discussions",
       es: "Discusiones complejas",
       it: "Discussioni complesse",
       fr: "Discussions complexes",
+      ja: "複雑な話し合い",
     },
     color: "#F97316",
   },
   {
     level: "C1",
-    name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" },
+    name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance", ja: "上級" },
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
       it: "Uso sofisticato della lingua",
       fr: "Usage sophistique de la langue",
+      ja: "洗練された言語運用",
     },
     color: "#EF4444",
   },
   {
     level: "C2",
-    name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" },
+    name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise", ja: "熟達" },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
       it: "Competenza quasi nativa",
       fr: "Competence quasi native",
+      ja: "ネイティブに近い熟達度",
     },
     color: "#EC4899",
   },
@@ -181,6 +188,20 @@ function getConversationSettingsUi(lang) {
         "ex. Je suis medecin et je veux pratiquer des conversations avec des patients...",
       save: "Enregistrer",
       close: "Fermer",
+    },
+    ja: {
+      title: "会話設定",
+      proficiencyLabel: "熟達度レベル",
+      proficiencyHint: "会話トピックの難易度を設定します",
+      pronunciationLabel: "発音練習",
+      pronunciationHint: "AIが発音改善をサポートします",
+      subjectLabel: "カスタムトピック",
+      subjectHint:
+        "練習したいテーマを指定します（例: 医療用語、ビジネス、旅行）",
+      subjectPlaceholder:
+        "例: 私は医師で、患者との医療会話を練習したいです...",
+      save: "保存",
+      close: "閉じる",
     },
   }[lang];
 }

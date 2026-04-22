@@ -36,7 +36,8 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr) {
+function supportCopy(lang, en, es, it, fr, ja) {
+  if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
@@ -171,6 +172,7 @@ export default function BitcoinSupportModal({
       "Crea becas con aprendizaje",
       "Crea borse di studio con l'apprendimento",
       "Creer des bourses",
+      "奨学金を作る",
     );
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
@@ -180,6 +182,7 @@ export default function BitcoinSupportModal({
       "Envía Bitcoin a educadores cada vez que ganes XP",
       "Invia Bitcoin agli educatori ogni volta che guadagni XP",
       "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
+      "XPを獲得するたびに教育者へBitcoinを送れます",
     );
   const footerNote =
     ui.tutorial_bitcoin_modal_body ||
@@ -189,6 +192,7 @@ export default function BitcoinSupportModal({
       "Esto se puede hacer después en tus ajustes.",
       "Puoi farlo più tardi dalle impostazioni.",
       "Tu pourras le faire plus tard dans les parametres.",
+      "これは後で設定から行えます。",
     );
   const skipLabel =
     ui.tutorial_bitcoin_modal_skip ||
@@ -198,10 +202,11 @@ export default function BitcoinSupportModal({
       "Tal vez después",
       "Forse più tardi",
       "Peut-etre plus tard",
+      "後で",
     );
   const closeLabel =
     ui.tutorial_bitcoin_modal_done ||
-    supportCopy(lang, "Done", "Listo", "Fatto", "Termine");
+    supportCopy(lang, "Done", "Listo", "Fatto", "Termine", "完了");
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
@@ -332,6 +337,7 @@ export default function BitcoinSupportModal({
                         "Ver sitio",
                         "Vedi sito",
                         "Voir le site",
+                        "サイトを見る",
                       )}
                     </Link>
                   ) : null}
@@ -349,6 +355,7 @@ export default function BitcoinSupportModal({
             "Selecciona una opción para habilitar los depósitos.",
             "Seleziona un'opzione per abilitare i depositi.",
             "Selectionne une option pour activer les depots.",
+            "入金を有効にするにはオプションを選択してください。",
           )}
         </Text>
       ) : null}
@@ -418,7 +425,7 @@ export default function BitcoinSupportModal({
         }}
       >
         <IconButton
-          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer")}
+          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer", "閉じる")}
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
@@ -538,6 +545,7 @@ export default function BitcoinSupportModal({
                             "Elige un destinatario",
                             "Scegli un destinatario",
                             "Choisis un destinataire",
+                            "受取先を選ぶ",
                           )}
                         </Text>
                         {selectedRecipient ? (
@@ -571,6 +579,7 @@ export default function BitcoinSupportModal({
                       "Elige un destinatario",
                       "Scegli un destinatario",
                       "Choisis un destinataire",
+                      "受取先を選ぶ",
                     )}
                   </Text>
                   {recipientSelectorContent}

@@ -96,7 +96,9 @@ export default function ProficiencyTestModal({
               {tFn(lang, "proficiency_modal_already_know", {
                 lang:
                   targetLangLabel ||
-                  (lang === "fr"
+                  (lang === "ja"
+                    ? "この言語"
+                    : lang === "fr"
                     ? "cette langue"
                     : lang === "it"
                     ? "questa lingua"
