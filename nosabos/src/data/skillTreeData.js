@@ -13,10 +13,13 @@
 import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
 import { withFrenchSkillTreeText } from "./skillTree/frenchLocalizer.js";
 import { withJapaneseSkillTreeText } from "./skillTree/japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./skillTree/portugueseLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
   withJapaneseSkillTreeText(
-    withFrenchSkillTreeText(withItalianSkillTreeText(skillTree)),
+    withFrenchSkillTreeText(
+      withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+    ),
   );
 
 export const SKILL_STATUS = {

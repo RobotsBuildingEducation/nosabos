@@ -68,10 +68,11 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr, ja) {
+function supportCopy(lang, en, es, it, fr, ja, pt = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -160,6 +161,7 @@ export function IdentityPanel({
           "Inserisci un nome visualizzato",
           "Saisis un nom d'affichage",
           "表示名を入力してください",
+          "Digite um nome de exibição",
         ),
         status: "warning",
         duration: 2000,
@@ -198,6 +200,7 @@ export function IdentityPanel({
           "Nome visualizzato aggiornato",
           "Nom d'affichage mis a jour",
           "表示名を更新しました",
+          "Nome de exibição atualizado",
         ),
         status: "success",
         duration: 2000,
@@ -205,7 +208,15 @@ export function IdentityPanel({
     } catch (error) {
       console.error("Failed to save display name:", error);
       toast({
-        title: supportCopy(lang, "Error", "Error", "Errore", "Erreur", "エラー"),
+        title: supportCopy(
+          lang,
+          "Error",
+          "Error",
+          "Errore",
+          "Erreur",
+          "エラー",
+          "Erro",
+        ),
         description: error?.message || String(error),
         status: "error",
         duration: 3000,
@@ -376,6 +387,7 @@ export function IdentityPanel({
                 `Account di ${displayName}`,
                 `Compte de ${displayName}`,
                 `${displayName}のアカウント`,
+                `Conta de ${displayName}`,
               )
             : t?.app_account_title || "Account"}
         </DrawerHeader>
@@ -422,13 +434,14 @@ export function IdentityPanel({
             </Box>
             <VStack align="start" spacing={0} flex={1}>
               <Text fontWeight="semibold" fontSize="sm">
-                {supportCopy(
+              {supportCopy(
                   lang,
                   "Join us on Patreon",
                   "Apóyanos en Patreon",
                   "Sostienici su Patreon",
                   "Rejoins-nous sur Patreon",
                   "Patreonで応援",
+                  "Apoie-nos no Patreon",
                 )}
               </Text>
               <Text fontSize="xs" color="gray.400">
@@ -439,6 +452,7 @@ export function IdentityPanel({
                   "Accedi a più app educative e contenuti",
                   "Accede a plus d'apps educatives et de contenu",
                   "さらに多くの教育アプリとコンテンツにアクセス",
+                  "Acesse mais apps educacionais e conteúdo",
                 )}
               </Text>
             </VStack>
@@ -453,7 +467,15 @@ export function IdentityPanel({
                 )
               }
             >
-              {supportCopy(lang, "Join", "Unirse", "Unisciti", "Rejoindre", "参加")}
+              {supportCopy(
+                lang,
+                "Join",
+                "Unirse",
+                "Unisciti",
+                "Rejoindre",
+                "参加",
+                "Entrar",
+              )}
             </Button>
           </HStack>
         </Box>
@@ -480,6 +502,7 @@ export function IdentityPanel({
                         "Cambia nome visualizzato",
                         "Changer le nom d'affichage",
                         "表示名を変更",
+                        "Alterar nome de exibição",
                       )
                     : supportCopy(
                         lang,
@@ -488,6 +511,7 @@ export function IdentityPanel({
                         "Crea nome visualizzato",
                         "Creer un nom d'affichage",
                         "表示名を作成",
+                        "Criar nome de exibição",
                       )}
                 </Text>
               </Flex>
@@ -505,6 +529,7 @@ export function IdentityPanel({
                     "Inserisci un nome visualizzato",
                     "Saisis un nom d'affichage",
                     "表示名を入力",
+                    "Digite um nome de exibição",
                   )
                 }
                 bg="gray.700"
@@ -523,9 +548,18 @@ export function IdentityPanel({
                     "Salvataggio…",
                     "Enregistrement...",
                     "保存中…",
+                    "Salvando…",
                   )}
                 >
-                  {supportCopy(lang, "Save", "Guardar", "Salva", "Enregistrer", "保存")}
+                  {supportCopy(
+                    lang,
+                    "Save",
+                    "Guardar",
+                    "Salva",
+                    "Enregistrer",
+                    "保存",
+                    "Salvar",
+                  )}
                 </Button>
               </HStack>
             </AccordionPanel>
@@ -614,6 +648,7 @@ export function IdentityPanel({
                       "Portafoglio Bitcoin",
                       "Portefeuille Bitcoin",
                       "Bitcoinウォレット",
+                      "Carteira Bitcoin",
                     )}
                   </Text>
                 </Flex>
@@ -1068,6 +1103,28 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "Your key is only used to create the wallet and is not stored.",
     };
+    const pt = {
+      createWallet: "Criar carteira",
+      loadingWallet: "Criando carteira…",
+      deposit: "Depositar",
+      loadingAddress: "Gerando endereço…",
+      or: "ou",
+      copyAddress: "Copiar endereço",
+      ps: "Use uma carteira Lightning compatível para pagar a fatura.",
+      activeWalletTitle: "Sua carteira está ativa",
+      verifyTransactions: "Verifique suas transações",
+      generateNew: "Gerar novo QR",
+      balanceLabel: "Saldo",
+      cardNameLabel: "Carteira",
+      scholarshipNote:
+        "Seus depósitos nos ajudam a criar bolsas com aprendizagem com ",
+      nip07NsecTitle: "Chave secreta necessária",
+      nip07NsecDescription:
+        "Você entrou com uma extensão do navegador, então não temos acesso à sua chave privada. Para criar uma carteira, digite seu nsec abaixo.",
+      nip07NsecPlaceholder: "Digite seu nsec1...",
+      nip07NsecWarning:
+        "Sua chave é usada apenas para criar a carteira e não é armazenada.",
+    };
     const it = {
       createWallet: "Crea portafoglio",
       loadingWallet: "Creazione portafoglio…",
@@ -1140,10 +1197,12 @@ export function BitcoinWalletSection({
         : walletLang === "fr"
         ? fr
         : walletLang === "it"
-          ? it
-          : walletLang === "es"
-            ? es
-            : en
+        ? it
+        : walletLang === "pt"
+        ? pt
+        : walletLang === "es"
+        ? es
+        : en
     )[key] ?? key;
   };
 
@@ -1281,7 +1340,15 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
+        title: supportCopy(
+          walletLang,
+          "Error",
+          "Error",
+          "Errore",
+          "Erreur",
+          "エラー",
+          "Erro",
+        ),
         description: supportCopy(
           walletLang,
           "Failed to create wallet",
@@ -1363,7 +1430,15 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
+        title: supportCopy(
+          walletLang,
+          "Error",
+          "Error",
+          "Errore",
+          "Erreur",
+          "エラー",
+          "Erro",
+        ),
         description: supportCopy(
           walletLang,
           "Failed to initiate deposit",
@@ -1414,7 +1489,15 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
+        title: supportCopy(
+          walletLang,
+          "Error",
+          "Error",
+          "Errore",
+          "Erreur",
+          "エラー",
+          "Erro",
+        ),
         description: supportCopy(
           walletLang,
           "Failed to initiate deposit",
@@ -1493,6 +1576,7 @@ export function BitcoinWalletSection({
           "Scegli un destinatario",
           "Choisis un destinataire",
           "入金で支援する受取先を選んでください:",
+          "Escolha quem apoiar com os seus depósitos:",
         )}
       </Text>
       <RadioGroup
@@ -1538,6 +1622,7 @@ export function BitcoinWalletSection({
                       "Vedi sito",
                       "Voir le site",
                       "サイトを見る",
+                      "Ver site",
                     )}
                   </Link>
                 ) : null}
@@ -1560,6 +1645,7 @@ export function BitcoinWalletSection({
             "Seleziona un'opzione per abilitare i depositi.",
             "Selectionne une option pour activer les depots.",
             "入金を有効にするにはオプションを選択してください。",
+            "Selecione uma opção para habilitar os depósitos.",
           )}
         </Text>
       )}
@@ -1590,6 +1676,7 @@ export function BitcoinWalletSection({
             "Portafoglio Bitcoin",
             "Portefeuille Bitcoin",
             "Bitcoinウォレット",
+            "Carteira Bitcoin",
           )}
         </Text>
       ) : null}
@@ -1630,6 +1717,7 @@ export function BitcoinWalletSection({
               "Caricamento portafoglio…",
               "Chargement du portefeuille...",
               "ウォレットを読み込み中…",
+              "Carregando carteira…",
             )}
           </Text>
         </HStack>

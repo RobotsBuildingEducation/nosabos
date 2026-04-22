@@ -274,6 +274,7 @@ export default function FlashcardPractice({
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
+  const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
   const ratingOptions = useMemo(
     () => getSchedulerRatingOptions(card.reviewProgress || {}),
     [card.reviewProgress],
@@ -472,10 +473,10 @@ export default function FlashcardPractice({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildFlashcardJudgePrompt({
-          concept: getConceptText(card, getEffectiveCardLanguage(supportLang)),
+          concept: getConceptText(card, effectiveCardLanguage),
           userAnswer: answer,
           targetLang,
-          supportLang,
+          supportLang: effectiveCardLanguage,
           cefrLevel: card.cefrLevel,
         }),
       });
@@ -613,10 +614,7 @@ export default function FlashcardPractice({
     setNotesLoading(true);
 
     try {
-      const concept = getConceptText(
-        card,
-        getEffectiveCardLanguage(supportLang),
-      );
+      const concept = getConceptText(card, effectiveCardLanguage);
       const userAnswer = textAnswer || recognizedText;
 
       const { example, summary } = await generateNoteContent({
@@ -624,7 +622,7 @@ export default function FlashcardPractice({
         userAnswer,
         wasCorrect: isCorrect,
         targetLang,
-        supportLang,
+        supportLang: effectiveCardLanguage,
         cefrLevel: card.cefrLevel,
         moduleType: "flashcard",
       });
@@ -635,7 +633,7 @@ export default function FlashcardPractice({
         example,
         summary,
         targetLang,
-        supportLang,
+        supportLang: effectiveCardLanguage,
         moduleType: "flashcard",
         wasCorrect: isCorrect,
       });
@@ -728,7 +726,7 @@ export default function FlashcardPractice({
 
     const sourceText = getConceptText(
       card,
-      getEffectiveCardLanguage(supportLang),
+      effectiveCardLanguage,
     );
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(
       targetLang,
@@ -786,20 +784,20 @@ export default function FlashcardPractice({
 
     playSound(selectSound);
 
-    const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
+    const concept = getConceptText(card, effectiveCardLanguage);
     const prompt = `You are a helpful language tutor for ${LANG_NAME(
       targetLang,
     )}. A student tried to translate a prompt from ${LANG_NAME(
-      supportLang,
+      effectiveCardLanguage,
     )} to ${LANG_NAME(targetLang)}.
 
-Prompt (${LANG_NAME(supportLang)}): ${concept}
+Prompt (${LANG_NAME(effectiveCardLanguage)}): ${concept}
 Student translation attempt (${LANG_NAME(targetLang)}): ${userAnswer}
 
-Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
+Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
 1) Correct translation: the best translation into ${LANG_NAME(targetLang)}
 2) Explanation: 2-3 concise sentences in ${LANG_NAME(
-      supportLang,
+      effectiveCardLanguage,
     )} explaining how the student's answer could be improved.`;
 
     setIsLoadingExplanation(true);
@@ -1036,7 +1034,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         >
                           {getConceptText(
                             card,
-                            getEffectiveCardLanguage(supportLang),
+                            effectiveCardLanguage,
                           )}
                         </Text>
                         <IconButton

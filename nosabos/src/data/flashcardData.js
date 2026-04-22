@@ -7,13 +7,19 @@
 import { withItalianFlashcardText } from "./flashcards/italianLocalizer.js";
 import { withFrenchFlashcardText } from "./flashcards/frenchLocalizer.js";
 import {
+  translateFlashcardConceptToPortuguese,
+  withPortugueseFlashcardText,
+} from "./flashcards/portugueseLocalizer.js";
+import {
   translateFlashcardConceptToJapanese,
   withJapaneseFlashcardText,
 } from "./flashcards/japaneseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
   withJapaneseFlashcardText(
-    withFrenchFlashcardText(withItalianFlashcardText(cards)),
+    withFrenchFlashcardText(
+      withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+    ),
   );
 
 export const FLASHCARD_DATA = withLocalizedFlashcardText([
@@ -7872,12 +7878,25 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "it", "fr", "ja"];
+    const languages = ["en", "es", "pt", "it", "fr", "ja"];
     const selectedLang = languages[hash % languages.length];
+    if (selectedLang === "pt" && !card.concept.pt) {
+      return translateFlashcardConceptToPortuguese(
+        card.concept.en,
+        card.concept.es,
+      );
+    }
     if (selectedLang === "ja" && !card.concept.ja) {
       return translateFlashcardConceptToJapanese(card.concept.en);
     }
     return card.concept[selectedLang] || card.concept.en;
+  }
+
+  if (supportLang === "pt" && !card.concept.pt) {
+    return translateFlashcardConceptToPortuguese(
+      card.concept.en,
+      card.concept.es,
+    );
   }
 
   if (supportLang === "ja" && !card.concept.ja) {

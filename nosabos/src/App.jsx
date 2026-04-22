@@ -198,6 +198,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageLabel,
+  getLanguageLocale,
   getLanguagePromptName,
   getPracticeLanguageOptions,
   getSortLocale,
@@ -234,7 +235,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "it", "fr", "ja"].some(
+  return ["en", "es", "pt", "it", "fr", "ja"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -690,16 +691,21 @@ function TopBar({
   const vadSecondsLabel = uiCopy(appLanguage, {
     en: "seconds",
     es: "segundos",
+    pt: "segundos",
     it: "secondi",
     fr: "secondes",
     ja: "秒",
   });
-  const pauseSeconds = (pauseMs / 1000).toFixed(1);
+  const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(pauseMs / 1000);
   const vadHint =
     t.onboarding_vad_hint ||
     uiCopy(appLanguage, {
       en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
       es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
@@ -1545,7 +1551,9 @@ function TopBar({
                           {uiCopy(appLanguage, {
                             en: "Start proficiency test",
                             es: "Iniciar prueba de nivel",
+                            pt: "Iniciar teste de nível",
                             it: "Inizia test di livello",
+                            fr: "Commencer le test de niveau",
                             ja: "レベルテストを始める",
                           })}
                         </Button>
@@ -5157,6 +5165,7 @@ export default function App() {
       name: {
         en: "Ultimate Beginner",
         es: "Principiante Total",
+        pt: "Iniciante absoluto",
         it: "Principiante assoluto",
         fr: "Grand debutant",
       },
@@ -5165,6 +5174,7 @@ export default function App() {
       description: {
         en: "First words and recognition",
         es: "Primeras palabras y reconocimiento",
+        pt: "Primeiras palavras e reconhecimento",
         it: "Prime parole e riconoscimento",
         fr: "Premiers mots et reconnaissance",
       },
@@ -5173,6 +5183,7 @@ export default function App() {
       name: {
         en: "Beginner",
         es: "Principiante",
+        pt: "Iniciante",
         it: "Principiante",
         fr: "Debutant",
       },
@@ -5181,6 +5192,7 @@ export default function App() {
       description: {
         en: "Basic survival language",
         es: "Lenguaje básico de supervivencia",
+        pt: "Linguagem básica de sobrevivência",
         it: "Lingua essenziale di base",
         fr: "Langue essentielle de base",
       },
@@ -5189,6 +5201,7 @@ export default function App() {
       name: {
         en: "Elementary",
         es: "Elemental",
+        pt: "Elementar",
         it: "Elementare",
         fr: "Elementaire",
       },
@@ -5197,6 +5210,7 @@ export default function App() {
       description: {
         en: "Simple everyday communication",
         es: "Comunicación cotidiana simple",
+        pt: "Comunicação cotidiana simples",
         it: "Comunicazione quotidiana semplice",
         fr: "Communication simple du quotidien",
       },
@@ -5205,6 +5219,7 @@ export default function App() {
       name: {
         en: "Intermediate",
         es: "Intermedio",
+        pt: "Intermediário",
         it: "Intermedio",
         fr: "Intermediaire",
       },
@@ -5213,6 +5228,7 @@ export default function App() {
       description: {
         en: "Handle everyday situations",
         es: "Manejo de situaciones cotidianas",
+        pt: "Lidar com situações do dia a dia",
         it: "Gestire situazioni quotidiane",
         fr: "Gerer les situations quotidiennes",
       },
@@ -5221,6 +5237,7 @@ export default function App() {
       name: {
         en: "Upper Intermediate",
         es: "Intermedio Alto",
+        pt: "Intermediário avançado",
         it: "Intermedio alto",
         fr: "Intermediaire avance",
       },
@@ -5229,28 +5246,43 @@ export default function App() {
       description: {
         en: "Complex discussions",
         es: "Discusiones complejas",
+        pt: "Discussões complexas",
         it: "Discussioni complesse",
         fr: "Discussions complexes",
       },
     },
     C1: {
-      name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" },
+      name: {
+        en: "Advanced",
+        es: "Avanzado",
+        pt: "Avançado",
+        it: "Avanzato",
+        fr: "Avance",
+      },
       color: "#EF4444",
       gradient: "linear(135deg, #F87171, #EF4444)",
       description: {
         en: "Sophisticated language use",
         es: "Uso sofisticado del idioma",
+        pt: "Uso sofisticado do idioma",
         it: "Uso sofisticato della lingua",
         fr: "Usage sophistique de la langue",
       },
     },
     C2: {
-      name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" },
+      name: {
+        en: "Mastery",
+        es: "Maestría",
+        pt: "Domínio",
+        it: "Padronanza",
+        fr: "Maitrise",
+      },
       color: "#EC4899",
       gradient: "linear(135deg, #F472B6, #EC4899)",
       description: {
         en: "Near-native proficiency",
         es: "Competencia casi nativa",
+        pt: "Proficiência quase nativa",
         it: "Competenza quasi nativa",
         fr: "Competence quasi native",
       },
@@ -6668,6 +6700,7 @@ export default function App() {
                 {uiCopy(appLanguage, {
                   en: "Keep learning",
                   es: "Seguir practicando",
+                  pt: "Continuar aprendendo",
                   it: "Continua ad imparare",
                   fr: "Continuer a apprendre",
                   ja: "学習を続ける",
@@ -6719,6 +6752,7 @@ export default function App() {
                   {uiCopy(appLanguage, {
                     en: "Lesson Complete!",
                     es: "¡Lección Completada!",
+                    pt: "Lição concluída!",
                     it: "Lezione Completata!",
                     fr: "Lecon terminee !",
                     ja: "レッスン完了！",
@@ -6750,6 +6784,7 @@ export default function App() {
                     {uiCopy(appLanguage, {
                       en: "XP Earned",
                       es: "XP Ganado",
+                      pt: "XP ganho",
                       it: "XP Guadagnato",
                       fr: "XP gagne",
                       ja: "獲得XP",
@@ -6762,6 +6797,7 @@ export default function App() {
                     {uiCopy(appLanguage, {
                       en: "Experience Points",
                       es: "Puntos de Experiencia",
+                      pt: "Pontos de experiência",
                       it: "Punti Esperienza",
                       fr: "Points d'experience",
                       ja: "経験値",
@@ -6786,6 +6822,7 @@ export default function App() {
                 {uiCopy(appLanguage, {
                   en: "Continue",
                   es: "Continuar",
+                  pt: "Continuar",
                   it: "Continua",
                   fr: "Continuer",
                   ja: "続ける",
@@ -6871,6 +6908,7 @@ export default function App() {
                       ? uiCopy(appLanguage, {
                           en: `You've unlocked level ${completedProficiencyData.nextLevel}`,
                           es: `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`,
+                          pt: `Você desbloqueou o nível ${completedProficiencyData.nextLevel}`,
                           it: `Hai sbloccato il livello ${completedProficiencyData.nextLevel}`,
                           fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
                           ja: `レベル${completedProficiencyData.nextLevel}が開放されました`,
@@ -6878,6 +6916,7 @@ export default function App() {
                       : uiCopy(appLanguage, {
                           en: "You've completed all levels!",
                           es: "¡Has completado todos los niveles!",
+                          pt: "Você concluiu todos os níveis!",
                           it: "Hai completato tutti i livelli!",
                           fr: "Tu as termine tous les niveaux !",
                           ja: "すべてのレベルを完了しました！",
@@ -6908,6 +6947,7 @@ export default function App() {
                   ? uiCopy(appLanguage, {
                       en: "Go to Next Level",
                       es: "Ir al Siguiente Nivel",
+                      pt: "Ir para o próximo nível",
                       it: "Vai al livello successivo",
                       fr: "Aller au niveau suivant",
                       ja: "次のレベルへ",
@@ -6915,6 +6955,7 @@ export default function App() {
                   : uiCopy(appLanguage, {
                       en: "Continue",
                       es: "Continuar",
+                      pt: "Continuar",
                       it: "Continua",
                       fr: "Continuer",
                       ja: "続ける",

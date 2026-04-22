@@ -251,6 +251,38 @@ const QUEST_LOG_COPY = {
   },
 };
 
+OBJECT_SEARCH_TEST_COPY.pt = {
+  intro: (itemName) =>
+    `Preciso de ${itemName}. Procure nos objetos de qualquer sala deste mapa. Cada um esconde um item. Traga o certo para mim.`,
+  wrongItem: (wrongName, correctName) =>
+    `Isso é ${wrongName}. Ainda preciso de ${correctName}. Continue procurando nos objetos.`,
+  success: (itemName) => `Perfeito. ${itemName} é exatamente o que eu precisava.`,
+  chooseItem: "Escolha um item para entregar:",
+  foundItem: (itemName) => `Encontrado: ${itemName}`,
+  alreadyChecked: "Você já verificou este objeto.",
+  nothingFound: "Não há nada útil aqui.",
+  continueSearching: "Continue procurando",
+};
+
+QUEST_LOG_COPY.pt = {
+  title: "Registro de missões",
+  button: "Registro de missões",
+  currentTask: "Tarefa atual",
+  progress: (done, total) => `Progresso: ${done}/${total}`,
+  complete: "Missão concluída! Bom trabalho.",
+  defaultTask: "Continue explorando e fale com o próximo personagem.",
+  startObjectSearch: (npcName, itemName) =>
+    `Fale com ${npcName} para começar a procura por ${itemName}.`,
+  searchObjects: (itemName) =>
+    `Procure ${itemName} nos objetos examináveis de qualquer sala. Cada objeto esconde um item.`,
+  returnItem: (itemName, npcName) => `Leve ${itemName} de volta para ${npcName}.`,
+  gatherSearch: (itemName) => `Procure ${itemName} nesta área.`,
+  gatherHint: (hint) => `Dica: ${hint}`,
+  choiceTask: (npcName) => `Fale com ${npcName} e escolha uma resposta.`,
+  speechTask: (npcName) => `Fale com ${npcName} e responda com a sua voz.`,
+  continueTask: (npcName) => `Fale com ${npcName} para continuar.`,
+};
+
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
   return Math.max(min, Math.min(max, Math.round(num)));
@@ -1530,6 +1562,7 @@ const UI_TEXT = {
     translateText: "Translate text",
     undoTranslation: "Undo translation",
     chooseCorrect: "Choose the correct option.",
+    closeDialogue: "Close dialogue",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -1571,6 +1604,7 @@ const UI_TEXT = {
     translateText: "Traducir texto",
     undoTranslation: "Deshacer traducción",
     chooseCorrect: "Elige la opción correcta.",
+    closeDialogue: "Cerrar dialogo",
   },
   it: {
     talkHint: "Premi SPAZIO o tocca per parlare",
@@ -1612,6 +1646,7 @@ const UI_TEXT = {
     translateText: "Traduci testo",
     undoTranslation: "Annulla traduzione",
     chooseCorrect: "Scegli l'opzione corretta.",
+    closeDialogue: "Chiudi dialogo",
   },
   fr: {
     talkHint: "Appuie sur ESPACE ou touche pour parler",
@@ -1653,6 +1688,7 @@ const UI_TEXT = {
     translateText: "Traduire le texte",
     undoTranslation: "Annuler la traduction",
     chooseCorrect: "Choisis la bonne option.",
+    closeDialogue: "Fermer le dialogue",
   },
   ja: {
     talkHint: "スペースキーまたはタップで話す",
@@ -1694,7 +1730,51 @@ const UI_TEXT = {
     translateText: "テキストを翻訳",
     undoTranslation: "翻訳を元に戻す",
     chooseCorrect: "正しい選択肢を選んでください。",
+    closeDialogue: "会話を閉じる",
   },
+};
+
+UI_TEXT.pt = {
+  talkHint: "Pressione ESPAÇO ou toque para falar",
+  correct: "Correto!",
+  incorrect: "Tente novamente!",
+  completed: "Parabéns! Você acertou todas as perguntas!",
+  playAgain: "Jogar novamente",
+  back: "Voltar",
+  progress: "Progresso",
+  answeredOf: "de",
+  moveHint: "Setas ou WASD para mover",
+  touchMove: "Toque para mover, toque em um NPC para conversar",
+  chooseScenario: "Escolha um cenário",
+  scenario: "Cenário",
+  newWorld: "Novo mundo",
+  quest: "Missão",
+  lockedNpc: "Você deve começar falando com:",
+  response: "Resposta",
+  micStart: "Iniciar microfone",
+  micStop: "Parar microfone",
+  heardYou: "Ouvi",
+  speechUnavailable: "A voz não está disponível neste navegador",
+  noSpeechMatch: "Não consegui entender. Tente novamente.",
+  continue: "Continuar",
+  skip: "Pular",
+  loadingTutorialScene: "Carregando a cena do tutorial...",
+  loadingGeneratingGame: "Gerando seu jogo...",
+  enableMusic: "Ativar música",
+  disableMusic: "Desativar música",
+  musicOn: "Música ativada",
+  musicOff: "Música desativada",
+  help: "Ajuda",
+  inventory: "Inventário",
+  noItems: "Ainda não há itens.",
+  dropItem: "Largar",
+  wrongItem: "o item errado",
+  speechContinue: "Entendi. Vamos continuar.",
+  thinking: "Pensando...",
+  translateText: "Traduzir texto",
+  undoTranslation: "Desfazer tradução",
+  chooseCorrect: "Escolha a opção correta.",
+  closeDialogue: "Fechar diálogo",
 };
 
 const SCENARIO_EMOJIS = {
@@ -1754,6 +1834,17 @@ const GAME_LOADING_MESSAGES = {
     "冒険を作っています...",
   ],
 };
+
+GAME_LOADING_MESSAGES.pt = [
+  "Construindo o seu mundo...",
+  "Posicionando NPCs...",
+  "Escrevendo os diálogos da missão...",
+  "Gerando desafios de vocabulário...",
+  "Desenhando o mapa...",
+  "Preparando quebra-cabeças de idioma...",
+  "Montando a cena...",
+  "Criando a sua aventura...",
+];
 
 const SCENARIO_OBJECT_VISUALS = {
   tree: { width: 1.3, height: 1.6, yOffset: 0.6, z: 2 },
@@ -1819,13 +1910,211 @@ function humanizeObjectType(type = "") {
     .toLowerCase();
 }
 
-function buildFallbackObjectExamineText(object) {
-  const label = humanizeObjectType(object?.type) || "object";
+const OBJECT_EXAMINE_FALLBACK_LABELS = {
+  en: {
+    tree: "tree",
+    house: "house",
+    building: "building",
+    pavilion: "pavilion",
+    greenhouse: "greenhouse",
+    doorway: "doorway",
+    bookshelf: "bookshelf",
+    shelf: "shelf",
+    tv: "television",
+    sofa: "sofa",
+    plant: "plant",
+    table: "table",
+    lamp: "lamp",
+    sign: "sign",
+    gate: "gate",
+    speaker: "speaker",
+    balloons: "balloons",
+    desk: "desk",
+    suitcaseStack: "stack of suitcases",
+    counter: "counter",
+    stove: "stove",
+    fridge: "fridge",
+    bench: "bench",
+    register: "cash register",
+    freezer: "freezer",
+    object: "object",
+  },
+  es: {
+    tree: "arbol",
+    house: "casa",
+    building: "edificio",
+    pavilion: "pabellon",
+    greenhouse: "invernadero",
+    doorway: "entrada",
+    bookshelf: "estanteria",
+    shelf: "repisa",
+    tv: "televisor",
+    sofa: "sofa",
+    plant: "planta",
+    table: "mesa",
+    lamp: "lampara",
+    sign: "letrero",
+    gate: "porton",
+    speaker: "altavoz",
+    balloons: "globos",
+    desk: "escritorio",
+    suitcaseStack: "monton de maletas",
+    counter: "mostrador",
+    stove: "estufa",
+    fridge: "refrigerador",
+    bench: "banco",
+    register: "caja registradora",
+    freezer: "congelador",
+    object: "objeto",
+  },
+  pt: {
+    tree: "arvore",
+    house: "casa",
+    building: "predio",
+    pavilion: "pavilhao",
+    greenhouse: "estufa",
+    doorway: "entrada",
+    bookshelf: "estante de livros",
+    shelf: "prateleira",
+    tv: "televisao",
+    sofa: "sofa",
+    plant: "planta",
+    table: "mesa",
+    lamp: "luminaria",
+    sign: "placa",
+    gate: "portao",
+    speaker: "caixa de som",
+    balloons: "baloes",
+    desk: "escrivaninha",
+    suitcaseStack: "pilha de malas",
+    counter: "balcao",
+    stove: "fogao",
+    fridge: "geladeira",
+    bench: "banco",
+    register: "caixa registradora",
+    freezer: "freezer",
+    object: "objeto",
+  },
+  it: {
+    tree: "albero",
+    house: "casa",
+    building: "edificio",
+    pavilion: "padiglione",
+    greenhouse: "serra",
+    doorway: "ingresso",
+    bookshelf: "libreria",
+    shelf: "scaffale",
+    tv: "televisore",
+    sofa: "divano",
+    plant: "pianta",
+    table: "tavolo",
+    lamp: "lampada",
+    sign: "cartello",
+    gate: "cancello",
+    speaker: "altoparlante",
+    balloons: "palloncini",
+    desk: "scrivania",
+    suitcaseStack: "pila di valigie",
+    counter: "bancone",
+    stove: "fornello",
+    fridge: "frigorifero",
+    bench: "panchina",
+    register: "cassa",
+    freezer: "congelatore",
+    object: "oggetto",
+  },
+  fr: {
+    tree: "arbre",
+    house: "maison",
+    building: "batiment",
+    pavilion: "pavillon",
+    greenhouse: "serre",
+    doorway: "entree",
+    bookshelf: "bibliotheque",
+    shelf: "etagere",
+    tv: "televiseur",
+    sofa: "canape",
+    plant: "plante",
+    table: "table",
+    lamp: "lampe",
+    sign: "panneau",
+    gate: "portail",
+    speaker: "haut-parleur",
+    balloons: "ballons",
+    desk: "bureau",
+    suitcaseStack: "pile de valises",
+    counter: "comptoir",
+    stove: "cuisiniere",
+    fridge: "refrigerateur",
+    bench: "banc",
+    register: "caisse",
+    freezer: "congelateur",
+    object: "objet",
+  },
+  ja: {
+    tree: "木",
+    house: "家",
+    building: "建物",
+    pavilion: "あずまや",
+    greenhouse: "温室",
+    doorway: "入口",
+    bookshelf: "本棚",
+    shelf: "棚",
+    tv: "テレビ",
+    sofa: "ソファ",
+    plant: "植物",
+    table: "テーブル",
+    lamp: "ランプ",
+    sign: "看板",
+    gate: "門",
+    speaker: "スピーカー",
+    balloons: "風船",
+    desk: "机",
+    suitcaseStack: "スーツケースの山",
+    counter: "カウンター",
+    stove: "コンロ",
+    fridge: "冷蔵庫",
+    bench: "ベンチ",
+    register: "レジ",
+    freezer: "冷凍庫",
+    object: "物",
+  },
+};
+
+const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
+  en: (label) => `You notice ${label}.`,
+  es: (label) => `Notas ${label}.`,
+  pt: (label) => `Voce percebe ${label}.`,
+  it: (label) => `Noti ${label}.`,
+  fr: (label) => `Tu remarques ${label}.`,
+  ja: (label) => `${label}に気づきます。`,
+};
+
+function getLocalizedObjectExamineLabel(type = "", lang = "en") {
+  const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const rawType = String(type || "").trim();
+  const fallbackLabel =
+    humanizeObjectType(rawType) ||
+    OBJECT_EXAMINE_FALLBACK_LABELS.en.object;
+  return (
+    OBJECT_EXAMINE_FALLBACK_LABELS[supportLang]?.[rawType] ||
+    OBJECT_EXAMINE_FALLBACK_LABELS.en?.[rawType] ||
+    fallbackLabel
+  );
+}
+
+function buildFallbackObjectExamineText(object, lang = "en") {
+  const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const name = humanizeObjectType(object?.type) || "object";
+  const supportName = getLocalizedObjectExamineLabel(object?.type, supportLang);
+  const supportSentence =
+    OBJECT_EXAMINE_FALLBACK_SENTENCES[supportLang] ||
+    OBJECT_EXAMINE_FALLBACK_SENTENCES.en;
   return {
-    name: label,
-    supportName: label,
-    text: `It looks like a ${label}.`,
-    supportText: `It looks like a ${label}.`,
+    name,
+    supportName,
+    text: `You notice ${name}.`,
+    supportText: supportSentence(supportName),
   };
 }
 
@@ -2059,7 +2348,7 @@ export default function RPGGame({
   );
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const objectSearchCopy =
-    OBJECT_SEARCH_TEST_COPY[targetLang] ||
+    OBJECT_SEARCH_TEST_COPY[supportLang] ||
     OBJECT_SEARCH_TEST_COPY.en;
   const questLogCopy =
     QUEST_LOG_COPY[supportLang] || QUEST_LOG_COPY.en;
@@ -2658,8 +2947,18 @@ export default function RPGGame({
 
         uncachedObjects.forEach((object) => {
           const key = getObjectExamineKey(map, object);
-          const text =
-            resolvedTexts.get(key) || buildFallbackObjectExamineText(object);
+          const fallback = buildFallbackObjectExamineText(object, supportLang);
+          const resolved = resolvedTexts.get(key);
+          const text = resolved
+            ? {
+                ...fallback,
+                ...resolved,
+                name: resolved.name || fallback.name,
+                supportName: resolved.supportName || fallback.supportName,
+                text: resolved.text || fallback.text,
+                supportText: resolved.supportText || fallback.supportText,
+              }
+            : fallback;
           objectExamineCacheRef.current.set(key, text);
         });
 
@@ -2679,7 +2978,7 @@ export default function RPGGame({
           const key = getObjectExamineKey(map, object);
           objectExamineCacheRef.current.set(
             key,
-            buildFallbackObjectExamineText(object),
+            buildFallbackObjectExamineText(object, supportLang),
           );
         });
         setObjectExamine((current) => {
@@ -6420,7 +6719,7 @@ export default function RPGGame({
             onClick={helpChat.onOpen}
           />
           <IconButton
-            aria-label="Inventory"
+            aria-label={ui.inventory}
             icon={
               <Box position="relative">
                 <BackpackIcon size={22} />
@@ -6890,7 +7189,7 @@ export default function RPGGame({
               )}
 
               <IconButton
-                aria-label="Close dialogue"
+                aria-label={ui.closeDialogue}
                 icon={<CloseIcon boxSize={2.5} />}
                 size="xs"
                 position="absolute"

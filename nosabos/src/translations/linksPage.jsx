@@ -1,3 +1,5 @@
+import { LINKS_PAGE_PT_STATIC } from "./linksPagePtStatic";
+
 export const linksPageTranslations = {
   en: {
     // Welcome section
@@ -557,6 +559,75 @@ export const linksPageTranslations = {
     language_it: "Italiano",
     language_ja: "Japonés",
   },
+};
+
+linksPageTranslations.pt = {
+  ...LINKS_PAGE_PT_STATIC,
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>Obrigado por conferir o meu trabalho!</p>
+
+      <p style={{ marginBottom: 12 }}>
+        Meu nome é Sheilfer. Estudei ciência da computação e sempre quis
+        aprender engenharia de software para construir tecnologia educacional.
+        Em geral, amo aprender, ensinar e a educação, e acredito que é aí que
+        minhas habilidades são mais úteis.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          Comecei esta ideia chamada Robots Building Education em 2015 porque
+          sentia que a tecnologia educacional estava sempre atrás do que a
+          internet já era capaz de fazer.
+        </span>{" "}
+        Jogos on-line e fóruns realmente prendiam a atenção das pessoas porque
+        eram divertidos, envolventes e até viciantes.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        E naquela época, como estudante universitário, eu me sentia frustrado
+        por dedicar horas aos estudos sem ver isso refletido de verdade até
+        praticamente terminar a faculdade, algo que pode levar até 20 anos.
+        Parecia que faltava alguma coisa.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education é a ideia de que a sua aprendizagem tem
+          impacto real no momento em que você aprende e progride.{" "}
+        </span>
+        Por enquanto, digo que é &quot;criar bolsas de estudo com a
+        aprendizagem&quot; porque é mais fácil imaginar o que a tecnologia está
+        fazendo por trás dos bastidores, mas a visão de longo prazo é fazer a
+        tecnologia educacional funcionar de um jeito que possa apoiar, de forma
+        significativa, escolas, professores e estudantes sem fronteiras.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Pense nisso como uma forma de fazer propriedades da internet
+        financiarem escolas de maneira parecida com os imóveis.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Então você pode ver algumas coisas funcionando na minha plataforma de
+        um jeito que talvez nunca tenha visto antes. Algumas partes são bem
+        fluidas e sem atrito para o que está realmente acontecendo, e isso
+        acontece em parte porque fui incansável para transformar essa ideia em
+        uma experiência real para as pessoas.{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          Eu realmente acredito que é assim que o mundo deveria funcionar,
+          porque não faz sentido para mim que bilhões de horas de trabalho na
+          educação on-line do dia a dia passem despercebidas e sem registro
+          público.
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Então, mais uma vez, obrigado por conferir o meu trabalho! Isso
+        sinceramente significa muito para mim.
+      </p>
+    </div>
+  ),
 };
 
 linksPageTranslations.fr = {

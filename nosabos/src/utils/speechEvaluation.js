@@ -533,6 +533,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Incluye las palabras clave del contenido.",
     "low-confidence": "Pronuncia con claridad y reduce el ruido de fondo.",
   },
+  pt: {
+    "speech-quality": "Fale um pouco mais alto e mantenha um ritmo constante.",
+    "not-target-lang": (targetLabel) => `Tente falar em ${targetLabel}.`,
+    "low-char-sim": "Aproxime-se mais do texto original.",
+    "low-word-f1": "Inclua as palavras-chave do conteudo.",
+    "low-confidence": "Pronuncie com clareza e reduza o ruido de fundo.",
+  },
   it: {
     "speech-quality": "Parla un po' più forte e mantieni un ritmo regolare.",
     "not-target-lang": (targetLabel) => `Prova a parlare in ${targetLabel}.`,
@@ -568,6 +575,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
           targetLabel ||
             (lang === "es"
               ? "el idioma objetivo"
+              : lang === "pt"
+                ? "o idioma alvo"
               : lang === "it"
                 ? "la lingua obiettivo"
                 : lang === "fr"
@@ -583,6 +592,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
     tips.push(
       lang === "es"
         ? "Vuelve a intentarlo hablando con claridad."
+        : lang === "pt"
+          ? "Tente novamente falando com clareza."
         : lang === "it"
           ? "Riprova parlando chiaramente."
           : lang === "fr"

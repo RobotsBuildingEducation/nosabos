@@ -557,6 +557,7 @@ export function formatRelativeReviewTime(
   const lang = normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE);
   if (!reviewDate) {
     if (lang === "es") return "Sin programar";
+    if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
     if (lang === "ja") return "未スケジュール";
@@ -599,6 +600,7 @@ export function formatAbsoluteReviewTime(
   const lang = normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE);
   if (!reviewDate) {
     if (lang === "es") return "Sin programar";
+    if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
     if (lang === "ja") return "未スケジュール";
@@ -613,6 +615,7 @@ export function formatAbsoluteReviewTime(
 
   if (isSameLocalDay(reviewDate, now)) {
     if (lang === "es") return `Hoy a las ${timeLabel}`;
+    if (lang === "pt") return `Hoje as ${timeLabel}`;
     if (lang === "it") return `Oggi alle ${timeLabel}`;
     if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
     if (lang === "ja") return `今日 ${timeLabel}`;
@@ -623,6 +626,7 @@ export function formatAbsoluteReviewTime(
   tomorrow.setDate(now.getDate() + 1);
   if (isSameLocalDay(reviewDate, tomorrow)) {
     if (lang === "es") return `Mañana a las ${timeLabel}`;
+    if (lang === "pt") return `Amanha as ${timeLabel}`;
     if (lang === "it") return `Domani alle ${timeLabel}`;
     if (lang === "fr") return `Demain a ${timeLabel}`;
     if (lang === "ja") return `明日 ${timeLabel}`;
@@ -638,6 +642,7 @@ export function formatAbsoluteReviewTime(
   }).format(reviewDate);
 
   if (lang === "es") return `${dateLabel} a las ${timeLabel}`;
+  if (lang === "pt") return `${dateLabel} as ${timeLabel}`;
   if (lang === "it") return `${dateLabel} alle ${timeLabel}`;
   if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
   if (lang === "ja") return `${dateLabel} ${timeLabel}`;

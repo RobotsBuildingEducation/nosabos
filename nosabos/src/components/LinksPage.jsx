@@ -144,6 +144,12 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
     bg: "linear-gradient(90deg, #006847 0 33.33%, #fff 33.33% 66.66%, #ce1126 66.66% 100%)",
     emblem: "#c79a2b",
   },
+  pt: {
+    bg: "#009b3a",
+    diamond: "#ffdf00",
+    orb: "#002776",
+    band: "rgba(255,255,255,0.92)",
+  },
   fr: {
     bg: "linear-gradient(90deg, #0055a4 0 33.33%, #fff 33.33% 66.66%, #ef4135 66.66% 100%)",
   },
@@ -203,7 +209,7 @@ const SupportLanguageFlagSwatch = ({ value }) => {
           : undefined
       }
       _after={
-        flag.emblem
+        flag.emblem && !flag.orb
           ? {
               content: '""',
               position: "absolute",
@@ -217,7 +223,49 @@ const SupportLanguageFlagSwatch = ({ value }) => {
             }
           : undefined
       }
-    />
+    >
+      {flag.diamond ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="66%"
+          h="66%"
+          bg={flag.diamond}
+          transform="translate(-50%, -50%) rotate(45deg)"
+          borderRadius="sm"
+        />
+      ) : null}
+      {flag.orb ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="44%"
+          h="44%"
+          bg={flag.orb}
+          borderRadius="full"
+          transform="translate(-50%, -50%)"
+          overflow="hidden"
+        >
+          {flag.band ? (
+            <Box
+              as="span"
+              position="absolute"
+              top="52%"
+              left="50%"
+              w="135%"
+              h="2px"
+              bg={flag.band}
+              transform="translate(-50%, -50%) rotate(14deg)"
+              opacity={0.95}
+            />
+          ) : null}
+        </Box>
+      ) : null}
+    </Box>
   );
 };
 

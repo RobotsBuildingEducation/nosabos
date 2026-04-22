@@ -60,6 +60,7 @@ import {
   questionFeedbackAccent,
   questionToneText,
 } from "./questionUiStyles";
+import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -75,14 +76,18 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 // --------------- helpers ---------------
 
 const LANG_NAME = (code, uiLang = "en") => {
-  const map = {
+  const normalizedCode = String(code || "").trim().toLowerCase();
+  const dict = translations[uiLang] || translations.en || {};
+  const fallback = translations.en || {};
+  const key = `language_${normalizedCode}`;
+  const rawFallbackMap = {
     en: "English",
     es: "Spanish",
     pt: "Portuguese",
     fr: "French",
     it: "Italian",
     nl: "Dutch",
-    nah: "Nahuatl",
+    nah: "Eastern Huasteca Nahuatl",
     ja: "Japanese",
     ru: "Russian",
     de: "German",
@@ -91,7 +96,234 @@ const LANG_NAME = (code, uiLang = "en") => {
     ga: "Irish",
     yua: "Yucatec Maya",
   };
-  return map[code] || code;
+  return dict[key] || fallback[key] || rawFallbackMap[normalizedCode] || code;
+};
+
+const FLASHCARD_UI = {
+  en: {
+    translate_to: (languageLabel) => `Translate to ${languageLabel}`,
+    show_answer: "Show answer",
+    tap_to_flip: "Tap to flip back",
+    answer_label: "Answer",
+    type_placeholder: "Type your translation...",
+    submit: "Submit",
+    record: "Record answer",
+    stop_recording: "Stop",
+    grading: "Checking...",
+    correct: "Correct!",
+    incorrect: "Not quite",
+    try_again: "Try again",
+    explain: "Explain my answer",
+    explanation_heading: "Explanation",
+    skip: "Skip",
+    collect: "Collect card",
+    collected: "Collected!",
+    deck_label: "Deck",
+    next: "Next question",
+    added_to_deck: "Added to deck",
+    generating: "Generating flashcard...",
+    connecting: "Connecting...",
+    recognized: "Recognized:",
+    deck_review: "Deck Review",
+    prev: "Prev",
+    close: "Close",
+    speech_error: "Speech error",
+    grading_error: "Grading error",
+    microphone_unavailable: "Microphone unavailable",
+    could_not_explain: "Could not explain",
+    loading: "Loading",
+    listen: "Listen",
+    open_keyboard: "Open keyboard",
+    close_keyboard: "Close keyboard",
+  },
+  es: {
+    translate_to: (languageLabel) => `Traduce al ${languageLabel}`,
+    show_answer: "Ver respuesta",
+    tap_to_flip: "Toca para voltear",
+    answer_label: "Respuesta",
+    type_placeholder: "Escribe tu traducción...",
+    submit: "Enviar",
+    record: "Grabar respuesta",
+    stop_recording: "Detener",
+    grading: "Verificando...",
+    correct: "¡Correcto!",
+    incorrect: "No del todo",
+    try_again: "Intentar de nuevo",
+    explain: "Explicar mi respuesta",
+    explanation_heading: "Explicación",
+    skip: "Saltar",
+    collect: "Recoger tarjeta",
+    collected: "¡Recogida!",
+    deck_label: "Mazo",
+    next: "Siguiente pregunta",
+    added_to_deck: "Añadida al mazo",
+    generating: "Generando tarjeta...",
+    connecting: "Conectando...",
+    recognized: "Reconocido:",
+    deck_review: "Repaso del mazo",
+    prev: "Anterior",
+    close: "Cerrar",
+    speech_error: "Error de voz",
+    grading_error: "Error al evaluar",
+    microphone_unavailable: "Micrófono no disponible",
+    could_not_explain: "No se pudo explicar",
+    loading: "Cargando",
+    listen: "Escuchar",
+    open_keyboard: "Abrir teclado",
+    close_keyboard: "Cerrar teclado",
+  },
+  pt: {
+    translate_to: (languageLabel) => `Traduza para ${languageLabel}`,
+    show_answer: "Mostrar resposta",
+    tap_to_flip: "Toque para virar",
+    answer_label: "Resposta",
+    type_placeholder: "Digite sua tradução...",
+    submit: "Enviar",
+    record: "Gravar resposta",
+    stop_recording: "Parar",
+    grading: "Verificando...",
+    correct: "Correto!",
+    incorrect: "Ainda não",
+    try_again: "Tentar de novo",
+    explain: "Explicar minha resposta",
+    explanation_heading: "Explicação",
+    skip: "Pular",
+    collect: "Salvar cartão",
+    collected: "Salvo!",
+    deck_label: "Baralho",
+    next: "Próxima pergunta",
+    added_to_deck: "Adicionado ao baralho",
+    generating: "Gerando flashcard...",
+    connecting: "Conectando...",
+    recognized: "Reconhecido:",
+    deck_review: "Revisão do baralho",
+    prev: "Anterior",
+    close: "Fechar",
+    speech_error: "Erro de fala",
+    grading_error: "Erro ao corrigir",
+    microphone_unavailable: "Microfone indisponível",
+    could_not_explain: "Não foi possível explicar",
+    loading: "Carregando",
+    listen: "Ouvir",
+    open_keyboard: "Abrir teclado",
+    close_keyboard: "Fechar teclado",
+  },
+  it: {
+    translate_to: (languageLabel) => `Traduci in ${languageLabel}`,
+    show_answer: "Mostra risposta",
+    tap_to_flip: "Tocca per girare",
+    answer_label: "Risposta",
+    type_placeholder: "Scrivi la tua traduzione...",
+    submit: "Invia",
+    record: "Registra risposta",
+    stop_recording: "Ferma",
+    grading: "Controllo...",
+    correct: "Corretto!",
+    incorrect: "Non proprio",
+    try_again: "Riprova",
+    explain: "Spiega la mia risposta",
+    explanation_heading: "Spiegazione",
+    skip: "Salta",
+    collect: "Raccogli carta",
+    collected: "Raccolta!",
+    deck_label: "Mazzo",
+    next: "Prossima domanda",
+    added_to_deck: "Aggiunta al mazzo",
+    generating: "Generazione scheda...",
+    connecting: "Connessione...",
+    recognized: "Riconosciuto:",
+    deck_review: "Ripasso del mazzo",
+    prev: "Precedente",
+    close: "Chiudi",
+    speech_error: "Errore vocale",
+    grading_error: "Errore di valutazione",
+    microphone_unavailable: "Microfono non disponibile",
+    could_not_explain: "Impossibile spiegare",
+    loading: "Caricamento",
+    listen: "Ascolta",
+    open_keyboard: "Apri tastiera",
+    close_keyboard: "Chiudi tastiera",
+  },
+  fr: {
+    translate_to: (languageLabel) => `Traduis en ${languageLabel}`,
+    show_answer: "Afficher la reponse",
+    tap_to_flip: "Touche pour retourner",
+    answer_label: "Reponse",
+    type_placeholder: "Ecris ta traduction...",
+    submit: "Envoyer",
+    record: "Enregistrer la reponse",
+    stop_recording: "Arreter",
+    grading: "Verification...",
+    correct: "Correct !",
+    incorrect: "Pas tout a fait",
+    try_again: "Reessaie",
+    explain: "Expliquer ma reponse",
+    explanation_heading: "Explication",
+    skip: "Passer",
+    collect: "Collecter la carte",
+    collected: "Collectee !",
+    deck_label: "Deck",
+    next: "Question suivante",
+    added_to_deck: "Ajoutee au deck",
+    generating: "Generation de la carte...",
+    connecting: "Connexion...",
+    recognized: "Reconnu :",
+    deck_review: "Revision du deck",
+    prev: "Precedent",
+    close: "Fermer",
+    speech_error: "Erreur vocale",
+    grading_error: "Erreur de correction",
+    microphone_unavailable: "Microphone indisponible",
+    could_not_explain: "Impossible d'expliquer",
+    loading: "Chargement",
+    listen: "Ecouter",
+    open_keyboard: "Ouvrir le clavier",
+    close_keyboard: "Fermer le clavier",
+  },
+  ja: {
+    translate_to: (languageLabel) => `${languageLabel}に翻訳`,
+    show_answer: "答えを表示",
+    tap_to_flip: "タップして戻る",
+    answer_label: "答え",
+    type_placeholder: "翻訳を入力...",
+    submit: "送信",
+    record: "答えを録音",
+    stop_recording: "停止",
+    grading: "確認中...",
+    correct: "正解！",
+    incorrect: "惜しい",
+    try_again: "もう一度",
+    explain: "答えを説明して",
+    explanation_heading: "説明",
+    skip: "スキップ",
+    collect: "カードを保存",
+    collected: "保存しました！",
+    deck_label: "デッキ",
+    next: "次の質問",
+    added_to_deck: "デッキに追加しました",
+    generating: "フラッシュカードを生成中...",
+    connecting: "接続中...",
+    recognized: "認識結果:",
+    deck_review: "デッキ復習",
+    prev: "前へ",
+    close: "閉じる",
+    speech_error: "音声エラー",
+    grading_error: "採点エラー",
+    microphone_unavailable: "マイクを利用できません",
+    could_not_explain: "説明できませんでした",
+    loading: "読み込み中",
+    listen: "聞く",
+    open_keyboard: "キーボードを開く",
+    close_keyboard: "キーボードを閉じる",
+  },
+};
+
+const getFlashcardUiText = (userLanguage, targetLang, key) => {
+  const dict = FLASHCARD_UI[userLanguage] || FLASHCARD_UI.en;
+  const value = dict[key] ?? FLASHCARD_UI.en[key] ?? key;
+  return typeof value === "function"
+    ? value(LANG_NAME(targetLang, userLanguage))
+    : value;
 };
 
 function buildFlashcardJudgePrompt({
@@ -246,151 +478,7 @@ export default function LessonFlashcard({
     };
   }, []);
 
-  const t = (key) => {
-    const dict = {
-      en: {
-        translate_to: `Translate to ${LANG_NAME(targetLang)}`,
-        show_answer: "Show answer",
-        tap_to_flip: "Tap to flip back",
-        answer_label: "Answer",
-        type_placeholder: "Type your translation...",
-        submit: "Submit",
-        record: "Record answer",
-        stop_recording: "Stop",
-        grading: "Checking...",
-        correct: "Correct!",
-        incorrect: "Not quite",
-        try_again: "Try again",
-        explain: "Explain my answer",
-        explanation_heading: "Explanation",
-        skip: "Skip",
-        collect: "Collect card",
-        collected: "Collected!",
-        deck_label: "Deck",
-        next: "Next question",
-        added_to_deck: "Added to deck",
-        generating: "Generating flashcard...",
-        connecting: "Connecting...",
-        recognized: "Recognized:",
-        deck_review: "Deck Review",
-        prev: "Prev",
-        close: "Close",
-      },
-      es: {
-        translate_to: `Traduce al ${LANG_NAME(targetLang)}`,
-        show_answer: "Ver respuesta",
-        tap_to_flip: "Toca para voltear",
-        answer_label: "Respuesta",
-        type_placeholder: "Escribe tu traducción...",
-        submit: "Enviar",
-        record: "Grabar respuesta",
-        stop_recording: "Detener",
-        grading: "Verificando...",
-        correct: "¡Correcto!",
-        incorrect: "No del todo",
-        try_again: "Intentar de nuevo",
-        explain: "Explicar mi respuesta",
-        explanation_heading: "Explicación",
-        skip: "Saltar",
-        collect: "Recoger tarjeta",
-        collected: "¡Recogida!",
-        deck_label: "Mazo",
-        next: "Siguiente pregunta",
-        added_to_deck: "Añadida al mazo",
-        generating: "Generando tarjeta...",
-        connecting: "Conectando...",
-        recognized: "Reconocido:",
-        deck_review: "Repaso del mazo",
-        prev: "Anterior",
-        close: "Cerrar",
-      },
-      it: {
-        translate_to: `Traduci in ${LANG_NAME(targetLang)}`,
-        show_answer: "Mostra risposta",
-        tap_to_flip: "Tocca per girare",
-        answer_label: "Risposta",
-        type_placeholder: "Scrivi la tua traduzione...",
-        submit: "Invia",
-        record: "Registra risposta",
-        stop_recording: "Ferma",
-        grading: "Controllo...",
-        correct: "Corretto!",
-        incorrect: "Non proprio",
-        try_again: "Riprova",
-        explain: "Spiega la mia risposta",
-        explanation_heading: "Spiegazione",
-        skip: "Salta",
-        collect: "Raccogli carta",
-        collected: "Raccolta!",
-        deck_label: "Mazzo",
-        next: "Prossima domanda",
-        added_to_deck: "Aggiunta al mazzo",
-        generating: "Generazione scheda...",
-        connecting: "Connessione...",
-        recognized: "Riconosciuto:",
-        deck_review: "Ripasso del mazzo",
-        prev: "Precedente",
-        close: "Chiudi",
-      },
-      fr: {
-        translate_to: `Traduis en ${LANG_NAME(targetLang)}`,
-        show_answer: "Afficher la reponse",
-        tap_to_flip: "Touche pour retourner",
-        answer_label: "Reponse",
-        type_placeholder: "Ecris ta traduction...",
-        submit: "Envoyer",
-        record: "Enregistrer la reponse",
-        stop_recording: "Arreter",
-        grading: "Verification...",
-        correct: "Correct !",
-        incorrect: "Pas tout a fait",
-        try_again: "Reessaie",
-        explain: "Expliquer ma reponse",
-        explanation_heading: "Explication",
-        skip: "Passer",
-        collect: "Collecter la carte",
-        collected: "Collectee !",
-        deck_label: "Deck",
-        next: "Question suivante",
-        added_to_deck: "Ajoutee au deck",
-        generating: "Generation de la carte...",
-        connecting: "Connexion...",
-        recognized: "Reconnu :",
-        deck_review: "Revision du deck",
-        prev: "Precedent",
-        close: "Fermer",
-      },
-      ja: {
-        translate_to: `${LANG_NAME(targetLang)}に翻訳`,
-        show_answer: "答えを表示",
-        tap_to_flip: "タップして戻る",
-        answer_label: "答え",
-        type_placeholder: "翻訳を入力...",
-        submit: "送信",
-        record: "答えを録音",
-        stop_recording: "停止",
-        grading: "確認中...",
-        correct: "正解！",
-        incorrect: "惜しい",
-        try_again: "もう一度",
-        explain: "答えを説明して",
-        explanation_heading: "説明",
-        skip: "スキップ",
-        collect: "カードを保存",
-        collected: "保存しました！",
-        deck_label: "デッキ",
-        next: "次の質問",
-        added_to_deck: "デッキに追加しました",
-        generating: "フラッシュカードを生成中...",
-        connecting: "接続中...",
-        recognized: "認識結果:",
-        deck_review: "デッキ復習",
-        prev: "前へ",
-        close: "閉じる",
-      },
-    };
-    return (dict[userLanguage] || dict.en)[key] || key;
-  };
+  const t = (key) => getFlashcardUiText(userLanguage, targetLang, key);
 
   // Speech
   const {
@@ -404,7 +492,7 @@ export default function LessonFlashcard({
     targetLang,
     onResult: ({ recognizedText: rt, error }) => {
       if (error) {
-        toast({ title: "Speech error", status: "error", duration: 2500 });
+        toast({ title: t("speech_error"), status: "error", duration: 2500 });
         return;
       }
       const text = rt || "";
@@ -450,7 +538,7 @@ export default function LessonFlashcard({
       }
     } catch (error) {
       console.error("AI grading error:", error);
-      toast({ title: "Grading error", status: "error", duration: 3000 });
+      toast({ title: t("grading_error"), status: "error", duration: 3000 });
     } finally {
       setIsGrading(false);
     }
@@ -510,7 +598,7 @@ export default function LessonFlashcard({
       const code = err?.code;
       if (code === "no-speech-recognition" || code === "mic-denied") {
         toast({
-          title: "Microphone unavailable",
+          title: t("microphone_unavailable"),
           status: "warning",
           duration: 3200,
         });
@@ -627,7 +715,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
         setExplanationText(explanation.trim());
       }
     } catch {
-      toast({ title: "Could not explain", status: "error", duration: 3000 });
+      toast({ title: t("could_not_explain"), status: "error", duration: 3000 });
     } finally {
       explanationStreamingRef.current = false;
       setIsLoadingExplanation(false);
@@ -912,7 +1000,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                   <Box>
                     {answer && (
                       <IconButton
-                        aria-label={loadingTts ? "Loading" : "Listen"}
+                        aria-label={loadingTts ? t("loading") : t("listen")}
                         position="absolute"
                         bottom={2}
                         left={2}
@@ -1072,7 +1160,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         {hasVirtualKeyboard && (
                           <IconButton
                             aria-label={
-                              showKeyboard ? "Close keyboard" : "Open keyboard"
+                              showKeyboard
+                                ? t("close_keyboard")
+                                : t("open_keyboard")
                             }
                             icon={<MdKeyboard size={20} />}
                             size="md"
@@ -1293,6 +1383,7 @@ export function FlashcardDeckReview({
   const [isFlipped, setIsFlipped] = useState(false);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const t = (key) => getFlashcardUiText(userLanguage, targetLang, key);
 
   if (!isOpen || cards.length === 0) return null;
 
@@ -1402,7 +1493,7 @@ export function FlashcardDeckReview({
                   position="relative"
                   zIndex={1}
                 >
-                  {LANG_NAME(supportLang)}
+                  {LANG_NAME(supportLang, userLanguage)}
                 </Text>
                 <Text
                   fontSize="2xl"
@@ -1452,7 +1543,7 @@ export function FlashcardDeckReview({
                   color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.700"}
                   mb={2}
                 >
-                  {LANG_NAME(targetLang)}
+                  {LANG_NAME(targetLang, userLanguage)}
                 </Text>
                 <Text
                   fontSize="2xl"

@@ -142,6 +142,32 @@ function getCopy(lang) {
     };
   }
 
+  if (lang === "pt") {
+    return {
+      title: "Seu companheiro",
+      subtitle: "Cuide da saude dele alcancando sua meta diaria de XP.",
+      health: "Saude",
+      happy: "Feliz",
+      healthy: "Saudavel",
+      unhappy: "Triste",
+      stressed: "Estressado",
+      unhealthy: "Doentinho",
+      dead: "Morto",
+      reward: "Meta concluida",
+      penalty: "Meta nao concluida",
+      rewardFooter: "A saude sobe para {health}%",
+      penaltyFooter: "A saude cai para {health}%",
+      latestAchieved: "Ultima atualizacao: +{delta}% por cumprir sua meta",
+      latestMissed: "Ultima atualizacao: {delta}% por nao cumprir sua meta",
+      managementHint: "Cumpra a meta de hoje para mante-lo forte.",
+      celebrationHint: "Seu cachorrinho recebeu um aumento de saude.",
+      rewardBadge: "Recompensa +{delta}%",
+      penaltyBadge: "Risco -{delta}%",
+      previewHint:
+        "Isto e apenas uma visualizacao. Nao muda a saude real do seu cachorro.",
+    };
+  }
+
   if (lang === "es") {
     return {
       title: "Tu compañero",
@@ -184,7 +210,11 @@ function getCopy(lang) {
     penaltyFooter: "Health drops to {health}%",
     latestAchieved: "Latest update: +{delta}% for hitting your goal",
     latestMissed: "Latest update: {delta}% for missing your goal",
+    managementHint: "Hit today's goal to keep it strong.",
     celebrationHint: "Your dog got a health boost today.",
+    rewardBadge: "Reward +{delta}%",
+    penaltyBadge: "Risk -{delta}%",
+    previewHint: "Preview only. This does not change your dog's real health.",
   };
 }
 

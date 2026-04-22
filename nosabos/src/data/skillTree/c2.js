@@ -5,10 +5,13 @@
 import { withItalianSkillTreeText } from "./italianLocalizer.js";
 import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
 import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./portugueseLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
   withJapaneseSkillTreeText(
-    withFrenchSkillTreeText(withItalianSkillTreeText(skillTree)),
+    withFrenchSkillTreeText(
+      withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+    ),
   );
 
 export const SKILL_TREE_C2 = withLocalizedSkillTreeText([

@@ -32,6 +32,7 @@ export const MAP_CHOICES = [
     name: {
       en: "Generated World",
       es: "Mundo generado",
+      pt: "Mundo gerado",
       it: "Mondo generato",
       fr: "Monde genere",
       ja: "生成された世界",
@@ -41,11 +42,11 @@ export const MAP_CHOICES = [
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界" },
-  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム" },
-  park: { en: "Park", es: "Parque", it: "Parco", fr: "Parc", ja: "公園" },
-  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto", fr: "Aeroport", ja: "空港" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -402,6 +403,7 @@ function normalizeQuestions(questions, supportLang) {
     {
       en: "Choose the correct option.",
       es: "Elige la opción correcta.",
+      pt: "Escolha a opcao correta.",
       it: "Scegli l'opzione corretta.",
       fr: "Choisis la bonne option.",
       ja: "正しい選択肢を選んでください。",
@@ -1872,6 +1874,53 @@ const REVIEW_ROOM_BLUEPRINTS = {
   ],
 };
 
+const SCENARIO_NAME_PT_BY_ES = {
+  Cocina: "Cozinha",
+  Estudio: "Estúdio",
+  "Patio del Jardin": "Pátio do Jardim",
+  "Sala de Preparacion": "Sala de Preparação",
+  Despensa: "Despensa",
+  "Patio del Cafe": "Pátio do Café",
+  "Ala de Archivo": "Ala do Arquivo",
+  "Rincon de Lectura": "Cantinho de Leitura",
+  "Oficina Principal": "Escritório Principal",
+  "Oficina de Boletos": "Bilheteria",
+  "Sala de Embarque": "Sala de Embarque",
+  "Mesa de Viaje": "Mesa de Viagem",
+  "Pabellon del Jardin": "Pavilhão do Jardim",
+  Invernadero: "Estufa",
+  "Estacion del Guardabosques": "Estação do Guarda-Florestal",
+  "Sala del Consejo": "Sala do Conselho",
+  "Sala de Registros": "Sala de Registros",
+  "Pabellon del Patio": "Pavilhão do Pátio",
+  "Laboratorio de Preparacion": "Laboratório de Preparação",
+  "Cabina de Analisis": "Cabine de Análise",
+  "Deposito de Equipo": "Depósito de Equipamentos",
+  Escenario: "Palco",
+  "Puesto de Comida": "Barraca de Comida",
+  "Taller Creativo": "Tenda Criativa",
+};
+
+MAP_CHOICES.forEach((choice) => {
+  if (choice?.name?.es && !choice.name.pt) {
+    choice.name.pt = SCENARIO_NAME_PT_BY_ES[choice.name.es] || choice.name.en;
+  }
+});
+
+Object.values(MAP_NAME_BY_ID).forEach((name) => {
+  if (name?.es && !name.pt) {
+    name.pt = SCENARIO_NAME_PT_BY_ES[name.es] || name.en;
+  }
+});
+
+Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((specs) => {
+  specs.forEach((spec) => {
+    if (spec?.name?.es && !spec.name.pt) {
+      spec.name.pt = SCENARIO_NAME_PT_BY_ES[spec.name.es] || spec.name.en;
+    }
+  });
+});
+
 function createSolidMapData(mapWidth, mapHeight, fillValue = 2) {
   return new Array(mapWidth * mapHeight).fill(fillValue);
 }
@@ -2858,7 +2907,7 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr"), ja: getMapName(mapId, "ja") };
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), pt: getMapName(mapId, "pt"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr"), ja: getMapName(mapId, "ja") };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2989,6 +3038,7 @@ async function fallbackScenario(
     name: environment?.names || {
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
+      pt: getMapName(mapId, "pt"),
       it: getMapName(mapId, "it"),
       fr: getMapName(mapId, "fr"),
     },
@@ -3289,6 +3339,7 @@ function normalizeScenario({
       name: {
         en: String(raw?.name?.en || getMapName(mapId, "en")),
         es: String(raw?.name?.es || getMapName(mapId, "es")),
+        pt: String(raw?.name?.pt || getMapName(mapId, "pt")),
         it: String(raw?.name?.it || getMapName(mapId, "it")),
         fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
         ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
@@ -3353,6 +3404,7 @@ function normalizeScenario({
   const processedName = {
     en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
     es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
+    pt: String(raw?.name?.pt || (Array.isArray(environment?.names?.pt) ? environment.names.pt[0] : environment?.names?.pt) || getMapName(mapId, "pt")),
     it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
     fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
     ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),

@@ -190,6 +190,50 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportLang}.`,
     },
+    pt: {
+      fillPrompt: `Voce e um tutor de idiomas prestativo que ensina ${targetLang}. Um aluno respondeu incorretamente a uma questao de preencher a lacuna.
+
+Pergunta: ${question}
+Resposta do aluno: ${userAnswer}
+Resposta correta (ou dica): ${correctAnswer}
+
+IMPORTANTE: Forneca sua explicacao em ${supportLang}.
+
+Forneca uma explicacao breve e encorajadora (2-3 frases) que:
+1. Explique por que a resposta nao se encaixa ou o que foi mal compreendido
+2. Esclareca a resposta correta e o seu significado
+3. Diga uma dica util para lembrar dela
+
+Mantenha tudo conciso, acolhedor e focado no aprendizado. Escreva toda a resposta em ${supportLang}.`,
+      mcPrompt: `Voce e um tutor de idiomas prestativo que ensina ${targetLang}. Um aluno respondeu incorretamente a uma questao de multipla escolha.
+
+Pergunta: ${question}
+Resposta do aluno: ${userAnswer}
+Resposta correta: ${correctAnswer}
+
+IMPORTANTE: Forneca sua explicacao em ${supportLang}.
+
+Forneca uma explicacao breve e encorajadora (2-3 frases) que:
+1. Explique por que a escolha foi incorreta
+2. Esclareca por que a resposta correta esta certa
+3. Diga uma dica util para lembrar a diferenca
+
+Mantenha tudo conciso, acolhedor e focado no aprendizado. Escreva toda a resposta em ${supportLang}.`,
+      maPrompt: `Voce e um tutor de idiomas prestativo que ensina ${targetLang}. Um aluno respondeu incorretamente a uma questao de multiplas respostas.
+
+Pergunta: ${question}
+Respostas do aluno: ${userAnswer}
+Respostas corretas: ${correctAnswer}
+
+IMPORTANTE: Forneca sua explicacao em ${supportLang}.
+
+Forneca uma explicacao breve e encorajadora (2-3 frases) que:
+1. Explique quais respostas faltaram ou foram escolhidas incorretamente
+2. Esclareca por que as respostas corretas estao certas
+3. Diga uma dica util para identificar as respostas corretas
+
+Mantenha tudo conciso, acolhedor e focado no aprendizado. Escreva toda a resposta em ${supportLang}.`,
+    },
     it: {
       fillPrompt: `Sei un tutor di lingue disponibile che insegna ${targetLang}. Uno studente ha risposto in modo errato a una domanda di completamento.
 

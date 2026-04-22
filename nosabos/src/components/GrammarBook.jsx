@@ -1094,9 +1094,11 @@ export default function GrammarBook({
     toast({
       title:
         t("copied_to_clipboard_all") ||
-        (userLanguage === "es"
-          ? "Copiado (pregunta + pista + traducción)"
-          : "Copied (question + hint + translation)"),
+        (userLanguage === "pt"
+          ? "Copiado (pergunta + dica + traducao)"
+          : userLanguage === "es"
+            ? "Copiado (pregunta + pista + traducción)"
+            : "Copied (question + hint + translation)"),
       duration: 1200,
       isClosable: true,
       position: "top",
@@ -3976,7 +3978,11 @@ Return JSON ONLY:
         });
         const retryTitle =
           t("grammar_speak_retry_title") ||
-          (userLanguage === "es" ? "Intenta de nuevo" : "Try again");
+          (userLanguage === "pt"
+            ? "Tente novamente"
+            : userLanguage === "es"
+              ? "Intenta de nuevo"
+              : "Try again");
         toast({
           title: retryTitle,
           description: tips.join(" "),
@@ -4092,6 +4098,7 @@ Return JSON ONLY:
   const sendMatchHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isFrenchUI = userLanguage === "fr";
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
@@ -4099,6 +4106,8 @@ Return JSON ONLY:
         ? "単語マッチング練習です。左の項目を単語バンクの正しい選択肢と組み合わせて答えてください。"
         : isFrenchUI
         ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
+        : isPortugueseUI
+        ? "Exercicio de associacao de palavras. Responda ligando cada item da coluna esquerda a opcao correta do banco de palavras."
         : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde emparejando cada elemento de la columna izquierda con la opción correcta del banco de palabras."
         : "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
@@ -4107,6 +4116,8 @@ Return JSON ONLY:
           ? `指示: ${mStem}`
           : isFrenchUI
           ? `Invite ou consigne : ${mStem}`
+          : isPortugueseUI
+          ? `Instrucao: ${mStem}`
           : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
@@ -4116,6 +4127,8 @@ Return JSON ONLY:
           ? `左の列: ${mLeft.join(" | ")}`
           : isFrenchUI
           ? `Colonne gauche : ${mLeft.join(" | ")}`
+          : isPortugueseUI
+          ? `Coluna esquerda: ${mLeft.join(" | ")}`
           : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
@@ -4125,6 +4138,8 @@ Return JSON ONLY:
           ? `単語バンク: ${mRight.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${mRight.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${mRight.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
@@ -4134,6 +4149,8 @@ Return JSON ONLY:
           ? `ヒント: ${mHint}`
           : isFrenchUI
           ? `Indice : ${mHint}`
+          : isPortugueseUI
+          ? `Dica: ${mHint}`
           : isSpanishUI
           ? `Pista: ${mHint}`
           : `Hint: ${mHint}`
@@ -4252,20 +4269,32 @@ Return JSON ONLY:
 
   const dragPlaceholderLabel =
     t("practice_drag_drop_slot_placeholder") ||
-    (userLanguage === "es"
-      ? "Suelta la respuesta aquí"
-      : "Drop the answer here");
+    (userLanguage === "pt"
+      ? "Solte a resposta aqui"
+      : userLanguage === "es"
+        ? "Suelta la respuesta aquí"
+        : "Drop the answer here");
   const skipLabel =
-    t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
+    t("practice_skip_question") ||
+    (userLanguage === "pt" ? "Pular" : userLanguage === "es" ? "Saltar" : "Skip");
   const canSkip = !isFinalQuiz && !quizCompleted;
   const questionListenLabel = t("vocab_listen_question");
   const speakListenLabel = t("vocab_listen_example");
   const speakVariantLabel =
-    t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
+    t("grammar_btn_speak") ||
+    (userLanguage === "pt"
+      ? "Falar"
+      : userLanguage === "es"
+        ? "Pronunciar"
+        : "Speak");
   const nextQuestionLabel = t("practice_next_question") || "Next question";
   const synthLabel =
     t("tts_synthesizing") ||
-    (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
+    (userLanguage === "pt"
+      ? "Sintetizando..."
+      : userLanguage === "es"
+        ? "Sintetizando..."
+        : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
 
   const createWarmAudio = useCallback(async () => {
@@ -5613,7 +5642,11 @@ Return JSON ONLY:
               <Text fontSize="sm" mt={3} color="teal.200">
                 <Text as="span" fontWeight="600">
                   {t("grammar_speak_last_heard") ||
-                    (userLanguage === "es" ? "Último intento" : "Last attempt")}
+                    (userLanguage === "pt"
+                      ? "Ultima tentativa"
+                      : userLanguage === "es"
+                        ? "Último intento"
+                        : "Last attempt")}
                   :
                 </Text>{" "}
                 {sRecognized}
@@ -5668,9 +5701,11 @@ Return JSON ONLY:
                       toast({
                         title:
                           t("grammar_speak_unavailable") ||
-                          (userLanguage === "es"
-                            ? "Reconocimiento de voz no disponible"
-                            : "Speech recognition unavailable"),
+                          (userLanguage === "pt"
+                            ? "Reconhecimento de voz indisponivel"
+                            : userLanguage === "es"
+                              ? "Reconocimiento de voz no disponible"
+                              : "Speech recognition unavailable"),
                         description: t("flashcard_speech_unavailable_desc"),
                         status: "warning",
                         duration: 3200,
@@ -5701,9 +5736,17 @@ Return JSON ONLY:
               >
                 {isSpeakRecording
                   ? t("grammar_speak_stop") ||
-                    (userLanguage === "es" ? "Detener" : "Stop")
+                    (userLanguage === "pt"
+                      ? "Parar"
+                      : userLanguage === "es"
+                        ? "Detener"
+                        : "Stop")
                   : t("grammar_speak_record") ||
-                    (userLanguage === "es" ? "Grabar" : "Record")}
+                    (userLanguage === "pt"
+                      ? "Gravar"
+                      : userLanguage === "es"
+                        ? "Grabar"
+                        : "Record")}
               </Button>
             </Stack>
 
@@ -5711,16 +5754,20 @@ Return JSON ONLY:
               <SpeakSuccessCard
                 title={
                   t("grammar_speak_success_title") ||
-                  (userLanguage === "es"
-                    ? "¡Pronunciación aprobada!"
-                    : "Pronunciation approved!")
+                  (userLanguage === "pt"
+                    ? "Pronuncia aprovada!"
+                    : userLanguage === "es"
+                      ? "¡Pronunciación aprobada!"
+                      : "Pronunciation approved!")
                 }
                 scoreLabel={
                   sEval
                     ? t("grammar_speak_success_desc", { score: sEval.score }) ||
-                      (userLanguage === "es"
-                        ? `Puntaje ${sEval.score}%`
-                        : `Score ${sEval.score}%`)
+                      (userLanguage === "pt"
+                        ? `Pontuacao ${sEval.score}%`
+                        : userLanguage === "es"
+                          ? `Puntaje ${sEval.score}%`
+                          : `Score ${sEval.score}%`)
                     : ""
                 }
                 xp={recentXp}

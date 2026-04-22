@@ -185,17 +185,26 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it, fr, ja) {
+function supportCopy(lang, en, es, it, fr, ja, pt = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
   if (lang === "es") return es || en;
   return en;
 }
 
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
-    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare", "Pret a renouveler", "更新できます");
+    return supportCopy(
+      lang,
+      "Ready to refresh",
+      "Listas para renovar",
+      "Pronte da rinnovare",
+      "Pret a renouveler",
+      "更新できます",
+      "Pronto para atualizar",
+    );
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
@@ -208,9 +217,18 @@ function formatRemaining(ms, lang) {
       `${h}h ${m}m rimanenti`,
       `${h}h ${m}m restantes`,
       `残り${h}時間${m}分`,
+      `faltam ${h}h ${m}min`,
     );
   }
-  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`, `${m}m restantes`, `残り${m}分`);
+  return supportCopy(
+    lang,
+    `${m}m left`,
+    `${m}m restantes`,
+    `${m}m rimanenti`,
+    `${m}m restantes`,
+    `残り${m}分`,
+    `faltam ${m}min`,
+  );
 }
 
 export default function RealWorldTasksModal({
@@ -372,6 +390,7 @@ export default function RealWorldTasksModal({
           "Impossibile generare le attività. Riprova.",
           "Impossible de generer les taches. Reessaie.",
           "タスクを生成できませんでした。もう一度お試しください。",
+          "Não foi possível gerar as tarefas. Tente novamente.",
         ),
       );
     } finally {
@@ -442,6 +461,7 @@ export default function RealWorldTasksModal({
           "Impossibile assegnare la ricompensa",
           "Impossible d'attribuer la recompense",
           "報酬を付与できませんでした",
+          "Não foi possível conceder a recompensa",
         ),
         status: "error",
         duration: 3000,
@@ -471,6 +491,7 @@ export default function RealWorldTasksModal({
     "Pratica di immersione",
     "Pratique d'immersion",
     "イマージョン練習",
+    "Prática de imersão",
   );
   const subtitle = supportCopy(
     lang,
@@ -479,6 +500,7 @@ export default function RealWorldTasksModal({
     "3 attività per usare la lingua fuori dall'app",
     "3 taches pour utiliser ta langue hors de l'app",
     "アプリの外で言語を使う3つのタスク",
+    "3 tarefas para usar seu idioma fora do app",
   );
   const progressLabel = supportCopy(
     lang,
@@ -487,6 +509,7 @@ export default function RealWorldTasksModal({
     "Prossimo gruppo tra",
     "Prochaine serie dans",
     "次のセットまで",
+    "Próximo lote em",
   );
   const generatingLabel = supportCopy(
     lang,
@@ -495,6 +518,7 @@ export default function RealWorldTasksModal({
     "Creazione attività...",
     "Creation des taches...",
     "タスクを作成中...",
+    "Criando tarefas...",
   );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
@@ -505,6 +529,8 @@ export default function RealWorldTasksModal({
       ? `+${REAL_WORLD_TASKS_REWARD_XP} XPを受け取る`
       : lang === "fr"
         ? `Reclamer +${REAL_WORLD_TASKS_REWARD_XP} XP`
+        : lang === "pt"
+          ? `Receber +${REAL_WORLD_TASKS_REWARD_XP} XP`
         : lang === "it"
           ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
           : lang === "es"
@@ -618,6 +644,7 @@ export default function RealWorldTasksModal({
                     "Riprova",
                     "Reessayer",
                     "もう一度",
+                    "Tentar novamente",
                   )}
                 </Button>
               </Flex>
@@ -631,6 +658,7 @@ export default function RealWorldTasksModal({
                     "Ancora nessuna attività.",
                     "Aucune tache pour l'instant.",
                     "タスクはまだありません。",
+                    "Ainda não há tarefas.",
                   )}
                 </Text>
               </Flex>

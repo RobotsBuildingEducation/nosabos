@@ -516,6 +516,48 @@ const WORLD_BLUEPRINTS = [
   },
 ];
 
+const WORLD_BLUEPRINTS_PT = [
+  {
+    names: ["Sala Aconchegante", "Apartamento da Família", "Casa do Bairro"],
+    summary: "um lar acolhedor cheio de objetos do dia a dia e detalhes reais",
+  },
+  {
+    names: ["Refeitório Animado", "Cozinha do Bairro", "Café do Mercado"],
+    summary: "um espaço de comida com balcões, aparelhos e objetos úteis",
+  },
+  {
+    names: ["Sala da Biblioteca", "Sala de Leitura", "Arquivo dos Escritores"],
+    summary: "um espaço de estudo com estantes, mesas e cantinhos de leitura",
+  },
+  {
+    names: ["Terminal Internacional", "Corredor de Trânsito", "Centro de Viagem"],
+    summary: "um espaço de viagem internacional com portões, placas e áreas de espera",
+  },
+  {
+    names: ["Trilha da Floresta", "Passeio do Jardim", "Clareira do Parque"],
+    summary: "uma área natural aberta com trilhas, vegetação e pontos de referência",
+  },
+  {
+    names: ["Salão Cívico", "Átrio de Conferências", "Fórum Público"],
+    summary: "um espaço público elegante com mesas, placas e áreas formais",
+  },
+  {
+    names: ["Laboratório de Pesquisa", "Estúdio de Inovação", "Oficina Científica"],
+    summary: "um espaço técnico com equipamentos, armazenamento e estações de trabalho",
+  },
+  {
+    names: ["Praça do Festival", "Terraço da Celebração", "Festa na Rua"],
+    summary: "um espaço social colorido com som, decoração e energia de evento",
+  },
+];
+
+WORLD_BLUEPRINTS.forEach((blueprint, index) => {
+  const pt = WORLD_BLUEPRINTS_PT[index];
+  if (!pt) return;
+  blueprint.names.pt = blueprint.names.pt || pt.names;
+  blueprint.summary.pt = blueprint.summary.pt || pt.summary;
+});
+
 const GATHER_POOLS_BY_THEME = {
   home: {
     es: {

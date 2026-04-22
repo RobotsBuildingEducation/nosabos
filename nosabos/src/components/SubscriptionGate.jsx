@@ -18,10 +18,11 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr, ja) {
+function supportCopy(lang, en, es, pt, it, fr, ja) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -62,6 +63,7 @@ export default function SubscriptionGate({
           lang,
           "Enter the passcode",
           "Ingresa el código de acceso",
+          "Digite o código de acesso",
           "Inserisci il codice di accesso",
           "Entre le code d'acces",
           "パスコードを入力してください",
@@ -132,12 +134,21 @@ export default function SubscriptionGate({
                 lang,
                 "Verifying",
                 "Verificando",
+                "Verificando",
                 "Verifica in corso",
                 "Verification",
                 "確認中",
               )}
             >
-              {supportCopy(lang, "Submit", "Enviar", "Invia", "Envoyer", "送信")}
+              {supportCopy(
+                lang,
+                "Submit",
+                "Enviar",
+                "Enviar",
+                "Invia",
+                "Envoyer",
+                "送信",
+              )}
             </Button>
           </Stack>
         </VStack>

@@ -21,6 +21,8 @@ export function SpeakSuccessCard({
     t("practice_speak_banner_you_said") ||
     (userLanguage === "ja"
       ? "あなたの発話"
+      : userLanguage === "pt"
+      ? "Voce disse"
       : userLanguage === "es"
       ? "Dijiste"
       : "You said");
@@ -28,6 +30,8 @@ export function SpeakSuccessCard({
     t("practice_speak_banner_translation") ||
     (userLanguage === "ja"
       ? "意味"
+      : userLanguage === "pt"
+      ? "Significado"
       : userLanguage === "es"
       ? "Significado"
       : "Meaning");
