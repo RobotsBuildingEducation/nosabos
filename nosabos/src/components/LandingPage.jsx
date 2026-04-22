@@ -843,6 +843,7 @@ const Logo = ({ size = 48 }) => (
 
 const ThemeModeToggle = ({ themeMode, onModeChange }) => {
   const isDark = themeMode === "dark";
+  const isLightTheme = !isDark;
   const nextMode = isDark ? "light" : "dark";
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
@@ -852,7 +853,7 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       aria-label={label}
       title={label}
       onClick={() => onModeChange(nextMode)}
-      icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
       size="sm"
       minW="40px"
       h="40px"
@@ -861,14 +862,20 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       top="18px"
       right="20px"
       zIndex={120}
-      bg="var(--app-surface-elevated)"
-      color="var(--app-text-primary)"
+      bg={isLightTheme ? "transparent" : "var(--app-surface-elevated)"}
+      color={isLightTheme ? "#33291f" : "var(--app-text-primary)"}
       border="1px solid"
-      borderColor="var(--app-border)"
-      boxShadow="var(--app-shadow-soft)"
+      borderColor={
+        isLightTheme ? "rgba(77, 58, 36, 0.34)" : "var(--app-border)"
+      }
+      boxShadow={isLightTheme ? "none" : "var(--app-shadow-soft)"}
       backdropFilter="blur(20px)"
-      _hover={{ bg: "var(--app-surface-muted)" }}
-      _active={{ bg: "var(--app-surface-muted)" }}
+      _hover={{
+        bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "var(--app-surface-muted)",
+      }}
+      _active={{
+        bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "var(--app-surface-muted)",
+      }}
     />
   );
 };

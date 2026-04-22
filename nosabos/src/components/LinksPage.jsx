@@ -152,6 +152,22 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   },
 };
 
+const getTopControlProps = (isLightTheme) => ({
+  bg: "transparent",
+  color: isLightTheme ? "#33291f" : "rgba(255, 255, 255, 0.92)",
+  borderColor: isLightTheme
+    ? "rgba(77, 58, 36, 0.34)"
+    : "rgba(148, 163, 184, 0.26)",
+  boxShadow: isLightTheme ? "none" : "0 10px 24px rgba(0, 0, 0, 0.22)",
+  backdropFilter: "blur(20px)",
+  _hover: {
+    bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "rgba(255, 255, 255, 0.07)",
+  },
+  _active: {
+    bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "rgba(255, 255, 255, 0.1)",
+  },
+});
+
 const SupportLanguageFlagSwatch = ({ value }) => {
   const flag = SUPPORT_LANGUAGE_FLAG_SWATCHES[value] || SUPPORT_LANGUAGE_FLAG_SWATCHES.en;
 
@@ -167,7 +183,7 @@ const SupportLanguageFlagSwatch = ({ value }) => {
       overflow="hidden"
       rounded="full"
       bg={flag.bg}
-      boxShadow="inset 0 0 0 1px rgba(255,255,255,0.2)"
+      boxShadow="0 0 0 1px rgba(15,23,42,0.16), inset 0 0 0 1px rgba(255,255,255,0.16)"
       _before={
         flag.canton
           ? {
@@ -200,8 +216,15 @@ const SupportLanguageFlagSwatch = ({ value }) => {
   );
 };
 
-const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
+const LanguageMenuFixed = ({
+  language,
+  onSelect,
+  playSound,
+  translations,
+  isLightTheme = false,
+}) => {
   const activeLanguage = language || "en";
+  const topControlProps = getTopControlProps(isLightTheme);
   const langOptions = getSupportLanguageOptions({
     ui: translations,
     uiLang: activeLanguage,
@@ -225,13 +248,8 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
           p={0}
           lineHeight="1"
           rounded="full"
-          bg={APP_SURFACE_ELEVATED}
           border="1px solid"
-          borderColor={APP_BORDER}
-          boxShadow={APP_SHADOW}
-          backdropFilter="blur(20px)"
-          _hover={{ bg: APP_SURFACE_MUTED }}
-          _active={{ bg: APP_SURFACE_MUTED }}
+          {...topControlProps}
         >
           <SupportLanguageFlagSwatch value={selected?.value || activeLanguage} />
         </MenuButton>
@@ -276,6 +294,8 @@ const LanguageMenuFixed = ({ language, onSelect, playSound, translations }) => {
 
 const ThemeModeToggle = ({ themeMode, onModeChange }) => {
   const isDark = themeMode === "dark";
+  const isLightTheme = !isDark;
+  const topControlProps = getTopControlProps(isLightTheme);
   const nextMode = isDark ? "light" : "dark";
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
@@ -285,18 +305,13 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       aria-label={label}
       title={label}
       onClick={() => onModeChange(nextMode)}
-      icon={isDark ? <FaMoon size={11} /> : <FaSun size={11} />}
+      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
       size="sm"
       minW="40px"
       h="40px"
       rounded="full"
-      bg={APP_SURFACE_ELEVATED}
       border="1px solid"
-      borderColor={APP_BORDER}
-      boxShadow={APP_SHADOW}
-      backdropFilter="blur(20px)"
-      _hover={{ bg: APP_SURFACE_MUTED }}
-      _active={{ bg: APP_SURFACE_MUTED }}
+      {...topControlProps}
     />
   );
 };
@@ -1283,6 +1298,7 @@ export default function LinksPage() {
               onSelect={setLanguage}
               playSound={handleSelectSound}
               translations={translations}
+              isLightTheme={isLightTheme}
             />
             <ThemeModeToggle
               themeMode={themeMode}
