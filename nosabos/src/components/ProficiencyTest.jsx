@@ -156,23 +156,25 @@ const CEFR_LEVEL_INFO = {
       es: "Principiante Total",
       it: "Principiante assoluto",
       fr: "Grand debutant",
+      ja: "完全初心者",
     },
     color: "#8B5CF6",
   },
-  A1: { name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant" }, color: "#3B82F6" },
-  A2: { name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire" }, color: "#8B5CF6" },
-  B1: { name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire" }, color: "#A855F7" },
+  A1: { name: { en: "Beginner", es: "Principiante", it: "Principiante", fr: "Debutant", ja: "初心者" }, color: "#3B82F6" },
+  A2: { name: { en: "Elementary", es: "Elemental", it: "Elementare", fr: "Elementaire", ja: "初級" }, color: "#8B5CF6" },
+  B1: { name: { en: "Intermediate", es: "Intermedio", it: "Intermedio", fr: "Intermediaire", ja: "中級" }, color: "#A855F7" },
   B2: {
     name: {
       en: "Upper Intermediate",
       es: "Intermedio Alto",
       it: "Intermedio alto",
       fr: "Intermediaire avance",
+      ja: "中上級",
     },
     color: "#F97316",
   },
-  C1: { name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance" }, color: "#EF4444" },
-  C2: { name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise" }, color: "#EC4899" },
+  C1: { name: { en: "Advanced", es: "Avanzado", it: "Avanzato", fr: "Avance", ja: "上級" }, color: "#EF4444" },
+  C2: { name: { en: "Mastery", es: "Maestría", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
 };
 
 const CEFR_LEVEL_OFFERINGS = {
@@ -187,6 +189,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Ejercicios muy cortos con mucha repetición.",
       "Enfoque en confianza y comprensión inicial.",
     ],
+    ja: [
+      "基本単語とフレーズを使う手厚いガイド付きレッスン。",
+      "反復の多い、とても短い問題。",
+      "自信と理解の土台に集中。",
+    ],
   },
   A1: {
     en: [
@@ -198,6 +205,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Módulos iniciales de saludos, información personal y rutina.",
       "Prácticas simples de conversación con apoyo frecuente.",
       "Vocabulario esencial y estructuras básicas.",
+    ],
+    ja: [
+      "あいさつ、個人情報、日常の基礎を扱う初心者モジュール。",
+      "頻繁なサポート付きの簡単な会話練習。",
+      "中心語彙と文型。",
     ],
   },
   A2: {
@@ -211,6 +223,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Respuestas más largas y mejor manejo de tiempos verbales.",
       "Vocabulario práctico ampliado para interacciones reales.",
     ],
+    ja: [
+      "買い物、予定、日課などの日常場面レッスン。",
+      "より長い回答と時制のコントロール。",
+      "実際のやり取りに役立つ実用語彙の拡張。",
+    ],
   },
   B1: {
     en: [
@@ -222,6 +239,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Conversaciones intermedias con opiniones y explicaciones.",
       "Práctica narrando eventos pasados/futuros con detalle.",
       "Gramática más matizada y mejor uso de conectores.",
+    ],
+    ja: [
+      "意見や説明を含む中級の話し合い。",
+      "過去や未来の出来事を詳しく語る練習。",
+      "より細かな文法と接続表現の使用。",
     ],
   },
   B2: {
@@ -235,6 +257,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Contextos complejos de escucha/lectura y temas abstractos.",
       "Mayor enfoque en fluidez natural y control de estilo.",
     ],
+    ja: [
+      "論証と正確さを伴う中上級のスピーキング。",
+      "複雑な聞き取り/読解の文脈と抽象的なテーマ。",
+      "自然な流暢さと文体コントロールに重点。",
+    ],
   },
   C1: {
     en: [
@@ -246,6 +273,11 @@ const CEFR_LEVEL_OFFERINGS = {
       "Escenarios avanzados que requieren precisión y flexibilidad.",
       "Uso idiomático y profesional del idioma.",
       "Tareas de alto nivel sobre tono, matiz y persuasión.",
+    ],
+    ja: [
+      "正確さと柔軟さが必要な上級シナリオ。",
+      "慣用的・専門的な言語使用。",
+      "トーン、ニュアンス、説得に関する高度なタスク。",
     ],
   },
   C2: {
@@ -259,16 +291,21 @@ const CEFR_LEVEL_OFFERINGS = {
       "Velocidad, complejidad y adaptabilidad casi nativas.",
       "Enfoque en refinamiento, registro y amplitud expresiva.",
     ],
+    ja: [
+      "微妙な意味を制御する熟達レベルのタスク。",
+      "ネイティブに近い速度、複雑さ、適応力。",
+      "洗練、レジスター、表現の幅に集中。",
+    ],
   },
 };
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation" },
-  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", ja: "語彙" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解" },
 ];
 
 function scoreColor(score) {
@@ -1920,6 +1957,7 @@ Return ONLY valid JSON:
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
       it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
       fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
+      ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
     },
     {
       level: "A1",
@@ -1929,6 +1967,7 @@ Return ONLY valid JSON:
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
       it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
       fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
+      ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
     },
     {
       level: "A2",
@@ -1938,6 +1977,7 @@ Return ONLY valid JSON:
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
       it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
       fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
+      ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
     },
     {
       level: "B1",
@@ -1947,6 +1987,7 @@ Return ONLY valid JSON:
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
       it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
       fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
+      ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
     },
     {
       level: "B2",
@@ -1956,6 +1997,7 @@ Return ONLY valid JSON:
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
       it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
       fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
+      ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
     },
     {
       level: "C1",
@@ -1965,6 +2007,7 @@ Return ONLY valid JSON:
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
       it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
       fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
+      ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
     },
     {
       level: "C2",
@@ -1974,6 +2017,7 @@ Return ONLY valid JSON:
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
       it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
       fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
+      ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",
     },
   ];
 

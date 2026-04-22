@@ -185,7 +185,8 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it, fr) {
+function supportCopy(lang, en, es, it, fr, ja) {
+  if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
@@ -194,7 +195,7 @@ function supportCopy(lang, en, es, it, fr) {
 
 function formatRemaining(ms, lang) {
   if (ms <= 0) {
-    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare", "Pret a renouveler");
+    return supportCopy(lang, "Ready to refresh", "Listas para renovar", "Pronte da rinnovare", "Pret a renouveler", "更新できます");
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
@@ -206,9 +207,10 @@ function formatRemaining(ms, lang) {
       `${h}h ${m}m restantes`,
       `${h}h ${m}m rimanenti`,
       `${h}h ${m}m restantes`,
+      `残り${h}時間${m}分`,
     );
   }
-  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`, `${m}m restantes`);
+  return supportCopy(lang, `${m}m left`, `${m}m restantes`, `${m}m rimanenti`, `${m}m restantes`, `残り${m}分`);
 }
 
 export default function RealWorldTasksModal({
@@ -369,6 +371,7 @@ export default function RealWorldTasksModal({
           "No se pudieron generar las tareas. Intenta de nuevo.",
           "Impossibile generare le attività. Riprova.",
           "Impossible de generer les taches. Reessaie.",
+          "タスクを生成できませんでした。もう一度お試しください。",
         ),
       );
     } finally {
@@ -438,6 +441,7 @@ export default function RealWorldTasksModal({
           "No se pudo otorgar la recompensa",
           "Impossibile assegnare la ricompensa",
           "Impossible d'attribuer la recompense",
+          "報酬を付与できませんでした",
         ),
         status: "error",
         duration: 3000,
@@ -466,6 +470,7 @@ export default function RealWorldTasksModal({
     "Práctica de inmersión",
     "Pratica di immersione",
     "Pratique d'immersion",
+    "イマージョン練習",
   );
   const subtitle = supportCopy(
     lang,
@@ -473,6 +478,7 @@ export default function RealWorldTasksModal({
     "3 tareas para usar tu idioma fuera de la app",
     "3 attività per usare la lingua fuori dall'app",
     "3 taches pour utiliser ta langue hors de l'app",
+    "アプリの外で言語を使う3つのタスク",
   );
   const progressLabel = supportCopy(
     lang,
@@ -480,6 +486,7 @@ export default function RealWorldTasksModal({
     "Próximo lote en",
     "Prossimo gruppo tra",
     "Prochaine serie dans",
+    "次のセットまで",
   );
   const generatingLabel = supportCopy(
     lang,
@@ -487,19 +494,22 @@ export default function RealWorldTasksModal({
     "Creando tareas...",
     "Creazione attività...",
     "Creation des taches...",
+    "タスクを作成中...",
   );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
     return options[Math.floor(Math.random() * options.length)];
   }, [isGenerating]);
   const claimLabel =
-    lang === "fr"
-      ? `Reclamer +${REAL_WORLD_TASKS_REWARD_XP} XP`
-      : lang === "it"
-      ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
-      : lang === "es"
-        ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-        : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
+    lang === "ja"
+      ? `+${REAL_WORLD_TASKS_REWARD_XP} XPを受け取る`
+      : lang === "fr"
+        ? `Reclamer +${REAL_WORLD_TASKS_REWARD_XP} XP`
+        : lang === "it"
+          ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
+          : lang === "es"
+            ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
+            : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
@@ -607,6 +617,7 @@ export default function RealWorldTasksModal({
                     "Reintentar",
                     "Riprova",
                     "Reessayer",
+                    "もう一度",
                   )}
                 </Button>
               </Flex>
@@ -619,6 +630,7 @@ export default function RealWorldTasksModal({
                     "No hay tareas todavía.",
                     "Ancora nessuna attività.",
                     "Aucune tache pour l'instant.",
+                    "タスクはまだありません。",
                   )}
                 </Text>
               </Flex>

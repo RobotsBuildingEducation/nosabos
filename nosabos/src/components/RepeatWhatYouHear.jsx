@@ -251,28 +251,37 @@ export default function RepeatWhatYouHear({
       return;
     const isFrenchUI = userLanguage === "fr";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
     const promptLines = [
-      isFrenchUI
+      isJapaneseUI
+        ? "「聞こえたものを繰り返す」練習です。単語バンクを使って、聞こえた文どおりに答えてください。"
+        : isFrenchUI
         ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
         : isSpanishUI
         ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
         : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
       sourceSentence
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `聞こえた文: ${sourceSentence}`
+          : isFrenchUI
           ? `Phrase prononcee : ${sourceSentence}`
           : isSpanishUI
           ? `Frase pronunciada: ${sourceSentence}`
           : `Spoken sentence: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `単語バンク: ${wordBank.join(" | ")}`
+          : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
       hint
-        ? isFrenchUI
+        ? isJapaneseUI
+          ? `ヒント: ${hint}`
+          : isFrenchUI
           ? `Indice : ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
@@ -356,7 +365,9 @@ export default function RepeatWhatYouHear({
                       {onAskAssistant && (
                         <IconButton
                           aria-label={
-                            userLanguage === "es"
+                            userLanguage === "ja"
+                              ? "アシスタントに聞く"
+                              : userLanguage === "es"
                               ? "Pedir ayuda"
                               : "Ask the assistant"
                           }
@@ -379,7 +390,11 @@ export default function RepeatWhatYouHear({
                       )}
                       <IconButton
                         aria-label={
-                          userLanguage === "es" ? "Escuchar" : "Listen"
+                          userLanguage === "ja"
+                            ? "聞く"
+                            : userLanguage === "es"
+                              ? "Escuchar"
+                              : "Listen"
                         }
                         icon={renderSpeakerIcon(isSynthesizing)}
                         size="md"
@@ -520,7 +535,11 @@ export default function RepeatWhatYouHear({
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
               <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {userLanguage === "es" ? "Asistente" : "Assistant"}
+                {userLanguage === "ja"
+                  ? "アシスタント"
+                  : userLanguage === "es"
+                    ? "Asistente"
+                    : "Assistant"}
               </Text>
               {isLoadingAssistantSupport && (
                 <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />

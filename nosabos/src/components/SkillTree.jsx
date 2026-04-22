@@ -220,6 +220,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
 import { normalizeSupportLanguage } from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
@@ -304,6 +305,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
     }
     return en || es || fallback;
   }
+  if (supportLang === "ja" && !textObj.ja) {
+    return translateSkillTreeTextToJapanese(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
@@ -321,6 +325,9 @@ const getUIDisplayText = (textObj) => {
   if (typeof textObj === "string") return textObj;
   const lang = getAppLanguage();
   const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
+  if (lang === "ja" && !textObj.ja) {
+    return translateSkillTreeTextToJapanese(fallback);
+  }
   return textObj[lang] || fallback;
 };
 

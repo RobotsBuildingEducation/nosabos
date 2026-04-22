@@ -594,6 +594,135 @@ translations.fr = {
   language_ga: "Irlandais",
 };
 
+translations.ja = {
+  ...translations.en,
+  nav_signin: "サインイン",
+  hero_title: "あなた専用の",
+  hero_title_accent: "言語チューター",
+  hero_subtitle: "インテリジェントなツールで新しい言語を練習し、学びましょう。",
+  cta_start: "学習を始める",
+  cta_signin: "キーを持っています",
+  languages_label: "言語",
+  languages_title: "練習できる",
+  languages_title_accent: "14言語",
+  languages_stable: "安定版",
+  languages_beta: "ベータ",
+  languages_alpha: "アルファ",
+  features_label: "機能",
+  features_title: "流暢さに必要な",
+  features_title_accent: "すべて",
+  feature_conversations: "リアルタイム会話",
+  feature_conversations_desc:
+    "あなたのレベルに合わせた没入型の対話で、話す・聞く練習をリアルタイムにサポートします。",
+  feature_stories: "インタラクティブストーリー",
+  feature_stories_desc:
+    "音読、要約、ロールプレイを通じて練習できる魅力的な物語です。",
+  feature_reading: "読解練習",
+  feature_reading_desc:
+    "テーマ別の読解で語彙と文化知識を広げ、理解問題で確認します。",
+  feature_grammar: "文法ブック",
+  feature_grammar_desc:
+    "短いルール解説、概念ドリル、適応型復習で基礎を強化します。",
+  feature_skilltree: "スキルツリー",
+  feature_skilltree_desc:
+    "段階的な学習パスと進捗の見える化で、着実に力を伸ばします。",
+  feature_flashcards: "語彙",
+  feature_flashcards_desc:
+    "レベルやよくある場面に合わせて新しい単語を練習します。",
+  feature_goals: "日次目標",
+  feature_goals_desc:
+    "毎日のXP目標と進捗トラッキングで学習習慣を育てます。",
+  feature_notes: "ノート生成",
+  feature_notes_desc:
+    "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
+  feature_immersion: "没入型練習",
+  feature_immersion_desc:
+    "アプリの外でも課題に取り組み、言語に浸りながら実践練習します。",
+  feature_assistant: "パーソナルアシスタント",
+  feature_assistant_desc:
+    "困ったときに、あなたに合った案内やおすすめを受け取れます。",
+  feature_flashcards_spaced: "フラッシュカード演習",
+  feature_flashcards_spaced_desc:
+    "CEFRレベル別に整理された間隔反復フラッシュカードで、1,000以上の単語や表現を身につけます。",
+  feature_game_review: "RPG復習",
+  feature_game_review_desc:
+    "クエスト型の世界を探索し、NPCと話し、アイテムを集めながら、学習中の言語でレッスン語彙を復習します。",
+  feature_proficiency_test: "レベル判定テスト",
+  feature_proficiency_test_desc:
+    "AIとの10往復の音声会話で、リアルタイムに適応しながらあなたのCEFRレベルを正確に判定します。",
+  feature_phonics: "フォニックス",
+  feature_phonics_desc:
+    "アルファベット・ブートキャンプで単語と音を練習し、発音を基礎から身につけます。",
+  value_label: "学習のしくみ",
+  value_title: "練習を",
+  value_title_accent: "実際の成長へ",
+  value_1:
+    "リアルタイムに適応するAI。会話、練習、フィードバックがあなたの今のレベルに合わせて変化します。",
+  value_2:
+    "話す、読む、書く、聞く、文法、語彙の6つの練習モードで、学び方に合わせて学べます。",
+  value_3:
+    "A1の初級からC2の習熟まで、324レッスンと明確なマイルストーンで進むCEFR学習パスです。",
+  value_4:
+    "聞き取り、修正し、話す自信を育てるリアルタイム発音コーチングです。",
+  value_adaptive: "適応型",
+  value_adaptive_desc: "練習はあなたのレベル、回答、目標に合わせて変化します。",
+  value_voice: "音声対応",
+  value_voice_desc: "話して、聞いて、すぐにフィードバックを受け取れます。",
+  value_private: "自分のキー",
+  value_private_desc: "自分のアカウントキーでプロフィールと進捗に戻れます。",
+  scholarship_label: "ミッション",
+  scholarship_title: "Bitcoinで",
+  scholarship_title_accent: "奨学金をつくる",
+  scholarship_desc:
+    "アプリ内のBitcoinウォレットにチャージして、学びを通じた奨学金づくりを支援しましょう。",
+  scholarship_link: "RobotsBuildingEducation.com",
+  scholarship_note:
+    "アプリでコミュニティアイデンティティを選ぶと、使うサトシが実際の人々の支援につながります。",
+  scholarship_cta: "詳しく見る",
+  faq_label: "FAQ",
+  faq_title: "よくある質問",
+  faq_q1: "何を練習できますか？",
+  faq_a1:
+    "会話、語彙、文法、読解、ストーリー、発音などを練習できます。",
+  faq_q2: "キーについて知る必要がありますか？",
+  faq_a2:
+    "いいえ。技術的な部分はこちらで処理します。レッスンに戻るには保存したキーだけが必要です。",
+  faq_q3: "どの言語を練習できますか？",
+  faq_a3:
+    "スペイン語、英語、ポルトガル語、フランス語、イタリア語から始め、ナワトル語などの文化的モジュールも探索できます。",
+  faq_q4: "料金はかかりますか？",
+  faq_a4:
+    "主要ツールは無料です。一部の高度なラボは奨学金または有料アクセスが必要な場合があります。",
+  cta_final_title: "言語学習の旅を",
+  cta_final_accent: "始めませんか？",
+  cta_final_subtitle:
+    "数秒で安全なプロフィールを作り、キーを保存して、言語学習の世界を開きましょう。",
+  placeholder_name: "表示名",
+  footer_brand: "No Sabos",
+  footer_tagline: "誰でも言語学習にアクセスできるように。",
+  signin_title: "おかえりなさい",
+  signin_subtitle: "アカウント作成時に保存したシークレットキーを貼り付けてください。",
+  signin_placeholder: "シークレットキーを貼り付け",
+  signin_button: "サインイン",
+  signin_extension: "拡張機能でサインイン",
+  signin_or: "または",
+  back_button: "戻る",
+  language_nl: "オランダ語",
+  language_en: "英語",
+  language_fr: "フランス語",
+  language_de: "ドイツ語",
+  language_it: "イタリア語",
+  language_pt: "ポルトガル語",
+  language_es: "スペイン語",
+  language_nah: "東ワステカ・ナワトル語",
+  language_yua: "ユカテコ・マヤ語",
+  language_el: "ギリシャ語",
+  language_ja: "日本語",
+  language_ru: "ロシア語",
+  language_pl: "ポーランド語",
+  language_ga: "アイルランド語",
+};
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // LANGUAGE MENU COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1731,6 +1860,7 @@ const LandingPage = ({ onAuthenticated }) => {
             {getPracticeLanguageOptions({
               ui: translations[lang] || translations.en,
               uiLang: lang,
+              includeTierTagInLabel: false,
             }).map(
               (langOption, i) => (
                 <motion.div

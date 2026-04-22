@@ -278,6 +278,50 @@ Fournis une breve explication encourageante (2-3 phrases) qui :
 
 Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
     },
+    ja: {
+      fillPrompt: `あなたは${targetLang}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解（またはヒント）: ${correctAnswer}
+
+重要: 説明は${supportLang}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その答えが合わない理由、または誤解している点
+2. 正しい答えとその意味
+3. 覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportLang}で書いてください。`,
+      mcPrompt: `あなたは${targetLang}を教える親切な語学チューターです。学習者が選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportLang}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その選択が間違いだった理由
+2. 正解が正しい理由
+3. 違いを覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportLang}で書いてください。`,
+      maPrompt: `あなたは${targetLang}を教える親切な語学チューターです。学習者が複数選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportLang}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. 選び忘れた答え、または誤って選んだ答え
+2. 正解が正しい理由
+3. 正しい答えを見分けるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportLang}で書いてください。`,
+    },
   };
 
   const prompts = langMap[userLanguage] || langMap.en;

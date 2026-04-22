@@ -7,9 +7,12 @@
 
 import { withItalianSkillTreeText } from "./italianLocalizer.js";
 import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
+import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
-  withFrenchSkillTreeText(withItalianSkillTreeText(skillTree));
+  withJapaneseSkillTreeText(
+    withFrenchSkillTreeText(withItalianSkillTreeText(skillTree)),
+  );
 
 export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
   // Tutorial Unit - always at the very beginning

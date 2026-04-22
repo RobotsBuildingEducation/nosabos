@@ -34,17 +34,18 @@ export const MAP_CHOICES = [
       es: "Mundo generado",
       it: "Mondo generato",
       fr: "Monde genere",
+      ja: "生成された世界",
     },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato", fr: "Monde genere" },
-  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno", fr: "Salon" },
-  park: { en: "Park", es: "Parque", it: "Parco", fr: "Parc" },
-  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto", fr: "Aeroport" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti", fr: "Place des salutations" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界" },
+  livingRoom: { en: "Living Room", es: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム" },
+  park: { en: "Park", es: "Parque", it: "Parco", fr: "Parc", ja: "公園" },
+  airport: { en: "Airport", es: "Aeropuerto", it: "Aeroporto", fr: "Aeroport", ja: "空港" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -403,6 +404,7 @@ function normalizeQuestions(questions, supportLang) {
       es: "Elige la opción correcta.",
       it: "Scegli l'opzione corretta.",
       fr: "Choisis la bonne option.",
+      ja: "正しい選択肢を選んでください。",
     }[supportLang] || "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
@@ -1687,21 +1689,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   home: [
     {
       slug: "kitchen",
-      name: { en: "Kitchen", es: "Cocina", it: "Cucina", fr: "Cuisine" },
+      name: { en: "Kitchen", es: "Cocina", it: "Cucina", fr: "Cuisine", ja: "キッチン" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "shelf"],
     },
     {
       slug: "study",
-      name: { en: "Study", es: "Estudio", it: "Studio", fr: "Bureau" },
+      name: { en: "Study", es: "Estudio", it: "Studio", fr: "Bureau", ja: "書斎" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["bookshelf", "desk", "lamp"],
     },
     {
       slug: "garden-patio",
-      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino", fr: "Patio du jardin" },
+      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino", fr: "Patio du jardin", ja: "庭のパティオ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "table"],
@@ -1710,21 +1712,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   market: [
     {
       slug: "prep-room",
-      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione", fr: "Salle de preparation" },
+      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione", fr: "Salle de preparation", ja: "準備室" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "fridge"],
     },
     {
       slug: "pantry",
-      name: { en: "Pantry", es: "Despensa", it: "Dispensa", fr: "Garde-manger" },
+      name: { en: "Pantry", es: "Despensa", it: "Dispensa", fr: "Garde-manger", ja: "食品庫" },
       markerType: "building",
       shape: "offset",
       objects: ["shelf", "shelf", "counter"],
     },
     {
       slug: "cafe-patio",
-      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè", fr: "Patio du cafe" },
+      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè", fr: "Patio du cafe", ja: "カフェのパティオ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["table", "bench", "plant"],
@@ -1733,21 +1735,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   library: [
     {
       slug: "archive-wing",
-      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio", fr: "Aile des archives" },
+      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio", fr: "Aile des archives", ja: "資料棟" },
       markerType: "doorway",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "lamp"],
     },
     {
       slug: "reading-nook",
-      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura", fr: "Coin lecture" },
+      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura", fr: "Coin lecture", ja: "読書コーナー" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["table", "bench", "lamp"],
     },
     {
       slug: "front-office",
-      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale", fr: "Accueil" },
+      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale", fr: "Accueil", ja: "受付オフィス" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "bookshelf", "plant"],
@@ -1756,21 +1758,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   transit: [
     {
       slug: "ticket-office",
-      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria", fr: "Billetterie" },
+      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria", fr: "Billetterie", ja: "チケット売り場" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "register", "sign"],
     },
     {
       slug: "gate-lounge",
-      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco", fr: "Salon d'embarquement" },
+      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco", fr: "Salon d'embarquement", ja: "搭乗ラウンジ" },
       markerType: "gate",
       shape: "courtyard",
       objects: ["bench", "sign", "suitcaseStack"],
     },
     {
       slug: "travel-desk",
-      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi", fr: "Comptoir voyage" },
+      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi", fr: "Comptoir voyage", ja: "旅行デスク" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "plant", "sign"],
@@ -1779,21 +1781,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   nature: [
     {
       slug: "garden-pavilion",
-      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino", fr: "Pavillon du jardin" },
+      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino", fr: "Pavillon du jardin", ja: "庭の東屋" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
     },
     {
       slug: "glasshouse",
-      name: { en: "Glasshouse", es: "Invernadero", it: "Serra", fr: "Serre" },
+      name: { en: "Glasshouse", es: "Invernadero", it: "Serra", fr: "Serre", ja: "温室" },
       markerType: "greenhouse",
       shape: "offset",
       objects: ["plant", "plant", "table"],
     },
     {
       slug: "ranger-station",
-      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi", fr: "Poste du garde" },
+      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi", fr: "Poste du garde", ja: "レンジャー詰所" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "shelf", "bench"],
@@ -1802,21 +1804,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   civic: [
     {
       slug: "council-room",
-      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio", fr: "Salle du conseil" },
+      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio", fr: "Salle du conseil", ja: "評議室" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "table", "lamp"],
     },
     {
       slug: "records-room",
-      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi", fr: "Salle des dossiers" },
+      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi", fr: "Salle des dossiers", ja: "記録室" },
       markerType: "building",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "desk"],
     },
     {
       slug: "courtyard-pavilion",
-      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile", fr: "Pavillon de la cour" },
+      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile", fr: "Pavillon de la cour", ja: "中庭の東屋" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
@@ -1825,21 +1827,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   lab: [
     {
       slug: "prep-lab",
-      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione", fr: "Labo de preparation" },
+      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione", fr: "Labo de preparation", ja: "準備ラボ" },
       markerType: "doorway",
       shape: "annex",
       objects: ["freezer", "table", "lamp"],
     },
     {
       slug: "analysis-booth",
-      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi", fr: "Cabine d'analyse" },
+      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi", fr: "Cabine d'analyse", ja: "分析ブース" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "shelf", "lamp"],
     },
     {
       slug: "equipment-store",
-      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature", fr: "Reserve d'equipement" },
+      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature", fr: "Reserve d'equipement", ja: "備品倉庫" },
       markerType: "building",
       shape: "alcove",
       objects: ["shelf", "freezer", "desk"],
@@ -1848,21 +1850,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   festival: [
     {
       slug: "performance-stage",
-      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni", fr: "Scene" },
+      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni", fr: "Scene", ja: "ステージ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["speaker", "speaker", "balloons"],
     },
     {
       slug: "food-stall",
-      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo", fr: "Stand de nourriture" },
+      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo", fr: "Stand de nourriture", ja: "屋台" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "table", "sign"],
     },
     {
       slug: "craft-tent",
-      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa", fr: "Tente d'artisanat" },
+      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa", fr: "Tente d'artisanat", ja: "クラフトテント" },
       markerType: "pavilion",
       shape: "annex",
       objects: ["table", "bench", "balloons"],
@@ -2856,7 +2858,7 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr") };
+    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr"), ja: getMapName(mapId, "ja") };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2864,6 +2866,7 @@ async function fallbackScenario(
       [targetLang]: normalizeQuestions([], supportLang),
       en: normalizeQuestions([], supportLang),
       es: normalizeQuestions([], supportLang),
+      ja: normalizeQuestions([], supportLang),
     };
 
     const allFallbackNpcs = [
@@ -2940,6 +2943,7 @@ async function fallbackScenario(
     [targetLang]: normalizeQuestions([], supportLang),
     en: normalizeQuestions([], supportLang),
     es: normalizeQuestions([], supportLang),
+    ja: normalizeQuestions([], supportLang),
   };
 
   const allFallbackNpcs = [
@@ -3287,6 +3291,7 @@ function normalizeScenario({
         es: String(raw?.name?.es || getMapName(mapId, "es")),
         it: String(raw?.name?.it || getMapName(mapId, "it")),
         fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
+        ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
       },
       tileSize: 32,
       mapWidth,
@@ -3305,6 +3310,7 @@ function normalizeScenario({
         [targetLang]: normalizeQuestions(raw?.questions, supportLang),
         en: normalizeQuestions(raw?.questions, supportLang),
         es: normalizeQuestions(raw?.questions, supportLang),
+        ja: normalizeQuestions(raw?.questions, supportLang),
       },
       quest: null,
       greetings: {
@@ -3314,6 +3320,9 @@ function normalizeScenario({
         es: Array.isArray(raw?.greetings?.es)
           ? raw.greetings.es.slice(0, 6).map(String)
           : ["¡Vamos a practicar!"],
+        ja: Array.isArray(raw?.greetings?.ja)
+          ? raw.greetings.ja.slice(0, 6).map(String)
+          : ["練習しましょう！"],
       },
     };
   }
@@ -3346,6 +3355,7 @@ function normalizeScenario({
     es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
     it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
     fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
+    ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
   };
   hubMap.name = processedName;
 
@@ -3371,6 +3381,7 @@ function normalizeScenario({
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
       es: normalizeQuestions(raw?.questions, supportLang),
+      ja: normalizeQuestions(raw?.questions, supportLang),
     },
     quest: null,
     greetings: {
@@ -3380,6 +3391,9 @@ function normalizeScenario({
       es: Array.isArray(raw?.greetings?.es)
         ? raw.greetings.es.slice(0, 6).map(String)
         : ["¡Vamos a practicar!"],
+      ja: Array.isArray(raw?.greetings?.ja)
+        ? raw.greetings.ja.slice(0, 6).map(String)
+        : ["練習しましょう！"],
     },
   };
 }

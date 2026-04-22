@@ -214,6 +214,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -680,6 +681,7 @@ const BCP47 = {
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
+  ja: { tts: "ja-JP" },
   nl: { tts: "nl-NL" },
   nah: { tts: "es-MX" },
   ru: { tts: "ru-RU" },
@@ -766,12 +768,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision" },
-  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解" },
 ];
 
 function speechScoreColor(score) {
@@ -848,7 +850,9 @@ export default function History({
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
           label:
-            userLanguage === "es"
+            userLanguage === "ja"
+              ? "レッスンの進捗"
+              : userLanguage === "es"
               ? "Progreso de la lección"
               : "Lesson progress",
         }
@@ -1236,6 +1240,7 @@ export default function History({
             es: "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura...",
             it: "Una fase importante si sviluppo quando le comunita consolidarono l'agricoltura...",
             fr: "Une phase importante s'est developpee lorsque les communautes ont consolide l'agriculture...",
+            ja: "人々が農業を安定させていく中で、重要な段階が始まりました...",
           }),
         takeaways: [
           uiCopy(supportLang, {
@@ -1243,18 +1248,21 @@ export default function History({
             es: "Intercambios y aldeas más fuertes.",
             it: "Villaggi e scambi piu forti.",
             fr: "Villages et echanges plus solides.",
+            ja: "村と交流がより強くなった。",
           }),
           uiCopy(supportLang, {
             en: "New identities and beliefs.",
             es: "Nuevas identidades y creencias.",
             it: "Nuove identita e credenze.",
             fr: "Nouvelles identites et croyances.",
+            ja: "新しいアイデンティティと信念。",
           }),
           uiCopy(supportLang, {
             en: "Technology spread regionally.",
             es: "La tecnología se difundió en la región.",
             it: "La tecnologia si diffuse nella regione.",
             fr: "La technologie s'est diffusee dans la region.",
+            ja: "技術が地域に広がった。",
           }),
         ],
       };
@@ -1813,6 +1821,7 @@ Return ONLY valid JSON:
           es: "No se pudo generar retroalimentación. ¡Sigue practicando!",
           it: "Impossibile generare il feedback. Continua a praticare!",
           fr: "Impossible de generer un retour. Continue a pratiquer !",
+          ja: "フィードバックを生成できませんでした。練習を続けましょう！",
         }),
         scores: {},
       });

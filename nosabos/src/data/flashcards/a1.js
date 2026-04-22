@@ -5,9 +5,12 @@
 
 import { withItalianFlashcardText } from "./italianLocalizer.js";
 import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
-  withFrenchFlashcardText(withItalianFlashcardText(cards));
+  withJapaneseFlashcardText(
+    withFrenchFlashcardText(withItalianFlashcardText(cards)),
+  );
 
 export const FLASHCARDS_A1 = withLocalizedFlashcardText([
   {

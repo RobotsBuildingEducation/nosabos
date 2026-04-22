@@ -143,6 +143,18 @@ const OBJECT_SEARCH_TEST_COPY = {
     nothingFound: "Rien d'utile ici.",
     continueSearching: "Continuer a chercher",
   },
+  ja: {
+    intro: (itemName) =>
+      `${itemName}が必要です。このマップのどの部屋でも、調べられる物を探してください。それぞれに1つずつアイテムが隠れています。正しいものを持ってきてください。`,
+    wrongItem: (wrongName, correctName) =>
+      `それは${wrongName}です。まだ${correctName}が必要です。ほかの物も調べてください。`,
+    success: (itemName) => `完璧です。${itemName}こそ必要なものです。`,
+    chooseItem: "渡すアイテムを選んでください:",
+    foundItem: (itemName) => `見つけたもの: ${itemName}`,
+    alreadyChecked: "この物はもう調べました。",
+    nothingFound: "役に立つものはありません。",
+    continueSearching: "探し続ける",
+  },
 };
 
 const QUEST_LOG_COPY = {
@@ -218,6 +230,24 @@ const QUEST_LOG_COPY = {
     choiceTask: (npcName) => `Parle a ${npcName} et choisis une reponse.`,
     speechTask: (npcName) => `Parle a ${npcName} et reponds avec ta voix.`,
     continueTask: (npcName) => `Parle a ${npcName} pour continuer.`,
+  },
+  ja: {
+    title: "クエストログ",
+    button: "クエストログ",
+    currentTask: "現在のタスク",
+    progress: (done, total) => `進捗: ${done}/${total}`,
+    complete: "クエスト完了！よくできました。",
+    defaultTask: "探索を続けて、次のキャラクターに話しかけましょう。",
+    startObjectSearch: (npcName, itemName) =>
+      `${npcName}に話しかけて、${itemName}探しを始めましょう。`,
+    searchObjects: (itemName) =>
+      `どの部屋でも、調べられる物から${itemName}を探しましょう。それぞれの物に1つずつアイテムが隠れています。`,
+    returnItem: (itemName, npcName) => `${itemName}を${npcName}に持っていきましょう。`,
+    gatherSearch: (itemName) => `このエリアで${itemName}を探しましょう。`,
+    gatherHint: (hint) => `ヒント: ${hint}`,
+    choiceTask: (npcName) => `${npcName}に話しかけて、返答を選びましょう。`,
+    speechTask: (npcName) => `${npcName}に話しかけて、声で答えましょう。`,
+    continueTask: (npcName) => `${npcName}に話しかけて続けましょう。`,
   },
 };
 
@@ -1624,6 +1654,47 @@ const UI_TEXT = {
     undoTranslation: "Annuler la traduction",
     chooseCorrect: "Choisis la bonne option.",
   },
+  ja: {
+    talkHint: "スペースキーまたはタップで話す",
+    correct: "正解！",
+    incorrect: "もう一度！",
+    completed: "おめでとうございます！すべての問題に正解しました！",
+    playAgain: "もう一度プレイ",
+    back: "戻る",
+    progress: "進捗",
+    answeredOf: "／",
+    moveHint: "矢印キーまたはWASDで移動",
+    touchMove: "タップで移動、NPCをタップして会話",
+    chooseScenario: "シナリオを選ぶ",
+    scenario: "シナリオ",
+    newWorld: "新しい世界",
+    quest: "クエスト",
+    lockedNpc: "最初に話す相手:",
+    response: "返答",
+    micStart: "マイク開始",
+    micStop: "マイク停止",
+    heardYou: "聞こえた内容",
+    speechUnavailable: "このブラウザでは音声を利用できません",
+    noSpeechMatch: "聞き取れませんでした。もう一度試してください。",
+    continue: "続ける",
+    skip: "スキップ",
+    loadingTutorialScene: "チュートリアル場面を読み込み中...",
+    loadingGeneratingGame: "ゲームを生成中...",
+    enableMusic: "音楽をオン",
+    disableMusic: "音楽をオフ",
+    musicOn: "音楽オン",
+    musicOff: "音楽オフ",
+    help: "ヘルプ",
+    inventory: "持ち物",
+    noItems: "まだアイテムはありません。",
+    dropItem: "捨てる",
+    wrongItem: "違うアイテム",
+    speechContinue: "わかりました。続けましょう。",
+    thinking: "考え中...",
+    translateText: "テキストを翻訳",
+    undoTranslation: "翻訳を元に戻す",
+    chooseCorrect: "正しい選択肢を選んでください。",
+  },
 };
 
 const SCENARIO_EMOJIS = {
@@ -1671,6 +1742,16 @@ const GAME_LOADING_MESSAGES = {
     "Preparation des enigmes linguistiques...",
     "Mise en place de la scene...",
     "Creation de ton aventure...",
+  ],
+  ja: [
+    "世界を組み立てています...",
+    "NPCを配置しています...",
+    "クエストの会話を書いています...",
+    "語彙チャレンジを生成しています...",
+    "マップのレイアウトを設計しています...",
+    "言語パズルを準備しています...",
+    "場面を整えています...",
+    "冒険を作っています...",
   ],
 };
 

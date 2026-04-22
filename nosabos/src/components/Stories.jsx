@@ -118,6 +118,7 @@ const LLM_LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -134,6 +135,7 @@ const BCP47 = {
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
+  ja: { stt: "ja-JP", tts: "ja-JP" },
   nl: { stt: "nl-NL", tts: "nl-NL" },
   nah: { stt: "es-MX", tts: "es-MX" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
@@ -158,6 +160,7 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
   if (
@@ -198,7 +201,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "it", "fr"].includes(lang) ? lang : "en";
+  return ["es", "it", "fr", "ja"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -269,7 +272,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "it", "fr", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "it", "fr", "ja", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -397,7 +400,7 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? (["es", "it", "fr"].includes(uiLang) ? uiLang : "en")
+      ? (["es", "it", "fr", "ja"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);

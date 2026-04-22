@@ -69,6 +69,10 @@ import {
   getSchedulerRatingOptions,
   mapXpToReviewOutcome,
 } from "../utils/flashcardReview";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -84,9 +88,12 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(
+      localStorage.getItem("appLanguage"),
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
   }
-  return "en";
+  return DEFAULT_SUPPORT_LANGUAGE;
 };
 
 // Translation helper for UI strings - uses appLanguage for UI text
@@ -105,10 +112,11 @@ const getTranslation = (key, params = {}) => {
 // Otherwise fall back to appLanguage (from account settings)
 const getEffectiveCardLanguage = (supportLang) => {
   const appLang = getAppLanguage();
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, appLang);
   // If supportLang is set to something other than default "en", use it
   // This means user explicitly chose a support language in conversation settings
-  if (supportLang && supportLang !== "en") {
-    return supportLang;
+  if (supportLang && normalizedSupportLang !== "en") {
+    return normalizedSupportLang;
   }
   // Otherwise use the app language preference
   return appLang;

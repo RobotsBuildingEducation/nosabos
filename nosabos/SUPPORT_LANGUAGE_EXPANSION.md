@@ -85,12 +85,15 @@ Language touchpoints are spread throughout. Key anchors:
 - `TARGET_LANGUAGE_LABELS` (~lines 173–217).
 - Support/practice language dropdowns (~lines 639–751, 1347–1359, 1463–1470).
 - **Mode menu / app navigation chrome** — the bottom/primary mode menu, menu label, and tab labels (`Alphabet`, `Path`, `Cards`, `Conversation`, `Mode`, `Help`, `Notes`, etc.) must be fully localized. These labels often live outside `translations.<code>` and are easy to miss because they are rendered in app-shell helpers rather than feature pages.
+- The **collapsed** bottom action-bar pill is its own smoke target. Its visible label must come from the same localized mode-menu copy as the expanded menu; do not leave a hardcoded `Menu` string in the minimized state.
 - `Intl.Collator(appLanguage === "es" ? "es" : "en")` (line ~648) — generalize to the new code.
 - Firestore validation for `supportLang` (~line 3357) currently `["en", "es"].includes(...)` — must include the new code.
 - Firestore validation for `targetLang` (~lines 2413–2427 and ~2539–2555) — include the new code.
 - `ALPHABET_LANGS` arrays — both occurrences (~lines 1604–1616 and ~5012–5024).
 - Inline `appLanguage === "es" ? … : …` ternaries scattered across the file (629, 682, 689, 938, 1016, 1042, 1055–1058, 1505, 1669–1670, 1807–1808, 2322, 2337–2342, …). Convert to translation keys or a `uiText(en, es, it)` helper.
 - Default settings that are stored as user-editable strings, especially the voice/persona prompt, must be treated as localized defaults. When the support language changes, swap the default persona to the new language immediately; if the user has edited the persona to a custom value, preserve it exactly.
+- Keep support-language tier metadata separate from practice-language tier metadata when needed. A language can be stable as a support/app language while still being tagged `beta` for practice, and support-language pickers must not inherit the practice-only `(beta)` label.
+- When option labels already include a tier tag from `getPracticeLanguageOptions()` / `getSupportLanguageOptions()`, do not append another manual ` (beta)` suffix in the drawer/menu renderer. The account/settings drawer is a required smoke target for accidental `(beta)(beta)` duplication.
 
 **Voice/persona implementation note:** `App.jsx` and `Onboarding.jsx` now detect the known default persona strings across `en`/`es`/`it` and localize those defaults before rendering, refilling, onboarding-save, and settings persistence. Empty strings are treated as intentional custom edits instead of "restore the default." The settings drawer also keeps active text drafts for debounced persona/help-request saves so a delayed user-progress refresh cannot revert partially deleted text while the user is typing.
 
@@ -109,6 +112,7 @@ Language touchpoints are spread throughout. Key anchors:
 - Inline Spanish-vs-English status text (lines 869–872, 2741, 2753, 2784–2797, 2829, 2921, 3013, 3078, 3084–3087, 3132, 3166).
 - Support-language normalization must include the new code. If the resolver only accepts `en`/`es`, the whole conversation UI will silently fall back to English even when `supportLang` is correct.
 - Visible conversation chrome includes settings button text, chat-log labels, generating-topic copy, topic shuffle aria labels, suggestion aria labels, level/XP labels, start/end buttons, replay labels, and transcript modal titles.
+- Regression note: the conversation header/footer controls are easy to miss because the lesson content itself can already be localized while the surrounding chrome is not. Smoke-test the settings button label, the `Level {n}` / XP strip, and the bottom `Start` / `End` button in the new support language.
 
 **Italian implementation note:** `Conversations.jsx` now accepts `it`/`it-*`/Italian aliases in its local resolver and reads the visible chrome from `translations.it` keys such as `ra_conversation_settings`, `ra_chat_log`, `ra_generating_topic`, `ra_btn_start`, `ra_btn_end`, `ra_btn_replay`, and `ra_label_level`.
 
@@ -118,6 +122,7 @@ Language touchpoints are spread throughout. Key anchors:
 - `probeText` voice-updated message (~lines 2095–2107).
 - `props` validation list (~line 964).
 - Visible lesson-realtime chrome includes goal buttons, skip/next, chat-log modal title, replay labels, auto-stop toast, translation-failed toast, free-practice toast, and loading/generating text.
+- Regression note: the bottom realtime control row (`Skip`, `Connect`, `End`, `Next`) is a distinct audit surface. It can stay in English even after the transcript modal, goals, and toasts are localized if the local support-language resolver still only accepts `en`/`es`.
 
 **Italian implementation note:** `RealTimeTest.jsx` now uses the shared `translations.it` realtime keys for these visible labels instead of local English/Spanish ternaries.
 
@@ -252,6 +257,14 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Label-localization wiring note:** `LanguageMenu` must pass the active locale dictionary to `getSupportLanguageOptions` so the option labels are localized, not just the selected language code. Use `getSupportLanguageOptions({ ui: translations[lang] || translations.en, uiLang: lang })`. The practice-language grid must do the same with `getPracticeLanguageOptions({ ui: translations[lang] || translations.en, uiLang: lang })` and render `langOption.label`, not `LANGUAGE_FALLBACK_LABELS[langOption.value]`. Without the `ui` argument, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the dropdown/cards read "English / Spanish / Italian" regardless of `lang`. Label convention matches `src/utils/translation.jsx`: each locale spells every language name in *its own* language (`en` → `English` / `Spanish` / `Italian`; `es` → `Inglés` / `Español` / `Italiano`; `it` → `Inglese` / `Spagnolo` / `Italiano`; `fr` → `Anglais` / `Espagnol` / `Italien`). Do **not** use native names (e.g. `Español` inside the English block) unless the design explicitly asks for native display names.
 
+**Tier-display note:** the landing-page support-language menu must not show practice-only tier tags. Japanese support language is stable, so the support menu label should not render `(beta)` there even if Japanese practice remains tagged elsewhere. Also audit the post-login practice-language card grid: if the card UI already renders a visible `Beta` badge, the label text itself should not also include a second `(beta)` suffix.
+
+**Hidden-fallback note:** if a locale is authored as `translations.<code> = { ...translations.en, ...overrides }`, missing keys silently leak English instead of failing loudly. Do a key-for-key audit against the English landing-page block before signoff; screenshots alone are not enough.
+
+**Japanese regression note:** the Japanese landing block once stopped after `feature_goals_desc`, omitted `feature_notes`, `feature_immersion`, `feature_assistant`, `feature_flashcards_spaced`, `feature_game_review`, `feature_proficiency_test`, `feature_phonics`, `value_1` through `value_4`, `scholarship_title_accent`, and `scholarship_note`, and used an unused `value_adaptive/value_voice/value_private` schema that the renderer never reads. That left the lower capability-card grid, the "How learning works" numbered bullets, and the scholarship title/note partially in English while the surrounding headings were Japanese. Treat those three landing-page sections as explicit acceptance tests for every future support language.
+
+**Split-heading note:** the scholarship headline renders `scholarship_title` and `scholarship_title_accent` as two separately styled spans on one line. Translate them as a pair so the grammar still reads naturally in the target language; do not assume English word order survives the accent split.
+
 ### 3.21e `src/components/TutorialActionBarPopovers.jsx`
 - `BUTTON_EXPLANATIONS` array has `label` and `description` objects with only `en` and `es` keys — Italian users see a completely blank card body.
 - `aria-label` / "Done" button copy uses binary `lang === "es"` ternaries.
@@ -274,6 +287,8 @@ Do not treat account settings as localized just because `translations.<code>` ex
 **Italian implementation note:** Done — full `it` translation block added to `linksPage.jsx` (all 50+ keys, including JSX `aboutContent`). Switch/toggle removed; top-left `LanguageMenuFixed` component added using `getSupportLanguageOptions()`, `setLanguage` from `useLanguage`, and Chakra `Menu`/`MenuOptionGroup`/`MenuItemOption`. The `useLanguage` hook already handles Italian timezone auto-detection, so Italian-locale users who land on the `/links` page also see the correct language without any extra changes.
 
 **Label-localization wiring note:** `LanguageMenuFixed` must receive the active locale dictionary and forward it to `getSupportLanguageOptions`. `LinksPage` already computes `translations = t(linksPageTranslations)` via `useLanguage().t`; pass it as a `translations` prop (alongside `language`) and call `getSupportLanguageOptions({ ui: translations, uiLang: language })` inside the menu. Required dictionary keys on every locale block in `src/translations/linksPage.jsx`: `language_en`, `language_es`, `language_fr`, `language_it`, spelled in the *UI* language — `en` block: `English / Spanish / French / Italian`; `es` block: `Inglés / Español / Francés / Italiano`; `it` block: `Inglese / Spagnolo / Francese / Italiano`; `fr` block: `Anglais / Espagnol / Français / Italien`. This matches the convention in `src/utils/translation.jsx`. Without these keys, `buildLanguageOptions` falls through to `LANGUAGE_FALLBACK_LABELS` (English) and the dropdown displays English labels on every UI locale.
+
+**Flag-swatches note:** `LanguageMenuFixed` also maintains a separate `SUPPORT_LANGUAGE_FLAG_SWATCHES` map for the collapsed top-left flag button. Adding a new support language is not complete until this swatch map includes the new code; otherwise the menu can show the correct label list while still rendering the wrong flag.
 
 **Language icon rendering note (mobile):** Do not wrap the flag SVG in a Chakra `<Text>` inside the `IconButton`'s `icon` prop. `Text` renders as `<p>`, which is invalid inside `<button>` and causes the icon to intermittently fail to paint on mobile WebKit. Wrap in `<Box as="span" display="inline-flex" …>` with an explicit 24×24 size and `"& svg": { width, height, display: "block" }` so the SVG always lays out.
 
@@ -435,6 +450,8 @@ Each path applies `withItalianSkillTreeText(...)`, which recursively adds `it` t
 
 When adding the next support language, either author the new key directly in each CEFR file or add an equivalent centralized data-localization pass. In both cases, run a recursive audit that confirms every `{ en, es }` object in `src/data/skillTreeData.js` and `src/data/skillTree/{pre-a1,a1,a2,b1,b2,c1,c2}.js` resolves the new key before marking the skill tree done.
 
+**Comprehensiveness note:** lesson-node titles and unit descriptions must be localized across the entire A0/Pre-A1 through C2 tree, not just the beginner levels. A centralized localizer is acceptable, but the renderer should also have a support-language-aware fallback so a missing `ja` object key does not leak English lesson nodes (`Zero to Five`, `Count from zero to ten`, etc.) in production.
+
 ### 5.2 Flashcard decks (`src/data/flashcards/` and `flashcardData.js`)
 
 Each level file is a flat list of card objects of the shape `concept: { en, es }`.
@@ -461,6 +478,8 @@ Each level file is a flat list of card objects of the shape `concept: { en, es }
 **Italian implementation note:** `src/data/flashcards/italianLocalizer.js` is the current Italian coverage layer for flashcard concepts. `src/data/flashcardData.js` and every split CEFR deck in `src/data/flashcards/{pre-a1,a1,a2,b1,b2,c1,c2}.js` applies `withItalianFlashcardText(...)`, which adds `concept.it` for the card prompt shown in flashcard mode and flashcard practice modals. Audit both the legacy dataset and split decks; the frontend can render from either path depending on initial load, lazy-load success, and fallback state.
 
 **French implementation note:** `src/data/flashcards/frenchLocalizer.js` now covers all 1,150 split CEFR cards from Pre-A1 through C2, including the B2 idiom deck that was visibly falling back to English (`It costs an arm and a leg`, `Break a leg`, etc.). Equality-based audits will still flag true French cognates and unchanged forms (`taxi`, `visa`, `culture`, `six`, `orange`, etc.), so verify either that the key is explicitly present in the localizer or that the identical spelling is intentional. Do not mark the rollout complete while the first card in any level still displays its English `concept.en` as the support-language prompt.
+
+**Renderer fallback note:** flashcard mode must not rely exclusively on pre-expanded `concept.<code>` fields. Add a support-language-aware fallback in both the legacy `flashcardData.js` reader and the split-deck `flashcards/common.js` reader so a missing `concept.ja` is translated before the UI falls back to English. Run an audit against all unique concept strings and require zero unintended English fallbacks before declaring flashcards complete for the new support language.
 
 ### 5.3 Alphabet bootcamps (`src/data/<lang>Alphabet.js`)
 

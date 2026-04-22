@@ -150,6 +150,11 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   it: {
     bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
   },
+  ja: {
+    bg: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
+    emblem: "#bc002d",
+    emblemSize: "12px",
+  },
 };
 
 const getTopControlProps = (isLightTheme) => ({
@@ -204,8 +209,8 @@ const SupportLanguageFlagSwatch = ({ value }) => {
               position: "absolute",
               top: "50%",
               left: "50%",
-              w: "4px",
-              h: "4px",
+              w: flag.emblemSize || "4px",
+              h: flag.emblemSize || "4px",
               rounded: "full",
               bg: flag.emblem,
               transform: "translate(-50%, -50%)",

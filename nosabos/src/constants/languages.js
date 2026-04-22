@@ -24,7 +24,7 @@ export const LANGUAGE_FALLBACK_LABELS = {
   it: "Italian",
   nl: "Dutch",
   nah: "Eastern Huasteca Nahuatl",
-  ja: "Japanese",
+  ja: "Japanese (日本語)",
   ru: "Russian",
   de: "German",
   el: "Greek",
@@ -47,7 +47,7 @@ export const LANGUAGE_PROMPT_LABELS = {
   pl: "Polish (polski)",
   ga: "Irish (Gaeilge)",
   yua: "Yucatec Maya (maaya t'aan)",
-  ja: "Japanese",
+  ja: "Japanese (日本語)",
 };
 
 const LANGUAGE_META = [
@@ -126,6 +126,7 @@ const LANGUAGE_META = [
     languageKey: "language_ja",
     practiceKey: "onboarding_practice_ja",
     tier: "beta",
+    supportTier: "stable",
     flag: japaneseFlag,
   },
   {
@@ -155,7 +156,7 @@ const TIER_ORDER = { stable: 0, alpha: 1, beta: 2 };
 const SUPPORTED_LANGUAGE_CODES_SET = new Set(
   LANGUAGE_META.map((item) => item.value),
 );
-const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "it", "fr"];
+const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "it", "fr", "ja"];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 
 export const LANGUAGE_LOCALES = {
@@ -180,6 +181,7 @@ const SORT_LOCALES = {
   es: "es",
   it: "it",
   fr: "fr",
+  ja: "ja",
 };
 
 const normalizeCode = (raw) => String(raw || "").trim().toLowerCase();
@@ -269,14 +271,26 @@ function withTierTag(label, tier, ui = {}, uiLang = "en") {
   if (tier === "alpha") {
     const alphaLabel =
       ui.onboarding_language_tag_alpha ||
-      (["es", "it", "fr"].includes(uiLang) ? "alfa" : "alpha");
+      (uiLang === "ja"
+        ? "アルファ"
+        : ["es", "it", "fr"].includes(uiLang)
+          ? "alfa"
+          : "alpha");
     return `${label} (${alphaLabel})`;
   }
   if (tier === "beta") {
-    const betaLabel = ui.onboarding_language_tag_beta || "beta";
+    const betaLabel =
+      ui.onboarding_language_tag_beta || (uiLang === "ja" ? "ベータ" : "beta");
     return `${label} (${betaLabel})`;
   }
   return label;
+}
+
+function resolveTier(item, mode) {
+  if (mode === "support") {
+    return item.supportTier || "stable";
+  }
+  return item.tier;
 }
 
 function buildLanguageOptions({
@@ -284,6 +298,7 @@ function buildLanguageOptions({
   uiLang = "en",
   showJapanese = true,
   mode = "practice",
+  includeTierTagInLabel = true,
 }) {
   const sortLocale = getSortLocale(uiLang);
   const collator = new Intl.Collator(sortLocale);
@@ -294,6 +309,7 @@ function buildLanguageOptions({
     )
     .filter((item) => (showJapanese ? true : item.value !== "ja"))
     .map((item) => {
+      const tier = resolveTier(item, mode);
       const baseLabel =
         mode === "practice"
           ? ui[item.practiceKey] ||
@@ -307,10 +323,12 @@ function buildLanguageOptions({
 
       return {
         value: item.value,
-        label: withTierTag(baseLabel, item.tier, ui, uiLang),
-        tier: item.tier,
-        beta: item.tier === "beta",
-        alpha: item.tier === "alpha",
+        label: includeTierTagInLabel
+          ? withTierTag(baseLabel, tier, ui, uiLang)
+          : baseLabel,
+        tier,
+        beta: tier === "beta",
+        alpha: tier === "alpha",
         flag: item.flag(),
       };
     });

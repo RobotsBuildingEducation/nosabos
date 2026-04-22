@@ -68,7 +68,8 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr) {
+function supportCopy(lang, en, es, it, fr, ja) {
+  if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
@@ -158,6 +159,7 @@ export function IdentityPanel({
           "Ingresa un nombre",
           "Inserisci un nome visualizzato",
           "Saisis un nom d'affichage",
+          "表示名を入力してください",
         ),
         status: "warning",
         duration: 2000,
@@ -195,6 +197,7 @@ export function IdentityPanel({
           "Nombre actualizado",
           "Nome visualizzato aggiornato",
           "Nom d'affichage mis a jour",
+          "表示名を更新しました",
         ),
         status: "success",
         duration: 2000,
@@ -202,7 +205,7 @@ export function IdentityPanel({
     } catch (error) {
       console.error("Failed to save display name:", error);
       toast({
-        title: supportCopy(lang, "Error", "Error", "Errore", "Erreur"),
+        title: supportCopy(lang, "Error", "Error", "Errore", "Erreur", "エラー"),
         description: error?.message || String(error),
         status: "error",
         duration: 3000,
@@ -372,6 +375,7 @@ export function IdentityPanel({
                 `Cuenta de ${displayName}`,
                 `Account di ${displayName}`,
                 `Compte de ${displayName}`,
+                `${displayName}のアカウント`,
               )
             : t?.app_account_title || "Account"}
         </DrawerHeader>
@@ -424,6 +428,7 @@ export function IdentityPanel({
                   "Apóyanos en Patreon",
                   "Sostienici su Patreon",
                   "Rejoins-nous sur Patreon",
+                  "Patreonで応援",
                 )}
               </Text>
               <Text fontSize="xs" color="gray.400">
@@ -433,6 +438,7 @@ export function IdentityPanel({
                   "Accede a más apps educativas y contenido",
                   "Accedi a più app educative e contenuti",
                   "Accede a plus d'apps educatives et de contenu",
+                  "さらに多くの教育アプリとコンテンツにアクセス",
                 )}
               </Text>
             </VStack>
@@ -447,7 +453,7 @@ export function IdentityPanel({
                 )
               }
             >
-              {supportCopy(lang, "Join", "Unirse", "Unisciti", "Rejoindre")}
+              {supportCopy(lang, "Join", "Unirse", "Unisciti", "Rejoindre", "参加")}
             </Button>
           </HStack>
         </Box>
@@ -473,6 +479,7 @@ export function IdentityPanel({
                         "Cambiar nombre de usuario",
                         "Cambia nome visualizzato",
                         "Changer le nom d'affichage",
+                        "表示名を変更",
                       )
                     : supportCopy(
                         lang,
@@ -480,6 +487,7 @@ export function IdentityPanel({
                         "Crear nombre de usuario",
                         "Crea nome visualizzato",
                         "Creer un nom d'affichage",
+                        "表示名を作成",
                       )}
                 </Text>
               </Flex>
@@ -496,6 +504,7 @@ export function IdentityPanel({
                     "Ingresa tu nombre",
                     "Inserisci un nome visualizzato",
                     "Saisis un nom d'affichage",
+                    "表示名を入力",
                   )
                 }
                 bg="gray.700"
@@ -513,9 +522,10 @@ export function IdentityPanel({
                     "Guardando…",
                     "Salvataggio…",
                     "Enregistrement...",
+                    "保存中…",
                   )}
                 >
-                  {supportCopy(lang, "Save", "Guardar", "Salva", "Enregistrer")}
+                  {supportCopy(lang, "Save", "Guardar", "Salva", "Enregistrer", "保存")}
                 </Button>
               </HStack>
             </AccordionPanel>
@@ -603,6 +613,7 @@ export function IdentityPanel({
                       "Billetera Bitcoin",
                       "Portafoglio Bitcoin",
                       "Portefeuille Bitcoin",
+                      "Bitcoinウォレット",
                     )}
                   </Text>
                 </Flex>
@@ -1101,8 +1112,32 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "Ta cle sert uniquement a creer le portefeuille et n'est pas stockee.",
     };
+    const ja = {
+      createWallet: "ウォレットを作成",
+      loadingWallet: "ウォレットを作成中…",
+      deposit: "入金",
+      loadingAddress: "アドレスを生成中…",
+      or: "または",
+      copyAddress: "アドレスをコピー",
+      ps: "対応するLightningウォレットで請求書を支払ってください。",
+      activeWalletTitle: "ウォレットは有効です",
+      verifyTransactions: "取引を確認",
+      generateNew: "新しいQRを生成",
+      balanceLabel: "残高",
+      cardNameLabel: "ウォレット",
+      scholarshipNote:
+        "あなたの入金は学習による奨学金づくりを支援します: ",
+      nip07NsecTitle: "シークレットキーが必要です",
+      nip07NsecDescription:
+        "ブラウザ拡張機能でサインインしているため、秘密鍵にアクセスできません。ウォレットを作成するには、下にnsecを入力してください。",
+      nip07NsecPlaceholder: "nsec1...を入力",
+      nip07NsecWarning:
+        "キーはウォレット作成にのみ使用され、保存されません。",
+    };
     return (
-      walletLang === "fr"
+      walletLang === "ja"
+        ? ja
+        : walletLang === "fr"
         ? fr
         : walletLang === "it"
           ? it
@@ -1130,6 +1165,7 @@ export function BitcoinWalletSection({
         "Billetera no lista",
         "Portafoglio non pronto",
         "Portefeuille pas pret",
+        "ウォレットの準備ができていません",
       ),
       description: supportCopy(
         walletLang,
@@ -1137,6 +1173,7 @@ export function BitcoinWalletSection({
         "Intenta de nuevo en un momento.",
         "Riprova tra poco.",
         "Reessaie dans un instant.",
+        "少し待ってからもう一度お試しください。",
       ),
       status: "error",
       duration: 2500,
@@ -1157,6 +1194,7 @@ export function BitcoinWalletSection({
           "Se requiere clave secreta",
           "Chiave segreta richiesta",
           "Cle secrete requise",
+          "シークレットキーが必要です",
         ),
         description: supportCopy(
           walletLang,
@@ -1164,6 +1202,7 @@ export function BitcoinWalletSection({
           "Ingresa tu nsec para crear la billetera.",
           "Inserisci il tuo nsec per creare il portafoglio.",
           "Saisis ton nsec pour creer le portefeuille.",
+          "ウォレットを作成するにはnsecを入力してください。",
         ),
         status: "warning",
         duration: 2500,
@@ -1180,6 +1219,7 @@ export function BitcoinWalletSection({
           "Clave inválida",
           "Chiave non valida",
           "Cle invalide",
+          "無効なキー",
         ),
         description: supportCopy(
           walletLang,
@@ -1187,6 +1227,7 @@ export function BitcoinWalletSection({
           "La clave debe empezar con 'nsec'.",
           "La chiave deve iniziare con 'nsec'.",
           "La cle doit commencer par 'nsec'.",
+          "キーは「nsec」で始まる必要があります。",
         ),
         status: "error",
         duration: 2500,
@@ -1214,6 +1255,7 @@ export function BitcoinWalletSection({
             "No se pudo crear",
             "Impossibile creare il portafoglio",
             "Impossible de creer le portefeuille",
+            "ウォレットを作成できませんでした",
           ),
           description:
             latestError ||
@@ -1224,6 +1266,7 @@ export function BitcoinWalletSection({
               "Intenta de nuevo en un momento.",
               "Riprova tra poco.",
               "Reessaie dans un instant.",
+              "少し待ってからもう一度お試しください。",
             ),
           status: "error",
           duration: 2800,
@@ -1238,13 +1281,14 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur"),
+        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
         description: supportCopy(
           walletLang,
           "Failed to create wallet",
           "No se pudo crear la billetera",
           "Creazione del portafoglio non riuscita",
           "Echec de la creation du portefeuille",
+          "ウォレットの作成に失敗しました",
         ),
         status: "error",
         duration: 2000,
@@ -1262,6 +1306,7 @@ export function BitcoinWalletSection({
           "Selecciona una identidad",
           "Seleziona un'identità",
           "Selectionne une identite",
+          "IDを選択してください",
         );
       const description =
         supportCopy(
@@ -1270,6 +1315,7 @@ export function BitcoinWalletSection({
           "Elige un destinatario para tus depósitos.",
           "Scegli chi riceve i tuoi depositi prima di continuare.",
           "Choisis qui recoit tes depots avant de continuer.",
+          "続行する前に入金の受取先を選んでください。",
         );
       toast({
         title,
@@ -1296,6 +1342,7 @@ export function BitcoinWalletSection({
             "No se pudo crear",
             "Impossibile creare la fattura",
             "Impossible de creer la facture",
+            "請求書を作成できませんでした",
           ),
           description:
             latestError ||
@@ -1306,6 +1353,7 @@ export function BitcoinWalletSection({
               "Intenta de nuevo en un momento.",
               "Riprova tra poco.",
               "Reessaie dans un instant.",
+              "少し待ってからもう一度お試しください。",
             ),
           status: "error",
           duration: 2800,
@@ -1315,13 +1363,14 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur"),
+        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
         description: supportCopy(
           walletLang,
           "Failed to initiate deposit",
           "No se pudo iniciar el depósito",
           "Avvio del deposito non riuscito",
           "Echec du lancement du depot",
+          "入金を開始できませんでした",
         ),
         status: "error",
         duration: 2000,
@@ -1344,6 +1393,7 @@ export function BitcoinWalletSection({
             "No se pudo crear",
             "Impossibile creare la fattura",
             "Impossible de creer la facture",
+            "請求書を作成できませんでした",
           ),
           description:
             latestError ||
@@ -1354,6 +1404,7 @@ export function BitcoinWalletSection({
               "Intenta de nuevo en un momento.",
               "Riprova tra poco.",
               "Reessaie dans un instant.",
+              "少し待ってからもう一度お試しください。",
             ),
           status: "error",
           duration: 2800,
@@ -1363,13 +1414,14 @@ export function BitcoinWalletSection({
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur"),
+        title: supportCopy(walletLang, "Error", "Error", "Errore", "Erreur", "エラー"),
         description: supportCopy(
           walletLang,
           "Failed to initiate deposit",
           "No se pudo iniciar el depósito",
           "Avvio del deposito non riuscito",
           "Echec du lancement du depot",
+          "入金を開始できませんでした",
         ),
         status: "error",
         duration: 2000,
@@ -1389,6 +1441,7 @@ export function BitcoinWalletSection({
           "Dirección copiada",
           "Indirizzo copiato",
           "Adresse copiee",
+          "アドレスをコピーしました",
         ),
         description: supportCopy(
           walletLang,
@@ -1396,6 +1449,7 @@ export function BitcoinWalletSection({
           "La factura Lightning se copió al portapapeles.",
           "Fattura Lightning copiata negli appunti.",
           "Facture Lightning copiee dans le presse-papiers.",
+          "Lightning請求書をクリップボードにコピーしました。",
         ),
         status: "warning",
         duration: 1500,
@@ -1438,6 +1492,7 @@ export function BitcoinWalletSection({
           "Elige a quién apoyar con tus depósitos:",
           "Scegli un destinatario",
           "Choisis un destinataire",
+          "入金で支援する受取先を選んでください:",
         )}
       </Text>
       <RadioGroup
@@ -1482,6 +1537,7 @@ export function BitcoinWalletSection({
                       "Ver sitio",
                       "Vedi sito",
                       "Voir le site",
+                      "サイトを見る",
                     )}
                   </Link>
                 ) : null}
@@ -1503,6 +1559,7 @@ export function BitcoinWalletSection({
             "Selecciona una opción para habilitar los depósitos.",
             "Seleziona un'opzione per abilitare i depositi.",
             "Selectionne une option pour activer les depots.",
+            "入金を有効にするにはオプションを選択してください。",
           )}
         </Text>
       )}
@@ -1532,6 +1589,7 @@ export function BitcoinWalletSection({
             "Billetera Bitcoin",
             "Portafoglio Bitcoin",
             "Portefeuille Bitcoin",
+            "Bitcoinウォレット",
           )}
         </Text>
       ) : null}
@@ -1571,6 +1629,7 @@ export function BitcoinWalletSection({
               "Cargando billetera…",
               "Caricamento portafoglio…",
               "Chargement du portefeuille...",
+              "ウォレットを読み込み中…",
             )}
           </Text>
         </HStack>

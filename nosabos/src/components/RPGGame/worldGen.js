@@ -124,11 +124,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Sala Acogedora", "Apartamento Familiar", "Casa del Barrio"],
       it: ["Salotto Accogliente", "Appartamento di Famiglia", "Casa del Quartiere"],
       fr: ["Salon douillet", "Appartement familial", "Maison du quartier"],
+      ja: ["居心地のよいリビング", "家族のアパート", "近所の家"],
     },
     summary: {
       en: "a warm home full of everyday objects and lived-in details",
       es: "un hogar calido lleno de objetos cotidianos y detalles reales",
       fr: "un foyer chaleureux rempli d'objets quotidiens et de details vecus",
+      ja: "日常の物と暮らしの細部が詰まった温かい家",
     },
     decorKinds: ["wood_scraps", "paper_bits"],
     suggestedObjects: [
@@ -173,11 +175,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Comedor Animado", "Cocina del Barrio", "Cafe del Mercado"],
       it: ["Sala da Pranzo Animata", "Cucina del Quartiere", "Caffe del Mercato"],
       fr: ["Halle gourmande animee", "Cuisine du quartier", "Cafe du marche"],
+      ja: ["にぎやかなフードホール", "近所のキッチン", "市場カフェ"],
     },
     summary: {
       en: "a lively food space with counters, appliances, and practical props",
       es: "un espacio de comida con mostradores, aparatos y objetos utiles",
       fr: "un espace de restauration vivant avec comptoirs, appareils et accessoires pratiques",
+      ja: "カウンター、調理器具、実用的な小物がある活気ある食の空間",
     },
     decorKinds: ["paper_bits", "floor_marks"],
     suggestedObjects: [
@@ -223,11 +227,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Sala de Biblioteca", "Sala de Lectura", "Archivo de Escritores"],
       it: ["Sala della Biblioteca", "Sala di Lettura", "Archivio degli Scrittori"],
       fr: ["Salle de bibliotheque", "Salle de lecture", "Archives des ecrivains"],
+      ja: ["静かな図書館ホール", "読書室", "作家のアーカイブ"],
     },
     summary: {
       en: "a book-filled study space with shelves, desks, and reading corners",
       es: "un espacio de estudio con estantes, escritorios y rincones de lectura",
       fr: "un espace d'etude rempli de livres avec etageres, bureaux et coins lecture",
+      ja: "本棚、机、読書コーナーが並ぶ本に囲まれた学習空間",
     },
     decorKinds: ["book_pages", "paper_bits"],
     suggestedObjects: [
@@ -273,11 +279,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Terminal Internacional", "Pasillo de Transito", "Centro de Viaje"],
       it: ["Terminal Internazionale", "Corridoio di Transito", "Centro Viaggi"],
       fr: ["Terminal international", "Hall de transit", "Centre de voyage"],
+      ja: ["国際ターミナル", "乗り継ぎコンコース", "旅行ハブ"],
     },
     summary: {
       en: "an international travel space with gates, signs, and waiting areas",
       es: "un espacio de viaje internacional con puertas, letreros y zonas de espera",
       fr: "un espace de voyage international avec portes, panneaux et zones d'attente",
+      ja: "ゲート、案内表示、待合エリアがある国際的な旅行空間",
     },
     decorKinds: ["floor_marks", "paper_bits"],
     suggestedObjects: [
@@ -323,11 +331,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Sendero del Bosque", "Paseo del Jardin", "Claro del Parque"],
       it: ["Sentiero del Bosco", "Passeggiata nel Giardino", "Radura del Parco"],
       fr: ["Sentier forestier", "Promenade du jardin", "Clairiere du parc"],
+      ja: ["森の小道", "庭の散歩道", "公園の広場"],
     },
     summary: {
       en: "an open natural area with winding paths, greenery, and landmarks",
       es: "una zona natural abierta con senderos, vegetacion y puntos de referencia",
       fr: "un espace naturel ouvert avec chemins sinueux, verdure et reperes",
+      ja: "曲がりくねった道、緑、目印がある開けた自然エリア",
     },
     decorKinds: ["grass_tuft", "flower_patch", "leaf_litter", "stones"],
     suggestedObjects: [
@@ -372,11 +382,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Salon Civico", "Atrio de Conferencias", "Foro Publico"],
       it: ["Sala Civica", "Atrio Conferenze", "Foro Pubblico"],
       fr: ["Salle civique", "Atrium de conference", "Forum public"],
+      ja: ["市民ホール", "会議アトリウム", "公開フォーラム"],
     },
     summary: {
       en: "a polished public space with desks, signs, and formal meeting points",
       es: "un espacio publico elegante con escritorios, letreros y zonas formales",
       fr: "un espace public soigne avec bureaux, panneaux et points de rencontre formels",
+      ja: "机、案内表示、フォーマルな集会場所がある整った公共空間",
     },
     decorKinds: ["paper_bits", "floor_marks", "stones"],
     suggestedObjects: [
@@ -420,11 +432,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Laboratorio de Investigacion", "Estudio de Innovacion", "Taller Cientifico"],
       it: ["Laboratorio di Ricerca", "Studio di Innovazione", "Laboratorio Scientifico"],
       fr: ["Laboratoire de recherche", "Studio d'innovation", "Atelier scientifique"],
+      ja: ["研究ラボ", "イノベーションスタジオ", "科学ワークショップ"],
     },
     summary: {
       en: "a clean technical space with equipment, storage, and study stations",
       es: "un espacio tecnico con equipo, almacenamiento y estaciones de trabajo",
       fr: "un espace technique propre avec equipement, rangement et postes d'etude",
+      ja: "設備、収納、学習ステーションがある清潔な技術空間",
     },
     decorKinds: ["floor_marks", "paper_bits"],
     suggestedObjects: [
@@ -468,11 +482,13 @@ const WORLD_BLUEPRINTS = [
       es: ["Plaza del Festival", "Terraza de Celebracion", "Fiesta en la Calle"],
       it: ["Piazza del Festival", "Terrazza delle Celebrazioni", "Festa in Strada"],
       fr: ["Place du festival", "Terrasse des celebrations", "Fete de rue"],
+      ja: ["祭りの広場", "お祝いテラス", "ストリートパーティー"],
     },
     summary: {
       en: "a colorful social space with sound, decorations, and event energy",
       es: "un espacio social colorido con sonido, decoracion y energia de evento",
       fr: "un espace social colore avec musique, decorations et energie d'evenement",
+      ja: "音、飾り、イベントの熱気に満ちた色鮮やかな交流空間",
     },
     decorKinds: ["confetti", "flower_patch", "paper_bits"],
     suggestedObjects: [
@@ -967,6 +983,9 @@ export function buildScenarioEnvironment(
   const themeLabelFr =
     String(rawEnvironment?.themeLabel?.fr || rawEnvironment?.name?.fr || "")
       .trim() || pickRandom(seed.names.fr || seed.names.en);
+  const themeLabelJa =
+    String(rawEnvironment?.themeLabel?.ja || rawEnvironment?.name?.ja || "")
+      .trim() || pickRandom(seed.names.ja || seed.names.en);
 
   return {
     blueprintId: seed.id,
@@ -977,6 +996,7 @@ export function buildScenarioEnvironment(
       es: themeLabelEs,
       it: themeLabelIt,
       fr: themeLabelFr,
+      ja: themeLabelJa,
     },
     summary: {
       en:
@@ -991,6 +1011,10 @@ export function buildScenarioEnvironment(
       fr:
         String(rawEnvironment?.summary?.fr || "").trim() ||
         seed.summary.fr ||
+        seed.summary.en,
+      ja:
+        String(rawEnvironment?.summary?.ja || "").trim() ||
+        seed.summary.ja ||
         seed.summary.en,
     },
     details,

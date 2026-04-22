@@ -46,6 +46,11 @@ import {
   translateAlphabetMeaningToFrench,
   withFrenchAlphabetSupport,
 } from "../data/alphabetFrenchLocalizer";
+import {
+  translateAlphabetInstructionToJapanese,
+  translateAlphabetMeaningToJapanese,
+  withJapaneseAlphabetSupport,
+} from "../data/alphabetJapaneseLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -182,11 +187,29 @@ const LANGUAGE_NAMES_FR = {
   yua: "Maya yucateque",
 };
 
+const LANGUAGE_NAMES_JA = {
+  ru: "ロシア語",
+  ja: "日本語",
+  en: "英語",
+  es: "スペイン語",
+  pt: "ポルトガル語",
+  fr: "フランス語",
+  it: "イタリア語",
+  nl: "オランダ語",
+  de: "ドイツ語",
+  nah: "ナワトル語",
+  el: "ギリシャ語",
+  pl: "ポーランド語",
+  ga: "アイルランド語",
+  yua: "ユカテコ・マヤ語",
+};
+
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
   it: LANGUAGE_NAMES_IT,
   fr: LANGUAGE_NAMES_FR,
+  ja: LANGUAGE_NAMES_JA,
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -240,6 +263,23 @@ const LANGUAGE_SCRIPTS_FR = {
   yua: "alphabet latin",
 };
 
+const LANGUAGE_SCRIPTS_JA = {
+  ru: "キリル文字",
+  ja: "ひらがなまたはカタカナ",
+  en: "ラテン文字",
+  es: "ラテン文字",
+  pt: "ラテン文字",
+  fr: "ラテン文字",
+  it: "ラテン文字",
+  nl: "ラテン文字",
+  de: "ラテン文字",
+  nah: "ラテン文字",
+  el: "ギリシャ文字",
+  pl: "ラテン文字",
+  ga: "ラテン文字",
+  yua: "ラテン文字",
+};
+
 const LANGUAGE_SCRIPTS_BY_UI = {
   en: LANGUAGE_SCRIPTS,
   es: {
@@ -260,6 +300,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
   },
   it: LANGUAGE_SCRIPTS_IT,
   fr: LANGUAGE_SCRIPTS_FR,
+  ja: LANGUAGE_SCRIPTS_JA,
 };
 
 const ALPHABET_UI_TEXT = {
@@ -413,6 +454,42 @@ const ALPHABET_UI_TEXT = {
     collection: "Collection",
     loadError: "Impossible de charger l'alphabet. Reessaie.",
   },
+  ja: {
+    vowel: "母音",
+    consonant: "子音",
+    sign: "記号",
+    practice: "練習",
+    playSound: "音を再生",
+    playWord: "単語を再生",
+    close: "閉じる",
+    sayThisWord: "この単語を言ってください:",
+    grading: "採点中...",
+    nextWord: "次の単語",
+    tryAgain: "もう一度",
+    back: "戻る",
+    connecting: "接続中...",
+    stop: "停止",
+    record: "録音",
+    recordingErrorTitle: "録音エラー",
+    recordingErrorDescription: "録音できませんでした。もう一度お試しください。",
+    gradingErrorTitle: "採点エラー",
+    gradingErrorDescription: "答えを採点できませんでした。",
+    speechUnsupportedTitle: "音声はサポートされていません",
+    speechUnsupportedDescription:
+      "このブラウザは音声認識に対応していません。",
+    micDeniedTitle: "マイクが拒否されました",
+    micDeniedDescription: "録音するにはマイクアクセスを許可してください。",
+    generateWordErrorTitle: "新しい単語を生成できませんでした",
+    level: "レベル",
+    progress: "進捗",
+    alphabetHeadline: "{language}の文字",
+    alphabetSubhead: "{language}の文字と音から始めましょう。",
+    note: "この後は、メニューでパスモードに切り替えてレッスンを探索しましょう。",
+    complete: "おめでとうございます！文字練習を完了しました。",
+    startSkillTree: "スキルツリーを始める",
+    collection: "コレクション",
+    loadError: "文字データを読み込めませんでした。もう一度お試しください。",
+  },
 };
 
 const uiText = (lang, key, params = {}) => {
@@ -450,6 +527,12 @@ const getLetterSound = (letter, uiLang) => {
       translateAlphabetInstructionToFrench(letter.soundEs || letter.sound)
     );
   }
+  if (uiLang === "ja") {
+    return (
+      letter.soundJa ||
+      translateAlphabetInstructionToJapanese(letter.soundEs || letter.sound)
+    );
+  }
   if (["es"].includes(uiLang)) {
     return letter.soundEs || letter.sound;
   }
@@ -469,6 +552,12 @@ const getLetterTip = (letter, uiLang) => {
       translateAlphabetInstructionToFrench(letter.tipEs || letter.tip)
     );
   }
+  if (uiLang === "ja") {
+    return (
+      letter.tipJa ||
+      translateAlphabetInstructionToJapanese(letter.tipEs || letter.tip)
+    );
+  }
   if (["es"].includes(uiLang)) {
     return letter.tipEs || letter.tip;
   }
@@ -476,17 +565,18 @@ const getLetterTip = (letter, uiLang) => {
 };
 
 const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "", it: "", fr: "" };
+  if (!meaning) return { en: "", es: "", it: "", fr: "", ja: "" };
   if (typeof meaning === "string") {
-    return { en: meaning, es: meaning, it: meaning, fr: meaning };
+    return { en: meaning, es: meaning, it: meaning, fr: meaning, ja: meaning };
   }
 
   const en = meaning.en || meaning.es || "";
   const es = meaning.es || meaning.en || "";
   const it = translateAlphabetMeaningToItalian(meaning) || en || es;
   const fr = translateAlphabetMeaningToFrench(meaning) || en || es;
+  const ja = translateAlphabetMeaningToJapanese(meaning) || en || es;
 
-  return { en, es, it, fr };
+  return { en, es, it, fr, ja };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -991,7 +1081,7 @@ function LetterCard({
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
       const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>"}
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -1009,6 +1099,7 @@ function LetterCard({
           es: parsed.meaning_es || parsed.meaning || "",
           it: parsed.meaning_it || parsed.meaning || "",
           fr: parsed.meaning_fr || parsed.meaning || "",
+          ja: parsed.meaning_ja || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -1331,7 +1422,9 @@ function LetterCard({
 }
 
 const withLocalizedAlphabetSupport = (letters) =>
-  withFrenchAlphabetSupport(withItalianAlphabetSupport(letters));
+  withJapaneseAlphabetSupport(
+    withFrenchAlphabetSupport(withItalianAlphabetSupport(letters)),
+  );
 
 const LANGUAGE_ALPHABETS = {
   ru: withLocalizedAlphabetSupport(RUSSIAN_ALPHABET),

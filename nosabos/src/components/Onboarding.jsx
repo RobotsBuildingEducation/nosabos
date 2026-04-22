@@ -79,7 +79,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "it", "fr"].some(
+  return ["en", "es", "it", "fr", "ja"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -268,6 +268,7 @@ export default function Onboarding({
       es: "Pausa entre turnos",
       it: "Pausa tra le risposte",
       fr: "Pause entre les reponses",
+      ja: "返答の間のポーズ",
     });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
@@ -276,6 +277,7 @@ export default function Onboarding({
       es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
     });
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const secondsLabel = uiCopy(supportLang, {
@@ -283,6 +285,7 @@ export default function Onboarding({
     es: "segundos",
     it: "secondi",
     fr: "secondes",
+    ja: "秒",
   });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -295,6 +298,7 @@ export default function Onboarding({
     es: ["Idiomas", "Voz", "Efectos"],
     it: ["Lingue", "Voce", "Effetti"],
     fr: ["Langues", "Voix", "Effets"],
+    ja: ["言語", "音声", "効果"],
   });
 
   return (
@@ -536,10 +540,7 @@ export default function Onboarding({
                           >
                             <HStack spacing={2}>
                               {selectedPracticeOption?.flag}
-                              <Text as="span">
-                                {selectedPracticeOption?.label}
-                                {selectedPracticeOption?.beta ? " (beta)" : ""}
-                              </Text>
+                              <Text as="span">{selectedPracticeOption?.label}</Text>
                             </HStack>
                           </MenuButton>
                           <MenuList
@@ -597,7 +598,6 @@ export default function Onboarding({
                                   <div style={{ display: "inline-flex" }}>
                                     {option?.flag}&nbsp;
                                     {option.label}
-                                    {option.beta ? " (beta)" : ""}
                                   </div>
                                 </MenuItemOption>
                               ))}
@@ -775,6 +775,7 @@ export default function Onboarding({
                       es: "Atrás",
                       it: "Indietro",
                       fr: "Retour",
+                      ja: "戻る",
                     })}
                   </Button>
                 )}
@@ -793,6 +794,8 @@ export default function Onboarding({
                         en: "Next",
                         es: "Siguiente",
                         it: "Avanti",
+                        fr: "Suivant",
+                        ja: "次へ",
                       })}
                   </Button>
                 ) : (

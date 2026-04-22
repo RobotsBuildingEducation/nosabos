@@ -95,6 +95,7 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
     return "French";
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
+  if (m === "ja" || m === "japanese" || m === "日本語") return "Japanese";
   if (m === "nl" || m === "dutch" || m === "nederlands" || m === "holandés")
     return "Dutch";
   if (m === "nah" || m === "nahuatl" || m === "eastern huasteca nahuatl")
@@ -130,6 +131,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
+  if (m === "ja") return "ja-JP";
   if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-MX"; // fallback
   if (m === "ru") return "ru-RU";
@@ -154,6 +156,7 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
   if (
@@ -300,12 +303,46 @@ function useUIText(uiLang, level, translationsObj) {
       "Script loaded": "Script charge",
       "You don't have any saved scripts yet.": "Tu n'as pas encore de scripts enregistres.",
     };
-    const copy = (en, es, it, fr) =>
+    const jaCopy = {
+      "Script Coach": "スクリプトコーチ",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "スクリプトをアップロードまたは貼り付けると、目標言語に変換し、あなたの言語でサポートを表示します。",
+      "Create script": "スクリプトを作成",
+      Listen: "聞く",
+      "Start Sentence Practice": "文ごとの練習を開始",
+      "Practice this sentence:": "この文を練習:",
+      "Skip Sentence": "文をスキップ",
+      "Finish Practice": "練習を終了",
+      "Record Sentence": "文を録音",
+      "Stop Recording": "録音を停止",
+      Progress: "進捗",
+      "Well done!": "よくできました！",
+      "Almost — try again": "もう少しです。もう一度",
+      Score: "スコア",
+      Level: "レベル",
+      "I speak (support)": "話せる言語（サポート）",
+      "I’m learning (target)": "学習中（目標）",
+      "e.g., es, Spanish, fr-CA": "例: es, Spanish, fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "ここにスクリプトを貼り付けてください…（対応: .txt, .srt, .vtt, .md, .docx, .pdf）",
+      "Upload file": "ファイルをアップロード",
+      "Script ready! Start practicing.": "スクリプトの準備ができました。練習を始めましょう。",
+      "You need at least one sentence.": "少なくとも1文が必要です。",
+      Save: "保存",
+      "Title (optional)": "タイトル（任意）",
+      "Your saved scripts": "保存済みスクリプト",
+      Open: "開く",
+      "Script saved": "スクリプトを保存しました",
+      "Script loaded": "スクリプトを読み込みました",
+      "You don't have any saved scripts yet.": "保存済みスクリプトはまだありません。",
+    };
+    const copy = (en, es, it, fr, ja) =>
       uiCopy(uiLang, {
         en,
         es,
         it,
         fr: fr || frCopy[en] || en,
+        ja: ja || jaCopy[en] || en,
       });
     return {
       header: copy("Script Coach", "Entrenador de guiones", "Coach di copioni"),
@@ -1025,43 +1062,56 @@ const isInsecureContext = () => {
 };
 
 function micErrorToMessage(err, uiLang) {
-  const t = (en, es, fr, it = en) => uiCopy(uiLang, { en, es, it, fr });
+  const t = (en, es, fr, it = en, ja = en) =>
+    uiCopy(uiLang, { en, es, it, fr, ja });
   switch (err?.name) {
     case "NotAllowedError":
       return t(
         "Browser is blocking the mic for this site. Click the lock icon → Site settings → Microphone → Allow, then reload.",
         "El navegador está bloqueando el micrófono para este sitio. Haz clic en el candado → Configuración del sitio → Micrófono → Permitir y recarga.",
-        "Le navigateur bloque le micro pour ce site. Clique sur le cadenas → Parametres du site → Microphone → Autoriser, puis recharge."
+        "Le navigateur bloque le micro pour ce site. Clique sur le cadenas → Parametres du site → Microphone → Autoriser, puis recharge.",
+        undefined,
+        "ブラウザがこのサイトのマイクをブロックしています。鍵アイコン → サイト設定 → マイク → 許可を選び、再読み込みしてください。",
       );
     case "SecurityError":
       return t(
         "Microphone requires HTTPS (or localhost). Open the app over https:// and try again.",
         "El micrófono requiere HTTPS (o localhost). Abre la app en https:// e inténtalo de nuevo.",
-        "Le micro necessite HTTPS (ou localhost). Ouvre l'app en https:// et reessaie."
+        "Le micro necessite HTTPS (ou localhost). Ouvre l'app en https:// et reessaie.",
+        undefined,
+        "マイクにはHTTPS（またはlocalhost）が必要です。https:// でアプリを開いてもう一度試してください。",
       );
     case "NotReadableError":
       return t(
         "The microphone is busy (Zoom/Teams/Discord). Close other apps using the mic and try again.",
         "El micrófono está en uso (Zoom/Teams/Discord). Cierra otras apps que lo usen e inténtalo de nuevo.",
-        "Le micro est occupe (Zoom/Teams/Discord). Ferme les autres apps qui l'utilisent et reessaie."
+        "Le micro est occupe (Zoom/Teams/Discord). Ferme les autres apps qui l'utilisent et reessaie.",
+        undefined,
+        "マイクが使用中です（Zoom/Teams/Discordなど）。マイクを使っている他のアプリを閉じて、もう一度試してください。",
       );
     case "NotFoundError":
       return t(
         "No microphone was found or it’s disabled at the OS level.",
         "No se encontró micrófono o está deshabilitado en el sistema.",
-        "Aucun micro trouve ou il est desactive dans le systeme."
+        "Aucun micro trouve ou il est desactive dans le systeme.",
+        undefined,
+        "マイクが見つからないか、OS側で無効になっています。",
       );
     case "OverconstrainedError":
       return t(
         "Requested audio constraints are not supported by your mic.",
         "Las restricciones de audio solicitadas no son compatibles con tu micrófono.",
-        "Les contraintes audio demandees ne sont pas prises en charge par ton micro."
+        "Les contraintes audio demandees ne sont pas prises en charge par ton micro.",
+        undefined,
+        "要求された音声設定はこのマイクではサポートされていません。",
       );
     default:
       return t(
         "Microphone error. If permissions look allowed, reload the page and try again.",
         "Error de micrófono. Si los permisos están en 'Permitir', recarga la página e inténtalo de nuevo.",
-        "Erreur de micro. Si les autorisations semblent correctes, recharge la page et reessaie."
+        "Erreur de micro. Si les autorisations semblent correctes, recharge la page et reessaie.",
+        undefined,
+        "マイクエラーです。権限が許可されている場合は、ページを再読み込みしてもう一度試してください。",
       );
   }
 }
@@ -1192,6 +1242,7 @@ export default function JobScript({
             es: "Archivo cargado",
             it: "File caricato",
             fr: "Fichier charge",
+            ja: "ファイルを読み込みました",
           }),
           status: "success",
           duration: 1200,
@@ -1204,6 +1255,7 @@ export default function JobScript({
             es: "Error al leer archivo",
             it: "Errore di lettura del file",
             fr: "Erreur de lecture du fichier",
+            ja: "ファイルの読み取りエラー",
           }),
           description: String(e?.message || e),
           status: "error",
@@ -1327,6 +1379,7 @@ export default function JobScript({
           es: "No se pudo crear el guion",
           it: "Impossibile creare il copione",
           fr: "Impossible de creer le script",
+          ja: "スクリプトを作成できませんでした",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1345,6 +1398,7 @@ export default function JobScript({
           es: "Nada que guardar",
           it: "Niente da salvare",
           fr: "Rien a enregistrer",
+          ja: "保存するものがありません",
         }),
         status: "warning",
       });
@@ -1381,6 +1435,7 @@ export default function JobScript({
           es: "No se pudo guardar",
           it: "Impossibile salvare",
           fr: "Impossible d'enregistrer",
+          ja: "保存できませんでした",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1410,6 +1465,7 @@ export default function JobScript({
           es: "No se pudo abrir",
           it: "Impossibile aprire",
           fr: "Impossible d'ouvrir",
+          ja: "開けませんでした",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1701,12 +1757,14 @@ export default function JobScript({
         es: "¡Felicidades!",
         it: "Congratulazioni!",
         fr: "Felicitations !",
+        ja: "おめでとうございます！",
       }),
       description: uiCopy(uiLang, {
         en: `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
         es: `¡Completaste la práctica! Ganaste ${awardedXp} ${uiText.xp}.`,
         it: `Pratica completata! Hai guadagnato ${awardedXp} ${uiText.xp}.`,
         fr: `Pratique terminee ! Tu as gagne ${awardedXp} ${uiText.xp}.`,
+        ja: `練習完了！${awardedXp} ${uiText.xp}を獲得しました。`,
       }),
       status: "success",
       duration: 3000,
@@ -1735,6 +1793,7 @@ export default function JobScript({
           es: "Micrófono bloqueado",
           it: "Microfono bloccato",
           fr: "Micro bloque",
+          ja: "マイクがブロックされています",
         }),
         description: micErrorToMessage({ name: "SecurityError" }, uiLang),
         status: "warning",
@@ -1753,6 +1812,7 @@ export default function JobScript({
             es: "Micrófono bloqueado",
             it: "Microfono bloccato",
             fr: "Micro bloque",
+            ja: "マイクがブロックされています",
           }),
           description: micErrorToMessage({ name: "NotAllowedError" }, uiLang),
           status: "error",
@@ -1830,6 +1890,7 @@ export default function JobScript({
           es: "Problema con el micrófono",
           it: "Problema con il microfono",
           fr: "Probleme de micro",
+          ja: "マイクの問題",
         }),
         description: msg,
         status: "warning",
@@ -1882,12 +1943,14 @@ export default function JobScript({
           es: "No se pudo usar el micrófono",
           it: "Impossibile usare il microfono",
           fr: "Impossible d'utiliser le micro",
+          ja: "マイクを使用できませんでした",
         }),
         description: uiCopy(uiLang, {
           en: "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
           es: "Prueba en Chrome/Edge con https://, revisa el candado (Micrófono: Permitir) y que ninguna app esté usando el micrófono.",
           it: "Prova Chrome/Edge su https://, controlla il lucchetto (Microfono: Consenti) e assicurati che nessun'altra app usi il microfono.",
           fr: "Essaie Chrome/Edge en https://, verifie le cadenas (Microphone : Autoriser) et assure-toi qu'aucune autre app n'utilise le micro.",
+          ja: "https:// のChrome/Edgeで試し、鍵アイコン（マイク: 許可）を確認し、他のアプリがマイクを使用していないことを確認してください。",
         }),
         status: "error",
         duration: 7000,
@@ -2040,6 +2103,7 @@ export default function JobScript({
           es: "Error de micrófono",
           it: "Errore del microfono",
           fr: "Erreur de micro",
+          ja: "マイクエラー",
         }),
         description: micErrorToMessage(e, uiLang),
         status: "error",
@@ -2377,6 +2441,7 @@ export default function JobScript({
                         es: "Oración",
                         it: "Frase",
                         fr: "Phrase",
+                        ja: "文",
                       })}{" "}
                       {currentSentenceIndex + 1}{" "}
                       {uiCopy(uiLang, {
@@ -2384,6 +2449,7 @@ export default function JobScript({
                         es: "de",
                         it: "di",
                         fr: "sur",
+                        ja: "／",
                       })}{" "}
                       {storyData.sentences.length}
                     </Text>

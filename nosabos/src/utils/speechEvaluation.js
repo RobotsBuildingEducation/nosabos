@@ -547,6 +547,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Inclue les mots cles du contenu.",
     "low-confidence": "Prononce clairement et reduis le bruit de fond.",
   },
+  ja: {
+    "speech-quality": "もう少し大きな声で、一定のペースで話してみましょう。",
+    "not-target-lang": (targetLabel) => `${targetLabel}で話してみましょう。`,
+    "low-char-sim": "元の文にもっと近づけてみましょう。",
+    "low-word-f1": "重要な内容語を入れてみましょう。",
+    "low-confidence": "はっきり発音し、周囲の雑音を減らしましょう。",
+  },
 };
 
 export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = {}) {
@@ -565,6 +572,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
                 ? "la lingua obiettivo"
                 : lang === "fr"
                   ? "la langue cible"
+                : lang === "ja"
+                  ? "目標言語"
                 : "the target language"),
         ),
       );
@@ -578,6 +587,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
           ? "Riprova parlando chiaramente."
           : lang === "fr"
             ? "Reessaie en parlant clairement."
+          : lang === "ja"
+            ? "はっきり話して、もう一度試してみましょう。"
           : "Try again, speaking clearly.",
     );
   }

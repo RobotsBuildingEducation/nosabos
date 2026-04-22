@@ -109,7 +109,8 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it, fr) {
+function supportCopy(lang, en, es, it, fr, ja) {
+  if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "es") return es || en;
@@ -267,6 +268,7 @@ const HelpChatFab = forwardRef(
           "Sin mensajes",
           "Nessun messaggio",
           "Aucun message",
+          "メッセージなし",
         ),
         noMessagesDesc: supportCopy(
           uiLang,
@@ -274,6 +276,7 @@ const HelpChatFab = forwardRef(
           "No hay mensajes para guardar.",
           "Non ci sono messaggi da salvare.",
           "Aucun message a enregistrer.",
+          "保存するメッセージがありません。",
         ),
         savedChatTitle: supportCopy(
           uiLang,
@@ -281,6 +284,7 @@ const HelpChatFab = forwardRef(
           "Chat guardado",
           "Chat salvata",
           "Chat enregistre",
+          "チャットを保存しました",
         ),
         chatSavedTitle: supportCopy(
           uiLang,
@@ -288,6 +292,7 @@ const HelpChatFab = forwardRef(
           "Chat guardado",
           "Chat salvata",
           "Chat enregistre",
+          "チャットを保存しました",
         ),
         chatDeletedTitle: supportCopy(
           uiLang,
@@ -295,6 +300,7 @@ const HelpChatFab = forwardRef(
           "Chat eliminado",
           "Chat eliminata",
           "Chat supprime",
+          "チャットを削除しました",
         ),
         requestFailed: supportCopy(
           uiLang,
@@ -302,6 +308,7 @@ const HelpChatFab = forwardRef(
           "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente.",
           "Mi dispiace, non sono riuscito a completare la richiesta. Riprova.",
           "Desole, je n'ai pas pu terminer cette demande. Reessaie.",
+          "すみません、そのリクエストを完了できませんでした。もう一度お試しください。",
         ),
         chatErrorTitle: supportCopy(
           uiLang,
@@ -309,6 +316,7 @@ const HelpChatFab = forwardRef(
           "Error de chat",
           "Errore chat",
           "Erreur de chat",
+          "チャットエラー",
         ),
         connectionErrorTitle: supportCopy(
           uiLang,
@@ -316,6 +324,7 @@ const HelpChatFab = forwardRef(
           "Error de conexión",
           "Errore di connessione",
           "Erreur de connexion",
+          "接続エラー",
         ),
         yourChats: supportCopy(
           uiLang,
@@ -323,6 +332,7 @@ const HelpChatFab = forwardRef(
           "Tus chats",
           "Le tue chat",
           "Tes chats",
+          "あなたのチャット",
         ),
         noSavedChats: supportCopy(
           uiLang,
@@ -330,14 +340,16 @@ const HelpChatFab = forwardRef(
           "No hay chats guardados",
           "Nessuna chat salvata",
           "Aucun chat enregistre",
+          "保存済みチャットはありません",
         ),
-        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina", "Supprimer"),
+        delete: supportCopy(uiLang, "Delete", "Eliminar", "Elimina", "Supprimer", "削除"),
         morphemeMode: supportCopy(
           uiLang,
           "Morpheme mode",
           "Modo morfemas",
           "Modalità morfemi",
           "Mode morphemes",
+          "形態素モード",
         ),
         breakDownWords: supportCopy(
           uiLang,
@@ -345,18 +357,20 @@ const HelpChatFab = forwardRef(
           "Desglosa palabras",
           "Scomponi le parole",
           "Decomposer les mots",
+          "単語を分解",
         ),
-        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat", "Nouveau chat"),
-        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto", "Aide"),
-        menu: supportCopy(uiLang, "Menu", "Menú", "Menu", "Menu"),
-        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi", "Morphemes"),
-        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat", "Enregistrer le chat"),
+        newChat: supportCopy(uiLang, "New chat", "Nuevo chat", "Nuova chat", "Nouveau chat", "新しいチャット"),
+        help: supportCopy(uiLang, "Help", "Ayuda", "Aiuto", "Aide", "ヘルプ"),
+        menu: supportCopy(uiLang, "Menu", "Menú", "Menu", "Menu", "メニュー"),
+        morphemes: supportCopy(uiLang, "Morphemes", "Morfemas", "Morfemi", "Morphemes", "形態素"),
+        saveChat: supportCopy(uiLang, "Save chat", "Guardar", "Salva chat", "Enregistrer le chat", "チャットを保存"),
         emptyPrompt: supportCopy(
           uiLang,
           "What do you want to learn today?",
           "¿Qué quieres aprender hoy?",
           "Che cosa vuoi imparare oggi?",
           "Qu'est-ce que tu veux apprendre aujourd'hui ?",
+          "今日は何を学びたいですか？",
         ),
         stopVoiceChat: supportCopy(
           uiLang,
@@ -364,6 +378,7 @@ const HelpChatFab = forwardRef(
           "Detener chat de voz",
           "Interrompi chat vocale",
           "Arreter le chat vocal",
+          "音声チャットを停止",
         ),
         startVoiceChat: supportCopy(
           uiLang,
@@ -371,17 +386,19 @@ const HelpChatFab = forwardRef(
           "Iniciar chat de voz",
           "Avvia chat vocale",
           "Demarrer le chat vocal",
+          "音声チャットを開始",
         ),
-        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci", "Lire"),
+        play: supportCopy(uiLang, "Play", "Reproducir", "Riproduci", "Lire", "再生"),
         askPlaceholder: supportCopy(
           uiLang,
           "Ask about this lesson...",
           "Pregunta sobre esta lección...",
           "Chiedi qualcosa su questa lezione...",
           "Pose une question sur cette lecon...",
+          "このレッスンについて質問...",
         ),
-        send: supportCopy(uiLang, "Send", "Enviar", "Invia", "Envoyer"),
-        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma", "Arreter"),
+        send: supportCopy(uiLang, "Send", "Enviar", "Invia", "Envoyer", "送信"),
+        stop: supportCopy(uiLang, "Stop", "Detener", "Ferma", "Arreter", "停止"),
       }),
       [uiLang],
     );
@@ -588,6 +605,7 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese (português brasileiro)",
           fr: "French (français)",
           it: "Italian (italiano)",
+          ja: "Japanese (日本語)",
           nl: "Dutch (Nederlands)",
           nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
           ru: "Russian (русский)",
@@ -1133,6 +1151,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           pt: "Portuguese",
           fr: "French",
           it: "Italian",
+          ja: "Japanese",
           nl: "Dutch",
           nah: "Eastern Huasteca Nahuatl",
           ru: "Russian",
