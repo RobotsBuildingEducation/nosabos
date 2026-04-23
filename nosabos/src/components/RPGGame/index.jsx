@@ -74,6 +74,7 @@ import RandomCharacter from "../RandomCharacter";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -2537,7 +2538,6 @@ export default function RPGGame({
   const questLogModal = useDisclosure();
   const helpChatRef = useRef(null);
   const isTouchDevice = useRef(false);
-  const interactionTouchStartRef = useRef(null);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
   const pendingSpeechReplyTokenRef = useRef(0);
@@ -5594,10 +5594,10 @@ export default function RPGGame({
       ];
 
       for (const dir of examineDirs) {
-        const object = findScenarioObjectAtTile(
-          activeMap.objects || [],
-          gs.playerX + dir.dx,
-          gs.playerY + dir.dy,
+        const object = (activeMap.objects || []).find(
+          (entry) =>
+            entry.tx === gs.playerX + dir.dx &&
+            entry.ty === gs.playerY + dir.dy,
         );
         if (object) {
           examineScenarioObject(object);
@@ -5607,35 +5607,21 @@ export default function RPGGame({
     };
 
     const handleKeyDown = (e) => {
-      const targetTag = String(e.target?.tagName || "").toLowerCase();
-      const isTypingTarget =
-        targetTag === "input" ||
-        targetTag === "textarea" ||
-        targetTag === "select" ||
-        e.target?.isContentEditable;
-      if (isTypingTarget) return;
-      if (
-        e.key === "Enter" ||
-        e.key === " " ||
-        e.key === "Spacebar" ||
-        e.code === "Space"
-      ) {
+      if (e.key === " " || e.key === "Enter") {
         e.preventDefault();
         handleInteract();
       }
     };
 
-    const handleClientPointSelection = (clientX, clientY, renderTarget = null) => {
-      const targetElement =
-        renderTarget || rendererRef.current?.domElement || canvasRef.current;
-      if (!targetElement || !scenario || !activeMap) return;
-      const rect = targetElement.getBoundingClientRect();
+    const handleClick = (e) => {
+      if (!canvasRef.current || !scenario || !activeMap) return;
+      const rect = canvasRef.current.getBoundingClientRect();
       const TILE = activeMap.tileSize || scenario.tileSize;
       const gs = gameStateRef.current;
       if (!gs) return;
 
-      const clickX = clientX - rect.left;
-      const clickY = clientY - rect.top;
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const dx = clickX - centerX;
@@ -5732,15 +5718,6 @@ export default function RPGGame({
         }
 
         if (blockedCandidate) {
-          const blockedObject = findScenarioObjectAtTile(
-            activeMap.objects || [],
-            blockedCandidate.tx,
-            blockedCandidate.ty,
-          );
-          if (!dialogue && blockedObject) {
-            examineScenarioObject(blockedObject);
-            return true;
-          }
           flashBlockedTileHint(blockedCandidate.tx, blockedCandidate.ty);
         }
         return false;
@@ -5748,7 +5725,9 @@ export default function RPGGame({
 
       const clickedObject =
         !dialogue &&
-        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY);
+        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY, {
+          exact: true,
+        });
       if (clickedObject) {
         examineScenarioObject(clickedObject);
         return;
@@ -5825,62 +5804,13 @@ export default function RPGGame({
       }
     };
 
-    const handleClick = (e) => {
-      const renderTarget =
-        e.currentTarget || rendererRef.current?.domElement || canvasRef.current;
-      if (!renderTarget || !scenario || !activeMap) return;
-      handleClientPointSelection(e.clientX, e.clientY, renderTarget);
-    };
+    window.addEventListener("keydown", handleKeyDown);
+    canvasRef.current?.addEventListener("click", handleClick);
 
-    const handleTouchStart = (e) => {
-      if (!e.touches?.length) return;
-      isTouchDevice.current = true;
-      e.preventDefault();
-      interactionTouchStartRef.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-      };
-    };
-
-    const handleTouchEnd = (e) => {
-      if (!interactionTouchStartRef.current || !e.changedTouches?.length) return;
-      e.preventDefault();
-      const touch = e.changedTouches[0];
-      const dx = touch.clientX - interactionTouchStartRef.current.x;
-      const dy = touch.clientY - interactionTouchStartRef.current.y;
-      interactionTouchStartRef.current = null;
-
-      if (Math.sqrt(dx * dx + dy * dy) < 15) {
-        const renderTarget =
-          e.currentTarget || rendererRef.current?.domElement || canvasRef.current;
-        handleClientPointSelection(touch.clientX, touch.clientY, renderTarget);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown, true);
-    const renderCanvas = rendererRef.current?.domElement;
-    const eventTargets = [renderCanvas, canvasRef.current].filter(
-      (target, idx, list) => target && list.indexOf(target) === idx,
-    );
-    eventTargets.forEach((target) => {
-      target.addEventListener("click", handleClick);
-      target.addEventListener("touchstart", handleTouchStart, {
-        passive: false,
-      });
-      target.addEventListener("touchend", handleTouchEnd, {
-        passive: false,
-      });
-    });
-
-    const currentEventTargets = [...eventTargets];
+    const currentCanvas = canvasRef.current;
     return () => {
-      window.removeEventListener("keydown", handleKeyDown, true);
-      interactionTouchStartRef.current = null;
-      currentEventTargets.forEach((target) => {
-        target.removeEventListener("click", handleClick);
-        target.removeEventListener("touchstart", handleTouchStart);
-        target.removeEventListener("touchend", handleTouchEnd);
-      });
+      window.removeEventListener("keydown", handleKeyDown);
+      currentCanvas?.removeEventListener("click", handleClick);
     };
   }, [
     activeMap,
@@ -5900,7 +5830,6 @@ export default function RPGGame({
     questSteps,
     speakNPCText,
     ui.lockedNpc,
-    interactionTouchStartRef,
   ]);
 
   useEffect(() => {
