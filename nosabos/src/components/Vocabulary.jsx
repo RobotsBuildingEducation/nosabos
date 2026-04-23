@@ -4780,9 +4780,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       : userLanguage === "es"
         ? "Siguiente pregunta"
         : "Next question");
+  const translatedSkipLabel = t("practice_skip_question");
   const skipLabel =
-    t("practice_skip_question") ||
-    (userLanguage === "pt" ? "Pular" : userLanguage === "es" ? "Saltar" : "Skip");
+    translatedSkipLabel &&
+    translatedSkipLabel !== "practice_skip_question"
+      ? translatedSkipLabel
+      : userLanguage === "pt"
+        ? "Pular"
+        : userLanguage === "es"
+          ? "Saltar"
+          : "Skip";
   const canSkip = !isFinalQuiz && !quizCompleted;
   const showNextButton = isFinalQuiz
     ? Boolean(nextAction)

@@ -64,6 +64,32 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "hi") {
+    return {
+      title: "आपका साथी",
+      subtitle: "अपना रोज़ का XP लक्ष्य पूरा करके इसकी सेहत अच्छी रखें।",
+      health: "सेहत",
+      happy: "खुश",
+      healthy: "स्वस्थ",
+      unhappy: "उदास",
+      stressed: "तनावग्रस्त",
+      unhealthy: "अस्वस्थ",
+      dead: "निष्क्रिय",
+      reward: "लक्ष्य पूरा",
+      penalty: "लक्ष्य छूटा",
+      rewardFooter: "सेहत {health}% तक बढ़ती है",
+      penaltyFooter: "सेहत {health}% तक घटती है",
+      latestAchieved: "नवीनतम अपडेट: लक्ष्य पूरा करने पर +{delta}%",
+      latestMissed: "नवीनतम अपडेट: लक्ष्य चूकने पर {delta}%",
+      managementHint: "इसे मजबूत रखने के लिए आज का लक्ष्य पूरा करें।",
+      celebrationHint: "आज आपके साथी की सेहत बढ़ी है।",
+      rewardBadge: "इनाम +{delta}%",
+      penaltyBadge: "जोखिम -{delta}%",
+      previewHint:
+        "यह केवल पूर्वावलोकन है। इससे आपके कुत्ते की असली सेहत नहीं बदलती।",
+    };
+  }
+
   if (lang === "ja") {
     return {
       title: "あなたの相棒",

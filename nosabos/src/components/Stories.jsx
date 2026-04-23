@@ -115,6 +115,7 @@ const LLM_LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    hi: "Hindi",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -132,6 +133,7 @@ const LLM_LANG_NAME = (code) =>
 const BCP47 = {
   es: { stt: "es-MX", tts: "es-MX" },
   en: { stt: "en-US", tts: "en-US" },
+  hi: { stt: "hi-IN", tts: "hi-IN" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
@@ -160,6 +162,7 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["hi", "hindi", "हिंदी", "hindustani"].includes(raw)) return "hi";
   if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
@@ -201,7 +204,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "pt", "it", "fr", "ja"].includes(lang) ? lang : "en";
+  return ["es", "pt", "it", "fr", "ja", "hi"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -272,7 +275,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "pt", "it", "fr", "ja", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -719,6 +722,7 @@ export default function StoryMode({
               sup: supportStoryText(supportLang, {
                 en: "Hello. Hi. Goodbye.",
                 es: "Hola. Hola. Adiós.",
+                hi: "नमस्ते। हाय। अलविदा।",
                 it: "Ciao. Ciao. Arrivederci.",
                 fr: "Bonjour. Salut. Au revoir.",
               }),
@@ -731,6 +735,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Hello.",
                         es: "Hola.",
+                        hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
                       }),
@@ -740,6 +745,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Hi.",
                         es: "Hola.",
+                        hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
                       }),
@@ -749,6 +755,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Goodbye.",
                         es: "Adiós.",
+                        hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
                       }),
@@ -760,6 +767,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Hello.",
                         es: "Hola.",
+                        hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
                       }),
@@ -769,6 +777,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Hi.",
                         es: "Hola.",
+                        hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
                       }),
@@ -778,6 +787,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Goodbye.",
                         es: "Adiós.",
+                        hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
                       }),
@@ -794,6 +804,7 @@ export default function StoryMode({
               sup: supportStoryText(supportLang, {
                 en: "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
                 es: "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था। उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे। चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था। बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसी फव्वारे के आसपास बैठते थे।",
                 it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                 fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
               }),
@@ -806,6 +817,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Once upon a time, there was a small town called San Miguel.",
                         es: "Había una vez un pequeño pueblo llamado San Miguel.",
+                        hi: "एक समय सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese chiamato San Miguel.",
                         fr: "Il etait une fois un petit village appele San Miguel.",
                       }),
@@ -815,6 +827,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "The town had a lovely square where kids played every day.",
                         es: "El pueblo tenía una plaza bonita donde los niños jugaban a diario.",
+                        hi: "उस कस्बे में एक सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
                       }),
@@ -824,6 +837,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "In the square, an old fountain always had fresh water.",
                         es: "En la plaza, una fuente antigua siempre tenía agua fresca.",
+                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
                         fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
                       }),
@@ -833,6 +847,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Adults sat around it to talk and rest after work.",
                         es: "Los adultos se sentaban alrededor para hablar y descansar después del trabajo.",
+                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसके आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
                       }),
@@ -844,6 +859,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "Once upon a time, there was a small town in Mexico called San Miguel.",
                         es: "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                        hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
                         fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
                       }),
@@ -853,6 +869,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "The town had a very beautiful square where the children played every day.",
                         es: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                        hi: "उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
                       }),
@@ -862,6 +879,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "In the square, there was an old fountain that always had fresh water.",
                         es: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
                         fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
                       }),
@@ -871,6 +889,7 @@ export default function StoryMode({
                       sup: supportStoryText(supportLang, {
                         en: "The adults sat around the fountain to talk and rest after work.",
                         es: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए फव्वारे के आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
                       }),
@@ -1392,6 +1411,7 @@ export default function StoryMode({
     supportStoryText(uiLang, {
       en: "Next Sentence",
       es: "Siguiente Oración",
+      hi: "अगला वाक्य",
       it: "Frase successiva",
       fr: "Phrase suivante",
     });
@@ -1400,6 +1420,7 @@ export default function StoryMode({
     supportStoryText(uiLang, {
       en: "Finish",
       es: "Terminar",
+      hi: "समाप्त करें",
       it: "Fine",
       fr: "Terminer",
     });
@@ -2174,6 +2195,7 @@ export default function StoryMode({
                                       supportStoryText(uiLang, {
                                         en: "Ready to continue!",
                                         es: "¡Listo para continuar!",
+                                        hi: "आगे बढ़ने के लिए तैयार!",
                                         it: "Pronto per continuare!",
                                         fr: "Pret pour continuer !",
                                       })}

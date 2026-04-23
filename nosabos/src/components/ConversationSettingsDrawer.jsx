@@ -44,7 +44,15 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 const CEFR_LEVELS = [
   {
     level: "Pre-A1",
-    name: { en: "Foundations", es: "Fundamentos", pt: "Fundamentos", it: "Fondamenti", fr: "Fondations", ja: "基礎" },
+    name: {
+      en: "Foundations",
+      es: "Fundamentos",
+      pt: "Fundamentos",
+      it: "Fondamenti",
+      fr: "Fondations",
+      ja: "基礎",
+      hi: "नींव",
+    },
     description: {
       en: "First words and phrases",
       es: "Primeras palabras y frases",
@@ -52,12 +60,21 @@ const CEFR_LEVELS = [
       it: "Prime parole e frasi",
       fr: "Premiers mots et phrases",
       ja: "最初の単語とフレーズ",
+      hi: "पहले शब्द और वाक्यांश",
     },
     color: "#8B5CF6",
   },
   {
     level: "A1",
-    name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者" },
+    name: {
+      en: "Beginner",
+      es: "Principiante",
+      pt: "Iniciante",
+      it: "Principiante",
+      fr: "Debutant",
+      ja: "初心者",
+      hi: "शुरुआती",
+    },
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
@@ -65,12 +82,21 @@ const CEFR_LEVELS = [
       it: "Lingua essenziale di base",
       fr: "Langue essentielle de base",
       ja: "基本的なサバイバル表現",
+      hi: "बुनियादी रोज़मर्रा की भाषा",
     },
     color: "#3B82F6",
   },
   {
     level: "A2",
-    name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級" },
+    name: {
+      en: "Elementary",
+      es: "Elemental",
+      pt: "Elementar",
+      it: "Elementare",
+      fr: "Elementaire",
+      ja: "初級",
+      hi: "प्रारंभिक",
+    },
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
@@ -78,12 +104,21 @@ const CEFR_LEVELS = [
       it: "Comunicazione quotidiana semplice",
       fr: "Communication simple du quotidien",
       ja: "簡単な日常コミュニケーション",
+      hi: "सरल दैनिक संवाद",
     },
     color: "#8B5CF6",
   },
   {
     level: "B1",
-    name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級" },
+    name: {
+      en: "Intermediate",
+      es: "Intermedio",
+      pt: "Intermediário",
+      it: "Intermedio",
+      fr: "Intermediaire",
+      ja: "中級",
+      hi: "मध्यम",
+    },
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
@@ -91,12 +126,21 @@ const CEFR_LEVELS = [
       it: "Gestire situazioni quotidiane",
       fr: "Gerer les situations quotidiennes",
       ja: "日常場面に対応",
+      hi: "रोज़मर्रा की स्थितियाँ संभालना",
     },
     color: "#A855F7",
   },
   {
     level: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto", pt: "Intermediário avançado", it: "Intermedio alto", fr: "Intermediaire avance", ja: "中上級" },
+    name: {
+      en: "Upper Intermediate",
+      es: "Intermedio Alto",
+      pt: "Intermediário avançado",
+      it: "Intermedio alto",
+      fr: "Intermediaire avance",
+      ja: "中上級",
+      hi: "उच्च मध्यम",
+    },
     description: {
       en: "Complex discussions",
       es: "Discusiones complejas",
@@ -104,12 +148,21 @@ const CEFR_LEVELS = [
       it: "Discussioni complesse",
       fr: "Discussions complexes",
       ja: "複雑な話し合い",
+      hi: "जटिल चर्चाएँ",
     },
     color: "#F97316",
   },
   {
     level: "C1",
-    name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級" },
+    name: {
+      en: "Advanced",
+      es: "Avanzado",
+      pt: "Avançado",
+      it: "Avanzato",
+      fr: "Avance",
+      ja: "上級",
+      hi: "उन्नत",
+    },
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
@@ -117,12 +170,21 @@ const CEFR_LEVELS = [
       it: "Uso sofisticato della lingua",
       fr: "Usage sophistique de la langue",
       ja: "洗練された言語運用",
+      hi: "परिष्कृत भाषा प्रयोग",
     },
     color: "#EF4444",
   },
   {
     level: "C2",
-    name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達" },
+    name: {
+      en: "Mastery",
+      es: "Maestría",
+      pt: "Domínio",
+      it: "Padronanza",
+      fr: "Maitrise",
+      ja: "熟達",
+      hi: "निपुणता",
+    },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
@@ -130,13 +192,14 @@ const CEFR_LEVELS = [
       it: "Competenza quasi nativa",
       fr: "Competence quasi native",
       ja: "ネイティブに近い熟達度",
+      hi: "लगभग मातृभाषी दक्षता",
     },
     color: "#EC4899",
   },
 ];
 
 function getConversationSettingsUi(lang) {
-  return {
+  const copy = {
     en: {
       title: "Conversation Settings",
       proficiencyLabel: "Proficiency Level",
@@ -224,7 +287,23 @@ function getConversationSettingsUi(lang) {
       save: "Salvar",
       close: "Fechar",
     },
-  }[lang];
+    hi: {
+      title: "बातचीत सेटिंग्स",
+      proficiencyLabel: "दक्षता स्तर",
+      proficiencyHint: "बातचीत के विषयों की कठिनाई तय करें",
+      pronunciationLabel: "उच्चारण अभ्यास",
+      pronunciationHint: "AI आपकी उच्चारण सुधारने में मदद करेगा",
+      subjectLabel: "कस्टम विषय",
+      subjectHint:
+        "वे विषय लिखें जिनका आप अभ्यास करना चाहते हैं (जैसे: चिकित्सा, काम, यात्रा)",
+      subjectPlaceholder:
+        "जैसे: मैं डॉक्टर हूँ और मरीजों के साथ बातचीत का अभ्यास करना चाहता/चाहती हूँ...",
+      save: "सहेजें",
+      close: "बंद करें",
+    },
+  };
+
+  return copy[lang] || copy.en;
 }
 
 export function ConversationSettingsPanel({

@@ -1,4 +1,5 @@
 import { LINKS_PAGE_PT_STATIC } from "./linksPagePtStatic";
+import { LINKS_PAGE_HI_STATIC } from "./linksPageHiStatic";
 
 export const linksPageTranslations = {
   en: {
@@ -184,6 +185,7 @@ export const linksPageTranslations = {
     language_es: "Spanish",
     language_fr: "French",
     language_it: "Italian",
+    language_hi: "Hindi",
     language_ja: "Japanese",
   },
   it: {
@@ -369,6 +371,7 @@ export const linksPageTranslations = {
     language_es: "Spagnolo",
     language_fr: "Francese",
     language_it: "Italiano",
+    language_hi: "Hindi",
     language_ja: "Giapponese",
   },
   es: {
@@ -557,6 +560,7 @@ export const linksPageTranslations = {
     language_es: "Español",
     language_fr: "Francés",
     language_it: "Italiano",
+    language_hi: "Hindi",
     language_ja: "Japonés",
   },
 };
@@ -625,6 +629,71 @@ linksPageTranslations.pt = {
       <p style={{ marginBottom: 12 }}>
         Então, mais uma vez, obrigado por conferir o meu trabalho! Isso
         sinceramente significa muito para mim.
+      </p>
+    </div>
+  ),
+};
+
+linksPageTranslations.hi = {
+  ...LINKS_PAGE_HI_STATIC,
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>मेरे काम को देखने के लिए धन्यवाद!</p>
+
+      <p style={{ marginBottom: 12 }}>
+        मेरा नाम Sheilfer है। मैंने कंप्यूटर साइंस पढ़ी और हमेशा सॉफ़्टवेयर
+        इंजीनियरिंग सीखकर शिक्षा तकनीक बनाना चाहा। सामान्य तौर पर मुझे सीखना,
+        सिखाना और शिक्षा बेहद प्रिय है, और मुझे लगता है कि मेरी क्षमताएं वहीं
+        सबसे अच्छे से काम आती हैं।
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          मैंने 2015 में Robots Building Education का विचार इसलिए शुरू किया
+          क्योंकि मुझे लगा कि शिक्षा तकनीक हमेशा इंटरनेट की असली क्षमता से पीछे
+          रह जाती है।
+        </span>{" "}
+        ऑनलाइन गेम और इंटरनेट फ़ोरम लोगों का ध्यान खींचते थे क्योंकि वे मज़ेदार,
+        आकर्षक और कभी-कभी लत लगाने वाले भी होते थे।
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        उस समय, एक कॉलेज छात्र के रूप में, मैं निराश होता था कि मैं पढ़ाई में
+        घंटों लगाता हूँ लेकिन उसका असर तभी दिखता है जब लगभग डिग्री पूरी होने को
+        आती है, और इसमें 20 साल तक लग सकते हैं। मुझे लगता था कि कुछ कमी है।
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education इस विचार पर आधारित है कि सीखने और आगे बढ़ने
+          के उसी क्षण आपकी शिक्षा का वास्तविक प्रभाव होना चाहिए।{" "}
+        </span>
+        अभी मैं इसे “सीखने के माध्यम से छात्रवृत्तियां बनाना” कहता हूँ क्योंकि
+        इससे यह समझना आसान हो जाता है कि तकनीक पर्दे के पीछे क्या कर रही है,
+        लेकिन दीर्घकालिक दृष्टि यह है कि शिक्षा तकनीक ऐसे काम करे कि वह स्कूलों,
+        शिक्षकों और छात्रों का सीमाओं से परे अर्थपूर्ण समर्थन कर सके।
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        इसे ऐसे समझें जैसे इंटरनेट की संपत्तियां स्कूलों को उसी तरह सहयोग दें
+        जैसे भौतिक संपत्तियां करती हैं।
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        इसलिए आप मेरी प्लेटफ़ॉर्म पर कुछ चीज़ें ऐसे काम करती देख सकते हैं जैसी
+        आपने पहले कभी न देखी हों। कई चीज़ें वास्तविकता की तुलना में बहुत सहज और
+        सरल लगती हैं, और इसका एक कारण यह है कि मैं इस विचार को वास्तविक अनुभव
+        बनाने के लिए लगातार लगा रहा हूँ।{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          मुझे सच में विश्वास है कि दुनिया को ऐसे ही काम करना चाहिए, क्योंकि
+          रोज़मर्रा की ऑनलाइन शिक्षा में लगने वाले अरबों घंटों का सार्वजनिक रूप
+          से अनदेखा रह जाना मुझे समझ में नहीं आता।
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        फिर से, मेरे काम को देखने के लिए धन्यवाद। यह मेरे लिए सचमुच बहुत मायने
+        रखता है।
       </p>
     </div>
   ),
@@ -790,6 +859,7 @@ linksPageTranslations.fr = {
   language_es: "Espagnol",
   language_fr: "Français",
   language_it: "Italien",
+  language_hi: "Hindi",
   language_ja: "Japonais",
 };
 
@@ -922,5 +992,6 @@ linksPageTranslations.ja = {
   language_es: "スペイン語",
   language_fr: "フランス語",
   language_it: "イタリア語",
+  language_hi: "ヒンディー語",
   language_ja: "日本語",
 };

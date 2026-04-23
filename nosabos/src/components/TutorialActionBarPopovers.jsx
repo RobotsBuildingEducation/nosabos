@@ -55,13 +55,14 @@ const BUTTON_EXPLANATIONS = [
     id: "back",
     tutorialId: "back",
     icon: ArrowBackIcon,
-    label: { en: "Back Button", es: "Botón Atrás", it: "Tasto Indietro", fr: "Bouton retour", ja: "戻るボタン" },
+    label: { en: "Back Button", es: "Botón Atrás", it: "Tasto Indietro", fr: "Bouton retour", ja: "戻るボタン", hi: "वापस बटन" },
     description: {
       en: "Returns you to the skill tree to choose another lesson",
       es: "Te regresa al árbol de habilidades para elegir otra lección",
       it: "Ti riporta all'albero delle abilità per scegliere un'altra lezione",
       fr: "Te ramene a l'arbre de competences pour choisir une autre lecon",
       ja: "スキルツリーに戻り、別のレッスンを選べます",
+      hi: "यह आपको स्किल ट्री पर वापस ले जाता है ताकि आप दूसरा पाठ चुन सकें।",
     },
     position: 0,
   },
@@ -69,13 +70,14 @@ const BUTTON_EXPLANATIONS = [
     id: "realWorldTasks",
     tutorialId: "teams",
     icon: FiCompass,
-    label: { en: "Immersion Practice", es: "Práctica de Inmersión", it: "Pratica di Immersione", fr: "Pratique d'immersion", ja: "イマージョン練習" },
+    label: { en: "Immersion Practice", es: "Práctica de Inmersión", it: "Pratica di Immersione", fr: "Pratique d'immersion", ja: "イマージョン練習", hi: "इमर्शन अभ्यास" },
     description: {
       en: "Complete tasks outside of the app to immerse and practice the language.",
       es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
       it: "Completa attività fuori dall'app per immergerti e praticare la lingua.",
       fr: "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
       ja: "アプリの外でタスクを完了し、言語に浸って練習します。",
+      hi: "ऐप के बाहर के काम पूरे करें ताकि आप भाषा में डूबकर उसका अभ्यास कर सकें।",
     },
     position: 1,
   },
@@ -83,13 +85,14 @@ const BUTTON_EXPLANATIONS = [
     id: "settings",
     tutorialId: "settings",
     icon: SettingsIcon,
-    label: { en: "Settings", es: "Configuración", it: "Impostazioni", fr: "Parametres", ja: "設定" },
+    label: { en: "Settings", es: "Configuración", it: "Impostazioni", fr: "Parametres", ja: "設定", hi: "सेटिंग्स" },
     description: {
       en: "Open settings and account tabs for your learning preferences, voice, and account details",
       es: "Abre las pestañas de configuración y cuenta para tus preferencias, voz y detalles de cuenta",
       it: "Apri le schede impostazioni e account per le preferenze, la voce e i dettagli dell'account",
       fr: "Ouvre les onglets parametres et compte pour tes preferences, ta voix et tes details de compte",
       ja: "学習設定、音声、アカウント詳細の設定とアカウントタブを開きます",
+      hi: "अपनी सीखने की पसंद, आवाज़ और खाते की जानकारी के लिए सेटिंग्स और अकाउंट टैब खोलें।",
     },
     position: 2,
   },
@@ -97,13 +100,14 @@ const BUTTON_EXPLANATIONS = [
     id: "notes",
     tutorialId: "notes",
     icon: RiBookmarkLine,
-    label: { en: "Notes", es: "Notas", it: "Note", fr: "Notes", ja: "メモ" },
+    label: { en: "Notes", es: "Notas", it: "Note", fr: "Notes", ja: "メモ", hi: "नोट्स" },
     description: {
       en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
       it: "Visualizza le tue note di studio. Le note si creano quando esegui o completi esercizi e schede.",
       fr: "Consulte tes notes d'etude. Elles peuvent etre creees quand tu tentes ou termines des exercices et des cartes.",
       ja: "学習メモを表示します。練習やカードを試す・完了するとメモを作成できます。",
+      hi: "अपने अध्ययन नोट्स देखें। नोट्स तब बन सकते हैं जब आप अभ्यासों और फ़्लैशकार्डों को आज़माते या पूरा करते हैं।",
     },
     position: 3,
   },
@@ -111,13 +115,14 @@ const BUTTON_EXPLANATIONS = [
     id: "help",
     tutorialId: "help",
     icon: MdOutlineSupportAgent,
-    label: { en: "Assistant", es: "Asistente", it: "Assistente", fr: "Assistant", ja: "アシスタント" },
+    label: { en: "Assistant", es: "Asistente", it: "Assistente", fr: "Assistant", ja: "アシスタント", hi: "सहायक" },
     description: {
       en: "Get instant help and answers from our learning assistant",
       es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
       it: "Ottieni aiuto immediato e risposte dal nostro assistente di apprendimento",
       fr: "Obtiens une aide immediate et des reponses de notre assistant d'apprentissage",
       ja: "学習アシスタントからすぐに助けや答えを得られます",
+      hi: "हमारे सीखने वाले सहायक से तुरंत मदद और उत्तर पाएँ।",
     },
     position: 5,
   },
@@ -125,13 +130,14 @@ const BUTTON_EXPLANATIONS = [
     id: "mode",
     tutorialId: "mode",
     icon: PiPath,
-    label: { en: "Learning Mode", es: "Modo de Aprendizaje", it: "Modalità di Apprendimento", fr: "Mode d'apprentissage", ja: "学習モード" },
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje", it: "Modalità di Apprendimento", fr: "Mode d'apprentissage", ja: "学習モード", hi: "सीखने का मोड" },
     description: {
       en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
       es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
       it: "Passa tra percorso di apprendimento, schede di pratica e modalità di conversazione libera. L'icona cambia in base alla modalità attuale.",
       fr: "Passe entre le parcours, les cartes de pratique et les modes de conversation libre. L'icone change selon le mode actuel.",
       ja: "学習パス、練習カード、自由会話モードを切り替えます。現在のモードに応じてアイコンが変わります。",
+      hi: "लर्निंग पाथ, अभ्यास कार्ड और मुक्त बातचीत मोड के बीच बदलें। आइकन आपके वर्तमान मोड के अनुसार बदलता है।",
     },
     position: 6,
   },
@@ -402,6 +408,8 @@ export default function TutorialActionBarPopovers({
                     ? "前へ"
                     : lang === "fr"
                     ? "Precedent"
+                    : lang === "hi"
+                    ? "पिछला"
                     : lang === "pt"
                     ? "Anterior"
                     : lang === "es"
@@ -435,6 +443,8 @@ export default function TutorialActionBarPopovers({
                     ? "完了"
                     : lang === "fr"
                     ? "Termine"
+                    : lang === "hi"
+                    ? "पूरा"
                     : lang === "pt"
                     ? "Concluir"
                     : lang === "es"
@@ -452,6 +462,8 @@ export default function TutorialActionBarPopovers({
                       ? "次へ"
                       : lang === "fr"
                       ? "Suivant"
+                      : lang === "hi"
+                      ? "अगला"
                       : lang === "pt"
                       ? "Proximo"
                       : lang === "es"

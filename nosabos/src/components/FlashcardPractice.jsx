@@ -1218,9 +1218,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           _active={{ transform: "translateY(0)" }}
                         >
                           {isConnecting
-                            ? getAppLanguage() === "es"
-                              ? "Conectando..."
-                              : "Connecting..."
+                            ? getTranslation("vocab_connecting")
                             : isRecording
                               ? getTranslation("flashcard_stop_recording")
                               : getTranslation("flashcard_record_answer")}

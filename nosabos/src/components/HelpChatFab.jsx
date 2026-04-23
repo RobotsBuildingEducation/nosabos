@@ -63,6 +63,7 @@ const LANG_COLORS = {
   pt: { bg: "green.600", label: "PT" },
   fr: { bg: "purple.600", label: "FR" },
   it: { bg: "orange.600", label: "IT" },
+  hi: { bg: "orange.500", label: "HI" },
   nl: { bg: "orange.400", label: "NL" },
   nah: { bg: "teal.600", label: "NAH" },
   ru: { bg: "cyan.600", label: "RU" },
@@ -109,11 +110,12 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null) {
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -271,6 +273,7 @@ const HelpChatFab = forwardRef(
           "Aucun message",
           "メッセージなし",
           "Sem mensagens",
+          "कोई संदेश नहीं",
         ),
         noMessagesDesc: supportCopy(
           uiLang,
@@ -280,6 +283,7 @@ const HelpChatFab = forwardRef(
           "Aucun message a enregistrer.",
           "保存するメッセージがありません。",
           "Nenhuma mensagem para salvar.",
+          "सहेजने के लिए कोई संदेश नहीं है।",
         ),
         savedChatTitle: supportCopy(
           uiLang,
@@ -289,6 +293,7 @@ const HelpChatFab = forwardRef(
           "Chat enregistre",
           "チャットを保存しました",
           "Chat salvo",
+          "सहेजी गई चैट",
         ),
         chatSavedTitle: supportCopy(
           uiLang,
@@ -298,6 +303,7 @@ const HelpChatFab = forwardRef(
           "Chat enregistre",
           "チャットを保存しました",
           "Chat salvo",
+          "चैट सहेज ली गई",
         ),
         chatDeletedTitle: supportCopy(
           uiLang,
@@ -307,6 +313,7 @@ const HelpChatFab = forwardRef(
           "Chat supprime",
           "チャットを削除しました",
           "Chat excluído",
+          "चैट हटा दी गई",
         ),
         requestFailed: supportCopy(
           uiLang,
@@ -316,6 +323,7 @@ const HelpChatFab = forwardRef(
           "Desole, je n'ai pas pu terminer cette demande. Reessaie.",
           "すみません、そのリクエストを完了できませんでした。もう一度お試しください。",
           "Desculpe, não consegui concluir essa solicitação. Tente novamente.",
+          "माफ़ कीजिए, मैं यह अनुरोध पूरा नहीं कर सका। कृपया फिर से कोशिश करें।",
         ),
         chatErrorTitle: supportCopy(
           uiLang,
@@ -325,6 +333,7 @@ const HelpChatFab = forwardRef(
           "Erreur de chat",
           "チャットエラー",
           "Erro no chat",
+          "चैट त्रुटि",
         ),
         connectionErrorTitle: supportCopy(
           uiLang,
@@ -334,6 +343,7 @@ const HelpChatFab = forwardRef(
           "Erreur de connexion",
           "接続エラー",
           "Erro de conexão",
+          "कनेक्शन त्रुटि",
         ),
         yourChats: supportCopy(
           uiLang,
@@ -343,6 +353,7 @@ const HelpChatFab = forwardRef(
           "Tes chats",
           "あなたのチャット",
           "Seus chats",
+          "आपकी चैट्स",
         ),
         noSavedChats: supportCopy(
           uiLang,
@@ -352,6 +363,7 @@ const HelpChatFab = forwardRef(
           "Aucun chat enregistre",
           "保存済みチャットはありません",
           "Nenhum chat salvo",
+          "कोई सहेजी गई चैट नहीं",
         ),
         delete: supportCopy(
           uiLang,
@@ -361,6 +373,7 @@ const HelpChatFab = forwardRef(
           "Supprimer",
           "削除",
           "Excluir",
+          "हटाएं",
         ),
         morphemeMode: supportCopy(
           uiLang,
@@ -370,6 +383,7 @@ const HelpChatFab = forwardRef(
           "Mode morphemes",
           "形態素モード",
           "Modo morfemas",
+          "मॉर्फीम मोड",
         ),
         breakDownWords: supportCopy(
           uiLang,
@@ -379,6 +393,7 @@ const HelpChatFab = forwardRef(
           "Decomposer les mots",
           "単語を分解",
           "Quebrar palavras",
+          "शब्दों को तोड़कर समझाएं",
         ),
         newChat: supportCopy(
           uiLang,
@@ -388,6 +403,7 @@ const HelpChatFab = forwardRef(
           "Nouveau chat",
           "新しいチャット",
           "Novo chat",
+          "नई चैट",
         ),
         help: supportCopy(
           uiLang,
@@ -397,6 +413,7 @@ const HelpChatFab = forwardRef(
           "Aide",
           "ヘルプ",
           "Ajuda",
+          "मदद",
         ),
         menu: supportCopy(
           uiLang,
@@ -406,6 +423,7 @@ const HelpChatFab = forwardRef(
           "Menu",
           "メニュー",
           "Menu",
+          "मेनू",
         ),
         morphemes: supportCopy(
           uiLang,
@@ -415,6 +433,7 @@ const HelpChatFab = forwardRef(
           "Morphemes",
           "形態素",
           "Morfemas",
+          "मॉर्फीम",
         ),
         saveChat: supportCopy(
           uiLang,
@@ -424,6 +443,7 @@ const HelpChatFab = forwardRef(
           "Enregistrer le chat",
           "チャットを保存",
           "Salvar chat",
+          "चैट सहेजें",
         ),
         emptyPrompt: supportCopy(
           uiLang,
@@ -433,6 +453,7 @@ const HelpChatFab = forwardRef(
           "Qu'est-ce que tu veux apprendre aujourd'hui ?",
           "今日は何を学びたいですか？",
           "O que você quer aprender hoje?",
+          "आज आप क्या सीखना चाहते हैं?",
         ),
         stopVoiceChat: supportCopy(
           uiLang,
@@ -442,6 +463,7 @@ const HelpChatFab = forwardRef(
           "Arreter le chat vocal",
           "音声チャットを停止",
           "Encerrar chat por voz",
+          "वॉइस चैट रोकें",
         ),
         startVoiceChat: supportCopy(
           uiLang,
@@ -451,6 +473,7 @@ const HelpChatFab = forwardRef(
           "Demarrer le chat vocal",
           "音声チャットを開始",
           "Iniciar chat por voz",
+          "वॉइस चैट शुरू करें",
         ),
         play: supportCopy(
           uiLang,
@@ -460,6 +483,7 @@ const HelpChatFab = forwardRef(
           "Lire",
           "再生",
           "Reproduzir",
+          "चलाएं",
         ),
         askPlaceholder: supportCopy(
           uiLang,
@@ -469,6 +493,7 @@ const HelpChatFab = forwardRef(
           "Pose une question sur cette lecon...",
           "このレッスンについて質問...",
           "Pergunte sobre esta lição...",
+          "इस पाठ के बारे में पूछें...",
         ),
         send: supportCopy(
           uiLang,
@@ -478,6 +503,7 @@ const HelpChatFab = forwardRef(
           "Envoyer",
           "送信",
           "Enviar",
+          "भेजें",
         ),
         stop: supportCopy(
           uiLang,
@@ -487,6 +513,7 @@ const HelpChatFab = forwardRef(
           "Arreter",
           "停止",
           "Parar",
+          "रोकें",
         ),
       }),
       [uiLang],
@@ -878,6 +905,13 @@ const HelpChatFab = forwardRef(
               ? "Seja conciso e natural."
               : "Seja bem breve e com tom nativo.";
         }
+        if (primaryLang === "hi") {
+          return lvl === "beginner"
+            ? "छोटे और सरल वाक्य प्रयोग करें।"
+            : lvl === "intermediate"
+              ? "संक्षिप्त और स्वाभाविक रहें।"
+              : "बहुत संक्षिप्त और स्वाभाविक रहें।";
+        }
         if (primaryLang === "en") {
           return lvl === "beginner"
             ? "Use short, simple sentences."
@@ -906,6 +940,14 @@ const HelpChatFab = forwardRef(
             )} apenas quando ajudarem, mas mantenha a explicação em ${nameForLanguage(
               primaryLang,
             )}.`
+          : primaryLang === "hi"
+            ? `${nameForLanguage(
+                primaryLang,
+              )} में समझाएँ और मार्गदर्शन दें। ${nameForLanguage(
+                targetLang,
+              )} के उदाहरण या वाक्य केवल तभी शामिल करें जब वे मदद करें, लेकिन मुख्य व्याख्या ${nameForLanguage(
+                primaryLang,
+              )} में रखें।`
           : `Explica y guía en ${nameForLanguage(
               primaryLang,
             )}. Incluye ejemplos o frases en ${nameForLanguage(
@@ -940,9 +982,13 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       const glossLine = glossLang
         ? primaryLang === "pt"
           ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
+          : primaryLang === "hi"
+            ? `व्याख्या के बाद ${glossHuman} में उदाहरण या अनुवाद की केवल एक पंक्ति जोड़ें। उसे नई पंक्ति में "// " से शुरू करें।`
           : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
         : primaryLang === "pt"
           ? "Não adicione traduções extras."
+          : primaryLang === "hi"
+            ? "अतिरिक्त अनुवाद न जोड़ें।"
           : "No añadas traducciones adicionales.";
 
       return [

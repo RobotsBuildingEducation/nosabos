@@ -10,6 +10,7 @@ const BCP47_TO_WHISPER = {
   pt: "pt",
   fr: "fr",
   it: "it",
+  hi: "hi",
   nl: "nl",
   nah: "es", // Nahuatl fallback to Spanish
   ru: "ru",

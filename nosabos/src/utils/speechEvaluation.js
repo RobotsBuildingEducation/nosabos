@@ -265,6 +265,14 @@ const STOPWORDS = {
     "stessa", "stessi", "stesse", "solo", "sola", "soli", "sole", "già", "ora",
     "ancora", "sempre", "mai", "qui", "qua", "là", "lì", "così", "bene",
   ]),
+  hi: new Set([
+    "का", "की", "के", "को", "से", "में", "पर", "और", "या", "तो", "भी", "ही",
+    "यह", "ये", "वह", "वे", "मैं", "हम", "तुम", "आप", "वो", "जो", "क्या", "क्यों",
+    "कब", "कहाँ", "कैसे", "एक", "कुछ", "बहुत", "नहीं", "हाँ", "था", "थी", "थे",
+    "है", "हूँ", "हो", "हैं", "कर", "करना", "किया", "गया", "गई", "अगर", "लेकिन",
+    "जब", "तक", "लिए", "द्वारा", "अपने", "अपनी", "अपना", "उनका", "उसका", "मेरा",
+    "मेरी", "मेरे", "तुम्हारा", "तुम्हारी", "तुम्हारे", "हमारा", "हमारी", "हमारे",
+  ]),
 };
 
 function removeDiacritics(s) {
@@ -547,6 +555,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Includi le parole chiave del contenuto.",
     "low-confidence": "Pronuncia con chiarezza e riduci il rumore di fondo.",
   },
+  hi: {
+    "speech-quality": "थोड़ा ज़ोर से और स्थिर गति में बोलिए।",
+    "not-target-lang": (targetLabel) => `${targetLabel} में बोलने की कोशिश कीजिए।`,
+    "low-char-sim": "मूल वाक्य के शब्दों के और करीब बोलिए।",
+    "low-word-f1": "मुख्य अर्थ वाले शब्द ज़रूर शामिल कीजिए।",
+    "low-confidence": "स्पष्ट बोलिए और आसपास का शोर कम कीजिए।",
+  },
   fr: {
     "speech-quality": "Parle un peu plus fort et garde un rythme regulier.",
     "not-target-lang": (targetLabel) => `Essaie de parler en ${targetLabel}.`,
@@ -579,9 +594,11 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
                 ? "o idioma alvo"
               : lang === "it"
                 ? "la lingua obiettivo"
+                : lang === "hi"
+                  ? "लक्ष्य भाषा"
                 : lang === "fr"
                   ? "la langue cible"
-                : lang === "ja"
+                  : lang === "ja"
                   ? "目標言語"
                 : "the target language"),
         ),
@@ -596,9 +613,11 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
           ? "Tente novamente falando com clareza."
         : lang === "it"
           ? "Riprova parlando chiaramente."
+          : lang === "hi"
+            ? "स्पष्ट बोलते हुए फिर से कोशिश कीजिए।"
           : lang === "fr"
             ? "Reessaie en parlant clairement."
-          : lang === "ja"
+            : lang === "ja"
             ? "はっきり話して、もう一度試してみましょう。"
           : "Try again, speaking clearly.",
     );

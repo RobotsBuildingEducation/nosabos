@@ -110,6 +110,7 @@ export const LANDING_PAGE_PT_STATIC = {
   language_fr: "Francês",
   language_de: "Alemão",
   language_it: "Italiano",
+  language_hi: "Hindi",
   language_pt: "Português",
   language_es: "Espanhol",
   language_nah: "Náuatle Huasteco Oriental",

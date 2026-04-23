@@ -4274,9 +4274,16 @@ Return JSON ONLY:
       : userLanguage === "es"
         ? "Suelta la respuesta aquí"
         : "Drop the answer here");
+  const translatedSkipLabel = t("practice_skip_question");
   const skipLabel =
-    t("practice_skip_question") ||
-    (userLanguage === "pt" ? "Pular" : userLanguage === "es" ? "Saltar" : "Skip");
+    translatedSkipLabel &&
+    translatedSkipLabel !== "practice_skip_question"
+      ? translatedSkipLabel
+      : userLanguage === "pt"
+        ? "Pular"
+        : userLanguage === "es"
+          ? "Saltar"
+          : "Skip";
   const canSkip = !isFinalQuiz && !quizCompleted;
   const questionListenLabel = t("vocab_listen_question");
   const speakListenLabel = t("vocab_listen_example");

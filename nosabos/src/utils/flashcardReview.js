@@ -560,6 +560,7 @@ export function formatRelativeReviewTime(
     if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
+    if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
     return "Unscheduled";
   }
@@ -603,6 +604,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
+    if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
     return "Unscheduled";
   }
@@ -618,6 +620,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return `Hoje as ${timeLabel}`;
     if (lang === "it") return `Oggi alle ${timeLabel}`;
     if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
+    if (lang === "hi") return `आज ${timeLabel} बजे`;
     if (lang === "ja") return `今日 ${timeLabel}`;
     return `Today at ${timeLabel}`;
   }
@@ -629,6 +632,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return `Amanha as ${timeLabel}`;
     if (lang === "it") return `Domani alle ${timeLabel}`;
     if (lang === "fr") return `Demain a ${timeLabel}`;
+    if (lang === "hi") return `कल ${timeLabel} बजे`;
     if (lang === "ja") return `明日 ${timeLabel}`;
     return `Tomorrow at ${timeLabel}`;
   }
@@ -645,6 +649,7 @@ export function formatAbsoluteReviewTime(
   if (lang === "pt") return `${dateLabel} as ${timeLabel}`;
   if (lang === "it") return `${dateLabel} alle ${timeLabel}`;
   if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
+  if (lang === "hi") return `${dateLabel} ${timeLabel} बजे`;
   if (lang === "ja") return `${dateLabel} ${timeLabel}`;
   return `${dateLabel} at ${timeLabel}`;
 }

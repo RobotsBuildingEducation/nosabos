@@ -95,6 +95,8 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
     return "French";
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
+  if (m === "hi" || m === "hindi" || m === "हिंदी" || m === "हिन्दी")
+    return "Hindi";
   if (m === "ja" || m === "japanese" || m === "日本語") return "Japanese";
   if (m === "nl" || m === "dutch" || m === "nederlands" || m === "holandés")
     return "Dutch";
@@ -131,6 +133,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
+  if (m === "hi") return "hi-IN";
   if (m === "ja") return "ja-JP";
   if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-MX"; // fallback
@@ -156,6 +159,7 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["hi", "hindi", "हिंदी", "हिन्दी"].includes(raw)) return "hi";
   if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";

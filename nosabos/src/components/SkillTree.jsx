@@ -220,6 +220,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
 import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
 import { normalizeSupportLanguage } from "../constants/languages";
@@ -308,6 +309,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
   if (supportLang === "ja" && !textObj.ja) {
     return translateSkillTreeTextToJapanese(fallback);
   }
+  if (supportLang === "hi" && !textObj.hi) {
+    return translateSkillTreeTextToHindi(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
@@ -327,6 +331,9 @@ const getUIDisplayText = (textObj) => {
   const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
   if (lang === "ja" && !textObj.ja) {
     return translateSkillTreeTextToJapanese(fallback);
+  }
+  if (lang === "hi" && !textObj.hi) {
+    return translateSkillTreeTextToHindi(fallback);
   }
   return textObj[lang] || fallback;
 };
@@ -1689,6 +1696,16 @@ const GAME_LOADING_MESSAGES = {
     "言語パズルを準備しています...",
     "場面を整えています...",
     "冒険を組み立てています...",
+  ],
+  hi: [
+    "आपकी दुनिया बनाई जा रही है...",
+    "NPC को रखा जा रहा है...",
+    "क्वेस्ट के संवाद लिखे जा रहे हैं...",
+    "शब्दावली चुनौतियां तैयार की जा रही हैं...",
+    "मानचित्र का लेआउट बनाया जा रहा है...",
+    "भाषा पहेलियां तैयार की जा रही हैं...",
+    "दृश्य सजाया जा रहा है...",
+    "आपका रोमांच तैयार किया जा रहा है...",
   ],
 };
 

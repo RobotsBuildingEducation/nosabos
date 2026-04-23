@@ -18,11 +18,12 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, pt, it, fr, ja) {
+function supportCopy(lang, en, es, pt, it, fr, ja, hi = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -67,6 +68,7 @@ export default function SubscriptionGate({
           "Inserisci il codice di accesso",
           "Entre le code d'acces",
           "パスコードを入力してください",
+          "पासकोड दर्ज करें",
         ),
       );
       return;
@@ -138,6 +140,7 @@ export default function SubscriptionGate({
                 "Verifica in corso",
                 "Verification",
                 "確認中",
+                "जांच हो रही है",
               )}
             >
               {supportCopy(
@@ -148,6 +151,7 @@ export default function SubscriptionGate({
                 "Invia",
                 "Envoyer",
                 "送信",
+                "जमा करें",
               )}
             </Button>
           </Stack>

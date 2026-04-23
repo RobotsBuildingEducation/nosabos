@@ -73,6 +73,7 @@ const MODULE_LABELS = {
     pt: "Cartao",
     it: "Scheda",
     fr: "Carte",
+    hi: "फ्लैशकार्ड",
   },
   vocabulary: {
     en: "Vocabulary",
@@ -80,6 +81,7 @@ const MODULE_LABELS = {
     pt: "Vocabulario",
     it: "Vocabolario",
     fr: "Vocabulaire",
+    hi: "शब्दावली",
   },
   grammar: {
     en: "Grammar",
@@ -87,6 +89,7 @@ const MODULE_LABELS = {
     pt: "Gramatica",
     it: "Grammatica",
     fr: "Grammaire",
+    hi: "व्याकरण",
   },
 };
 
@@ -122,6 +125,8 @@ export default function NotesDrawer({
       ? "Minhas notas"
       : lang === "it"
       ? "Le mie note"
+      : lang === "hi"
+      ? "मेरे नोट्स"
       : lang === "es"
       ? "Mis Notas"
       : "My Notes";
@@ -134,6 +139,8 @@ export default function NotesDrawer({
       ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
       : lang === "it"
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
+      : lang === "hi"
+      ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
       : lang === "es"
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
@@ -146,6 +153,8 @@ export default function NotesDrawer({
       ? "Limpar tudo"
       : lang === "it"
       ? "Cancella tutto"
+      : lang === "hi"
+      ? "सब साफ़ करें"
       : lang === "es"
       ? "Borrar todo"
       : "Clear all";
@@ -158,6 +167,8 @@ export default function NotesDrawer({
       ? "Resumo"
       : lang === "it"
       ? "Riassunto"
+      : lang === "hi"
+      ? "सारांश"
       : lang === "es"
       ? "Resumen"
       : "Summary";
@@ -170,6 +181,8 @@ export default function NotesDrawer({
       ? "Licao"
       : lang === "it"
       ? "Lezione"
+      : lang === "hi"
+      ? "पाठ"
       : lang === "es"
       ? "Lección"
       : "Lesson";
@@ -182,9 +195,86 @@ export default function NotesDrawer({
       ? "Sem notas"
       : lang === "it"
       ? "Nessuna nota"
+      : lang === "hi"
+      ? "कोई नोट नहीं"
       : lang === "es"
       ? "Sin notas"
       : "No notes";
+  const closeLabel =
+    translations[lang]?.teams_drawer_close ||
+    translations.en?.teams_drawer_close ||
+    "Close";
+  const noteTitleFallback =
+    lang === "ja"
+      ? "メモ"
+      : lang === "fr"
+      ? "Note"
+      : lang === "pt"
+      ? "Nota"
+      : lang === "it"
+      ? "Nota"
+      : lang === "hi"
+      ? "नोट"
+      : lang === "es"
+      ? "Nota"
+      : "Note";
+  const formatNoteCountLabel = (count) => {
+    const formattedCount = new Intl.NumberFormat(locale).format(count);
+
+    if (lang === "ja") {
+      return `${formattedCount}件のメモ`;
+    }
+
+    if (lang === "fr") {
+      return `${formattedCount} ${count === 1 ? "note" : "notes"}`;
+    }
+
+    if (lang === "pt") {
+      return `${formattedCount} ${count === 1 ? "nota" : "notas"}`;
+    }
+
+    if (lang === "it") {
+      return `${formattedCount} ${count === 1 ? "nota" : "note"}`;
+    }
+
+    if (lang === "hi") {
+      return `${formattedCount} नोट`;
+    }
+
+    if (lang === "es") {
+      return `${formattedCount} ${count === 1 ? "nota" : "notas"}`;
+    }
+
+    return `${formattedCount} ${count === 1 ? "note" : "notes"}`;
+  };
+  const listenLabel =
+    lang === "ja"
+      ? "聞く"
+      : lang === "fr"
+      ? "Ecouter"
+      : lang === "pt"
+      ? "Ouvir"
+      : lang === "it"
+      ? "Ascolta"
+      : lang === "hi"
+      ? "सुनें"
+      : lang === "es"
+      ? "Escuchar"
+      : "Listen";
+  const deleteNoteLabel =
+    lang === "ja"
+      ? "メモを削除"
+      : lang === "fr"
+      ? "Supprimer la note"
+      : lang === "pt"
+      ? "Excluir nota"
+      : lang === "it"
+      ? "Elimina nota"
+      : lang === "hi"
+      ? "नोट हटाएं"
+      : lang === "es"
+      ? "Eliminar nota"
+      : "Delete note";
   const noteUi = useMemo(
     () =>
       isLightTheme
@@ -326,8 +416,8 @@ export default function NotesDrawer({
   const renderNoteItem = (note) => {
     const lessonTitle =
       typeof note.lessonTitle === "object"
-        ? note.lessonTitle[lang] || note.lessonTitle.en || "Note"
-        : note.lessonTitle || "Note";
+        ? note.lessonTitle[lang] || note.lessonTitle.en || noteTitleFallback
+        : note.lessonTitle || noteTitleFallback;
 
     const moduleLabel =
       MODULE_LABELS[note.moduleType]?.[lang] ||
@@ -418,13 +508,7 @@ export default function NotesDrawer({
                   )
                 }
                 aria-label={
-                  lang === "ja"
-                    ? "聞く"
-                    : lang === "pt"
-                    ? "Ouvir"
-                    : lang === "es"
-                    ? "Escuchar"
-                    : "Listen"
+                  listenLabel
                 }
                 size="sm"
                 variant="ghost"
@@ -438,13 +522,7 @@ export default function NotesDrawer({
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
                 aria-label={
-                  lang === "ja"
-                    ? "メモを削除"
-                    : lang === "pt"
-                    ? "Excluir nota"
-                    : lang === "es"
-                    ? "Eliminar nota"
-                    : "Delete note"
+                  deleteNoteLabel
                 }
                 size="sm"
                 variant="ghost"
@@ -576,23 +654,7 @@ export default function NotesDrawer({
                               fontWeight="medium"
                             >
                               {hasNotes
-                                ? `${levelNotes.length} ${
-                                    levelNotes.length === 1
-                                      ? lang === "ja"
-                                        ? "件のメモ"
-                                        : lang === "pt"
-                                        ? "nota"
-                                        : lang === "es"
-                                        ? "nota"
-                                        : "note"
-                                      : lang === "ja"
-                                        ? "件のメモ"
-                                        : lang === "pt"
-                                        ? "notas"
-                                        : lang === "es"
-                                        ? "notas"
-                                        : "notes"
-                                  }`
+                                ? formatNoteCountLabel(levelNotes.length)
                                 : noNotesLabel}
                             </Text>
                           </HStack>
@@ -629,7 +691,7 @@ export default function NotesDrawer({
               _hover={{ bg: noteUi.closeHoverBg }}
               onClick={onClose}
             >
-              {translations[appLanguage]["teams_drawer_close"] || "Close"}
+              {closeLabel}
             </Button>
           </Box>
         </DrawerFooter>
