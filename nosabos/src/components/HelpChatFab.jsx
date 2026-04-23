@@ -110,7 +110,40 @@ const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
+const ARABIC_SUPPORT_COPY = {
+  "No messages": "ما فيش رسائل",
+  "No messages to save.": "ما فيش رسائل تتسجّل.",
+  "Saved chat": "محادثة محفوظة",
+  "Chat saved": "اتحفظت المحادثة",
+  "Chat deleted": "اتحذفت المحادثة",
+  "Sorry, I couldn’t complete that request. Please try again.":
+    "آسف، ما قدرتش أكمّل الطلب ده. جرّب مرة تانية.",
+  "Chat error": "خطأ في المحادثة",
+  "Connection error": "خطأ في الاتصال",
+  "Your chats": "محادثاتك",
+  "No saved chats": "ما فيش محادثات محفوظة",
+  Delete: "حذف",
+  "Morpheme mode": "وضع المورفيمات",
+  "Break down words": "قسّم الكلمات",
+  "New chat": "محادثة جديدة",
+  Help: "مساعدة",
+  Menu: "القائمة",
+  Morphemes: "مورفيمات",
+  "Save chat": "احفظ المحادثة",
+  "What do you want to learn today?": "حابب تتعلم إيه النهارده؟",
+  "Stop voice chat": "أوقف المحادثة الصوتية",
+  "Start voice chat": "ابدأ المحادثة الصوتية",
+  Play: "تشغيل",
+  "Ask about this lesson...": "اسأل عن الدرس ده...",
+  Send: "إرسال",
+  Stop: "إيقاف",
+};
+
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
@@ -722,6 +755,7 @@ const HelpChatFab = forwardRef(
           fr: "French (français)",
           it: "Italian (italiano)",
           ja: "Japanese (日本語)",
+          ar: "Egyptian Arabic (العربية المصرية)",
           nl: "Dutch (Nederlands)",
           nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
           ru: "Russian (русский)",
@@ -884,6 +918,8 @@ const HelpChatFab = forwardRef(
       const strict =
         primaryLang === "es"
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
+          : primaryLang === "ar"
+            ? "رد بالكامل بالمصري/العربية المصرية كلغة الدعم، حتى لو المستخدم كتب بلغة تانية."
           : primaryLang === "en"
             ? "Respond entirely in English (the support language), even if the user writes in another language."
             : `Respond entirely in ${nameForLanguage(
@@ -904,6 +940,13 @@ const HelpChatFab = forwardRef(
             : lvl === "intermediate"
               ? "Seja conciso e natural."
               : "Seja bem breve e com tom nativo.";
+        }
+        if (primaryLang === "ar") {
+          return lvl === "beginner"
+            ? "استخدم جمل قصيرة وبسيطة."
+            : lvl === "intermediate"
+              ? "خليك مختصر وطبيعي."
+              : "خليك مختصر جدًا وطبيعي.";
         }
         if (primaryLang === "hi") {
           return lvl === "beginner"
@@ -940,6 +983,14 @@ const HelpChatFab = forwardRef(
             )} apenas quando ajudarem, mas mantenha a explicação em ${nameForLanguage(
               primaryLang,
             )}.`
+          : primaryLang === "ar"
+            ? `اشرح ووجّه بـ ${nameForLanguage(
+                primaryLang,
+              )}. ضيف أمثلة أو جمل بـ ${nameForLanguage(
+                targetLang,
+              )} بس لما تكون مفيدة، وخلي الشرح الأساسي بـ ${nameForLanguage(
+                primaryLang,
+              )}.`
           : primaryLang === "hi"
             ? `${nameForLanguage(
                 primaryLang,
@@ -982,11 +1033,15 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       const glossLine = glossLang
         ? primaryLang === "pt"
           ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
+          : primaryLang === "ar"
+            ? `بعد الشرح، ضيف سطر واحد بس كمثال أو ترجمة بـ ${glossHuman}. ابدأ السطر الجديد بـ "// ".`
           : primaryLang === "hi"
             ? `व्याख्या के बाद ${glossHuman} में उदाहरण या अनुवाद की केवल एक पंक्ति जोड़ें। उसे नई पंक्ति में "// " से शुरू करें।`
           : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
         : primaryLang === "pt"
           ? "Não adicione traduções extras."
+          : primaryLang === "ar"
+            ? "ما تضيفش ترجمات زيادة."
           : primaryLang === "hi"
             ? "अतिरिक्त अनुवाद न जोड़ें।"
           : "No añadas traducciones adicionales.";
@@ -1307,6 +1362,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           fr: "French",
           it: "Italian",
           ja: "Japanese",
+          ar: "Egyptian Arabic",
           nl: "Dutch",
           nah: "Eastern Huasteca Nahuatl",
           ru: "Russian",

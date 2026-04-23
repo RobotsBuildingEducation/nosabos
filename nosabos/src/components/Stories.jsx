@@ -275,7 +275,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -725,6 +725,7 @@ export default function StoryMode({
                 hi: "नमस्ते। हाय। अलविदा।",
                 it: "Ciao. Ciao. Arrivederci.",
                 fr: "Bonjour. Salut. Au revoir.",
+                ar: "أهلاً. هاي. مع السلامة.",
               }),
             },
             sentences:
@@ -738,6 +739,7 @@ export default function StoryMode({
                         hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
+                        ar: "أهلاً.",
                       }),
                     },
                     {
@@ -748,6 +750,7 @@ export default function StoryMode({
                         hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
+                        ar: "هاي.",
                       }),
                     },
                     {
@@ -758,6 +761,7 @@ export default function StoryMode({
                         hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
+                        ar: "مع السلامة.",
                       }),
                     },
                   ]
@@ -770,6 +774,7 @@ export default function StoryMode({
                         hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
+                        ar: "أهلاً.",
                       }),
                     },
                     {
@@ -780,6 +785,7 @@ export default function StoryMode({
                         hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
+                        ar: "هاي.",
                       }),
                     },
                     {
@@ -790,6 +796,7 @@ export default function StoryMode({
                         hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
+                        ar: "مع السلامة.",
                       }),
                     },
                   ],
@@ -807,6 +814,7 @@ export default function StoryMode({
                 hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था। उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे। चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था। बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसी फव्वारे के आसपास बैठते थे।",
                 it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                 fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل. كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم. وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً. وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
               }),
             },
             sentences:
@@ -820,6 +828,7 @@ export default function StoryMode({
                         hi: "एक समय सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese chiamato San Miguel.",
                         fr: "Il etait une fois un petit village appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة اسمها سان ميجيل.",
                       }),
                     },
                     {
@@ -830,6 +839,7 @@ export default function StoryMode({
                         hi: "उस कस्बे में एक सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
+                        ar: "كان في البلدة ميدان جميل يلعب فيه الأطفال كل يوم.",
                       }),
                     },
                     {
@@ -840,6 +850,7 @@ export default function StoryMode({
                         hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
                         fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
                       }),
                     },
                     {
@@ -850,6 +861,7 @@ export default function StoryMode({
                         hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसके आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حولها ليتحدثوا ويستريحوا بعد العمل.",
                       }),
                     },
                   ]
@@ -862,6 +874,7 @@ export default function StoryMode({
                         hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
                         fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل.",
                       }),
                     },
                     {
@@ -872,6 +885,7 @@ export default function StoryMode({
                         hi: "उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
+                        ar: "كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم.",
                       }),
                     },
                     {
@@ -882,6 +896,7 @@ export default function StoryMode({
                         hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
                         fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
                       }),
                     },
                     {
@@ -892,6 +907,7 @@ export default function StoryMode({
                         hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए फव्वारे के आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
                       }),
                     },
                   ],
@@ -1414,6 +1430,7 @@ export default function StoryMode({
       hi: "अगला वाक्य",
       it: "Frase successiva",
       fr: "Phrase suivante",
+      ar: "الجملة التالية",
     });
   const finishLabel =
     t(uiLang, "stories_finish") ||
@@ -1423,6 +1440,7 @@ export default function StoryMode({
       hi: "समाप्त करें",
       it: "Fine",
       fr: "Terminer",
+      ar: "إنهاء",
     });
 
   const handleEvaluationResult = useCallback(
@@ -2198,6 +2216,7 @@ export default function StoryMode({
                                         hi: "आगे बढ़ने के लिए तैयार!",
                                         it: "Pronto per continuare!",
                                         fr: "Pret pour continuer !",
+                                        ar: "جاهز تكمل!",
                                       })}
                                 </Text>
                               </Box>

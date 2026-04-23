@@ -106,6 +106,7 @@ export default function Randomize() {
           it: "Storie",
           fr: "Histoires",
           ja: "ストーリー",
+          ar: "القصص",
         }),
       grammar:
         t("tabs_grammar") ||
@@ -115,6 +116,7 @@ export default function Randomize() {
           it: "Grammatica",
           fr: "Grammaire",
           ja: "文法",
+          ar: "القواعد",
         }),
       vocab:
         t("tabs_vocab") ||
@@ -124,6 +126,7 @@ export default function Randomize() {
           it: "Vocabolario",
           fr: "Vocabulaire",
           ja: "語彙",
+          ar: "المفردات",
         }),
       reading:
         t("tabs_reading") ||
@@ -133,6 +136,7 @@ export default function Randomize() {
           it: "Lettura",
           fr: "Lecture",
           ja: "読解",
+          ar: "القراءة",
         }),
     }),
     [t, uiLang]
@@ -189,6 +193,7 @@ export default function Randomize() {
             it: "Ottimo lavoro!",
             fr: "Bien joue !",
             ja: "よくできました！",
+            ar: "شغل ممتاز!",
           });
         const desc =
           t("random_toast_desc", { xp: diff }) ||
@@ -198,6 +203,7 @@ export default function Randomize() {
             it: `Hai guadagnato +${diff} XP.`,
             fr: `Tu as gagne +${diff} XP.`,
             ja: `+${diff} XPを獲得しました。`,
+            ar: `كسبت +${diff} XP.`,
           });
 
         toast({
@@ -251,6 +257,7 @@ export default function Randomize() {
         it: `Livello ${levelNumber}`,
         fr: `Niveau ${levelNumber}`,
         ja: `レベル ${levelNumber}`,
+        ar: `المستوى ${levelNumber}`,
       }),
     xpBadge:
       t("grammar_badge_xp", { xp }) ||
@@ -260,6 +267,7 @@ export default function Randomize() {
         it: `XP ${xp}`,
         fr: `XP ${xp}`,
         ja: `XP ${xp}`,
+        ar: `XP ${xp}`,
       }),
     shuffle:
       t("random_shuffle") ||
@@ -269,6 +277,7 @@ export default function Randomize() {
         it: "Mescola",
         fr: "Melanger",
         ja: "シャッフル",
+        ar: "بدّل",
       }),
     picking:
       t("randomize_picking_surprise") ||
@@ -278,6 +287,7 @@ export default function Randomize() {
         it: "Scelta di una sorpresa per te...",
         fr: "Choix d'une surprise pour toi...",
         ja: "サプライズを選んでいます...",
+        ar: "بنختار لك مفاجأة...",
       }),
     loading:
       t("generic_loading") ||
@@ -287,6 +297,7 @@ export default function Randomize() {
         it: "Caricamento...",
         fr: "Chargement...",
         ja: "読み込み中...",
+        ar: "جارٍ التحميل...",
       }),
   };
 

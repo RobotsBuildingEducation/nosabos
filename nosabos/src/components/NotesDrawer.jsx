@@ -74,6 +74,7 @@ const MODULE_LABELS = {
     it: "Scheda",
     fr: "Carte",
     hi: "फ्लैशकार्ड",
+    ar: "بطاقة",
   },
   vocabulary: {
     en: "Vocabulary",
@@ -82,6 +83,7 @@ const MODULE_LABELS = {
     it: "Vocabolario",
     fr: "Vocabulaire",
     hi: "शब्दावली",
+    ar: "المفردات",
   },
   grammar: {
     en: "Grammar",
@@ -90,6 +92,7 @@ const MODULE_LABELS = {
     it: "Grammatica",
     fr: "Grammaire",
     hi: "व्याकरण",
+    ar: "القواعد",
   },
 };
 
@@ -119,6 +122,8 @@ export default function NotesDrawer({
   const drawerTitle =
     lang === "ja"
       ? "マイメモ"
+      : lang === "ar"
+      ? "ملاحظاتي"
       : lang === "fr"
       ? "Mes notes"
       : lang === "pt"
@@ -141,6 +146,8 @@ export default function NotesDrawer({
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
       : lang === "hi"
       ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
+      : lang === "ar"
+      ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
       : lang === "es"
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
@@ -155,6 +162,8 @@ export default function NotesDrawer({
       ? "Cancella tutto"
       : lang === "hi"
       ? "सब साफ़ करें"
+      : lang === "ar"
+      ? "امسح الكل"
       : lang === "es"
       ? "Borrar todo"
       : "Clear all";
@@ -169,6 +178,8 @@ export default function NotesDrawer({
       ? "Riassunto"
       : lang === "hi"
       ? "सारांश"
+      : lang === "ar"
+      ? "الملخص"
       : lang === "es"
       ? "Resumen"
       : "Summary";
@@ -183,6 +194,8 @@ export default function NotesDrawer({
       ? "Lezione"
       : lang === "hi"
       ? "पाठ"
+      : lang === "ar"
+      ? "الدرس"
       : lang === "es"
       ? "Lección"
       : "Lesson";
@@ -197,6 +210,8 @@ export default function NotesDrawer({
       ? "Nessuna nota"
       : lang === "hi"
       ? "कोई नोट नहीं"
+      : lang === "ar"
+      ? "مفيش ملاحظات"
       : lang === "es"
       ? "Sin notas"
       : "No notes";
@@ -215,6 +230,8 @@ export default function NotesDrawer({
       ? "Nota"
       : lang === "hi"
       ? "नोट"
+      : lang === "ar"
+      ? "ملاحظة"
       : lang === "es"
       ? "Nota"
       : "Note";
@@ -223,6 +240,10 @@ export default function NotesDrawer({
 
     if (lang === "ja") {
       return `${formattedCount}件のメモ`;
+    }
+
+    if (lang === "ar") {
+      return `${formattedCount} ${count === 1 ? "ملاحظة" : "ملاحظات"}`;
     }
 
     if (lang === "fr") {
@@ -258,6 +279,8 @@ export default function NotesDrawer({
       ? "Ascolta"
       : lang === "hi"
       ? "सुनें"
+      : lang === "ar"
+      ? "اسمع"
       : lang === "es"
       ? "Escuchar"
       : "Listen";
@@ -272,6 +295,8 @@ export default function NotesDrawer({
       ? "Elimina nota"
       : lang === "hi"
       ? "नोट हटाएं"
+      : lang === "ar"
+      ? "احذف الملاحظة"
       : lang === "es"
       ? "Eliminar nota"
       : "Delete note";

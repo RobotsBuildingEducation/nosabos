@@ -97,6 +97,8 @@ export default function TranslateSentence({
       ? t("vocab_assistant")
       : userLanguage === "hi"
         ? "सहायक"
+        : userLanguage === "ar"
+          ? "المساعد"
         : userLanguage === "ja"
           ? "アシスタント"
           : userLanguage === "pt" || userLanguage === "it"
@@ -237,9 +239,12 @@ export default function TranslateSentence({
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
     const promptLines = [
       isJapaneseUI
         ? "提供された単語バンクを使って、この文を翻訳してください。"
+        : isArabicUI
+        ? "ترجم الجملة دي باستخدام بنك الكلمات الموجود."
         : isFrenchUI
         ? "Traduis cette phrase avec la banque de mots fournie."
         : isPortugueseUI
@@ -250,6 +255,8 @@ export default function TranslateSentence({
       sourceSentence
         ? isJapaneseUI
           ? `翻訳する文: ${sourceSentence}`
+          : isArabicUI
+          ? `الجملة المطلوب ترجمتها: ${sourceSentence}`
           : isFrenchUI
           ? `Phrase a traduire : ${sourceSentence}`
           : isPortugueseUI
@@ -261,6 +268,8 @@ export default function TranslateSentence({
       wordBank?.length
         ? isJapaneseUI
           ? `単語バンク: ${wordBank.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${wordBank.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isPortugueseUI
@@ -272,6 +281,8 @@ export default function TranslateSentence({
       hint
         ? isJapaneseUI
           ? `ヒント: ${hint}`
+          : isArabicUI
+          ? `تلميح: ${hint}`
           : isFrenchUI
           ? `Indice : ${hint}`
           : isPortugueseUI
@@ -282,6 +293,8 @@ export default function TranslateSentence({
         : null,
       isJapaneseUI
         ? "単語バンクの選択肢を組み合わせて、正しい翻訳で答えてください。"
+        : isArabicUI
+        ? "جاوب بالترجمة الصحيحة المكوّنة من اختيارات بنك الكلمات."
         : isFrenchUI
         ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
         : isPortugueseUI
@@ -405,6 +418,8 @@ export default function TranslateSentence({
                       aria-label={
                         userLanguage === "ja"
                           ? "アシスタントに聞く"
+                          : userLanguage === "ar"
+                            ? "اسأل المساعد"
                           : userLanguage === "pt"
                           ? "Pedir ajuda"
                           : userLanguage === "es"
@@ -424,6 +439,8 @@ export default function TranslateSentence({
                     aria-label={
                       userLanguage === "ja"
                         ? "聞く"
+                        : userLanguage === "ar"
+                          ? "استمع"
                         : userLanguage === "pt"
                           ? "Ouvir"
                         : userLanguage === "es"

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { evaluateAttemptStrict } from "../utils/speechEvaluation";
 
 const BCP47_TO_WHISPER = {
+  ar: "ar",
   es: "es",
   en: "en",
   pt: "pt",

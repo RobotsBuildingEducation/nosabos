@@ -37,6 +37,10 @@ import { POLISH_ALPHABET } from "../data/polishAlphabet";
 import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
 import {
+  translateAlphabetMeaningToArabic,
+  withArabicAlphabetSupport,
+} from "../data/alphabetArabicLocalizer";
+import {
   translateAlphabetMeaningToItalian,
   withItalianAlphabetSupport,
 } from "../data/alphabetItalianLocalizer";
@@ -243,6 +247,23 @@ const LANGUAGE_NAMES_HI = {
   yua: "युकातेक माया",
 };
 
+const LANGUAGE_NAMES_AR = {
+  ru: "الروسية",
+  ja: "اليابانية",
+  en: "الإنجليزية",
+  es: "الإسبانية",
+  pt: "البرتغالية",
+  fr: "الفرنسية",
+  it: "الإيطالية",
+  nl: "الهولندية",
+  de: "الألمانية",
+  nah: "الناواتل",
+  el: "اليونانية",
+  pl: "البولندية",
+  ga: "الأيرلندية",
+  yua: "المايا اليوكاتيكية",
+};
+
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
@@ -251,6 +272,7 @@ const LANGUAGE_NAMES_BY_UI = {
   fr: LANGUAGE_NAMES_FR,
   ja: LANGUAGE_NAMES_JA,
   hi: LANGUAGE_NAMES_HI,
+  ar: LANGUAGE_NAMES_AR,
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -355,6 +377,23 @@ const LANGUAGE_SCRIPTS_HI = {
   yua: "लैटिन वर्णमाला",
 };
 
+const LANGUAGE_SCRIPTS_AR = {
+  ru: "الأبجدية السيريلية",
+  ja: "الهيراجانا أو الكاتاكانا",
+  en: "الأبجدية اللاتينية",
+  es: "الأبجدية اللاتينية",
+  pt: "الأبجدية اللاتينية",
+  fr: "الأبجدية اللاتينية",
+  it: "الأبجدية اللاتينية",
+  nl: "الأبجدية اللاتينية",
+  de: "الأبجدية اللاتينية",
+  nah: "الأبجدية اللاتينية",
+  el: "الأبجدية اليونانية",
+  pl: "الأبجدية اللاتينية",
+  ga: "الأبجدية اللاتينية",
+  yua: "الأبجدية اللاتينية",
+};
+
 const LANGUAGE_SCRIPTS_BY_UI = {
   en: LANGUAGE_SCRIPTS,
   es: {
@@ -378,6 +417,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
   fr: LANGUAGE_SCRIPTS_FR,
   ja: LANGUAGE_SCRIPTS_JA,
   hi: LANGUAGE_SCRIPTS_HI,
+  ar: LANGUAGE_SCRIPTS_AR,
 };
 
 const ALPHABET_UI_TEXT = {
@@ -603,6 +643,43 @@ const ALPHABET_UI_TEXT = {
     collection: "संग्रह",
     loadError: "हम वर्णमाला लोड नहीं कर सके। कृपया फिर कोशिश करें।",
   },
+  ar: {
+    vowel: "حرف علّة",
+    consonant: "حرف ساكن",
+    sign: "علامة",
+    practice: "اتدرّب",
+    playSound: "شغّل الصوت",
+    playWord: "شغّل الكلمة",
+    close: "اقفل",
+    sayThisWord: "قول الكلمة دي:",
+    grading: "جارٍ التقييم...",
+    nextWord: "الكلمة اللي بعد كده",
+    tryAgain: "حاول تاني",
+    back: "رجوع",
+    connecting: "جارٍ الاتصال...",
+    stop: "إيقاف",
+    record: "سجّل",
+    recordingErrorTitle: "خطأ في التسجيل",
+    recordingErrorDescription: "ما قدرناش نسجّل. جرّب تاني.",
+    gradingErrorTitle: "خطأ في التقييم",
+    gradingErrorDescription: "ما قدرناش نقيّم إجابتك.",
+    speechUnsupportedTitle: "الصوت غير مدعوم",
+    speechUnsupportedDescription:
+      "المتصفح ده مش بيدعم التعرّف على الكلام.",
+    micDeniedTitle: "المايك مرفوض",
+    micDeniedDescription: "اسمح للمايك علشان تسجّل.",
+    generateWordErrorTitle: "ما قدرناش نطلّع كلمة جديدة",
+    level: "المستوى",
+    progress: "التقدّم",
+    alphabetHeadline: "أبجدية {language}",
+    alphabetSubhead: "ابدأ بتعلّم حروف وأصوات {language}.",
+    note:
+      "بعد كده بدّل لوضع المسار من القائمة علشان تستكشف الدروس.",
+    complete: "مبروك! خلّصت الأبجدية.",
+    startSkillTree: "ابدأ شجرة المهارات",
+    collection: "المجموعة",
+    loadError: "ما قدرناش نحمّل الأبجدية. جرّب تاني.",
+  },
 };
 
 ALPHABET_UI_TEXT.pt = {
@@ -677,6 +754,7 @@ const LOCALIZED_FIELD_SUFFIX = {
   fr: "Fr",
   ja: "Ja",
   hi: "Hi",
+  ar: "Ar",
 };
 
 const getLocalizedLetterField = (letter, uiLang, baseKey) => {
@@ -695,6 +773,7 @@ const getMeaningText = (meaning, uiLang) => {
     return (
       meaning.en ||
       meaning.es ||
+      meaning.ar ||
       meaning.hi ||
       meaning.pt ||
       meaning.it ||
@@ -731,7 +810,18 @@ const getLetterTip = (letter, uiLang) =>
   getLocalizedLetterField(letter, uiLang, "tip");
 
 const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "", pt: "", it: "", fr: "", ja: "", hi: "" };
+  if (!meaning) {
+    return {
+      en: "",
+      es: "",
+      pt: "",
+      it: "",
+      fr: "",
+      ja: "",
+      hi: "",
+      ar: "",
+    };
+  }
   if (typeof meaning === "string") {
     const source = String(meaning || "").trim();
     return {
@@ -742,12 +832,14 @@ const normalizeMeaning = (meaning) => {
       fr: translateAlphabetMeaningToFrench(source) || "",
       ja: translateAlphabetMeaningToJapanese(source) || "",
       hi: translateAlphabetMeaningToHindi(source) || "",
+      ar: translateAlphabetMeaningToArabic(source) || "",
     };
   }
 
   const en =
     meaning.en ||
     meaning.es ||
+    meaning.ar ||
     meaning.hi ||
     meaning.pt ||
     meaning.it ||
@@ -760,8 +852,9 @@ const normalizeMeaning = (meaning) => {
   const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
   const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
   const hi = meaning.hi || translateAlphabetMeaningToHindi(meaning) || "";
+  const ar = meaning.ar || translateAlphabetMeaningToArabic(meaning) || "";
 
-  return { en, es, pt, it, fr, ja, hi };
+  return { en, es, pt, it, fr, ja, hi, ar };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -1267,7 +1360,7 @@ function LetterCard({
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
       const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>"}
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -1287,6 +1380,7 @@ function LetterCard({
           fr: parsed.meaning_fr || parsed.meaning || "",
           ja: parsed.meaning_ja || parsed.meaning || "",
           hi: parsed.meaning_hi || parsed.meaning || "",
+          ar: parsed.meaning_ar || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -1297,7 +1391,15 @@ function LetterCard({
         return null;
       }
     },
-    [letter.letter, letter.name, letter.nameHi, letter.nameJa, targetLang, uiLang],
+    [
+      letter.letter,
+      letter.name,
+      letter.nameAr,
+      letter.nameHi,
+      letter.nameJa,
+      targetLang,
+      uiLang,
+    ],
   );
 
   // Cleanup on unmount
@@ -1615,10 +1717,12 @@ function LetterCard({
 }
 
 const withLocalizedAlphabetSupport = (letters) =>
-  withHindiAlphabetSupport(
-    withJapaneseAlphabetSupport(
-      withFrenchAlphabetSupport(
-        withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+  withArabicAlphabetSupport(
+    withHindiAlphabetSupport(
+      withJapaneseAlphabetSupport(
+        withFrenchAlphabetSupport(
+          withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+        ),
       ),
     ),
   );

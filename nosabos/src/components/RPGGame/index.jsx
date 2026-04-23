@@ -314,6 +314,38 @@ QUEST_LOG_COPY.pt = {
   continueTask: (npcName) => `Fale com ${npcName} para continuar.`,
 };
 
+OBJECT_SEARCH_TEST_COPY.ar = {
+  intro: (itemName) =>
+    `أنا محتاج ${itemName}. دوّر في الأشياء الموجودة في أي أوضة على الخريطة. كل حاجة مخبية غرض. هاتلي الحاجة الصح.`,
+  wrongItem: (wrongName, correctName) =>
+    `ده ${wrongName}. أنا لسه محتاج ${correctName}. كمّل تدوير في الأشياء.`,
+  success: (itemName) => `تمام. ${itemName} هو بالظبط اللي كنت محتاجه.`,
+  chooseItem: "اختَر غرض عشان تسلّمه:",
+  foundItem: (itemName) => `لقيت: ${itemName}`,
+  alreadyChecked: "إنت فحصت الحاجة دي قبل كده.",
+  nothingFound: "مفيش حاجة مفيدة هنا.",
+  continueSearching: "كمّل تدوير",
+};
+
+QUEST_LOG_COPY.ar = {
+  title: "سجل المهام",
+  button: "سجل المهام",
+  currentTask: "المهمة الحالية",
+  progress: (done, total) => `التقدم: ${done}/${total}`,
+  complete: "المهمة خلصت! شغل ممتاز.",
+  defaultTask: "كمّل استكشاف وكلم الشخصية اللي بعدها.",
+  startObjectSearch: (npcName, itemName) =>
+    `كلم ${npcName} عشان تبدأ تدور على ${itemName}.`,
+  searchObjects: (itemName) =>
+    `فتش الأشياء اللي ينفع تفحصها في أي أوضة عشان تلاقي ${itemName}. كل حاجة مخبية غرض.`,
+  returnItem: (itemName, npcName) => `رجّع ${itemName} لـ ${npcName}.`,
+  gatherSearch: (itemName) => `دوّر على ${itemName} في المنطقة دي.`,
+  gatherHint: (hint) => `تلميح: ${hint}`,
+  choiceTask: (npcName) => `كلم ${npcName} واختَر رد.`,
+  speechTask: (npcName) => `كلم ${npcName} ورد بصوتك.`,
+  continueTask: (npcName) => `كلم ${npcName} عشان تكمل.`,
+};
+
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
   return Math.max(min, Math.min(max, Math.round(num)));
@@ -1850,6 +1882,49 @@ UI_TEXT.pt = {
   closeDialogue: "Fechar diálogo",
 };
 
+UI_TEXT.ar = {
+  talkHint: "اضغط SPACE أو اضغط على الشاشة عشان تتكلم",
+  correct: "صح!",
+  incorrect: "حاول تاني!",
+  completed: "مبروك! جاوبت على كل الأسئلة صح!",
+  playAgain: "العب تاني",
+  back: "رجوع",
+  progress: "التقدم",
+  answeredOf: "من",
+  moveHint: "استخدم الأسهم أو WASD للحركة",
+  touchMove: "اضغط عشان تتحرك، واضغط على الشخصية عشان تتكلم",
+  chooseScenario: "اختَر سيناريو",
+  scenario: "سيناريو",
+  newWorld: "عالم جديد",
+  quest: "مهمة",
+  lockedNpc: "لازم تبدأ مع",
+  response: "الرد",
+  micStart: "شغّل المايك",
+  micStop: "وقّف المايك",
+  heardYou: "أنا سمعت",
+  speechUnavailable: "الصوت مش متاح في المتصفح ده",
+  noSpeechMatch: "ملحقتش أفهمك. حاول تاني.",
+  continue: "كمّل",
+  skip: "تخطي",
+  loadingTutorialScene: "جارٍ تحميل مشهد الشرح...",
+  loadingGeneratingGame: "بنجهّز لعبتك...",
+  enableMusic: "شغّل الموسيقى",
+  disableMusic: "اقفل الموسيقى",
+  musicOn: "الموسيقى شغالة",
+  musicOff: "الموسيقى مقفولة",
+  help: "مساعدة",
+  inventory: "الشنطة",
+  noItems: "لسه مفيش أغراض.",
+  dropItem: "ارمِ",
+  wrongItem: "الغرض الغلط",
+  speechContinue: "تمام، فهمت. نكمّل.",
+  thinking: "بفكر...",
+  translateText: "ترجمة النص",
+  undoTranslation: "إلغاء الترجمة",
+  chooseCorrect: "اختَر الإجابة الصح.",
+  closeDialogue: "اقفل الحوار",
+};
+
 const SCENARIO_EMOJIS = {
   [REVIEW_WORLD_ID]: "✨",
   [TUTORIAL_MAP_ID]: "👋",
@@ -1927,6 +2002,17 @@ GAME_LOADING_MESSAGES.pt = [
   "Preparando quebra-cabeças de idioma...",
   "Montando a cena...",
   "Criando a sua aventura...",
+];
+
+GAME_LOADING_MESSAGES.ar = [
+  "بنكوّن عالمك...",
+  "بنحط الشخصيات...",
+  "بنكتب حوارات المهمة...",
+  "بنجهّز تحديات المفردات...",
+  "بنصمم الخريطة...",
+  "بنحضّر ألغاز اللغة...",
+  "بنظبط المشهد...",
+  "بنصنع مغامرتك...",
 ];
 
 const SCENARIO_OBJECT_VISUALS = {
@@ -2192,6 +2278,35 @@ const OBJECT_EXAMINE_FALLBACK_LABELS = {
   },
 };
 
+OBJECT_EXAMINE_FALLBACK_LABELS.ar = {
+  tree: "شجرة",
+  house: "بيت",
+  building: "مبنى",
+  pavilion: "مظلة",
+  greenhouse: "صوبة",
+  doorway: "مدخل",
+  bookshelf: "رف كتب",
+  shelf: "رف",
+  tv: "تلفزيون",
+  sofa: "كنبة",
+  plant: "زرع",
+  table: "ترابيزة",
+  lamp: "لمبة",
+  sign: "لافتة",
+  gate: "بوابة",
+  speaker: "سماعة",
+  balloons: "بلالين",
+  desk: "مكتب",
+  suitcaseStack: "كومة شنط",
+  counter: "كاونتر",
+  stove: "بوتاجاز",
+  fridge: "تلاجة",
+  bench: "دكة",
+  register: "كاشير",
+  freezer: "فريزر",
+  object: "غرض",
+};
+
 const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
   en: (label) => `You notice ${label}.`,
   es: (label) => `Notas ${label}.`,
@@ -2201,6 +2316,8 @@ const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
   ja: (label) => `${label}に気づきます。`,
   hi: (label) => `आपको ${label} दिखता है।`,
 };
+
+OBJECT_EXAMINE_FALLBACK_SENTENCES.ar = (label) => `إنت ملاحظ ${label}.`;
 
 function getLocalizedObjectExamineLabel(type = "", lang = "en") {
   const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);

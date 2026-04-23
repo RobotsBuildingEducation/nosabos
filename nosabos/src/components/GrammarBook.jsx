@@ -1096,6 +1096,8 @@ export default function GrammarBook({
         t("copied_to_clipboard_all") ||
         (userLanguage === "pt"
           ? "Copiado (pergunta + dica + traducao)"
+          : userLanguage === "ar"
+            ? "اتنسخ (السؤال + التلميح + الترجمة)"
           : userLanguage === "es"
             ? "Copiado (pregunta + pista + traducción)"
             : "Copied (question + hint + translation)"),
@@ -4101,9 +4103,12 @@ Return JSON ONLY:
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
     const promptLines = [
       isJapaneseUI
         ? "単語マッチング練習です。左の項目を単語バンクの正しい選択肢と組み合わせて答えてください。"
+        : isArabicUI
+        ? "تمرين توصيل كلمات. جاوب بوصل كل عنصر في العمود الشمال بالاختيار الصح من بنك الكلمات."
         : isFrenchUI
         ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
         : isPortugueseUI
@@ -4114,6 +4119,8 @@ Return JSON ONLY:
       mStem
         ? isJapaneseUI
           ? `指示: ${mStem}`
+          : isArabicUI
+          ? `التعليمات: ${mStem}`
           : isFrenchUI
           ? `Invite ou consigne : ${mStem}`
           : isPortugueseUI
@@ -4125,6 +4132,8 @@ Return JSON ONLY:
       mLeft.length
         ? isJapaneseUI
           ? `左の列: ${mLeft.join(" | ")}`
+          : isArabicUI
+          ? `العمود الشمال: ${mLeft.join(" | ")}`
           : isFrenchUI
           ? `Colonne gauche : ${mLeft.join(" | ")}`
           : isPortugueseUI
@@ -4136,6 +4145,8 @@ Return JSON ONLY:
       mRight.length
         ? isJapaneseUI
           ? `単語バンク: ${mRight.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${mRight.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${mRight.join(" | ")}`
           : isPortugueseUI
@@ -4147,6 +4158,8 @@ Return JSON ONLY:
       mHint
         ? isJapaneseUI
           ? `ヒント: ${mHint}`
+          : isArabicUI
+          ? `تلميح: ${mHint}`
           : isFrenchUI
           ? `Indice : ${mHint}`
           : isPortugueseUI
@@ -4271,6 +4284,8 @@ Return JSON ONLY:
     t("practice_drag_drop_slot_placeholder") ||
     (userLanguage === "pt"
       ? "Solte a resposta aqui"
+      : userLanguage === "ar"
+        ? "حط الإجابة هنا"
       : userLanguage === "es"
         ? "Suelta la respuesta aquí"
         : "Drop the answer here");
@@ -4279,6 +4294,8 @@ Return JSON ONLY:
     translatedSkipLabel &&
     translatedSkipLabel !== "practice_skip_question"
       ? translatedSkipLabel
+      : userLanguage === "ar"
+        ? "تخطي"
       : userLanguage === "pt"
         ? "Pular"
         : userLanguage === "es"
@@ -4291,14 +4308,20 @@ Return JSON ONLY:
     t("grammar_btn_speak") ||
     (userLanguage === "pt"
       ? "Falar"
+      : userLanguage === "ar"
+        ? "تكلّم"
       : userLanguage === "es"
         ? "Pronunciar"
         : "Speak");
-  const nextQuestionLabel = t("practice_next_question") || "Next question";
+  const nextQuestionLabel =
+    t("practice_next_question") ||
+    (userLanguage === "ar" ? "السؤال التالي" : "Next question");
   const synthLabel =
     t("tts_synthesizing") ||
     (userLanguage === "pt"
       ? "Sintetizando..."
+      : userLanguage === "ar"
+        ? "جارٍ التركيب..."
       : userLanguage === "es"
         ? "Sintetizando..."
         : "Synthesizing...");
@@ -5651,6 +5674,8 @@ Return JSON ONLY:
                   {t("grammar_speak_last_heard") ||
                     (userLanguage === "pt"
                       ? "Ultima tentativa"
+                      : userLanguage === "ar"
+                        ? "آخر محاولة"
                       : userLanguage === "es"
                         ? "Último intento"
                         : "Last attempt")}
@@ -5710,6 +5735,8 @@ Return JSON ONLY:
                           t("grammar_speak_unavailable") ||
                           (userLanguage === "pt"
                             ? "Reconhecimento de voz indisponivel"
+                            : userLanguage === "ar"
+                              ? "التعرّف على الصوت غير متاح"
                             : userLanguage === "es"
                               ? "Reconocimiento de voz no disponible"
                               : "Speech recognition unavailable"),
@@ -5745,12 +5772,16 @@ Return JSON ONLY:
                   ? t("grammar_speak_stop") ||
                     (userLanguage === "pt"
                       ? "Parar"
+                      : userLanguage === "ar"
+                        ? "إيقاف"
                       : userLanguage === "es"
                         ? "Detener"
                         : "Stop")
                   : t("grammar_speak_record") ||
                     (userLanguage === "pt"
                       ? "Gravar"
+                      : userLanguage === "ar"
+                        ? "سجّل"
                       : userLanguage === "es"
                         ? "Grabar"
                         : "Record")}
@@ -5763,6 +5794,8 @@ Return JSON ONLY:
                   t("grammar_speak_success_title") ||
                   (userLanguage === "pt"
                     ? "Pronuncia aprovada!"
+                    : userLanguage === "ar"
+                      ? "النطق ممتاز!"
                     : userLanguage === "es"
                       ? "¡Pronunciación aprobada!"
                       : "Pronunciation approved!")
@@ -5772,6 +5805,8 @@ Return JSON ONLY:
                     ? t("grammar_speak_success_desc", { score: sEval.score }) ||
                       (userLanguage === "pt"
                         ? `Pontuacao ${sEval.score}%`
+                        : userLanguage === "ar"
+                          ? `النتيجة ${sEval.score}%`
                         : userLanguage === "es"
                           ? `Puntaje ${sEval.score}%`
                           : `Score ${sEval.score}%`)

@@ -250,6 +250,42 @@ export const indianFlag = () => {
   );
 };
 
+export const egyptianFlag = () => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath="url(#EG_svg__a)">
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#F0F0F0"
+        />
+        <path
+          d="M12 0C6.84 0 2.442 3.257.746 7.826h22.508C21.557 3.257 17.159 0 12 0Z"
+          fill="#CE1126"
+        />
+        <path
+          d="M12 24c5.16 0 9.558-3.257 11.254-7.826H.746C2.443 20.743 6.841 24 12 24Z"
+          fill="#000"
+        />
+        <path
+          d="M12.001 9.04c-.777 0-1.408.63-1.408 1.407 0 .446.208.844.531 1.102-.17.192-.274.444-.274.721 0 .6.487 1.087 1.088 1.087h.126v.603h-.78v.704h1.434v-.972a.352.352 0 0 0-.353-.352h-.427a.383.383 0 0 1 0-.766h.703a1.407 1.407 0 0 0-.64-2.66Zm0 2.111a.704.704 0 1 1 0-1.407.704.704 0 0 1 0 1.407Z"
+          fill="#FFDA44"
+        />
+      </g>
+      <defs>
+        <clipPath id="EG_svg__a">
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
 export const brazilianFlag = () => {
   return (
     <svg

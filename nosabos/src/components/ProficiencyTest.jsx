@@ -179,6 +179,14 @@ const CEFR_LEVEL_INFO = {
   C2: { name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
 };
 
+CEFR_LEVEL_INFO["Pre-A1"].name.ar = "مبتدئ تمامًا";
+CEFR_LEVEL_INFO.A1.name.ar = "مبتدئ";
+CEFR_LEVEL_INFO.A2.name.ar = "أساسي";
+CEFR_LEVEL_INFO.B1.name.ar = "متوسط";
+CEFR_LEVEL_INFO.B2.name.ar = "متوسط أعلى";
+CEFR_LEVEL_INFO.C1.name.ar = "متقدم";
+CEFR_LEVEL_INFO.C2.name.ar = "إتقان";
+
 const CEFR_LEVEL_OFFERINGS = {
   "Pre-A1": {
     en: [
@@ -336,6 +344,42 @@ const CEFR_LEVEL_OFFERINGS = {
   },
 };
 
+CEFR_LEVEL_OFFERINGS["Pre-A1"].ar = [
+  "دروس موجهة جدًا بكلمات وعبارات أساسية.",
+  "تدريبات قصيرة جدًا مع تكرار كثير.",
+  "التركيز على الثقة وبداية الفهم.",
+];
+CEFR_LEVEL_OFFERINGS.A1.ar = [
+  "وحدات للمبتدئين عن التحية والبيانات الشخصية والأساسيات اليومية.",
+  "تدريبات محادثة بسيطة مع دعم مستمر.",
+  "مفردات أساسية وقوالب جمل مهمة.",
+];
+CEFR_LEVEL_OFFERINGS.A2.ar = [
+  "مواقف يومية قصيرة عن التسوق والوقت والعيلة والأماكن.",
+  "حوارات أبسط لكن بأفكار أكتر من A1.",
+  "بداية استخدام اللغة بشكل عملي أكتر.",
+];
+CEFR_LEVEL_OFFERINGS.B1.ar = [
+  "محادثات متوسطة عن الرأي والتجارب والروتين.",
+  "أسئلة مفتوحة وردود أطول شوية.",
+  "التركيز على الوضوح وربط الأفكار.",
+];
+CEFR_LEVEL_OFFERINGS.B2.ar = [
+  "نقاشات أعمق عن مواقف واقعية وأفكار مركبة.",
+  "تدريب على الشرح والدفاع عن الرأي.",
+  "مرونة أكبر في الكلام وسرعة الاستجابة.",
+];
+CEFR_LEVEL_OFFERINGS.C1.ar = [
+  "استخدام متقدم للغة في ردود أطول وأكثر دقة.",
+  "التعامل مع أفكار مجردة وتفاصيل دقيقة.",
+  "التركيز على النبرة والمعنى والاختيار المناسب للكلمات.",
+];
+CEFR_LEVEL_OFFERINGS.C2.ar = [
+  "أعلى مستوى من الدقة والطلاقة والمرونة.",
+  "القدرة على التعامل مع موضوعات معقدة جدًا بسهولة.",
+  "لغة قريبة جدًا من مستوى المتحدث الأصلي.",
+];
+
 const ASSESSMENT_CRITERIA = [
   { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音" },
   { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法" },
@@ -344,6 +388,19 @@ const ASSESSMENT_CRITERIA = [
   { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信" },
   { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解" },
 ];
+
+const ASSESSMENT_CRITERIA_AR = {
+  pronunciation: "النطق",
+  grammar: "القواعد",
+  vocabulary: "المفردات",
+  fluency: "الطلاقة",
+  confidence: "الثقة",
+  comprehension: "الفهم",
+};
+
+ASSESSMENT_CRITERIA.forEach((criterion) => {
+  criterion.ar = ASSESSMENT_CRITERIA_AR[criterion.key] || criterion.en;
+});
 
 function scoreColor(score) {
   if (score >= 8) return "green";
@@ -996,6 +1053,7 @@ export default function ProficiencyTest() {
     const langName =
       {
         es: "Spanish",
+        ar: "Egyptian Arabic",
         pt: "Portuguese",
         fr: "French",
         it: "Italian",
@@ -1014,6 +1072,7 @@ export default function ProficiencyTest() {
     const strict =
       {
         es: "Responde ÚNICAMENTE en español.",
+        ar: "أجب فقط بالعربية المصرية.",
         pt: "Responda APENAS em português brasileiro.",
         fr: "Réponds UNIQUEMENT en français.",
         it: "Rispondi SOLO in italiano.",
@@ -1413,7 +1472,7 @@ export default function ProficiencyTest() {
     );
 
     const LANG_MAP = {
-      es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
+      es: "Spanish", ar: "Egyptian Arabic", pt: "Portuguese", fr: "French", it: "Italian",
       nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
       el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
       yua: "Yucatec Maya", en: "English",
@@ -1423,6 +1482,7 @@ export default function ProficiencyTest() {
 
     const insufficientAudioMsg = {
       es: "Evidencia de audio insuficiente.",
+      ar: "أدلة الصوت غير كفاية.",
       it: "Prove audio insufficienti.",
       pt: "Evidência de áudio insuficiente.",
       fr: "Preuves audio insuffisantes.",
@@ -2071,6 +2131,27 @@ Return ONLY valid JSON:
       hi: "जटिल विषयों पर लगभग मातृभाषी जैसी सटीकता, गति और अनुकूलनशीलता।",
     },
   ];
+
+  const RUBRIC_ROWS_AR = {
+    "Pre-A1":
+      "كلمات منفصلة أو ردود قصيرة جدًا مع انقطاع متكرر في الفهم.",
+    A1:
+      "يقدر يتعامل مع التحيات والبيانات الشخصية الأساسية بقوالب بسيطة محفوظة.",
+    A2:
+      "يقدر يتكلم عن موضوعات روتينية ويجاوب على أسئلة مباشرة بتفاصيل محدودة.",
+    B1:
+      "يقدر يشرح آراءه ويحكي أحداث ويحافظ على محادثة قصيرة مع بعض الأخطاء.",
+    B2:
+      "يقدر يتواصل بوضوح عن موضوعات مألوفة ومجردة مع تحكم وطلاقة كويسين.",
+    C1:
+      "يقدر ينتج لغة مرنة وبتفاصيل دقيقة في ردود أطول مع فهم قوي.",
+    C2:
+      "دقة وسرعة ومرونة قريبة جدًا من المتحدث الأصلي في الموضوعات المعقدة.",
+  };
+
+  rubricRows.forEach((row) => {
+    row.ar = RUBRIC_ROWS_AR[row.level] || row.en;
+  });
 
   return (
     <>

@@ -56,7 +56,10 @@ import { analytics, database } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
-import { getSupportLanguageOptions } from "../constants/languages";
+import {
+  getSupportLanguageOptions,
+} from "../constants/languages";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
@@ -165,6 +168,11 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
     bg: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
     emblem: "#bc002d",
     emblemSize: "12px",
+  },
+  ar: {
+    bg: "linear-gradient(180deg, #ce1126 0 33.33%, #ffffff 33.33% 66.66%, #000000 66.66% 100%)",
+    emblem: "#c9a227",
+    emblemSize: "10px",
   },
 };
 
@@ -350,8 +358,26 @@ const LanguageMenuFixed = ({
           borderColor={APP_BORDER}
           boxShadow={APP_SHADOW}
           minW="160px"
+          maxH="300px"
+          overflowY="auto"
           py={1}
           zIndex={122}
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: APP_SURFACE,
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: APP_BORDER_STRONG,
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: APP_TEXT_MUTED,
+            },
+          }}
         >
           <MenuOptionGroup
             value={activeLanguage}
@@ -880,6 +906,10 @@ export default function LinksPage() {
   useEffect(() => {
     initLanguage();
   }, [initLanguage]);
+
+  useEffect(() => {
+    syncDocumentLanguage(language);
+  }, [language]);
 
   // Load stored npub, displayName, and profilePicture
   useEffect(() => {

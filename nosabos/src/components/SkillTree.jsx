@@ -220,6 +220,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
 import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
 import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
@@ -312,6 +313,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
   if (supportLang === "hi" && !textObj.hi) {
     return translateSkillTreeTextToHindi(fallback);
   }
+  if (supportLang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
@@ -334,6 +338,9 @@ const getUIDisplayText = (textObj) => {
   }
   if (lang === "hi" && !textObj.hi) {
     return translateSkillTreeTextToHindi(fallback);
+  }
+  if (lang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
   }
   return textObj[lang] || fallback;
 };
@@ -1706,6 +1713,16 @@ const GAME_LOADING_MESSAGES = {
     "भाषा पहेलियां तैयार की जा रही हैं...",
     "दृश्य सजाया जा रहा है...",
     "आपका रोमांच तैयार किया जा रहा है...",
+  ],
+  ar: [
+    "بنكوّن عالمك...",
+    "بنحط الشخصيات...",
+    "بنكتب حوار المهمة...",
+    "بنجهز تحديات المفردات...",
+    "بنرسم خريطة المكان...",
+    "بنحضّر ألغاز اللغة...",
+    "بنظبط المشهد...",
+    "بنصنع مغامرتك...",
   ],
 };
 

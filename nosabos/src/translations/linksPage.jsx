@@ -186,6 +186,7 @@ export const linksPageTranslations = {
     language_fr: "French",
     language_it: "Italian",
     language_hi: "Hindi",
+    language_ar: "Egyptian Arabic",
     language_ja: "Japanese",
   },
   it: {
@@ -372,6 +373,7 @@ export const linksPageTranslations = {
     language_fr: "Francese",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Arabo egiziano",
     language_ja: "Giapponese",
   },
   es: {
@@ -561,6 +563,7 @@ export const linksPageTranslations = {
     language_fr: "Francés",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
     language_ja: "Japonés",
   },
 };
@@ -697,6 +700,91 @@ linksPageTranslations.hi = {
       </p>
     </div>
   ),
+};
+
+linksPageTranslations.ar = {
+  ...linksPageTranslations.en,
+  welcome: "أهلاً",
+  customizeProfile: "عدّل الملف الشخصي",
+  profile: "الملف الشخصي",
+  about: "عنّي",
+  aboutTitle: "عنّي",
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>شكرًا إنك بتشوف شغلي!</p>
+      <p style={{ marginBottom: 12 }}>
+        أنا Sheilfer. درست علوم الحاسب وكان هدفي دايمًا أتعلم هندسة البرمجيات
+        علشان أبني تكنولوجيا تعليمية. بحب التعلم والتعليم، وبحس إن ده المكان
+        اللي أقدر أستخدم فيه مهاراتي بأفضل شكل.
+      </p>
+      <p style={{ marginBottom: 12 }}>
+        بدأت فكرة Robots Building Education في 2015 لأني حسيت إن تكنولوجيا
+        التعليم كانت دايمًا متأخرة عن اللي الإنترنت فعلاً يقدر يعمله.
+      </p>
+      <p style={{ marginBottom: 12 }}>
+        Robots Building Education بالنسبة لي هي إن التعلم يكون له أثر حقيقي
+        لحظة ما تتعلم وتتقدم. الرؤية على المدى الطويل هي دعم المدارس،
+        المدرسين، والطلاب بشكل فعلي ومن غير حدود.
+      </p>
+      <p style={{ marginBottom: 12 }}>
+        فمرّة تانية، شكرًا إنك بتتابع شغلي. ده بيفرق معايا جدًا.
+      </p>
+    </div>
+  ),
+  english: "الإنجليزية",
+  spanish: "الإسبانية",
+  list: "قائمة",
+  carousel: "دوّار",
+  previousLink: "الرابط السابق",
+  nextLink: "الرابط التالي",
+  launchApp: "افتح التطبيق",
+  subscribe: "اشترك",
+  buyApps: "اشترِ التطبيقات",
+  rbeModalDescription:
+    "هتستخدم المفتاح السري علشان تدخل حسابك. لو دخلت من السوشيال، هتعمل ده مرة واحدة بس.",
+  copySecretKey: "انسخ المفتاح السري",
+  goToApp: "روح للتطبيق",
+  close: "إغلاق",
+  customizeProfileTitle: "عدّل الملف الشخصي",
+  username: "اسم المستخدم",
+  enterUsername: "اكتب اسم المستخدم",
+  profilePictureUrl: "رابط صورة الملف الشخصي",
+  saveProfile: "احفظ الملف الشخصي",
+  secretKey: "المفتاح السري",
+  switchAccount: "بدّل الحساب",
+  pasteNsec: "الصق مفتاح nsec هنا",
+  bitcoinWallet: "محفظة بيتكوين",
+  loadingWallet: "بنحمّل المحفظة...",
+  secretKeyRequired: "المفتاح السري مطلوب",
+  createWallet: "أنشئ محفظة",
+  creatingWallet: "بيتم إنشاء المحفظة...",
+  deposit: "إيداع",
+  copyAddress: "انسخ العنوان",
+  or: "أو",
+  generateNewQR: "ولّد QR جديد",
+  wallet: "المحفظة",
+  balance: "الرصيد",
+  noChanges: "مفيش تغييرات",
+  profileUpdated: "تم تحديث الملف الشخصي",
+  error: "خطأ",
+  copied: "اتنسخ!",
+  failedCopy: "فشل النسخ",
+  invalidKey: "مفتاح غير صالح",
+  accountSwitched: "اتبدّل الحساب",
+  authFailed: "المفتاح السري غير صالح أو حصل فشل في التوثيق",
+  walletCreated: "المحفظة اتعملت",
+  walletReady: "محفظة البيتكوين جاهزة.",
+  failedCreateWallet: "فشل إنشاء المحفظة",
+  failedDeposit: "فشل بدء الإيداع",
+  addressCopied: "اتنسخ العنوان",
+  invoiceCopied: "تم نسخ فاتورة Lightning.",
+  language_en: "الإنجليزية",
+  language_es: "الإسبانية",
+  language_fr: "الفرنسية",
+  language_it: "الإيطالية",
+  language_hi: "الهندية",
+  language_ar: "العربية المصرية",
+  language_ja: "اليابانية",
 };
 
 linksPageTranslations.fr = {
@@ -860,6 +948,7 @@ linksPageTranslations.fr = {
   language_fr: "Français",
   language_it: "Italien",
   language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
   language_ja: "Japonais",
 };
 
@@ -993,5 +1082,6 @@ linksPageTranslations.ja = {
   language_fr: "フランス語",
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
+  language_ar: "エジプトアラビア語",
   language_ja: "日本語",
 };

@@ -37,17 +37,18 @@ export const MAP_CHOICES = [
       fr: "Monde genere",
       ja: "生成された世界",
       hi: "बनाई गई दुनिया",
+      ar: "العالم المتولّد",
     },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया" },
-  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष" },
-  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान" },
-  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान", ar: "الحديقة" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा", ar: "المطار" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -409,6 +410,7 @@ function normalizeQuestions(questions, supportLang) {
       fr: "Choisis la bonne option.",
       ja: "正しい選択肢を選んでください。",
       hi: "सही विकल्प चुनें।",
+      ar: "اختر الإجابة الصحيحة.",
     }[supportLang] || "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
@@ -1981,6 +1983,41 @@ const REVIEW_ROOM_BLUEPRINTS = {
   ],
 };
 
+const SCENARIO_NAME_AR_BY_EN = {
+  Kitchen: "المطبخ",
+  Study: "المكتب",
+  "Garden Patio": "فناء الحديقة",
+  "Prep Room": "غرفة التحضير",
+  Pantry: "المخزن",
+  "Cafe Patio": "فناء المقهى",
+  "Archive Wing": "جناح الأرشيف",
+  "Reading Nook": "ركن القراءة",
+  "Front Office": "المكتب الأمامي",
+  "Ticket Office": "شباك التذاكر",
+  "Gate Lounge": "صالة البوابة",
+  "Travel Desk": "مكتب السفر",
+  "Garden Pavilion": "جناح الحديقة",
+  Glasshouse: "البيت الزجاجي",
+  "Ranger Station": "مركز الحارس",
+  "Council Room": "قاعة المجلس",
+  "Records Room": "غرفة السجلات",
+  "Courtyard Pavilion": "جناح الفناء",
+  "Prep Lab": "مختبر التحضير",
+  "Analysis Booth": "كشك التحليل",
+  "Equipment Store": "مخزن المعدات",
+  "Performance Stage": "مسرح العروض",
+  "Food Stall": "كشك الطعام",
+  "Craft Tent": "خيمة الحِرف",
+};
+
+Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((rooms) => {
+  rooms.forEach((room) => {
+    if (!room?.name?.ar) {
+      room.name.ar = SCENARIO_NAME_AR_BY_EN[room.name.en] || room.name.en;
+    }
+  });
+});
+
 const SCENARIO_NAME_PT_BY_ES = {
   Cocina: "Cozinha",
   Estudio: "Estúdio",
@@ -2725,6 +2762,9 @@ function buildReviewWorldMaps({
       hi: Array.isArray(environment?.names?.hi)
         ? environment.names.hi[0]
         : environment?.names?.hi || "पाठ की दुनिया",
+      ar: Array.isArray(environment?.names?.ar)
+        ? environment.names.ar[0]
+        : environment?.names?.ar || "عالم الدرس",
     },
     tileSize: 32,
     mapWidth: hubWidth,
@@ -3073,6 +3113,7 @@ async function fallbackScenario(
       fr: getMapName(mapId, "fr"),
       ja: getMapName(mapId, "ja"),
       hi: getMapName(mapId, "hi"),
+      ar: getMapName(mapId, "ar"),
     };
     const mapWidth = 18;
     const mapHeight = 14;
@@ -3219,6 +3260,7 @@ async function fallbackScenario(
       fr: getMapName(mapId, "fr"),
       ja: getMapName(mapId, "ja"),
       hi: getMapName(mapId, "hi"),
+      ar: getMapName(mapId, "ar"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3521,6 +3563,7 @@ function normalizeScenario({
         it: String(raw?.name?.it || getMapName(mapId, "it")),
         fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
         ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
+        ar: String(raw?.name?.ar || getMapName(mapId, "ar")),
       },
       tileSize: 32,
       mapWidth,
@@ -3587,6 +3630,7 @@ function normalizeScenario({
     fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
     ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
     hi: String(raw?.name?.hi || (Array.isArray(environment?.names?.hi) ? environment.names.hi[0] : environment?.names?.hi) || getMapName(mapId, "hi")),
+    ar: String(raw?.name?.ar || (Array.isArray(environment?.names?.ar) ? environment.names.ar[0] : environment?.names?.ar) || getMapName(mapId, "ar")),
   };
   hubMap.name = processedName;
 

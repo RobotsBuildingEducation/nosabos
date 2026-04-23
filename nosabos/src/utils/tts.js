@@ -8,6 +8,7 @@ const REALTIME_URL =
     : "";
 
 export const TTS_LANG_TAG = {
+  ar: "ar-EG",
   en: "en-US",
   es: "es-MX",
   pt: "pt-BR",

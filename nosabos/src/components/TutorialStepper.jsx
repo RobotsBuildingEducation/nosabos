@@ -46,6 +46,7 @@ const MODULE_CONFIG = {
       fr: "Vocabulaire",
       ja: "語彙",
       hi: "शब्दावली",
+      ar: "المفردات",
     },
     shortLabel: {
       en: "Vocab",
@@ -55,6 +56,7 @@ const MODULE_CONFIG = {
       fr: "Vocab",
       ja: "語彙",
       hi: "शब्द",
+      ar: "كلمات",
     },
     description: {
       en: "Learn new words through interactive questions.",
@@ -64,6 +66,7 @@ const MODULE_CONFIG = {
       fr: "Apprends de nouveaux mots avec des questions interactives.",
       ja: "インタラクティブな質問で新しい単語を学びます。",
       hi: "इंटरैक्टिव प्रश्नों के माध्यम से नए शब्द सीखें।",
+      ar: "اتعلّم كلمات جديدة من خلال أسئلة تفاعلية.",
     },
   },
   grammar: {
@@ -77,6 +80,7 @@ const MODULE_CONFIG = {
       fr: "Grammaire",
       ja: "文法",
       hi: "व्याकरण",
+      ar: "القواعد",
     },
     shortLabel: {
       en: "Grammar",
@@ -86,6 +90,7 @@ const MODULE_CONFIG = {
       fr: "Gram",
       ja: "文法",
       hi: "व्याक.",
+      ar: "قواعد",
     },
     description: {
       en: "Master grammar rules through exercises.",
@@ -95,6 +100,7 @@ const MODULE_CONFIG = {
       fr: "Maitrise les regles de grammaire avec des exercices.",
       ja: "練習問題で文法ルールを身につけます。",
       hi: "अभ्यासों के ज़रिए व्याकरण के नियमों में पकड़ बनाइए।",
+      ar: "اتقن قواعد اللغة من خلال التمارين.",
     },
   },
   reading: {
@@ -108,6 +114,7 @@ const MODULE_CONFIG = {
       fr: "Lecture",
       ja: "読解",
       hi: "पठन",
+      ar: "القراءة",
     },
     shortLabel: {
       en: "Read",
@@ -117,6 +124,7 @@ const MODULE_CONFIG = {
       fr: "Lire",
       ja: "読む",
       hi: "पढ़ें",
+      ar: "اقرأ",
     },
     description: {
       en: "Improve your reading skills by following along with passages.",
@@ -126,6 +134,7 @@ const MODULE_CONFIG = {
       fr: "Ameliore ta lecture en suivant les textes.",
       ja: "文章を追いながら読解力を高めます。",
       hi: "पैसेज के साथ पढ़ते हुए अपनी पठन क्षमता बेहतर बनाइए।",
+      ar: "حسّن مهارات القراءة وأنت بتتابع النصوص.",
     },
   },
   stories: {
@@ -139,6 +148,7 @@ const MODULE_CONFIG = {
       fr: "Histoires",
       ja: "ストーリー",
       hi: "कहानियाँ",
+      ar: "القصص",
     },
     shortLabel: {
       en: "Story",
@@ -148,6 +158,7 @@ const MODULE_CONFIG = {
       fr: "Histoire",
       ja: "物語",
       hi: "कहानी",
+      ar: "قصة",
     },
     description: {
       en: "Practice with interactive stories by reading and speaking sentence by sentence.",
@@ -157,6 +168,7 @@ const MODULE_CONFIG = {
       fr: "Pratique avec des histoires interactives, phrase par phrase, a l'ecrit et a l'oral.",
       ja: "文ごとに読んで話すインタラクティブなストーリーで練習します。",
       hi: "इंटरैक्टिव कहानियों के साथ वाक्य-दर-वाक्य पढ़कर और बोलकर अभ्यास करें।",
+      ar: "اتدرّب بقصص تفاعلية من خلال القراءة والكلام جملة بجملة.",
     },
   },
   realtime: {
@@ -170,6 +182,7 @@ const MODULE_CONFIG = {
       fr: "Chat",
       ja: "チャット",
       hi: "चैट",
+      ar: "محادثة",
     },
     shortLabel: {
       en: "Chat",
@@ -179,6 +192,7 @@ const MODULE_CONFIG = {
       fr: "Parler",
       ja: "話す",
       hi: "बोलें",
+      ar: "تكلّم",
     },
     description: {
       en: "Practice speaking with realtime conversations.",
@@ -188,6 +202,7 @@ const MODULE_CONFIG = {
       fr: "Pratique l'expression orale avec des conversations en temps reel.",
       ja: "リアルタイム会話で話す練習をします。",
       hi: "रीयलटाइम बातचीत के साथ बोलने का अभ्यास करें।",
+      ar: "اتدرّب على الكلام من خلال محادثات مباشرة.",
     },
   },
   game: {
@@ -201,6 +216,7 @@ const MODULE_CONFIG = {
       fr: "Jeu",
       ja: "ゲーム",
       hi: "गेम",
+      ar: "لعبة",
     },
     shortLabel: {
       en: "Game",
@@ -210,6 +226,7 @@ const MODULE_CONFIG = {
       fr: "Jeu",
       ja: "ゲーム",
       hi: "गेम",
+      ar: "لعبة",
     },
     description: {
       en: "Review what you learned by playing an interactive game.",
@@ -219,6 +236,7 @@ const MODULE_CONFIG = {
       fr: "Revise ce que tu as appris avec un jeu interactif.",
       ja: "インタラクティブなゲームで学んだことを復習します。",
       hi: "इंटरैक्टिव गेम खेलकर जो सीखा है उसका पुनरावलोकन करें।",
+      ar: "راجع اللي اتعلمته من خلال لعبة تفاعلية.",
     },
   },
 };

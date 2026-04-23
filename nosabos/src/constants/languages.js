@@ -1,5 +1,6 @@
 import {
   brazilianFlag,
+  egyptianFlag,
   frenchFlag,
   germanFlag,
   greekFlag,
@@ -18,6 +19,7 @@ export const DEFAULT_SUPPORT_LANGUAGE = "en";
 export const DEFAULT_TARGET_LANGUAGE = "es";
 
 export const LANGUAGE_FALLBACK_LABELS = {
+  ar: "Egyptian Arabic",
   en: "English",
   es: "Spanish",
   pt: "Portuguese",
@@ -36,6 +38,7 @@ export const LANGUAGE_FALLBACK_LABELS = {
 };
 
 export const LANGUAGE_PROMPT_LABELS = {
+  ar: "Egyptian Arabic (العربية المصرية)",
   es: "Spanish (espanol)",
   en: "English",
   pt: "Portuguese (portugues brasileiro)",
@@ -54,6 +57,15 @@ export const LANGUAGE_PROMPT_LABELS = {
 };
 
 const LANGUAGE_META = [
+  {
+    value: "ar",
+    languageKey: "language_ar",
+    practiceKey: "onboarding_practice_ar",
+    tier: "stable",
+    supportTier: "stable",
+    practiceEnabled: false,
+    flag: egyptianFlag,
+  },
   {
     value: "nl",
     languageKey: "language_nl",
@@ -172,10 +184,21 @@ const PRACTICE_LANGUAGE_CODES_BASE = LANGUAGE_META.filter(
   (item) => item.practiceEnabled !== false,
 ).map((item) => item.value);
 const PRACTICE_LANGUAGE_CODES_SET = new Set(PRACTICE_LANGUAGE_CODES_BASE);
-const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "pt", "it", "fr", "ja", "hi"];
+const SUPPORT_LANGUAGE_CODES_BASE = [
+  "en",
+  "es",
+  "pt",
+  "it",
+  "fr",
+  "ja",
+  "hi",
+  "ar",
+];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
+export const RTL_LANGUAGE_CODES = ["ar"];
 
 export const LANGUAGE_LOCALES = {
+  ar: "ar-EG",
   en: "en-US",
   es: "es-MX",
   pt: "pt-BR",
@@ -194,6 +217,7 @@ export const LANGUAGE_LOCALES = {
 };
 
 const SORT_LOCALES = {
+  ar: "ar",
   en: "en",
   es: "es",
   pt: "pt",
@@ -207,8 +231,10 @@ const normalizeCode = (raw) => String(raw || "").trim().toLowerCase();
 const normalizeSupportedCode = (raw) => {
   const normalized = normalizeCode(raw);
   if (!normalized) return "";
+  if (normalized === "arz") return "ar";
   if (SUPPORTED_LANGUAGE_CODES_SET.has(normalized)) return normalized;
   const [base] = normalized.split(/[-_]/);
+  if (base === "arz" && SUPPORTED_LANGUAGE_CODES_SET.has("ar")) return "ar";
   if (SUPPORTED_LANGUAGE_CODES_SET.has(base)) return base;
   return normalized;
 };
@@ -281,6 +307,11 @@ export function getLanguageLocale(code, fallback = "en-US") {
   return LANGUAGE_LOCALES[normalized] || fallback;
 }
 
+export function getLanguageDirection(code, fallback = "ltr") {
+  const normalized = normalizeSupportedCode(code);
+  return RTL_LANGUAGE_CODES.includes(normalized) ? "rtl" : fallback;
+}
+
 export function getSortLocale(code, fallback = "en") {
   const normalized = normalizeSupportLanguage(code, DEFAULT_SUPPORT_LANGUAGE);
   return SORT_LOCALES[normalized] || fallback;
@@ -292,7 +323,7 @@ function withTierTag(label, tier, ui = {}, uiLang = "en") {
       ui.onboarding_language_tag_alpha ||
       (uiLang === "ja"
         ? "アルファ"
-        : ["es", "pt", "it", "fr", "hi"].includes(uiLang)
+        : ["es", "pt", "it", "fr", "hi", "ar"].includes(uiLang)
           ? "alfa"
           : "alpha");
     return `${label} (${alphaLabel})`;

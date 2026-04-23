@@ -94,6 +94,10 @@ const HINDI_TIMEZONES = [
   'Asia/Calcutta',
 ];
 
+const ARABIC_TIMEZONES = [
+  'Africa/Cairo',
+];
+
 const FRENCH_TIMEZONES = [
   'Europe/Paris',
   'Europe/Monaco',
@@ -157,6 +161,7 @@ const JAPANESE_TIMEZONES = [
 const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL', 'es-PE', 'es-VE'];
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
 const HINDI_LANGUAGE_CODES = ['hi', 'hi-IN', 'hi-Latn', 'hi-Latn-IN', 'hi-Deva', 'hi-Deva-IN'];
+const ARABIC_LANGUAGE_CODES = ['ar', 'ar-EG', 'ar-Arab', 'ar-Arab-EG', 'arz'];
 const FRENCH_LANGUAGE_CODES = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
 const PORTUGUESE_LANGUAGE_CODES = ['pt', 'pt-BR', 'pt-PT', 'pt-AO', 'pt-MZ', 'pt-CV', 'pt-GW', 'pt-ST', 'pt-TL'];
 const JAPANESE_LANGUAGE_CODES = ['ja', 'ja-JP'];
@@ -189,6 +194,16 @@ export function isHindiTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return HINDI_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isArabicTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return ARABIC_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -267,6 +282,20 @@ export function isHindiBrowserLanguage() {
   }
 }
 
+export function isArabicBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      ARABIC_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
 export function isFrenchBrowserLanguage() {
   try {
     const languages = navigator.languages?.length
@@ -323,6 +352,10 @@ export function detectUserLanguage() {
   }
 
   // First check timezone (more reliable for regional detection)
+  if (isArabicTimezone()) {
+    return 'ar';
+  }
+
   if (isItalianTimezone()) {
     return 'it';
   }
@@ -348,6 +381,10 @@ export function detectUserLanguage() {
   }
 
   // Fallback to browser language detection
+  if (isArabicBrowserLanguage()) {
+    return 'ar';
+  }
+
   if (isItalianBrowserLanguage()) {
     return 'it';
   }

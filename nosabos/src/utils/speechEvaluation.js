@@ -273,6 +273,12 @@ const STOPWORDS = {
     "जब", "तक", "लिए", "द्वारा", "अपने", "अपनी", "अपना", "उनका", "उसका", "मेरा",
     "मेरी", "मेरे", "तुम्हारा", "तुम्हारी", "तुम्हारे", "हमारा", "हमारी", "हमारे",
   ]),
+  ar: new Set([
+    "ال", "و", "في", "من", "على", "إلى", "عن", "مع", "ده", "دي", "هو", "هي",
+    "أنا", "إنت", "انت", "احنا", "هم", "كان", "كانت", "يكون", "بتاع", "لسه",
+    "مش", "ما", "أو", "او", "كل", "بعض", "أي", "اي", "مين", "فين", "ليه", "إزاي",
+    "ازاي", "إمتى", "امتى", "ده", "دي", "دول", "فيه", "فيها", "عشان", "علشان",
+  ]),
 };
 
 function removeDiacritics(s) {
@@ -562,6 +568,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "मुख्य अर्थ वाले शब्द ज़रूर शामिल कीजिए।",
     "low-confidence": "स्पष्ट बोलिए और आसपास का शोर कम कीजिए।",
   },
+  ar: {
+    "speech-quality": "اتكلم بصوت أوضح وحافظ على سرعة ثابتة.",
+    "not-target-lang": (targetLabel) => `حاول تتكلم بـ ${targetLabel}.`,
+    "low-char-sim": "قرّب كلامك أكتر من الجملة الأصلية.",
+    "low-word-f1": "حاول تدخل الكلمات الأساسية في المحتوى.",
+    "low-confidence": "انطق بوضوح وقلل الضوضاء حواليك.",
+  },
   fr: {
     "speech-quality": "Parle un peu plus fort et garde un rythme regulier.",
     "not-target-lang": (targetLabel) => `Essaie de parler en ${targetLabel}.`,
@@ -599,8 +612,10 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
                 : lang === "fr"
                   ? "la langue cible"
                   : lang === "ja"
-                  ? "目標言語"
-                : "the target language"),
+                    ? "目標言語"
+                    : lang === "ar"
+                      ? "اللغة الهدف"
+                      : "the target language"),
         ),
       );
     else if (msg) tips.push(msg);
@@ -617,9 +632,11 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
             ? "स्पष्ट बोलते हुए फिर से कोशिश कीजिए।"
           : lang === "fr"
             ? "Reessaie en parlant clairement."
-            : lang === "ja"
-            ? "はっきり話して、もう一度試してみましょう。"
-          : "Try again, speaking clearly.",
+          : lang === "ja"
+              ? "はっきり話して、もう一度試してみましょう。"
+              : lang === "ar"
+                ? "حاول مرة تانية واتكلم بوضوح."
+                : "Try again, speaking clearly.",
     );
   }
   return tips;

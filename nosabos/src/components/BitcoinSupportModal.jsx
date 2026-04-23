@@ -36,7 +36,26 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, pt, it, fr, ja, hi = null) {
+const ARABIC_SUPPORT_COPY = {
+  "Create Scholarships": "اعمل منح تعليمية",
+  "Send Bitcoin to educators any time you gain XP":
+    "ابعت بيتكوين للمعلّمين كل ما تكسب XP",
+  "This can be done later in your settings.":
+    "تقدر تعمل ده بعدين من الإعدادات.",
+  "Maybe later": "يمكن بعدين",
+  Done: "تم",
+  "View site": "افتح الموقع",
+  "Select an option to enable deposits.":
+    "اختار خيار عشان تفعّل الإيداعات.",
+  Close: "إغلاق",
+  "Choose a recipient": "اختار مستلِم",
+};
+
+function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
@@ -177,6 +196,7 @@ export default function BitcoinSupportModal({
       "Creer des bourses",
       "奨学金を作る",
       "शिक्षा-वृत्तियां बनाएं",
+      "اعمل منح تعليمية",
     );
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
@@ -189,6 +209,7 @@ export default function BitcoinSupportModal({
       "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
       "XPを獲得するたびに教育者へBitcoinを送れます",
       "जब भी आप XP कमाएं, शिक्षकों को Bitcoin भेजें",
+      "ابعت بيتكوين للمعلّمين كل ما تكسب XP",
     );
   const footerNote =
     ui.tutorial_bitcoin_modal_body ||
@@ -201,6 +222,7 @@ export default function BitcoinSupportModal({
       "Tu pourras le faire plus tard dans les parametres.",
       "これは後で設定から行えます。",
       "यह बाद में आपकी सेटिंग्स में भी किया जा सकता है।",
+      "تقدر تعمل ده بعدين من الإعدادات.",
     );
   const skipLabel =
     ui.tutorial_bitcoin_modal_skip ||
@@ -213,10 +235,21 @@ export default function BitcoinSupportModal({
       "Peut-etre plus tard",
       "後で",
       "शायद बाद में",
+      "يمكن بعدين",
     );
   const closeLabel =
     ui.tutorial_bitcoin_modal_done ||
-    supportCopy(lang, "Done", "Listo", "Concluído", "Fatto", "Termine", "完了", "पूरा");
+    supportCopy(
+      lang,
+      "Done",
+      "Listo",
+      "Concluído",
+      "Fatto",
+      "Termine",
+      "完了",
+      "पूरा",
+      "تم",
+    );
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
@@ -350,6 +383,7 @@ export default function BitcoinSupportModal({
                         "サイトを見る",
                         null,
                         "साइट देखें",
+                        "افتح الموقع",
                       )}
                     </Link>
                   ) : null}
@@ -370,6 +404,7 @@ export default function BitcoinSupportModal({
             "入金を有効にするにはオプションを選択してください。",
             null,
             "जमा सक्षम करने के लिए एक विकल्प चुनें।",
+            "اختار خيار عشان تفعّل الإيداعات.",
           )}
         </Text>
       ) : null}
@@ -439,7 +474,17 @@ export default function BitcoinSupportModal({
         }}
       >
         <IconButton
-          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer", "閉じる", null, "बंद करें")}
+          aria-label={supportCopy(
+            lang,
+            "Close",
+            "Cerrar",
+            "Chiudi",
+            "Fermer",
+            "閉じる",
+            null,
+            "बंद करें",
+            "إغلاق",
+          )}
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
@@ -562,6 +607,7 @@ export default function BitcoinSupportModal({
                             "受取先を選ぶ",
                             null,
                             "प्राप्तकर्ता चुनें",
+                            "اختار مستلِم",
                           )}
                         </Text>
                         {selectedRecipient ? (
@@ -598,6 +644,7 @@ export default function BitcoinSupportModal({
                       "受取先を選ぶ",
                       null,
                       "प्राप्तकर्ता चुनें",
+                      "اختار مستلِم",
                     )}
                   </Text>
                   {recipientSelectorContent}

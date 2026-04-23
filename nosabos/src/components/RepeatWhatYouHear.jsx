@@ -87,6 +87,8 @@ export default function RepeatWhatYouHear({
       ? t("vocab_assistant")
       : userLanguage === "hi"
         ? "सहायक"
+        : userLanguage === "ar"
+          ? "المساعد"
         : userLanguage === "ja"
           ? "アシスタント"
           : userLanguage === "pt" || userLanguage === "it"
@@ -265,9 +267,12 @@ export default function RepeatWhatYouHear({
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
     const promptLines = [
       isJapaneseUI
         ? "「聞こえたものを繰り返す」練習です。単語バンクを使って、聞こえた文どおりに答えてください。"
+        : isArabicUI
+        ? "تمرين كرر اللي سمعته. جاوب بالجملة زي ما اتقالت مستخدمًا بنك الكلمات."
         : isFrenchUI
         ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
         : isPortugueseUI
@@ -278,6 +283,8 @@ export default function RepeatWhatYouHear({
       sourceSentence
         ? isJapaneseUI
           ? `聞こえた文: ${sourceSentence}`
+          : isArabicUI
+          ? `الجملة المسموعة: ${sourceSentence}`
           : isFrenchUI
           ? `Phrase prononcee : ${sourceSentence}`
           : isPortugueseUI
@@ -289,6 +296,8 @@ export default function RepeatWhatYouHear({
       wordBank?.length
         ? isJapaneseUI
           ? `単語バンク: ${wordBank.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${wordBank.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isPortugueseUI
@@ -300,6 +309,8 @@ export default function RepeatWhatYouHear({
       hint
         ? isJapaneseUI
           ? `ヒント: ${hint}`
+          : isArabicUI
+          ? `تلميح: ${hint}`
           : isFrenchUI
           ? `Indice : ${hint}`
           : isPortugueseUI
@@ -388,6 +399,8 @@ export default function RepeatWhatYouHear({
                           aria-label={
                             userLanguage === "ja"
                               ? "アシスタントに聞く"
+                              : userLanguage === "ar"
+                                ? "اسأل المساعد"
                               : userLanguage === "pt"
                               ? "Pedir ajuda"
                               : userLanguage === "es"
@@ -415,6 +428,8 @@ export default function RepeatWhatYouHear({
                         aria-label={
                           userLanguage === "ja"
                             ? "聞く"
+                            : userLanguage === "ar"
+                              ? "استمع"
                             : userLanguage === "pt"
                               ? "Ouvir"
                             : userLanguage === "es"

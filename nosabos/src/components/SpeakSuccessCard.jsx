@@ -25,6 +25,8 @@ export function SpeakSuccessCard({
       ? "Voce disse"
       : userLanguage === "es"
       ? "Dijiste"
+      : userLanguage === "ar"
+      ? "أنت قلت"
       : "You said");
   const translationLabel =
     t("practice_speak_banner_translation") ||
@@ -34,6 +36,8 @@ export function SpeakSuccessCard({
       ? "Significado"
       : userLanguage === "es"
       ? "Significado"
+      : userLanguage === "ar"
+      ? "المعنى"
       : "Meaning");
 
   return (

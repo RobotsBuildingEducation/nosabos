@@ -50,8 +50,10 @@ import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
 } from "../constants/languages";
+import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
 import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -217,6 +219,7 @@ const translations = {
     language_de: "German",
     language_it: "Italian",
     language_hi: "Hindi",
+    language_ar: "Egyptian Arabic",
     language_pt: "Portuguese",
     language_es: "Spanish",
     language_nah: "Eastern Huasteca Nahuatl",
@@ -342,6 +345,7 @@ const translations = {
     language_de: "Alemán",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
     language_pt: "Portugués",
     language_es: "Español",
     language_nah: "Náhuatl huasteco oriental",
@@ -465,6 +469,7 @@ const translations = {
     language_de: "Tedesco",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Arabo egiziano",
     language_pt: "Portoghese",
     language_es: "Spagnolo",
     language_nah: "Nahuatl huasteco orientale",
@@ -479,6 +484,10 @@ const translations = {
 
 translations.pt = LANDING_PAGE_PT_STATIC;
 translations.hi = LANDING_PAGE_HI_STATIC;
+translations.ar = {
+  ...translations.en,
+  ...LANDING_PAGE_AR_STATIC,
+};
 
 translations.fr = {
   ...translations.en,
@@ -592,6 +601,7 @@ translations.fr = {
   language_de: "Allemand",
   language_it: "Italien",
   language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
   language_pt: "Portugais",
   language_es: "Espagnol",
   language_nah: "Nahuatl huastèque oriental",
@@ -722,6 +732,7 @@ translations.ja = {
   language_de: "ドイツ語",
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
+  language_ar: "エジプトアラビア語",
   language_pt: "ポルトガル語",
   language_es: "スペイン語",
   language_nah: "東ワステカ・ナワトル語",
@@ -777,6 +788,24 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
           bg="var(--app-surface)"
           shadow="xl"
           minW="160px"
+          maxH="300px"
+          overflowY="auto"
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "var(--app-glass-bg-soft)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "var(--app-border-strong)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "var(--app-text-muted)",
+            },
+          }}
         >
           <MenuOptionGroup
             type="radio"
@@ -1551,6 +1580,10 @@ const LandingPage = ({ onAuthenticated }) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("appLanguage", lang);
     }
+  }, [lang]);
+
+  useEffect(() => {
+    syncDocumentLanguage(lang);
   }, [lang]);
 
   const handleCreate = useCallback(async () => {

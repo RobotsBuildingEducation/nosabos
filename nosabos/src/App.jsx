@@ -207,6 +207,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "./constants/languages";
+import { syncDocumentLanguage } from "./utils/documentLanguage";
 
 /* ---------------------------
    Small helpers
@@ -235,7 +236,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -1358,7 +1359,25 @@ function TopBar({
                             <MenuList
                               borderColor="gray.700"
                               bg="gray.900"
+                              maxH="300px"
+                              overflowY="auto"
                               motionProps={INSTANT_EXIT_MOTION_PROPS}
+                              sx={{
+                                "&::-webkit-scrollbar": {
+                                  width: "8px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  bg: "gray.800",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  bg: "gray.600",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb:hover": {
+                                  bg: "gray.500",
+                                },
+                              }}
                             >
                               <Box
                                 px={3}
@@ -2012,6 +2031,7 @@ export default function App() {
       } catch {}
 
       const applyOptimisticLanguage = () => {
+        syncDocumentLanguage(normalized);
         setAppLanguage(normalized);
         setSupportLangFn?.(normalized);
         if (user) {
@@ -2044,6 +2064,9 @@ export default function App() {
     [setUser, user],
   );
   const t = translations[appLanguage] || translations.en;
+  useEffect(() => {
+    syncDocumentLanguage(appLanguage);
+  }, [appLanguage]);
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
@@ -3556,6 +3579,12 @@ export default function App() {
       // This prevents stale locale defaults from overwriting the user's choice
       // when returning from proficiency/back to home.
       const uiLangForPersist = normalized.supportLang;
+
+      try {
+        localStorage.setItem("appLanguage", uiLangForPersist);
+      } catch {}
+      syncDocumentLanguage(uiLangForPersist);
+      setAppLanguage(uiLangForPersist);
 
       await setDoc(
         doc(database, "users", id),
