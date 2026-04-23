@@ -74,6 +74,7 @@ import RandomCharacter from "../RandomCharacter";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
