@@ -61,6 +61,11 @@ import {
   getRealtimeOrbVisualState,
 } from "./realtimeArchiveStream";
 import { translations } from "../utils/translation";
+import {
+  buildMessageTranslationPrompt,
+  getBaseLanguageCode,
+  resolveSupportUiLanguage,
+} from "../utils/supportTranslation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -1158,10 +1163,7 @@ export default function Conversations({
     streamingRef.current = true;
 
     // Determine the language for the response
-    const responseLang =
-      getLanguagePromptName(
-        normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE),
-      ) || "English";
+    const responseLang = getLanguagePromptName(resolvedSupportLang) || "English";
 
     // Get current settings from ref (for use in async context)
     const currentSettings = conversationSettingsRef.current;
@@ -1309,11 +1311,11 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }
   })();
 
-  const resolvedSupportLang =
-    normalizeSupportLanguage(supportLangRef.current || supportLang, "") ||
-    normalizeSupportLanguage(user?.progress?.supportLang, "") ||
-    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE) ||
-    DEFAULT_SUPPORT_LANGUAGE;
+  const resolvedSupportLang = resolveSupportUiLanguage({
+    supportLang: supportLangRef.current || supportLang,
+    persistedSupportLang: user?.progress?.supportLang,
+    storedUiLang,
+  });
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
@@ -2135,7 +2137,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     try {
       const goalText = currentGoal.text.en;
       const tLang = targetLangRef.current;
-      const sLang = supportLangRef.current;
+      const sLang = resolvedSupportLang;
       const languageName =
         tLang === "es"
           ? "Spanish"
@@ -2236,8 +2238,16 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultSuccess =
           sLang === "es"
             ? "¡Bien hecho! Completaste la meta."
+            : sLang === "pt"
+              ? "Muito bem! Você concluiu a meta."
             : sLang === "it"
               ? "Ben fatto! Hai completato l'obiettivo."
+              : sLang === "fr"
+                ? "Bravo ! Tu as atteint l'objectif."
+                : sLang === "ja"
+                  ? "よくできました！目標を達成しました。"
+                  : sLang === "hi"
+                    ? "बहुत बढ़िया! आपने लक्ष्य पूरा कर लिया।"
             : "Great job! You completed the goal!";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
@@ -2248,8 +2258,16 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultGuidance =
           sLang === "es"
             ? "Intenta hablar sobre la meta."
+            : sLang === "pt"
+              ? "Tente falar sobre a meta."
             : sLang === "it"
               ? "Prova a parlare dell'obiettivo."
+              : sLang === "fr"
+                ? "Essaie de parler de l'objectif."
+                : sLang === "ja"
+                  ? "目標について話してみてください。"
+                  : sLang === "hi"
+                    ? "लक्ष्य के बारे में बोलने की कोशिश करें।"
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
@@ -2509,6 +2527,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           textFinal: text,
           textStream: "",
           translation: "",
+          translationLang: "",
           pairs: [],
           done: true,
           ts: userTs,
@@ -2634,6 +2653,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         textFinal: "",
         textStream: "",
         translation: "",
+        translationLang: "",
         pairs: [],
         done: false,
         hasAudio: false,
@@ -2668,30 +2688,21 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     if (m.role !== "assistant") return;
 
     const target = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
+      resolvedSupportLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
 
-    if ((m.lang || targetLangRef.current) === target) {
-      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+    if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({
+        ...prev,
+        translation: src,
+        translationLang: target,
+        pairs: [],
+      }));
       return;
     }
 
-    const prompt =
-      target === "es"
-        ? `Traduce lo siguiente al español claro y natural.
-Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
-Evita responder con toda la frase en un solo fragmento.`
-        : target === "it"
-          ? `Traduci quanto segue in italiano naturale e chiaro.
-Restituisci SOLO JSON nel formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Dividi la frase in frammenti paralleli molto brevi (2-6 parole) dentro "pairs" per allineare le idee.
-Non restituire l'intera frase come un unico frammento.`
-        : `Translate the following into natural US English.
-Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
-Do not return the whole sentence as a single chunk.`;
+    const prompt = buildMessageTranslationPrompt(target);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2738,7 +2749,12 @@ Do not return the whole sentence as a single chunk.`;
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
     const pairs = tidyPairs(rawPairs);
 
-    updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
+    updateMessage(id, (prev) => ({
+      ...prev,
+      translation,
+      translationLang: target,
+      pairs,
+    }));
   }
 
   async function handleManualTranslate(id) {
@@ -2755,6 +2771,52 @@ Do not return the whole sentence as a single chunk.`;
       setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
     }
   }
+
+  useEffect(() => {
+    if (!showTranslations) return;
+    const target = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const assistantMessages = messagesRef.current.filter(
+      (message) =>
+        message.role === "assistant" &&
+        message.done &&
+        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
+    );
+
+    assistantMessages.forEach((message) => {
+      const currentTranslationLang = normalizeSupportLanguage(
+        message.translationLang,
+        "",
+      );
+      const sourceLang = getBaseLanguageCode(
+        message.lang || targetLangRef.current,
+      );
+      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
+
+      if (!sourceText) return;
+
+      if (sourceLang === target) {
+        if (
+          currentTranslationLang !== target ||
+          message.translation !== sourceText ||
+          (message.pairs?.length || 0) > 0
+        ) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            translation: sourceText,
+            translationLang: target,
+            pairs: [],
+          }));
+        }
+        return;
+      }
+
+      if (currentTranslationLang === target && message.translation) return;
+      translateMessage(message.id).catch(() => {});
+    });
+  }, [messages, resolvedSupportLang, showTranslations]);
 
   /* ---------------------------
      Render
@@ -3042,10 +3104,22 @@ Do not return the whole sentence as a single chunk.`;
                     }`}
                     secondaryText={
                       showTranslations
-                        ? latestAssistantMessage.translation || ""
+                        ? normalizeSupportLanguage(
+                            latestAssistantMessage.translationLang,
+                            "",
+                          ) === resolvedSupportLang
+                          ? latestAssistantMessage.translation || ""
+                          : ""
                         : ""
                     }
-                    pairs={latestAssistantMessage.pairs || []}
+                    pairs={
+                      normalizeSupportLanguage(
+                        latestAssistantMessage.translationLang,
+                        "",
+                      ) === resolvedSupportLang
+                        ? latestAssistantMessage.pairs || []
+                        : []
+                    }
                     showSecondary={showTranslations}
                     isTranslating={
                       translatingMessageId === latestAssistantMessage.id
@@ -3191,7 +3265,11 @@ Do not return the whole sentence as a single chunk.`;
                 }
 
                 const primaryText = (m.textFinal || "") + (m.textStream || "");
-                const secondaryText = m.translation || "";
+                const secondaryText =
+                  normalizeSupportLanguage(m.translationLang, "") ===
+                  resolvedSupportLang
+                    ? m.translation || ""
+                    : "";
 
                 if (!primaryText.trim()) return null;
                 return (
@@ -3199,7 +3277,12 @@ Do not return the whole sentence as a single chunk.`;
                     <AlignedBubble
                       primaryText={primaryText}
                       secondaryText={showTranslations ? secondaryText : ""}
-                      pairs={m.pairs || []}
+                      pairs={
+                        normalizeSupportLanguage(m.translationLang, "") ===
+                        resolvedSupportLang
+                          ? m.pairs || []
+                          : []
+                      }
                       showSecondary={showTranslations}
                       isTranslating={translatingMessageId === m.id}
                       canTranslate={showTranslations}

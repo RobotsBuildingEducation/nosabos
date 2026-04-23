@@ -768,12 +768,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ" },
-  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ", hi: "शुद्धता" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性", hi: "पूर्णता" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", hi: "उच्चारण" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", hi: "प्रवाह" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", hi: "आत्मविश्वास" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", hi: "समझ" },
 ];
 
 function speechScoreColor(score) {
@@ -849,14 +849,7 @@ export default function History({
           pct: lessonProgressPct,
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
-          label:
-            userLanguage === "ja"
-              ? "レッスンの進捗"
-              : userLanguage === "pt"
-              ? "Progresso da licao"
-              : userLanguage === "es"
-              ? "Progreso de la lección"
-              : "Lesson progress",
+          label: t("vocab_lesson_progress"),
         }
       : null;
 

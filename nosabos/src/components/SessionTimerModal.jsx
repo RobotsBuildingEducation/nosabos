@@ -66,6 +66,7 @@ function ClockVisual({
   maxMinutes = 240,
   playSliderTick,
   isLightTheme = false,
+  dragHint = "Drag around the clock to set time",
 }) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
   const clockRef = useRef(null);
@@ -451,7 +452,7 @@ function ClockVisual({
           color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}
           mt={2}
         >
-          Drag around the clock to set time
+          {dragHint}
         </Text>
       )}
     </Box>
@@ -586,6 +587,10 @@ export default function SessionTimerModal({
               onMinutesChange={handleLocalMinutesChange}
               playSliderTick={playSliderTick}
               isLightTheme={isLightTheme}
+              dragHint={
+                t.timer_modal_drag_hint ||
+                "Drag around the clock to set time"
+              }
             />
 
             {helper}

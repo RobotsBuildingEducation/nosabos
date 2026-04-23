@@ -45,6 +45,12 @@ import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
 import { translations } from "../utils/translation";
 import {
+  buildMessageTranslationPrompt,
+  buildSimpleTranslationPrompt,
+  getBaseLanguageCode,
+  resolveSupportUiLanguage,
+} from "../utils/supportTranslation";
+import {
   ArchiveTextAnimation,
   getChatLogButtonHighlightProps,
   getRealtimeOrbVisualState,
@@ -808,10 +814,11 @@ export default function RealTimeTest({
     }
   }, []);
 
-  const uiLang =
-    normalizeSupportLanguage(supportLangRef.current || supportLang, "") ||
-    normalizeSupportLanguage(storedUiLang, "") ||
-    DEFAULT_SUPPORT_LANGUAGE;
+  const uiLang = resolveSupportUiLanguage({
+    supportLang: supportLangRef.current || supportLang,
+    persistedSupportLang: user?.progress?.supportLang,
+    storedUiLang,
+  });
   const ui = translations[uiLang] || translations.en;
   const uiText = (key, fallback = "") =>
     ui?.[key] || translations.en?.[key] || fallback;
@@ -827,8 +834,11 @@ export default function RealTimeTest({
     ({
       en: "Show translation",
       es: "Mostrar traducción",
+      pt: "Mostrar tradução",
       it: "Mostra traduzione",
       fr: "Afficher la traduction",
+      ja: "翻訳を表示",
+      hi: "अनुवाद दिखाएं",
     }[uiLang] || "Show translation");
 
   /* ---------------------------
@@ -899,19 +909,7 @@ export default function RealTimeTest({
     languageNameFor(targetLang),
   );
   // Goal-UI language routing
-  const goalUiLang = (() => {
-    const s = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
-      "",
-    );
-    if (s) return s;
-    const t = normalizePracticeLanguage(
-      targetLangRef.current || targetLang,
-      DEFAULT_TARGET_LANGUAGE,
-    );
-    if (["en", "es", "pt", "it", "fr", "ja"].includes(t)) return t;
-    return uiLang;
-  })();
+  const goalUiLang = uiLang;
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
     translations[goalUiLang]?.ra_goal_label ||
@@ -923,6 +921,8 @@ export default function RealTimeTest({
       ? "Meta"
       : goalUiLang === "it"
       ? "Obiettivo"
+      : goalUiLang === "hi"
+      ? "लक्ष्य"
       : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
@@ -932,6 +932,8 @@ export default function RealTimeTest({
       ? "Meta concluída!"
       : goalUiLang === "it"
         ? "Obiettivo completato!"
+        : goalUiLang === "hi"
+          ? "लक्ष्य पूरा हुआ!"
         : "Goal completed!");
   const tGoalSkip =
     gtr?.ra_goal_skip ||
@@ -943,6 +945,8 @@ export default function RealTimeTest({
       ? "Pular"
       : goalUiLang === "it"
       ? "Salta"
+      : goalUiLang === "hi"
+      ? "छोड़ें"
       : "Skip");
   const tGoalCriteria = gtr?.ra_goal_criteria || "";
 
@@ -959,15 +963,8 @@ export default function RealTimeTest({
 
   // Backfill localized goal text for supported UI languages when older goals lack it
   useEffect(() => {
-    const goalLang = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
-    const needsBackfill =
-      goalLang === "es" ||
-      goalLang === "it" ||
-      goalLang === "fr" ||
-      goalLang === "ja";
+    const goalLang = uiLang;
+    const needsBackfill = goalLang !== "en";
     const goal = currentGoal;
     if (!needsBackfill || !goal) return;
     if (goalLocalizationBusyRef.current) return;
@@ -1003,7 +1000,7 @@ export default function RealTimeTest({
         goalLocalizationBusyRef.current = false;
       }
     })();
-  }, [currentGoal, supportLang]);
+  }, [currentGoal, uiLang]);
 
   // Keep local_npub cached
   useEffect(() => {
@@ -1560,10 +1557,7 @@ export default function RealTimeTest({
      🎯 Goal helpers
   --------------------------- */
   function buildTutorialGoal() {
-    const goalLang = normalizeSupportLanguage(
-      supportLangRef.current || supportLang || uiLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
+    const goalLang = uiLang;
     const scenario =
       goalLang === "ja"
         ? "こんにちはと言う"
@@ -1575,6 +1569,8 @@ export default function RealTimeTest({
         ? "Diga olá"
         : goalLang === "it"
         ? "Di' ciao"
+        : goalLang === "hi"
+        ? "नमस्ते कहें"
         : "Say hello";
     const successCriteria =
       goalLang === "ja"
@@ -1585,6 +1581,8 @@ export default function RealTimeTest({
         ? 'O aluno diz "olá".'
         : goalLang === "it"
           ? "Lo studente dice ciao."
+          : goalLang === "hi"
+            ? "सीखने वाला नमस्ते कहता है।"
           : goalLang === "fr"
             ? "L'apprenant dit bonjour."
           : "The learner says hello.";
@@ -1596,12 +1594,14 @@ export default function RealTimeTest({
       title_it: "Di' ciao",
       title_fr: "Dis bonjour",
       title_ja: "こんにちはと言う",
+      title_hi: "नमस्ते कहें",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
       rubric_pt: 'O aluno diz "olá".',
       rubric_it: "Lo studente dice ciao.",
       rubric_fr: "L'apprenant dit bonjour.",
       rubric_ja: "学習者がこんにちはと言う。",
+      rubric_hi: "सीखने वाला नमस्ते कहता है।",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
@@ -1609,6 +1609,7 @@ export default function RealTimeTest({
       successCriteria_it: "Lo studente dice ciao.",
       successCriteria_fr: "L'apprenant dit bonjour.",
       successCriteria_ja: "学習者がこんにちはと言う。",
+      successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1638,10 +1639,7 @@ export default function RealTimeTest({
     const lessonDesc = lessonData?.description?.en || "";
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
-    const goalLangCode = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
+    const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
 
     // Check if this is an integrated practice lesson
@@ -1726,7 +1724,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             parsed.successCriteria ||
             (goalLangCode === "pt"
               ? `Conclua a tarefa sobre ${topic}`
-              : `Complete the ${topic} task`),
+              : goalLangCode === "hi"
+                ? `${topic} से जुड़ा कार्य पूरा करें`
+                : `Complete the ${topic} task`),
         };
       }
     } catch (err) {
@@ -1750,6 +1750,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             'O aluno diz "olá" e responde adequadamente a "como vai?"',
         },
+        hi: {
+          scenario: "नमस्ते कहें और किसी का हाल पूछें",
+          prompt:
+            "सीखने वाले का अभिवादन करें और उससे सही तरीके से अभिवादन का उत्तर दिलवाएं।",
+          successCriteria:
+            "सीखने वाला नमस्ते कहता है और हाल पूछने पर सही प्रतिक्रिया देता है",
+        },
       },
       numbers: {
         en: {
@@ -1765,6 +1772,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Peça ao aluno o número de telefone, a idade ou outro número em contexto.",
           successCriteria:
             "O aluno produz números corretamente em um contexto com significado",
+        },
+        hi: {
+          scenario: "अपना फोन नंबर या उम्र बताएं",
+          prompt:
+            "सीखने वाले से उसका फोन नंबर, उम्र या संदर्भ के भीतर कोई और संख्या पूछें।",
+          successCriteria:
+            "सीखने वाला अर्थपूर्ण संदर्भ में संख्याएं सही तरह से बोलता है",
         },
       },
       food: {
@@ -1782,6 +1796,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno faz pelo menos um pedido usando expressões adequadas",
         },
+        hi: {
+          scenario: "कुछ खाने या पीने का ऑर्डर दें",
+          prompt:
+            "आप वेटर या बरिस्ता हैं। सीखने वाले से खाना या पेय ऑर्डर करवाएं।",
+          successCriteria:
+            "सीखने वाला उचित वाक्यांशों का उपयोग करके कम से कम एक चीज़ ऑर्डर करता है",
+        },
       },
       places: {
         en: {
@@ -1797,6 +1818,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Pergunte ao aluno sobre um lugar: onde mora, quer visitar ou seu lugar favorito.",
           successCriteria:
             "O aluno descreve um lugar com pelo menos 2 ou 3 detalhes",
+        },
+        hi: {
+          scenario: "बताएं कि आप कहाँ रहते हैं या कहाँ जाना चाहते हैं",
+          prompt:
+            "सीखने वाले से किसी जगह के बारे में पूछें: वह कहाँ रहता है, कहाँ जाना चाहता है, या उसकी पसंदीदा जगह कौन सी है।",
+          successCriteria:
+            "सीखने वाला कम से कम 2 या 3 विवरणों के साथ किसी स्थान का वर्णन करता है",
         },
       },
       shopping: {
@@ -1814,6 +1842,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno pergunta sobre um item e conclui uma transação simples",
         },
+        hi: {
+          scenario: "दुकान से कुछ खरीदें",
+          prompt:
+            "आप दुकानदार हैं। कीमत और विकल्पों पर बात करते हुए सीखने वाले की किसी वस्तु को खरीदने में मदद करें।",
+          successCriteria:
+            "सीखने वाला किसी वस्तु के बारे में पूछता है और एक सरल खरीद पूरी करता है",
+        },
       },
       travel: {
         en: {
@@ -1829,6 +1864,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Dê direções para um lugar ou pergunte ao aluno como chegar a algum lugar.",
           successCriteria:
             "O aluno entende ou produz direções com vocabulário de localização",
+        },
+        hi: {
+          scenario: "रास्ता पूछें या बताएं",
+          prompt:
+            "किसी स्थान तक पहुँचने का रास्ता बताएं या सीखने वाले से पूछें कि वह किसी जगह तक कैसे पहुँचेगा।",
+          successCriteria:
+            "सीखने वाला स्थान-संबंधी शब्दावली के साथ दिशा समझता है या बताता है",
         },
       },
       family: {
@@ -1846,6 +1888,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno descreve pelo menos 2 familiares com alguns detalhes",
         },
+        hi: {
+          scenario: "अपने परिवार के सदस्यों का वर्णन करें",
+          prompt:
+            "सीखने वाले से उसके परिवार के बारे में पूछें: उसमें कौन हैं, उम्र, नाम आदि।",
+          successCriteria:
+            "सीखने वाला कम से कम 2 परिवार सदस्यों का कुछ विवरण के साथ वर्णन करता है",
+        },
       },
       time: {
         en: {
@@ -1861,6 +1910,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Pergunte ao aluno o que faz em diferentes momentos do dia: rotina da manhã, refeições etc.",
           successCriteria:
             "O aluno descreve atividades ligadas a horários específicos",
+        },
+        hi: {
+          scenario: "अपनी रोज़मर्रा की दिनचर्या बताएं",
+          prompt:
+            "सीखने वाले से पूछें कि वह दिन के अलग-अलग समय पर क्या करता है, जैसे सुबह की दिनचर्या, भोजन आदि।",
+          successCriteria:
+            "सीखने वाला खास समयों से जुड़ी गतिविधियों का वर्णन करता है",
         },
       },
     };
@@ -1892,6 +1948,21 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             : "Faça perguntas de acompanhamento para incentivar respostas mais longas."
         }`,
         successCriteria: `O aluno produz várias palavras ou expressões relevantes sobre ${topic} em contexto`,
+      };
+    }
+
+    if (goalLangCode === "hi") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `${focusPoints[0]} का किसी वास्तविक स्थिति में उपयोग करें`
+            : `${topic} के बारे में कुछ साझा करें`,
+        prompt: `${topic} से जुड़ी शब्दावली का उपयोग करने के लिए सीखने वाले के लिए एक वास्तविक स्थिति बनाएं। ${
+          focusPoints.length
+            ? `विशेष रूप से इसका अभ्यास कराएं: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "और बोलने के लिए आगे के प्रश्न पूछें।"
+        }`,
+        successCriteria: `सीखने वाला ${topic} से जुड़े कई शब्द या वाक्यांश संदर्भ में बोलता है`,
       };
     }
 
@@ -1938,10 +2009,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const lessonDesc = lesson?.description?.en || "";
     const cefrLvl = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
-    const goalLangCode = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
+    const goalLangCode = uiLang;
     const goalLangName = getLanguagePromptName(goalLangCode) || "English";
 
     // Get current goal for context
@@ -2002,12 +2070,14 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           title_it: goalLang === "it" ? goalText : "",
           title_fr: goalLang === "fr" ? goalText : "",
           title_ja: goalLang === "ja" ? goalText : "",
+          title_hi: goalLang === "hi" ? goalText : "",
           rubric_en: "",
           rubric_es: "",
           rubric_pt: "",
           rubric_it: "",
           rubric_fr: "",
           rubric_ja: "",
+          rubric_hi: "",
           [localizedTitleKey]: goalText,
           [localizedRubricKey]: "",
           lessonScenario: goalText,
@@ -2059,16 +2129,6 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
 
   function goalUiLangCode() {
-    const s = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
-      "",
-    );
-    if (s) return s;
-    const t = normalizePracticeLanguage(
-      targetLangRef.current || targetLang,
-      DEFAULT_TARGET_LANGUAGE,
-    );
-    if (["en", "es", "pt", "it", "fr", "ja"].includes(t)) return t;
     return uiLang;
   }
   function goalTitleForUI(goal) {
@@ -2163,13 +2223,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   async function translateGoalText(text, target = "es") {
     const trimmed = String(text || "").trim();
     if (!trimmed) return "";
-
-    const prompt =
-      target === "es"
-        ? `Traduce al español neutral y conciso. Devuelve solo JSON {"translation":"..."}.\n${trimmed}`
-        : target === "it"
-          ? `Traduci in italiano naturale e conciso. Restituisci solo JSON {"translation":"..."}.\n${trimmed}`
-        : `Translate to natural US English. Return only JSON {"translation":"..."}.\n${trimmed}`;
+    const prompt = `${buildSimpleTranslationPrompt(target)}\n${trimmed}`;
 
     try {
       const r = await fetch(RESPONSES_URL, {
@@ -2334,21 +2388,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     const titleTL = goalTitleForTarget(goal);
     const gLang = goalUiLangCode();
     const uiLangName = getLanguagePromptName(gLang) || "English";
-    const uiLangNativeName =
-      gLang === "fr"
-        ? "français"
-        : gLang === "es"
-        ? "español"
-        : gLang === "it"
-        ? "italiano"
-        : "inglés";
 
     const judgePrompt =
       targetLangRef.current === "es"
         ? `Evalúa si el siguiente enunciado cumple esta meta en español: "${titleTL}". Criterio: ${rubricTL}.
 Devuelve SOLO JSON:
 {"met":true|false,"confidence":0..1,"feedback_tl":"mensaje breve y amable en el idioma meta (≤12 palabras)","feedback_ui":"mensaje breve y amable en ${
-            uiLangNativeName
+            uiLangName
           } (≤12 palabras)"}`
         : `Evaluate whether the following utterance meets this goal in ${
             targetLangRef.current === "en" ? "English" : "the target language"
@@ -2888,6 +2934,7 @@ Return ONLY JSON:
           textFinal: text,
           textStream: "",
           translation: "",
+          translationLang: "",
           pairs: [],
           done: true,
           ts: userTs,
@@ -2972,6 +3019,18 @@ Return ONLY JSON:
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
+        const shouldAutoTranslate =
+          showTranslations &&
+          normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE) !==
+            normalizePracticeLanguage(
+              targetLangRef.current || targetLang,
+              DEFAULT_TARGET_LANGUAGE,
+            );
+        if (shouldAutoTranslate) {
+          window.setTimeout(() => {
+            translateMessage(mid).catch(() => {});
+          }, 0);
+        }
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
@@ -3001,6 +3060,7 @@ Return ONLY JSON:
         textFinal: "",
         textStream: "",
         translation: "",
+        translationLang: "",
         pairs: [],
         done: false,
         hasAudio: false,
@@ -3028,12 +3088,17 @@ Return ONLY JSON:
     if (m.role !== "assistant") return;
 
     const target = normalizeSupportLanguage(
-      supportLangRef.current || supportLang,
+      uiLang,
       DEFAULT_SUPPORT_LANGUAGE,
     );
 
-    if ((m.lang || targetLangRef.current) === target) {
-      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+    if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({
+        ...prev,
+        translation: src,
+        translationLang: target,
+        pairs: [],
+      }));
       await upsertAssistantTurn(id, {
         text: src,
         lang: m.lang || targetLangRef.current || "es",
@@ -3043,21 +3108,7 @@ Return ONLY JSON:
       return;
     }
 
-    const prompt =
-      target === "es"
-        ? `Traduce lo siguiente al español claro y natural.
-Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
-Evita responder con toda la frase en un solo fragmento.`
-        : target === "it"
-          ? `Traduci quanto segue in italiano naturale e chiaro.
-Restituisci SOLO JSON nel formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Dividi la frase in frammenti paralleli molto brevi (2-6 parole) dentro "pairs" per allineare le idee.
-Non restituire l'intera frase come un unico frammento.`
-        : `Translate the following into natural US English.
-Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
-Do not return the whole sentence as a single chunk.`;
+    const prompt = buildMessageTranslationPrompt(target);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -3104,7 +3155,12 @@ Do not return the whole sentence as a single chunk.`;
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
     const pairs = tidyPairs(rawPairs);
 
-    updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
+    updateMessage(id, (prev) => ({
+      ...prev,
+      translation,
+      translationLang: target,
+      pairs,
+    }));
     await upsertAssistantTurn(id, {
       text: src,
       lang: m.lang || targetLangRef.current || "es",
@@ -3112,6 +3168,49 @@ Do not return the whole sentence as a single chunk.`;
       pairs,
     });
   }
+
+  useEffect(() => {
+    if (!showTranslations) return;
+    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+    const assistantMessages = messagesRef.current.filter(
+      (message) =>
+        message.role === "assistant" &&
+        message.done &&
+        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
+    );
+
+    assistantMessages.forEach((message) => {
+      const currentTranslationLang = normalizeSupportLanguage(
+        message.translationLang,
+        "",
+      );
+      const sourceLang = getBaseLanguageCode(
+        message.lang || targetLangRef.current,
+      );
+      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
+
+      if (!sourceText) return;
+
+      if (sourceLang === target) {
+        if (
+          currentTranslationLang !== target ||
+          message.translation !== sourceText ||
+          (message.pairs?.length || 0) > 0
+        ) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            translation: sourceText,
+            translationLang: target,
+            pairs: [],
+          }));
+        }
+        return;
+      }
+
+      if (currentTranslationLang === target && message.translation) return;
+      translateMessage(message.id).catch(() => {});
+    });
+  }, [uiLang, showTranslations]);
 
   async function upsertAssistantTurn(mid, { text, lang, translation, pairs }) {
     const npub = strongNpub(user);
@@ -3130,7 +3229,7 @@ Do not return the whole sentence as a single chunk.`;
           progress: {
             level: levelRef.current,
             supportLang: normalizeSupportLanguage(
-              supportLangRef.current,
+              uiLang,
               DEFAULT_SUPPORT_LANGUAGE,
             ),
             voice: voiceRef.current,
@@ -3167,7 +3266,7 @@ Do not return the whole sentence as a single chunk.`;
     const nextProgress = {
       level: partial.level ?? levelRef.current,
       supportLang: normalizeSupportLanguage(
-        partial.supportLang ?? supportLangRef.current,
+        partial.supportLang ?? uiLang,
         DEFAULT_SUPPORT_LANGUAGE,
       ),
       voice: partial.voice ?? voiceRef.current,
@@ -3538,13 +3637,28 @@ Do not return the whole sentence as a single chunk.`;
                     showTranslations
                       ? latestAssistantMessage.source === "hist"
                         ? latestAssistantMessage[`trans_${secondaryPref}`] ||
+                          latestAssistantMessage.translation ||
                           latestAssistantMessage.trans_en ||
                           latestAssistantMessage.trans_es ||
                           ""
-                        : latestAssistantMessage.translation || ""
+                        : normalizeSupportLanguage(
+                            latestAssistantMessage.translationLang,
+                            "",
+                          ) === uiLang
+                          ? latestAssistantMessage.translation || ""
+                          : ""
                       : ""
                   }
-                  pairs={latestAssistantMessage.pairs || []}
+                  pairs={
+                    latestAssistantMessage.source === "hist"
+                      ? latestAssistantMessage.pairs || []
+                      : normalizeSupportLanguage(
+                          latestAssistantMessage.translationLang,
+                          "",
+                        ) === uiLang
+                        ? latestAssistantMessage.pairs || []
+                        : []
+                  }
                   showSecondary={showTranslations}
                   isTranslating={translatingMessageId === latestAssistantMessage.id}
                   canReplay={
@@ -3730,10 +3844,14 @@ Do not return the whole sentence as a single chunk.`;
                   const secondaryText =
                     m.source === "hist"
                       ? m[`trans_${secondaryPref}`] ||
+                        m.translation ||
                         m.trans_en ||
                         m.trans_es ||
                         ""
-                      : m.translation || "";
+                      : normalizeSupportLanguage(m.translationLang, "") ===
+                          uiLang
+                        ? m.translation || ""
+                        : "";
                   const replayLabel =
                     uiText("ra_btn_replay", "Replay");
                   return (
@@ -3747,7 +3865,16 @@ Do not return the whole sentence as a single chunk.`;
                         }
                         primaryText={`${m.textFinal || ""}${m.textStream || ""}`}
                         secondaryText={showTranslations ? secondaryText : ""}
-                        pairs={m.pairs || []}
+                        pairs={
+                          m.source === "hist"
+                            ? m.pairs || []
+                            : normalizeSupportLanguage(
+                                m.translationLang,
+                                "",
+                              ) === uiLang
+                              ? m.pairs || []
+                              : []
+                        }
                         showSecondary={showTranslations}
                         isTranslating={translatingMessageId === m.id}
                         canReplay={

@@ -3,6 +3,7 @@ import {
   frenchFlag,
   germanFlag,
   greekFlag,
+  indianFlag,
   irishFlag,
   italianFlag,
   japaneseFlag,
@@ -22,6 +23,7 @@ export const LANGUAGE_FALLBACK_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
+  hi: "Hindi",
   nl: "Dutch",
   nah: "Eastern Huasteca Nahuatl",
   ja: "Japanese (日本語)",
@@ -39,6 +41,7 @@ export const LANGUAGE_PROMPT_LABELS = {
   pt: "Portuguese (portugues brasileiro)",
   fr: "French (francais)",
   it: "Italian (italiano)",
+  hi: "Hindi (hindi)",
   nl: "Dutch (Nederlands)",
   nah: "Eastern Huasteca Nahuatl (nahuatl huasteco oriental)",
   ru: "Russian",
@@ -85,6 +88,15 @@ const LANGUAGE_META = [
     practiceKey: "onboarding_practice_it",
     tier: "stable",
     flag: italianFlag,
+  },
+  {
+    value: "hi",
+    languageKey: "language_hi",
+    practiceKey: "onboarding_practice_hi",
+    tier: "stable",
+    supportTier: "stable",
+    practiceEnabled: false,
+    flag: indianFlag,
   },
   {
     value: "pt",
@@ -156,7 +168,11 @@ const TIER_ORDER = { stable: 0, alpha: 1, beta: 2 };
 const SUPPORTED_LANGUAGE_CODES_SET = new Set(
   LANGUAGE_META.map((item) => item.value),
 );
-const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "pt", "it", "fr", "ja"];
+const PRACTICE_LANGUAGE_CODES_BASE = LANGUAGE_META.filter(
+  (item) => item.practiceEnabled !== false,
+).map((item) => item.value);
+const PRACTICE_LANGUAGE_CODES_SET = new Set(PRACTICE_LANGUAGE_CODES_BASE);
+const SUPPORT_LANGUAGE_CODES_BASE = ["en", "es", "pt", "it", "fr", "ja", "hi"];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 
 export const LANGUAGE_LOCALES = {
@@ -165,6 +181,7 @@ export const LANGUAGE_LOCALES = {
   pt: "pt-BR",
   fr: "fr-FR",
   it: "it-IT",
+  hi: "hi-IN",
   nl: "nl-NL",
   nah: "es-MX",
   ja: "ja-JP",
@@ -183,6 +200,7 @@ const SORT_LOCALES = {
   it: "it",
   fr: "fr",
   ja: "ja",
+  hi: "hi",
 };
 
 const normalizeCode = (raw) => String(raw || "").trim().toLowerCase();
@@ -195,14 +213,14 @@ const normalizeSupportedCode = (raw) => {
   return normalized;
 };
 
-export const PRACTICE_LANGUAGE_CODES = LANGUAGE_META.map((item) => item.value);
+export const PRACTICE_LANGUAGE_CODES = [...PRACTICE_LANGUAGE_CODES_BASE];
 export const SUPPORT_LANGUAGE_CODES = SUPPORT_LANGUAGE_CODES_BASE.filter((code) =>
   SUPPORTED_LANGUAGE_CODES_SET.has(code),
 );
 export const ALPHABET_LANGUAGE_CODES = [...PRACTICE_LANGUAGE_CODES];
 
 export function isSupportedPracticeLanguage(code) {
-  return SUPPORTED_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
+  return PRACTICE_LANGUAGE_CODES_SET.has(normalizeSupportedCode(code));
 }
 
 export function isSupportedSupportLanguage(code) {
@@ -274,7 +292,7 @@ function withTierTag(label, tier, ui = {}, uiLang = "en") {
       ui.onboarding_language_tag_alpha ||
       (uiLang === "ja"
         ? "アルファ"
-        : ["es", "pt", "it", "fr"].includes(uiLang)
+        : ["es", "pt", "it", "fr", "hi"].includes(uiLang)
           ? "alfa"
           : "alpha");
     return `${label} (${alphaLabel})`;
@@ -306,7 +324,9 @@ function buildLanguageOptions({
 
   const items = LANGUAGE_META
     .filter((item) =>
-      mode === "support" ? SUPPORT_LANGUAGE_CODES_SET.has(item.value) : true,
+      mode === "support"
+        ? SUPPORT_LANGUAGE_CODES_SET.has(item.value)
+        : item.practiceEnabled !== false,
     )
     .filter((item) => (showJapanese ? true : item.value !== "ja"))
     .map((item) => {

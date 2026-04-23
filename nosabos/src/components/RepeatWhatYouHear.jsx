@@ -82,6 +82,18 @@ export default function RepeatWhatYouHear({
   characterImage = null,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const assistantLabel =
+    t("vocab_assistant") !== "vocab_assistant"
+      ? t("vocab_assistant")
+      : userLanguage === "hi"
+        ? "सहायक"
+        : userLanguage === "ja"
+          ? "アシスタント"
+          : userLanguage === "pt" || userLanguage === "it"
+            ? "Assistente"
+            : userLanguage === "es"
+              ? "Asistente"
+              : "Assistant";
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
   const hasPlayedRef = useRef(false);
@@ -547,14 +559,8 @@ export default function RepeatWhatYouHear({
           >
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
-                <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {userLanguage === "ja"
-                  ? "アシスタント"
-                  : userLanguage === "pt"
-                    ? "Assistente"
-                    : userLanguage === "es"
-                      ? "Asistente"
-                      : "Assistant"}
+              <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
+                {assistantLabel}
               </Text>
               {isLoadingAssistantSupport && (
                 <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />

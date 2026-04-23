@@ -1,6 +1,7 @@
 // src/utils/translation.jsx
 
 import { Button, HStack } from "@chakra-ui/react";
+import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
 import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
 
 // Simple i18n helper for flat keys with {placeholders}
@@ -187,6 +188,7 @@ export const translations = {
     language_pt: "Portuguese",
     language_fr: "French",
     language_it: "Italian",
+    language_hi: "Hindi",
     language_nl: "Dutch",
     language_nah: "Eastern Huasteca Nahuatl",
     language_ja: "Japanese",
@@ -237,6 +239,7 @@ export const translations = {
     onboarding_practice_pt: "Portuguese",
     onboarding_practice_fr: "French",
     onboarding_practice_it: "Italian",
+    onboarding_practice_hi: "Hindi",
     onboarding_practice_nl: "Dutch",
     onboarding_practice_ja: "Japanese",
     onboarding_practice_en: "English",
@@ -1174,6 +1177,7 @@ export const translations = {
     language_pt: "Portugués",
     language_fr: "Francés",
     language_it: "Italiano",
+    language_hi: "Hindi",
     language_nl: "Holandés",
     language_nah: "Náhuatl huasteco",
     language_ja: "Japonés",
@@ -1407,6 +1411,7 @@ export const translations = {
     onboarding_practice_pt: "Portugués",
     onboarding_practice_fr: "Francés",
     onboarding_practice_it: "Italiano",
+    onboarding_practice_hi: "Hindi",
     onboarding_practice_nl: "Holandés",
     onboarding_practice_ja: "Japonés",
     onboarding_practice_en: "Inglés",
@@ -1970,6 +1975,7 @@ translations.it = {
   language_pt: "Portoghese",
   language_fr: "Francese",
   language_it: "Italiano",
+  language_hi: "Hindi",
   language_nl: "Olandese",
   language_nah: "Nahuatl huasteco orientale",
   language_ja: "Giapponese",
@@ -2014,6 +2020,7 @@ translations.it = {
   onboarding_practice_pt: "Portoghese",
   onboarding_practice_fr: "Francese",
   onboarding_practice_it: "Italiano",
+  onboarding_practice_hi: "Hindi",
   onboarding_practice_nl: "Olandese",
   onboarding_practice_ja: "Giapponese",
   onboarding_practice_en: "Inglese",
@@ -2816,6 +2823,7 @@ translations.fr = {
   language_pt: "Portugais",
   language_fr: "Francais",
   language_it: "Italien",
+  language_hi: "Hindi",
   language_nl: "Neerlandais",
   language_nah: "Nahuatl huasteque oriental",
   language_ja: "Japonais",
@@ -2861,6 +2869,7 @@ translations.fr = {
   onboarding_practice_pt: "Portugais",
   onboarding_practice_fr: "Francais",
   onboarding_practice_it: "Italien",
+  onboarding_practice_hi: "Hindi",
   onboarding_practice_nl: "Neerlandais",
   onboarding_practice_ja: "Japonais",
   onboarding_practice_en: "Anglais",
@@ -3667,6 +3676,7 @@ translations.ja = {
   language_pt: "ポルトガル語",
   language_fr: "フランス語",
   language_it: "イタリア語",
+  language_hi: "ヒンディー語",
   language_nl: "オランダ語",
   language_nah: "東ワステカ・ナワトル語",
   language_ja: "日本語",
@@ -3710,6 +3720,7 @@ translations.ja = {
   onboarding_practice_pt: "ポルトガル語",
   onboarding_practice_fr: "フランス語",
   onboarding_practice_it: "イタリア語",
+  onboarding_practice_hi: "ヒンディー語",
   onboarding_practice_nl: "オランダ語",
   onboarding_practice_ja: "日本語",
   onboarding_practice_en: "英語",
@@ -4351,6 +4362,73 @@ translations.ja = {
   vocab_create_note: "メモを作成",
   vocab_note_saved: "メモを保存しました！",
   vocab_lesson_progress: "レッスン進捗",
+};
+
+translations.hi = {
+  ...translations.en,
+  ...TRANSLATION_HI_STATIC,
+  "passcode.instructions": (
+    <div>
+      जारी रखने के लिए सदस्यता पासकोड दर्ज करें।
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>सदस्यता लेने पर आपको मिलेगा:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            कई AI शिक्षा ऐप्स तक पहुँच।
+          </li>
+          <li style={{ marginBottom: 8 }}>व्यक्तिगत सहायता।</li>
+          <li style={{ marginBottom: 8 }}>
+            स्टार्टअप इंजीनियरिंग, निवेश और निर्माण पर बढ़ती हुई सदस्य सामग्री।
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            सीखते हुए छात्रवृत्तियाँ बनाने के मिशन को सहयोग देने का अवसर।
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            सदस्यता लें
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            एक बार भुगतान करें
+          </Button>
+        </HStack>
+      </div>
+    </div>
+  ),
 };
 
 translations.pt = {

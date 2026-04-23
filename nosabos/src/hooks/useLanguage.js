@@ -47,6 +47,7 @@ const spanishTimezones = [
 ];
 
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
+const hindiTimezones = ["Asia/Kolkata", "Asia/Calcutta"];
 
 const portugueseTimezones = [
   "Europe/Lisbon",
@@ -107,6 +108,9 @@ const frenchTimezones = [
 const detectLanguageFromTimezone = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (hindiTimezones.includes(timezone)) {
+      return "hi";
+    }
     if (italianTimezones.includes(timezone)) {
       return "it";
     }

@@ -89,6 +89,11 @@ const ITALIAN_TIMEZONES = [
   'Europe/San_Marino',
 ];
 
+const HINDI_TIMEZONES = [
+  'Asia/Kolkata',
+  'Asia/Calcutta',
+];
+
 const FRENCH_TIMEZONES = [
   'Europe/Paris',
   'Europe/Monaco',
@@ -151,6 +156,7 @@ const JAPANESE_TIMEZONES = [
  */
 const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL', 'es-PE', 'es-VE'];
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
+const HINDI_LANGUAGE_CODES = ['hi', 'hi-IN', 'hi-Latn', 'hi-Latn-IN', 'hi-Deva', 'hi-Deva-IN'];
 const FRENCH_LANGUAGE_CODES = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
 const PORTUGUESE_LANGUAGE_CODES = ['pt', 'pt-BR', 'pt-PT', 'pt-AO', 'pt-MZ', 'pt-CV', 'pt-GW', 'pt-ST', 'pt-TL'];
 const JAPANESE_LANGUAGE_CODES = ['ja', 'ja-JP'];
@@ -173,6 +179,16 @@ export function isItalianTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return ITALIAN_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isHindiTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return HINDI_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -230,6 +246,20 @@ export function isItalianBrowserLanguage() {
       : [navigator.language || navigator.userLanguage];
     return languages.some((lang) =>
       ITALIAN_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
+export function isHindiBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      HINDI_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
     );
   } catch (error) {
     console.warn('Could not detect browser language:', error);
@@ -297,6 +327,10 @@ export function detectUserLanguage() {
     return 'it';
   }
 
+  if (isHindiTimezone()) {
+    return 'hi';
+  }
+
   if (isFrenchTimezone()) {
     return 'fr';
   }
@@ -316,6 +350,10 @@ export function detectUserLanguage() {
   // Fallback to browser language detection
   if (isItalianBrowserLanguage()) {
     return 'it';
+  }
+
+  if (isHindiBrowserLanguage()) {
+    return 'hi';
   }
 
   if (isFrenchBrowserLanguage()) {

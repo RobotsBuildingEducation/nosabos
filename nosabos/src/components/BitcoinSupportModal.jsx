@@ -36,11 +36,12 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, pt, it, fr, ja) {
+function supportCopy(lang, en, es, pt, it, fr, ja, hi = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -175,6 +176,7 @@ export default function BitcoinSupportModal({
       "Crea borse di studio con l'apprendimento",
       "Creer des bourses",
       "奨学金を作る",
+      "शिक्षा-वृत्तियां बनाएं",
     );
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
@@ -186,6 +188,7 @@ export default function BitcoinSupportModal({
       "Invia Bitcoin agli educatori ogni volta che guadagni XP",
       "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
       "XPを獲得するたびに教育者へBitcoinを送れます",
+      "जब भी आप XP कमाएं, शिक्षकों को Bitcoin भेजें",
     );
   const footerNote =
     ui.tutorial_bitcoin_modal_body ||
@@ -197,6 +200,7 @@ export default function BitcoinSupportModal({
       "Puoi farlo più tardi dalle impostazioni.",
       "Tu pourras le faire plus tard dans les parametres.",
       "これは後で設定から行えます。",
+      "यह बाद में आपकी सेटिंग्स में भी किया जा सकता है।",
     );
   const skipLabel =
     ui.tutorial_bitcoin_modal_skip ||
@@ -208,10 +212,11 @@ export default function BitcoinSupportModal({
       "Forse più tardi",
       "Peut-etre plus tard",
       "後で",
+      "शायद बाद में",
     );
   const closeLabel =
     ui.tutorial_bitcoin_modal_done ||
-    supportCopy(lang, "Done", "Listo", "Concluído", "Fatto", "Termine", "完了");
+    supportCopy(lang, "Done", "Listo", "Concluído", "Fatto", "Termine", "完了", "पूरा");
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
@@ -343,6 +348,8 @@ export default function BitcoinSupportModal({
                         "Vedi sito",
                         "Voir le site",
                         "サイトを見る",
+                        null,
+                        "साइट देखें",
                       )}
                     </Link>
                   ) : null}
@@ -361,6 +368,8 @@ export default function BitcoinSupportModal({
             "Seleziona un'opzione per abilitare i depositi.",
             "Selectionne une option pour activer les depots.",
             "入金を有効にするにはオプションを選択してください。",
+            null,
+            "जमा सक्षम करने के लिए एक विकल्प चुनें।",
           )}
         </Text>
       ) : null}
@@ -430,7 +439,7 @@ export default function BitcoinSupportModal({
         }}
       >
         <IconButton
-          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer", "閉じる")}
+          aria-label={supportCopy(lang, "Close", "Cerrar", "Chiudi", "Fermer", "閉じる", null, "बंद करें")}
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
@@ -551,6 +560,8 @@ export default function BitcoinSupportModal({
                             "Scegli un destinatario",
                             "Choisis un destinataire",
                             "受取先を選ぶ",
+                            null,
+                            "प्राप्तकर्ता चुनें",
                           )}
                         </Text>
                         {selectedRecipient ? (
@@ -585,6 +596,8 @@ export default function BitcoinSupportModal({
                       "Scegli un destinatario",
                       "Choisis un destinataire",
                       "受取先を選ぶ",
+                      null,
+                      "प्राप्तकर्ता चुनें",
                     )}
                   </Text>
                   {recipientSelectorContent}

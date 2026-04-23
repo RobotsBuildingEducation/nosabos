@@ -50,6 +50,7 @@ import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
 } from "../constants/languages";
+import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -215,6 +216,7 @@ const translations = {
     language_fr: "French",
     language_de: "German",
     language_it: "Italian",
+    language_hi: "Hindi",
     language_pt: "Portuguese",
     language_es: "Spanish",
     language_nah: "Eastern Huasteca Nahuatl",
@@ -339,6 +341,7 @@ const translations = {
     language_fr: "Francés",
     language_de: "Alemán",
     language_it: "Italiano",
+    language_hi: "Hindi",
     language_pt: "Portugués",
     language_es: "Español",
     language_nah: "Náhuatl huasteco oriental",
@@ -461,6 +464,7 @@ const translations = {
     language_fr: "Francese",
     language_de: "Tedesco",
     language_it: "Italiano",
+    language_hi: "Hindi",
     language_pt: "Portoghese",
     language_es: "Spagnolo",
     language_nah: "Nahuatl huasteco orientale",
@@ -474,6 +478,7 @@ const translations = {
 };
 
 translations.pt = LANDING_PAGE_PT_STATIC;
+translations.hi = LANDING_PAGE_HI_STATIC;
 
 translations.fr = {
   ...translations.en,
@@ -586,6 +591,7 @@ translations.fr = {
   language_fr: "Français",
   language_de: "Allemand",
   language_it: "Italien",
+  language_hi: "Hindi",
   language_pt: "Portugais",
   language_es: "Espagnol",
   language_nah: "Nahuatl huastèque oriental",
@@ -715,6 +721,7 @@ translations.ja = {
   language_fr: "フランス語",
   language_de: "ドイツ語",
   language_it: "イタリア語",
+  language_hi: "ヒンディー語",
   language_pt: "ポルトガル語",
   language_es: "スペイン語",
   language_nah: "東ワステカ・ナワトル語",

@@ -155,6 +155,18 @@ const OBJECT_SEARCH_TEST_COPY = {
     nothingFound: "役に立つものはありません。",
     continueSearching: "探し続ける",
   },
+  hi: {
+    intro: (itemName) =>
+      `मुझे ${itemName} चाहिए। इस नक्शे के किसी भी कमरे में मौजूद वस्तुओं को खोजिए। हर एक के भीतर एक चीज़ छिपी है। सही चीज़ मेरे पास लाइए।`,
+    wrongItem: (wrongName, correctName) =>
+      `यह ${wrongName} है। मुझे अभी भी ${correctName} चाहिए। वस्तुओं को देखते रहिए।`,
+    success: (itemName) => `बिलकुल सही। मुझे ठीक ${itemName} ही चाहिए था।`,
+    chooseItem: "देने के लिए एक वस्तु चुनें:",
+    foundItem: (itemName) => `मिला: ${itemName}`,
+    alreadyChecked: "आप इस वस्तु को पहले ही देख चुके हैं।",
+    nothingFound: "यहाँ कुछ उपयोगी नहीं मिला।",
+    continueSearching: "खोज जारी रखें",
+  },
 };
 
 const QUEST_LOG_COPY = {
@@ -248,6 +260,24 @@ const QUEST_LOG_COPY = {
     choiceTask: (npcName) => `${npcName}に話しかけて、返答を選びましょう。`,
     speechTask: (npcName) => `${npcName}に話しかけて、声で答えましょう。`,
     continueTask: (npcName) => `${npcName}に話しかけて続けましょう。`,
+  },
+  hi: {
+    title: "क्वेस्ट लॉग",
+    button: "क्वेस्ट लॉग",
+    currentTask: "वर्तमान कार्य",
+    progress: (done, total) => `प्रगति: ${done}/${total}`,
+    complete: "क्वेस्ट पूरी हुई! बहुत बढ़िया।",
+    defaultTask: "खोज जारी रखें और अगले पात्र से बात करें।",
+    startObjectSearch: (npcName, itemName) =>
+      `${itemName} की खोज शुरू करने के लिए ${npcName} से बात करें।`,
+    searchObjects: (itemName) =>
+      `${itemName} ढूँढ़ने के लिए किसी भी कमरे की जाँचने योग्य वस्तुओं को देखें। हर वस्तु के भीतर एक चीज़ छिपी है।`,
+    returnItem: (itemName, npcName) => `${itemName} को वापस ${npcName} के पास ले जाएँ।`,
+    gatherSearch: (itemName) => `इस इलाके में ${itemName} खोजें।`,
+    gatherHint: (hint) => `संकेत: ${hint}`,
+    choiceTask: (npcName) => `${npcName} से बात करें और एक उत्तर चुनें।`,
+    speechTask: (npcName) => `${npcName} से बात करें और अपनी आवाज़ में उत्तर दें।`,
+    continueTask: (npcName) => `आगे बढ़ने के लिए ${npcName} से बात करें।`,
   },
 };
 
@@ -1732,6 +1762,48 @@ const UI_TEXT = {
     chooseCorrect: "正しい選択肢を選んでください。",
     closeDialogue: "会話を閉じる",
   },
+  hi: {
+    talkHint: "बात करने के लिए SPACE दबाएँ या टैप करें",
+    correct: "सही!",
+    incorrect: "फिर से कोशिश करें!",
+    completed: "बधाई हो! आपने सभी प्रश्नों के सही उत्तर दिए!",
+    playAgain: "फिर से खेलें",
+    back: "वापस",
+    progress: "प्रगति",
+    answeredOf: "में से",
+    moveHint: "चलने के लिए एरो की या WASD का उपयोग करें",
+    touchMove: "चलने के लिए टैप करें, बात करने के लिए NPC पर टैप करें",
+    chooseScenario: "एक परिदृश्य चुनें",
+    scenario: "परिदृश्य",
+    newWorld: "नई दुनिया",
+    quest: "क्वेस्ट",
+    lockedNpc: "आपको शुरुआत यहाँ से करनी चाहिए:",
+    response: "उत्तर",
+    micStart: "माइक शुरू करें",
+    micStop: "माइक रोकें",
+    heardYou: "मैंने सुना",
+    speechUnavailable: "इस ब्राउज़र में आवाज़ उपलब्ध नहीं है",
+    noSpeechMatch: "मैं समझ नहीं पाया। फिर से कोशिश करें।",
+    continue: "जारी रखें",
+    skip: "छोड़ें",
+    loadingTutorialScene: "ट्यूटोरियल दृश्य लोड हो रहा है...",
+    loadingGeneratingGame: "आपका गेम तैयार किया जा रहा है...",
+    enableMusic: "संगीत चालू करें",
+    disableMusic: "संगीत बंद करें",
+    musicOn: "संगीत चालू",
+    musicOff: "संगीत बंद",
+    help: "सहायता",
+    inventory: "इन्वेंटरी",
+    noItems: "अभी कोई वस्तु नहीं है।",
+    dropItem: "छोड़ें",
+    wrongItem: "गलत वस्तु",
+    speechContinue: "समझ गया। आगे बढ़ते हैं।",
+    thinking: "सोच रहा है...",
+    translateText: "पाठ का अनुवाद करें",
+    undoTranslation: "अनुवाद हटाएँ",
+    chooseCorrect: "सही विकल्प चुनें।",
+    closeDialogue: "संवाद बंद करें",
+  },
 };
 
 UI_TEXT.pt = {
@@ -1832,6 +1904,16 @@ const GAME_LOADING_MESSAGES = {
     "言語パズルを準備しています...",
     "場面を整えています...",
     "冒険を作っています...",
+  ],
+  hi: [
+    "आपकी दुनिया बनाई जा रही है...",
+    "NPC को रखा जा रहा है...",
+    "क्वेस्ट के संवाद लिखे जा रहे हैं...",
+    "शब्दावली चुनौतियाँ तैयार की जा रही हैं...",
+    "मानचित्र का लेआउट बनाया जा रहा है...",
+    "भाषा पहेलियाँ तैयार की जा रही हैं...",
+    "दृश्य सजाया जा रहा है...",
+    "आपका रोमांच तैयार किया जा रहा है...",
   ],
 };
 
@@ -2079,6 +2161,34 @@ const OBJECT_EXAMINE_FALLBACK_LABELS = {
     freezer: "冷凍庫",
     object: "物",
   },
+  hi: {
+    tree: "पेड़",
+    house: "घर",
+    building: "इमारत",
+    pavilion: "मंडप",
+    greenhouse: "काँचघर",
+    doorway: "द्वार",
+    bookshelf: "किताबों की शेल्फ़",
+    shelf: "शेल्फ़",
+    tv: "टेलीविजन",
+    sofa: "सोफ़ा",
+    plant: "पौधा",
+    table: "मेज़",
+    lamp: "दीपक",
+    sign: "संकेत-पट",
+    gate: "फाटक",
+    speaker: "स्पीकर",
+    balloons: "गुब्बारे",
+    desk: "डेस्क",
+    suitcaseStack: "सूटकेसों का ढेर",
+    counter: "काउंटर",
+    stove: "चूल्हा",
+    fridge: "फ्रिज",
+    bench: "बेंच",
+    register: "कैश रजिस्टर",
+    freezer: "फ़्रीज़र",
+    object: "वस्तु",
+  },
 };
 
 const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
@@ -2088,6 +2198,7 @@ const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
   it: (label) => `Noti ${label}.`,
   fr: (label) => `Tu remarques ${label}.`,
   ja: (label) => `${label}に気づきます。`,
+  hi: (label) => `आपको ${label} दिखता है।`,
 };
 
 function getLocalizedObjectExamineLabel(type = "", lang = "en") {
@@ -2116,6 +2227,30 @@ function buildFallbackObjectExamineText(object, lang = "en") {
     text: `You notice ${name}.`,
     supportText: supportSentence(supportName),
   };
+}
+
+function getRpgItemPrimaryLabel(item) {
+  return String(item?.supportName || item?.name || "").trim();
+}
+
+function getRpgItemSecondaryLabels(item) {
+  const primary = getRpgItemPrimaryLabel(item);
+  const transcription = String(item?.transcription || "").trim();
+  const sourceName = String(item?.name || "").trim();
+  return [transcription, sourceName].filter(
+    (value, idx, arr) => value && value !== primary && arr.indexOf(value) === idx,
+  );
+}
+
+function getRpgItemCompactLabel(item) {
+  const primary = getRpgItemPrimaryLabel(item);
+  const secondary = getRpgItemSecondaryLabels(item)[0];
+  if (!primary) return secondary || "";
+  return secondary ? `${primary} (${secondary})` : primary;
+}
+
+function getRpgItemSupportHint(item) {
+  return String(item?.supportHint || item?.hint || "").trim();
 }
 
 function findScenarioObjectAtTile(objects = [], tileX, tileY, options = {}) {
@@ -2402,6 +2537,7 @@ export default function RPGGame({
   const questLogModal = useDisclosure();
   const helpChatRef = useRef(null);
   const isTouchDevice = useRef(false);
+  const interactionTouchStartRef = useRef(null);
   const levelCompleteSoundPlayedRef = useRef(false);
   const ttsPlayerRef = useRef(null);
   const pendingSpeechReplyTokenRef = useRef(0);
@@ -2449,6 +2585,7 @@ export default function RPGGame({
   const gatherPlacementCacheKeyRef = useRef(null);
   const objectExamineCacheRef = useRef(new Map());
   const objectExaminePendingMapsRef = useRef(new Set());
+  const objectExaminePendingRequestsRef = useRef(new Map());
   gatherUnlockedRef.current = gatherUnlocked;
 
   const playSound = useSoundSettings((state) => state.playSound);
@@ -2851,6 +2988,19 @@ export default function RPGGame({
     [scenario?.id],
   );
 
+  const syncObjectExamineFromCache = useCallback((requestedKeys = null) => {
+    setObjectExamine((current) => {
+      if (!current) return current;
+      if (requestedKeys && !requestedKeys.has(current.key)) return current;
+      const nextEntry = objectExamineCacheRef.current.get(current.key);
+      return {
+        ...current,
+        ...(nextEntry || {}),
+        pending: false,
+      };
+    });
+  }, []);
+
   const requestObjectExamineTexts = useCallback(
     async (map, rawObjects = []) => {
       const objects = Array.isArray(rawObjects)
@@ -2863,15 +3013,30 @@ export default function RPGGame({
         (object) =>
           !objectExamineCacheRef.current.has(getObjectExamineKey(map, object)),
       );
+      const requestedKeys = new Set(
+        objects.map((object) => getObjectExamineKey(map, object)),
+      );
       if (!uncachedObjects.length) return;
-      if (objectExaminePendingMapsRef.current.has(mapId)) return;
+      const existingPendingRequest =
+        objectExaminePendingRequestsRef.current.get(mapId);
+      if (existingPendingRequest) {
+        await existingPendingRequest;
+        return requestObjectExamineTexts(map, objects);
+      }
 
       objectExaminePendingMapsRef.current.add(mapId);
 
       const mapName =
         typeof map.name === "string"
           ? map.name
-          : map.name?.en || map.name?.es || "Area";
+          : map.name?.en ||
+            map.name?.es ||
+            map.name?.pt ||
+            map.name?.it ||
+            map.name?.fr ||
+            map.name?.ja ||
+            map.name?.hi ||
+            "Area";
       const prompt = [
         objectExamineCefrPromptRule,
         objectExaminePromptContext,
@@ -2910,95 +3075,80 @@ export default function RPGGame({
         .filter(Boolean)
         .join("\n");
 
-      try {
-        const response = await callResponses({ input: prompt });
-        const parsed = parseLooseJSON(response);
-        const entries = Array.isArray(parsed)
-          ? parsed
-          : Array.isArray(parsed?.items)
-            ? parsed.items
-            : [];
-        const resolvedTexts = new Map();
+      const loadPromise = (async () => {
+        try {
+          const response = await callResponses({ input: prompt });
+          const parsed = parseLooseJSON(response);
+          const entries = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.items)
+              ? parsed.items
+              : [];
+          const resolvedTexts = new Map();
 
-        entries.forEach((entry) => {
-          const key = String(entry?.key || "").trim();
-          const name = String(entry?.name || entry?.label || "").trim();
-          const supportName = String(
-            entry?.supportName ||
-              entry?.translation ||
-              entry?.supportLabel ||
-              "",
-          ).trim();
-          const supportText = String(
-            entry?.supportText ||
-              entry?.translatedText ||
-              entry?.supportLine ||
-              "",
-          ).trim();
-          const text = String(entry?.text || entry?.line || "").trim();
-          if (!key || !text) return;
-          resolvedTexts.set(key, {
-            name: name.replace(/^["']|["']$/g, "").trim(),
-            supportName: supportName.replace(/^["']|["']$/g, "").trim(),
-            text: text.replace(/^["']|["']$/g, "").trim(),
-            supportText: supportText.replace(/^["']|["']$/g, "").trim(),
+          entries.forEach((entry) => {
+            const key = String(entry?.key || "").trim();
+            const name = String(entry?.name || entry?.label || "").trim();
+            const supportName = String(
+              entry?.supportName ||
+                entry?.translation ||
+                entry?.supportLabel ||
+                "",
+            ).trim();
+            const supportText = String(
+              entry?.supportText ||
+                entry?.translatedText ||
+                entry?.supportLine ||
+                "",
+            ).trim();
+            const text = String(entry?.text || entry?.line || "").trim();
+            if (!key || !text) return;
+            resolvedTexts.set(key, {
+              name: name.replace(/^["']|["']$/g, "").trim(),
+              supportName: supportName.replace(/^["']|["']$/g, "").trim(),
+              text: text.replace(/^["']|["']$/g, "").trim(),
+              supportText: supportText.replace(/^["']|["']$/g, "").trim(),
+            });
           });
-        });
 
-        uncachedObjects.forEach((object) => {
-          const key = getObjectExamineKey(map, object);
-          const fallback = buildFallbackObjectExamineText(object, supportLang);
-          const resolved = resolvedTexts.get(key);
-          const text = resolved
-            ? {
-                ...fallback,
-                ...resolved,
-                name: resolved.name || fallback.name,
-                supportName: resolved.supportName || fallback.supportName,
-                text: resolved.text || fallback.text,
-                supportText: resolved.supportText || fallback.supportText,
-              }
-            : fallback;
-          objectExamineCacheRef.current.set(key, text);
-        });
+          uncachedObjects.forEach((object) => {
+            const key = getObjectExamineKey(map, object);
+            const fallback = buildFallbackObjectExamineText(object, supportLang);
+            const resolved = resolvedTexts.get(key);
+            const text = resolved
+              ? {
+                  ...fallback,
+                  ...resolved,
+                  name: resolved.name || fallback.name,
+                  supportName: resolved.supportName || fallback.supportName,
+                  text: resolved.text || fallback.text,
+                  supportText: resolved.supportText || fallback.supportText,
+                }
+              : fallback;
+            objectExamineCacheRef.current.set(key, text);
+          });
+        } catch {
+          uncachedObjects.forEach((object) => {
+            const key = getObjectExamineKey(map, object);
+            objectExamineCacheRef.current.set(
+              key,
+              buildFallbackObjectExamineText(object, supportLang),
+            );
+          });
+        } finally {
+          syncObjectExamineFromCache(requestedKeys);
+          objectExaminePendingMapsRef.current.delete(mapId);
+          objectExaminePendingRequestsRef.current.delete(mapId);
+        }
+      })();
 
-        setObjectExamine((current) => {
-          if (!current) return current;
-          const nextEntry = objectExamineCacheRef.current.get(current.key);
-          return nextEntry
-            ? {
-                ...current,
-                ...nextEntry,
-                pending: false,
-              }
-            : current;
-        });
-      } catch {
-        uncachedObjects.forEach((object) => {
-          const key = getObjectExamineKey(map, object);
-          objectExamineCacheRef.current.set(
-            key,
-            buildFallbackObjectExamineText(object, supportLang),
-          );
-        });
-        setObjectExamine((current) => {
-          if (!current) return current;
-          const nextEntry = objectExamineCacheRef.current.get(current.key);
-          return nextEntry
-            ? {
-                ...current,
-                ...nextEntry,
-                pending: false,
-              }
-            : current;
-        });
-      } finally {
-        objectExaminePendingMapsRef.current.delete(mapId);
-      }
+      objectExaminePendingRequestsRef.current.set(mapId, loadPromise);
+      return loadPromise;
     },
     [
       cefrLevel,
       getObjectExamineKey,
+      syncObjectExamineFromCache,
       scenario?.id,
       supportLang,
       supportLangName,
@@ -3139,6 +3289,7 @@ export default function RPGGame({
   useEffect(() => {
     objectExamineCacheRef.current = new Map();
     objectExaminePendingMapsRef.current = new Set();
+    objectExaminePendingRequestsRef.current = new Map();
     setObjectExamine(null);
     setPickupBanner(null);
     setStartedObjectSearchStepKey(null);
@@ -3376,7 +3527,6 @@ export default function RPGGame({
 
   // Three.js refs
   const gameStateRef = useRef(null);
-  const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
   const playerSpriteRef = useRef(null);
@@ -3793,6 +3943,9 @@ export default function RPGGame({
             : {
                 ...targetItem,
                 name: ui.wrongItem,
+                supportName: ui.wrongItem,
+                supportHint: "",
+                transcription: "",
                 isCorrect: false,
               };
       const objectKey = getObjectExamineKey(entry.map, entry.object);
@@ -3811,12 +3964,12 @@ export default function RPGGame({
       npcIdx: currentQuestStep.npcIdx,
       targetItem,
       assignments,
-      npcLine: objectSearchCopy.intro(targetItem.name),
+      npcLine: objectSearchCopy.intro(getRpgItemCompactLabel(targetItem)),
       wrongItemTemplate: objectSearchCopy.wrongItem(
         "{{wrongItem}}",
         "{{correctItem}}",
       ),
-      successText: objectSearchCopy.success(targetItem.name),
+      successText: objectSearchCopy.success(getRpgItemCompactLabel(targetItem)),
     };
   }, [
     currentQuestNode,
@@ -3863,18 +4016,18 @@ export default function RPGGame({
         items: hasCorrectObjectSearchItem
           ? [
               questLogCopy.returnItem(
-                currentObjectSearchQuest.targetItem.name,
+                getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                 npcName,
               ),
             ]
           : [
               isObjectSearchQuestStarted
                 ? questLogCopy.searchObjects(
-                    currentObjectSearchQuest.targetItem.name,
+                    getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                   )
                 : questLogCopy.startObjectSearch(
                     npcName,
-                    currentObjectSearchQuest.targetItem.name,
+                    getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                   ),
             ],
       };
@@ -3895,11 +4048,17 @@ export default function RPGGame({
       );
       const items = [
         hasCorrectGatherItem
-          ? questLogCopy.returnItem(gatherItemName, npcName)
-          : questLogCopy.gatherSearch(gatherItemName),
+          ? questLogCopy.returnItem(
+              getRpgItemCompactLabel(currentQuestNode.gatherItem),
+              npcName,
+            )
+          : questLogCopy.gatherSearch(
+              getRpgItemCompactLabel(currentQuestNode.gatherItem),
+            ),
       ];
-      if (currentQuestNode.gatherItem?.hint) {
-        items.push(questLogCopy.gatherHint(currentQuestNode.gatherItem.hint));
+      const supportHint = getRpgItemSupportHint(currentQuestNode.gatherItem);
+      if (supportHint) {
+        items.push(questLogCopy.gatherHint(supportHint));
       }
       return {
         title: questLogCopy.title,
@@ -3989,9 +4148,9 @@ export default function RPGGame({
   ]);
 
   // Show a quick toast when picking up an item
-  const showPickupToast = useCallback((itemName) => {
+  const showPickupToast = useCallback((item) => {
     setPickupBanner({
-      itemName,
+      itemLabel: getRpgItemCompactLabel(item),
       openedAt: Date.now(),
     });
   }, []);
@@ -4001,6 +4160,8 @@ export default function RPGGame({
       if (!activeMap || !object) return;
       const key = getObjectExamineKey(activeMap, object);
       const cachedEntry = objectExamineCacheRef.current.get(key);
+      const fallbackEntry =
+        cachedEntry || buildFallbackObjectExamineText(object, supportLang);
       let lootText = "";
 
       if (isObjectSearchQuestStarted) {
@@ -4033,6 +4194,9 @@ export default function RPGGame({
                 isCorrect: assignedItem.isCorrect,
                 sprite: assignedItem.sprite || "default",
                 visual: assignedItem.visual || null,
+                supportName: assignedItem.supportName || "",
+                supportHint: assignedItem.supportHint || "",
+                transcription: assignedItem.transcription || "",
                 objectSearchItem: true,
                 objectSearchStepKey: currentObjectSearchQuest.stepKey,
                 sourceObjectKey: key,
@@ -4040,7 +4204,7 @@ export default function RPGGame({
             ];
           });
           playGameSound("rpgDialogueSelect");
-          showPickupToast(assignedItem.name);
+          showPickupToast(assignedItem);
           lootText = "";
         } else if (assignedItem) {
           lootText = objectSearchCopy.alreadyChecked;
@@ -4051,10 +4215,10 @@ export default function RPGGame({
 
       setObjectExamine({
         key,
-        name: cachedEntry?.name || "",
-        supportName: cachedEntry?.supportName || "",
-        text: cachedEntry?.text || "",
-        supportText: cachedEntry?.supportText || "",
+        name: fallbackEntry?.name || "",
+        supportName: fallbackEntry?.supportName || "",
+        text: fallbackEntry?.text || "",
+        supportText: fallbackEntry?.supportText || "",
         lootText,
         pending: !cachedEntry,
         openedAt: Date.now(),
@@ -4072,6 +4236,7 @@ export default function RPGGame({
       playGameSound,
       requestObjectExamineTexts,
       showPickupToast,
+      supportLang,
     ],
   );
 
@@ -4541,7 +4706,6 @@ export default function RPGGame({
 
     // Scene
     const scene = new THREE.Scene();
-    sceneRef.current = scene;
 
     const fallbackPlayerTexture = createCharacterTexture(
       PLAYER_COLORS,
@@ -5216,10 +5380,13 @@ export default function RPGGame({
               isCorrect: item.isCorrect,
               sprite: item.sprite || "default",
               visual: item.visual || null,
+              supportName: item.supportName || "",
+              supportHint: item.supportHint || "",
+              transcription: item.transcription || "",
             },
           ]);
           playGameSound("rpgDialogueSelect");
-          showPickupToast(item.name);
+          showPickupToast(item);
         }
       });
 
@@ -5427,10 +5594,10 @@ export default function RPGGame({
       ];
 
       for (const dir of examineDirs) {
-        const object = (activeMap.objects || []).find(
-          (entry) =>
-            entry.tx === gs.playerX + dir.dx &&
-            entry.ty === gs.playerY + dir.dy,
+        const object = findScenarioObjectAtTile(
+          activeMap.objects || [],
+          gs.playerX + dir.dx,
+          gs.playerY + dir.dy,
         );
         if (object) {
           examineScenarioObject(object);
@@ -5440,21 +5607,35 @@ export default function RPGGame({
     };
 
     const handleKeyDown = (e) => {
-      if (e.key === " " || e.key === "Enter") {
+      const targetTag = String(e.target?.tagName || "").toLowerCase();
+      const isTypingTarget =
+        targetTag === "input" ||
+        targetTag === "textarea" ||
+        targetTag === "select" ||
+        e.target?.isContentEditable;
+      if (isTypingTarget) return;
+      if (
+        e.key === "Enter" ||
+        e.key === " " ||
+        e.key === "Spacebar" ||
+        e.code === "Space"
+      ) {
         e.preventDefault();
         handleInteract();
       }
     };
 
-    const handleClick = (e) => {
-      if (!canvasRef.current || !scenario || !activeMap) return;
-      const rect = canvasRef.current.getBoundingClientRect();
+    const handleClientPointSelection = (clientX, clientY, renderTarget = null) => {
+      const targetElement =
+        renderTarget || rendererRef.current?.domElement || canvasRef.current;
+      if (!targetElement || !scenario || !activeMap) return;
+      const rect = targetElement.getBoundingClientRect();
       const TILE = activeMap.tileSize || scenario.tileSize;
       const gs = gameStateRef.current;
       if (!gs) return;
 
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const clickX = clientX - rect.left;
+      const clickY = clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
       const dx = clickX - centerX;
@@ -5551,6 +5732,15 @@ export default function RPGGame({
         }
 
         if (blockedCandidate) {
+          const blockedObject = findScenarioObjectAtTile(
+            activeMap.objects || [],
+            blockedCandidate.tx,
+            blockedCandidate.ty,
+          );
+          if (!dialogue && blockedObject) {
+            examineScenarioObject(blockedObject);
+            return true;
+          }
           flashBlockedTileHint(blockedCandidate.tx, blockedCandidate.ty);
         }
         return false;
@@ -5558,15 +5748,12 @@ export default function RPGGame({
 
       const clickedObject =
         !dialogue &&
-        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY, {
-          exact: true,
-        });
+        findScenarioObjectAtTile(activeMap.objects || [], tileX, tileY);
       if (clickedObject) {
         examineScenarioObject(clickedObject);
         return;
       }
 
-      // Check NPC click
       const npcIdx =
         activeMapNpcIndices.find(
           (index) =>
@@ -5596,7 +5783,6 @@ export default function RPGGame({
           const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId = questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
-          // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
             node = { ...node, playerLine: pendingBridgeRef.current };
             pendingBridgeRef.current = null;
@@ -5605,7 +5791,6 @@ export default function RPGGame({
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
-          // Clear heard speech from previous interactions
           setLastHeardSpeech("");
           setDialogue({
             npcIdx,
@@ -5628,7 +5813,6 @@ export default function RPGGame({
           });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
-          // Generate dynamic choices if the first node is a choice node
           if (node?.responseMode === "choice") {
             generateDynamicChoices(node, npcIdx, questProgress.currentStepIdx);
           }
@@ -5636,19 +5820,67 @@ export default function RPGGame({
         return;
       }
 
-      // Move toward clicked tile
       if (!dialogue) {
         moveOneStepToward(tileX, tileY);
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    canvasRef.current?.addEventListener("click", handleClick);
+    const handleClick = (e) => {
+      const renderTarget =
+        e.currentTarget || rendererRef.current?.domElement || canvasRef.current;
+      if (!renderTarget || !scenario || !activeMap) return;
+      handleClientPointSelection(e.clientX, e.clientY, renderTarget);
+    };
 
-    const currentCanvas = canvasRef.current;
+    const handleTouchStart = (e) => {
+      if (!e.touches?.length) return;
+      isTouchDevice.current = true;
+      e.preventDefault();
+      interactionTouchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    };
+
+    const handleTouchEnd = (e) => {
+      if (!interactionTouchStartRef.current || !e.changedTouches?.length) return;
+      e.preventDefault();
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - interactionTouchStartRef.current.x;
+      const dy = touch.clientY - interactionTouchStartRef.current.y;
+      interactionTouchStartRef.current = null;
+
+      if (Math.sqrt(dx * dx + dy * dy) < 15) {
+        const renderTarget =
+          e.currentTarget || rendererRef.current?.domElement || canvasRef.current;
+        handleClientPointSelection(touch.clientX, touch.clientY, renderTarget);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    const renderCanvas = rendererRef.current?.domElement;
+    const eventTargets = [renderCanvas, canvasRef.current].filter(
+      (target, idx, list) => target && list.indexOf(target) === idx,
+    );
+    eventTargets.forEach((target) => {
+      target.addEventListener("click", handleClick);
+      target.addEventListener("touchstart", handleTouchStart, {
+        passive: false,
+      });
+      target.addEventListener("touchend", handleTouchEnd, {
+        passive: false,
+      });
+    });
+
+    const currentEventTargets = [...eventTargets];
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      currentCanvas?.removeEventListener("click", handleClick);
+      window.removeEventListener("keydown", handleKeyDown, true);
+      interactionTouchStartRef.current = null;
+      currentEventTargets.forEach((target) => {
+        target.removeEventListener("click", handleClick);
+        target.removeEventListener("touchstart", handleTouchStart);
+        target.removeEventListener("touchend", handleTouchEnd);
+      });
     };
   }, [
     activeMap,
@@ -5668,6 +5900,7 @@ export default function RPGGame({
     questSteps,
     speakNPCText,
     ui.lockedNpc,
+    interactionTouchStartRef,
   ]);
 
   useEffect(() => {
@@ -6045,8 +6278,12 @@ export default function RPGGame({
         dialogue.node.gatherWrongItemTemplate ||
           "That is {{wrongItem}}. Not what I need. Look for {{correctItem}}.",
         {
-          wrongItem: submittedItem.name,
-          correctItem: requiredItem,
+          wrongItem: isObjectSearchTurnIn
+            ? getRpgItemCompactLabel(submittedItem)
+            : submittedItem.name,
+          correctItem: isObjectSearchTurnIn
+            ? getRpgItemCompactLabel(dialogue.node.gatherItem)
+            : requiredItem,
         },
       );
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
@@ -6071,7 +6308,7 @@ export default function RPGGame({
     if (isObjectSearchTurnIn) {
       const successText =
         dialogue.node.objectSearchSuccessText ||
-        objectSearchCopy.success(submittedItem.name);
+        objectSearchCopy.success(getRpgItemCompactLabel(submittedItem));
       setDialogue((prev) => ({ ...prev, npcReply: successText }));
       setStartedObjectSearchStepKey(null);
       setTimeout(() => {
@@ -6878,12 +7115,20 @@ export default function RPGGame({
                     px={3}
                     py={2}
                     justify="space-between"
+                    align="flex-start"
                     border="1px solid"
                     borderColor={rpgPanelBorderSoft}
                   >
-                    <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
-                      {inventory[selectedInvItem].name}
-                    </Text>
+                    <VStack align="start" spacing={0} flex="1">
+                      <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
+                        {getRpgItemPrimaryLabel(inventory[selectedInvItem])}
+                      </Text>
+                      {getRpgItemSecondaryLabels(inventory[selectedInvItem]).length ? (
+                        <Text color={rpgTextMuted} fontSize="xs">
+                          {getRpgItemSecondaryLabels(inventory[selectedInvItem]).join(" · ")}
+                        </Text>
+                      ) : null}
+                    </VStack>
                     <Button
                       size="xs"
                       colorScheme="red"
@@ -7008,7 +7253,7 @@ export default function RPGGame({
                   +
                 </Text>
                 <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm">
-                  {pickupBanner.itemName}
+                  {pickupBanner.itemLabel}
                 </Text>
               </HStack>
             ) : null}
@@ -7024,19 +7269,65 @@ export default function RPGGame({
                 py={3}
                 boxShadow={rpgPanelShadow}
               >
-                {objectExamine.pending ? (
-                  <VStack align="stretch" spacing={1}>
-                    {objectExamine.lootText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgReplyText}
-                        fontWeight="semibold"
-                      >
-                        {objectExamine.lootText}
-                      </Text>
-                    ) : null}
-                    <HStack spacing={2}>
+                <VStack align="stretch" spacing={1}>
+                  {objectExamine.lootText ? (
+                    <Text
+                      fontSize="xs"
+                      lineHeight="1.35"
+                      color={rpgReplyText}
+                      fontWeight="semibold"
+                      pb={
+                        objectExamine.name ||
+                        objectExamine.supportName ||
+                        objectExamine.text ||
+                        objectExamine.supportText
+                          ? 1
+                          : 0
+                      }
+                    >
+                      {objectExamine.lootText}
+                    </Text>
+                  ) : null}
+                  {objectExamine.name || objectExamine.supportName ? (
+                    <Text
+                      fontSize="sm"
+                      lineHeight="1.35"
+                      color={rpgTextPrimary}
+                      fontWeight="semibold"
+                    >
+                      {objectExamine.name}
+                      {objectExamine.supportName
+                        ? ` (${objectExamine.supportName})`
+                        : ""}
+                    </Text>
+                  ) : null}
+                  {objectExamine.text ? (
+                    <Text fontSize="sm" lineHeight="1.45" color={rpgTextPrimary}>
+                      {objectExamine.text}
+                    </Text>
+                  ) : null}
+                  {objectExamine.supportText ? (
+                    <Text
+                      fontSize="xs"
+                      lineHeight="1.35"
+                      color={rpgTextMuted}
+                      fontStyle="italic"
+                    >
+                      ({objectExamine.supportText})
+                    </Text>
+                  ) : null}
+                  {objectExamine.pending ? (
+                    <HStack
+                      spacing={2}
+                      pt={
+                        objectExamine.name ||
+                        objectExamine.supportName ||
+                        objectExamine.text ||
+                        objectExamine.supportText
+                          ? 1
+                          : 0
+                      }
+                    >
                       <VoiceOrb
                         state={
                           ["idle", "listening", "speaking"][
@@ -7049,50 +7340,8 @@ export default function RPGGame({
                         ...
                       </Text>
                     </HStack>
-                  </VStack>
-                ) : (
-                  <VStack align="stretch" spacing={1}>
-                    {objectExamine.lootText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgReplyText}
-                        fontWeight="semibold"
-                        pb={1}
-                      >
-                        {objectExamine.lootText}
-                      </Text>
-                    ) : null}
-                    {objectExamine.name || objectExamine.supportName ? (
-                      <Text
-                        fontSize="sm"
-                        lineHeight="1.35"
-                        color={rpgTextPrimary}
-                        fontWeight="semibold"
-                      >
-                        {objectExamine.name}
-                        {objectExamine.supportName
-                          ? ` (${objectExamine.supportName})`
-                          : ""}
-                      </Text>
-                    ) : null}
-                    {objectExamine.text ? (
-                      <Text fontSize="sm" lineHeight="1.45" color={rpgTextPrimary}>
-                        {objectExamine.text}
-                      </Text>
-                    ) : null}
-                    {objectExamine.supportText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgTextMuted}
-                        fontStyle="italic"
-                      >
-                        ({objectExamine.supportText})
-                      </Text>
-                    ) : null}
-                  </VStack>
-                )}
+                  ) : null}
+                </VStack>
               </Box>
             ) : null}
           </VStack>

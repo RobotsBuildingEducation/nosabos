@@ -235,7 +235,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -1555,6 +1555,7 @@ function TopBar({
                             it: "Inizia test di livello",
                             fr: "Commencer le test de niveau",
                             ja: "レベルテストを始める",
+                            hi: "प्रवीणता परीक्षण शुरू करें",
                           })}
                         </Button>
                       )}
@@ -6628,6 +6629,7 @@ export default function App() {
                     it: "Obiettivo giornaliero raggiunto!",
                     fr: "Objectif quotidien atteint !",
                     ja: "デイリー目標達成！",
+                    hi: "दैनिक लक्ष्य पूरा हुआ!",
                   })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
@@ -6637,6 +6639,7 @@ export default function App() {
                     it: "Hai raggiunto il tuo obiettivo XP di oggi.",
                     fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
                     ja: "今日のXP目標を達成しました。",
+                    hi: "आपने आज का XP लक्ष्य पूरा कर लिया।",
                   })}
                 </Text>
               </VStack>
@@ -6660,6 +6663,7 @@ export default function App() {
                           it: "Obiettivo",
                           fr: "Objectif",
                           ja: "目標",
+                          hi: "लक्ष्य",
                         })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
@@ -6674,6 +6678,7 @@ export default function App() {
                       it: "Mantieni la serie e torna domani per un nuovo obiettivo!",
                       fr: "Garde la serie et reviens demain pour un nouvel objectif !",
                       ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
+                      hi: "अपनी श्रृंखला बनाए रखें और नए लक्ष्य के लिए कल फिर आएँ!",
                     })}
                   </Text>
                 </VStack>
@@ -6704,6 +6709,7 @@ export default function App() {
                   it: "Continua ad imparare",
                   fr: "Continuer a apprendre",
                   ja: "学習を続ける",
+                  hi: "सीखना जारी रखें",
                 })}
               </Button>
             </VStack>
@@ -6756,6 +6762,7 @@ export default function App() {
                     it: "Lezione Completata!",
                     fr: "Lecon terminee !",
                     ja: "レッスン完了！",
+                    hi: "पाठ पूरा हुआ!",
                   })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
@@ -6788,6 +6795,7 @@ export default function App() {
                       it: "XP Guadagnato",
                       fr: "XP gagne",
                       ja: "獲得XP",
+                      hi: "प्राप्त XP",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -6801,6 +6809,7 @@ export default function App() {
                       it: "Punti Esperienza",
                       fr: "Points d'experience",
                       ja: "経験値",
+                      hi: "अनुभव अंक",
                     })}
                   </Text>
                 </VStack>
@@ -6826,6 +6835,7 @@ export default function App() {
                   it: "Continua",
                   fr: "Continuer",
                   ja: "続ける",
+                  hi: "जारी रखें",
                 })}
               </Button>
             </VStack>
@@ -6872,6 +6882,7 @@ export default function App() {
                     it: "Livello completato!",
                     fr: "Niveau termine !",
                     ja: "レベル完了！",
+                    hi: "स्तर पूरा हुआ!",
                   })}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
@@ -6901,6 +6912,7 @@ export default function App() {
                       it: "Congratulazioni!",
                       fr: "Felicitations !",
                       ja: "おめでとうございます！",
+                      hi: "बधाई हो!",
                     })}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
@@ -6912,6 +6924,7 @@ export default function App() {
                           it: `Hai sbloccato il livello ${completedProficiencyData.nextLevel}`,
                           fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
                           ja: `レベル${completedProficiencyData.nextLevel}が開放されました`,
+                          hi: `आपने स्तर ${completedProficiencyData.nextLevel} खोल लिया है`,
                         })
                       : uiCopy(appLanguage, {
                           en: "You've completed all levels!",
@@ -6920,6 +6933,7 @@ export default function App() {
                           it: "Hai completato tutti i livelli!",
                           fr: "Tu as termine tous les niveaux !",
                           ja: "すべてのレベルを完了しました！",
+                          hi: "आपने सभी स्तर पूरे कर लिए हैं!",
                         })}
                   </Text>
                 </VStack>
@@ -6951,6 +6965,7 @@ export default function App() {
                       it: "Vai al livello successivo",
                       fr: "Aller au niveau suivant",
                       ja: "次のレベルへ",
+                      hi: "अगले स्तर पर जाएँ",
                     })
                   : uiCopy(appLanguage, {
                       en: "Continue",
@@ -6959,6 +6974,7 @@ export default function App() {
                       it: "Continua",
                       fr: "Continuer",
                       ja: "続ける",
+                      hi: "जारी रखें",
                     })}
               </Button>
             </VStack>

@@ -13,6 +13,7 @@ export const TTS_LANG_TAG = {
   pt: "pt-BR",
   fr: "fr-FR",
   it: "it-IT",
+  hi: "hi-IN",
   nl: "nl-NL",
   nah: "es-MX",
   ru: "ru-RU",

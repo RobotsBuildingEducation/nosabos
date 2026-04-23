@@ -7,6 +7,10 @@
 import { withItalianFlashcardText } from "./flashcards/italianLocalizer.js";
 import { withFrenchFlashcardText } from "./flashcards/frenchLocalizer.js";
 import {
+  translateFlashcardConceptToHindi,
+  withHindiFlashcardText,
+} from "./flashcards/hindiLocalizer.js";
+import {
   translateFlashcardConceptToPortuguese,
   withPortugueseFlashcardText,
 } from "./flashcards/portugueseLocalizer.js";
@@ -16,9 +20,11 @@ import {
 } from "./flashcards/japaneseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
-  withJapaneseFlashcardText(
-    withFrenchFlashcardText(
-      withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+  withHindiFlashcardText(
+    withJapaneseFlashcardText(
+      withFrenchFlashcardText(
+        withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+      ),
     ),
   );
 
@@ -7878,7 +7884,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "pt", "it", "fr", "ja"];
+    const languages = ["en", "es", "pt", "it", "fr", "ja", "hi"];
     const selectedLang = languages[hash % languages.length];
     if (selectedLang === "pt" && !card.concept.pt) {
       return translateFlashcardConceptToPortuguese(
@@ -7888,6 +7894,9 @@ export const getConceptText = (card, supportLang) => {
     }
     if (selectedLang === "ja" && !card.concept.ja) {
       return translateFlashcardConceptToJapanese(card.concept.en);
+    }
+    if (selectedLang === "hi" && !card.concept.hi) {
+      return translateFlashcardConceptToHindi(card.concept.en || card.concept.es);
     }
     return card.concept[selectedLang] || card.concept.en;
   }
@@ -7901,6 +7910,10 @@ export const getConceptText = (card, supportLang) => {
 
   if (supportLang === "ja" && !card.concept.ja) {
     return translateFlashcardConceptToJapanese(card.concept.en);
+  }
+
+  if (supportLang === "hi" && !card.concept.hi) {
+    return translateFlashcardConceptToHindi(card.concept.en || card.concept.es);
   }
 
   // Otherwise use the specified language, fallback to English

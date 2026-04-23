@@ -115,6 +115,8 @@ const OUTDOOR_NAMES = {
        "Jardin au clair de lune", "Place pavee", "Bosquet murmureur", "Cour des lanternes", "Champ de fleurs"],
   ja: ["町の広場", "村の緑地", "森の空き地", "川辺の公園", "夕焼けの草原",
        "月明かりの庭", "石畳の広場", "ささやく木立", "ランタンの中庭", "野花の野原"],
+  hi: ["नगर चौक", "गाँव का मैदान", "जंगल की खुली जगह", "नदी किनारे का उद्यान", "सूर्यास्त का मैदान",
+       "चाँदनी बगीचा", "पत्थरों वाला चौक", "फुसफुसाता उपवन", "लालटेन आँगन", "जंगली फूलों का मैदान"],
 };
 
 const INDOOR_ROOM_TYPES = [
@@ -127,6 +129,7 @@ const INDOOR_ROOM_TYPES = [
       it: ["Biblioteca antica", "Sala di lettura", "Studio dello studioso", "Angolo dei libri", "Archivi polverosi"],
       fr: ["Bibliotheque ancienne", "Salle de lecture", "Bureau du savant", "Coin des livres", "Archives poussiereuses"],
       ja: ["古い図書館", "読書室", "学者の書斎", "本の小部屋", "ほこりっぽい資料室"],
+      hi: ["प्राचीन पुस्तकालय", "पठन कक्ष", "विद्वान का अध्ययन कक्ष", "पुस्तक कोना", "धूल भरा अभिलेखागार"],
     },
     wallFurniture: [BOOKSHELF, WINDOW_TILE],
     centerFurniture: [TABLE, DESK, PLANT_POT],
@@ -141,6 +144,7 @@ const INDOOR_ROOM_TYPES = [
       it: ["Baita accogliente", "Casetta calda", "Riposo del viaggiatore", "Rifugio del focolare", "Capanna di montagna"],
       fr: ["Cabane douillette", "Maison chaleureuse", "Repos du voyageur", "Refuge du foyer", "Cabane de montagne"],
       ja: ["居心地のよい小屋", "暖かなコテージ", "旅人の休憩所", "暖炉のロッジ", "山小屋"],
+      hi: ["आरामदायक कुटिया", "गरमाहट भरी कुटिया", "यात्री विश्राम", "अंगीठी वाला आश्रय", "पहाड़ी झोंपड़ी"],
     },
     wallFurniture: [FIREPLACE, WINDOW_TILE, BED],
     centerFurniture: [TABLE, SOFA, PLANT_POT],
@@ -155,6 +159,7 @@ const INDOOR_ROOM_TYPES = [
       it: ["Bottega artigiana", "Stanza dei lavori manuali", "Spazio creativo", "Laboratorio dell'inventore", "Rifugio del creatore"],
       fr: ["Atelier artisanal", "Salle de creation", "Espace creatif", "Laboratoire de l'inventeur", "Repaire du createur"],
       ja: ["職人の工房", "クラフトルーム", "ものづくり空間", "発明家のラボ", "創作者の隠れ家"],
+      hi: ["कारीगर कार्यशाला", "हुनर कक्ष", "निर्माता का स्थान", "जुगाड़ू की प्रयोगशाला", "आविष्कारक का अड्डा"],
     },
     wallFurniture: [BOOKSHELF, DESK, WINDOW_TILE],
     centerFurniture: [TABLE, PLANT_POT, DESK],
@@ -169,6 +174,7 @@ const INDOOR_ROOM_TYPES = [
       it: ["Camera degli ospiti", "Camera accogliente", "Stanza del sognatore", "Sala del riposo", "Rifugio tranquillo"],
       fr: ["Chambre d'amis", "Chambre douillette", "Chambre du reveur", "Salle de sieste", "Havre de repos"],
       ja: ["客室", "居心地のよい寝室", "夢見る人の部屋", "昼寝の部屋", "休息の隠れ家"],
+      hi: ["अतिथि कक्ष", "आरामदायक शयनकक्ष", "स्वप्नदर्शी का कक्ष", "झपकी कक्ष", "विश्राम आश्रय"],
     },
     wallFurniture: [BED, WINDOW_TILE, BOOKSHELF],
     centerFurniture: [DESK, PLANT_POT, TABLE],
@@ -183,6 +189,7 @@ const INDOOR_ROOM_TYPES = [
       it: ["Salotto", "Sala comune", "Sala degli incontri", "Angolo sociale", "Sala da tè"],
       fr: ["Salon", "Salle commune", "Hall de rencontre", "Coin social", "Salon de the"],
       ja: ["ラウンジ", "談話室", "集会ホール", "交流コーナー", "ティールーム"],
+      hi: ["बैठक", "सामान्य कक्ष", "मिलन सभागार", "सामाजिक कोना", "चाय कक्ष"],
     },
     wallFurniture: [WINDOW_TILE, FIREPLACE, BOOKSHELF],
     centerFurniture: [SOFA, TABLE, PLANT_POT],
@@ -276,6 +283,20 @@ const SIGN_MESSAGES = {
     "言語は新しい世界への扉を開きます。文字通りです。",
     "探索を続けましょう！いつも新しい発見があります。",
   ],
+  hi: [
+    "स्वागत है, साहसी यात्री! खेल लोड होते समय घूमिए।",
+    "सुझाव: असली गेम में NPC से बात करके शब्दावली का अभ्यास करें!",
+    "मज़ेदार बात: भाषा सीखना अपने दिमाग को लेवल अप करने जैसा है।",
+    "प्रो टिप: क्वेस्ट पूरी करके XP कमाएँ और नए पाठ खोलें!",
+    "यह पुल दो दुनियाओं को जोड़ता है... ठीक भाषाओं की तरह।",
+    "नई जगहें खोजने के लिए दरवाज़ों से अंदर जाएँ!",
+    "आप जो भी शब्द सीखते हैं, वह एक बड़े रोमांच की ओर कदम है।",
+    "जितना ज़्यादा खोजेंगे, उतना ज़्यादा पाएँगे!",
+    "राज़: कुछ रास्ते छिपे खज़ानों तक ले जाते हैं...",
+    "क्या आप जानते हैं? हर बार लोड होने पर यह नक्शा बदल जाता है!",
+    "भाषाएँ नई दुनियाओं के दरवाज़े खोलती हैं। सचमुच!",
+    "खोज जारी रखें! हमेशा कुछ नया मिलता है।",
+  ],
 };
 
 const CHEST_MESSAGES = {
@@ -339,6 +360,16 @@ const CHEST_MESSAGES = {
     "箱の中身は...やる気です！意志力+10。",
     "中にメモがあります。「とてもよくできています！」",
   ],
+  hi: [
+    "आपको एक छिपा खज़ाना मिला! ...यह ज्ञान है!",
+    "अंदर की पर्ची कहती है: 'अभ्यास से निपुणता आती है'",
+    "आपको चमकता रून मिला... उस पर 'XP +100' लिखा है (मज़ाक कर रहे हैं)",
+    "अंदर: उन सभी दुनियाओं का छोटा नक्शा जिन्हें आप खोजेंगे!",
+    "एक सोने का सिक्का! ठहरिए... यह शब्दावली टोकन है।",
+    "आपको व्याकरण का एक प्राचीन स्क्रॉल मिला!",
+    "इस संदूक में है... प्रेरणा! +10 इच्छाशक्ति।",
+    "अंदर एक नोट है: 'आप बहुत अच्छा कर रहे हैं!'",
+  ],
 };
 
 const LAMP_MESSAGES = {
@@ -377,6 +408,12 @@ const LAMP_MESSAGES = {
     "柔らかな光が古い文字を照らしています...読めません。",
     "光が小さな火花のように踊っています。",
     "励ましの暖かな光を感じます。",
+  ],
+  hi: [
+    "दीपक गरमाहट से टिमटिमा रहा है। यहाँ बहुत आरामदायक लगता है।",
+    "मुलायम रोशनी किसी प्राचीन लेख को प्रकाशित कर रही है... पढ़ा नहीं जा रहा।",
+    "रोशनी छोटी जुगनुओं की तरह नाच रही है।",
+    "आपको हौसले की एक गरम चमक महसूस होती है।",
   ],
 };
 
@@ -417,6 +454,12 @@ const PLANT_MESSAGES = {
     "この植物は誰の記憶よりも長くここにあります。",
     "小さな花が咲いています。素敵ですね！",
   ],
+  hi: [
+    "एक खुश छोटी पौधी। लगता है इसे यह जगह पसंद है।",
+    "आपके गुजरते ही पत्तियाँ धीरे-धीरे सरसराती हैं।",
+    "यह पौधा यहाँ उतने समय से है जितना किसी को याद भी नहीं।",
+    "एक छोटा फूल खिल रहा है। कितना सुंदर!",
+  ],
 };
 
 const TABLE_MESSAGES = {
@@ -455,6 +498,12 @@ const TABLE_MESSAGES = {
     "テーブルには長年の勉強会でできた傷があります。",
     "本や紙が表面に散らばっています。",
     "途中まで解いたパズルがテーブルに置かれています。",
+  ],
+  hi: [
+    "मजबूत लकड़ी की मेज़। किसी ने क्रिया-रूपों पर नोट्स छोड़ रखे हैं।",
+    "इस मेज़ पर वर्षों के अध्ययन सत्रों के निशान हैं।",
+    "सतह पर किताबें और कागज़ बिखरे हुए हैं।",
+    "मेज़ पर आधा पूरा हुआ एक पज़ल रखा है।",
   ],
 };
 
@@ -723,6 +772,7 @@ function generateWorld(seed) {
     it: pick(rng, OUTDOOR_NAMES.it),
     fr: pick(rng, OUTDOOR_NAMES.fr),
     ja: pick(rng, OUTDOOR_NAMES.ja),
+    hi: pick(rng, OUTDOOR_NAMES.hi),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -738,6 +788,7 @@ function generateWorld(seed) {
     it: pick(rng, roomType1.names.it),
     fr: pick(rng, roomType1.names.fr),
     ja: pick(rng, roomType1.names.ja),
+    hi: pick(rng, roomType1.names.hi),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
@@ -748,6 +799,7 @@ function generateWorld(seed) {
     it: pick(rng, roomType2.names.it),
     fr: pick(rng, roomType2.names.fr),
     ja: pick(rng, roomType2.names.ja),
+    hi: pick(rng, roomType2.names.hi),
   };
 
   // Build rooms object

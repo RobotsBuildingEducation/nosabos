@@ -58,6 +58,7 @@ const TARGET_LANGUAGE_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
+  hi: "Hindi",
   nl: "Dutch",
   nah: "Eastern Huasteca Nahuatl",
   ja: "Japanese",
@@ -185,11 +186,12 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null) {
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
   if (lang === "es") return es || en;
   return en;
 }
@@ -204,6 +206,7 @@ function formatRemaining(ms, lang) {
       "Pret a renouveler",
       "更新できます",
       "Pronto para atualizar",
+      "रीफ्रेश के लिए तैयार",
     );
   }
   const totalSec = Math.floor(ms / 1000);
@@ -218,6 +221,7 @@ function formatRemaining(ms, lang) {
       `${h}h ${m}m restantes`,
       `残り${h}時間${m}分`,
       `faltam ${h}h ${m}min`,
+      `${h}घं ${m}मि बाकी`,
     );
   }
   return supportCopy(
@@ -228,6 +232,7 @@ function formatRemaining(ms, lang) {
     `${m}m restantes`,
     `残り${m}分`,
     `faltam ${m}min`,
+    `${m}मि बाकी`,
   );
 }
 
@@ -391,6 +396,7 @@ export default function RealWorldTasksModal({
           "Impossible de generer les taches. Reessaie.",
           "タスクを生成できませんでした。もう一度お試しください。",
           "Não foi possível gerar as tarefas. Tente novamente.",
+          "कार्य नहीं बनाए जा सके। कृपया फिर से कोशिश करें।",
         ),
       );
     } finally {
@@ -462,6 +468,7 @@ export default function RealWorldTasksModal({
           "Impossible d'attribuer la recompense",
           "報酬を付与できませんでした",
           "Não foi possível conceder a recompensa",
+          "इनाम नहीं दिया जा सका",
         ),
         status: "error",
         duration: 3000,
@@ -492,6 +499,7 @@ export default function RealWorldTasksModal({
     "Pratique d'immersion",
     "イマージョン練習",
     "Prática de imersão",
+    "इमर्शन अभ्यास",
   );
   const subtitle = supportCopy(
     lang,
@@ -501,6 +509,7 @@ export default function RealWorldTasksModal({
     "3 taches pour utiliser ta langue hors de l'app",
     "アプリの外で言語を使う3つのタスク",
     "3 tarefas para usar seu idioma fora do app",
+    "ऐप के बाहर अपनी भाषा का उपयोग करने के लिए 3 कार्य",
   );
   const progressLabel = supportCopy(
     lang,
@@ -510,6 +519,7 @@ export default function RealWorldTasksModal({
     "Prochaine serie dans",
     "次のセットまで",
     "Próximo lote em",
+    "अगला सेट",
   );
   const generatingLabel = supportCopy(
     lang,
@@ -519,6 +529,7 @@ export default function RealWorldTasksModal({
     "Creation des taches...",
     "タスクを作成中...",
     "Criando tarefas...",
+    "कार्य बनाए जा रहे हैं...",
   );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
@@ -531,11 +542,13 @@ export default function RealWorldTasksModal({
         ? `Reclamer +${REAL_WORLD_TASKS_REWARD_XP} XP`
         : lang === "pt"
           ? `Receber +${REAL_WORLD_TASKS_REWARD_XP} XP`
-        : lang === "it"
-          ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
-          : lang === "es"
-            ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-            : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
+          : lang === "hi"
+            ? `+${REAL_WORLD_TASKS_REWARD_XP} XP प्राप्त करें`
+            : lang === "it"
+              ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
+              : lang === "es"
+                ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
+                : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>

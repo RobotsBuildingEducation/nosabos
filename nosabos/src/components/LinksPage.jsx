@@ -156,6 +156,11 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   it: {
     bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
   },
+  hi: {
+    bg: "linear-gradient(180deg, #ff9933 0 33.33%, #fff 33.33% 66.66%, #138808 66.66% 100%)",
+    chakra: "#1a4ba0",
+    chakraSize: "10px",
+  },
   ja: {
     bg: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
     emblem: "#bc002d",
@@ -263,6 +268,40 @@ const SupportLanguageFlagSwatch = ({ value }) => {
               opacity={0.95}
             />
           ) : null}
+        </Box>
+      ) : null}
+      {flag.chakra ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w={flag.chakraSize || "10px"}
+          h={flag.chakraSize || "10px"}
+          transform="translate(-50%, -50%)"
+          borderRadius="full"
+          border="1px solid"
+          borderColor={flag.chakra}
+          bg="rgba(255,255,255,0.92)"
+          backgroundImage={[
+            "linear-gradient(90deg, transparent 47%, var(--chakra-wheel-color) 47% 53%, transparent 53%)",
+            "linear-gradient(0deg, transparent 47%, var(--chakra-wheel-color) 47% 53%, transparent 53%)",
+            "linear-gradient(45deg, transparent 48%, var(--chakra-wheel-color) 48% 52%, transparent 52%)",
+            "linear-gradient(-45deg, transparent 48%, var(--chakra-wheel-color) 48% 52%, transparent 52%)",
+          ].join(", ")}
+          sx={{ "--chakra-wheel-color": flag.chakra }}
+        >
+          <Box
+            as="span"
+            position="absolute"
+            top="50%"
+            left="50%"
+            w="2px"
+            h="2px"
+            borderRadius="full"
+            bg={flag.chakra}
+            transform="translate(-50%, -50%)"
+          />
         </Box>
       ) : null}
     </Box>

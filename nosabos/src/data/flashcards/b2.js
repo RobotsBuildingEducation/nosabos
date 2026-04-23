@@ -5,13 +5,16 @@
 
 import { withItalianFlashcardText } from "./italianLocalizer.js";
 import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
 import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
 import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
-  withJapaneseFlashcardText(
-    withFrenchFlashcardText(
-      withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+  withHindiFlashcardText(
+    withJapaneseFlashcardText(
+      withFrenchFlashcardText(
+        withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+      ),
     ),
   );
 

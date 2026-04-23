@@ -1996,6 +1996,7 @@ Return ONLY valid JSON:
       it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
       fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
       ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
+      hi: "अलग-अलग शब्द, भराव शब्द या बहुत छोटे उत्तर। समझ बार-बार टूटती है।",
     },
     {
       level: "A1",
@@ -2007,6 +2008,7 @@ Return ONLY valid JSON:
       it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
       fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
       ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
+      hi: "सरल, याद किए हुए ढाँचों से अभिवादन और बुनियादी निजी जानकारी संभालने में सक्षम है।",
     },
     {
       level: "A2",
@@ -2018,6 +2020,7 @@ Return ONLY valid JSON:
       it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
       fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
       ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
+      hi: "रोज़मर्रा के विषयों पर बात करने और सीधे सवालों का सीमित विवरण के साथ जवाब देने में सक्षम है।",
     },
     {
       level: "B1",
@@ -2029,6 +2032,7 @@ Return ONLY valid JSON:
       it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
       fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
       ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
+      hi: "राय समझाने, घटनाएँ बताने और कुछ त्रुटियों के साथ छोटी बातचीत बनाए रखने में सक्षम है।",
     },
     {
       level: "B2",
@@ -2040,6 +2044,7 @@ Return ONLY valid JSON:
       it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
       fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
       ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
+      hi: "परिचित और अमूर्त विषयों पर अच्छे नियंत्रण और प्रवाह के साथ स्पष्ट संवाद करने में सक्षम है।",
     },
     {
       level: "C1",
@@ -2051,6 +2056,7 @@ Return ONLY valid JSON:
       it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
       fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
       ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
+      hi: "लंबे उत्तरों में मजबूत समझ के साथ लचीली और बारीक भाषा का प्रयोग करने में सक्षम है।",
     },
     {
       level: "C2",
@@ -2062,6 +2068,7 @@ Return ONLY valid JSON:
       it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
       fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
       ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",
+      hi: "जटिल विषयों पर लगभग मातृभाषी जैसी सटीकता, गति और अनुकूलनशीलता।",
     },
   ];
 

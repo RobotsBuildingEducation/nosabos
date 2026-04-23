@@ -68,11 +68,57 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null) {
+const HINDI_SUPPORT_COPY = {
+  "Enter a display name": "एक प्रदर्शित नाम दर्ज करें",
+  "Display name updated": "प्रदर्शित नाम अपडेट हो गया",
+  Error: "त्रुटि",
+  "Join us on Patreon": "Patreon पर हमारा साथ दें",
+  "Access more education apps and content":
+    "और अधिक शैक्षिक ऐप्स और सामग्री तक पहुंचें",
+  Join: "जुड़ें",
+  "Change display name": "प्रदर्शित नाम बदलें",
+  "Create display name": "प्रदर्शित नाम बनाएं",
+  "Saving…": "सहेजा जा रहा है…",
+  Save: "सहेजें",
+  "Wallet not ready": "वॉलेट तैयार नहीं है",
+  "Please try again in a moment.": "कृपया थोड़ी देर में फिर से कोशिश करें।",
+  "Secret key required": "सीक्रेट की आवश्यक है",
+  "Enter your nsec to create the wallet.":
+    "वॉलेट बनाने के लिए अपना nsec दर्ज करें।",
+  "Invalid key": "अमान्य कुंजी",
+  "Key must start with 'nsec'.": "कुंजी 'nsec' से शुरू होनी चाहिए।",
+  "Couldn't create wallet": "वॉलेट नहीं बनाया जा सका",
+  "Failed to create wallet": "वॉलेट बनाने में विफल",
+  "Select an identity": "एक पहचान चुनें",
+  "Choose who receives your deposits before continuing.":
+    "आगे बढ़ने से पहले चुनें कि आपकी जमा राशि किसे मिलेगी।",
+  "Couldn't create invoice": "इनवॉइस नहीं बनाई जा सकी",
+  "Failed to initiate deposit": "जमा शुरू नहीं हो सकी",
+  "Address copied": "पता कॉपी हो गया",
+  "Lightning invoice copied to clipboard.":
+    "Lightning इनवॉइस क्लिपबोर्ड पर कॉपी हो गई।",
+  "Choose a recipient": "प्राप्तकर्ता चुनें",
+  "View site": "साइट देखें",
+  "Select an option to enable deposits.":
+    "जमा सक्षम करने के लिए एक विकल्प चुनें।",
+  "Bitcoin wallet": "Bitcoin वॉलेट",
+  "Loading wallet…": "वॉलेट लोड हो रहा है…",
+};
+
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
   if (lang === "pt") return pt || en;
+  if (lang === "hi") {
+    if (hi) return hi;
+    if (typeof en === "string") {
+      if (/'s Account$/.test(en)) {
+        return en.replace(/'s Account$/, " का खाता");
+      }
+      return HINDI_SUPPORT_COPY[en] || en;
+    }
+  }
   if (lang === "es") return es || en;
   return en;
 }
@@ -1125,6 +1171,28 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "Sua chave é usada apenas para criar a carteira e não é armazenada.",
     };
+    const hi = {
+      createWallet: "वॉलेट बनाएं",
+      loadingWallet: "वॉलेट बनाया जा रहा है…",
+      deposit: "जमा करें",
+      loadingAddress: "पता बनाया जा रहा है…",
+      or: "या",
+      copyAddress: "पता कॉपी करें",
+      ps: "इनवॉइस का भुगतान करने के लिए संगत Lightning वॉलेट का उपयोग करें।",
+      activeWalletTitle: "आपका वॉलेट सक्रिय है",
+      verifyTransactions: "अपने लेन-देन जांचें",
+      generateNew: "नया QR बनाएं",
+      balanceLabel: "बैलेंस",
+      cardNameLabel: "वॉलेट",
+      scholarshipNote:
+        "आपकी जमा राशि सीखने के माध्यम से छात्रवृत्तियां बनाने में हमारी मदद करती है: ",
+      nip07NsecTitle: "सीक्रेट की आवश्यक है",
+      nip07NsecDescription:
+        "आपने ब्राउज़र एक्सटेंशन से साइन इन किया है, इसलिए हमें आपकी निजी कुंजी तक पहुंच नहीं है। वॉलेट बनाने के लिए नीचे अपना nsec दर्ज करें।",
+      nip07NsecPlaceholder: "अपना nsec1 दर्ज करें...",
+      nip07NsecWarning:
+        "आपकी कुंजी केवल वॉलेट बनाने के लिए उपयोग होती है और संग्रहीत नहीं की जाती।",
+    };
     const it = {
       createWallet: "Crea portafoglio",
       loadingWallet: "Creazione portafoglio…",
@@ -1200,6 +1268,8 @@ export function BitcoinWalletSection({
         ? it
         : walletLang === "pt"
         ? pt
+        : walletLang === "hi"
+        ? hi
         : walletLang === "es"
         ? es
         : en

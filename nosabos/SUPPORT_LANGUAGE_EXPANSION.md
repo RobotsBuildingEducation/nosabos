@@ -116,6 +116,8 @@ Language touchpoints are spread throughout. Key anchors:
 
 **Italian implementation note:** `Conversations.jsx` now accepts `it`/`it-*`/Italian aliases in its local resolver and reads the visible chrome from `translations.it` keys such as `ra_conversation_settings`, `ra_chat_log`, `ra_generating_topic`, `ra_btn_start`, `ra_btn_end`, `ra_btn_replay`, and `ra_label_level`.
 
+**Support-language routing note:** Conversation-turn translations must resolve against the active app/support language, not a stale profile fallback. Use the shared support-language resolver/prompt helpers and persist per-message `translationLang` metadata so Hindi/Portuguese/French/etc. support text does not silently fall back to English or keep rendering an old gloss after the user switches the app language.
+
 ### 3.8 `src/components/RealTimeTest.jsx`
 - `buildLanguageInstructions` strict block (~lines 1905–1930).
 - `goalLangName` maps — BOTH occurrences (~lines 1265 and ~1473).
@@ -125,6 +127,8 @@ Language touchpoints are spread throughout. Key anchors:
 - Regression note: the bottom realtime control row (`Skip`, `Connect`, `End`, `Next`) is a distinct audit surface. It can stay in English even after the transcript modal, goals, and toasts are localized if the local support-language resolver still only accepts `en`/`es`.
 
 **Italian implementation note:** `RealTimeTest.jsx` now uses the shared `translations.it` realtime keys for these visible labels instead of local English/Spanish ternaries.
+
+**Support-language routing note:** Realtime message/goal translations must use the same shared support-language resolver as `Conversations.jsx`, and rendered support text must be gated by the stored `translationLang` for that turn. Otherwise the Gemini/OpenAI call can succeed while the UI still shows English or mismatched-language support text under Hindi/Portuguese/etc. shells.
 
 ### 3.9 `src/components/HelpChatFab.jsx`
 - `nameFor` helper in TWO places (~lines 278–285 and ~580–588).
@@ -213,6 +217,8 @@ Do not treat account settings as localized just because `translations.<code>` ex
 - Bootcamp card copy must resolve through a single support-language field map. Do not let `AlphabetBootcamp.jsx` live-translate `sound` / `tip` / `name` at render time with ad hoc `appLanguage === "es" ? ... : ...` branches or cross-language fallbacks. The component should read `name<code>`, `sound<code>`, `tip<code>`, and `practiceWordMeaning.<code>` directly from the localized payload and render blank when the support-language field is missing.
 - Treat support-language source preference as part of the contract. Different localizers may use different canonical source fields (`sound` vs `soundEs`), but that decision belongs inside the localizer, never inside the React component. A French localizer that accidentally prefers `soundEs` will leak Spanish when switching target alphabets; a Japanese localizer that falls back to `sound` after a failed translation will leak English. Keep source selection in the data layer and verify it there.
 - Alphabet Bootcamp must be audited as a matrix, not a single-language smoke test. For every new support language, verify at least one phrase-heavy alphabet (Irish), one Latin alphabet with lots of pronunciation notes (Dutch or German), one authored target alphabet (Spanish/Japanese/Italian), and one non-Latin alphabet (Russian/Greek). A rollout is not complete until `name`, `sound`, `tip`, and `practiceWordMeaning` stay in the support language across that matrix.
+- Hindi regression note: token replacement alone was not enough for Bootcamp tips. Exact phrase patterns such as `Same as English B.`, `Same sound as U.`, `Only appears in 'où'...`, and trema/nasal explanations needed explicit localizer rules in `alphabetHindiLocalizer.js` or the card shipped stitched English/Hindi support text even though `soundHi` / `tipHi` fields technically existed.
+- Hindi regression note: do not close Alphabet Bootcamp work after fixing the reported target language only. Run the mixed-output audit across **every registered target alphabet dataset** (`english`, `spanish`, `portuguese`, `french`, `italian`, `dutch`, `german`, `japanese`, `russian`, `greek`, `polish`, `irish`, `nahuatl`, `yucatec_maya`) because Hindi leaks were resurfacing in untouched decks like Japanese even after French-specific fixes looked correct.
 - Bootcamp parity is measured against existing support languages, not just against "some localized output exists". When a new support language is added, compare its representative-matrix coverage against Spanish/French/Italian and treat big blank deltas as a blocker. Japanese looked "partially localized" while still failing Dutch / Irish / Italian / Russian card content.
 - Do not assume one support-language localizer is "done" because another support language renders the same target alphabet correctly. Spanish/French/Italian/Japanese localizers must each pass their own representative-matrix audit; French rendering an Irish tip does not prove Japanese does.
 - Run both audits on the localized bootcamp payload before signoff: `blank-field audit` (`sound<code>` / `tip<code>` missing where source copy exists) and `mixed-output audit` (raw English/Spanish or specialist source labels leaking into support-language text). Passing only one of the two is not enough.
@@ -241,6 +247,7 @@ Do not treat account settings as localized just because `translations.<code>` ex
 2. `runAssessment()` now derives `supportName` from a shared `LANG_MAP` constant (consolidated from the old separate `langName` map), then injects a `LANGUAGE REQUIREMENT` block into the prompt instructing the LLM to write the `summary` and every criterion `note` in `${supportName}`; JSON example placeholders updated to `"[reason in ${supportName}]"`.
 3. `insufficientAudioMsg` lookup table added for all supported languages; the hardcoded English `"Insufficient audio evidence."` string in the prompt replaced with `${insufficientAudioMsg}`.
 4. `rubricRows` array (the CEFR level description table rendered in the rubric drawer) — each of the 7 rows had only `en`/`es` keys; `it` added to all entries. The existing `row[supportLang] || row.en` JSX lookup picks them up without further changes. For future support languages, add a key to every `rubricRows` entry alongside `en` and `es`.
+5. The rubric drawer intro paragraph (`ui.proficiency_test_rubric_desc`) is a separate translation key from the row table. Future support-language rollouts must patch both the intro copy and every `rubricRows.<lang>` entry together or the drawer will ship mixed-language content.
 
 ### 3.21b `src/components/ProficiencyTestModal.jsx`
 - Uses `const isEs = lang === "es"` with binary ternaries for all visible copy — import `t as tFn` and create a `ui = (key, vars) => tFn(lang, key, vars)` helper; replace all ternaries.
@@ -327,6 +334,8 @@ The RPGGame has its own isolated UI text system — it does **not** use `transla
 
 **Italian implementation note:** Done — `it` entries added to all four dictionaries; all 10 hardcoded ternaries replaced with `ui.*` lookups; `normalizeQuestions` extended to three-way. The LLM prompt construction in `scenarios.js` already used `getLanguagePromptName()` and worked for any language code — no changes needed there. The `GATHER_ITEMS_BY_MAP` gather-quest item pools (`en`/`es` only) remain English as a fallback since item names are target-language content, not support-language chrome.
 
+**Object-examine reliability note:** The object-read panel must never stay spinner-only while an examine request is in flight. Seed `objectExamine` with immediate fallback/support copy from `buildFallbackObjectExamineText(...)`, keep the loading orb as a secondary indicator, and ensure every completion/fallback path clears `pending` for the currently open object even when the active request is a map-level preload that started before the click.
+
 ### 3.21j RPGGame room names (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`)
 
 Room/area names displayed in the game HUD and loader are stored as `{ en, es }` name objects and looked up by `supportLang`. Adding `it` requires changes in three files:
@@ -351,6 +360,8 @@ Room/area names displayed in the game HUD and loader are stored as `{ en, es }` 
 **`index.jsx` object-examine `mapName`** — was looking up `map.name?.[targetLang]` (the practice language) for LLM context. Changed to `map.name?.en` since the LLM prompt is in English regardless of target language.
 
 **`index.jsx` object-examine fallback copy** — `buildFallbackObjectExamineText(...)` is a learner-visible support-language surface. Localizing the generated `supportName` / `supportText` prompt is not enough; if generation fails or omits those fields, the fallback/merge path must still populate `supportName` and `supportText` in the support language instead of leaking English.
+
+**`index.jsx` object click targeting** — examine interactions must use `findScenarioObjectAtTile(...)` hitboxes, not exact anchor-tile matching, for pointer/tap input. Large sprites such as shelves/bookcases can occupy multiple visible tiles; exact matching makes the user hit a blocked solid tile and see the red `X` instead of opening the object-read panel.
 
 **`activeAreaLabel`** in `index.jsx` already correctly reads `activeMap.name?.[supportLang]` — no change needed; it works automatically once the upstream name objects include the `it` key.
 
@@ -647,6 +658,43 @@ These misses came from the French rollout and must be treated as acceptance test
 - HelpChatFab localizes its full visible UI: saved-chat sidebar, empty state, save/new actions, Morpheme mode, center prompt, input placeholder, and tooltips.
 - History/Reading module localizes `VoiceOrb` loader captions such as `Listening...`.
 - Tutorial/realtime goal UI renders localized success criteria; it must not show English strings like `The learner says hello.` under localized labels such as `Critères`.
+
+---
+
+### 9.2 Hindi Regression Sweep Targets
+
+These misses surfaced during the Hindi support-language rollout and should now be treated as explicit smoke targets for every future support language:
+
+1. Account/settings drawer must localize all visible settings chrome, including post toggles, sound toggles/state text, volume label, theme title/description, theme option labels, and test-sound CTA. Audit `App.jsx`, `Onboarding.jsx`, `ThemeModeField.jsx`, and shared translation keys together.
+2. Conversation settings must never crash when opened in a new support language. `ConversationSettingsDrawer.jsx` needs a full support-language entry in `getConversationSettingsUi()`, CEFR `name` / `description` coverage, and a safe `copy[lang] || copy.en` fallback so `proficiencyLabel` and related fields cannot be `undefined`.
+3. Flashcard mode needs a dedicated smoke test beyond deck data. Audit the overview stats, activity legend, daily-target card, CTA buttons, level/XP footer, connecting/loading copy, and review buttons/hints across `FlashcardPractice.jsx`, `FlashcardSkillTree.jsx`, `LessonFlashcard.jsx`, and `translation.jsx`.
+4. Alphabet Bootcamp parity includes card-face content, not just shell chrome. Run a runtime audit against `name<code>`, `sound<code>`, `tip<code>`, and `practiceWordMeaning.<code>` so mixed English scaffolding does not leak into localized cards.
+5. Lesson-modal module tags are separate from lesson titles. Audit every mode chip (`Vocabulary`, `Grammar`, `Reading`, `Stories`, `Realtime`, `Game`) and confirm the lesson modal reads localized tag copy instead of hardcoded English.
+6. Tutorial steppers/popovers have their own local dictionaries. `TutorialStepper.jsx` and `TutorialActionBarPopovers.jsx` must each include the new support-language labels/descriptions plus localized previous/next/done/help labels.
+7. Module level/XP headers are separate chrome. Audit the `Level {n}` / `XP {xp}` bar anywhere it appears in modules and loaders instead of assuming lesson-body localization covers it.
+8. Daily-goal celebration copy in `App.jsx` is a required surface: title, subtitle, goal label, streak/pet status text, and primary CTA must all resolve through the support language.
+9. History/Reading evaluation is only complete when every speech-evaluation label and learner-facing note is localized. Audit `SPEECH_CRITERIA`, summary copy, button labels, and generated/fallback notes in `History.jsx` and related speech-evaluation utilities.
+10. Stories UI has its own support-language resolver. `Stories.jsx` `getAppUILang()` must recognize the new support language or the story shell can stay in English while lesson text is localized.
+11. Realtime goal/objective UI must be localized independently from the rest of the realtime shell. Audit tutorial goal cards, rubric text, success criteria, and goal badges in `RealTimeTest.jsx`.
+12. Realtime message translation requires both prompt coverage and render-path coverage. Audit the translation prompt language name, auto-translation trigger, persisted translation fields, and history replay rendering so translated assistant/user messages do not silently fall back to English.
+13. Tutorial/review game loaders require localized world data, not just localized outer UI. `LoadingMiniGame.jsx` must include the new support language in room-name pools, interactable message pools, generated room-name objects, and the runtime `world.messages` builder.
+14. RPG mode has its own isolated text system. Audit `RPGGame/index.jsx` and `scenarios.js` for local dictionaries (`UI_TEXT`, `QUEST_LOG_COPY`, `OBJECT_SEARCH_TEST_COPY`, `GAME_LOADING_MESSAGES`) plus map names, inventory modal text, help labels, and translation toggles.
+15. Lesson-complete celebration copy in `App.jsx` is a separate modal surface: `Lesson Complete!`, `XP Earned`, `Experience Points`, and the continue CTA all need support-language coverage.
+16. Session timer modal must localize its full shell, including title, description, clock drag hint, minutes label, max hint, quick picks, restart state, and completion-state text.
+17. Flashcard answer-rating buttons (`Need help`, `Still learning`, `Know it`, `Mastered`, plus helper text) must be localized explicitly; do not assume the flashcard shell covers them.
+18. Assistant labels must be smoke-tested anywhere they appear as local component chrome, including vocab/grammar support panels and tutorial/help popovers. Shared `vocab_assistant` coverage alone is not enough if component-local button maps still hardcode `Assistant`.
+19. Alphabet Bootcamp localizers need a phrase-level audit, not just token replacement. Exact pronunciation tips such as diaeresis / trema explanations (`Pronounced separately from adjacent vowel`, `'Naïf'`, `'Noël'`) must be translated cleanly in the data localizer or the card will ship mixed support-language output.
+20. Account/settings proficiency CTAs can live outside shared translation dictionaries. Audit `App.jsx` and any local `uiCopy(...)` / inline support-language maps for strings like `Start proficiency test`, because they will not be fixed by adding `translations.<code>` alone.
+21. Notes drawers are separate from the global team/community drawer copy. Audit `NotesDrawer.jsx` for local title, empty state, clear-all CTA, lesson/module labels, listen/delete aria labels, accordion note-count chips/pluralization (`1 note`, `2 notes`), no-notes rows, and footer close text; this surface often bypasses `translations.<code>` entirely.
+22. Support-language flag accuracy on `/links` is rendered through `LinksPage.jsx` swatches, not only shared SVG assets. Visual regressions like an oversimplified India flag must be fixed in the swatch renderer (`SupportLanguageFlagSwatch`) as part of rollout QA.
+23. Stories support translations require both resolver coverage and fallback-story coverage. `Stories.jsx` must accept the new support language in `supportLang` validation AND include that language in demo/tutorial `supportStoryText(...)` blocks, or sentence-level support text silently falls back to English.
+24. RPG room names come from multiple registries. Audit `MAP_NAME_BY_ID`, `REVIEW_ROOM_BLUEPRINTS`, `WORLD_BLUEPRINTS`, review-hub builders, fallback scenarios, and any generated `processedName` objects together; patching only one source leaves mixed English room labels in review worlds.
+25. RPG gather/object-search items need support-language metadata on the item model itself. Add and preserve fields like `supportName`, `supportHint`, and optional `transcription` through scenario generation, gather placement, pickup, inventory storage, and object-search assignment so quest log, pickup banners, and inventory UI cannot leak raw target strings or English decoys.
+26. RPG object-examine fallback tables are a separate smoke target. `OBJECT_EXAMINE_FALLBACK_LABELS` and `OBJECT_EXAMINE_FALLBACK_SENTENCES` in `RPGGame/index.jsx` must include the new support language so object descriptions still localize when the runtime generation path fails.
+27. Proficiency-test rubric QA must include the full drawer body, not just the header chrome. Audit `proficiency_test_rubric_desc` plus all seven CEFR `rubricRows` descriptions in `ProficiencyTest.jsx`, because this table has repeatedly stayed in English after new support-language launches.
+28. Notes drawer QA must explicitly verify singular/plural note-count labels in every supported app language (`1 note`, `2 notes`, etc.). Static drawer headers can be localized while the accordion summary still leaks English if `NotesDrawer.jsx` keeps a component-local count formatter.
+29. Realtime/conversation support translations need a routing smoke test separate from visible chrome. Verify that generated support text resolves against the active app/support language for every supported support locale (`en`, `es`, `pt`, `it`, `fr`, `ja`, `hi`), that each saved turn stores `translationLang`, and that the UI does not render stale English glosses after switching support languages.
+30. RPG object-examine QA must include the async-loading path, not just fallback dictionaries. Click an object while the map-preload request is already in flight and verify the panel shows immediate fallback/support text, then resolves to the generated text (or a fallback) instead of staying stuck on the loading orb forever.
 
 ---
 

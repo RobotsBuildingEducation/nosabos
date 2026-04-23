@@ -36,17 +36,18 @@ export const MAP_CHOICES = [
       it: "Mondo generato",
       fr: "Monde genere",
       ja: "生成された世界",
+      hi: "बनाई गई दुनिया",
     },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界" },
-  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム" },
-  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園" },
-  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -407,6 +408,7 @@ function normalizeQuestions(questions, supportLang) {
       it: "Scegli l'opzione corretta.",
       fr: "Choisis la bonne option.",
       ja: "正しい選択肢を選んでください。",
+      hi: "सही विकल्प चुनें।",
     }[supportLang] || "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
@@ -836,6 +838,45 @@ function applyGatherVisualsToQuest(quest, rawVisuals) {
   };
 }
 
+function sanitizeGatherSupportField(value) {
+  return String(value || "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
+function applyGatherSupportCopyToQuest(quest, supportByKey) {
+  if (!supportByKey?.size) return quest;
+
+  const applySupport = (item) => {
+    if (!item) return item;
+    const support = supportByKey.get(getGatherItemKey(item));
+    if (!support) return item;
+    return {
+      ...item,
+      supportName: support.supportName || item.supportName || "",
+      supportHint: support.supportHint || item.supportHint || "",
+      transcription: support.transcription || item.transcription || "",
+    };
+  };
+
+  return {
+    ...quest,
+    gatherData: {
+      ...quest.gatherData,
+      correct: (quest.gatherData.correct || []).map(applySupport),
+      decoys: (quest.gatherData.decoys || []).map(applySupport),
+      all: (quest.gatherData.all || []).map(applySupport),
+    },
+    steps: (quest.steps || []).map((step) => ({
+      ...step,
+      nodes: (step.nodes || []).map((node) => ({
+        ...node,
+        gatherItem: node.gatherItem ? applySupport(node.gatherItem) : node.gatherItem,
+      })),
+    })),
+  };
+}
+
 async function enrichQuestGatherVisuals(
   quest,
   targetLang,
@@ -888,6 +929,72 @@ async function enrichQuestGatherVisuals(
   const parsed = parseJSON(raw);
   if (!Array.isArray(parsed)) return quest;
   return applyGatherVisualsToQuest(quest, parsed);
+}
+
+async function enrichQuestGatherSupportCopy(
+  quest,
+  targetLang,
+  supportLang,
+) {
+  const items = Array.isArray(quest?.gatherData?.all) ? quest.gatherData.all : [];
+  if (!items.length) return quest;
+
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
+  const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
+  const supportLangName = resolveTargetLanguageName(normalizedSupportLang);
+  const prompt = [
+    "You localize inventory item labels for a language-learning RPG.",
+    "Return ONLY valid JSON.",
+    "Output a JSON array with the SAME length and SAME order as the input array.",
+    `Interpret every item name and hint as ${targetLangName} (code: ${normalizedTargetLang}).`,
+    `Translate learner-facing support copy into ${supportLangName} (code: ${normalizedSupportLang}).`,
+    'For each entry, keep "name" and "hint" exactly the same as the input.',
+    `Write "supportName" as a concise learner-facing translation of the item name in ${supportLangName}.`,
+    `Write "supportHint" as a direct translation of the hint in ${supportLangName}. If the hint is blank, return an empty string.`,
+    'Write "transcription" as a short Latin-script pronunciation guide for the original item name only when that helps a learner read it. If it is unnecessary, return an empty string.',
+    "Do not add extra commentary or keys.",
+    'Each output item must have this shape: {"name":"exact original item name","hint":"exact original hint or empty string","supportName":"...","supportHint":"...","transcription":"..."}',
+    "",
+    JSON.stringify(
+      items.map((item) => ({
+        name: item.name,
+        hint: item.hint || "",
+      })),
+    ),
+  ].join("\n");
+
+  try {
+    const raw = await callResponses({
+      model: SCENARIO_MODEL,
+      input: prompt,
+    });
+    const parsed = parseJSON(raw);
+    if (!Array.isArray(parsed)) return quest;
+
+    const supportByKey = new Map();
+    parsed.forEach((entry, idx) => {
+      const sourceItem = items[idx];
+      if (!sourceItem) return;
+      supportByKey.set(getGatherItemKey(sourceItem), {
+        supportName: sanitizeGatherSupportField(
+          entry?.supportName || entry?.translation,
+        ),
+        supportHint: sanitizeGatherSupportField(
+          entry?.supportHint || entry?.translatedHint,
+        ),
+        transcription: sanitizeGatherSupportField(
+          entry?.transcription ||
+            entry?.romanization ||
+            entry?.transliteration,
+        ),
+      });
+    });
+
+    return applyGatherSupportCopyToQuest(quest, supportByKey);
+  } catch {
+    return quest;
+  }
 }
 
 function pickRandom(arr) {
@@ -1901,6 +2008,33 @@ const SCENARIO_NAME_PT_BY_ES = {
   "Taller Creativo": "Tenda Criativa",
 };
 
+const SCENARIO_NAME_HI_BY_EN = {
+  Kitchen: "रसोई",
+  Study: "अध्ययन कक्ष",
+  "Garden Patio": "बगीचे का आँगन",
+  "Prep Room": "तैयारी कक्ष",
+  Pantry: "भंडार कक्ष",
+  "Cafe Patio": "कैफ़े आँगन",
+  "Archive Wing": "अभिलेख कक्ष",
+  "Reading Nook": "पठन कोना",
+  "Front Office": "मुख्य कार्यालय",
+  "Ticket Office": "टिकट कार्यालय",
+  "Gate Lounge": "गेट लाउंज",
+  "Travel Desk": "यात्रा डेस्क",
+  "Garden Pavilion": "उद्यान मंडप",
+  Glasshouse: "काँचघर",
+  "Ranger Station": "रेंजर चौकी",
+  "Council Room": "परिषद कक्ष",
+  "Records Room": "अभिलेख कक्ष",
+  "Courtyard Pavilion": "आँगन मंडप",
+  "Prep Lab": "तैयारी प्रयोगशाला",
+  "Analysis Booth": "विश्लेषण कक्ष",
+  "Equipment Store": "उपकरण भंडार",
+  "Performance Stage": "प्रदर्शन मंच",
+  "Food Stall": "भोजन स्टॉल",
+  "Craft Tent": "शिल्प तंबू",
+};
+
 MAP_CHOICES.forEach((choice) => {
   if (choice?.name?.es && !choice.name.pt) {
     choice.name.pt = SCENARIO_NAME_PT_BY_ES[choice.name.es] || choice.name.en;
@@ -1917,6 +2051,9 @@ Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((specs) => {
   specs.forEach((spec) => {
     if (spec?.name?.es && !spec.name.pt) {
       spec.name.pt = SCENARIO_NAME_PT_BY_ES[spec.name.es] || spec.name.en;
+    }
+    if (spec?.name?.en && !spec.name.hi) {
+      spec.name.hi = SCENARIO_NAME_HI_BY_EN[spec.name.en] || spec.name.en;
     }
   });
 });
@@ -2525,7 +2662,9 @@ function buildReviewWorldMaps({
             hubWidth,
             hubHeight,
           ),
-          label: environment?.names?.en || "Main Area",
+          label: Array.isArray(environment?.names?.en)
+            ? environment.names.en[0]
+            : environment?.names?.en || "Main Area",
         },
       ],
       generate() {
@@ -2564,9 +2703,28 @@ function buildReviewWorldMaps({
 
   const hubMap = {
     id: REVIEW_HUB_MAP_ID,
-    name: environment?.names || {
-      en: "Lesson World",
-      es: "Mundo de Leccion",
+    name: {
+      en: Array.isArray(environment?.names?.en)
+        ? environment.names.en[0]
+        : environment?.names?.en || "Lesson World",
+      es: Array.isArray(environment?.names?.es)
+        ? environment.names.es[0]
+        : environment?.names?.es || "Mundo de Leccion",
+      pt: Array.isArray(environment?.names?.pt)
+        ? environment.names.pt[0]
+        : environment?.names?.pt || "Mundo da Licao",
+      it: Array.isArray(environment?.names?.it)
+        ? environment.names.it[0]
+        : environment?.names?.it || "Mondo della Lezione",
+      fr: Array.isArray(environment?.names?.fr)
+        ? environment.names.fr[0]
+        : environment?.names?.fr || "Monde de la lecon",
+      ja: Array.isArray(environment?.names?.ja)
+        ? environment.names.ja[0]
+        : environment?.names?.ja || "レッスンの世界",
+      hi: Array.isArray(environment?.names?.hi)
+        ? environment.names.hi[0]
+        : environment?.names?.hi || "पाठ की दुनिया",
     },
     tileSize: 32,
     mapWidth: hubWidth,
@@ -2907,7 +3065,15 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es"), pt: getMapName(mapId, "pt"), it: getMapName(mapId, "it"), fr: getMapName(mapId, "fr"), ja: getMapName(mapId, "ja") };
+    const name = {
+      en: getMapName(mapId, "en"),
+      es: getMapName(mapId, "es"),
+      pt: getMapName(mapId, "pt"),
+      it: getMapName(mapId, "it"),
+      fr: getMapName(mapId, "fr"),
+      ja: getMapName(mapId, "ja"),
+      hi: getMapName(mapId, "hi"),
+    };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2949,6 +3115,11 @@ async function fallbackScenario(
       reviewContext,
       null,
     );
+    const localizedQuest = await enrichQuestGatherSupportCopy(
+      visualizedQuest,
+      targetLang,
+      supportLang,
+    );
 
     return {
       id: mapId,
@@ -2976,7 +3147,7 @@ async function fallbackScenario(
       },
       npcs,
       questions: questionsByLang,
-      quest: visualizedQuest,
+      quest: localizedQuest,
       greetings: {
         en: ["Generating scenario unavailable; using safe fallback."],
         es: ["Generacion no disponible; usando respaldo."],
@@ -3033,6 +3204,11 @@ async function fallbackScenario(
     reviewContext,
     environment,
   );
+  const localizedQuest = await enrichQuestGatherSupportCopy(
+    visualizedQuest,
+    targetLang,
+    supportLang,
+  );
   const baseScenario = {
     id: mapId,
     name: environment?.names || {
@@ -3041,6 +3217,8 @@ async function fallbackScenario(
       pt: getMapName(mapId, "pt"),
       it: getMapName(mapId, "it"),
       fr: getMapName(mapId, "fr"),
+      ja: getMapName(mapId, "ja"),
+      hi: getMapName(mapId, "hi"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3058,7 +3236,7 @@ async function fallbackScenario(
     },
     npcs: reviewMaps.npcs,
     questions: questionsByLang,
-    quest: visualizedQuest,
+    quest: localizedQuest,
     greetings: {
       en: [
         "Scenario generation was incomplete, so we built a lesson-themed world locally.",
@@ -3070,15 +3248,15 @@ async function fallbackScenario(
   };
   const populatedFallbackScenario = distributeReviewWorldNPCs(
     baseScenario,
-    visualizedQuest,
+    localizedQuest,
   );
 
   return {
     ...populatedFallbackScenario,
-    quest: visualizedQuest,
+    quest: localizedQuest,
     gatherPlacements: buildGatherPlacementsForScenario(
       populatedFallbackScenario,
-      visualizedQuest,
+      localizedQuest,
     ),
   };
 }
@@ -3408,6 +3586,7 @@ function normalizeScenario({
     it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
     fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
     ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
+    hi: String(raw?.name?.hi || (Array.isArray(environment?.names?.hi) ? environment.names.hi[0] : environment?.names?.hi) || getMapName(mapId, "hi")),
   };
   hubMap.name = processedName;
 
@@ -3482,14 +3661,22 @@ async function withQuest(
     reviewContext,
     scenario.environment || null,
   );
-  const populatedScenario = distributeReviewWorldNPCs(scenario, visualizedQuest);
+  const supportLocalizedQuest = await enrichQuestGatherSupportCopy(
+    visualizedQuest,
+    targetLang,
+    supportLang,
+  );
+  const populatedScenario = distributeReviewWorldNPCs(
+    scenario,
+    supportLocalizedQuest,
+  );
 
   return {
     ...populatedScenario,
-    quest: visualizedQuest,
+    quest: supportLocalizedQuest,
     gatherPlacements: buildGatherPlacementsForScenario(
       populatedScenario,
-      visualizedQuest,
+      supportLocalizedQuest,
     ),
   };
 }
