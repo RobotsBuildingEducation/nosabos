@@ -71,6 +71,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import XpProgressHeader from "./XpProgressHeader";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -408,6 +409,8 @@ export default function StoryMode({
     progress.supportLang === "bilingual"
       ? (["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
+  const targetTextProps = getBidiTextProps(targetLang);
+  const supportTextProps = getBidiTextProps(supportLang);
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
 
@@ -1969,6 +1972,8 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color={APP_TEXT_PRIMARY}
                                     lineHeight="1.6"
+                                    {...targetTextProps}
+                                    sx={mergeBidiSx(targetTextProps)}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1978,6 +1983,8 @@ export default function StoryMode({
                                       color={APP_TEXT_SECONDARY}
                                       lineHeight="1.4"
                                       mt={1}
+                                      {...supportTextProps}
+                                      sx={mergeBidiSx(supportTextProps)}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -2015,6 +2022,8 @@ export default function StoryMode({
                             color={APP_TEXT_PRIMARY}
                             mb={3}
                             lineHeight="1.8"
+                            {...targetTextProps}
+                            sx={mergeBidiSx(targetTextProps)}
                           >
                             {storyData.fullStory?.tgt || ""}
                           </Text>
@@ -2024,6 +2033,8 @@ export default function StoryMode({
                               fontSize="md"
                               color={APP_TEXT_SECONDARY}
                               lineHeight="1.6"
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -2063,6 +2074,9 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      dir={targetTextProps.dir}
+                      lang={targetTextProps.lang}
+                      sx={mergeBidiSx(targetTextProps)}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -2072,6 +2086,9 @@ export default function StoryMode({
                         color={APP_TEXT_SECONDARY}
                         lineHeight="1.5"
                         textAlign="center"
+                        dir={supportTextProps.dir}
+                        lang={supportTextProps.lang}
+                        sx={mergeBidiSx(supportTextProps)}
                       >
                         {currentSentence?.sup}
                       </Text>

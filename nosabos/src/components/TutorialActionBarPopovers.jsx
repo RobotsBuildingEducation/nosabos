@@ -30,6 +30,7 @@ import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import { getLanguageDirection } from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -171,6 +172,7 @@ export default function TutorialActionBarPopovers({
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const isRtl = getLanguageDirection(lang) === "rtl";
 
   // Measure the target button and compute arrow position
   const measureArrow = useCallback(
@@ -406,7 +408,13 @@ export default function TutorialActionBarPopovers({
             {/* Navigation buttons */}
             <HStack spacing={3} mt={2} w="100%" justify="center">
               <IconButton
-                icon={<ChevronLeftIcon boxSize={5} />}
+                icon={
+                  isRtl ? (
+                    <ChevronRightIcon boxSize={5} />
+                  ) : (
+                    <ChevronLeftIcon boxSize={5} />
+                  )
+                }
                 onClick={handlePrevious}
                 isDisabled={isFirstStep}
                 aria-label={
@@ -465,7 +473,13 @@ export default function TutorialActionBarPopovers({
                 </Button>
               ) : (
                 <IconButton
-                  icon={<ChevronRightIcon boxSize={5} />}
+                  icon={
+                    isRtl ? (
+                      <ChevronLeftIcon boxSize={5} />
+                    ) : (
+                      <ChevronRightIcon boxSize={5} />
+                    )
+                  }
                   onClick={handleNext}
                   aria-label={
                     lang === "ja"

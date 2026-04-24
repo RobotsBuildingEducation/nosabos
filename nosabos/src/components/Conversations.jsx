@@ -66,6 +66,7 @@ import {
   getBaseLanguageCode,
   resolveSupportUiLanguage,
 } from "../utils/supportTranslation";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -459,7 +460,11 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ display: "inline", boxShadow: "inset 0 -2px transparent" }}
+      style={{
+        display: "inline",
+        boxShadow: "inset 0 -2px transparent",
+        unicodeBidi: "isolate",
+      }}
     >
       {mid}
     </span>,
@@ -489,7 +494,9 @@ function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
 
 function AlignedBubble({
   primaryText,
+  primaryLang = "en",
   secondaryText,
+  secondaryLang = "en",
   pairs,
   showSecondary,
   isTranslating,
@@ -530,6 +537,8 @@ function AlignedBubble({
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
+  const primaryTextProps = getBidiTextProps(primaryLang);
+  const secondaryTextProps = getBidiTextProps(secondaryLang);
 
   return (
     <Box
@@ -577,8 +586,9 @@ function AlignedBubble({
             fontSize="md"
             lineHeight="1.6"
             color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
-            sx={MOBILE_TEXT_SX}
             flex="1"
+            {...primaryTextProps}
+            sx={mergeBidiSx(primaryTextProps, MOBILE_TEXT_SX)}
           >
             {primaryNodes}
           </Box>
@@ -591,16 +601,23 @@ function AlignedBubble({
             mt={1}
             lineHeight="1.55"
             color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-            sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
+            {...secondaryTextProps}
+            sx={mergeBidiSx(secondaryTextProps, MOBILE_TEXT_SX)}
           >
             {secondaryNodes}
           </Box>
         )}
 
         {!!pairs?.length && showSecondary && (
-          <Wrap spacing={3} mt={3} shouldWrapChildren>
+          <Wrap
+            spacing={3}
+            mt={3}
+            shouldWrapChildren
+            dir={primaryTextProps.dir}
+            sx={{ unicodeBidi: "isolate" }}
+          >
             {pairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
@@ -625,7 +642,13 @@ function AlignedBubble({
                     minW="0"
                     maxW="260px"
                   >
-                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="1.4"
+                      {...primaryTextProps}
+                      sx={mergeBidiSx(primaryTextProps)}
+                    >
                       {p.lhs}
                     </Text>
                     <Text
@@ -635,6 +658,8 @@ function AlignedBubble({
                       }
                       mt={1}
                       lineHeight="1.35"
+                      {...secondaryTextProps}
+                      sx={mergeBidiSx(secondaryTextProps)}
                     >
                       {p.rhs}
                     </Text>
@@ -682,9 +707,10 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getBidiTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
@@ -704,7 +730,8 @@ function UserBubble({ label, text }) {
         fontSize="md"
         lineHeight="1.6"
         color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-        sx={MOBILE_TEXT_SX}
+        {...textProps}
+        sx={mergeBidiSx(textProps, MOBILE_TEXT_SX)}
       >
         {text}
       </Box>
@@ -1241,7 +1268,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const topicText = fullText.trim();
       if (topicText) {
         setCurrentGoal({
-          text: { en: topicText, es: topicText, it: topicText, fr: topicText },
+          text: {
+            en: topicText,
+            [resolvedSupportLang]: topicText,
+          },
           completed: false,
         });
       } else {
@@ -1321,6 +1351,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const ui = translations[uiLang] || translations.en;
   const uiText = (key, fallback = "") =>
     ui?.[key] || translations.en?.[key] || fallback;
+  const goalTextForUI = (goal) => {
+    const text = goal?.text || {};
+    const localized = text[uiLang];
+    if (localized) return localized;
+    if (uiLang !== "en") return "";
+    return text.en || "";
+  };
   const liveUiState =
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
@@ -2332,7 +2369,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "ja": "goal in Japanese (max 15 words)"}`;
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2349,10 +2386,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       if (!r.ok) {
         // Fallback to default goal
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: getRandomFallbackTopic(selectedLevel),
           completed: false,
         });
         goalCheckPendingRef.current = false;
@@ -2373,26 +2407,27 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         "";
 
       const parsed = safeParseJson(responseText);
-      if (parsed?.en && parsed?.es) {
+      if (parsed?.en || parsed?.[resolvedSupportLang]) {
         setCurrentGoal({
-          text: { en: parsed.en, es: parsed.es },
+          text: {
+            ...parsed,
+            en: parsed.en || parsed[resolvedSupportLang] || "",
+          },
           completed: false,
         });
       } else {
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: getRandomFallbackTopic(selectedLevel),
           completed: false,
         });
       }
     } catch (e) {
       setCurrentGoal({
-        text: {
-          en: "Continue the conversation",
-          es: "Continúa la conversación",
-        },
+        text: getRandomFallbackTopic(
+          conversationSettingsRef.current.proficiencyLevel ||
+            maxProficiencyLevel ||
+            "A1",
+        ),
         completed: false,
       });
     }
@@ -2934,7 +2969,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                         }
                         flex="1"
                       >
-                        {currentGoal.text[uiLang] || currentGoal.text.en}
+                        {goalTextForUI(currentGoal) ||
+                          uiText(
+                            "ra_generating_topic",
+                            "Generating new topic...",
+                          )}
                         {goalFeedback &&
                           !isGeneratingGoal &&
                           !currentGoal.completed && (
@@ -3106,6 +3145,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                     primaryText={`${latestAssistantMessage.textFinal || ""}${
                       latestAssistantMessage.textStream || ""
                     }`}
+                    primaryLang={latestAssistantMessage.lang || targetLang || "es"}
                     secondaryText={
                       showTranslations
                         ? normalizeSupportLanguage(
@@ -3116,6 +3156,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                           : ""
                         : ""
                     }
+                    secondaryLang={resolvedSupportLang}
                     pairs={
                       normalizeSupportLanguage(
                         latestAssistantMessage.translationLang,
@@ -3263,7 +3304,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                 if (isUser) {
                   return (
                     <RowRight key={m.id}>
-                      <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                      <UserBubble
+                        label={ui.ra_label_you}
+                        text={m.textFinal}
+                        textLang={targetLang}
+                      />
                     </RowRight>
                   );
                 }
@@ -3280,7 +3325,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   <RowLeft key={m.id}>
                     <AlignedBubble
                       primaryText={primaryText}
+                      primaryLang={m.lang || targetLang || "es"}
                       secondaryText={showTranslations ? secondaryText : ""}
+                      secondaryLang={resolvedSupportLang}
                       pairs={
                         normalizeSupportLanguage(m.translationLang, "") ===
                         resolvedSupportLang

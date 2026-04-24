@@ -72,6 +72,7 @@ import {
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -102,6 +103,15 @@ function useT(uiLang = "en") {
 
 const uiCopy = (lang, copy) =>
   copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+  };
+}
 
 /* ---------------------------
    LLM plumbing (backend for XP scoring + fallback)
@@ -881,6 +891,8 @@ export default function History({
       ? normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE)
       : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations = progress.showTranslations !== false;
+  const targetTextProps = getLanguageTextProps(targetLang);
+  const supportTextProps = getLanguageTextProps(supportLang);
 
   const localizedLangName = (code) =>
     ({
@@ -1993,7 +2005,12 @@ Return ONLY valid JSON:
               </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
-                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
+                <Text
+                  fontSize={{ base: "lg", md: "xl" }}
+                  fontWeight="700"
+                  {...targetTextProps}
+                  sx={{ unicodeBidi: "plaintext" }}
+                >
                   {viewLecture.title}
                   {draftLecture ? (
                     <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
@@ -2105,6 +2122,8 @@ Return ONLY valid JSON:
                               as="span"
                               role="button"
                               tabIndex={0}
+                              dir={targetTextProps.dir}
+                              lang={targetTextProps.lang}
                               position="relative"
                               bg={
                                 activeSentenceIndex === i
@@ -2128,6 +2147,7 @@ Return ONLY valid JSON:
                               transition="all 0.15s"
                               cursor="pointer"
                               sx={{
+                                unicodeBidi: "isolate",
                                 "&:active": {
                                   top: "2px",
                                   boxShadow: "none",
@@ -2150,6 +2170,8 @@ Return ONLY valid JSON:
                                 fontStyle="italic"
                                 lineHeight="1.5"
                                 mb={3}
+                                {...supportTextProps}
+                                sx={{ unicodeBidi: "plaintext" }}
                               >
                                 {lineTranslations[i]}
                               </Text>
@@ -2159,7 +2181,12 @@ Return ONLY valid JSON:
                       })}
                     </VStack>
                   ) : (
-                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
+                    <Text
+                      fontSize={{ base: "md", md: "md" }}
+                      lineHeight="2.2"
+                      {...targetTextProps}
+                      sx={{ unicodeBidi: "plaintext" }}
+                    >
                       {targetSentences.map((sentence, i) => {
                         const colors = [
                           "rgba(56, 178, 172, 0.12)",
@@ -2183,6 +2210,8 @@ Return ONLY valid JSON:
                             role="button"
                             tabIndex={0}
                             key={i}
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
                             position="relative"
                             bg={
                               activeSentenceIndex === i
@@ -2206,6 +2235,7 @@ Return ONLY valid JSON:
                             transition="all 0.15s"
                             cursor="pointer"
                             sx={{
+                              unicodeBidi: "isolate",
                               "&:active": {
                                 top: "2px",
                                 boxShadow: "none",
@@ -2423,6 +2453,8 @@ Return ONLY valid JSON:
                                 lineHeight="1.8"
                                 opacity={0.9}
                                 fontStyle="italic"
+                                {...targetTextProps}
+                                sx={{ unicodeBidi: "plaintext" }}
                               >
                                 {speechTranscript}
                               </Text>
@@ -2846,7 +2878,12 @@ Return ONLY valid JSON:
                           {t("history_review_heading")}
                         </Text> */}
 
-                        <Text fontSize="sm" lineHeight="1.6">
+                        <Text
+                          fontSize="sm"
+                          lineHeight="1.6"
+                          {...supportTextProps}
+                          sx={{ unicodeBidi: "plaintext" }}
+                        >
                           {reviewQuestion.question}
                         </Text>
 
@@ -2966,7 +3003,13 @@ Return ONLY valid JSON:
                                     >
                                       {String.fromCharCode(65 + i)}
                                     </Flex>
-                                    <Text fontSize="sm">{opt}</Text>
+                                    <Text
+                                      fontSize="sm"
+                                      {...supportTextProps}
+                                      sx={{ unicodeBidi: "plaintext" }}
+                                    >
+                                      {opt}
+                                    </Text>
                                   </HStack>
                                 </Box>
                               ))}
@@ -3208,6 +3251,8 @@ Return ONLY valid JSON:
                                     fontSize="sm"
                                     color="whiteAlpha.900"
                                     lineHeight="1.6"
+                                    {...supportTextProps}
+                                    sx={{ unicodeBidi: "plaintext" }}
                                   >
                                     {explanationText}
                                   </Text>
@@ -3240,7 +3285,12 @@ Return ONLY valid JSON:
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
                       {viewLecture.takeaways.map((tkw, i) => (
-                        <Text key={i} fontSize="sm">
+                        <Text
+                          key={i}
+                          fontSize="sm"
+                          {...supportTextProps}
+                          sx={{ unicodeBidi: "plaintext" }}
+                        >
                           • {tkw}
                         </Text>
                       ))}

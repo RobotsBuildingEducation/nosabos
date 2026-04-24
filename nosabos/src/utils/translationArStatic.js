@@ -215,7 +215,21 @@ export const TRANSLATION_AR_STATIC = {
   onboarding_challenge_default: "قول مرحبًا.",
   onboarding_cta_next: "التالي",
   onboarding_cta_start: "ابدأ الجلسة",
+  onboarding_bitcoin_optional_title: "إيداعات بيتكوين اختيارية",
+  onboarding_bitcoin_optional_desc:
+    "اختار هوية تدعمها بإيداعاتك، أو تخطى الخطوة دي دلوقتي.",
   bitcoin_modal_title: "ادعم ببيتكوين",
+  tutorial_bitcoin_modal_title: "اعمل منح تعليمية",
+  tutorial_bitcoin_modal_subtitle:
+    "ابعت بيتكوين للمعلّمين كل ما تكسب XP",
+  tutorial_bitcoin_modal_body: "تقدر تعمل ده بعدين من الإعدادات.",
+  tutorial_bitcoin_modal_skip: "يمكن بعدين",
+  tutorial_bitcoin_modal_done: "تم",
+  bitcoin_modal_reload_note:
+    "لما الإيداع يتأكد، هنحمّل التطبيق تاني عشان نحدّث الرصيد.",
+  bitcoin_modal_scholarship_note:
+    "إيداعاتك بتساعدنا نعمل منح دراسية من خلال التعلّم مع ",
+  bitcoin_modal_success: "وصل الإيداع! بنحدّث الرصيد…",
   bitcoin_modal_skip: "تخطى دلوقتي",
   bitcoin_modal_close: "إغلاق",
   app_install_aria: "تثبيت",
@@ -363,7 +377,27 @@ export const TRANSLATION_AR_STATIC = {
   proficiency_test_return_app: "ارجع للتطبيق",
   proficiency_test_rubric_desc:
     "دي الطريقة اللي بنحسب بيها مستواك. التقييم صارم علشان ما نبالغش في المستوى.",
+  proficiency_test_what_scored: "إيه اللي بيتقيّم",
+  proficiency_test_what_scored_desc:
+    "بنقيّم 6 مجالات من 1 لـ 10: النطق، القواعد، المفردات، الطلاقة، الثقة، والفهم.",
+  proficiency_test_scoring_heading: "آلية احتساب النتيجة",
+  proficiency_test_scoring_1: "الفهم والطلاقة وزنهم أكبر من الثقة.",
+  proficiency_test_scoring_2:
+    "الردود القصيرة جدًا أو اللي مفيهاش محتوى كفاية بتخلي النتيجة تقف عند Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    "كثرة الحشو أو ردود زي \"مش عارف\" بتقلل المستوى تلقائيًا.",
+  proficiency_test_scoring_4:
+    "المستوى النهائي عمره ما بيتخطى الدليل اللي ظهر في محادثتك.",
   proficiency_test_got_it: "فهمت",
+  proficiency_test_exit_title: "تخرج من اختبار المستوى؟",
+  proficiency_test_exit_desc:
+    "تقدمك مش هيتحفظ. تقدر تعمل الاختبار تاني بعدين من الإعدادات.",
+  proficiency_test_yes_exit: "أيوه، اخرج",
+  proficiency_test_continue: "كمّل الاختبار",
+  proficiency_test_assess_fallback:
+    "اكتمل التقييم. شوف نتيجتك تحت.",
+  proficiency_test_assess_error:
+    "حصل خطأ في التقييم. حطيناك في Pre-A1/A0 بشكل احتياطي.",
   proficiency_speaking: "بيتكلّم",
   proficiency_listening: "بيسمع",
   proficiency_thinking: "بيفكر",
@@ -457,6 +491,11 @@ export const TRANSLATION_AR_STATIC = {
   flashcard_show_answer: "اظهر الإجابة",
   flashcard_answer_label: "الإجابة:",
   flashcard_tap_to_flip: "المس علشان تقلب",
+  flashcard_loading: "تحميل",
+  flashcard_grading: "بنقيّم إجابتك...",
+  flashcard_record_answer: "سجّل الإجابة",
+  flashcard_stop_recording: "وقف التسجيل",
+  flashcard_recognized: "المسموع:",
   flashcard_type_placeholder: "اكتب الإجابة...",
   flashcard_submit: "ابعث الإجابة",
   flashcard_cancel: "إلغاء",
@@ -467,13 +506,95 @@ export const TRANSLATION_AR_STATIC = {
   flashcard_explanation_heading: "الشرح",
   flashcard_xp_level: "المستوى {level}",
   flashcard_total_xp: "إجمالي XP {xp}",
+  flashcard_create_note: "اعمل ملاحظة",
+  flashcard_note_saved: "اتحفظت الملاحظة!",
+  flashcard_note_error: "ماقدرناش نعمل الملاحظة",
+  flashcard_error_loading: "حصل خطأ في تحميل الإجابة",
+  flashcard_eval_error_title: "ماقدرناش نقيّم",
+  flashcard_eval_error_desc: "جرّب تاني واتأكد إن الاتصال ثابت.",
+  flashcard_grading_error_title: "خطأ في التقييم",
+  flashcard_grading_error_desc: "ماقدرناش نقيّم إجابتك. جرّب تاني.",
+  flashcard_speech_unavailable_title: "التعرّف على الصوت مش متاح",
+  flashcard_speech_unavailable_desc:
+    "استخدم متصفح مبني على Chromium ومعاه إذن الميكروفون.",
+  flashcard_mic_denied_title: "الميكروفون مرفوض",
+  flashcard_mic_denied_desc: "فعّل إذن الميكروفون من إعدادات المتصفح.",
   flashcard_all_done: "خلصت كل حاجة!",
+  flashcard_all_completed: "خلصت كل البطاقات!",
+  flashcard_listen: "اسمع",
+  flashcard_listening: "بيشتغل...",
+  flashcard_practice_random: "اتدرب على بطاقة عشوائية",
+  flashcard_random_xp_toast: "+{xp} XP من التدريب!",
+  flashcard_due_now: "مطلوبة دلوقتي",
+  flashcard_new_card: "بطاقة جديدة",
+  flashcard_review_now: "راجع دلوقتي",
+  flashcard_learning_card: "قيد التعلّم",
+  flashcard_scheduled_card: "متجدولة",
+  flashcard_mastery_stage: "مرحلة {stage}",
+  flashcard_next_review: "المراجعة الجاية {time}",
+  flashcard_next_review_label: "المراجعة الجاية",
+  flashcard_recall_hint:
+    "حاول تفتكر بنفسك قبل ما تظهر الإجابة. البطاقات المستحقة الأول، وبعدها الجديدة.",
+  flashcard_memory_saved:
+    "استرجاع ممتاز. البطاقة اتجدولت عشان تظهر قبل ما الذاكرة تبدأ تضعف.",
+  flashcard_memory_retry:
+    "المجهود ده مفيد. جرّب تاني أو راجع الإجابة، وبعدين ارجع للبطاقة قريب.",
   flashcard_continue: "كمّل",
   flashcard_rate_recall: "قيّم التذكر",
+  flashcard_ai_suggests: "اقتراح الذكاء الاصطناعي: {rating}",
+  flashcard_self_grade_prompt:
+    "اختار كنت فاكرها قد إيه. ده اللي هيحدد ميعاد المراجعة الجاية.",
+  flashcard_rating_help_aria: "معنى أزرار المراجعة",
+  flashcard_rating_help_title: "معنى كل زر",
   flashcard_button_again: "محتاج مساعدة",
+  flashcard_button_again_help:
+    "استخدمه لما تغلط أو تحتاج تشوف الإجابة.",
   flashcard_button_hard: "لسه بتعلم",
+  flashcard_button_hard_help:
+    "استخدمه لما تكون مألوفة بس مش قادر تفتكرها بثقة.",
   flashcard_button_good: "أنا عارفها",
+  flashcard_button_good_help:
+    "استخدمه لما تفتكرها صح حتى لو أخدت مجهود.",
   flashcard_button_easy: "متقنة",
+  flashcard_button_easy_help:
+    "استخدمه لما الإجابة تيجي بسرعة وتحس إنها سهلة.",
+  flashcard_session_title: "تدفق البطاقات",
+  flashcard_session_subtitle:
+    "إيقاع أهدى: راجع المستحق، وبعدها أضف الجديد بقدر مناسب.",
+  flashcard_review_first:
+    "التدريب المتباعد بيشتغل أحسن لما تخلّص المراجعات المستحقة قبل البطاقات الجديدة.",
+  flashcard_reviews_due: "مراجعات مستحقة",
+  flashcard_new_queue: "بطاقات جديدة",
+  flashcard_mastered_cards: "بطاقات متعلّمة",
+  flashcard_streak: "سلسلة المذاكرة",
+  flashcard_activity: "النشاط",
+  flashcard_activity_subtitle: "السنة دي",
+  flashcard_activity_empty: "مفيش مذاكرة",
+  flashcard_activity_some: "تقدم",
+  flashcard_activity_goal: "الهدف اليومي",
+  flashcard_daily_target: "الهدف اليومي",
+  flashcard_cards_done_today: "{count}/{target} بطاقة خلصت النهارده",
+  flashcard_caught_up:
+    "حققت الهدف اليومي. لو عايز أكتر، راجع بطاقة ضعيفة أو سيب مراجعات بكرة تيجي في وقتها.",
+  flashcard_start_reviews: "ابدأ المراجعات",
+  flashcard_learn_next: "اتعلم البطاقة الجاية",
+  flashcard_strengthen_weak: "راجع البطاقات الضعيفة",
+  flashcard_session_loading: "بنجهز طابور المراجعة...",
+  flashcard_due_subtitle:
+    "البطاقات دي جاهزة دلوقتي. خلصها الأول علشان تثبّت التباعد وتحمي الذكريات القديمة.",
+  flashcard_new_subtitle:
+    "بس البطاقة الجديدة الجاية هي المتاحة. الباقي مقفول عشان الدِك مايبقاش تقيل.",
+  flashcard_weak_queue: "بطاقات ضعيفة",
+  flashcard_weak_subtitle:
+    "بطاقات اتعلمتها ومش مستحقة دلوقتي، بس احتمال تنساها أعلى من غير تقوية بسيطة.",
+  flashcard_weak_reason_lapses: "أخطاء قريبة",
+  flashcard_weak_reason_mastery: "إتقان منخفض",
+  flashcard_weak_reason_slipping: "لسه بتتفلت",
+  flashcard_scheduled_queue: "متجدولة لبعدين",
+  flashcard_scheduled_subtitle:
+    "بطاقات اتعلمتها ومستنية نافذة المراجعة المناسبة الجاية.",
+  flashcard_next_up: "الجاية",
+  cefr_level_completed: "المستوى اكتمل!",
   timer_modal_title: "مؤقت الجلسة",
   timer_modal_description: "اختار هتركز قد إيه.",
   timer_modal_minutes_label: "دقائق",

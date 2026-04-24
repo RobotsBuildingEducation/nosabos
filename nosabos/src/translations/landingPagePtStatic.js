@@ -104,6 +104,11 @@ export const LANDING_PAGE_PT_STATIC = {
   signin_button: "Entrar",
   signin_extension: "Entrar com extensão",
   signin_or: "ou",
+  signin_error_invalid_key:
+    "Chave secreta inválida. Confira e tente de novo.",
+  signin_error_extension:
+    "Não foi possível entrar com a extensão. Tente de novo.",
+  signin_error_generic: "Não foi possível entrar. Tente de novo.",
   back_button: "Voltar",
   language_nl: "Holandês",
   language_en: "Inglês",

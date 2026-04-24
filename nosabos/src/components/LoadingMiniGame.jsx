@@ -869,6 +869,7 @@ function generateWorld(seed) {
     fr: pick(rng, OUTDOOR_NAMES.fr),
     ja: pick(rng, OUTDOOR_NAMES.ja),
     hi: pick(rng, OUTDOOR_NAMES.hi),
+    ar: pick(rng, OUTDOOR_NAMES.ar),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -885,6 +886,7 @@ function generateWorld(seed) {
     fr: pick(rng, roomType1.names.fr),
     ja: pick(rng, roomType1.names.ja),
     hi: pick(rng, roomType1.names.hi),
+    ar: pick(rng, roomType1.names.ar),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
@@ -896,6 +898,7 @@ function generateWorld(seed) {
     fr: pick(rng, roomType2.names.fr),
     ja: pick(rng, roomType2.names.ja),
     hi: pick(rng, roomType2.names.hi),
+    ar: pick(rng, roomType2.names.ar),
   };
 
   // Build rooms object

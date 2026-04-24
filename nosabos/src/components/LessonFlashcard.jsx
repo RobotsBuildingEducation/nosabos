@@ -54,6 +54,7 @@ import clickSound from "../assets/click.mp3";
 import RandomCharacter from "./RandomCharacter";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionFeedbackPanelProps,
   getQuestionToolButtonProps,
@@ -99,6 +100,16 @@ const LANG_NAME = (code, uiLang = "en") => {
     yua: "Yucatec Maya",
   };
   return dict[key] || fallback[key] || rawFallbackMap[normalizedCode] || code;
+};
+
+const getLanguageTextProps = (lang, { align = "center" } = {}) => {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
 };
 
 const FLASHCARD_UI = {
@@ -532,6 +543,11 @@ export default function LessonFlashcard({
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const conceptTextProps = getLanguageTextProps(supportLang);
+  const answerTextProps = getLanguageTextProps(targetLang);
+  const targetInlineTextProps = getLanguageTextProps(targetLang, {
+    align: "start",
+  });
 
   const stopAnswerAudio = () => {
     stopTTSPlayback(audioRef.current);
@@ -1029,8 +1045,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     fontSize="xl"
                     fontWeight="black"
                     color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                    textAlign="center"
                     textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
+                    {...conceptTextProps}
                   >
                     {concept}
                   </Text>
@@ -1065,8 +1081,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     fontSize="xl"
                     fontWeight="black"
                     color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                    textAlign="center"
                     textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
+                    {...answerTextProps}
                   >
                     {answer || "..."}
                   </Text>
@@ -1194,7 +1210,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <Text fontSize="xs" color={APP_TEXT_SECONDARY} mb={1}>
                           {t("recognized")}
                         </Text>
-                        <Text fontSize="sm" color="teal.200">
+                        <Text
+                          fontSize="sm"
+                          color="teal.200"
+                          {...targetInlineTextProps}
+                        >
                           {recognizedText}
                         </Text>
                       </Box>
@@ -1209,7 +1229,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         placeholder={t("type_placeholder")}
                         size="sm"
                         fontSize="14px"
-                        textAlign="center"
+                        dir={answerTextProps.dir}
+                        lang={answerTextProps.lang}
+                        textAlign={answerTextProps.textAlign}
                         bg={APP_SURFACE}
                         border="1px solid"
                         borderColor={APP_BORDER}
@@ -1219,6 +1241,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           borderColor: "blue.300",
                           boxShadow: "0 0 0 1px #3B82F6",
                         }}
+                        sx={answerTextProps.sx}
                       />
 
                       {/* Virtual keyboard */}
@@ -1407,7 +1430,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           fontSize="sm"
                           lineHeight="1.6"
                           sx={{
-                            "& p": { mb: 2 },
+                            "& p": { mb: 2, unicodeBidi: "plaintext" },
                             "& p:last-child": { mb: 0 },
                             "& strong": {
                               fontWeight: "bold",
@@ -1415,7 +1438,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             },
                             "& em": { fontStyle: "italic" },
                             "& ul, & ol": { pl: 4, mb: 2 },
-                            "& li": { mb: 1 },
+                            "& li": { mb: 1, unicodeBidi: "plaintext" },
                             "& code": {
                               bg: "rgba(0,0,0,0.3)",
                               px: 1,
@@ -1462,6 +1485,8 @@ export function FlashcardDeckReview({
   if (!isOpen || cards.length === 0) return null;
 
   const card = cards[currentIndex] || cards[0];
+  const conceptTextProps = getLanguageTextProps(supportLang);
+  const answerTextProps = getLanguageTextProps(targetLang);
 
   const handleNext = () => {
     setIsFlipped(false);
@@ -1573,9 +1598,9 @@ export function FlashcardDeckReview({
                   fontSize="2xl"
                   fontWeight="bold"
                   color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                  textAlign="center"
                   position="relative"
                   zIndex={1}
+                  {...conceptTextProps}
                 >
                   {card.concept}
                 </Text>
@@ -1623,7 +1648,7 @@ export function FlashcardDeckReview({
                   fontSize="2xl"
                   fontWeight="bold"
                   color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                  textAlign="center"
+                  {...answerTextProps}
                 >
                   {card.answer}
                 </Text>

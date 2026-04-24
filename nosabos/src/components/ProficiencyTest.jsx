@@ -58,6 +58,11 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -419,6 +424,15 @@ function uiStateLabel(uiState, ui) {
 /* ---- helpers ---- */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+  };
+}
+
 function strongNpub(user) {
   return (
     user?.id ||
@@ -666,10 +680,11 @@ function summarizeSpeechEvidence(turns = []) {
 }
 
 /* ---- Bubble components ---- */
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   if (!text) return null;
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getLanguageTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "cyan.800"}
@@ -694,7 +709,12 @@ function UserBubble({ label, text }) {
       <Text
         fontSize="sm"
         color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+        {...textProps}
+        sx={{
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          unicodeBidi: "plaintext",
+        }}
       >
         {text}
       </Text>
@@ -705,6 +725,7 @@ function UserBubble({ label, text }) {
 function AssistantBubble({
   label,
   text,
+  textLang = "en",
   containerRef,
   primaryTextRef,
   contentOpacity = 1,
@@ -713,6 +734,7 @@ function AssistantBubble({
   if (!text) return null;
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getLanguageTextProps(textLang);
   return (
     <Box
       ref={containerRef}
@@ -746,7 +768,12 @@ function AssistantBubble({
           ref={primaryTextRef}
           fontSize="sm"
           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-          sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+          {...textProps}
+          sx={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            unicodeBidi: "plaintext",
+          }}
         >
           {text}
         </Text>
@@ -838,7 +865,14 @@ export default function ProficiencyTest() {
     "es";
   const targetLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const targetLanguageCode = (targetLangTag || "es-MX").split("-")[0];
-  const supportLang = user?.progress?.supportLang || "en";
+  const storedSupportLang =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("appLanguage")
+      : "";
+  const supportLang = normalizeSupportLanguage(
+    user?.progress?.supportLang || storedSupportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const voicePersona = user?.progress?.voicePersona || "";
   const pauseMs = user?.progress?.pauseMs || 800;
 
@@ -2378,6 +2412,7 @@ Return ONLY valid JSON:
                   contentOpacity={liveBubbleContentOpacity}
                   contentTransform={liveBubbleContentTransform}
                   label={ui.proficiency_test_assessor}
+                  textLang={targetLang}
                   text={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
@@ -2506,7 +2541,11 @@ Return ONLY valid JSON:
                   const userText = m.pendingTranscript ? "…" : m.textFinal;
                   return (
                     <RowRight key={m.id}>
-                      <UserBubble label={ui.proficiency_test_you} text={userText} />
+                      <UserBubble
+                        label={ui.proficiency_test_you}
+                        text={userText}
+                        textLang={targetLang}
+                      />
                     </RowRight>
                   );
                 }
@@ -2518,6 +2557,7 @@ Return ONLY valid JSON:
                     <AssistantBubble
                       label={ui.proficiency_test_assessor}
                       text={text}
+                      textLang={targetLang}
                     />
                   </RowLeft>
                 );
@@ -3098,6 +3138,9 @@ Return ONLY valid JSON:
                           fontSize="xs"
                           opacity={0.6}
                           color={isLightTheme ? APP_TEXT_MUTED : undefined}
+                          dir="ltr"
+                          textAlign="left"
+                          sx={{ unicodeBidi: "plaintext" }}
                         >
                           {row.range}
                         </Text>

@@ -6669,6 +6669,7 @@ export default function App() {
                     fr: "Objectif quotidien atteint !",
                     ja: "デイリー目標達成！",
                     hi: "दैनिक लक्ष्य पूरा हुआ!",
+                    ar: "الهدف اليومي اكتمل!",
                   })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
@@ -6679,6 +6680,7 @@ export default function App() {
                     fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
                     ja: "今日のXP目標を達成しました。",
                     hi: "आपने आज का XP लक्ष्य पूरा कर लिया।",
+                    ar: "حققت هدف XP بتاع النهارده.",
                   })}
                 </Text>
               </VStack>
@@ -6703,6 +6705,7 @@ export default function App() {
                           fr: "Objectif",
                           ja: "目標",
                           hi: "लक्ष्य",
+                          ar: "الهدف",
                         })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
@@ -6718,6 +6721,7 @@ export default function App() {
                       fr: "Garde la serie et reviens demain pour un nouvel objectif !",
                       ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
                       hi: "अपनी श्रृंखला बनाए रखें और नए लक्ष्य के लिए कल फिर आएँ!",
+                      ar: "كمّل السلسلة وارجع بكرة لهدف جديد!",
                     })}
                   </Text>
                 </VStack>
@@ -6749,6 +6753,7 @@ export default function App() {
                   fr: "Continuer a apprendre",
                   ja: "学習を続ける",
                   hi: "सीखना जारी रखें",
+                  ar: "كمّل تعلّم",
                 })}
               </Button>
             </VStack>
@@ -6802,6 +6807,7 @@ export default function App() {
                     fr: "Lecon terminee !",
                     ja: "レッスン完了！",
                     hi: "पाठ पूरा हुआ!",
+                    ar: "الدرس اكتمل!",
                   })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
@@ -6835,6 +6841,7 @@ export default function App() {
                       fr: "XP gagne",
                       ja: "獲得XP",
                       hi: "प्राप्त XP",
+                      ar: "XP المكتسبة",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -6849,6 +6856,7 @@ export default function App() {
                       fr: "Points d'experience",
                       ja: "経験値",
                       hi: "अनुभव अंक",
+                      ar: "نقاط الخبرة",
                     })}
                   </Text>
                 </VStack>
@@ -6875,6 +6883,7 @@ export default function App() {
                   fr: "Continuer",
                   ja: "続ける",
                   hi: "जारी रखें",
+                  ar: "كمّل",
                 })}
               </Button>
             </VStack>

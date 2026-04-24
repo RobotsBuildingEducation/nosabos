@@ -71,6 +71,7 @@ import {
 } from "../utils/flashcardReview";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
   normalizeSupportLanguage,
 } from "../constants/languages";
 
@@ -120,6 +121,16 @@ const getEffectiveCardLanguage = (supportLang) => {
   }
   // Otherwise use the app language preference
   return appLang;
+};
+
+const getLanguageTextProps = (lang, { align = "center" } = {}) => {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
 };
 
 // Language name helper
@@ -275,6 +286,18 @@ export default function FlashcardPractice({
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
   const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
+  const cardPromptTextProps = useMemo(
+    () => getLanguageTextProps(effectiveCardLanguage),
+    [effectiveCardLanguage],
+  );
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetInlineTextProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "start" }),
+    [targetLang],
+  );
   const ratingOptions = useMemo(
     () => getSchedulerRatingOptions(card.reviewProgress || {}),
     [card.reviewProgress],
@@ -1029,8 +1052,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           fontSize="3xl"
                           fontWeight="black"
                           color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                          textAlign="center"
                           textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
+                          {...cardPromptTextProps}
                         >
                           {getConceptText(
                             card,
@@ -1095,8 +1118,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             fontSize="3xl"
                             fontWeight="black"
                             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                            textAlign="center"
                             textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
+                            {...targetTextProps}
                           >
                             {streamedAnswer || "..."}
                           </Text>
@@ -1244,6 +1267,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             <Text
                               fontSize="lg"
                               color={isLightTheme ? "#447a70" : "teal.200"}
+                              {...targetInlineTextProps}
                             >
                               {recognizedText}
                             </Text>
@@ -1262,7 +1286,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             )}
                             size="lg"
                             fontSize="16px"
-                            textAlign="center"
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
+                            textAlign={targetTextProps.textAlign}
                             bg={isLightTheme ? APP_SURFACE_ELEVATED : "#f4f5ffff"}
                             border="2px solid"
                             borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
@@ -1274,6 +1300,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                               borderColor: cefrColor.primary,
                               boxShadow: `0 0 0 1px ${cefrColor.primary}`,
                             }}
+                            sx={targetTextProps.sx}
                           />
 
                           {/* Submit Button */}
@@ -1640,7 +1667,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                               lineHeight="1.6"
                               pb={{ base: 3, md: 4 }}
                               sx={{
-                                "& p": { mb: 2 },
+                                "& p": { mb: 2, unicodeBidi: "plaintext" },
                                 "& p:last-child": { mb: 2 },
                                 "& strong": {
                                   fontWeight: "bold",
@@ -1648,7 +1675,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                 },
                                 "& em": { fontStyle: "italic" },
                                 "& ul, & ol": { pl: 4, mb: 2 },
-                                "& li": { mb: 1 },
+                                "& li": { mb: 1, unicodeBidi: "plaintext" },
                                 "& code": {
                                   bg: isLightTheme
                                     ? "rgba(96,77,56,0.08)"

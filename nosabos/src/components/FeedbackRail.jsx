@@ -260,7 +260,7 @@ const FeedbackRail = React.memo(
                 lineHeight="1.6"
                 pb={4}
                 sx={{
-                  "& p": { mb: 2 },
+                  "& p": { mb: 2, unicodeBidi: "plaintext" },
                   "& p:last-child": { mb: 2 },
                   "& strong": {
                     fontWeight: "bold",
@@ -268,7 +268,7 @@ const FeedbackRail = React.memo(
                   },
                   "& em": { fontStyle: "italic" },
                   "& ul, & ol": { pl: 4, mb: 2 },
-                  "& li": { mb: 1 },
+                  "& li": { mb: 1, unicodeBidi: "plaintext" },
                   "& code": {
                     bg: "var(--app-surface-muted)",
                     px: 1,

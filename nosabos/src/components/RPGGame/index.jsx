@@ -84,6 +84,7 @@ import {
   SOFT_STOP_BUTTON_SOLID_BG,
   SOFT_STOP_BUTTON_SOLID_HOVER_BG,
 } from "../../utils/softStopButton";
+import { getBidiTextProps, mergeBidiSx } from "../../utils/bidiText";
 import { useThemeStore } from "../../useThemeStore";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
@@ -2599,6 +2600,8 @@ export default function RPGGame({
     supportLangProp || localStorageSettings.supportLang,
     "en",
   );
+  const targetTextProps = getBidiTextProps(targetLang);
+  const supportTextProps = getBidiTextProps(supportLang);
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const objectSearchCopy =
     OBJECT_SEARCH_TEST_COPY[supportLang] ||
@@ -7209,7 +7212,13 @@ export default function RPGGame({
           borderRadius="xl"
           boxShadow={rpgPanelShadow}
         >
-          <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
+          <ModalHeader
+            color={rpgReplyText}
+            fontSize="md"
+            pb={1}
+            {...supportTextProps}
+            sx={mergeBidiSx(supportTextProps)}
+          >
             {currentQuestLog.title}
           </ModalHeader>
           <ModalCloseButton
@@ -7227,10 +7236,22 @@ export default function RPGGame({
                 border="1px solid"
                 borderColor={rpgPanelBorderSoft}
               >
-                <Text color={rpgTextSecondary} fontSize="xs" fontWeight="semibold">
+                <Text
+                  color={rpgTextSecondary}
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  {...supportTextProps}
+                  sx={mergeBidiSx(supportTextProps)}
+                >
                   {questLogCopy.currentTask}
                 </Text>
-                <Text color={rpgReplyText} fontSize="xs" fontWeight="bold">
+                <Text
+                  color={rpgReplyText}
+                  fontSize="xs"
+                  fontWeight="bold"
+                  {...supportTextProps}
+                  sx={mergeBidiSx(supportTextProps)}
+                >
                   {currentQuestLog.progressText}
                 </Text>
               </HStack>
@@ -7256,7 +7277,13 @@ export default function RPGGame({
                     >
                       {idx + 1}.
                     </Text>
-                    <Text color={rpgTextPrimary} fontSize="sm" lineHeight="1.45">
+                    <Text
+                      color={rpgTextPrimary}
+                      fontSize="sm"
+                      lineHeight="1.45"
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
+                    >
                       {item}
                     </Text>
                   </HStack>
@@ -7298,7 +7325,12 @@ export default function RPGGame({
                 <Text color={isLightTheme ? rpgReplyText : "yellow.300"} fontSize="sm" fontWeight="bold">
                   +
                 </Text>
-                <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm">
+                <Text
+                  color={isLightTheme ? rpgTextPrimary : "white"}
+                  fontSize="sm"
+                  {...targetTextProps}
+                  sx={mergeBidiSx(targetTextProps)}
+                >
                   {pickupBanner.itemLabel}
                 </Text>
               </HStack>
@@ -7328,8 +7360,10 @@ export default function RPGGame({
                         objectExamine.text ||
                         objectExamine.supportText
                           ? 1
-                          : 0
+                        : 0
                       }
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
                     >
                       {objectExamine.lootText}
                     </Text>
@@ -7340,15 +7374,31 @@ export default function RPGGame({
                       lineHeight="1.35"
                       color={rpgTextPrimary}
                       fontWeight="semibold"
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
                     >
                       {objectExamine.name}
-                      {objectExamine.supportName
-                        ? ` (${objectExamine.supportName})`
-                        : ""}
+                      {objectExamine.supportName ? (
+                        <Box
+                          as="span"
+                          dir={supportTextProps.dir}
+                          lang={supportTextProps.lang}
+                          sx={mergeBidiSx(supportTextProps)}
+                        >
+                          {" "}
+                          ({objectExamine.supportName})
+                        </Box>
+                      ) : null}
                     </Text>
                   ) : null}
                   {objectExamine.text ? (
-                    <Text fontSize="sm" lineHeight="1.45" color={rpgTextPrimary}>
+                    <Text
+                      fontSize="sm"
+                      lineHeight="1.45"
+                      color={rpgTextPrimary}
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
+                    >
                       {objectExamine.text}
                     </Text>
                   ) : null}
@@ -7358,6 +7408,8 @@ export default function RPGGame({
                       lineHeight="1.35"
                       color={rpgTextMuted}
                       fontStyle="italic"
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
                     >
                       ({objectExamine.supportText})
                     </Text>
@@ -7510,7 +7562,13 @@ export default function RPGGame({
                     mt={8}
                     mb={2}
                   >
-                    <Text color={isLightTheme ? "#4b6888" : "blue.800"} fontSize="sm" fontStyle="italic">
+                    <Text
+                      color={isLightTheme ? "#4b6888" : "blue.800"}
+                      fontSize="sm"
+                      fontStyle="italic"
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
+                    >
                       {dialogue.node.playerLine}
                     </Text>
                   </Box>
@@ -7592,9 +7650,12 @@ export default function RPGGame({
                                 color={rpgReplyText}
                                 fontSize="sm"
                                 sx={{
+                                  ...mergeBidiSx(targetTextProps),
                                   "& p": { m: 0 },
                                   "& strong": { fontWeight: "bold" },
                                 }}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
                               >
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                   {line}
@@ -7606,6 +7667,8 @@ export default function RPGGame({
                                 fontSize="md"
                                 fontWeight="bold"
                                 m={0}
+                                {...targetTextProps}
+                                sx={mergeBidiSx(targetTextProps)}
                               >
                                 {line}
                               </Text>
@@ -7616,6 +7679,8 @@ export default function RPGGame({
                                 fontSize="sm"
                                 fontStyle="italic"
                                 m={0}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
                               >
                                 {lineTranslations[i]}
                               </Text>
@@ -7637,6 +7702,8 @@ export default function RPGGame({
                           fontSize="md"
                           fontWeight="bold"
                           m={0}
+                          {...targetTextProps}
+                          sx={mergeBidiSx(targetTextProps)}
                         />
                       )}
                       {!!dialogue.npcReply && (
@@ -7644,9 +7711,12 @@ export default function RPGGame({
                           color={rpgReplyText}
                           fontSize="sm"
                           sx={{
+                            ...mergeBidiSx(targetTextProps),
                             "& p": { m: 0 },
                             "& strong": { fontWeight: "bold" },
                           }}
+                          dir={targetTextProps.dir}
+                          lang={targetTextProps.lang}
                         >
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {dialogue.npcReply}
@@ -7658,8 +7728,22 @@ export default function RPGGame({
 
                   {lastHeardSpeech &&
                     dialogue.node?.responseMode === "speech" && (
-                      <Text color={isLightTheme ? "#2f7e77" : "teal.700"} fontSize="xs" m={0}>
-                        {ui.heardYou}: {lastHeardSpeech}
+                      <Text
+                        color={isLightTheme ? "#2f7e77" : "teal.700"}
+                        fontSize="xs"
+                        m={0}
+                        {...supportTextProps}
+                        sx={mergeBidiSx(supportTextProps)}
+                      >
+                        {ui.heardYou}:{" "}
+                        <Box
+                          as="span"
+                          dir={targetTextProps.dir}
+                          lang={targetTextProps.lang}
+                          sx={mergeBidiSx(targetTextProps)}
+                        >
+                          {lastHeardSpeech}
+                        </Box>
                       </Text>
                     )}
 
@@ -7723,13 +7807,19 @@ export default function RPGGame({
                               onClick={() => handleAnswer(idx)}
                               isDisabled={isRecording || isConnecting}
                               justifyContent="flex-start"
-                              textAlign="left"
+                              textAlign={targetTextProps.textAlign}
                               whiteSpace="normal"
                               h="auto"
                               py={2}
                             >
                               <VStack align="stretch" spacing={0} w="100%">
-                                <Text color={isLightTheme ? rpgTextPrimary : "gray.900"} fontSize="sm" m={0}>
+                                <Text
+                                  color={isLightTheme ? rpgTextPrimary : "gray.900"}
+                                  fontSize="sm"
+                                  m={0}
+                                  {...targetTextProps}
+                                  sx={mergeBidiSx(targetTextProps)}
+                                >
                                   {String.fromCharCode(65 + idx)}. {opt}
                                 </Text>
                                 {translatedOpt ? (
@@ -7739,6 +7829,8 @@ export default function RPGGame({
                                     fontStyle="italic"
                                     m={0}
                                     whiteSpace="normal"
+                                    {...supportTextProps}
+                                    sx={mergeBidiSx(supportTextProps)}
                                   >
                                     {translatedOpt}
                                   </Text>
@@ -7819,7 +7911,13 @@ export default function RPGGame({
                       {inventory.length > 0 ? (
                         <>
                           <VStack align="stretch" spacing={0}>
-                            <Text color={rpgTextMuted} fontSize="xs" m={0}>
+                            <Text
+                              color={rpgTextMuted}
+                              fontSize="xs"
+                              m={0}
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
+                            >
                               {dialogueActionLabelMap.submitPrompt}
                             </Text>
                             {actionTranslations?.submitPrompt ? (
@@ -7828,6 +7926,8 @@ export default function RPGGame({
                                 fontSize="xs"
                                 fontStyle="italic"
                                 m={0}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
                               >
                                 {actionTranslations.submitPrompt}
                               </Text>
@@ -7884,7 +7984,13 @@ export default function RPGGame({
                         py={2}
                       >
                         <VStack align="stretch" spacing={0} w="100%">
-                          <Text m={0}>{dialogueActionLabelMap.continue}</Text>
+                          <Text
+                            m={0}
+                            {...supportTextProps}
+                            sx={mergeBidiSx(supportTextProps)}
+                          >
+                            {dialogueActionLabelMap.continue}
+                          </Text>
                         {actionTranslations?.continue ? (
                           <Text
                               color={rpgTranslationText}
@@ -7893,6 +7999,8 @@ export default function RPGGame({
                               fontWeight="normal"
                               whiteSpace="normal"
                               m={0}
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
                             >
                               {actionTranslations.continue}
                             </Text>
@@ -7911,7 +8019,11 @@ export default function RPGGame({
                       py={2}
                     >
                       <VStack align="stretch" spacing={0}>
-                        <Text m={0}>
+                        <Text
+                          m={0}
+                          {...supportTextProps}
+                          sx={mergeBidiSx(supportTextProps)}
+                        >
                           {dialogueActionLabelMap.continue || ui.continue}
                         </Text>
                         {actionTranslations?.continue ? (
@@ -7922,6 +8034,8 @@ export default function RPGGame({
                             fontWeight="normal"
                             whiteSpace="normal"
                             m={0}
+                            {...supportTextProps}
+                            sx={mergeBidiSx(supportTextProps)}
                           >
                             {actionTranslations.continue}
                           </Text>

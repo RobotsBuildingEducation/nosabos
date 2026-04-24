@@ -4289,7 +4289,7 @@ Return JSON ONLY:
           color={APP_TEXT_PRIMARY}
           lineHeight="1.6"
           sx={{
-            "& p": { mb: 2 },
+            "& p": { mb: 2, unicodeBidi: "plaintext" },
             "& p:last-child": { mb: 0 },
             "& strong": {
               fontWeight: "bold",
@@ -4297,7 +4297,7 @@ Return JSON ONLY:
             },
             "& em": { fontStyle: "italic" },
             "& ul, & ol": { pl: 4, mb: 2 },
-            "& li": { mb: 1 },
+            "& li": { mb: 1, unicodeBidi: "plaintext" },
             "& code": {
               bg: APP_SURFACE,
               px: 1,
@@ -5190,7 +5190,7 @@ Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
                                 dir={targetTextProps.dir}
                                 lang={targetTextProps.lang}
                                 sx={{ unicodeBidi: "plaintext" }}
@@ -5472,7 +5472,7 @@ Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
                                 dir={targetTextProps.dir}
                                 lang={targetTextProps.lang}
                                 sx={{ unicodeBidi: "plaintext" }}

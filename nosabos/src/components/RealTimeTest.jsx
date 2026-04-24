@@ -50,6 +50,7 @@ import {
   getBaseLanguageCode,
   resolveSupportUiLanguage,
 } from "../utils/supportTranslation";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import {
   ArchiveTextAnimation,
   getChatLogButtonHighlightProps,
@@ -322,7 +323,11 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ display: "inline", boxShadow: "inset 0 -2px transparent" }}
+      style={{
+        display: "inline",
+        boxShadow: "inset 0 -2px transparent",
+        unicodeBidi: "isolate",
+      }}
     >
       {mid}
     </span>,
@@ -354,7 +359,9 @@ function AlignedBubble({
   primaryLabel,
   secondaryLabel,
   primaryText,
+  primaryLang = "en",
   secondaryText,
+  secondaryLang = "en",
   pairs,
   showSecondary,
   isTranslating,
@@ -395,6 +402,8 @@ function AlignedBubble({
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
+  const primaryTextProps = getBidiTextProps(primaryLang);
+  const secondaryTextProps = getBidiTextProps(secondaryLang);
 
   return (
     <Box
@@ -438,8 +447,9 @@ function AlignedBubble({
             fontSize="md"
             lineHeight="1.6"
             color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
-            sx={MOBILE_TEXT_SX}
             flex="1"
+            {...primaryTextProps}
+            sx={mergeBidiSx(primaryTextProps, MOBILE_TEXT_SX)}
           >
             {primaryNodes}
           </Box>
@@ -452,16 +462,23 @@ function AlignedBubble({
             mt={1}
             lineHeight="1.55"
             color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-            sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
+            {...secondaryTextProps}
+            sx={mergeBidiSx(secondaryTextProps, MOBILE_TEXT_SX)}
           >
             {secondaryNodes}
           </Box>
         )}
 
         {!!pairs?.length && showSecondary && (
-          <Wrap spacing={3} mt={3} shouldWrapChildren>
+          <Wrap
+            spacing={3}
+            mt={3}
+            shouldWrapChildren
+            dir={primaryTextProps.dir}
+            sx={{ unicodeBidi: "isolate" }}
+          >
             {pairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
@@ -486,7 +503,13 @@ function AlignedBubble({
                     minW="0"
                     maxW="260px"
                   >
-                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="1.4"
+                      {...primaryTextProps}
+                      sx={mergeBidiSx(primaryTextProps)}
+                    >
                       {p.lhs}
                     </Text>
                     <Text
@@ -496,6 +519,8 @@ function AlignedBubble({
                       }
                       mt={1}
                       lineHeight="1.35"
+                      {...secondaryTextProps}
+                      sx={mergeBidiSx(secondaryTextProps)}
                     >
                       {p.rhs}
                     </Text>
@@ -543,9 +568,10 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getBidiTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
@@ -565,7 +591,8 @@ function UserBubble({ label, text }) {
         fontSize="md"
         lineHeight="1.6"
         color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-        sx={MOBILE_TEXT_SX}
+        {...textProps}
+        sx={mergeBidiSx(textProps, MOBILE_TEXT_SX)}
       >
         {text}
       </Box>
@@ -630,6 +657,7 @@ export default function RealTimeTest({
   onSwitchedAccount,
   lesson = null,
   lessonContent = null,
+  supportLang: initialSupportLang = "",
   onSkip = null,
 }) {
   const toast = useToast();
@@ -663,6 +691,14 @@ export default function RealTimeTest({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+  const initialSupportLanguage = normalizeSupportLanguage(
+    initialSupportLang ||
+      user?.progress?.supportLang ||
+      (typeof window !== "undefined"
+        ? window.localStorage.getItem("appLanguage")
+        : ""),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
 
   // Extract CEFR level from lesson
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
@@ -712,7 +748,7 @@ export default function RealTimeTest({
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
-  const [supportLang, setSupportLang] = useState("en");
+  const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState("alloy");
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example,
@@ -986,11 +1022,20 @@ export default function RealTimeTest({
             : translateGoalText(rubricSource || titleSource, goalLang),
         ]);
 
-        const patched = {
-          ...goal,
-          [`title_${goalLang}`]: goal[`title_${goalLang}`] || localizedTitle,
-          [`rubric_${goalLang}`]: goal[`rubric_${goalLang}`] || localizedRubric,
-        };
+        const patched = { ...goal };
+        if (!goal[`title_${goalLang}`] && localizedTitle) {
+          patched[`title_${goalLang}`] = localizedTitle;
+        }
+        if (!goal[`rubric_${goalLang}`] && localizedRubric) {
+          patched[`rubric_${goalLang}`] = localizedRubric;
+        }
+
+        if (
+          patched[`title_${goalLang}`] === goal[`title_${goalLang}`] &&
+          patched[`rubric_${goalLang}`] === goal[`rubric_${goalLang}`]
+        ) {
+          return;
+        }
 
         setCurrentGoal(patched);
         goalRef.current = patched;
@@ -1148,6 +1193,14 @@ export default function RealTimeTest({
     if (code === "bilingual") return code;
     return normalizeSupportLanguage(code, DEFAULT_SUPPORT_LANGUAGE);
   }
+
+  useEffect(() => {
+    if (!initialSupportLang) return;
+    const v = normalizeSupport(initialSupportLang);
+    supportLangRef.current = v;
+    setSupportLang(v);
+  }, [initialSupportLang]);
+
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {
       levelRef.current = p.level;
@@ -2215,9 +2268,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return (
+    const localized =
       goal[`title_${gLang}`] ||
       goal[`scenario_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
       goal.title_en ||
       goal.title_es ||
       goal.scenario ||
@@ -2227,9 +2284,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return (
+    const localized =
       goal[`rubric_${gLang}`] ||
       goal[`successCriteria_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
       goal.successCriteria ||
       goal.rubric_en ||
       goal.rubric_es ||
@@ -2350,7 +2411,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       return (parsed?.translation || merged || trimmed).trim();
     } catch (err) {
       console.warn("Goal translation failed", err?.message || err);
-      return trimmed;
+      return target === "en" ? trimmed : "";
     }
   }
 
@@ -3462,6 +3523,8 @@ Return ONLY JSON:
   const orbUiState = getRealtimeOrbVisualState(uiState);
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
+  const currentGoalTitleText = goalTitleForUI(currentGoal);
+  const currentGoalRubricText = goalRubricForUI(currentGoal);
 
   async function handleManualTranslate(id) {
     if (!id || translatingMessageId === id) return;
@@ -3592,7 +3655,10 @@ Return ONLY JSON:
                       {isGeneratingGoal
                         ? streamingGoalText ||
                           uiText("ra_generating", "Generating...")
-                        : goalTitleForUI(currentGoal) || "—"}
+                        : currentGoalTitleText ||
+                          (uiLang === "en"
+                            ? "—"
+                            : uiText("ra_generating", "Generating..."))}
                     </Text>
                   </HStack>
                   <IconButton
@@ -3608,16 +3674,16 @@ Return ONLY JSON:
                     aria-label={uiText("ra_chat_log", "Chat log")}
                   />
                 </HStack>
-                {!!currentGoal && !isGeneratingGoal && (
+                {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                   <Text
                     fontSize="xs"
                     opacity={0.8}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                   >
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                    {goalRubricForUI(currentGoal)}
+                    {currentGoalRubricText}
                   </Text>
-                )}
+                ) : null}
                 {goalFeedback && !isGeneratingGoal ? (
                   <HStack
                     mt={2}
@@ -3714,6 +3780,7 @@ Return ONLY JSON:
                   primaryText={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
+                  primaryLang={latestAssistantMessage.lang || targetLang || "es"}
                   secondaryText={
                     showTranslations
                       ? latestAssistantMessage.source === "hist"
@@ -3730,6 +3797,7 @@ Return ONLY JSON:
                           : ""
                       : ""
                   }
+                  secondaryLang={uiLang}
                   pairs={
                     latestAssistantMessage.source === "hist"
                       ? latestAssistantMessage.pairs || []
@@ -3918,7 +3986,11 @@ Return ONLY JSON:
                   if (m.role === "user") {
                     return (
                       <RowRight key={m.id}>
-                        <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                        <UserBubble
+                          label={ui.ra_label_you}
+                          text={m.textFinal}
+                          textLang={targetLang}
+                        />
                       </RowRight>
                     );
                   }
@@ -3945,7 +4017,9 @@ Return ONLY JSON:
                             : translations[uiLang][`language_${secondaryPref}`]
                         }
                         primaryText={`${m.textFinal || ""}${m.textStream || ""}`}
+                        primaryLang={m.lang || targetLang || "es"}
                         secondaryText={showTranslations ? secondaryText : ""}
+                        secondaryLang={uiLang}
                         pairs={
                           m.source === "hist"
                             ? m.pairs || []

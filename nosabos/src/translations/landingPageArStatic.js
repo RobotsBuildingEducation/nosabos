@@ -104,6 +104,11 @@ export const LANDING_PAGE_AR_STATIC = {
   signin_button: "سجّل الدخول",
   signin_extension: "دخول بالإضافة",
   signin_or: "أو",
+  signin_error_invalid_key:
+    "المفتاح السري غير صالح. راجعه وجرّب تاني.",
+  signin_error_extension:
+    "تسجيل الدخول بالإضافة فشل. جرّب تاني.",
+  signin_error_generic: "فشل تسجيل الدخول. جرّب تاني.",
   back_button: "رجوع",
   language_nl: "الهولندية",
   language_en: "الإنجليزية",

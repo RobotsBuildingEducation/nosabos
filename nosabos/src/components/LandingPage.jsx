@@ -212,6 +212,10 @@ const translations = {
     signin_button: "Sign In",
     signin_extension: "Sign in with Extension",
     signin_or: "or",
+    signin_error_invalid_key:
+      "Invalid secret key. Please check it and try again.",
+    signin_error_extension: "Extension sign-in failed. Please try again.",
+    signin_error_generic: "Sign in failed. Please try again.",
     back_button: "Back",
     language_nl: "Dutch",
     language_en: "English",
@@ -338,6 +342,11 @@ const translations = {
     signin_button: "Iniciar Sesión",
     signin_extension: "Iniciar con Extensión",
     signin_or: "o",
+    signin_error_invalid_key:
+      "Llave secreta no válida. Revísala e inténtalo de nuevo.",
+    signin_error_extension:
+      "No se pudo iniciar sesión con la extensión. Inténtalo de nuevo.",
+    signin_error_generic: "No se pudo iniciar sesión. Inténtalo de nuevo.",
     back_button: "Regresar",
     language_nl: "Holandés",
     language_en: "Inglés",
@@ -462,6 +471,11 @@ const translations = {
     signin_button: "Accedi",
     signin_extension: "Accedi con Estensione",
     signin_or: "o",
+    signin_error_invalid_key:
+      "Chiave segreta non valida. Controllala e riprova.",
+    signin_error_extension:
+      "Accesso con estensione non riuscito. Riprova.",
+    signin_error_generic: "Accesso non riuscito. Riprova.",
     back_button: "Indietro",
     language_nl: "Olandese",
     language_en: "Inglese",
@@ -594,6 +608,11 @@ translations.fr = {
   signin_button: "Connexion",
   signin_extension: "Connexion avec extension",
   signin_or: "ou",
+  signin_error_invalid_key:
+    "Cle secrete invalide. Verifie-la et reessaie.",
+  signin_error_extension:
+    "La connexion avec l'extension a echoue. Reessaie.",
+  signin_error_generic: "Connexion impossible. Reessaie.",
   back_button: "Retour",
   language_nl: "Néerlandais",
   language_en: "Anglais",
@@ -725,6 +744,12 @@ translations.ja = {
   signin_button: "サインイン",
   signin_extension: "拡張機能でサインイン",
   signin_or: "または",
+  signin_error_invalid_key:
+    "シークレットキーが無効です。確認してもう一度お試しください。",
+  signin_error_extension:
+    "拡張機能でのサインインに失敗しました。もう一度お試しください。",
+  signin_error_generic:
+    "サインインに失敗しました。もう一度お試しください。",
   back_button: "戻る",
   language_nl: "オランダ語",
   language_en: "英語",
@@ -1387,6 +1412,26 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
   const [error, setError] = useState("");
   const playSound = useSoundSettings((s) => s.playSound);
 
+  const resolveSignInError = useCallback(
+    (err) => {
+      const message = String(err?.message || err || "").toLowerCase();
+      if (message.includes("extension")) {
+        return copy.signin_error_extension || copy.signin_error_generic;
+      }
+      if (
+        message.includes("invalid") ||
+        message.includes("secret") ||
+        message.includes("key") ||
+        message.includes("nsec") ||
+        message.includes("bech32")
+      ) {
+        return copy.signin_error_invalid_key || copy.signin_error_generic;
+      }
+      return copy.signin_error_generic || "Sign in failed. Please try again.";
+    },
+    [copy],
+  );
+
   const handleSignIn = async () => {
     if (!secretKey.trim()) return;
     playSound(submitActionSound);
@@ -1395,7 +1440,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
     try {
       await onSignIn(secretKey);
     } catch (e) {
-      setError(e.message || "Sign in failed");
+      setError(resolveSignInError(e));
     } finally {
       setLoading(false);
     }
