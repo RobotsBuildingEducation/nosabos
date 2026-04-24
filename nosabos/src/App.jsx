@@ -1131,7 +1131,11 @@ function TopBar({
             flex={1}
             minH={0}
           >
-            <Flex justify={isRtlApp ? "flex-start" : "flex-end"} mt={-2} mb={-2}>
+            <Flex
+              justify={isRtlApp ? "flex-start" : "flex-end"}
+              mt={-2}
+              mb={-2}
+            >
               <IconButton
                 aria-label={t.close || t.app_close || "Close"}
                 icon={<CloseIcon boxSize={3} />}
