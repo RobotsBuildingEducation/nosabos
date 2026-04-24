@@ -21,6 +21,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
+import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
@@ -39,6 +40,16 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
 /**
  * TranslateSentence - A Duolingo-style translation exercise component
  *
@@ -53,6 +64,8 @@ export default function TranslateSentence({
   correctAnswer = [], // Array of correct words in order (validation handled by parent)
   hint = "",
   loading = false,
+  sourceLang = "en",
+  answerLang = "en",
 
   // User language / UI
   userLanguage = "en",
@@ -92,6 +105,9 @@ export default function TranslateSentence({
   characterImage = null,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const sourceTextProps = getLanguageTextProps(sourceLang);
+  const answerTextProps = getLanguageTextProps(answerLang);
+  const answerDir = answerTextProps.dir;
   const assistantLabel =
     t("vocab_assistant") !== "vocab_assistant"
       ? t("vocab_assistant")
@@ -460,6 +476,7 @@ export default function TranslateSentence({
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...sourceTextProps}
                   >
                     {sourceSentence || (loading ? "..." : "")}
                   </Text>
@@ -536,6 +553,8 @@ export default function TranslateSentence({
                 gap={2}
                 minH="48px"
                 align="center"
+                justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+                dir={answerDir}
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128, 90, 213, 0.08)"
@@ -575,6 +594,9 @@ export default function TranslateSentence({
                           dragging: dragSnapshot.isDragging,
                         })}
                         fontSize="sm"
+                        dir={answerTextProps.dir}
+                        lang={answerTextProps.lang}
+                        sx={{ unicodeBidi: "plaintext" }}
                         cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() => {
                           if (lastOk !== true) {
@@ -610,6 +632,7 @@ export default function TranslateSentence({
               justify="center"
               p={2}
               minH="60px"
+              dir={answerDir}
               bg={
                 snapshot.isDraggingOver
                   ? "rgba(128, 90, 213, 0.05)"
@@ -637,6 +660,9 @@ export default function TranslateSentence({
                         dragging: dragSnapshot.isDragging,
                       })}
                       fontSize="sm"
+                      dir={answerTextProps.dir}
+                      lang={answerTextProps.lang}
+                      sx={{ unicodeBidi: "plaintext" }}
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {

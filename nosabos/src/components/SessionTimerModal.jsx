@@ -28,6 +28,11 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -468,6 +473,7 @@ export default function SessionTimerModal({
   isRunning,
   helper,
   t = {},
+  lang = "en",
   useSharedBackdrop = false,
 }) {
   const presets = [10, 20, 30, 45, 60, 90, 120, 180, 240];
@@ -475,6 +481,8 @@ export default function SessionTimerModal({
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const isRtl = getLanguageDirection(resolvedLang) === "rtl";
 
   // All editing (typing, presets, clock drag) updates only this local draft
   // so interactions stay instant. The parent App is synced at commit points:
@@ -554,7 +562,7 @@ export default function SessionTimerModal({
         rounded="2xl"
         shadow={isLightTheme ? APP_SHADOW : "xl"}
       >
-        <ModalHeader>
+        <ModalHeader pl={isRtl ? 12 : undefined} pr={isRtl ? undefined : 12}>
           <HStack spacing={2} align="center">
             <Box
               as={FiClock}
@@ -566,6 +574,8 @@ export default function SessionTimerModal({
         </ModalHeader>
         <ModalCloseButton
           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+          left={isRtl ? 3 : undefined}
+          right={isRtl ? "auto" : undefined}
           _hover={{
             bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
           }}

@@ -198,6 +198,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageLabel,
+  getLanguageDirection,
   getLanguageLocale,
   getLanguagePromptName,
   getPracticeLanguageOptions,
@@ -622,6 +623,7 @@ function TopBar({
   const toast = useToast();
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
+  const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
@@ -696,6 +698,7 @@ function TopBar({
     it: "secondi",
     fr: "secondes",
     ja: "秒",
+    ar: "ثواني",
   });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
     minimumFractionDigits: 1,
@@ -710,6 +713,7 @@ function TopBar({
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -1127,9 +1131,9 @@ function TopBar({
             flex={1}
             minH={0}
           >
-            <Flex justify="flex-end" mt={-2} mb={-2}>
+            <Flex justify={isRtlApp ? "flex-start" : "flex-end"} mt={-2} mb={-2}>
               <IconButton
-                aria-label={t.close || "Close"}
+                aria-label={t.close || t.app_close || "Close"}
                 icon={<CloseIcon boxSize={3} />}
                 size="sm"
                 variant="ghost"
@@ -1575,6 +1579,7 @@ function TopBar({
                             fr: "Commencer le test de niveau",
                             ja: "レベルテストを始める",
                             hi: "प्रवीणता परीक्षण शुरू करें",
+                            ar: "ابدأ اختبار المستوى",
                           })}
                         </Button>
                       )}
@@ -6525,6 +6530,7 @@ export default function App() {
         isRunning={isTimerRunning}
         helper={null}
         t={t}
+        lang={appLanguage}
         useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
@@ -6575,7 +6581,11 @@ export default function App() {
           <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
             {t.timer_times_up_title || "Time's up!"}
           </ModalHeader>
-          <ModalCloseButton color="white" />
+          <ModalCloseButton
+            color="white"
+            left={appLanguage === "ar" ? 3 : undefined}
+            right={appLanguage === "ar" ? "auto" : undefined}
+          />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
             <VStack spacing={5} textAlign="center">
               <Box

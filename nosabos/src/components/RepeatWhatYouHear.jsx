@@ -20,6 +20,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
+import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
@@ -37,6 +38,16 @@ const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise
  *
@@ -49,6 +60,8 @@ export default function RepeatWhatYouHear({
   correctAnswer = [], // eslint-disable-line no-unused-vars
   hint = "",
   loading = false,
+  sourceLang = "en",
+  answerLang = "",
 
   userLanguage = "en",
   t = (key) => key,
@@ -82,6 +95,8 @@ export default function RepeatWhatYouHear({
   characterImage = null,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const answerTextProps = getLanguageTextProps(answerLang || sourceLang);
+  const answerDir = answerTextProps.dir;
   const assistantLabel =
     t("vocab_assistant") !== "vocab_assistant"
       ? t("vocab_assistant")
@@ -384,6 +399,8 @@ export default function RepeatWhatYouHear({
                     gap={2}
                     minH="48px"
                     align="center"
+                    justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+                    dir={answerDir}
                     bg={
                       snapshot.isDraggingOver
                         ? "rgba(128, 90, 213, 0.08)"
@@ -480,6 +497,9 @@ export default function RepeatWhatYouHear({
                               dragging: dragSnapshot.isDragging,
                             })}
                             cursor={lastOk === true ? "default" : "grab"}
+                            dir={answerTextProps.dir}
+                            lang={answerTextProps.lang}
+                            sx={{ unicodeBidi: "plaintext" }}
                             onClick={() => {
                               if (lastOk !== true) {
                                 playSound(selectSound);
@@ -516,6 +536,7 @@ export default function RepeatWhatYouHear({
               justify="center"
               p={2}
               minH="60px"
+              dir={answerDir}
               bg={
                 snapshot.isDraggingOver
                   ? "rgba(128, 90, 213, 0.05)"
@@ -543,6 +564,9 @@ export default function RepeatWhatYouHear({
                         dragging: dragSnapshot.isDragging,
                       })}
                       fontSize="sm"
+                      dir={answerTextProps.dir}
+                      lang={answerTextProps.lang}
+                      sx={{ unicodeBidi: "plaintext" }}
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {

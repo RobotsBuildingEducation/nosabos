@@ -115,6 +115,7 @@ const LLM_LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     hi: "Hindi",
     pt: "Brazilian Portuguese",
     fr: "French",
@@ -158,6 +159,8 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["ar", "arz", "arabic", "egyptian arabic", "عربي", "العربية"].includes(raw))
+    return "ar";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
@@ -204,7 +207,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "pt", "it", "fr", "ja", "hi"].includes(lang) ? lang : "en";
+  return ["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -403,7 +406,7 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? (["es", "pt", "it", "fr", "ja"].includes(uiLang) ? uiLang : "en")
+      ? (["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);

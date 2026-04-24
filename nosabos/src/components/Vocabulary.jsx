@@ -90,6 +90,7 @@ import {
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -106,6 +107,24 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
+function getLanguageInputProps(lang) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    textAlign: dir === "rtl" ? "right" : "left",
+  };
+}
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -200,6 +219,7 @@ const LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -1152,12 +1172,25 @@ export default function Vocabulary({
       : true;
   const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetTextCenterProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "center" }),
+    [targetLang],
+  );
+  const targetInputProps = useMemo(
+    () => getLanguageInputProps(targetLang),
+    [targetLang],
+  );
 
   // UI language labels
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
       es: t("language_es"),
+      ar: t("language_ar"),
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
@@ -4846,6 +4879,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         ? "Sintetizando..."
         : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
+  const isTranslateTargetToSupport = tDirection === "target-to-support";
+  const translateSourceLang = isTranslateTargetToSupport
+    ? targetLang
+    : supportCode;
+  const translateAnswerLang = isTranslateTargetToSupport
+    ? supportCode
+    : targetLang;
 
   const createWarmAudio = useCallback(async () => {
     try {
@@ -5266,6 +5306,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...targetTextProps}
                   >
                     {qFill || (loadingQFill ? "…" : "")}
                   </Text>
@@ -5281,6 +5322,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               placeholder={t("vocab_input_placeholder_word")}
               isDisabled={loadingGFill}
               fontSize="16px"
+              {...targetInputProps}
             />
 
             {showKeyboard && showKeyboardButton && (
@@ -5406,6 +5448,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
@@ -5460,6 +5503,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5510,6 +5556,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMC || (loadingQMC ? "…" : "")}
                       </Text>
@@ -5560,7 +5607,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             <Box w="8px" h="8px" rounded="full" bg="white" />
                           )}
                         </Box>
-                        <Text flex="1" fontSize="md">
+                        <Text flex="1" fontSize="md" {...targetTextProps}>
                           {c}
                         </Text>
                       </HStack>
@@ -5674,6 +5721,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMaPrompt() || (loadingQMA ? "…" : "")}
                         </Text>
@@ -5728,6 +5776,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5778,6 +5829,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMA || (loadingQMA ? "…" : "")}
                       </Text>
@@ -5840,7 +5892,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                               </Text>
                             )}
                           </Box>
-                          <Text flex="1" fontSize="md">
+                          <Text flex="1" fontSize="md" {...targetTextProps}>
                             {c}
                           </Text>
                         </HStack>
@@ -5986,7 +6038,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     })}
                   />
 
-                  <Text fontSize="3xl" fontWeight="700">
+                  <Text
+                    fontSize="3xl"
+                    fontWeight="700"
+                    {...targetTextCenterProps}
+                  >
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
@@ -6568,6 +6624,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
@@ -6600,6 +6658,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}

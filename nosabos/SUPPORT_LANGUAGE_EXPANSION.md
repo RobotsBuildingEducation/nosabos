@@ -698,6 +698,22 @@ These misses surfaced during the Hindi support-language rollout and should now b
 
 ---
 
+### 9.3 Egyptian Arabic RTL Regression Targets
+
+These misses surfaced during the Egyptian Arabic support-language rollout. Treat them as required smoke targets for Arabic and any future RTL support language:
+
+1. Daily-goal manager footer actions need dedicated localized labels. Do not rely on `teams_drawer_close` or an English `Close` fallback for the visible close button.
+2. Modal close buttons must be direction-aware. For RTL app languages, place `ModalCloseButton` / icon close controls on the left side and add matching header padding so the icon does not overlap Arabic titles. Smoke-test session timer, daily goal, skill-tree lesson modal, wallet/support modals, and app-level completion/time-up modals.
+3. Account/settings drawer QA must include local setting rows and nested wallet copy: VAD value suffixes, post toggles/state text, proficiency CTAs, secret-key copy, wallet headings, loading text, recipient selection, and toast/error fallbacks.
+4. Lesson-modal module tags are independent UI chrome. Confirm every mode chip (`Vocabulary`, `Grammar`, `Reading`, `Stories`, `Realtime`, `Game`) resolves through support-language keys such as `mode_vocabulary` instead of hardcoded English.
+5. Vocab/grammar practice text direction must follow the content language, not only the app shell. If the UI language is Arabic but the learner is studying Spanish, Spanish prompts and answer inputs must stay LTR so strings like `Buenos dias` do not visually reorder; if the target/answer language is RTL, that text must render RTL.
+6. Vocab/grammar action controls are required smoke targets: `Next question`, `Skip`, submit/check buttons, drag/drop helper text, and final-quiz controls must all resolve through `practice_*`, `quiz_*`, `vocab_*`, or `grammar_*` keys.
+7. Vocab/grammar question headers are separate from generated lesson text. Audit mode instructions such as `Choose the correct answer`, `Choose all correct answers`, `Match the words`, `Fill the blank`, and speak/listen headers in both `Vocabulary.jsx` and `GrammarBook.jsx`.
+8. Stories UI has two language gates. `Stories.jsx` must include the new support code in both `getAppUILang()` and the bilingual `supportLang` resolver, or story loaders and shell copy can fall back to English while the lesson content looks localized.
+9. Component-local Arabic support-copy maps are easy to miss. Audit `IdentityDrawer.jsx`, `BitcoinSupportModal.jsx`, and any other `supportCopy(...)` helper for English key lookups that bypass `translations.ar`.
+
+---
+
 ## 10. Italian (`it`) Rollout Status
 
 Current state (to keep this doc honest):

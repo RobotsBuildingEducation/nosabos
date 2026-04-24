@@ -224,7 +224,10 @@ import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalize
 import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
 import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
-import { normalizeSupportLanguage } from "../constants/languages";
+import {
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import {
@@ -1747,6 +1750,7 @@ function LessonDetailModal({
   const isTransitioningToLesson = gameLoading || lessonLoading;
   const blockModalClose = useCallback(() => undefined, []);
   const resolvedSupportLang = normalizeSupportLanguage(supportLang);
+  const isRtl = getLanguageDirection(resolvedSupportLang) === "rtl";
   const t = useCallback(
     (key, params = {}) => getTranslation(key, params, resolvedSupportLang),
     [resolvedSupportLang],
@@ -2068,7 +2072,8 @@ function LessonDetailModal({
               }}
               borderRadius="lg"
               top={4}
-              right={4}
+              left={isRtl ? 4 : undefined}
+              right={isRtl ? "auto" : 4}
               isDisabled={lessonLoading}
             />
             <ModalBody pb={6} pt={6} position="relative">
@@ -2129,7 +2134,13 @@ function LessonDetailModal({
                           }
                         >
                           <Icon size={16} />
-                          <Text textTransform="capitalize">{modeName}</Text>
+                          <Text
+                            textTransform={
+                              resolvedSupportLang === "ar" ? "none" : "capitalize"
+                            }
+                          >
+                            {modeName}
+                          </Text>
                         </Badge>
                       );
                     })}

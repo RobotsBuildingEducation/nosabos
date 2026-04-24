@@ -117,6 +117,29 @@ const ARABIC_SUPPORT_COPY = {
   "Create display name": "اعمل اسم عرض",
   "Saving…": "جارٍ الحفظ…",
   Save: "حفظ",
+  "Wallet not ready": "المحفظة مش جاهزة",
+  "Please try again in a moment.": "جرّب تاني بعد لحظة.",
+  "Secret key required": "مطلوب المفتاح السري",
+  "Enter your nsec to create the wallet.":
+    "اكتب nsec بتاعك علشان تنشئ المحفظة.",
+  "Invalid key": "مفتاح غير صالح",
+  "Key must start with 'nsec'.": "المفتاح لازم يبدأ بـ nsec.",
+  "Couldn't create wallet": "ماقدرناش ننشئ المحفظة",
+  "Failed to create wallet": "فشل إنشاء المحفظة",
+  "Select an identity": "اختار هوية",
+  "Choose who receives your deposits before continuing.":
+    "اختار مين يستقبل إيداعاتك قبل ما تكمل.",
+  "Couldn't create invoice": "ماقدرناش ننشئ الفاتورة",
+  "Failed to initiate deposit": "فشل بدء الإيداع",
+  "Address copied": "اتنسخ العنوان",
+  "Lightning invoice copied to clipboard.":
+    "فاتورة Lightning اتنسخت للحافظة.",
+  "Choose a recipient": "اختار مستلِم",
+  "View site": "افتح الموقع",
+  "Select an option to enable deposits.":
+    "اختار خيار عشان تفعّل الإيداعات.",
+  "Bitcoin wallet": "محفظة بيتكوين",
+  "Loading wallet…": "جارٍ تحميل المحفظة…",
 };
 
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {

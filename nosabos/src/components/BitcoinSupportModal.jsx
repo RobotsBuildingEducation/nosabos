@@ -33,6 +33,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import { translations } from "../utils/translation";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
   normalizeSupportLanguage,
 } from "../constants/languages";
 
@@ -49,6 +50,8 @@ const ARABIC_SUPPORT_COPY = {
     "اختار خيار عشان تفعّل الإيداعات.",
   Close: "إغلاق",
   "Choose a recipient": "اختار مستلِم",
+  "Bitcoin wallet": "محفظة بيتكوين",
+  "Loading wallet…": "جارٍ تحميل المحفظة…",
 };
 
 function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
@@ -74,6 +77,7 @@ export default function BitcoinSupportModal({
   isIdentitySaving = false,
 }) {
   const lang = normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const isRtl = getLanguageDirection(lang) === "rtl";
   const ui = useMemo(() => translations[lang] ?? translations.en, [lang]);
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   const shellRef = useRef(null);
@@ -491,7 +495,8 @@ export default function BitcoinSupportModal({
           _hover={{ color: "white", bg: "blackAlpha.200" }}
           position="absolute"
           top={4}
-          right={4}
+          left={isRtl ? 4 : undefined}
+          right={isRtl ? "auto" : 4}
           zIndex={1}
           onClick={handleDismiss}
         />

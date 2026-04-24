@@ -76,6 +76,7 @@ import XpProgressHeader from "./XpProgressHeader";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -101,6 +102,24 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
+function getLanguageInputProps(lang) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    textAlign: dir === "rtl" ? "right" : "left",
+  };
+}
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -198,6 +217,7 @@ const LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -1028,12 +1048,25 @@ export default function GrammarBook({
       : true;
   const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetTextCenterProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "center" }),
+    [targetLang],
+  );
+  const targetInputProps = useMemo(
+    () => getLanguageInputProps(targetLang),
+    [targetLang],
+  );
 
   // Localized chips
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
       es: t("language_es"),
+      ar: t("language_ar"),
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
@@ -4326,6 +4359,13 @@ Return JSON ONLY:
         ? "Sintetizando..."
         : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
+  const isTranslateTargetToSupport = tDirection === "target-to-support";
+  const translateSourceLang = isTranslateTargetToSupport
+    ? targetLang
+    : supportCode;
+  const translateAnswerLang = isTranslateTargetToSupport
+    ? supportCode
+    : targetLang;
 
   const createWarmAudio = useCallback(async () => {
     try {
@@ -4951,6 +4991,7 @@ Return JSON ONLY:
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...targetTextProps}
                   >
                     {question || (loadingQ ? "…" : "")}
                   </Text>
@@ -4966,6 +5007,7 @@ Return JSON ONLY:
               placeholder={t("grammar_input_placeholder_answer")}
               isDisabled={loadingG}
               fontSize="16px"
+              {...targetInputProps}
             />
 
             {showKeyboard && showKeyboardButton && (
@@ -5098,6 +5140,7 @@ Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMcPrompt() || (loadingMCQ ? "…" : "")}
                         </Text>
@@ -5148,6 +5191,9 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 onClick={() =>
                                   handleMcAnswerClick(idx, position)
                                 }
@@ -5205,6 +5251,7 @@ Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {mcQ || (loadingMCQ ? "…" : "")}
                       </Text>
@@ -5255,7 +5302,7 @@ Return JSON ONLY:
                             <Box w="8px" h="8px" rounded="full" bg="white" />
                           )}
                         </Box>
-                        <Text flex="1" fontSize="md">
+                        <Text flex="1" fontSize="md" {...targetTextProps}>
                           {c}
                         </Text>
                       </HStack>
@@ -5375,6 +5422,7 @@ Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMaPrompt() || (loadingMAQ ? "…" : "")}
                         </Text>
@@ -5425,6 +5473,9 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 onClick={() =>
                                   handleMaAnswerClick(idx, position)
                                 }
@@ -5482,6 +5533,7 @@ Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {maQ || (loadingMAQ ? "…" : "")}
                       </Text>
@@ -5544,7 +5596,7 @@ Return JSON ONLY:
                               </Text>
                             )}
                           </Box>
-                          <Text flex="1" fontSize="md">
+                          <Text flex="1" fontSize="md" {...targetTextProps}>
                             {c}
                           </Text>
                         </HStack>
@@ -5661,7 +5713,11 @@ Return JSON ONLY:
                     isDisabled={!sTarget}
                   />
 
-                  <Text fontSize="3xl" fontWeight="700">
+                  <Text
+                    fontSize="3xl"
+                    fontWeight="700"
+                    {...targetTextCenterProps}
+                  >
                     {sTarget || "…"}
                   </Text>
                 </Box>
@@ -6226,6 +6282,8 @@ Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
@@ -6261,6 +6319,8 @@ Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
