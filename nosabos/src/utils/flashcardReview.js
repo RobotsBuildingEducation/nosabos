@@ -562,6 +562,7 @@ export function formatRelativeReviewTime(
     if (lang === "fr") return "Non programme";
     if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
+    if (lang === "ar") return "غير مجدول";
     return "Unscheduled";
   }
 
@@ -606,6 +607,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "fr") return "Non programme";
     if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
+    if (lang === "ar") return "غير مجدول";
     return "Unscheduled";
   }
 
@@ -622,6 +624,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
     if (lang === "hi") return `आज ${timeLabel} बजे`;
     if (lang === "ja") return `今日 ${timeLabel}`;
+    if (lang === "ar") return `اليوم الساعة ${timeLabel}`;
     return `Today at ${timeLabel}`;
   }
 
@@ -634,6 +637,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "fr") return `Demain a ${timeLabel}`;
     if (lang === "hi") return `कल ${timeLabel} बजे`;
     if (lang === "ja") return `明日 ${timeLabel}`;
+    if (lang === "ar") return `بكرة الساعة ${timeLabel}`;
     return `Tomorrow at ${timeLabel}`;
   }
 
@@ -651,6 +655,7 @@ export function formatAbsoluteReviewTime(
   if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
   if (lang === "hi") return `${dateLabel} ${timeLabel} बजे`;
   if (lang === "ja") return `${dateLabel} ${timeLabel}`;
+  if (lang === "ar") return `${dateLabel} الساعة ${timeLabel}`;
   return `${dateLabel} at ${timeLabel}`;
 }
 

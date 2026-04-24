@@ -201,6 +201,31 @@ const LESSON_QUIZ_UI = {
     feedbackIncorrect: "✗ 不正解",
     submitAnswer: "答えを送信",
   },
+  ar: {
+    listenQuestion: "استمع للسؤال",
+    quizPassedToast: "تم اجتياز الاختبار!",
+    quizPassed: "تم اجتياز الاختبار! 🎉",
+    quizFailed: "لم يتم اجتياز الاختبار 😔",
+    score: "النتيجة",
+    passedDesc: (correct, xp) =>
+      `مبروك! نجحت بـ ${correct} إجابة صحيحة. كسبت ${xp} XP!`,
+    failedDesc: (needed, correct) =>
+      `تحتاج ${needed} إجابات صحيحة للنجاح. حصلت على ${correct}. جرّب مرة أخرى!`,
+    retry: "أعد الاختبار",
+    continue: "استمر",
+    question: "السؤال",
+    correct: "الصحيحة",
+    answerPlaceholder: "اكتب إجابتك...",
+    stopRecording: "أوقف التسجيل",
+    startSpeaking: "ابدأ التحدث",
+    youSaid: "قلت",
+    matchWords: "طابق الكلمات مع تعريفاتها",
+    clickDefinitions: "(اضغط على التعريفات للمطابقة)",
+    unknownQuestionType: "نوع سؤال غير معروف",
+    feedbackCorrect: "✓ صحيح!",
+    feedbackIncorrect: "✗ غير صحيح",
+    submitAnswer: "أرسل الإجابة",
+  },
 };
 
 /* ---------------------------
@@ -256,6 +281,7 @@ function LANG_NAME(code) {
   const map = {
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     nah: "Eastern Huasteca Nahuatl",
     pt: "Portuguese",
     fr: "French",

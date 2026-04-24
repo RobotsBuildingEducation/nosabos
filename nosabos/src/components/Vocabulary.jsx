@@ -90,6 +90,7 @@ import {
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
   isSupportedPracticeLanguage,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -106,6 +107,24 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
+function getLanguageInputProps(lang) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    textAlign: dir === "rtl" ? "right" : "left",
+  };
+}
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -200,6 +219,7 @@ const LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -1152,12 +1172,25 @@ export default function Vocabulary({
       : true;
   const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetTextCenterProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "center" }),
+    [targetLang],
+  );
+  const targetInputProps = useMemo(
+    () => getLanguageInputProps(targetLang),
+    [targetLang],
+  );
 
   // UI language labels
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
       es: t("language_es"),
+      ar: t("language_ar"),
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
@@ -1217,6 +1250,8 @@ export default function Vocabulary({
         t("copied_to_clipboard_all") ||
         (userLanguage === "pt"
           ? "Copiado (pergunta + dica + traducao)"
+          : userLanguage === "ar"
+            ? "اتنسخ (السؤال + التلميح + الترجمة)"
           : userLanguage === "es"
             ? "Copiado (pregunta + pista + traducción)"
             : "Copied (question + hint + translation)"),
@@ -4257,9 +4292,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
     const promptLines = [
       isJapaneseUI
         ? "単語マッチング練習です。単語を単語バンクの選択肢と組み合わせて答えてください。"
+        : isArabicUI
+        ? "تمرين توصيل كلمات. جاوب بوصل الكلمات باختيارات بنك الكلمات."
         : isPortugueseUI
         ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
         : isSpanishUI
@@ -4268,6 +4306,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       mStem
         ? isJapaneseUI
           ? `指示: ${mStem}`
+          : isArabicUI
+          ? `التعليمات: ${mStem}`
           : isPortugueseUI
           ? `Instrucao: ${mStem}`
           : isSpanishUI
@@ -4277,6 +4317,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       mLeft.length
         ? isJapaneseUI
           ? `左の列: ${mLeft.join(" | ")}`
+          : isArabicUI
+          ? `العمود الشمال: ${mLeft.join(" | ")}`
           : isPortugueseUI
           ? `Coluna esquerda: ${mLeft.join(" | ")}`
           : isSpanishUI
@@ -4286,6 +4328,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       mRight.length
         ? isJapaneseUI
           ? `単語バンク: ${mRight.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${mRight.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${mRight.join(" | ")}`
           : isSpanishUI
@@ -4295,6 +4339,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       mHint
         ? isJapaneseUI
           ? `ヒント: ${mHint}`
+          : isArabicUI
+          ? `تلميح: ${mHint}`
           : isPortugueseUI
             ? `Dica: ${mHint}`
           : isSpanishUI
@@ -4318,10 +4364,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
     const base =
       sVariant === "translate"
         ? isJapaneseUI
           ? "声に出して言う（翻訳）。与えられた単語を練習言語に翻訳して答えてください。"
+          : isArabicUI
+          ? "قلها بصوت عالي (ترجمة). قول ترجمة الكلمة دي بلغة التدرّب."
           : isPortugueseUI
           ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
           : isSpanishUI
@@ -4329,6 +4378,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           : "Say it aloud (translate). Provide the target language translation for the given word."
         : isJapaneseUI
           ? "声に出して言う（完成）。学習者が欠けている単語を入れて文全体を言えるよう助けてください。"
+          : isArabicUI
+          ? "قلها بصوت عالي (إكمال). ساعد المتعلّم يقول الجملة كاملة بالكلمة الناقصة."
           : isPortugueseUI
           ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
           : isSpanishUI
@@ -4339,6 +4390,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sPrompt
         ? isJapaneseUI
           ? `指示: ${sPrompt}`
+          : isArabicUI
+          ? `التعليمات: ${sPrompt}`
           : isPortugueseUI
           ? `Instrucao: ${sPrompt}`
           : isSpanishUI
@@ -4348,6 +4401,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sStimulus
         ? isJapaneseUI
           ? `学習者に表示: ${sStimulus}`
+          : isArabicUI
+          ? `المعروض للمتعلّم: ${sStimulus}`
           : isPortugueseUI
           ? `Mostrado ao aluno: ${sStimulus}`
           : isSpanishUI
@@ -4357,6 +4412,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sTarget
         ? isJapaneseUI
           ? `期待される発話答え: ${sTarget}`
+          : isArabicUI
+          ? `الإجابة المنطوقة المتوقعة: ${sTarget}`
           : isPortugueseUI
           ? `Resposta falada esperada: ${sTarget}`
           : isSpanishUI
@@ -4366,6 +4423,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sHint
         ? isJapaneseUI
           ? `ヒント: ${sHint}`
+          : isArabicUI
+          ? `تلميح: ${sHint}`
           : isPortugueseUI
             ? `Dica: ${sHint}`
           : isSpanishUI
@@ -4375,6 +4434,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       sTranslation
         ? isJapaneseUI
           ? `サポート翻訳/文脈: ${sTranslation}`
+          : isArabicUI
+          ? `ترجمة أو سياق مساعد: ${sTranslation}`
           : isPortugueseUI
           ? `Traducao ou contexto de apoio: ${sTranslation}`
           : isSpanishUI
@@ -4420,6 +4481,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           t("vocab_speak_variant_translate") ||
           (userLanguage === "pt"
             ? "Traduza a palavra"
+            : userLanguage === "ar"
+              ? "ترجم الكلمة"
             : userLanguage === "es"
               ? "Traduce la palabra"
               : "Translate the word")
@@ -4429,6 +4492,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           t("vocab_speak_variant_complete") ||
           (userLanguage === "pt"
             ? "Complete a frase"
+            : userLanguage === "ar"
+              ? "كمّل الجملة"
             : userLanguage === "es"
               ? "Completa la oración"
               : "Complete the sentence")
@@ -4439,6 +4504,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           t("vocab_speak_variant_repeat") ||
           (userLanguage === "pt"
             ? "Fale a palavra"
+            : userLanguage === "ar"
+              ? "قل الكلمة"
             : userLanguage === "es"
               ? "Pronuncia la palabra"
               : "Speak the word")
@@ -4519,7 +4586,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           color={APP_TEXT_PRIMARY}
           lineHeight="1.6"
           sx={{
-            "& p": { mb: 2 },
+            "& p": { mb: 2, unicodeBidi: "plaintext" },
             "& p:last-child": { mb: 0 },
             "& strong": {
               fontWeight: "bold",
@@ -4527,7 +4594,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             },
             "& em": { fontStyle: "italic" },
             "& ul, & ol": { pl: 4, mb: 2 },
-            "& li": { mb: 1 },
+            "& li": { mb: 1, unicodeBidi: "plaintext" },
             "& code": {
               bg: APP_SURFACE,
               px: 1,
@@ -4547,6 +4614,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     t("practice_drag_drop_slot_placeholder") ||
     (userLanguage === "pt"
       ? "Solte a resposta aqui"
+      : userLanguage === "ar"
+        ? "حط الإجابة هنا"
       : userLanguage === "es"
         ? "Suelta la respuesta aquí"
         : "Drop the answer here");
@@ -4777,6 +4846,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     t("practice_next_question") ||
     (userLanguage === "pt"
       ? "Proxima pergunta"
+      : userLanguage === "ar"
+        ? "السؤال التالي"
       : userLanguage === "es"
         ? "Siguiente pregunta"
         : "Next question");
@@ -4785,6 +4856,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     translatedSkipLabel &&
     translatedSkipLabel !== "practice_skip_question"
       ? translatedSkipLabel
+      : userLanguage === "ar"
+        ? "تخطي"
       : userLanguage === "pt"
         ? "Pular"
         : userLanguage === "es"
@@ -4800,10 +4873,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     t("tts_synthesizing") ||
     (userLanguage === "pt"
       ? "Sintetizando..."
+      : userLanguage === "ar"
+        ? "جارٍ التركيب..."
       : userLanguage === "es"
         ? "Sintetizando..."
         : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
+  const isTranslateTargetToSupport = tDirection === "target-to-support";
+  const translateSourceLang = isTranslateTargetToSupport
+    ? targetLang
+    : supportCode;
+  const translateAnswerLang = isTranslateTargetToSupport
+    ? supportCode
+    : targetLang;
 
   const createWarmAudio = useCallback(async () => {
     try {
@@ -5224,6 +5306,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...targetTextProps}
                   >
                     {qFill || (loadingQFill ? "…" : "")}
                   </Text>
@@ -5239,6 +5322,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               placeholder={t("vocab_input_placeholder_word")}
               isDisabled={loadingGFill}
               fontSize="16px"
+              {...targetInputProps}
             />
 
             {showKeyboard && showKeyboardButton && (
@@ -5364,6 +5448,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
@@ -5417,7 +5502,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5468,6 +5556,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMC || (loadingQMC ? "…" : "")}
                       </Text>
@@ -5518,7 +5607,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             <Box w="8px" h="8px" rounded="full" bg="white" />
                           )}
                         </Box>
-                        <Text flex="1" fontSize="md">
+                        <Text flex="1" fontSize="md" {...targetTextProps}>
                           {c}
                         </Text>
                       </HStack>
@@ -5632,6 +5721,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMaPrompt() || (loadingQMA ? "…" : "")}
                         </Text>
@@ -5685,7 +5775,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5736,6 +5829,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMA || (loadingQMA ? "…" : "")}
                       </Text>
@@ -5798,7 +5892,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                               </Text>
                             )}
                           </Box>
-                          <Text flex="1" fontSize="md">
+                          <Text flex="1" fontSize="md" {...targetTextProps}>
                             {c}
                           </Text>
                         </HStack>
@@ -5944,7 +6038,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     })}
                   />
 
-                  <Text fontSize="3xl" fontWeight="700">
+                  <Text
+                    fontSize="3xl"
+                    fontWeight="700"
+                    {...targetTextCenterProps}
+                  >
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
@@ -5957,6 +6055,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   {t("vocab_speak_last_heard") ||
                     (userLanguage === "pt"
                       ? "Ultima tentativa"
+                      : userLanguage === "ar"
+                        ? "آخر محاولة"
                       : userLanguage === "es"
                         ? "Último intento"
                         : "Last attempt")}
@@ -6033,6 +6133,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           t("vocab_speak_unavailable") ||
                           (userLanguage === "pt"
                             ? "Reconhecimento de voz indisponivel"
+                            : userLanguage === "ar"
+                              ? "التعرّف على الصوت غير متاح"
                             : userLanguage === "es"
                               ? "Reconocimiento de voz no disponible"
                               : "Speech recognition unavailable"),
@@ -6075,12 +6177,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     ? t("vocab_speak_stop") ||
                       (userLanguage === "pt"
                         ? "Parar"
+                        : userLanguage === "ar"
+                          ? "إيقاف"
                         : userLanguage === "es"
                           ? "Detener"
                           : "Stop")
                     : t("vocab_speak_record") ||
                       (userLanguage === "pt"
                         ? "Gravar"
+                        : userLanguage === "ar"
+                          ? "سجّل"
                         : userLanguage === "es"
                           ? "Grabar"
                           : "Record")}
@@ -6110,6 +6216,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   t("vocab_speak_success_title") ||
                   (userLanguage === "pt"
                     ? "Otima pronunciacao!"
+                    : userLanguage === "ar"
+                      ? "نطق ممتاز!"
                     : userLanguage === "es"
                       ? "¡Gran pronunciación!"
                       : "Great pronunciation!")
@@ -6119,6 +6227,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     ? t("vocab_speak_success_desc", { score: sEval.score }) ||
                       (userLanguage === "pt"
                         ? `Pontuacao ${sEval.score}%`
+                        : userLanguage === "ar"
+                          ? `النتيجة ${sEval.score}%`
                         : userLanguage === "es"
                           ? `Puntaje ${sEval.score}%`
                           : `Score ${sEval.score}%`)
@@ -6514,6 +6624,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
@@ -6546,6 +6658,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}

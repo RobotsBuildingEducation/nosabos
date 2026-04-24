@@ -600,6 +600,48 @@ WORLD_BLUEPRINTS.forEach((blueprint, index) => {
   blueprint.summary.hi = blueprint.summary.hi || hi.summary;
 });
 
+const WORLD_BLUEPRINTS_AR = [
+  {
+    names: ["أوضة معيشة مريحة", "شقة عائلية", "بيت الحي"],
+    summary: "بيت دافي مليان حاجات يومية وتفاصيل معيشة",
+  },
+  {
+    names: ["سوق أكل زحمة", "مطبخ الحي", "كافيه السوق"],
+    summary: "مكان أكل حيوي فيه كاونترات وأجهزة وحاجات عملية",
+  },
+  {
+    names: ["قاعة المكتبة", "قاعة القراءة", "أرشيف الكُتّاب"],
+    summary: "مكان دراسة هادي مليان كتب ورفوف ومكاتب وأركان قراءة",
+  },
+  {
+    names: ["المحطة الدولية", "ممر الترانزيت", "مركز السفر"],
+    summary: "مساحة سفر دولية فيها بوابات ولافتات وأماكن انتظار",
+  },
+  {
+    names: ["ممر الغابة", "مشى الحديقة", "فسحة المنتزه"],
+    summary: "مساحة طبيعية مفتوحة فيها طرق ملتفة وخضرة وعلامات واضحة",
+  },
+  {
+    names: ["القاعة المدنية", "ردهة المؤتمرات", "الساحة العامة"],
+    summary: "مساحة عامة مرتبة فيها مكاتب ولافتات ونقط تجمع رسمية",
+  },
+  {
+    names: ["مختبر الأبحاث", "استوديو الابتكار", "المعمل العلمي"],
+    summary: "مساحة تقنية نظيفة فيها معدات وتخزين ومحطات دراسة",
+  },
+  {
+    names: ["ساحة المهرجان", "تراس الاحتفال", "حفلة الشارع"],
+    summary: "مساحة اجتماعية ملوّنة فيها موسيقى وزينة وحماس فعالية",
+  },
+];
+
+WORLD_BLUEPRINTS.forEach((blueprint, index) => {
+  const ar = WORLD_BLUEPRINTS_AR[index];
+  if (!ar) return;
+  blueprint.names.ar = blueprint.names.ar || ar.names;
+  blueprint.summary.ar = blueprint.summary.ar || ar.summary;
+});
+
 const GATHER_POOLS_BY_THEME = {
   home: {
     es: {
@@ -1070,6 +1112,9 @@ export function buildScenarioEnvironment(
   const themeLabelJa =
     String(rawEnvironment?.themeLabel?.ja || rawEnvironment?.name?.ja || "")
       .trim() || pickRandom(seed.names.ja || seed.names.en);
+  const themeLabelAr =
+    String(rawEnvironment?.themeLabel?.ar || rawEnvironment?.name?.ar || "")
+      .trim() || pickRandom(seed.names.ar || seed.names.en);
 
   return {
     blueprintId: seed.id,
@@ -1081,6 +1126,7 @@ export function buildScenarioEnvironment(
       it: themeLabelIt,
       fr: themeLabelFr,
       ja: themeLabelJa,
+      ar: themeLabelAr,
     },
     summary: {
       en:
@@ -1099,6 +1145,10 @@ export function buildScenarioEnvironment(
       ja:
         String(rawEnvironment?.summary?.ja || "").trim() ||
         seed.summary.ja ||
+        seed.summary.en,
+      ar:
+        String(rawEnvironment?.summary?.ar || "").trim() ||
+        seed.summary.ar ||
         seed.summary.en,
     },
     details,

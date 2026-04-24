@@ -71,6 +71,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import XpProgressHeader from "./XpProgressHeader";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -115,6 +116,7 @@ const LLM_LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
     hi: "Hindi",
     pt: "Brazilian Portuguese",
     fr: "French",
@@ -158,6 +160,8 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["ar", "arz", "arabic", "egyptian arabic", "عربي", "العربية"].includes(raw))
+    return "ar";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
@@ -204,7 +208,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "pt", "it", "fr", "ja", "hi"].includes(lang) ? lang : "en";
+  return ["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -275,7 +279,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -403,8 +407,10 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? (["es", "pt", "it", "fr", "ja"].includes(uiLang) ? uiLang : "en")
+      ? (["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
+  const targetTextProps = getBidiTextProps(targetLang);
+  const supportTextProps = getBidiTextProps(supportLang);
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
 
@@ -725,6 +731,7 @@ export default function StoryMode({
                 hi: "नमस्ते। हाय। अलविदा।",
                 it: "Ciao. Ciao. Arrivederci.",
                 fr: "Bonjour. Salut. Au revoir.",
+                ar: "أهلاً. هاي. مع السلامة.",
               }),
             },
             sentences:
@@ -738,6 +745,7 @@ export default function StoryMode({
                         hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
+                        ar: "أهلاً.",
                       }),
                     },
                     {
@@ -748,6 +756,7 @@ export default function StoryMode({
                         hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
+                        ar: "هاي.",
                       }),
                     },
                     {
@@ -758,6 +767,7 @@ export default function StoryMode({
                         hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
+                        ar: "مع السلامة.",
                       }),
                     },
                   ]
@@ -770,6 +780,7 @@ export default function StoryMode({
                         hi: "नमस्ते।",
                         it: "Ciao.",
                         fr: "Bonjour.",
+                        ar: "أهلاً.",
                       }),
                     },
                     {
@@ -780,6 +791,7 @@ export default function StoryMode({
                         hi: "हाय।",
                         it: "Ciao.",
                         fr: "Salut.",
+                        ar: "هاي.",
                       }),
                     },
                     {
@@ -790,6 +802,7 @@ export default function StoryMode({
                         hi: "अलविदा।",
                         it: "Arrivederci.",
                         fr: "Au revoir.",
+                        ar: "مع السلامة.",
                       }),
                     },
                   ],
@@ -807,6 +820,7 @@ export default function StoryMode({
                 hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था। उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे। चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था। बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसी फव्वारे के आसपास बैठते थे।",
                 it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                 fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل. كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم. وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً. وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
               }),
             },
             sentences:
@@ -820,6 +834,7 @@ export default function StoryMode({
                         hi: "एक समय सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese chiamato San Miguel.",
                         fr: "Il etait une fois un petit village appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة اسمها سان ميجيل.",
                       }),
                     },
                     {
@@ -830,6 +845,7 @@ export default function StoryMode({
                         hi: "उस कस्बे में एक सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
+                        ar: "كان في البلدة ميدان جميل يلعب فيه الأطفال كل يوم.",
                       }),
                     },
                     {
@@ -840,6 +856,7 @@ export default function StoryMode({
                         hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
                         fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
                       }),
                     },
                     {
@@ -850,6 +867,7 @@ export default function StoryMode({
                         hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसके आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حولها ليتحدثوا ويستريحوا بعد العمل.",
                       }),
                     },
                   ]
@@ -862,6 +880,7 @@ export default function StoryMode({
                         hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
                         it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
                         fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل.",
                       }),
                     },
                     {
@@ -872,6 +891,7 @@ export default function StoryMode({
                         hi: "उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
                         it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
+                        ar: "كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم.",
                       }),
                     },
                     {
@@ -882,6 +902,7 @@ export default function StoryMode({
                         hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
                         it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
                         fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
                       }),
                     },
                     {
@@ -892,6 +913,7 @@ export default function StoryMode({
                         hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए फव्वारे के आसपास बैठते थे।",
                         it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
                       }),
                     },
                   ],
@@ -1414,6 +1436,7 @@ export default function StoryMode({
       hi: "अगला वाक्य",
       it: "Frase successiva",
       fr: "Phrase suivante",
+      ar: "الجملة التالية",
     });
   const finishLabel =
     t(uiLang, "stories_finish") ||
@@ -1423,6 +1446,7 @@ export default function StoryMode({
       hi: "समाप्त करें",
       it: "Fine",
       fr: "Terminer",
+      ar: "إنهاء",
     });
 
   const handleEvaluationResult = useCallback(
@@ -1948,6 +1972,8 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color={APP_TEXT_PRIMARY}
                                     lineHeight="1.6"
+                                    {...targetTextProps}
+                                    sx={mergeBidiSx(targetTextProps)}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1957,6 +1983,8 @@ export default function StoryMode({
                                       color={APP_TEXT_SECONDARY}
                                       lineHeight="1.4"
                                       mt={1}
+                                      {...supportTextProps}
+                                      sx={mergeBidiSx(supportTextProps)}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1994,6 +2022,8 @@ export default function StoryMode({
                             color={APP_TEXT_PRIMARY}
                             mb={3}
                             lineHeight="1.8"
+                            {...targetTextProps}
+                            sx={mergeBidiSx(targetTextProps)}
                           >
                             {storyData.fullStory?.tgt || ""}
                           </Text>
@@ -2003,6 +2033,8 @@ export default function StoryMode({
                               fontSize="md"
                               color={APP_TEXT_SECONDARY}
                               lineHeight="1.6"
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -2042,6 +2074,9 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      dir={targetTextProps.dir}
+                      lang={targetTextProps.lang}
+                      sx={mergeBidiSx(targetTextProps)}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -2051,6 +2086,9 @@ export default function StoryMode({
                         color={APP_TEXT_SECONDARY}
                         lineHeight="1.5"
                         textAlign="center"
+                        dir={supportTextProps.dir}
+                        lang={supportTextProps.lang}
+                        sx={mergeBidiSx(supportTextProps)}
                       >
                         {currentSentence?.sup}
                       </Text>
@@ -2198,6 +2236,7 @@ export default function StoryMode({
                                         hi: "आगे बढ़ने के लिए तैयार!",
                                         it: "Pronto per continuare!",
                                         fr: "Pret pour continuer !",
+                                        ar: "جاهز تكمل!",
                                       })}
                                 </Text>
                               </Box>

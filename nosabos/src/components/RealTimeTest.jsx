@@ -50,6 +50,7 @@ import {
   getBaseLanguageCode,
   resolveSupportUiLanguage,
 } from "../utils/supportTranslation";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import {
   ArchiveTextAnimation,
   getChatLogButtonHighlightProps,
@@ -322,7 +323,11 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ display: "inline", boxShadow: "inset 0 -2px transparent" }}
+      style={{
+        display: "inline",
+        boxShadow: "inset 0 -2px transparent",
+        unicodeBidi: "isolate",
+      }}
     >
       {mid}
     </span>,
@@ -354,7 +359,9 @@ function AlignedBubble({
   primaryLabel,
   secondaryLabel,
   primaryText,
+  primaryLang = "en",
   secondaryText,
+  secondaryLang = "en",
   pairs,
   showSecondary,
   isTranslating,
@@ -395,6 +402,8 @@ function AlignedBubble({
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
+  const primaryTextProps = getBidiTextProps(primaryLang);
+  const secondaryTextProps = getBidiTextProps(secondaryLang);
 
   return (
     <Box
@@ -438,8 +447,9 @@ function AlignedBubble({
             fontSize="md"
             lineHeight="1.6"
             color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
-            sx={MOBILE_TEXT_SX}
             flex="1"
+            {...primaryTextProps}
+            sx={mergeBidiSx(primaryTextProps, MOBILE_TEXT_SX)}
           >
             {primaryNodes}
           </Box>
@@ -452,16 +462,23 @@ function AlignedBubble({
             mt={1}
             lineHeight="1.55"
             color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-            sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
+            {...secondaryTextProps}
+            sx={mergeBidiSx(secondaryTextProps, MOBILE_TEXT_SX)}
           >
             {secondaryNodes}
           </Box>
         )}
 
         {!!pairs?.length && showSecondary && (
-          <Wrap spacing={3} mt={3} shouldWrapChildren>
+          <Wrap
+            spacing={3}
+            mt={3}
+            shouldWrapChildren
+            dir={primaryTextProps.dir}
+            sx={{ unicodeBidi: "isolate" }}
+          >
             {pairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
@@ -486,7 +503,13 @@ function AlignedBubble({
                     minW="0"
                     maxW="260px"
                   >
-                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="1.4"
+                      {...primaryTextProps}
+                      sx={mergeBidiSx(primaryTextProps)}
+                    >
                       {p.lhs}
                     </Text>
                     <Text
@@ -496,6 +519,8 @@ function AlignedBubble({
                       }
                       mt={1}
                       lineHeight="1.35"
+                      {...secondaryTextProps}
+                      sx={mergeBidiSx(secondaryTextProps)}
                     >
                       {p.rhs}
                     </Text>
@@ -543,9 +568,10 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getBidiTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
@@ -565,7 +591,8 @@ function UserBubble({ label, text }) {
         fontSize="md"
         lineHeight="1.6"
         color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-        sx={MOBILE_TEXT_SX}
+        {...textProps}
+        sx={mergeBidiSx(textProps, MOBILE_TEXT_SX)}
       >
         {text}
       </Box>
@@ -630,6 +657,7 @@ export default function RealTimeTest({
   onSwitchedAccount,
   lesson = null,
   lessonContent = null,
+  supportLang: initialSupportLang = "",
   onSkip = null,
 }) {
   const toast = useToast();
@@ -663,6 +691,14 @@ export default function RealTimeTest({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+  const initialSupportLanguage = normalizeSupportLanguage(
+    initialSupportLang ||
+      user?.progress?.supportLang ||
+      (typeof window !== "undefined"
+        ? window.localStorage.getItem("appLanguage")
+        : ""),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
 
   // Extract CEFR level from lesson
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
@@ -712,7 +748,7 @@ export default function RealTimeTest({
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
-  const [supportLang, setSupportLang] = useState("en");
+  const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState("alloy");
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example,
@@ -839,6 +875,7 @@ export default function RealTimeTest({
       fr: "Afficher la traduction",
       ja: "翻訳を表示",
       hi: "अनुवाद दिखाएं",
+      ar: "إظهار الترجمة",
     }[uiLang] || "Show translation");
 
   /* ---------------------------
@@ -985,11 +1022,20 @@ export default function RealTimeTest({
             : translateGoalText(rubricSource || titleSource, goalLang),
         ]);
 
-        const patched = {
-          ...goal,
-          [`title_${goalLang}`]: goal[`title_${goalLang}`] || localizedTitle,
-          [`rubric_${goalLang}`]: goal[`rubric_${goalLang}`] || localizedRubric,
-        };
+        const patched = { ...goal };
+        if (!goal[`title_${goalLang}`] && localizedTitle) {
+          patched[`title_${goalLang}`] = localizedTitle;
+        }
+        if (!goal[`rubric_${goalLang}`] && localizedRubric) {
+          patched[`rubric_${goalLang}`] = localizedRubric;
+        }
+
+        if (
+          patched[`title_${goalLang}`] === goal[`title_${goalLang}`] &&
+          patched[`rubric_${goalLang}`] === goal[`rubric_${goalLang}`]
+        ) {
+          return;
+        }
 
         setCurrentGoal(patched);
         goalRef.current = patched;
@@ -1147,6 +1193,14 @@ export default function RealTimeTest({
     if (code === "bilingual") return code;
     return normalizeSupportLanguage(code, DEFAULT_SUPPORT_LANGUAGE);
   }
+
+  useEffect(() => {
+    if (!initialSupportLang) return;
+    const v = normalizeSupport(initialSupportLang);
+    supportLangRef.current = v;
+    setSupportLang(v);
+  }, [initialSupportLang]);
+
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {
       levelRef.current = p.level;
@@ -1571,6 +1625,8 @@ export default function RealTimeTest({
         ? "Di' ciao"
         : goalLang === "hi"
         ? "नमस्ते कहें"
+        : goalLang === "ar"
+        ? "قول أهلا"
         : "Say hello";
     const successCriteria =
       goalLang === "ja"
@@ -1583,6 +1639,8 @@ export default function RealTimeTest({
           ? "Lo studente dice ciao."
           : goalLang === "hi"
             ? "सीखने वाला नमस्ते कहता है।"
+            : goalLang === "ar"
+              ? "المتعلم يقول أهلًا."
           : goalLang === "fr"
             ? "L'apprenant dit bonjour."
           : "The learner says hello.";
@@ -1595,6 +1653,7 @@ export default function RealTimeTest({
       title_fr: "Dis bonjour",
       title_ja: "こんにちはと言う",
       title_hi: "नमस्ते कहें",
+      title_ar: "قول أهلا",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
       rubric_pt: 'O aluno diz "olá".',
@@ -1602,6 +1661,7 @@ export default function RealTimeTest({
       rubric_fr: "L'apprenant dit bonjour.",
       rubric_ja: "学習者がこんにちはと言う。",
       rubric_hi: "सीखने वाला नमस्ते कहता है।",
+      rubric_ar: "المتعلم يقول أهلًا.",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
@@ -1610,6 +1670,7 @@ export default function RealTimeTest({
       successCriteria_fr: "L'apprenant dit bonjour.",
       successCriteria_ja: "学習者がこんにちはと言う。",
       successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
+      successCriteria_ar: "المتعلم يقول أهلًا.",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1757,6 +1818,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "सीखने वाला नमस्ते कहता है और हाल पूछने पर सही प्रतिक्रिया देता है",
         },
+        ar: {
+          scenario: "سلّم واسأل الشخص عامل إيه",
+          prompt:
+            "ابدأ بتحية بسيطة وخلي المتعلم يرد برد مناسب ويكمل سؤال قصير عن الحال.",
+          successCriteria:
+            "المتعلم يسلّم ويرد بشكل مناسب على سؤال عن الحال",
+        },
       },
       numbers: {
         en: {
@@ -1779,6 +1847,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "सीखने वाले से उसका फोन नंबर, उम्र या संदर्भ के भीतर कोई और संख्या पूछें।",
           successCriteria:
             "सीखने वाला अर्थपूर्ण संदर्भ में संख्याएं सही तरह से बोलता है",
+        },
+        ar: {
+          scenario: "قل رقم تليفونك أو سنك",
+          prompt:
+            "اسأل المتعلم عن رقم تليفونه أو سنه أو أي رقم تاني في سياق واضح.",
+          successCriteria:
+            "المتعلم يقول الأرقام بشكل صحيح في سياق له معنى",
         },
       },
       food: {
@@ -1803,6 +1878,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "सीखने वाला उचित वाक्यांशों का उपयोग करके कम से कम एक चीज़ ऑर्डर करता है",
         },
+        ar: {
+          scenario: "اطلب حاجة تاكلها أو تشربها",
+          prompt:
+            "أنت نادل أو باريستا. خلّي المتعلم يطلب أكل أو مشروب باستخدام عبارات مناسبة.",
+          successCriteria:
+            "المتعلم يطلب حاجة واحدة على الأقل بعبارات مناسبة",
+        },
       },
       places: {
         en: {
@@ -1825,6 +1907,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "सीखने वाले से किसी जगह के बारे में पूछें: वह कहाँ रहता है, कहाँ जाना चाहता है, या उसकी पसंदीदा जगह कौन सी है।",
           successCriteria:
             "सीखने वाला कम से कम 2 या 3 विवरणों के साथ किसी स्थान का वर्णन करता है",
+        },
+        ar: {
+          scenario: "اوصف فين ساكن أو فين نفسك تزور",
+          prompt:
+            "اسأل المتعلم عن مكان: فين ساكن، أو عايز يزوره، أو مكانه المفضل.",
+          successCriteria:
+            "المتعلم يوصف مكان بتفصيلتين أو تلاتة على الأقل",
         },
       },
       shopping: {
@@ -1849,6 +1938,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "सीखने वाला किसी वस्तु के बारे में पूछता है और एक सरल खरीद पूरी करता है",
         },
+        ar: {
+          scenario: "اشتري حاجة من محل",
+          prompt:
+            "أنت البايع. ساعد المتعلم يشتري حاجة ويتكلم عن السعر والاختيارات.",
+          successCriteria:
+            "المتعلم يسأل عن غرض ويكمل عملية شراء بسيطة",
+        },
       },
       travel: {
         en: {
@@ -1871,6 +1967,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "किसी स्थान तक पहुँचने का रास्ता बताएं या सीखने वाले से पूछें कि वह किसी जगह तक कैसे पहुँचेगा।",
           successCriteria:
             "सीखने वाला स्थान-संबंधी शब्दावली के साथ दिशा समझता है या बताता है",
+        },
+        ar: {
+          scenario: "اسأل عن الطريق أو اشرحه",
+          prompt:
+            "إما تشرح طريق لمكان، أو تسأل المتعلم يوصل لمكان إزاي.",
+          successCriteria:
+            "المتعلم يفهم أو يدي اتجاهات باستخدام كلمات المكان",
         },
       },
       family: {
@@ -1895,6 +1998,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "सीखने वाला कम से कम 2 परिवार सदस्यों का कुछ विवरण के साथ वर्णन करता है",
         },
+        ar: {
+          scenario: "اوصف أفراد عيلتك",
+          prompt:
+            "اسأل المتعلم عن عيلته: مين فيها، أعمارهم، أسماؤهم، وهكذا.",
+          successCriteria:
+            "المتعلم يوصف فردين على الأقل من عيلته مع شوية تفاصيل",
+        },
       },
       time: {
         en: {
@@ -1917,6 +2027,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "सीखने वाले से पूछें कि वह दिन के अलग-अलग समय पर क्या करता है, जैसे सुबह की दिनचर्या, भोजन आदि।",
           successCriteria:
             "सीखने वाला खास समयों से जुड़ी गतिविधियों का वर्णन करता है",
+        },
+        ar: {
+          scenario: "احكي عن روتينك اليومي",
+          prompt:
+            "اسأل المتعلم بيعمل إيه في أوقات مختلفة من اليوم، زي الصبح أو وقت الأكل.",
+          successCriteria:
+            "المتعلم يوصف أنشطة مرتبطة بأوقات معينة",
         },
       },
     };
@@ -1963,6 +2080,21 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             : "और बोलने के लिए आगे के प्रश्न पूछें।"
         }`,
         successCriteria: `सीखने वाला ${topic} से जुड़े कई शब्द या वाक्यांश संदर्भ में बोलता है`,
+      };
+    }
+
+    if (goalLangCode === "ar") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `استخدم ${focusPoints[0]} في موقف حقيقي`
+            : `شارك حاجة عن ${topic}`,
+        prompt: `اعمل موقف واقعي يخلّي المتعلم يستخدم مفردات عن ${topic}. ${
+          focusPoints.length
+            ? `ركز خصوصًا على: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "اسأله أسئلة متابعة تشجّعه يتكلم أكتر."
+        }`,
+        successCriteria: `المتعلم يقول كلمات أو عبارات مناسبة عن ${topic} في سياق واضح`,
       };
     }
 
@@ -2071,6 +2203,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           title_fr: goalLang === "fr" ? goalText : "",
           title_ja: goalLang === "ja" ? goalText : "",
           title_hi: goalLang === "hi" ? goalText : "",
+          title_ar: goalLang === "ar" ? goalText : "",
           rubric_en: "",
           rubric_es: "",
           rubric_pt: "",
@@ -2078,6 +2211,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           rubric_fr: "",
           rubric_ja: "",
           rubric_hi: "",
+          rubric_ar: "",
           [localizedTitleKey]: goalText,
           [localizedRubricKey]: "",
           lessonScenario: goalText,
@@ -2134,9 +2268,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return (
+    const localized =
       goal[`title_${gLang}`] ||
       goal[`scenario_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
       goal.title_en ||
       goal.title_es ||
       goal.scenario ||
@@ -2146,9 +2284,13 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return (
+    const localized =
       goal[`rubric_${gLang}`] ||
       goal[`successCriteria_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
       goal.successCriteria ||
       goal.rubric_en ||
       goal.rubric_es ||
@@ -2269,7 +2411,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       return (parsed?.translation || merged || trimmed).trim();
     } catch (err) {
       console.warn("Goal translation failed", err?.message || err);
-      return trimmed;
+      return target === "en" ? trimmed : "";
     }
   }
 
@@ -3381,6 +3523,8 @@ Return ONLY JSON:
   const orbUiState = getRealtimeOrbVisualState(uiState);
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
+  const currentGoalTitleText = goalTitleForUI(currentGoal);
+  const currentGoalRubricText = goalRubricForUI(currentGoal);
 
   async function handleManualTranslate(id) {
     if (!id || translatingMessageId === id) return;
@@ -3511,7 +3655,10 @@ Return ONLY JSON:
                       {isGeneratingGoal
                         ? streamingGoalText ||
                           uiText("ra_generating", "Generating...")
-                        : goalTitleForUI(currentGoal) || "—"}
+                        : currentGoalTitleText ||
+                          (uiLang === "en"
+                            ? "—"
+                            : uiText("ra_generating", "Generating..."))}
                     </Text>
                   </HStack>
                   <IconButton
@@ -3527,16 +3674,16 @@ Return ONLY JSON:
                     aria-label={uiText("ra_chat_log", "Chat log")}
                   />
                 </HStack>
-                {!!currentGoal && !isGeneratingGoal && (
+                {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                   <Text
                     fontSize="xs"
                     opacity={0.8}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                   >
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                    {goalRubricForUI(currentGoal)}
+                    {currentGoalRubricText}
                   </Text>
-                )}
+                ) : null}
                 {goalFeedback && !isGeneratingGoal ? (
                   <HStack
                     mt={2}
@@ -3633,6 +3780,7 @@ Return ONLY JSON:
                   primaryText={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
+                  primaryLang={latestAssistantMessage.lang || targetLang || "es"}
                   secondaryText={
                     showTranslations
                       ? latestAssistantMessage.source === "hist"
@@ -3649,6 +3797,7 @@ Return ONLY JSON:
                           : ""
                       : ""
                   }
+                  secondaryLang={uiLang}
                   pairs={
                     latestAssistantMessage.source === "hist"
                       ? latestAssistantMessage.pairs || []
@@ -3837,7 +3986,11 @@ Return ONLY JSON:
                   if (m.role === "user") {
                     return (
                       <RowRight key={m.id}>
-                        <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                        <UserBubble
+                          label={ui.ra_label_you}
+                          text={m.textFinal}
+                          textLang={targetLang}
+                        />
                       </RowRight>
                     );
                   }
@@ -3864,7 +4017,9 @@ Return ONLY JSON:
                             : translations[uiLang][`language_${secondaryPref}`]
                         }
                         primaryText={`${m.textFinal || ""}${m.textStream || ""}`}
+                        primaryLang={m.lang || targetLang || "es"}
                         secondaryText={showTranslations ? secondaryText : ""}
+                        secondaryLang={uiLang}
                         pairs={
                           m.source === "hist"
                             ? m.pairs || []

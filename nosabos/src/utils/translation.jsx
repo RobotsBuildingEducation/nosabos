@@ -1,6 +1,7 @@
 // src/utils/translation.jsx
 
 import { Button, HStack } from "@chakra-ui/react";
+import { TRANSLATION_AR_STATIC } from "./translationArStatic";
 import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
 import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
 
@@ -183,6 +184,7 @@ export const translations = {
     common_id_label: "ID:",
     common_saving: "Saving",
     common_cancel: "Cancel",
+    language_ar: "Egyptian Arabic",
     language_en: "English",
     language_es: "Spanish",
     language_pt: "Portuguese",
@@ -231,6 +233,7 @@ export const translations = {
     onboarding_support_bilingual: "Bilingual",
     onboarding_support_es: "Spanish",
     onboarding_support_it: "Italian",
+    onboarding_support_ar: "Egyptian Arabic",
     onboarding_support_ja: "Japanese",
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_menu_label: "Practice:",
@@ -240,6 +243,7 @@ export const translations = {
     onboarding_practice_fr: "French",
     onboarding_practice_it: "Italian",
     onboarding_practice_hi: "Hindi",
+    onboarding_practice_ar: "Egyptian Arabic",
     onboarding_practice_nl: "Dutch",
     onboarding_practice_ja: "Japanese",
     onboarding_practice_en: "English",
@@ -1178,6 +1182,7 @@ export const translations = {
     language_fr: "Francés",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
     language_nl: "Holandés",
     language_nah: "Náhuatl huasteco",
     language_ja: "Japonés",
@@ -1403,6 +1408,7 @@ export const translations = {
     onboarding_support_bilingual: "Bilingüe",
     onboarding_support_es: "Español",
     onboarding_support_it: "Italiano",
+    onboarding_support_ar: "Árabe egipcio",
     onboarding_support_ja: "Japonés",
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_menu_label: "Práctica:",
@@ -1412,6 +1418,7 @@ export const translations = {
     onboarding_practice_fr: "Francés",
     onboarding_practice_it: "Italiano",
     onboarding_practice_hi: "Hindi",
+    onboarding_practice_ar: "Árabe egipcio",
     onboarding_practice_nl: "Holandés",
     onboarding_practice_ja: "Japonés",
     onboarding_practice_en: "Inglés",
@@ -1970,6 +1977,7 @@ translations.it = {
   DEFAULT_PERSONA: "Un assistente amichevole e disponibile",
   common_saving: "Salvataggio",
   common_cancel: "Annulla",
+  language_ar: "Arabo egiziano",
   language_en: "Inglese",
   language_es: "Spagnolo",
   language_pt: "Portoghese",
@@ -2012,6 +2020,7 @@ translations.it = {
   onboarding_support_bilingual: "Bilingue",
   onboarding_support_es: "Spagnolo",
   onboarding_support_it: "Italiano",
+  onboarding_support_ar: "Arabo egiziano",
   onboarding_support_ja: "Giapponese",
   onboarding_practice_label_title: "Lingua di pratica",
   onboarding_practice_menu_label: "Pratica:",
@@ -2021,6 +2030,7 @@ translations.it = {
   onboarding_practice_fr: "Francese",
   onboarding_practice_it: "Italiano",
   onboarding_practice_hi: "Hindi",
+  onboarding_practice_ar: "Arabo egiziano",
   onboarding_practice_nl: "Olandese",
   onboarding_practice_ja: "Giapponese",
   onboarding_practice_en: "Inglese",
@@ -2824,6 +2834,7 @@ translations.fr = {
   language_fr: "Francais",
   language_it: "Italien",
   language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
   language_nl: "Neerlandais",
   language_nah: "Nahuatl huasteque oriental",
   language_ja: "Japonais",
@@ -2860,6 +2871,7 @@ translations.fr = {
   onboarding_support_bilingual: "Bilingue",
   onboarding_support_es: "Espagnol",
   onboarding_support_it: "Italien",
+  onboarding_support_ar: "Arabe egyptien",
   onboarding_support_fr: "Francais",
   onboarding_support_ja: "Japonais",
   onboarding_practice_label_title: "Langue de pratique",
@@ -2870,6 +2882,7 @@ translations.fr = {
   onboarding_practice_fr: "Francais",
   onboarding_practice_it: "Italien",
   onboarding_practice_hi: "Hindi",
+  onboarding_practice_ar: "Arabe egyptien",
   onboarding_practice_nl: "Neerlandais",
   onboarding_practice_ja: "Japonais",
   onboarding_practice_en: "Anglais",
@@ -3671,6 +3684,7 @@ translations.ja = {
   common_id_label: "ID:",
   common_saving: "保存中",
   common_cancel: "キャンセル",
+  language_ar: "エジプトアラビア語",
   language_en: "英語",
   language_es: "スペイン語",
   language_pt: "ポルトガル語",
@@ -3711,6 +3725,7 @@ translations.ja = {
   onboarding_support_bilingual: "バイリンガル",
   onboarding_support_es: "スペイン語",
   onboarding_support_it: "イタリア語",
+  onboarding_support_ar: "エジプトアラビア語",
   onboarding_support_fr: "フランス語",
   onboarding_support_ja: "日本語",
   onboarding_practice_label_title: "練習言語",
@@ -3721,6 +3736,7 @@ translations.ja = {
   onboarding_practice_fr: "フランス語",
   onboarding_practice_it: "イタリア語",
   onboarding_practice_hi: "ヒンディー語",
+  onboarding_practice_ar: "エジプトアラビア語",
   onboarding_practice_nl: "オランダ語",
   onboarding_practice_ja: "日本語",
   onboarding_practice_en: "英語",
@@ -4362,6 +4378,73 @@ translations.ja = {
   vocab_create_note: "メモを作成",
   vocab_note_saved: "メモを保存しました！",
   vocab_lesson_progress: "レッスン進捗",
+};
+
+translations.ar = {
+  ...translations.en,
+  ...TRANSLATION_AR_STATIC,
+  "passcode.instructions": (
+    <div>
+      اكتب كود الاشتراك علشان تكمل.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>الاشتراك بيديك:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            دخول لعدة تطبيقات تعليمية بالذكاء الاصطناعي.
+          </li>
+          <li style={{ marginBottom: 8 }}>دعم شخصي.</li>
+          <li style={{ marginBottom: 8 }}>
+            محتوى متزايد للمشتركين عن هندسة البرمجيات، المشاريع، والاستثمار.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            فرصة تدعم مهمة صناعة منح دراسية من خلال التعلم.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            اشترك
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            ادفع مرة واحدة
+          </Button>
+        </HStack>
+      </div>
+    </div>
+  ),
 };
 
 translations.hi = {

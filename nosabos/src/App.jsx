@@ -198,6 +198,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
   getLanguageLabel,
+  getLanguageDirection,
   getLanguageLocale,
   getLanguagePromptName,
   getPracticeLanguageOptions,
@@ -207,6 +208,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "./constants/languages";
+import { syncDocumentLanguage } from "./utils/documentLanguage";
 
 /* ---------------------------
    Small helpers
@@ -235,7 +237,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -621,6 +623,7 @@ function TopBar({
   const toast = useToast();
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
+  const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
@@ -695,6 +698,7 @@ function TopBar({
     it: "secondi",
     fr: "secondes",
     ja: "秒",
+    ar: "ثواني",
   });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
     minimumFractionDigits: 1,
@@ -709,6 +713,7 @@ function TopBar({
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -1126,9 +1131,9 @@ function TopBar({
             flex={1}
             minH={0}
           >
-            <Flex justify="flex-end" mt={-2} mb={-2}>
+            <Flex justify={isRtlApp ? "flex-start" : "flex-end"} mt={-2} mb={-2}>
               <IconButton
-                aria-label={t.close || "Close"}
+                aria-label={t.close || t.app_close || "Close"}
                 icon={<CloseIcon boxSize={3} />}
                 size="sm"
                 variant="ghost"
@@ -1358,7 +1363,25 @@ function TopBar({
                             <MenuList
                               borderColor="gray.700"
                               bg="gray.900"
+                              maxH="300px"
+                              overflowY="auto"
                               motionProps={INSTANT_EXIT_MOTION_PROPS}
+                              sx={{
+                                "&::-webkit-scrollbar": {
+                                  width: "8px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  bg: "gray.800",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  bg: "gray.600",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb:hover": {
+                                  bg: "gray.500",
+                                },
+                              }}
                             >
                               <Box
                                 px={3}
@@ -1556,6 +1579,7 @@ function TopBar({
                             fr: "Commencer le test de niveau",
                             ja: "レベルテストを始める",
                             hi: "प्रवीणता परीक्षण शुरू करें",
+                            ar: "ابدأ اختبار المستوى",
                           })}
                         </Button>
                       )}
@@ -2012,6 +2036,7 @@ export default function App() {
       } catch {}
 
       const applyOptimisticLanguage = () => {
+        syncDocumentLanguage(normalized);
         setAppLanguage(normalized);
         setSupportLangFn?.(normalized);
         if (user) {
@@ -2044,6 +2069,9 @@ export default function App() {
     [setUser, user],
   );
   const t = translations[appLanguage] || translations.en;
+  useEffect(() => {
+    syncDocumentLanguage(appLanguage);
+  }, [appLanguage]);
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
@@ -3556,6 +3584,12 @@ export default function App() {
       // This prevents stale locale defaults from overwriting the user's choice
       // when returning from proficiency/back to home.
       const uiLangForPersist = normalized.supportLang;
+
+      try {
+        localStorage.setItem("appLanguage", uiLangForPersist);
+      } catch {}
+      syncDocumentLanguage(uiLangForPersist);
+      setAppLanguage(uiLangForPersist);
 
       await setDoc(
         doc(database, "users", id),
@@ -6496,6 +6530,7 @@ export default function App() {
         isRunning={isTimerRunning}
         helper={null}
         t={t}
+        lang={appLanguage}
         useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
@@ -6546,7 +6581,11 @@ export default function App() {
           <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
             {t.timer_times_up_title || "Time's up!"}
           </ModalHeader>
-          <ModalCloseButton color="white" />
+          <ModalCloseButton
+            color="white"
+            left={appLanguage === "ar" ? 3 : undefined}
+            right={appLanguage === "ar" ? "auto" : undefined}
+          />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
             <VStack spacing={5} textAlign="center">
               <Box
@@ -6630,6 +6669,7 @@ export default function App() {
                     fr: "Objectif quotidien atteint !",
                     ja: "デイリー目標達成！",
                     hi: "दैनिक लक्ष्य पूरा हुआ!",
+                    ar: "الهدف اليومي اكتمل!",
                   })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
@@ -6640,6 +6680,7 @@ export default function App() {
                     fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
                     ja: "今日のXP目標を達成しました。",
                     hi: "आपने आज का XP लक्ष्य पूरा कर लिया।",
+                    ar: "حققت هدف XP بتاع النهارده.",
                   })}
                 </Text>
               </VStack>
@@ -6664,6 +6705,7 @@ export default function App() {
                           fr: "Objectif",
                           ja: "目標",
                           hi: "लक्ष्य",
+                          ar: "الهدف",
                         })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
@@ -6679,6 +6721,7 @@ export default function App() {
                       fr: "Garde la serie et reviens demain pour un nouvel objectif !",
                       ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
                       hi: "अपनी श्रृंखला बनाए रखें और नए लक्ष्य के लिए कल फिर आएँ!",
+                      ar: "كمّل السلسلة وارجع بكرة لهدف جديد!",
                     })}
                   </Text>
                 </VStack>
@@ -6710,6 +6753,7 @@ export default function App() {
                   fr: "Continuer a apprendre",
                   ja: "学習を続ける",
                   hi: "सीखना जारी रखें",
+                  ar: "كمّل تعلّم",
                 })}
               </Button>
             </VStack>
@@ -6763,6 +6807,7 @@ export default function App() {
                     fr: "Lecon terminee !",
                     ja: "レッスン完了！",
                     hi: "पाठ पूरा हुआ!",
+                    ar: "الدرس اكتمل!",
                   })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
@@ -6796,6 +6841,7 @@ export default function App() {
                       fr: "XP gagne",
                       ja: "獲得XP",
                       hi: "प्राप्त XP",
+                      ar: "XP المكتسبة",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -6810,6 +6856,7 @@ export default function App() {
                       fr: "Points d'experience",
                       ja: "経験値",
                       hi: "अनुभव अंक",
+                      ar: "نقاط الخبرة",
                     })}
                   </Text>
                 </VStack>
@@ -6836,6 +6883,7 @@ export default function App() {
                   fr: "Continuer",
                   ja: "続ける",
                   hi: "जारी रखें",
+                  ar: "كمّل",
                 })}
               </Button>
             </VStack>

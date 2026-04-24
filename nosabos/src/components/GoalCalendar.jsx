@@ -8,6 +8,7 @@ const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const WEEKDAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const WEEKDAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
+const WEEKDAYS_AR = ["ح", "ن", "ث", "ر", "خ", "ج", "س"];
 
 const MONTHS_EN = [
   "January", "February", "March", "April", "May", "June",
@@ -24,6 +25,10 @@ const MONTHS_PT = [
 const MONTHS_JA = [
   "1月", "2月", "3月", "4月", "5月", "6月",
   "7月", "8月", "9月", "10月", "11月", "12月"
+];
+const MONTHS_AR = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
 ];
 
 // Gradient for completed days
@@ -83,6 +88,8 @@ export default function GoalCalendar({
   const weekdays =
     lang === "ja"
       ? WEEKDAYS_JA
+      : lang === "ar"
+        ? WEEKDAYS_AR
       : lang === "pt"
         ? WEEKDAYS_PT
         : lang === "es"
@@ -91,6 +98,8 @@ export default function GoalCalendar({
   const months =
     lang === "ja"
       ? MONTHS_JA
+      : lang === "ar"
+        ? MONTHS_AR
       : lang === "pt"
         ? MONTHS_PT
         : lang === "es"

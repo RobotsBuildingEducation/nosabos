@@ -52,6 +52,7 @@ const CEFR_LEVELS = [
       fr: "Fondations",
       ja: "基礎",
       hi: "नींव",
+      ar: "الأساسيات",
     },
     description: {
       en: "First words and phrases",
@@ -61,6 +62,7 @@ const CEFR_LEVELS = [
       fr: "Premiers mots et phrases",
       ja: "最初の単語とフレーズ",
       hi: "पहले शब्द और वाक्यांश",
+      ar: "أول كلمات وعبارات",
     },
     color: "#8B5CF6",
   },
@@ -74,6 +76,7 @@ const CEFR_LEVELS = [
       fr: "Debutant",
       ja: "初心者",
       hi: "शुरुआती",
+      ar: "مبتدئ",
     },
     description: {
       en: "Basic survival language",
@@ -83,6 +86,7 @@ const CEFR_LEVELS = [
       fr: "Langue essentielle de base",
       ja: "基本的なサバイバル表現",
       hi: "बुनियादी रोज़मर्रा की भाषा",
+      ar: "لغة أساسية للحياة اليومية",
     },
     color: "#3B82F6",
   },
@@ -96,6 +100,7 @@ const CEFR_LEVELS = [
       fr: "Elementaire",
       ja: "初級",
       hi: "प्रारंभिक",
+      ar: "أساسي",
     },
     description: {
       en: "Simple everyday communication",
@@ -105,6 +110,7 @@ const CEFR_LEVELS = [
       fr: "Communication simple du quotidien",
       ja: "簡単な日常コミュニケーション",
       hi: "सरल दैनिक संवाद",
+      ar: "تواصل يومي بسيط",
     },
     color: "#8B5CF6",
   },
@@ -118,6 +124,7 @@ const CEFR_LEVELS = [
       fr: "Intermediaire",
       ja: "中級",
       hi: "मध्यम",
+      ar: "متوسط",
     },
     description: {
       en: "Handle everyday situations",
@@ -127,6 +134,7 @@ const CEFR_LEVELS = [
       fr: "Gerer les situations quotidiennes",
       ja: "日常場面に対応",
       hi: "रोज़मर्रा की स्थितियाँ संभालना",
+      ar: "التعامل مع مواقف الحياة اليومية",
     },
     color: "#A855F7",
   },
@@ -140,6 +148,7 @@ const CEFR_LEVELS = [
       fr: "Intermediaire avance",
       ja: "中上級",
       hi: "उच्च मध्यम",
+      ar: "متوسط متقدم",
     },
     description: {
       en: "Complex discussions",
@@ -149,6 +158,7 @@ const CEFR_LEVELS = [
       fr: "Discussions complexes",
       ja: "複雑な話し合い",
       hi: "जटिल चर्चाएँ",
+      ar: "مناقشات معقدة",
     },
     color: "#F97316",
   },
@@ -162,6 +172,7 @@ const CEFR_LEVELS = [
       fr: "Avance",
       ja: "上級",
       hi: "उन्नत",
+      ar: "متقدم",
     },
     description: {
       en: "Sophisticated language use",
@@ -171,6 +182,7 @@ const CEFR_LEVELS = [
       fr: "Usage sophistique de la langue",
       ja: "洗練された言語運用",
       hi: "परिष्कृत भाषा प्रयोग",
+      ar: "استخدام متقن للغة",
     },
     color: "#EF4444",
   },
@@ -184,6 +196,7 @@ const CEFR_LEVELS = [
       fr: "Maitrise",
       ja: "熟達",
       hi: "निपुणता",
+      ar: "إتقان",
     },
     description: {
       en: "Near-native proficiency",
@@ -193,6 +206,7 @@ const CEFR_LEVELS = [
       fr: "Competence quasi native",
       ja: "ネイティブに近い熟達度",
       hi: "लगभग मातृभाषी दक्षता",
+      ar: "طلاقة قريبة من المتحدث الأصلي",
     },
     color: "#EC4899",
   },
@@ -301,6 +315,20 @@ function getConversationSettingsUi(lang) {
       save: "सहेजें",
       close: "बंद करें",
     },
+    ar: {
+      title: "إعدادات المحادثة",
+      proficiencyLabel: "مستوى الكفاءة",
+      proficiencyHint: "حدّد درجة صعوبة مواضيع المحادثة",
+      pronunciationLabel: "تدريب النطق",
+      pronunciationHint: "الذكاء الاصطناعي هيساعدك تحسّن النطق",
+      subjectLabel: "مواضيع مخصصة",
+      subjectHint:
+        "اكتب المواضيع اللي عايز تتدرّب عليها (مثال: طب، شغل، سفر)",
+      subjectPlaceholder:
+        "مثال: أنا دكتور وعايز أتدرّب على محادثات طبية مع المرضى...",
+      save: "حفظ",
+      close: "إغلاق",
+    },
   };
 
   return copy[lang] || copy.en;
@@ -398,10 +426,10 @@ export function ConversationSettingsPanel({
               </Badge>
               <Box minW={0} flex={1}>
                 <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                  {currentLevel.name[lang]}
+                  {currentLevel.name[lang] || currentLevel.name.en}
                 </Text>
                 <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                  {currentLevel.description[lang]}
+                  {currentLevel.description[lang] || currentLevel.description.en}
                 </Text>
               </Box>
             </HStack>
@@ -442,13 +470,13 @@ export function ConversationSettingsPanel({
                   </Badge>
                   <Box minW={0} flex={1}>
                     <Text fontSize="sm" fontWeight="medium">
-                      {level.name[lang]}
+                      {level.name[lang] || level.name.en}
                     </Text>
                     <Text
                       fontSize="xs"
                       color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
                     >
-                      {level.description[lang]}
+                      {level.description[lang] || level.description.en}
                     </Text>
                   </Box>
                 </HStack>

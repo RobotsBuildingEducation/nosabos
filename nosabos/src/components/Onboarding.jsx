@@ -47,6 +47,7 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
 import { useThemeStore } from "../useThemeStore";
@@ -80,7 +81,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -179,6 +180,10 @@ export default function Onboarding({
     syncThemeMode(themeMode);
   }, [syncThemeMode, themeMode]);
 
+  useEffect(() => {
+    syncDocumentLanguage(supportLang);
+  }, [supportLang]);
+
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
@@ -271,6 +276,7 @@ export default function Onboarding({
       it: "Pausa tra le risposte",
       fr: "Pause entre les reponses",
       ja: "返答の間のポーズ",
+      ar: "الوقفة بين الردود",
     });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
@@ -281,6 +287,7 @@ export default function Onboarding({
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 1.2 ثانية مناسبة للكلام الطبيعي.",
     });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
     minimumFractionDigits: 1,
@@ -293,6 +300,7 @@ export default function Onboarding({
     it: "secondi",
     fr: "secondes",
     ja: "秒",
+    ar: "ثانية",
   });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -307,6 +315,7 @@ export default function Onboarding({
     it: ["Lingue", "Voce", "Effetti"],
     fr: ["Langues", "Voix", "Effets"],
     ja: ["言語", "音声", "効果"],
+    ar: ["اللغات", "الصوت", "المؤثرات"],
   });
 
   return (
@@ -475,7 +484,28 @@ export default function Onboarding({
                               <Text as="span">{supportOption.label}</Text>
                             </HStack>
                           </MenuButton>
-                          <MenuList borderColor="gray.700" bg="gray.900">
+                          <MenuList
+                            borderColor="gray.700"
+                            bg="gray.900"
+                            maxH="300px"
+                            overflowY="auto"
+                            sx={{
+                              "&::-webkit-scrollbar": {
+                                width: "8px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                bg: "gray.800",
+                                borderRadius: "4px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                bg: "gray.600",
+                                borderRadius: "4px",
+                              },
+                              "&::-webkit-scrollbar-thumb:hover": {
+                                bg: "gray.500",
+                              },
+                            }}
+                          >
                             <Box
                               px={3}
                               pt={2}
@@ -785,6 +815,7 @@ export default function Onboarding({
                       it: "Indietro",
                       fr: "Retour",
                       ja: "戻る",
+                      ar: "رجوع",
                     })}
                   </Button>
                 )}
@@ -806,6 +837,7 @@ export default function Onboarding({
                         it: "Avanti",
                         fr: "Suivant",
                         ja: "次へ",
+                        ar: "التالي",
                       })}
                   </Button>
                 ) : (

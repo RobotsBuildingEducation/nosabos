@@ -55,6 +55,7 @@ export const REAL_WORLD_TASKS_REFRESH_MS = 6 * 60 * 60 * 1000; // 6 hours
 const TARGET_LANGUAGE_LABELS = {
   en: "English",
   es: "Spanish",
+  ar: "Egyptian Arabic",
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
@@ -186,7 +187,25 @@ async function generateRealWorldTasks({ targetLang, appLanguage, cefrLevel }) {
   return tasks;
 }
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
+const ARABIC_SUPPORT_COPY = {
+  "Ready to refresh": "جاهزة للتحديث",
+  "Could not generate tasks. Please try again.":
+    "ما قدرناش نولّد المهام. جرّب مرة تانية.",
+  "Failed to award reward": "ما قدرناش نضيف المكافأة",
+  "Immersion Practice": "تدريب الانغماس",
+  "3 tasks to use your language outside the app":
+    "3 مهام عشان تستخدم لغتك برّه التطبيق",
+  "Next batch in": "الدفعة الجاية بعد",
+  "Creating tasks...": "بنجهّز المهام...",
+  "Try again": "حاول تاني",
+  "No tasks yet.": "لسه ما فيش مهام.",
+};
+
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
@@ -207,12 +226,16 @@ function formatRemaining(ms, lang) {
       "更新できます",
       "Pronto para atualizar",
       "रीफ्रेश के लिए तैयार",
+      "جاهزة للتحديث",
     );
   }
   const totalSec = Math.floor(ms / 1000);
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   if (h > 0) {
+    if (lang === "ar") {
+      return `باقي ${h}س ${m}د`;
+    }
     return supportCopy(
       lang,
       `${h}h ${m}m left`,
@@ -223,6 +246,9 @@ function formatRemaining(ms, lang) {
       `faltam ${h}h ${m}min`,
       `${h}घं ${m}मि बाकी`,
     );
+  }
+  if (lang === "ar") {
+    return `باقي ${m}د`;
   }
   return supportCopy(
     lang,
@@ -397,6 +423,7 @@ export default function RealWorldTasksModal({
           "タスクを生成できませんでした。もう一度お試しください。",
           "Não foi possível gerar as tarefas. Tente novamente.",
           "कार्य नहीं बनाए जा सके। कृपया फिर से कोशिश करें।",
+          "ما قدرناش نولّد المهام. جرّب مرة تانية.",
         ),
       );
     } finally {
@@ -469,6 +496,7 @@ export default function RealWorldTasksModal({
           "報酬を付与できませんでした",
           "Não foi possível conceder a recompensa",
           "इनाम नहीं दिया जा सका",
+          "ما قدرناش نضيف المكافأة",
         ),
         status: "error",
         duration: 3000,
@@ -500,6 +528,7 @@ export default function RealWorldTasksModal({
     "イマージョン練習",
     "Prática de imersão",
     "इमर्शन अभ्यास",
+    "تدريب الانغماس",
   );
   const subtitle = supportCopy(
     lang,
@@ -510,6 +539,7 @@ export default function RealWorldTasksModal({
     "アプリの外で言語を使う3つのタスク",
     "3 tarefas para usar seu idioma fora do app",
     "ऐप के बाहर अपनी भाषा का उपयोग करने के लिए 3 कार्य",
+    "3 مهام عشان تستخدم لغتك برّه التطبيق",
   );
   const progressLabel = supportCopy(
     lang,
@@ -520,6 +550,7 @@ export default function RealWorldTasksModal({
     "次のセットまで",
     "Próximo lote em",
     "अगला सेट",
+    "الدفعة الجاية بعد",
   );
   const generatingLabel = supportCopy(
     lang,
@@ -530,6 +561,7 @@ export default function RealWorldTasksModal({
     "タスクを作成中...",
     "Criando tarefas...",
     "कार्य बनाए जा रहे हैं...",
+    "بنجهّز المهام...",
   );
   const voiceOrbState = useMemo(() => {
     const options = ["idle", "listening", "speaking"];
@@ -544,6 +576,8 @@ export default function RealWorldTasksModal({
           ? `Receber +${REAL_WORLD_TASKS_REWARD_XP} XP`
           : lang === "hi"
             ? `+${REAL_WORLD_TASKS_REWARD_XP} XP प्राप्त करें`
+            : lang === "ar"
+              ? `استلم +${REAL_WORLD_TASKS_REWARD_XP} XP`
             : lang === "it"
               ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
               : lang === "es"
@@ -658,6 +692,8 @@ export default function RealWorldTasksModal({
                     "Reessayer",
                     "もう一度",
                     "Tentar novamente",
+                    null,
+                    "حاول تاني",
                   )}
                 </Button>
               </Flex>
@@ -672,6 +708,8 @@ export default function RealWorldTasksModal({
                     "Aucune tache pour l'instant.",
                     "タスクはまだありません。",
                     "Ainda não há tarefas.",
+                    null,
+                    "لسه ما فيش مهام.",
                   )}
                 </Text>
               </Flex>

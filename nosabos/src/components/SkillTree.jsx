@@ -220,10 +220,14 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
 import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
 import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
-import { normalizeSupportLanguage } from "../constants/languages";
+import {
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import {
@@ -312,6 +316,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
   if (supportLang === "hi" && !textObj.hi) {
     return translateSkillTreeTextToHindi(fallback);
   }
+  if (supportLang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
@@ -334,6 +341,9 @@ const getUIDisplayText = (textObj) => {
   }
   if (lang === "hi" && !textObj.hi) {
     return translateSkillTreeTextToHindi(fallback);
+  }
+  if (lang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
   }
   return textObj[lang] || fallback;
 };
@@ -1707,6 +1717,16 @@ const GAME_LOADING_MESSAGES = {
     "दृश्य सजाया जा रहा है...",
     "आपका रोमांच तैयार किया जा रहा है...",
   ],
+  ar: [
+    "بنكوّن عالمك...",
+    "بنحط الشخصيات...",
+    "بنكتب حوار المهمة...",
+    "بنجهز تحديات المفردات...",
+    "بنرسم خريطة المكان...",
+    "بنحضّر ألغاز اللغة...",
+    "بنظبط المشهد...",
+    "بنصنع مغامرتك...",
+  ],
 };
 
 function LessonDetailModal({
@@ -1730,6 +1750,7 @@ function LessonDetailModal({
   const isTransitioningToLesson = gameLoading || lessonLoading;
   const blockModalClose = useCallback(() => undefined, []);
   const resolvedSupportLang = normalizeSupportLanguage(supportLang);
+  const isRtl = getLanguageDirection(resolvedSupportLang) === "rtl";
   const t = useCallback(
     (key, params = {}) => getTranslation(key, params, resolvedSupportLang),
     [resolvedSupportLang],
@@ -2051,7 +2072,8 @@ function LessonDetailModal({
               }}
               borderRadius="lg"
               top={4}
-              right={4}
+              left={isRtl ? 4 : undefined}
+              right={isRtl ? "auto" : 4}
               isDisabled={lessonLoading}
             />
             <ModalBody pb={6} pt={6} position="relative">
@@ -2112,7 +2134,13 @@ function LessonDetailModal({
                           }
                         >
                           <Icon size={16} />
-                          <Text textTransform="capitalize">{modeName}</Text>
+                          <Text
+                            textTransform={
+                              resolvedSupportLang === "ar" ? "none" : "capitalize"
+                            }
+                          >
+                            {modeName}
+                          </Text>
                         </Badge>
                       );
                     })}

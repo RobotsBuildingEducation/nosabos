@@ -11,12 +11,15 @@ import { withFrenchFlashcardText } from "./frenchLocalizer.js";
 import { withHindiFlashcardText } from "./hindiLocalizer.js";
 import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
 import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
-  withHindiFlashcardText(
-    withJapaneseFlashcardText(
-      withFrenchFlashcardText(
-        withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+  withArabicFlashcardText(
+    withHindiFlashcardText(
+      withJapaneseFlashcardText(
+        withFrenchFlashcardText(
+          withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+        ),
       ),
     ),
   );

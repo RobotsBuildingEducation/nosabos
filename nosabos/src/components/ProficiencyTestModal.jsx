@@ -98,6 +98,8 @@ export default function ProficiencyTestModal({
                   targetLangLabel ||
                   (lang === "ja"
                     ? "この言語"
+                    : lang === "ar"
+                    ? "اللغة دي"
                     : lang === "fr"
                     ? "cette langue"
                     : lang === "pt"

@@ -18,7 +18,17 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 
-function supportCopy(lang, en, es, pt, it, fr, ja, hi = null) {
+const ARABIC_SUPPORT_COPY = {
+  "Enter the passcode": "اكتب رمز الدخول",
+  Verifying: "جارٍ التحقق",
+  Submit: "إرسال",
+};
+
+function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
@@ -69,6 +79,7 @@ export default function SubscriptionGate({
           "Entre le code d'acces",
           "パスコードを入力してください",
           "पासकोड दर्ज करें",
+          "اكتب رمز الدخول",
         ),
       );
       return;
@@ -141,6 +152,7 @@ export default function SubscriptionGate({
                 "Verification",
                 "確認中",
                 "जांच हो रही है",
+                "جارٍ التحقق",
               )}
             >
               {supportCopy(
@@ -152,6 +164,7 @@ export default function SubscriptionGate({
                 "Envoyer",
                 "送信",
                 "जमा करें",
+                "إرسال",
               )}
             </Button>
           </Stack>

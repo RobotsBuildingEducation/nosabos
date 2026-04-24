@@ -7,12 +7,15 @@ import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
 import { withHindiSkillTreeText } from "./hindiLocalizer.js";
 import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
 import { withPortugueseSkillTreeText } from "./portugueseLocalizer.js";
+import { withArabicSkillTreeText } from "./arabicLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
-  withHindiSkillTreeText(
-    withJapaneseSkillTreeText(
-      withFrenchSkillTreeText(
-        withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+  withArabicSkillTreeText(
+    withHindiSkillTreeText(
+      withJapaneseSkillTreeText(
+        withFrenchSkillTreeText(
+          withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+        ),
       ),
     ),
   );
@@ -1598,7 +1601,9 @@ const baseLearningPath = {
   C2: SKILL_TREE_C2,
 };
 
-const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+const cefrAlignedLearningPath = withLocalizedSkillTreeText(
+  applyCEFRScaffolding(baseLearningPath),
+);
 
 const SUPPORTED_TARGET_LANGS = new Set([
   "en",

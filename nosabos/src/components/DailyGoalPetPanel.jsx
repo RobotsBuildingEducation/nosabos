@@ -64,6 +64,32 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "ar") {
+    return {
+      title: "صاحبك",
+      subtitle: "حافظ على صحته لما تحقق هدف XP اليومي.",
+      health: "الصحة",
+      happy: "مبسوط",
+      healthy: "صحي",
+      unhappy: "زعلان",
+      stressed: "متوتر",
+      unhealthy: "تعبان",
+      dead: "غير نشط",
+      reward: "الهدف اتحقق",
+      penalty: "الهدف فاتك",
+      rewardFooter: "الصحة بتعلى لحد {health}%",
+      penaltyFooter: "الصحة بتنزل لحد {health}%",
+      latestAchieved: "آخر تحديث: +{delta}% بعد تحقيق الهدف",
+      latestMissed: "آخر تحديث: {delta}% بعد فوات الهدف",
+      managementHint: "حقق هدف النهارده علشان يفضل قوي.",
+      celebrationHint: "صحة صاحبك زادت النهارده.",
+      rewardBadge: "مكافأة +{delta}%",
+      penaltyBadge: "خطر -{delta}%",
+      previewHint:
+        "دي مجرد معاينة ومش هتغير الصحة الحقيقية لصاحبك.",
+    };
+  }
+
   if (lang === "hi") {
     return {
       title: "आपका साथी",

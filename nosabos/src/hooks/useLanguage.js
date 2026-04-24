@@ -5,6 +5,7 @@ import {
   isSupportedSupportLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 
 // Spanish-speaking timezone identifiers
 const spanishTimezones = [
@@ -48,6 +49,7 @@ const spanishTimezones = [
 
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
 const hindiTimezones = ["Asia/Kolkata", "Asia/Calcutta"];
+const arabicTimezones = ["Africa/Cairo"];
 
 const portugueseTimezones = [
   "Europe/Lisbon",
@@ -108,6 +110,9 @@ const frenchTimezones = [
 const detectLanguageFromTimezone = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (arabicTimezones.includes(timezone)) {
+      return "ar";
+    }
     if (hindiTimezones.includes(timezone)) {
       return "hi";
     }
@@ -159,20 +164,29 @@ const useLanguage = create((set, get) => ({
   // Initialize language (only sets if not already set by user)
   initLanguage: () => {
     const currentLang = get().language;
-    if (currentLang === null) {
-      // Check if appLanguage already exists in localStorage (set by App.jsx)
-      const stored = getStoredLanguage();
-      if (stored) {
-        set({ language: stored });
-        return stored;
-      }
-      // Otherwise detect from timezone
-      const detectedLang = detectLanguageFromTimezone();
-      setStoredLanguage(detectedLang); // Write immediately
-      set({ language: detectedLang });
-      return detectedLang;
+    if (currentLang !== null) {
+      const normalizedCurrentLang = normalizeSupportLanguage(
+        currentLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      );
+      syncDocumentLanguage(normalizedCurrentLang);
+      return normalizedCurrentLang;
     }
-    return currentLang;
+
+    // Check if appLanguage already exists in localStorage (set by App.jsx)
+    const stored = getStoredLanguage();
+    if (stored) {
+      syncDocumentLanguage(stored);
+      set({ language: stored });
+      return stored;
+    }
+
+    // Otherwise detect from timezone
+    const detectedLang = detectLanguageFromTimezone();
+    setStoredLanguage(detectedLang); // Write immediately
+    syncDocumentLanguage(detectedLang);
+    set({ language: detectedLang });
+    return detectedLang;
   },
 
   // Set language explicitly (user preference)
@@ -182,6 +196,7 @@ const useLanguage = create((set, get) => ({
       get().language || DEFAULT_SUPPORT_LANGUAGE,
     );
     setStoredLanguage(nextLang); // Write immediately
+    syncDocumentLanguage(nextLang);
     set({ language: nextLang });
   },
 
@@ -197,6 +212,7 @@ const useLanguage = create((set, get) => ({
         (currentIndex + 1) % SUPPORT_LANGUAGE_CODES.length
       ] || DEFAULT_SUPPORT_LANGUAGE;
     setStoredLanguage(newLang); // Write immediately
+    syncDocumentLanguage(newLang);
     set({ language: newLang });
   },
 

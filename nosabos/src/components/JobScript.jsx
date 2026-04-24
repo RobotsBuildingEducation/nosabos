@@ -90,6 +90,16 @@ const LLM_LANG_NAME = (codeOrName) => {
     .toLowerCase();
   if (m === "en" || m === "english") return "English";
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
+  if (
+    m === "ar" ||
+    m === "arabic" ||
+    m === "egyptian arabic" ||
+    m === "العربية" ||
+    m === "العربية المصرية" ||
+    m === "مصري" ||
+    m === "مصرى"
+  )
+    return "Egyptian Arabic";
   if (m === "pt" || m === "portuguese" || m === "português")
     return "Brazilian Portuguese";
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
@@ -130,6 +140,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (!m) return fallback;
   if (m === "en") return "en-US";
   if (m === "es") return "es-MX";
+  if (m === "ar") return "ar-EG";
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
@@ -155,6 +166,18 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (
+    [
+      "ar",
+      "arabic",
+      "egyptian arabic",
+      "العربية",
+      "العربية المصرية",
+      "مصري",
+      "مصرى",
+    ].includes(raw)
+  )
+    return "ar";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
@@ -340,13 +363,47 @@ function useUIText(uiLang, level, translationsObj) {
       "Script loaded": "スクリプトを読み込みました",
       "You don't have any saved scripts yet.": "保存済みスクリプトはまだありません。",
     };
-    const copy = (en, es, it, fr, ja) =>
+    const arCopy = {
+      "Script Coach": "مدرب السكربت",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "ارفع السكربت أو الصقه؛ هنحوّله للغة الهدف ونعرض الشرح بلغتك.",
+      "Create script": "اعمل سكربت",
+      Listen: "اسمع",
+      "Start Sentence Practice": "ابدأ تدريب الجمل",
+      "Practice this sentence:": "اتدرّب على الجملة دي:",
+      "Skip Sentence": "تخطى الجملة",
+      "Finish Practice": "أنهِ التدريب",
+      "Record Sentence": "سجّل الجملة",
+      "Stop Recording": "أوقف التسجيل",
+      Progress: "التقدم",
+      "Well done!": "أحسنت!",
+      "Almost — try again": "قربت، جرّب مرة تانية",
+      Score: "النتيجة",
+      Level: "المستوى",
+      "I speak (support)": "أنا بتكلم (الدعم)",
+      "I’m learning (target)": "أنا بتعلم (الهدف)",
+      "e.g., es, Spanish, fr-CA": "مثال: es أو Spanish أو fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "الصق السكربت هنا... (المدعوم: .txt و .srt و .vtt و .md و .docx و .pdf)",
+      "Upload file": "ارفع ملف",
+      "Script ready! Start practicing.": "السكربت جاهز! ابدأ التدريب.",
+      "You need at least one sentence.": "لازم يكون فيه جملة واحدة على الأقل.",
+      Save: "احفظ",
+      "Title (optional)": "العنوان (اختياري)",
+      "Your saved scripts": "السكربتات المحفوظة",
+      Open: "افتح",
+      "Script saved": "تم حفظ السكربت",
+      "Script loaded": "تم تحميل السكربت",
+      "You don't have any saved scripts yet.": "لسه ما عندكش سكربتات محفوظة.",
+    };
+    const copy = (en, es, it, fr, ja, ar) =>
       uiCopy(uiLang, {
         en,
         es,
         it,
         fr: fr || frCopy[en] || en,
         ja: ja || jaCopy[en] || en,
+        ar: ar || arCopy[en] || en,
       });
     return {
       header: copy("Script Coach", "Entrenador de guiones", "Coach di copioni"),
@@ -1066,8 +1123,8 @@ const isInsecureContext = () => {
 };
 
 function micErrorToMessage(err, uiLang) {
-  const t = (en, es, fr, it = en, ja = en) =>
-    uiCopy(uiLang, { en, es, it, fr, ja });
+  const t = (en, es, fr, it = en, ja = en, ar = en) =>
+    uiCopy(uiLang, { en, es, it, fr, ja, ar });
   switch (err?.name) {
     case "NotAllowedError":
       return t(
@@ -1076,6 +1133,7 @@ function micErrorToMessage(err, uiLang) {
         "Le navigateur bloque le micro pour ce site. Clique sur le cadenas → Parametres du site → Microphone → Autoriser, puis recharge.",
         undefined,
         "ブラウザがこのサイトのマイクをブロックしています。鍵アイコン → サイト設定 → マイク → 許可を選び、再読み込みしてください。",
+        "المتصفح مانع الميكروفون للموقع ده. اضغط على رمز القفل → إعدادات الموقع → الميكروفون → سماح، وبعدها أعد التحميل.",
       );
     case "SecurityError":
       return t(
@@ -1084,6 +1142,7 @@ function micErrorToMessage(err, uiLang) {
         "Le micro necessite HTTPS (ou localhost). Ouvre l'app en https:// et reessaie.",
         undefined,
         "マイクにはHTTPS（またはlocalhost）が必要です。https:// でアプリを開いてもう一度試してください。",
+        "الميكروفون يحتاج HTTPS (أو localhost). افتح التطبيق عبر https:// ثم جرّب مرة أخرى.",
       );
     case "NotReadableError":
       return t(
@@ -1092,6 +1151,7 @@ function micErrorToMessage(err, uiLang) {
         "Le micro est occupe (Zoom/Teams/Discord). Ferme les autres apps qui l'utilisent et reessaie.",
         undefined,
         "マイクが使用中です（Zoom/Teams/Discordなど）。マイクを使っている他のアプリを閉じて、もう一度試してください。",
+        "الميكروفون مستخدم في تطبيق آخر (Zoom/Teams/Discord). اقفل التطبيقات الثانية ثم جرّب مرة أخرى.",
       );
     case "NotFoundError":
       return t(
@@ -1100,6 +1160,7 @@ function micErrorToMessage(err, uiLang) {
         "Aucun micro trouve ou il est desactive dans le systeme.",
         undefined,
         "マイクが見つからないか、OS側で無効になっています。",
+        "لم يتم العثور على ميكروفون أو أنه معطّل من النظام.",
       );
     case "OverconstrainedError":
       return t(
@@ -1108,6 +1169,7 @@ function micErrorToMessage(err, uiLang) {
         "Les contraintes audio demandees ne sont pas prises en charge par ton micro.",
         undefined,
         "要求された音声設定はこのマイクではサポートされていません。",
+        "إعدادات الصوت المطلوبة غير مدعومة على هذا الميكروفون.",
       );
     default:
       return t(
@@ -1116,6 +1178,7 @@ function micErrorToMessage(err, uiLang) {
         "Erreur de micro. Si les autorisations semblent correctes, recharge la page et reessaie.",
         undefined,
         "マイクエラーです。権限が許可されている場合は、ページを再読み込みしてもう一度試してください。",
+        "حصلت مشكلة في الميكروفون. إذا كانت الصلاحيات مفعلة، أعد تحميل الصفحة ثم جرّب مرة أخرى.",
       );
   }
 }
@@ -1232,8 +1295,22 @@ export default function JobScript({
           text = await parsePdfToText(file);
         } else {
           toast({
-            title: "Unsupported file",
-            description: "Use .txt, .srt, .vtt, .md, .docx, or .pdf",
+            title: uiCopy(uiLang, {
+              en: "Unsupported file",
+              es: "Archivo no compatible",
+              it: "File non supportato",
+              fr: "Fichier non pris en charge",
+              ja: "未対応のファイルです",
+              ar: "ملف غير مدعوم",
+            }),
+            description: uiCopy(uiLang, {
+              en: "Use .txt, .srt, .vtt, .md, .docx, or .pdf",
+              es: "Usa .txt, .srt, .vtt, .md, .docx o .pdf",
+              it: "Usa .txt, .srt, .vtt, .md, .docx o .pdf",
+              fr: "Utilise .txt, .srt, .vtt, .md, .docx ou .pdf",
+              ja: ".txt、.srt、.vtt、.md、.docx、.pdf を使ってください",
+              ar: "استخدم .txt أو .srt أو .vtt أو .md أو .docx أو .pdf",
+            }),
             status: "warning",
           });
           break theExt;
@@ -1247,6 +1324,7 @@ export default function JobScript({
             it: "File caricato",
             fr: "Fichier charge",
             ja: "ファイルを読み込みました",
+            ar: "تم تحميل الملف",
           }),
           status: "success",
           duration: 1200,
@@ -1260,6 +1338,7 @@ export default function JobScript({
             it: "Errore di lettura del file",
             fr: "Erreur de lecture du fichier",
             ja: "ファイルの読み取りエラー",
+            ar: "خطأ في قراءة الملف",
           }),
           description: String(e?.message || e),
           status: "error",
@@ -1384,6 +1463,7 @@ export default function JobScript({
           it: "Impossibile creare il copione",
           fr: "Impossible de creer le script",
           ja: "スクリプトを作成できませんでした",
+          ar: "تعذر إنشاء السكربت",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1403,6 +1483,7 @@ export default function JobScript({
           it: "Niente da salvare",
           fr: "Rien a enregistrer",
           ja: "保存するものがありません",
+          ar: "لا يوجد شيء للحفظ",
         }),
         status: "warning",
       });
@@ -1440,6 +1521,7 @@ export default function JobScript({
           it: "Impossibile salvare",
           fr: "Impossible d'enregistrer",
           ja: "保存できませんでした",
+          ar: "تعذر الحفظ",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1470,6 +1552,7 @@ export default function JobScript({
           it: "Impossibile aprire",
           fr: "Impossible d'ouvrir",
           ja: "開けませんでした",
+          ar: "تعذر الفتح",
         }),
         description: String(e?.message || e),
         status: "error",
@@ -1762,6 +1845,7 @@ export default function JobScript({
         it: "Congratulazioni!",
         fr: "Felicitations !",
         ja: "おめでとうございます！",
+        ar: "مبروك!",
       }),
       description: uiCopy(uiLang, {
         en: `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
@@ -1769,6 +1853,7 @@ export default function JobScript({
         it: `Pratica completata! Hai guadagnato ${awardedXp} ${uiText.xp}.`,
         fr: `Pratique terminee ! Tu as gagne ${awardedXp} ${uiText.xp}.`,
         ja: `練習完了！${awardedXp} ${uiText.xp}を獲得しました。`,
+        ar: `خلصت التدريب! كسبت ${awardedXp} ${uiText.xp}.`,
       }),
       status: "success",
       duration: 3000,
@@ -1798,6 +1883,7 @@ export default function JobScript({
           it: "Microfono bloccato",
           fr: "Micro bloque",
           ja: "マイクがブロックされています",
+          ar: "الميكروفون محظور",
         }),
         description: micErrorToMessage({ name: "SecurityError" }, uiLang),
         status: "warning",
@@ -1817,6 +1903,7 @@ export default function JobScript({
             it: "Microfono bloccato",
             fr: "Micro bloque",
             ja: "マイクがブロックされています",
+            ar: "الميكروفون محظور",
           }),
           description: micErrorToMessage({ name: "NotAllowedError" }, uiLang),
           status: "error",
@@ -1895,6 +1982,7 @@ export default function JobScript({
           it: "Problema con il microfono",
           fr: "Probleme de micro",
           ja: "マイクの問題",
+          ar: "مشكلة في الميكروفون",
         }),
         description: msg,
         status: "warning",
@@ -1948,6 +2036,7 @@ export default function JobScript({
           it: "Impossibile usare il microfono",
           fr: "Impossible d'utiliser le micro",
           ja: "マイクを使用できませんでした",
+          ar: "تعذر استخدام الميكروفون",
         }),
         description: uiCopy(uiLang, {
           en: "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
@@ -1955,6 +2044,7 @@ export default function JobScript({
           it: "Prova Chrome/Edge su https://, controlla il lucchetto (Microfono: Consenti) e assicurati che nessun'altra app usi il microfono.",
           fr: "Essaie Chrome/Edge en https://, verifie le cadenas (Microphone : Autoriser) et assure-toi qu'aucune autre app n'utilise le micro.",
           ja: "https:// のChrome/Edgeで試し、鍵アイコン（マイク: 許可）を確認し、他のアプリがマイクを使用していないことを確認してください。",
+          ar: "جرّب Chrome/Edge عبر https://، وتأكد من رمز القفل (الميكروفون: سماح)، وأنه لا يوجد تطبيق آخر يستخدم الميكروفون.",
         }),
         status: "error",
         duration: 7000,
@@ -2108,6 +2198,7 @@ export default function JobScript({
           it: "Errore del microfono",
           fr: "Erreur de micro",
           ja: "マイクエラー",
+          ar: "خطأ في الميكروفون",
         }),
         description: micErrorToMessage(e, uiLang),
         status: "error",
@@ -2446,6 +2537,7 @@ export default function JobScript({
                         it: "Frase",
                         fr: "Phrase",
                         ja: "文",
+                        ar: "الجملة",
                       })}{" "}
                       {currentSentenceIndex + 1}{" "}
                       {uiCopy(uiLang, {
@@ -2454,6 +2546,7 @@ export default function JobScript({
                         it: "di",
                         fr: "sur",
                         ja: "／",
+                        ar: "من",
                       })}{" "}
                       {storyData.sentences.length}
                     </Text>

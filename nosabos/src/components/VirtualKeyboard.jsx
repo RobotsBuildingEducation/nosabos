@@ -438,6 +438,8 @@ export default function VirtualKeyboard({
               {isUpperCase
                 ? userLanguage === "ja"
                   ? "大文字"
+                  : userLanguage === "ar"
+                    ? "حروف كبيرة"
                   : userLanguage === "pt"
                   ? "Maiusculas"
                   : userLanguage === "es"
@@ -445,6 +447,8 @@ export default function VirtualKeyboard({
                   : "Uppercase"
                 : userLanguage === "ja"
                 ? "小文字"
+                : userLanguage === "ar"
+                ? "حروف صغيرة"
                 : userLanguage === "pt"
                 ? "Minusculas"
                 : userLanguage === "es"
@@ -457,6 +461,8 @@ export default function VirtualKeyboard({
           aria-label={
             userLanguage === "ja"
               ? "キーボードを閉じる"
+              : userLanguage === "ar"
+              ? "إغلاق لوحة المفاتيح"
               : userLanguage === "pt"
               ? "Fechar teclado"
               : userLanguage === "es"
@@ -522,6 +528,8 @@ export default function VirtualKeyboard({
           >
             {userLanguage === "ja"
               ? "スペース"
+              : userLanguage === "ar"
+              ? "مسافة"
               : userLanguage === "pt"
               ? "Espaco"
               : userLanguage === "es"
@@ -532,6 +540,8 @@ export default function VirtualKeyboard({
             aria-label={
               userLanguage === "ja"
                 ? "削除"
+                : userLanguage === "ar"
+                ? "حذف"
                 : userLanguage === "pt"
                 ? "Apagar"
                 : userLanguage === "es"

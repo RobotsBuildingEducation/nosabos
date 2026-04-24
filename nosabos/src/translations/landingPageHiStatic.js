@@ -104,6 +104,11 @@ export const LANDING_PAGE_HI_STATIC = {
   signin_button: "साइन इन",
   signin_extension: "एक्सटेंशन के साथ साइन इन",
   signin_or: "या",
+  signin_error_invalid_key:
+    "सीक्रेट कुंजी अमान्य है। कृपया जांचें और फिर कोशिश करें।",
+  signin_error_extension:
+    "एक्सटेंशन से साइन इन नहीं हो सका। कृपया फिर कोशिश करें।",
+  signin_error_generic: "साइन इन नहीं हो सका। कृपया फिर कोशिश करें।",
   back_button: "वापस",
   language_nl: "डच",
   language_en: "अंग्रेज़ी",

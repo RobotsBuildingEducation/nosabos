@@ -105,7 +105,53 @@ const HINDI_SUPPORT_COPY = {
   "Loading wallet…": "वॉलेट लोड हो रहा है…",
 };
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null) {
+const ARABIC_SUPPORT_COPY = {
+  "Enter a display name": "اكتب اسم عرض",
+  "Display name updated": "اتحدّث اسم العرض",
+  Error: "خطأ",
+  "Join us on Patreon": "انضم لينا على Patreon",
+  "Access more education apps and content":
+    "افتح تطبيقات ومحتوى تعليمي أكتر",
+  Join: "انضم",
+  "Change display name": "غيّر اسم العرض",
+  "Create display name": "اعمل اسم عرض",
+  "Saving…": "جارٍ الحفظ…",
+  Save: "حفظ",
+  "Wallet not ready": "المحفظة مش جاهزة",
+  "Please try again in a moment.": "جرّب تاني بعد لحظة.",
+  "Secret key required": "مطلوب المفتاح السري",
+  "Enter your nsec to create the wallet.":
+    "اكتب nsec بتاعك علشان تنشئ المحفظة.",
+  "Invalid key": "مفتاح غير صالح",
+  "Key must start with 'nsec'.": "المفتاح لازم يبدأ بـ nsec.",
+  "Couldn't create wallet": "ماقدرناش ننشئ المحفظة",
+  "Failed to create wallet": "فشل إنشاء المحفظة",
+  "Select an identity": "اختار هوية",
+  "Choose who receives your deposits before continuing.":
+    "اختار مين يستقبل إيداعاتك قبل ما تكمل.",
+  "Couldn't create invoice": "ماقدرناش ننشئ الفاتورة",
+  "Failed to initiate deposit": "فشل بدء الإيداع",
+  "Address copied": "اتنسخ العنوان",
+  "Lightning invoice copied to clipboard.":
+    "فاتورة Lightning اتنسخت للحافظة.",
+  "Choose a recipient": "اختار مستلِم",
+  "View site": "افتح الموقع",
+  "Select an option to enable deposits.":
+    "اختار خيار عشان تفعّل الإيداعات.",
+  "Bitcoin wallet": "محفظة بيتكوين",
+  "Loading wallet…": "جارٍ تحميل المحفظة…",
+};
+
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "ar") {
+    if (ar) return ar;
+    if (typeof en === "string") {
+      if (/'s Account$/.test(en)) {
+        return en.replace(/'s Account$/, " - الحساب");
+      }
+      return ARABIC_SUPPORT_COPY[en] || en;
+    }
+  }
   if (lang === "ja") return ja || en;
   if (lang === "fr") return fr || en;
   if (lang === "it") return it || en;
@@ -1259,6 +1305,28 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "キーはウォレット作成にのみ使用され、保存されません。",
     };
+    const ar = {
+      createWallet: "أنشئ محفظة",
+      loadingWallet: "جارٍ إنشاء المحفظة…",
+      deposit: "إيداع",
+      loadingAddress: "جارٍ إنشاء العنوان…",
+      or: "أو",
+      copyAddress: "انسخ العنوان",
+      ps: "استخدم محفظة Lightning متوافقة لدفع الفاتورة.",
+      activeWalletTitle: "محفظتك مفعّلة",
+      verifyTransactions: "تحقق من معاملاتك",
+      generateNew: "أنشئ QR جديدًا",
+      balanceLabel: "الرصيد",
+      cardNameLabel: "المحفظة",
+      scholarshipNote:
+        "إيداعاتك تساعدنا نعمل منح دراسية من خلال التعلّم مع ",
+      nip07NsecTitle: "مطلوب المفتاح السري",
+      nip07NsecDescription:
+        "أنت مسجل الدخول من إضافة في المتصفح، لذلك لا نملك الوصول إلى مفتاحك الخاص. لإنشاء محفظة، أدخل nsec بالأسفل.",
+      nip07NsecPlaceholder: "أدخل nsec1...",
+      nip07NsecWarning:
+        "يُستخدم مفتاحك فقط لإنشاء المحفظة ولا يتم حفظه.",
+    };
     return (
       walletLang === "ja"
         ? ja
@@ -1270,6 +1338,8 @@ export function BitcoinWalletSection({
         ? pt
         : walletLang === "hi"
         ? hi
+        : walletLang === "ar"
+        ? ar
         : walletLang === "es"
         ? es
         : en

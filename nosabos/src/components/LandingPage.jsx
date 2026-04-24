@@ -50,8 +50,10 @@ import {
   getPracticeLanguageOptions,
   getSupportLanguageOptions,
 } from "../constants/languages";
+import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
 import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -210,6 +212,10 @@ const translations = {
     signin_button: "Sign In",
     signin_extension: "Sign in with Extension",
     signin_or: "or",
+    signin_error_invalid_key:
+      "Invalid secret key. Please check it and try again.",
+    signin_error_extension: "Extension sign-in failed. Please try again.",
+    signin_error_generic: "Sign in failed. Please try again.",
     back_button: "Back",
     language_nl: "Dutch",
     language_en: "English",
@@ -217,6 +223,7 @@ const translations = {
     language_de: "German",
     language_it: "Italian",
     language_hi: "Hindi",
+    language_ar: "Egyptian Arabic",
     language_pt: "Portuguese",
     language_es: "Spanish",
     language_nah: "Eastern Huasteca Nahuatl",
@@ -335,6 +342,11 @@ const translations = {
     signin_button: "Iniciar Sesión",
     signin_extension: "Iniciar con Extensión",
     signin_or: "o",
+    signin_error_invalid_key:
+      "Llave secreta no válida. Revísala e inténtalo de nuevo.",
+    signin_error_extension:
+      "No se pudo iniciar sesión con la extensión. Inténtalo de nuevo.",
+    signin_error_generic: "No se pudo iniciar sesión. Inténtalo de nuevo.",
     back_button: "Regresar",
     language_nl: "Holandés",
     language_en: "Inglés",
@@ -342,6 +354,7 @@ const translations = {
     language_de: "Alemán",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
     language_pt: "Portugués",
     language_es: "Español",
     language_nah: "Náhuatl huasteco oriental",
@@ -458,6 +471,11 @@ const translations = {
     signin_button: "Accedi",
     signin_extension: "Accedi con Estensione",
     signin_or: "o",
+    signin_error_invalid_key:
+      "Chiave segreta non valida. Controllala e riprova.",
+    signin_error_extension:
+      "Accesso con estensione non riuscito. Riprova.",
+    signin_error_generic: "Accesso non riuscito. Riprova.",
     back_button: "Indietro",
     language_nl: "Olandese",
     language_en: "Inglese",
@@ -465,6 +483,7 @@ const translations = {
     language_de: "Tedesco",
     language_it: "Italiano",
     language_hi: "Hindi",
+    language_ar: "Arabo egiziano",
     language_pt: "Portoghese",
     language_es: "Spagnolo",
     language_nah: "Nahuatl huasteco orientale",
@@ -479,6 +498,10 @@ const translations = {
 
 translations.pt = LANDING_PAGE_PT_STATIC;
 translations.hi = LANDING_PAGE_HI_STATIC;
+translations.ar = {
+  ...translations.en,
+  ...LANDING_PAGE_AR_STATIC,
+};
 
 translations.fr = {
   ...translations.en,
@@ -585,6 +608,11 @@ translations.fr = {
   signin_button: "Connexion",
   signin_extension: "Connexion avec extension",
   signin_or: "ou",
+  signin_error_invalid_key:
+    "Cle secrete invalide. Verifie-la et reessaie.",
+  signin_error_extension:
+    "La connexion avec l'extension a echoue. Reessaie.",
+  signin_error_generic: "Connexion impossible. Reessaie.",
   back_button: "Retour",
   language_nl: "Néerlandais",
   language_en: "Anglais",
@@ -592,6 +620,7 @@ translations.fr = {
   language_de: "Allemand",
   language_it: "Italien",
   language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
   language_pt: "Portugais",
   language_es: "Espagnol",
   language_nah: "Nahuatl huastèque oriental",
@@ -715,6 +744,12 @@ translations.ja = {
   signin_button: "サインイン",
   signin_extension: "拡張機能でサインイン",
   signin_or: "または",
+  signin_error_invalid_key:
+    "シークレットキーが無効です。確認してもう一度お試しください。",
+  signin_error_extension:
+    "拡張機能でのサインインに失敗しました。もう一度お試しください。",
+  signin_error_generic:
+    "サインインに失敗しました。もう一度お試しください。",
   back_button: "戻る",
   language_nl: "オランダ語",
   language_en: "英語",
@@ -722,6 +757,7 @@ translations.ja = {
   language_de: "ドイツ語",
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
+  language_ar: "エジプトアラビア語",
   language_pt: "ポルトガル語",
   language_es: "スペイン語",
   language_nah: "東ワステカ・ナワトル語",
@@ -777,6 +813,24 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
           bg="var(--app-surface)"
           shadow="xl"
           minW="160px"
+          maxH="300px"
+          overflowY="auto"
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "var(--app-glass-bg-soft)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "var(--app-border-strong)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "var(--app-text-muted)",
+            },
+          }}
         >
           <MenuOptionGroup
             type="radio"
@@ -1358,6 +1412,26 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
   const [error, setError] = useState("");
   const playSound = useSoundSettings((s) => s.playSound);
 
+  const resolveSignInError = useCallback(
+    (err) => {
+      const message = String(err?.message || err || "").toLowerCase();
+      if (message.includes("extension")) {
+        return copy.signin_error_extension || copy.signin_error_generic;
+      }
+      if (
+        message.includes("invalid") ||
+        message.includes("secret") ||
+        message.includes("key") ||
+        message.includes("nsec") ||
+        message.includes("bech32")
+      ) {
+        return copy.signin_error_invalid_key || copy.signin_error_generic;
+      }
+      return copy.signin_error_generic || "Sign in failed. Please try again.";
+    },
+    [copy],
+  );
+
   const handleSignIn = async () => {
     if (!secretKey.trim()) return;
     playSound(submitActionSound);
@@ -1366,7 +1440,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
     try {
       await onSignIn(secretKey);
     } catch (e) {
-      setError(e.message || "Sign in failed");
+      setError(resolveSignInError(e));
     } finally {
       setLoading(false);
     }
@@ -1551,6 +1625,10 @@ const LandingPage = ({ onAuthenticated }) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("appLanguage", lang);
     }
+  }, [lang]);
+
+  useEffect(() => {
+    syncDocumentLanguage(lang);
   }, [lang]);
 
   const handleCreate = useCallback(async () => {
