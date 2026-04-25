@@ -279,6 +279,11 @@ const STOPWORDS = {
     "مش", "ما", "أو", "او", "كل", "بعض", "أي", "اي", "مين", "فين", "ليه", "إزاي",
     "ازاي", "إمتى", "امتى", "ده", "دي", "دول", "فيه", "فيها", "عشان", "علشان",
   ]),
+  zh: new Set([
+    "的", "了", "和", "是", "我", "你", "他", "她", "它", "我们", "你们", "他们",
+    "在", "有", "不", "也", "就", "都", "很", "这", "那", "一个", "什么", "怎么",
+    "为什么", "可以", "要", "会", "说", "做", "去", "来", "给", "对", "跟", "把",
+  ]),
 };
 
 function removeDiacritics(s) {
@@ -290,7 +295,7 @@ function removeDiacritics(s) {
 function normalizeGeneric(str, lang) {
   const s = removeDiacritics(str || "").toLowerCase();
   return s
-    .replace(/[^a-zñáéíóúüʼ' -]/gi, " ")
+    .replace(/[^\p{L}\p{N}ʼ' -]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -589,6 +594,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "重要な内容語を入れてみましょう。",
     "low-confidence": "はっきり発音し、周囲の雑音を減らしましょう。",
   },
+  zh: {
+    "speech-quality": "请声音更清楚一些，并保持稳定语速。",
+    "not-target-lang": (targetLabel) => `请尝试用${targetLabel}说。`,
+    "low-char-sim": "请更接近原句内容。",
+    "low-word-f1": "请包含关键词。",
+    "low-confidence": "请清楚发音，并减少背景噪音。",
+  },
 };
 
 export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = {}) {
@@ -609,6 +621,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
                 ? "la lingua obiettivo"
                 : lang === "hi"
                   ? "लक्ष्य भाषा"
+                : lang === "zh"
+                  ? "目标语言"
                 : lang === "fr"
                   ? "la langue cible"
                   : lang === "ja"
@@ -630,6 +644,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
           ? "Riprova parlando chiaramente."
           : lang === "hi"
             ? "स्पष्ट बोलते हुए फिर से कोशिश कीजिए।"
+          : lang === "zh"
+            ? "请清楚地说，然后再试一次。"
           : lang === "fr"
             ? "Reessaie en parlant clairement."
           : lang === "ja"

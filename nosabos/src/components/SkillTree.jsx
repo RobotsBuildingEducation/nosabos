@@ -221,6 +221,7 @@ import {
   SKILL_STATUS,
 } from "../data/skillTreeData";
 import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
+import { translateSkillTreeTextToChinese } from "../data/skillTree/chineseLocalizer";
 import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
 import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
@@ -319,6 +320,9 @@ const getDisplayText = (textObj, supportLang = "en") => {
   if (supportLang === "ar" && !textObj.ar) {
     return translateSkillTreeTextToArabic(fallback);
   }
+  if (supportLang === "zh" && !textObj.zh) {
+    return translateSkillTreeTextToChinese(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
@@ -344,6 +348,9 @@ const getUIDisplayText = (textObj) => {
   }
   if (lang === "ar" && !textObj.ar) {
     return translateSkillTreeTextToArabic(fallback);
+  }
+  if (lang === "zh" && !textObj.zh) {
+    return translateSkillTreeTextToChinese(fallback);
   }
   return textObj[lang] || fallback;
 };
@@ -1726,6 +1733,16 @@ const GAME_LOADING_MESSAGES = {
     "بنحضّر ألغاز اللغة...",
     "بنظبط المشهد...",
     "بنصنع مغامرتك...",
+  ],
+  zh: [
+    "正在构建你的世界...",
+    "正在放置角色...",
+    "正在编写任务对话...",
+    "正在生成词汇挑战...",
+    "正在设计地图布局...",
+    "正在准备语言谜题...",
+    "正在布置场景...",
+    "正在打造你的冒险...",
   ],
 };
 

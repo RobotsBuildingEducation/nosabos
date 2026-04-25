@@ -38,7 +38,11 @@ export default function ConversationAccountDrawer({
   const isLightTheme = themeMode === "light";
   const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const ui =
-    lang === "ja"
+    lang === "zh"
+      ? {
+          title: "会话设置",
+        }
+      : lang === "ja"
       ? {
           title: "会話設定",
         }

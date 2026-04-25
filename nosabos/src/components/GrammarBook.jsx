@@ -218,6 +218,7 @@ const LANG_NAME = (code) =>
     en: "English",
     es: "Spanish",
     ar: "Egyptian Arabic",
+    zh: "Mandarin Chinese",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -4137,11 +4138,14 @@ Return JSON ONLY:
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
       isJapaneseUI
         ? "単語マッチング練習です。左の項目を単語バンクの正しい選択肢と組み合わせて答えてください。"
         : isArabicUI
         ? "تمرين توصيل كلمات. جاوب بوصل كل عنصر في العمود الشمال بالاختيار الصح من بنك الكلمات."
+        : isChineseUI
+        ? "这是单词配对练习。请把左侧项目与词库中的正确选项配对作答。"
         : isFrenchUI
         ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
         : isPortugueseUI
@@ -4154,6 +4158,8 @@ Return JSON ONLY:
           ? `指示: ${mStem}`
           : isArabicUI
           ? `التعليمات: ${mStem}`
+          : isChineseUI
+          ? `说明：${mStem}`
           : isFrenchUI
           ? `Invite ou consigne : ${mStem}`
           : isPortugueseUI
@@ -4167,6 +4173,8 @@ Return JSON ONLY:
           ? `左の列: ${mLeft.join(" | ")}`
           : isArabicUI
           ? `العمود الشمال: ${mLeft.join(" | ")}`
+          : isChineseUI
+          ? `左侧栏：${mLeft.join(" | ")}`
           : isFrenchUI
           ? `Colonne gauche : ${mLeft.join(" | ")}`
           : isPortugueseUI
@@ -4180,6 +4188,8 @@ Return JSON ONLY:
           ? `単語バンク: ${mRight.join(" | ")}`
           : isArabicUI
           ? `بنك الكلمات: ${mRight.join(" | ")}`
+          : isChineseUI
+          ? `词库：${mRight.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${mRight.join(" | ")}`
           : isPortugueseUI
@@ -4193,6 +4203,8 @@ Return JSON ONLY:
           ? `ヒント: ${mHint}`
           : isArabicUI
           ? `تلميح: ${mHint}`
+          : isChineseUI
+          ? `提示：${mHint}`
           : isFrenchUI
           ? `Indice : ${mHint}`
           : isPortugueseUI

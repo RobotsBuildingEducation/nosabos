@@ -115,6 +115,8 @@ export default function TranslateSentence({
         ? "सहायक"
         : userLanguage === "ar"
           ? "المساعد"
+        : userLanguage === "zh"
+          ? "助手"
         : userLanguage === "ja"
           ? "アシスタント"
           : userLanguage === "pt" || userLanguage === "it"
@@ -256,11 +258,14 @@ export default function TranslateSentence({
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
       isJapaneseUI
         ? "提供された単語バンクを使って、この文を翻訳してください。"
         : isArabicUI
         ? "ترجم الجملة دي باستخدام بنك الكلمات الموجود."
+        : isChineseUI
+        ? "请使用提供的词库翻译这个句子。"
         : isFrenchUI
         ? "Traduis cette phrase avec la banque de mots fournie."
         : isPortugueseUI
@@ -273,6 +278,8 @@ export default function TranslateSentence({
           ? `翻訳する文: ${sourceSentence}`
           : isArabicUI
           ? `الجملة المطلوب ترجمتها: ${sourceSentence}`
+          : isChineseUI
+          ? `要翻译的句子：${sourceSentence}`
           : isFrenchUI
           ? `Phrase a traduire : ${sourceSentence}`
           : isPortugueseUI
@@ -286,6 +293,8 @@ export default function TranslateSentence({
           ? `単語バンク: ${wordBank.join(" | ")}`
           : isArabicUI
           ? `بنك الكلمات: ${wordBank.join(" | ")}`
+          : isChineseUI
+          ? `词库：${wordBank.join(" | ")}`
           : isFrenchUI
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isPortugueseUI
@@ -299,6 +308,8 @@ export default function TranslateSentence({
           ? `ヒント: ${hint}`
           : isArabicUI
           ? `تلميح: ${hint}`
+          : isChineseUI
+          ? `提示：${hint}`
           : isFrenchUI
           ? `Indice : ${hint}`
           : isPortugueseUI
@@ -311,6 +322,8 @@ export default function TranslateSentence({
         ? "単語バンクの選択肢を組み合わせて、正しい翻訳で答えてください。"
         : isArabicUI
         ? "جاوب بالترجمة الصحيحة المكوّنة من اختيارات بنك الكلمات."
+        : isChineseUI
+        ? "请组合词库中的选项，回答正确翻译。"
         : isFrenchUI
         ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
         : isPortugueseUI
@@ -434,6 +447,8 @@ export default function TranslateSentence({
                       aria-label={
                         userLanguage === "ja"
                           ? "アシスタントに聞く"
+                          : userLanguage === "zh"
+                          ? "询问助手"
                           : userLanguage === "ar"
                             ? "اسأل المساعد"
                           : userLanguage === "pt"
@@ -455,6 +470,8 @@ export default function TranslateSentence({
                     aria-label={
                       userLanguage === "ja"
                         ? "聞く"
+                        : userLanguage === "zh"
+                          ? "聆听"
                         : userLanguage === "ar"
                           ? "استمع"
                         : userLanguage === "pt"

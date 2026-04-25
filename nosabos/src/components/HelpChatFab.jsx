@@ -64,6 +64,7 @@ const LANG_COLORS = {
   fr: { bg: "purple.600", label: "FR" },
   it: { bg: "orange.600", label: "IT" },
   hi: { bg: "orange.500", label: "HI" },
+  zh: { bg: "red.600", label: "ZH" },
   nl: { bg: "orange.400", label: "NL" },
   nah: { bg: "teal.600", label: "NAH" },
   ru: { bg: "cyan.600", label: "RU" },
@@ -139,7 +140,37 @@ const ARABIC_SUPPORT_COPY = {
   Stop: "إيقاف",
 };
 
+const CHINESE_SUPPORT_COPY = {
+  "No messages": "没有消息",
+  "No messages to save.": "没有可保存的消息。",
+  "Saved chat": "已保存的聊天",
+  "Chat saved": "聊天已保存",
+  "Chat deleted": "聊天已删除",
+  "Sorry, I couldn’t complete that request. Please try again.":
+    "抱歉，我无法完成这个请求。请再试一次。",
+  "Chat error": "聊天错误",
+  "Connection error": "连接错误",
+  "Your chats": "你的聊天",
+  "No saved chats": "没有保存的聊天",
+  Delete: "删除",
+  "Morpheme mode": "语素模式",
+  "Break down words": "拆解词语",
+  "New chat": "新聊天",
+  Help: "帮助",
+  Menu: "菜单",
+  Morphemes: "语素",
+  "Save chat": "保存聊天",
+  "What do you want to learn today?": "今天你想学什么？",
+  "Stop voice chat": "停止语音聊天",
+  "Start voice chat": "开始语音聊天",
+  Play: "播放",
+  "Ask about this lesson...": "询问这个课程...",
+  Send: "发送",
+  Stop: "停止",
+};
+
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;
     return ARABIC_SUPPORT_COPY[en] || en;
@@ -756,6 +787,7 @@ const HelpChatFab = forwardRef(
           it: "Italian (italiano)",
           ja: "Japanese (日本語)",
           ar: "Egyptian Arabic (العربية المصرية)",
+          zh: "Mandarin Chinese (普通话中文)",
           nl: "Dutch (Nederlands)",
           nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
           ru: "Russian (русский)",
@@ -918,6 +950,8 @@ const HelpChatFab = forwardRef(
       const strict =
         primaryLang === "es"
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
+          : primaryLang === "zh"
+            ? "请完全使用普通话中文作为支持语言回答，即使用户用其他语言书写。"
           : primaryLang === "ar"
             ? "رد بالكامل بالمصري/العربية المصرية كلغة الدعم، حتى لو المستخدم كتب بلغة تانية."
           : primaryLang === "en"
@@ -954,6 +988,13 @@ const HelpChatFab = forwardRef(
             : lvl === "intermediate"
               ? "संक्षिप्त और स्वाभाविक रहें।"
               : "बहुत संक्षिप्त और स्वाभाविक रहें।";
+        }
+        if (primaryLang === "zh") {
+          return lvl === "beginner"
+            ? "使用简短、简单的句子。"
+            : lvl === "intermediate"
+              ? "保持简洁自然。"
+              : "非常简洁，并使用自然语气。";
         }
         if (primaryLang === "en") {
           return lvl === "beginner"
@@ -999,6 +1040,14 @@ const HelpChatFab = forwardRef(
               )} के उदाहरण या वाक्य केवल तभी शामिल करें जब वे मदद करें, लेकिन मुख्य व्याख्या ${nameForLanguage(
                 primaryLang,
               )} में रखें।`
+          : primaryLang === "zh"
+            ? `用${nameForLanguage(
+                primaryLang,
+              )}解释和指导。只有在有帮助时才加入${nameForLanguage(
+                targetLang,
+              )}的例句或短语，但主要解释必须保持${nameForLanguage(
+                primaryLang,
+              )}。`
           : `Explica y guía en ${nameForLanguage(
               primaryLang,
             )}. Incluye ejemplos o frases en ${nameForLanguage(
@@ -1363,6 +1412,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           it: "Italian",
           ja: "Japanese",
           ar: "Egyptian Arabic",
+          zh: "Mandarin Chinese",
           nl: "Dutch",
           nah: "Eastern Huasteca Nahuatl",
           ru: "Russian",

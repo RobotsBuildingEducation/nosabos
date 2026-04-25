@@ -53,6 +53,7 @@ const CEFR_LEVELS = [
       ja: "基礎",
       hi: "नींव",
       ar: "الأساسيات",
+      zh: "基础",
     },
     description: {
       en: "First words and phrases",
@@ -63,6 +64,7 @@ const CEFR_LEVELS = [
       ja: "最初の単語とフレーズ",
       hi: "पहले शब्द और वाक्यांश",
       ar: "أول كلمات وعبارات",
+      zh: "最初的单词和短语",
     },
     color: "#8B5CF6",
   },
@@ -77,6 +79,7 @@ const CEFR_LEVELS = [
       ja: "初心者",
       hi: "शुरुआती",
       ar: "مبتدئ",
+      zh: "初学者",
     },
     description: {
       en: "Basic survival language",
@@ -87,6 +90,7 @@ const CEFR_LEVELS = [
       ja: "基本的なサバイバル表現",
       hi: "बुनियादी रोज़मर्रा की भाषा",
       ar: "لغة أساسية للحياة اليومية",
+      zh: "基础生存语言",
     },
     color: "#3B82F6",
   },
@@ -101,6 +105,7 @@ const CEFR_LEVELS = [
       ja: "初級",
       hi: "प्रारंभिक",
       ar: "أساسي",
+      zh: "初级",
     },
     description: {
       en: "Simple everyday communication",
@@ -111,6 +116,7 @@ const CEFR_LEVELS = [
       ja: "簡単な日常コミュニケーション",
       hi: "सरल दैनिक संवाद",
       ar: "تواصل يومي بسيط",
+      zh: "简单日常交流",
     },
     color: "#8B5CF6",
   },
@@ -125,6 +131,7 @@ const CEFR_LEVELS = [
       ja: "中級",
       hi: "मध्यम",
       ar: "متوسط",
+      zh: "中级",
     },
     description: {
       en: "Handle everyday situations",
@@ -135,6 +142,7 @@ const CEFR_LEVELS = [
       ja: "日常場面に対応",
       hi: "रोज़मर्रा की स्थितियाँ संभालना",
       ar: "التعامل مع مواقف الحياة اليومية",
+      zh: "应对日常情境",
     },
     color: "#A855F7",
   },
@@ -149,6 +157,7 @@ const CEFR_LEVELS = [
       ja: "中上級",
       hi: "उच्च मध्यम",
       ar: "متوسط متقدم",
+      zh: "中高级",
     },
     description: {
       en: "Complex discussions",
@@ -159,6 +168,7 @@ const CEFR_LEVELS = [
       ja: "複雑な話し合い",
       hi: "जटिल चर्चाएँ",
       ar: "مناقشات معقدة",
+      zh: "复杂讨论",
     },
     color: "#F97316",
   },
@@ -173,6 +183,7 @@ const CEFR_LEVELS = [
       ja: "上級",
       hi: "उन्नत",
       ar: "متقدم",
+      zh: "高级",
     },
     description: {
       en: "Sophisticated language use",
@@ -183,6 +194,7 @@ const CEFR_LEVELS = [
       ja: "洗練された言語運用",
       hi: "परिष्कृत भाषा प्रयोग",
       ar: "استخدام متقن للغة",
+      zh: "成熟精细的语言运用",
     },
     color: "#EF4444",
   },
@@ -197,6 +209,7 @@ const CEFR_LEVELS = [
       ja: "熟達",
       hi: "निपुणता",
       ar: "إتقان",
+      zh: "精通",
     },
     description: {
       en: "Near-native proficiency",
@@ -207,6 +220,7 @@ const CEFR_LEVELS = [
       ja: "ネイティブに近い熟達度",
       hi: "लगभग मातृभाषी दक्षता",
       ar: "طلاقة قريبة من المتحدث الأصلي",
+      zh: "接近母语水平",
     },
     color: "#EC4899",
   },
@@ -328,6 +342,20 @@ function getConversationSettingsUi(lang) {
         "مثال: أنا دكتور وعايز أتدرّب على محادثات طبية مع المرضى...",
       save: "حفظ",
       close: "إغلاق",
+    },
+    zh: {
+      title: "会话设置",
+      proficiencyLabel: "熟练度等级",
+      proficiencyHint: "设置会话主题的难度等级",
+      pronunciationLabel: "发音练习",
+      pronunciationHint: "AI 会帮助你提升单词发音",
+      subjectLabel: "自定义主题",
+      subjectHint:
+        "定义你想练习的主题（例如：医疗术语、商务、旅行）",
+      subjectPlaceholder:
+        "例如：我是医生，想练习与患者进行医疗会话...",
+      save: "保存",
+      close: "关闭",
     },
   };
 

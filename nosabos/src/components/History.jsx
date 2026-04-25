@@ -93,7 +93,8 @@ function useT(uiLang = "en") {
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
-    const raw = (dict[key] ?? enDict[key] ?? key) + "";
+    const raw = (dict[key] ?? enDict[key] ?? "") + "";
+    if (!raw) return "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
       k in params ? String(params[k]) : `{${k}}`,
@@ -103,6 +104,27 @@ function useT(uiLang = "en") {
 
 const uiCopy = (lang, copy) =>
   copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
+function getStoredAppLanguage(fallback = DEFAULT_SUPPORT_LANGUAGE) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    return normalizeSupportLanguage(
+      localStorage.getItem("appLanguage"),
+      fallback,
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+function resolveHistoryUiLanguage(userLanguage) {
+  const storedLang = getStoredAppLanguage("");
+  const propLang = normalizeSupportLanguage(userLanguage, "");
+  if (propLang && (propLang !== DEFAULT_SUPPORT_LANGUAGE || !storedLang)) {
+    return propLang;
+  }
+  return storedLang || propLang || DEFAULT_SUPPORT_LANGUAGE;
+}
 
 function getLanguageTextProps(lang, { align = "start" } = {}) {
   const dir = getLanguageDirection(lang, "ltr");
@@ -225,6 +247,7 @@ const LANG_NAME = (code) =>
     fr: "French",
     it: "Italian",
     ar: "Egyptian Arabic",
+    zh: "Mandarin Chinese",
     ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
@@ -240,6 +263,7 @@ const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
   es: ["Spanish", "Español"],
   ar: ["Egyptian Arabic", "Arabic", "Árabe egipcio", "العربية المصرية"],
+  zh: ["Mandarin Chinese", "Chinese", "Chino mandarín", "普通话中文", "中文"],
   pt: [
     "Portuguese",
     "Portugués",
@@ -362,11 +386,17 @@ const strongNpub = (user) =>
 function useSharedProgress() {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
+  const initialSupportLang = normalizeSupportLanguage(
+    user?.progress?.supportLang === "bilingual"
+      ? user?.appLanguage
+      : user?.progress?.supportLang || user?.appLanguage,
+    getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
+  );
   const [xp, setXp] = useState(0);
   const [progress, setProgress] = useState({
     level: "beginner",
     targetLang: "es",
-    supportLang: "en",
+    supportLang: initialSupportLang,
     showTranslations: true,
     voice: "alloy",
   });
@@ -383,6 +413,10 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
+      const supportFallback = normalizeSupportLanguage(
+        data?.appLanguage,
+        getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
+      );
       const targetLang = isSupportedPracticeLanguage(p.targetLang)
         ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
         : DEFAULT_TARGET_LANGUAGE;
@@ -395,7 +429,7 @@ function useSharedProgress() {
         supportLang:
           p.supportLang === "bilingual"
             ? "bilingual"
-            : normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+            : normalizeSupportLanguage(p.supportLang, supportFallback),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
         voice: p.voice || "alloy",
@@ -691,6 +725,7 @@ const BCP47 = {
   es: { tts: "es-MX" },
   en: { tts: "en-US" },
   ar: { tts: "ar-EG" },
+  zh: { tts: "zh-CN" },
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
@@ -781,12 +816,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ", hi: "शुद्धता", ar: "الدقة" },
-  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性", hi: "पूर्णता", ar: "الاكتمال" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", hi: "उच्चारण", ar: "النطق" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", hi: "प्रवाह", ar: "الطلاقة" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", hi: "आत्मविश्वास", ar: "الثقة" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", hi: "समझ", ar: "الفهم" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ", hi: "शुद्धता", ar: "الدقة", zh: "准确性" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性", hi: "पूर्णता", ar: "الاكتمال", zh: "完整性" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", hi: "उच्चारण", ar: "النطق", zh: "发音" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", hi: "प्रवाह", ar: "الطلاقة", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", hi: "आत्मविश्वास", ar: "الثقة", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", hi: "समझ", ar: "الفهم", zh: "理解力" },
 ];
 
 function speechScoreColor(score) {
@@ -806,7 +841,11 @@ export default function History({
   onSkip = null,
   lessonStartXp = null,
 }) {
-  const t = useT(userLanguage);
+  const uiLang = useMemo(
+    () => resolveHistoryUiLanguage(userLanguage),
+    [userLanguage],
+  );
+  const t = useT(uiLang);
   const user = useUserStore((s) => s.user);
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -888,7 +927,7 @@ export default function History({
 
   const supportLang =
     progress.supportLang === "bilingual"
-      ? normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE)
+      ? normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE)
       : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations = progress.showTranslations !== false;
   const targetTextProps = getLanguageTextProps(targetLang);
@@ -1834,6 +1873,7 @@ Return ONLY valid JSON:
           fr: "Impossible de generer un retour. Continue a pratiquer !",
           ja: "フィードバックを生成できませんでした。練習を続けましょう！",
           ar: "مقدرناش نولّد تقييم. كمّل تدريب!",
+          zh: "无法生成反馈。继续练习！",
         }),
         scores: {},
       });
@@ -2921,7 +2961,7 @@ Return ONLY valid JSON:
                                 lang={targetLang}
                                 onKeyPress={handleReviewKeyboardInput}
                                 onClose={() => setShowReviewKeyboard(false)}
-                                userLanguage={userLanguage}
+                                userLanguage={uiLang}
                               />
                             )}
                             {showReviewKeyboardButton && (
@@ -3056,7 +3096,7 @@ Return ONLY valid JSON:
                                 lang={targetLang}
                                 onKeyPress={handleReviewKeyboardInput}
                                 onClose={() => setShowReviewKeyboard(false)}
-                                userLanguage={userLanguage}
+                                userLanguage={uiLang}
                               />
                             )}
                             {showReviewKeyboardButton && (

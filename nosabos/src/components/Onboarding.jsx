@@ -81,7 +81,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -277,6 +277,7 @@ export default function Onboarding({
       fr: "Pause entre les reponses",
       ja: "返答の間のポーズ",
       ar: "الوقفة بين الردود",
+      zh: "回答之间的停顿",
     });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
@@ -288,6 +289,7 @@ export default function Onboarding({
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
       ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 1.2 ثانية مناسبة للكلام الطبيعي.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
     });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
     minimumFractionDigits: 1,
@@ -301,6 +303,7 @@ export default function Onboarding({
     fr: "secondes",
     ja: "秒",
     ar: "ثانية",
+    zh: "秒",
   });
   const supportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -316,6 +319,7 @@ export default function Onboarding({
     fr: ["Langues", "Voix", "Effets"],
     ja: ["言語", "音声", "効果"],
     ar: ["اللغات", "الصوت", "المؤثرات"],
+    zh: ["语言", "声音", "效果"],
   });
 
   return (
@@ -816,6 +820,7 @@ export default function Onboarding({
                       fr: "Retour",
                       ja: "戻る",
                       ar: "رجوع",
+                      zh: "返回",
                     })}
                   </Button>
                 )}
@@ -838,6 +843,7 @@ export default function Onboarding({
                         fr: "Suivant",
                         ja: "次へ",
                         ar: "التالي",
+                        zh: "下一步",
                       })}
                   </Button>
                 ) : (

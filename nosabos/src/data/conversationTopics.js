@@ -7,6 +7,7 @@
 
 import { getLearningPath } from "./skillTreeData";
 import { translateSkillTreeTextToArabic } from "./skillTree/arabicLocalizer.js";
+import { translateSkillTreeTextToChinese } from "./skillTree/chineseLocalizer.js";
 
 /**
  * Extract lesson topics from the skill tree for a given proficiency level
@@ -141,6 +142,7 @@ export const fallbackTopics = Object.fromEntries(
     topics.map((topic) => ({
       ...topic,
       ar: topic.ar || translateSkillTreeTextToArabic(topic.en),
+      zh: topic.zh || translateSkillTreeTextToChinese(topic.en),
     })),
   ]),
 );

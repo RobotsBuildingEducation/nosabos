@@ -191,6 +191,13 @@ CEFR_LEVEL_INFO.B1.name.ar = "متوسط";
 CEFR_LEVEL_INFO.B2.name.ar = "متوسط أعلى";
 CEFR_LEVEL_INFO.C1.name.ar = "متقدم";
 CEFR_LEVEL_INFO.C2.name.ar = "إتقان";
+CEFR_LEVEL_INFO["Pre-A1"].name.zh = "零基础入门";
+CEFR_LEVEL_INFO.A1.name.zh = "初学者";
+CEFR_LEVEL_INFO.A2.name.zh = "初级";
+CEFR_LEVEL_INFO.B1.name.zh = "中级";
+CEFR_LEVEL_INFO.B2.name.zh = "中高级";
+CEFR_LEVEL_INFO.C1.name.zh = "高级";
+CEFR_LEVEL_INFO.C2.name.zh = "精通";
 
 const CEFR_LEVEL_OFFERINGS = {
   "Pre-A1": {
@@ -384,14 +391,49 @@ CEFR_LEVEL_OFFERINGS.C2.ar = [
   "القدرة على التعامل مع موضوعات معقدة جدًا بسهولة.",
   "لغة قريبة جدًا من مستوى المتحدث الأصلي.",
 ];
+CEFR_LEVEL_OFFERINGS["Pre-A1"].zh = [
+  "用基础单词和短语进行高度引导式课程。",
+  "非常短的提示，并配有大量重复。",
+  "专注建立信心和理解基础。",
+];
+CEFR_LEVEL_OFFERINGS.A1.zh = [
+  "适合问候、个人信息和日常基础的初学者模块。",
+  "简单句型和常见生存表达。",
+  "建立早期口语信心。",
+];
+CEFR_LEVEL_OFFERINGS.A2.zh = [
+  "购物、时间、家庭和地点等简短日常情境。",
+  "比 A1 更丰富但仍然简单的对话。",
+  "开始更实用地使用语言。",
+];
+CEFR_LEVEL_OFFERINGS.B1.zh = [
+  "关于观点、经历和日常安排的中级会话。",
+  "开放式问题和稍长回答。",
+  "重点是清晰表达和连接想法。",
+];
+CEFR_LEVEL_OFFERINGS.B2.zh = [
+  "围绕真实场景和复杂观点展开更深入讨论。",
+  "练习解释并为观点辩护。",
+  "提升语言灵活度和反应速度。",
+];
+CEFR_LEVEL_OFFERINGS.C1.zh = [
+  "在较长回答中进行更高级、更精确的表达。",
+  "处理抽象观点和细微细节。",
+  "关注语气、含义和恰当用词。",
+];
+CEFR_LEVEL_OFFERINGS.C2.zh = [
+  "最高水平的准确度、流利度和灵活性。",
+  "轻松处理非常复杂的话题。",
+  "语言接近母语者水平。",
+];
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音" },
-  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", ja: "語彙" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", zh: "发音" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法", zh: "语法" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", ja: "語彙", zh: "词汇" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", zh: "理解力" },
 ];
 
 const ASSESSMENT_CRITERIA_AR = {
@@ -1506,7 +1548,7 @@ export default function ProficiencyTest() {
     );
 
     const LANG_MAP = {
-      es: "Spanish", ar: "Egyptian Arabic", pt: "Portuguese", fr: "French", it: "Italian",
+      es: "Spanish", ar: "Egyptian Arabic", zh: "Mandarin Chinese", pt: "Portuguese", fr: "French", it: "Italian",
       nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
       el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
       yua: "Yucatec Maya", en: "English",
@@ -1517,6 +1559,7 @@ export default function ProficiencyTest() {
     const insufficientAudioMsg = {
       es: "Evidencia de audio insuficiente.",
       ar: "أدلة الصوت غير كفاية.",
+      zh: "音频证据不足。",
       it: "Prove audio insufficienti.",
       pt: "Evidência de áudio insuficiente.",
       fr: "Preuves audio insuffisantes.",
@@ -2091,6 +2134,7 @@ Return ONLY valid JSON:
       fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
       ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
       hi: "अलग-अलग शब्द, भराव शब्द या बहुत छोटे उत्तर। समझ बार-बार टूटती है।",
+      zh: "只有单词、填充词或很短的回答。理解经常中断。",
     },
     {
       level: "A1",
@@ -2103,6 +2147,7 @@ Return ONLY valid JSON:
       fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
       ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
       hi: "सरल, याद किए हुए ढाँचों से अभिवादन और बुनियादी निजी जानकारी संभालने में सक्षम है।",
+      zh: "能用简单记忆句型处理问候和基本个人信息。",
     },
     {
       level: "A2",
@@ -2115,6 +2160,7 @@ Return ONLY valid JSON:
       fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
       ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
       hi: "रोज़मर्रा के विषयों पर बात करने और सीधे सवालों का सीमित विवरण के साथ जवाब देने में सक्षम है।",
+      zh: "能讨论日常话题，并用有限细节回答直接问题。",
     },
     {
       level: "B1",
@@ -2127,6 +2173,7 @@ Return ONLY valid JSON:
       fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
       ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
       hi: "राय समझाने, घटनाएँ बताने और कुछ त्रुटियों के साथ छोटी बातचीत बनाए रखने में सक्षम है।",
+      zh: "能表达观点、叙述事件，并在有些错误的情况下维持短对话。",
     },
     {
       level: "B2",
@@ -2139,6 +2186,7 @@ Return ONLY valid JSON:
       fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
       ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
       hi: "परिचित और अमूर्त विषयों पर अच्छे नियंत्रण और प्रवाह के साथ स्पष्ट संवाद करने में सक्षम है।",
+      zh: "能就熟悉和抽象话题清晰交流，控制力和流利度较好。",
     },
     {
       level: "C1",
@@ -2151,6 +2199,7 @@ Return ONLY valid JSON:
       fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
       ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
       hi: "लंबे उत्तरों में मजबूत समझ के साथ लचीली और बारीक भाषा का प्रयोग करने में सक्षम है।",
+      zh: "能在较长回答中灵活、细致地使用语言，并表现出较强理解力。",
     },
     {
       level: "C2",
@@ -2163,6 +2212,7 @@ Return ONLY valid JSON:
       fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
       ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",
       hi: "जटिल विषयों पर लगभग मातृभाषी जैसी सटीकता, गति और अनुकूलनशीलता।",
+      zh: "在复杂话题中接近母语者的准确度、速度和适应能力。",
     },
   ];
 

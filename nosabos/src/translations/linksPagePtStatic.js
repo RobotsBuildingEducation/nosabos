@@ -104,6 +104,7 @@ export const LINKS_PAGE_PT_STATIC = {
   language_hi: "Hindi",
   language_ja: "Japonês",
   language_pt: "Português",
+  language_zh: "Chinês mandarim",
 };
 
 export default LINKS_PAGE_PT_STATIC;

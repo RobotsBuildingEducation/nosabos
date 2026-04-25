@@ -142,7 +142,48 @@ const ARABIC_SUPPORT_COPY = {
   "Loading wallet…": "جارٍ تحميل المحفظة…",
 };
 
+const CHINESE_SUPPORT_COPY = {
+  "Enter a display name": "请输入显示名称",
+  "Display name updated": "显示名称已更新",
+  Error: "错误",
+  "Join us on Patreon": "在 Patreon 支持我们",
+  "Access more education apps and content": "解锁更多教育应用和内容",
+  Join: "加入",
+  "Change display name": "更改显示名称",
+  "Create display name": "创建显示名称",
+  "Saving…": "正在保存…",
+  Save: "保存",
+  "Wallet not ready": "钱包尚未准备好",
+  "Please try again in a moment.": "请稍后再试。",
+  "Secret key required": "需要私密密钥",
+  "Enter your nsec to create the wallet.": "输入你的 nsec 以创建钱包。",
+  "Invalid key": "密钥无效",
+  "Key must start with 'nsec'.": "密钥必须以“nsec”开头。",
+  "Couldn't create wallet": "无法创建钱包",
+  "Failed to create wallet": "创建钱包失败",
+  "Select an identity": "选择身份",
+  "Choose who receives your deposits before continuing.":
+    "继续之前请选择谁接收你的充值。",
+  "Couldn't create invoice": "无法创建发票",
+  "Failed to initiate deposit": "发起充值失败",
+  "Address copied": "地址已复制",
+  "Lightning invoice copied to clipboard.": "Lightning 发票已复制到剪贴板。",
+  "Choose a recipient": "选择接收者",
+  "View site": "查看网站",
+  "Select an option to enable deposits.": "选择一个选项以启用充值。",
+  "Bitcoin wallet": "Bitcoin 钱包",
+  "Loading wallet…": "正在加载钱包…",
+};
+
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "zh") {
+    if (typeof en === "string") {
+      if (/'s Account$/.test(en)) {
+        return en.replace(/'s Account$/, " 的账户");
+      }
+      return CHINESE_SUPPORT_COPY[en] || en;
+    }
+  }
   if (lang === "ar") {
     if (ar) return ar;
     if (typeof en === "string") {

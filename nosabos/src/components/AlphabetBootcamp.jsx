@@ -60,6 +60,10 @@ import {
   translateAlphabetMeaningToHindi,
   withHindiAlphabetSupport,
 } from "../data/alphabetHindiLocalizer";
+import {
+  translateAlphabetMeaningToChinese,
+  withChineseAlphabetSupport,
+} from "../data/alphabetChineseLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -264,6 +268,23 @@ const LANGUAGE_NAMES_AR = {
   yua: "المايا اليوكاتيكية",
 };
 
+const LANGUAGE_NAMES_ZH = {
+  ru: "俄语",
+  ja: "日语",
+  en: "英语",
+  es: "西班牙语",
+  pt: "葡萄牙语",
+  fr: "法语",
+  it: "意大利语",
+  nl: "荷兰语",
+  de: "德语",
+  nah: "纳瓦特尔语",
+  el: "希腊语",
+  pl: "波兰语",
+  ga: "爱尔兰语",
+  yua: "尤卡坦玛雅语",
+};
+
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
@@ -273,6 +294,7 @@ const LANGUAGE_NAMES_BY_UI = {
   ja: LANGUAGE_NAMES_JA,
   hi: LANGUAGE_NAMES_HI,
   ar: LANGUAGE_NAMES_AR,
+  zh: LANGUAGE_NAMES_ZH,
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -394,6 +416,23 @@ const LANGUAGE_SCRIPTS_AR = {
   yua: "الأبجدية اللاتينية",
 };
 
+const LANGUAGE_SCRIPTS_ZH = {
+  ru: "西里尔字母",
+  ja: "平假名或片假名",
+  en: "拉丁字母",
+  es: "拉丁字母",
+  pt: "拉丁字母",
+  fr: "拉丁字母",
+  it: "拉丁字母",
+  nl: "拉丁字母",
+  de: "拉丁字母",
+  nah: "拉丁字母",
+  el: "希腊字母",
+  pl: "拉丁字母",
+  ga: "拉丁字母",
+  yua: "拉丁字母",
+};
+
 const LANGUAGE_SCRIPTS_BY_UI = {
   en: LANGUAGE_SCRIPTS,
   es: {
@@ -418,6 +457,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
   ja: LANGUAGE_SCRIPTS_JA,
   hi: LANGUAGE_SCRIPTS_HI,
   ar: LANGUAGE_SCRIPTS_AR,
+  zh: LANGUAGE_SCRIPTS_ZH,
 };
 
 const ALPHABET_UI_TEXT = {
@@ -680,6 +720,43 @@ const ALPHABET_UI_TEXT = {
     collection: "المجموعة",
     loadError: "ما قدرناش نحمّل الأبجدية. جرّب تاني.",
   },
+  zh: {
+    vowel: "元音",
+    consonant: "辅音",
+    sign: "符号",
+    practice: "练习",
+    playSound: "播放发音",
+    playWord: "播放单词",
+    close: "关闭",
+    sayThisWord: "说这个词：",
+    grading: "正在评分...",
+    nextWord: "下一个词",
+    tryAgain: "再试一次",
+    back: "返回",
+    connecting: "正在连接...",
+    stop: "停止",
+    record: "录音",
+    recordingErrorTitle: "录音出错",
+    recordingErrorDescription: "无法录音。请再试一次。",
+    gradingErrorTitle: "评分出错",
+    gradingErrorDescription: "无法评估你的回答。",
+    speechUnsupportedTitle: "不支持语音",
+    speechUnsupportedDescription:
+      "你的浏览器不支持语音识别。",
+    micDeniedTitle: "麦克风被拒绝",
+    micDeniedDescription: "请允许麦克风权限以便录音。",
+    generateWordErrorTitle: "无法生成新单词",
+    level: "等级",
+    progress: "进度",
+    alphabetHeadline: "{language}字母",
+    alphabetSubhead: "从学习{language}的字母和发音开始。",
+    note:
+      "完成后，在菜单中切换到路径模式继续学习课程。",
+    complete: "恭喜！你已完成字母练习。",
+    startSkillTree: "开始技能树",
+    collection: "收藏",
+    loadError: "无法加载字母数据。请再试一次。",
+  },
 };
 
 ALPHABET_UI_TEXT.pt = {
@@ -755,6 +832,7 @@ const LOCALIZED_FIELD_SUFFIX = {
   ja: "Ja",
   hi: "Hi",
   ar: "Ar",
+  zh: "Zh",
 };
 
 const getLocalizedLetterField = (letter, uiLang, baseKey) => {
@@ -779,6 +857,7 @@ const getMeaningText = (meaning, uiLang) => {
       meaning.it ||
       meaning.fr ||
       meaning.ja ||
+      meaning.zh ||
       ""
     );
   }
@@ -820,6 +899,7 @@ const normalizeMeaning = (meaning) => {
       ja: "",
       hi: "",
       ar: "",
+      zh: "",
     };
   }
   if (typeof meaning === "string") {
@@ -833,6 +913,7 @@ const normalizeMeaning = (meaning) => {
       ja: translateAlphabetMeaningToJapanese(source) || "",
       hi: translateAlphabetMeaningToHindi(source) || "",
       ar: translateAlphabetMeaningToArabic(source) || "",
+      zh: translateAlphabetMeaningToChinese(source) || "",
     };
   }
 
@@ -845,6 +926,7 @@ const normalizeMeaning = (meaning) => {
     meaning.it ||
     meaning.fr ||
     meaning.ja ||
+    meaning.zh ||
     "";
   const es = meaning.es || "";
   const pt = meaning.pt || translateAlphabetMeaningToPortuguese(meaning) || "";
@@ -853,8 +935,9 @@ const normalizeMeaning = (meaning) => {
   const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
   const hi = meaning.hi || translateAlphabetMeaningToHindi(meaning) || "";
   const ar = meaning.ar || translateAlphabetMeaningToArabic(meaning) || "";
+  const zh = meaning.zh || translateAlphabetMeaningToChinese(meaning) || "";
 
-  return { en, es, pt, it, fr, ja, hi, ar };
+  return { en, es, pt, it, fr, ja, hi, ar, zh };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -1360,7 +1443,7 @@ function LetterCard({
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
       const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>"}
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>","meaning_zh":"<short Mandarin Chinese meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -1381,6 +1464,7 @@ function LetterCard({
           ja: parsed.meaning_ja || parsed.meaning || "",
           hi: parsed.meaning_hi || parsed.meaning || "",
           ar: parsed.meaning_ar || parsed.meaning || "",
+          zh: parsed.meaning_zh || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -1397,6 +1481,7 @@ function LetterCard({
       letter.nameAr,
       letter.nameHi,
       letter.nameJa,
+      letter.nameZh,
       targetLang,
       uiLang,
     ],
@@ -1717,11 +1802,13 @@ function LetterCard({
 }
 
 const withLocalizedAlphabetSupport = (letters) =>
-  withArabicAlphabetSupport(
-    withHindiAlphabetSupport(
-      withJapaneseAlphabetSupport(
-        withFrenchAlphabetSupport(
-          withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+  withChineseAlphabetSupport(
+    withArabicAlphabetSupport(
+      withHindiAlphabetSupport(
+        withJapaneseAlphabetSupport(
+          withFrenchAlphabetSupport(
+            withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+          ),
         ),
       ),
     ),

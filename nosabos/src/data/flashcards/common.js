@@ -6,6 +6,7 @@ import { translateFlashcardConceptToArabic } from "./arabicLocalizer.js";
 import { translateFlashcardConceptToJapanese } from "./japaneseLocalizer.js";
 import { translateFlashcardConceptToHindi } from "./hindiLocalizer.js";
 import { translateFlashcardConceptToPortuguese } from "./portugueseLocalizer.js";
+import { translateFlashcardConceptToChinese } from "./chineseLocalizer.js";
 
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
@@ -37,7 +38,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"];
+    const languages = ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"];
     const selectedLang = languages[hash % languages.length];
     if (selectedLang === "pt" && !card.concept.pt) {
       return translateFlashcardConceptToPortuguese(
@@ -53,6 +54,9 @@ export const getConceptText = (card, supportLang) => {
     }
     if (selectedLang === "ar" && !card.concept.ar) {
       return translateFlashcardConceptToArabic(card.concept.en || card.concept.es);
+    }
+    if (selectedLang === "zh" && !card.concept.zh) {
+      return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
     }
     return card.concept[selectedLang] || card.concept.en;
   }
@@ -74,6 +78,10 @@ export const getConceptText = (card, supportLang) => {
 
   if (supportLang === "ar" && !card.concept.ar) {
     return translateFlashcardConceptToArabic(card.concept.en || card.concept.es);
+  }
+
+  if (supportLang === "zh" && !card.concept.zh) {
+    return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
   }
 
   // Otherwise use the specified language, fallback to English

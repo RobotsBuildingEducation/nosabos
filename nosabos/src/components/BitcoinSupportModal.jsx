@@ -54,7 +54,24 @@ const ARABIC_SUPPORT_COPY = {
   "Loading wallet…": "جارٍ تحميل المحفظة…",
 };
 
+const CHINESE_SUPPORT_COPY = {
+  "Create Scholarships": "创造奖学金",
+  "Send Bitcoin to educators any time you gain XP":
+    "每次获得 XP 时向教育者发送 Bitcoin",
+  "This can be done later in your settings.":
+    "你也可以稍后在设置中完成。",
+  "Maybe later": "稍后再说",
+  Done: "完成",
+  "View site": "查看网站",
+  "Select an option to enable deposits.": "选择一个选项以启用充值。",
+  Close: "关闭",
+  "Choose a recipient": "选择接收者",
+  "Bitcoin wallet": "Bitcoin 钱包",
+  "Loading wallet…": "正在加载钱包…",
+};
+
 function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;
     return ARABIC_SUPPORT_COPY[en] || en;

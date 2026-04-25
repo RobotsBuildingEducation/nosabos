@@ -94,7 +94,7 @@ const TEXT_TRANSLATIONS = {
   "academic writing": "كتابة أكاديمية",
   "professional communication": "تواصل مهني",
   "debate & argumentation": "النقاش وبناء الحُجج",
-  "near-native fluency": "طلاقة شبه native",
+  "near-native fluency": "طلاقة قريبة من أهل اللغة",
   "complete mastery": "إتقان كامل",
   "game review": "مراجعة باللعبة",
   "conversation practice": "تدريب المحادثة",
@@ -139,6 +139,89 @@ const TEXT_TRANSLATIONS = {
     "اتعلّم إزاي تستخدم التطبيق وتكتشف كل المزايا",
   "a guided tour of all learning modules":
     "جولة إرشادية في كل وحدات التعلّم",
+  "learn words for the people in your life":
+    "اتعلّم كلمات للناس الموجودين في حياتك",
+  "the learner says hello.": "يقول المتعلم أهلًا.",
+  "the learner says hello to you.": "المتعلم يقول لك أهلًا.",
+  "the learner names at least two extended family members.":
+    "يسمّي المتعلم اتنين على الأقل من أفراد العيلة الكبيرة.",
+  "the learner uses people vocabulary to describe someone.":
+    "يستخدم المتعلم مفردات الناس لوصف شخص.",
+  "test your knowledge of people and family words":
+    "اختبر معرفتك بكلمات الناس والعيلة",
+  "learn your first numbers: 0, 1, 2, 3, 4, 5":
+    "اتعلّم أول أرقامك: 0، 1، 2، 3، 4، 5",
+  "complete counting to ten: 6, 7, 8, 9, 10":
+    "كمّل العد لحد عشرة: 6، 7، 8، 9، 10",
+  "use numbers to count everyday things":
+    "استخدم الأرقام لعدّ الحاجات اليومية",
+  "numbers quiz": "اختبار الأرقام",
+  "test your counting skills from 0 to 10":
+    "اختبر مهاراتك في العد من 0 لحد 10",
+  "learn farewell expressions for different situations":
+    "اتعلّم عبارات الوداع لمواقف مختلفة",
+  "the learner uses at least two different farewell expressions.":
+    "يستخدم المتعلم عبارتين وداع مختلفتين على الأقل.",
+  "practice greetings in real-life situations":
+    "اتدرّب على التحيات في مواقف من الحياة الواقعية",
+  "test your greeting and farewell skills":
+    "اختبر مهاراتك في التحية والوداع",
+  "master the most important words in any language":
+    "اتقن أهم الكلمات في أي لغة",
+  "the learner uses at least two uncertainty expressions.":
+    "يستخدم المتعلم عبارتين على الأقل للتعبير عن عدم التأكد.",
+  "responses quiz": "اختبار الردود",
+  "test your ability to respond appropriately":
+    "اختبر قدرتك على الرد بشكل مناسب",
+  "the learner uses apology and attention phrases appropriately.":
+    "يستخدم المتعلم عبارات الاعتذار ولفت الانتباه بشكل مناسب.",
+  "the learner uses at least two polite expressions naturally.":
+    "يستخدم المتعلم عبارتين مهذبتين على الأقل بشكل طبيعي.",
+  "courtesy quiz": "اختبار المجاملات",
+  "test your polite expression skills":
+    "اختبر مهاراتك في التعبيرات المهذبة",
+  "learn names of common household items":
+    "اتعلّم أسماء حاجات البيت الشائعة",
+  "the learner names at least two food or drink items.":
+    "يسمّي المتعلم نوعين على الأقل من الأكل أو الشرب.",
+  "objects quiz": "اختبار الأشياء",
+  "learn to identify and name colors":
+    "اتعلّم تميّز الألوان وتسمّيها",
+  "the learner names at least three colors in conversation.":
+    "يسمّي المتعلم ثلاثة ألوان على الأقل في المحادثة.",
+  "complete your color palette": "كمّل لوحة ألوانك",
+  "the learner uses at least three color words including neutral colors.":
+    "يستخدم المتعلم ثلاث كلمات ألوان على الأقل، ومنها ألوان حيادية.",
+  "test your color recognition skills":
+    "اختبر مهاراتك في التعرّف على الألوان",
+  "ask others what their name is": "اسأل الآخرين عن أسمائهم",
+  "complete the introduction with polite expressions":
+    "كمّل التعارف بتعبيرات مهذبة",
+  "introductions quiz": "اختبار التعارف",
+  "test your introduction skills": "اختبر مهاراتك في التعارف",
+  "learn new words through interactive questions. practice saying 'hello'.":
+    "اتعلّم كلمات جديدة من خلال أسئلة تفاعلية. اتدرّب على قول أهلًا.",
+  "master greeting etiquette and social niceties":
+    "اتقن آداب التحية واللطف الاجتماعي",
+  "learn to introduce yourself and ask others' names":
+    "اتعلّم تعرّف نفسك وتسأل عن أسماء الآخرين",
+  "practice introductions in real conversations":
+    "اتدرّب على التعارف في محادثات حقيقية",
+  "narrative and storytelling": "السرد والحكي",
+  "narrative and storytelling structures": "تراكيب السرد والحكي",
+  "narrative and storytelling conversation": "محادثة عن السرد والحكي",
+  "narrative and storytelling mastery": "إتقان السرد والحكي",
+  "practice using narrative and storytelling in real conversation":
+    "اتدرّب على استخدام السرد والحكي في محادثة حقيقية",
+  "advanced narrative and storytelling content and comprehension":
+    "محتوى متقدّم في السرد والحكي وفهمه",
+  "demonstrate mastery of narrative and storytelling":
+    "أظهر إتقان السرد والحكي",
+  "read and discuss narrative and storytelling": "اقرأ وناقش السرد والحكي",
+  "at the doctor's": "عند الدكتور",
+  "at the doctor's quiz": "اختبار عند الدكتور",
+  "conditional would quiz": "اختبار الجمل الشرطية الافتراضية",
+  "near-native fluency quiz": "اختبار الطلاقة القريبة من أهل اللغة",
   "learn new words with interactive questions. practice saying hello.":
     "اتعلّم كلمات جديدة من خلال أسئلة تفاعلية. اتدرّب على قول أهلًا.",
   "learn to count from zero to twenty":
@@ -352,7 +435,7 @@ const TEXT_TRANSLATIONS = {
   "helpful suggestions": "اقتراحات مفيدة",
   "let's, why don't we": "يلا، ليه ما...",
   "let's try this": "يلا نجرب ده",
-  "conditional would": "would الشرطية",
+  "conditional would": "الجمل الشرطية الافتراضية",
   "i would...": "أنا كنت ه...",
   "if i were you": "لو أنا مكانك",
   "hypothetical situations": "مواقف افتراضية",
@@ -367,7 +450,6 @@ const TEXT_TRANSLATIONS = {
   "customs and festivals": "عادات ومهرجانات",
   headlines: "عناوين الأخبار",
   "informed citizen": "مواطن واعي",
-  "i think that...": "أنا شايف إن...",
   "i think that...": "أنا شايف إن...",
   "express dissatisfaction": "عبّر عن عدم الرضا",
   "i'm not satisfied": "أنا مش راضي/ة",
@@ -387,8 +469,7 @@ const TEXT_TRANSLATIONS = {
   "quoting others": "نقل كلام الآخرين",
   "retelling stories": "إعادة حكي القصص",
   "relative clauses": "جمل الصلة",
-  "who, which, that": "who وwhich وthat",
-  "who, which, that": "who وwhich وthat",
+  "who, which, that": "ضمائر الوصل",
   "formal vs informal": "رسمي مقابل غير رسمي",
   "register switching": "تغيير مستوى الكلام",
   "registers of speech": "مستويات الكلام",
@@ -448,7 +529,6 @@ const TEXT_TRANSLATIONS = {
   "refined language": "لغة راقية",
   "rhetorical devices": "أساليب بلاغية",
   "persuasive techniques": "تقنيات الإقناع",
-  "persuasive techniques": "تقنيات الإقناع",
   "specialized vocabulary": "مفردات متخصصة",
   "expert terminology": "مصطلحات متخصصة",
   "domain expertise": "خبرة مجال",
@@ -483,7 +563,6 @@ const TOKEN_TRANSLATIONS = {
   citizenship: "المواطنة",
   classroom: "الفصل",
   collaborative: "تعاونية",
-  communication: "تواصل",
   communication: "تواصل",
   comparisons: "مقارنات",
   complex: "معقّدة",
@@ -917,7 +996,7 @@ const translateTopic = (topic) =>
   EXTRA_TEXT_TRANSLATIONS[normalizeKey(topic)] ||
   TEXT_TRANSLATIONS[normalizeKey(topic)] ||
   translateTokenizedText(topic) ||
-  String(topic || "");
+  (/[A-Za-z]/.test(String(topic || "")) ? "الموضوع ده" : String(topic || ""));
 
 export const translateSkillTreeTextToArabic = (englishText) => {
   if (!englishText || typeof englishText !== "string") return englishText;
@@ -1062,7 +1141,7 @@ export const translateSkillTreeTextToArabic = (englishText) => {
     if (tokenized) return tokenized;
   }
 
-  return englishText;
+  return /[A-Za-z]/.test(englishText) ? "محتوى تعليمي" : englishText;
 };
 
 const addArabicText = (value) => {

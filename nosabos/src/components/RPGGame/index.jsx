@@ -347,6 +347,38 @@ QUEST_LOG_COPY.ar = {
   continueTask: (npcName) => `كلم ${npcName} عشان تكمل.`,
 };
 
+OBJECT_SEARCH_TEST_COPY.zh = {
+  intro: (itemName) =>
+    `我需要${itemName}。请在这张地图的任意房间里查看物品。每个物品都藏着一样东西。把正确的东西带给我。`,
+  wrongItem: (wrongName, correctName) =>
+    `这是${wrongName}。我还需要${correctName}。继续查看物品吧。`,
+  success: (itemName) => `太好了。${itemName}正是我需要的东西。`,
+  chooseItem: "选择要交出的物品：",
+  foundItem: (itemName) => `找到：${itemName}`,
+  alreadyChecked: "你已经检查过这个物品了。",
+  nothingFound: "这里没有有用的东西。",
+  continueSearching: "继续寻找",
+};
+
+QUEST_LOG_COPY.zh = {
+  title: "任务日志",
+  button: "任务日志",
+  currentTask: "当前任务",
+  progress: (done, total) => `进度：${done}/${total}`,
+  complete: "任务完成！做得好。",
+  defaultTask: "继续探索，并和下一个角色对话。",
+  startObjectSearch: (npcName, itemName) =>
+    `与 ${npcName} 对话，开始寻找${itemName}。`,
+  searchObjects: (itemName) =>
+    `在任意房间中搜索可检查物品，寻找${itemName}。每个物品都藏着一样东西。`,
+  returnItem: (itemName, npcName) => `把${itemName}带回给 ${npcName}。`,
+  gatherSearch: (itemName) => `在这个区域寻找${itemName}。`,
+  gatherHint: (hint) => `提示：${hint}`,
+  choiceTask: (npcName) => `与 ${npcName} 对话并选择一个回答。`,
+  speechTask: (npcName) => `与 ${npcName} 对话并用语音回答。`,
+  continueTask: (npcName) => `与 ${npcName} 对话以继续。`,
+};
+
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
   return Math.max(min, Math.min(max, Math.round(num)));
@@ -1926,6 +1958,50 @@ UI_TEXT.ar = {
   closeDialogue: "اقفل الحوار",
 };
 
+UI_TEXT.zh = {
+  talkHint: "按 SPACE 或点击进行对话",
+  correct: "正确！",
+  incorrect: "再试一次！",
+  completed: "恭喜！你正确回答了所有问题！",
+  playAgain: "再玩一次",
+  back: "返回",
+  progress: "进度",
+  answeredOf: "/",
+  moveHint: "方向键或 WASD 移动",
+  touchMove: "点击移动，点击 NPC 对话",
+  chooseScenario: "选择场景",
+  scenario: "场景",
+  newWorld: "新世界",
+  quest: "任务",
+  lockedNpc: "你应该先从这里开始：",
+  response: "回答",
+  micStart: "开始麦克风",
+  micStop: "停止麦克风",
+  heardYou: "我听到",
+  speechUnavailable: "此浏览器不支持语音",
+  noSpeechMatch: "我没听清。再试一次。",
+  continue: "继续",
+  skip: "跳过",
+  loading: "正在加载",
+  loadingTutorialScene: "正在加载教程场景...",
+  loadingGeneratingGame: "正在生成你的游戏...",
+  enableMusic: "打开音乐",
+  disableMusic: "关闭音乐",
+  musicOn: "音乐已开启",
+  musicOff: "音乐已关闭",
+  help: "帮助",
+  inventory: "背包",
+  noItems: "还没有物品。",
+  dropItem: "丢下",
+  wrongItem: "错误的物品",
+  speechContinue: "我明白了。继续吧。",
+  thinking: "正在思考...",
+  translateText: "翻译文本",
+  undoTranslation: "撤销翻译",
+  chooseCorrect: "选择正确选项。",
+  closeDialogue: "关闭对话",
+};
+
 const SCENARIO_EMOJIS = {
   [REVIEW_WORLD_ID]: "✨",
   [TUTORIAL_MAP_ID]: "👋",
@@ -2014,6 +2090,17 @@ GAME_LOADING_MESSAGES.ar = [
   "بنحضّر ألغاز اللغة...",
   "بنظبط المشهد...",
   "بنصنع مغامرتك...",
+];
+
+GAME_LOADING_MESSAGES.zh = [
+  "正在构建你的世界...",
+  "正在放置角色...",
+  "正在编写任务对话...",
+  "正在生成词汇挑战...",
+  "正在绘制地图...",
+  "正在准备语言谜题...",
+  "正在布置场景...",
+  "正在创造你的冒险...",
 ];
 
 const SCENARIO_OBJECT_VISUALS = {
@@ -2308,6 +2395,35 @@ OBJECT_EXAMINE_FALLBACK_LABELS.ar = {
   object: "غرض",
 };
 
+OBJECT_EXAMINE_FALLBACK_LABELS.zh = {
+  tree: "树",
+  house: "房子",
+  building: "建筑",
+  pavilion: "亭子",
+  greenhouse: "温室",
+  doorway: "门口",
+  bookshelf: "书架",
+  shelf: "架子",
+  tv: "电视",
+  sofa: "沙发",
+  plant: "植物",
+  table: "桌子",
+  lamp: "灯",
+  sign: "标牌",
+  gate: "大门",
+  speaker: "扬声器",
+  balloons: "气球",
+  desk: "书桌",
+  suitcaseStack: "一摞行李箱",
+  counter: "柜台",
+  stove: "炉灶",
+  fridge: "冰箱",
+  bench: "长椅",
+  register: "收银机",
+  freezer: "冷柜",
+  object: "物品",
+};
+
 const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
   en: (label) => `You notice ${label}.`,
   es: (label) => `Notas ${label}.`,
@@ -2319,6 +2435,7 @@ const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
 };
 
 OBJECT_EXAMINE_FALLBACK_SENTENCES.ar = (label) => `إنت ملاحظ ${label}.`;
+OBJECT_EXAMINE_FALLBACK_SENTENCES.zh = (label) => `你注意到${label}。`;
 
 function getLocalizedObjectExamineLabel(type = "", lang = "en") {
   const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
@@ -6766,7 +6883,7 @@ export default function RPGGame({
                         flexDir="column"
                         minW="140px"
                         isLoading={loadingScenarioId === choice.id}
-                        loadingText="Loading"
+                        loadingText={ui.loading}
                       >
                         <Text fontSize="3xl" mb={1}>
                           {choice.emoji ||

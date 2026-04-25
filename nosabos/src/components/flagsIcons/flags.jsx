@@ -1,4 +1,7 @@
 let mexicanFlagCounter = 0;
+let egyptianFlagCounter = 0;
+let chineseFlagCounter = 0;
+
 export let mexicanFlag = () => {
   const id = `MX_svg__${++mexicanFlagCounter}`;
   return (
@@ -251,6 +254,8 @@ export const indianFlag = () => {
 };
 
 export const egyptianFlag = () => {
+  const id = `EG_svg__${++egyptianFlagCounter}`;
+
   return (
     <svg
       width="24"
@@ -259,7 +264,7 @@ export const egyptianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clipPath="url(#EG_svg__a)">
+      <g clipPath={`url(#${id})`}>
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -272,13 +277,15 @@ export const egyptianFlag = () => {
           d="M12 24c5.16 0 9.558-3.257 11.254-7.826H.746C2.443 20.743 6.841 24 12 24Z"
           fill="#000"
         />
-        <path
-          d="M12.001 9.04c-.777 0-1.408.63-1.408 1.407 0 .446.208.844.531 1.102-.17.192-.274.444-.274.721 0 .6.487 1.087 1.088 1.087h.126v.603h-.78v.704h1.434v-.972a.352.352 0 0 0-.353-.352h-.427a.383.383 0 0 1 0-.766h.703a1.407 1.407 0 0 0-.64-2.66Zm0 2.111a.704.704 0 1 1 0-1.407.704.704 0 0 1 0 1.407Z"
-          fill="#FFDA44"
-        />
+        <g fill="#C09300" stroke="#8C6F00" strokeWidth="0.12">
+          <path d="M11.52 8.32c.28-.3.68-.47 1.1-.47.48 0 .93.22 1.21.59l.35.45.8-.32c.23-.09.47.12.4.36l-.24.85 2.31-1.1c.28-.13.57.16.43.43-.7 1.39-1.84 2.38-3.34 2.86l-.55.18v2.26h-3.98v-2.26l-.55-.18c-1.5-.48-2.64-1.47-3.34-2.86-.14-.27.15-.56.43-.43l2.31 1.1-.24-.85c-.07-.24.17-.45.4-.36l.8.32.34-.45c.28-.37.72-.59 1.36-.12Z" />
+          <path d="M10.52 10.2h2.96l-.49 1.16h-1.98l-.49-1.16Z" />
+          <path d="M10.9 12.15h2.2v2.25h-2.2v-2.25Z" />
+          <path d="M9.62 14.56h4.76v.74H9.62z" />
+        </g>
       </g>
       <defs>
-        <clipPath id="EG_svg__a">
+        <clipPath id={id}>
           <path fill="#fff" d="M0 0h24v24H0z" />
         </clipPath>
       </defs>
@@ -375,6 +382,57 @@ export const japaneseFlag = () => {
       </g>
       <defs>
         <clipPath id="JP_svg__a">
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+export const chineseFlag = () => {
+  const id = `CN_svg__${++chineseFlagCounter}`;
+
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath={`url(#${id})`}>
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#DE2910"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(6.15 6.15) scale(2.45)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(10.45 3.85) rotate(24) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(12.65 5.9) rotate(47) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(12.6 8.85) rotate(24) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(10.35 10.9) rotate(47) scale(.78)"
+        />
+      </g>
+      <defs>
+        <clipPath id={id}>
           <path fill="#fff" d="M0 0h24v24H0z" />
         </clipPath>
       </defs>

@@ -1,5 +1,6 @@
 import { LINKS_PAGE_PT_STATIC } from "./linksPagePtStatic";
 import { LINKS_PAGE_HI_STATIC } from "./linksPageHiStatic";
+import { LINKS_PAGE_ZH_STATIC } from "./linksPageZhStatic";
 
 export const linksPageTranslations = {
   en: {
@@ -188,6 +189,7 @@ export const linksPageTranslations = {
     language_hi: "Hindi",
     language_ar: "Egyptian Arabic",
     language_ja: "Japanese",
+    language_zh: "Mandarin Chinese",
   },
   it: {
     roadmapCashTitle: "Roadmap.Cash (gratuito)",
@@ -375,6 +377,7 @@ export const linksPageTranslations = {
     language_hi: "Hindi",
     language_ar: "Arabo egiziano",
     language_ja: "Giapponese",
+    language_zh: "Cinese mandarino",
   },
   es: {
     roadmapCashTitle: "Roadmap.Cash (gratis)",
@@ -565,6 +568,7 @@ export const linksPageTranslations = {
     language_hi: "Hindi",
     language_ar: "Árabe egipcio",
     language_ja: "Japonés",
+    language_zh: "Chino mandarín",
   },
 };
 
@@ -702,6 +706,52 @@ linksPageTranslations.hi = {
   ),
 };
 
+linksPageTranslations.zh = {
+  ...LINKS_PAGE_ZH_STATIC,
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>感谢你查看我的作品！</p>
+
+      <p style={{ marginBottom: 12 }}>
+        我叫 Sheilfer。我学习过计算机科学，也一直想学习软件工程来构建教育技术。总的来说，我热爱学习、教学和教育，也相信这些是我的能力最适合发挥作用的地方。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          我在 2015 年开始了 Robots Building Education 这个想法，因为我觉得教育技术总是落后于互联网本来可以做到的事情。
+        </span>{" "}
+        网络游戏和互联网论坛之所以能真正抓住人的注意力，是因为它们有趣、投入感强，甚至会让人上瘾。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        当时我还是大学生，我有点沮丧：自己投入很多时间学习，但这些努力几乎要等到大学毕业后才真正体现出来，而这个过程可能长达二十年。总觉得少了点什么。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education 的核心想法是：学习和进步发生的当下，就应该产生真实影响。{" "}
+        </span>
+        现在我说它是“通过学习创造奖学金”，因为这样更容易想象技术在幕后实际做了什么；但长期愿景是让教育技术以一种无国界的方式，切实支持学校、老师和学生。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        可以把它想成一种让互联网资产像房产支持学校那样为教育提供资金的方式。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        所以你可能会在我的平台上看到一些以前没见过的运作方式。有些体验非常顺滑、几乎没有摩擦，而这背后其实发生了很多事；这部分是因为我一直很执着地把这个想法做成真实体验。{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          我真心相信世界应该这样运作，因为每天线上教育中数十亿小时的努力被忽视、也没有被公开记录，这在我看来并不合理。
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        所以，再次感谢你查看我的作品！这对我真的很有意义。
+      </p>
+    </div>
+  ),
+};
+
 linksPageTranslations.ar = {
   ...linksPageTranslations.en,
   welcome: "أهلاً",
@@ -740,38 +790,79 @@ linksPageTranslations.ar = {
   launchApp: "افتح التطبيق",
   subscribe: "اشترك",
   buyApps: "اشترِ التطبيقات",
+  noSabosTitle: "No Sabos",
+  noSabosDescription:
+    "مدرّسك الشخصي للغات. اتعلّم واستكشف لغات جديدة بأدوات ذكية تساعدك تتدرّب.",
+  rbeTitle: "Robots Building Education",
+  rbeDescription:
+    "مدرّسك الشخصي للبرمجة. اتعلّم أساسيات هندسة البرمجيات بسرعة علشان تبدأ تستخدم أدوات البرمجة بالذكاء الاصطناعي وتبني أفكارك.",
+  patreonTitle: "Patreon",
+  patreonDescription:
+    "ادفع مرة واحدة علشان تملك التطبيقات، أو اشترك علشان تفتح محتوى إضافي عن هندسة البرمجيات، والأعمال، والتمويل، وتحديثات تانية.",
+  rbeModalTitle: "Robots Building Education",
   rbeModalDescription:
     "هتستخدم المفتاح السري علشان تدخل حسابك. لو دخلت من السوشيال، هتعمل ده مرة واحدة بس.",
   copySecretKey: "انسخ المفتاح السري",
   goToApp: "روح للتطبيق",
   close: "إغلاق",
+  roadmapCashTitle: "Roadmap.Cash (مجاني)",
+  roadmapCashDescription:
+    "أداة مجانية صغيرة للتخطيط المالي الشخصي. اكتب البيانات اللي تحبها، وإحنا نولّد لك رؤى وخطط وتوجيه يساعدك تحقق أهدافك المالية.",
+  roadmapCashModalTitle: "Roadmap.Cash",
+  roadmapCashModalDescription:
+    "هتستخدم المفتاح السري علشان تبدّل لحسابك من القائمة. لو دخلت من السوشيال، هتعمل ده مرة واحدة بس.",
   customizeProfileTitle: "عدّل الملف الشخصي",
   username: "اسم المستخدم",
   enterUsername: "اكتب اسم المستخدم",
   profilePictureUrl: "رابط صورة الملف الشخصي",
+  profilePicturePlaceholder: "https://example.com/your-image.jpg",
   saveProfile: "احفظ الملف الشخصي",
   secretKey: "المفتاح السري",
+  secretKeyWarning:
+    "المفتاح السري هو كلمة السر بتاعتك للتطبيقات اللامركزية. خليه في مكان آمن وما تشاركوش مع أي حد.",
   switchAccount: "بدّل الحساب",
   pasteNsec: "الصق مفتاح nsec هنا",
+  switchAccountHelp: "اكتب nsec مختلف علشان تبدّل لحساب Nostr تاني",
   bitcoinWallet: "محفظة بيتكوين",
+  walletDescription1: "إيداعاتك بتساعدنا نعمل منح دراسية من خلال التعلّم.",
+  walletDescription2:
+    "لما تجاوب أسئلة في التطبيقات، الفلوس بتتبعت للمستلمين اللي تختارهم.",
   loadingWallet: "بنحمّل المحفظة...",
   secretKeyRequired: "المفتاح السري مطلوب",
+  nip07Warning:
+    "إنت داخل بإضافة متصفح، فإحنا ما عندناش وصول للمفتاح الخاص بتاعك. علشان تعمل محفظة، اكتب nsec تحت.",
+  enterNsec: "اكتب nsec1...",
+  keyNotStored: "مفتاحك بيتستخدم بس لإنشاء المحفظة ومش بيتخزن.",
   createWallet: "أنشئ محفظة",
   creatingWallet: "بيتم إنشاء المحفظة...",
   deposit: "إيداع",
   copyAddress: "انسخ العنوان",
   or: "أو",
+  lightningInstructions:
+    "استخدم محفظة Lightning متوافقة علشان تدفع الفاتورة.",
+  cashApp: "Cash App",
   generateNewQR: "ولّد QR جديد",
   wallet: "المحفظة",
   balance: "الرصيد",
+  sats: "ساتس",
   noChanges: "مفيش تغييرات",
+  enterUsernameOrPicture: "من فضلك اكتب اسم مستخدم أو رابط صورة للملف الشخصي",
   profileUpdated: "تم تحديث الملف الشخصي",
+  profileSaved: "تم حفظ ملفك الشخصي على Nostr",
   error: "خطأ",
+  failedUpdateProfile: "فشل تحديث الملف الشخصي",
+  noSecretKey: "مفيش مفتاح سري",
+  usingExtension: "إنت بتستخدم إضافة المتصفح للتوقيع",
   copied: "اتنسخ!",
+  secretKeyCopied: "تم نسخ المفتاح السري للحافظة",
   failedCopy: "فشل النسخ",
   invalidKey: "مفتاح غير صالح",
+  enterValidNsec: "من فضلك اكتب مفتاح nsec صالح",
   accountSwitched: "اتبدّل الحساب",
+  loginSuccess: "تم تسجيل الدخول بالحساب الجديد",
   authFailed: "المفتاح السري غير صالح أو حصل فشل في التوثيق",
+  secretKeyRequiredToast: "اكتب nsec بتاعك علشان تعمل المحفظة.",
+  keyMustStartNsec: "لازم المفتاح يبدأ بـ 'nsec'.",
   walletCreated: "المحفظة اتعملت",
   walletReady: "محفظة البيتكوين جاهزة.",
   failedCreateWallet: "فشل إنشاء المحفظة",
@@ -785,6 +876,8 @@ linksPageTranslations.ar = {
   language_hi: "الهندية",
   language_ar: "العربية المصرية",
   language_ja: "اليابانية",
+  language_pt: "البرتغالية",
+  language_zh: "الصينية المندرينية",
 };
 
 linksPageTranslations.fr = {
@@ -950,6 +1043,7 @@ linksPageTranslations.fr = {
   language_hi: "Hindi",
   language_ar: "Arabe egyptien",
   language_ja: "Japonais",
+  language_zh: "Chinois mandarin",
 };
 
 linksPageTranslations.ja = {
@@ -1084,4 +1178,5 @@ linksPageTranslations.ja = {
   language_hi: "ヒンディー語",
   language_ar: "エジプトアラビア語",
   language_ja: "日本語",
+  language_zh: "中国語（普通話）",
 };

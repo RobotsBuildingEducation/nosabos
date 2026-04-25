@@ -9,6 +9,7 @@ const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const WEEKDAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const WEEKDAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
 const WEEKDAYS_AR = ["ح", "ن", "ث", "ر", "خ", "ج", "س"];
+const WEEKDAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
 
 const MONTHS_EN = [
   "January", "February", "March", "April", "May", "June",
@@ -29,6 +30,10 @@ const MONTHS_JA = [
 const MONTHS_AR = [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+];
+const MONTHS_ZH = [
+  "一月", "二月", "三月", "四月", "五月", "六月",
+  "七月", "八月", "九月", "十月", "十一月", "十二月"
 ];
 
 // Gradient for completed days
@@ -88,6 +93,8 @@ export default function GoalCalendar({
   const weekdays =
     lang === "ja"
       ? WEEKDAYS_JA
+      : lang === "zh"
+        ? WEEKDAYS_ZH
       : lang === "ar"
         ? WEEKDAYS_AR
       : lang === "pt"
@@ -98,6 +105,8 @@ export default function GoalCalendar({
   const months =
     lang === "ja"
       ? MONTHS_JA
+      : lang === "zh"
+        ? MONTHS_ZH
       : lang === "ar"
         ? MONTHS_AR
       : lang === "pt"
@@ -215,6 +224,8 @@ export default function GoalCalendar({
             aria-label={
               lang === "ja"
                 ? "前の月"
+                : lang === "zh"
+                ? "上个月"
                 : lang === "pt"
                 ? "Mes anterior"
                 : lang === "es"
@@ -245,6 +256,8 @@ export default function GoalCalendar({
             aria-label={
               lang === "ja"
                 ? "次の月"
+                : lang === "zh"
+                ? "下个月"
                 : lang === "pt"
                 ? "Proximo mes"
                 : lang === "es"
@@ -336,6 +349,8 @@ export default function GoalCalendar({
             {completedLabel ||
               (lang === "ja"
                 ? "完了"
+                : lang === "zh"
+                ? "已完成"
                 : lang === "pt"
                 ? "Concluido"
                 : lang === "es"
@@ -349,6 +364,8 @@ export default function GoalCalendar({
             {incompleteLabel ||
               (lang === "ja"
                 ? "未完了"
+                : lang === "zh"
+                ? "未完成"
                 : lang === "pt"
                 ? "Pendente"
                 : lang === "es"
@@ -368,6 +385,8 @@ export default function GoalCalendar({
           <Text fontSize="xs" color={colors.legendText}>
             {lang === "ja"
               ? "今日"
+              : lang === "zh"
+                ? "今天"
               : lang === "pt"
                 ? "Hoje"
                 : lang === "es"

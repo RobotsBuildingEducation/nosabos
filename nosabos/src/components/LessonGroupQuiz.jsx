@@ -226,6 +226,31 @@ const LESSON_QUIZ_UI = {
     feedbackIncorrect: "✗ غير صحيح",
     submitAnswer: "أرسل الإجابة",
   },
+  zh: {
+    listenQuestion: "听问题",
+    quizPassedToast: "测验通过！",
+    quizPassed: "测验通过！🎉",
+    quizFailed: "测验未通过 😔",
+    score: "分数",
+    passedDesc: (correct, xp) =>
+      `恭喜！你答对 ${correct} 题并通过测验，获得 ${xp} XP！`,
+    failedDesc: (needed, correct) =>
+      `需要答对 ${needed} 题才能通过。你答对了 ${correct} 题。再试一次！`,
+    retry: "重试测验",
+    continue: "继续",
+    question: "问题",
+    correct: "正确",
+    answerPlaceholder: "输入你的答案...",
+    stopRecording: "停止录音",
+    startSpeaking: "开始说话",
+    youSaid: "你说了",
+    matchWords: "将单词与定义匹配",
+    clickDefinitions: "（点击定义进行匹配）",
+    unknownQuestionType: "未知问题类型",
+    feedbackCorrect: "✓ 正确！",
+    feedbackIncorrect: "✗ 不正确",
+    submitAnswer: "提交答案",
+  },
 };
 
 /* ---------------------------

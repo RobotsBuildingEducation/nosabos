@@ -100,6 +100,16 @@ const LLM_LANG_NAME = (codeOrName) => {
     m === "مصرى"
   )
     return "Egyptian Arabic";
+  if (
+    m === "zh" ||
+    m === "zh-cn" ||
+    m === "chinese" ||
+    m === "mandarin" ||
+    m === "mandarin chinese" ||
+    m === "中文" ||
+    m === "普通话"
+  )
+    return "Mandarin Chinese";
   if (m === "pt" || m === "portuguese" || m === "português")
     return "Brazilian Portuguese";
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
@@ -141,6 +151,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "en") return "en-US";
   if (m === "es") return "es-MX";
   if (m === "ar") return "ar-EG";
+  if (m === "zh") return "zh-CN";
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
@@ -178,6 +189,8 @@ const toLangKey = (value) => {
     ].includes(raw)
   )
     return "ar";
+  if (["zh", "zh-cn", "chinese", "mandarin", "mandarin chinese", "中文", "普通话"].includes(raw))
+    return "zh";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
