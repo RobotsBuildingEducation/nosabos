@@ -6,6 +6,7 @@ import { evaluateAttemptStrict } from "../utils/speechEvaluation";
 
 const BCP47_TO_WHISPER = {
   ar: "ar",
+  zh: "zh",
   es: "es",
   en: "en",
   pt: "pt",

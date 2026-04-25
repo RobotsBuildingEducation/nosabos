@@ -70,29 +70,35 @@ const MODULE_LABELS = {
   flashcard: {
     en: "Flashcard",
     es: "Tarjeta",
-    pt: "Cartao",
+    pt: "Cartão",
     it: "Scheda",
     fr: "Carte",
+    ja: "フラッシュカード",
     hi: "फ्लैशकार्ड",
     ar: "بطاقة",
+    zh: "抽认卡",
   },
   vocabulary: {
     en: "Vocabulary",
     es: "Vocabulario",
-    pt: "Vocabulario",
+    pt: "Vocabulário",
     it: "Vocabolario",
     fr: "Vocabulaire",
+    ja: "語彙",
     hi: "शब्दावली",
     ar: "المفردات",
+    zh: "词汇",
   },
   grammar: {
     en: "Grammar",
-    es: "Gramatica",
-    pt: "Gramatica",
+    es: "Gramática",
+    pt: "Gramática",
     it: "Grammatica",
     fr: "Grammaire",
+    ja: "文法",
     hi: "व्याकरण",
     ar: "القواعد",
+    zh: "语法",
   },
 };
 
@@ -122,6 +128,8 @@ export default function NotesDrawer({
   const drawerTitle =
     lang === "ja"
       ? "マイメモ"
+      : lang === "zh"
+      ? "我的笔记"
       : lang === "ar"
       ? "ملاحظاتي"
       : lang === "fr"
@@ -138,6 +146,8 @@ export default function NotesDrawer({
   const emptyMessage =
     lang === "ja"
       ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
+      : lang === "zh"
+      ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
       : lang === "fr"
       ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
       : lang === "pt"
@@ -154,6 +164,8 @@ export default function NotesDrawer({
   const clearAllLabel =
     lang === "ja"
       ? "すべて削除"
+      : lang === "zh"
+      ? "全部清除"
       : lang === "fr"
       ? "Tout effacer"
       : lang === "pt"
@@ -167,25 +179,11 @@ export default function NotesDrawer({
       : lang === "es"
       ? "Borrar todo"
       : "Clear all";
-  const summaryLabel =
-    lang === "ja"
-      ? "要約"
-      : lang === "fr"
-      ? "Resume"
-      : lang === "pt"
-      ? "Resumo"
-      : lang === "it"
-      ? "Riassunto"
-      : lang === "hi"
-      ? "सारांश"
-      : lang === "ar"
-      ? "الملخص"
-      : lang === "es"
-      ? "Resumen"
-      : "Summary";
   const lessonLabel =
     lang === "ja"
       ? "レッスン"
+      : lang === "zh"
+      ? "课程"
       : lang === "fr"
       ? "Lecon"
       : lang === "pt"
@@ -202,6 +200,8 @@ export default function NotesDrawer({
   const noNotesLabel =
     lang === "ja"
       ? "メモなし"
+      : lang === "zh"
+      ? "没有笔记"
       : lang === "fr"
       ? "Aucune note"
       : lang === "pt"
@@ -222,6 +222,8 @@ export default function NotesDrawer({
   const noteTitleFallback =
     lang === "ja"
       ? "メモ"
+      : lang === "zh"
+      ? "笔记"
       : lang === "fr"
       ? "Note"
       : lang === "pt"
@@ -240,6 +242,10 @@ export default function NotesDrawer({
 
     if (lang === "ja") {
       return `${formattedCount}件のメモ`;
+    }
+
+    if (lang === "zh") {
+      return `${formattedCount} 条笔记`;
     }
 
     if (lang === "ar") {
@@ -271,6 +277,8 @@ export default function NotesDrawer({
   const listenLabel =
     lang === "ja"
       ? "聞く"
+      : lang === "zh"
+      ? "聆听"
       : lang === "fr"
       ? "Ecouter"
       : lang === "pt"
@@ -287,6 +295,8 @@ export default function NotesDrawer({
   const deleteNoteLabel =
     lang === "ja"
       ? "メモを削除"
+      : lang === "zh"
+      ? "删除笔记"
       : lang === "fr"
       ? "Supprimer la note"
       : lang === "pt"

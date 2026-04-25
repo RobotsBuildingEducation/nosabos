@@ -201,7 +201,22 @@ const ARABIC_SUPPORT_COPY = {
   "No tasks yet.": "لسه ما فيش مهام.",
 };
 
+const CHINESE_SUPPORT_COPY = {
+  "Ready to refresh": "可以刷新",
+  "Could not generate tasks. Please try again.":
+    "无法生成任务。请再试一次。",
+  "Failed to award reward": "无法发放奖励",
+  "Immersion Practice": "沉浸练习",
+  "3 tasks to use your language outside the app":
+    "3 个在应用外使用语言的任务",
+  "Next batch in": "下一批倒计时",
+  "Creating tasks...": "正在创建任务...",
+  "Try again": "再试一次",
+  "No tasks yet.": "还没有任务。",
+};
+
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;
     return ARABIC_SUPPORT_COPY[en] || en;
@@ -236,6 +251,9 @@ function formatRemaining(ms, lang) {
     if (lang === "ar") {
       return `باقي ${h}س ${m}د`;
     }
+    if (lang === "zh") {
+      return `还剩 ${h}小时 ${m}分钟`;
+    }
     return supportCopy(
       lang,
       `${h}h ${m}m left`,
@@ -249,6 +267,9 @@ function formatRemaining(ms, lang) {
   }
   if (lang === "ar") {
     return `باقي ${m}د`;
+  }
+  if (lang === "zh") {
+    return `还剩 ${m}分钟`;
   }
   return supportCopy(
     lang,
@@ -578,6 +599,8 @@ export default function RealWorldTasksModal({
             ? `+${REAL_WORLD_TASKS_REWARD_XP} XP प्राप्त करें`
             : lang === "ar"
               ? `استلم +${REAL_WORLD_TASKS_REWARD_XP} XP`
+            : lang === "zh"
+              ? `领取 +${REAL_WORLD_TASKS_REWARD_XP} XP`
             : lang === "it"
               ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
               : lang === "es"

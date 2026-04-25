@@ -162,6 +162,8 @@ const toLangKey = (value) => {
   if (["es", "spanish", "español"].includes(raw)) return "es";
   if (["ar", "arz", "arabic", "egyptian arabic", "عربي", "العربية"].includes(raw))
     return "ar";
+  if (["zh", "zh-cn", "chinese", "mandarin", "mandarin chinese", "中文", "普通话"].includes(raw))
+    return "zh";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
@@ -208,7 +210,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(lang) ? lang : "en";
+  return ["es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -279,7 +281,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -732,6 +734,7 @@ export default function StoryMode({
                 it: "Ciao. Ciao. Arrivederci.",
                 fr: "Bonjour. Salut. Au revoir.",
                 ar: "أهلاً. هاي. مع السلامة.",
+                zh: "你好。嗨。再见。",
               }),
             },
             sentences:
@@ -746,6 +749,7 @@ export default function StoryMode({
                         it: "Ciao.",
                         fr: "Bonjour.",
                         ar: "أهلاً.",
+                        zh: "你好。",
                       }),
                     },
                     {
@@ -757,6 +761,7 @@ export default function StoryMode({
                         it: "Ciao.",
                         fr: "Salut.",
                         ar: "هاي.",
+                        zh: "嗨。",
                       }),
                     },
                     {
@@ -768,6 +773,7 @@ export default function StoryMode({
                         it: "Arrivederci.",
                         fr: "Au revoir.",
                         ar: "مع السلامة.",
+                        zh: "再见。",
                       }),
                     },
                   ]
@@ -781,6 +787,7 @@ export default function StoryMode({
                         it: "Ciao.",
                         fr: "Bonjour.",
                         ar: "أهلاً.",
+                        zh: "你好。",
                       }),
                     },
                     {
@@ -792,6 +799,7 @@ export default function StoryMode({
                         it: "Ciao.",
                         fr: "Salut.",
                         ar: "هاي.",
+                        zh: "嗨。",
                       }),
                     },
                     {
@@ -803,6 +811,7 @@ export default function StoryMode({
                         it: "Arrivederci.",
                         fr: "Au revoir.",
                         ar: "مع السلامة.",
+                        zh: "再见。",
                       }),
                     },
                   ],
@@ -821,6 +830,7 @@ export default function StoryMode({
                 it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                 fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
                 ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل. كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم. وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً. وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
+                zh: "从前，墨西哥有一个叫圣米格尔的小镇。小镇有一个很漂亮的广场，孩子们每天都在那里玩。广场上有一座古老的喷泉，里面总是有清水。大人们下班后会坐在喷泉周围聊天和休息。",
               }),
             },
             sentences:
@@ -835,6 +845,7 @@ export default function StoryMode({
                         it: "C'era una volta un piccolo paese chiamato San Miguel.",
                         fr: "Il etait une fois un petit village appele San Miguel.",
                         ar: "كان يا ما كان، كانت هناك بلدة صغيرة اسمها سان ميجيل.",
+                        zh: "从前，有一个叫圣米格尔的小镇。",
                       }),
                     },
                     {
@@ -846,6 +857,7 @@ export default function StoryMode({
                         it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
                         ar: "كان في البلدة ميدان جميل يلعب فيه الأطفال كل يوم.",
+                        zh: "小镇有一个漂亮的广场，孩子们每天都在那里玩。",
                       }),
                     },
                     {
@@ -857,6 +869,7 @@ export default function StoryMode({
                         it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
                         fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
                         ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
+                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
                       }),
                     },
                     {
@@ -868,6 +881,7 @@ export default function StoryMode({
                         it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
                         ar: "وكان الكبار يجلسون حولها ليتحدثوا ويستريحوا بعد العمل.",
+                        zh: "大人们下班后会坐在它周围聊天和休息。",
                       }),
                     },
                   ]
@@ -881,6 +895,7 @@ export default function StoryMode({
                         it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
                         fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
                         ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل.",
+                        zh: "从前，墨西哥有一个叫圣米格尔的小镇。",
                       }),
                     },
                     {
@@ -892,6 +907,7 @@ export default function StoryMode({
                         it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
                         fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
                         ar: "كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم.",
+                        zh: "小镇有一个很漂亮的广场，孩子们每天都在那里玩。",
                       }),
                     },
                     {
@@ -903,6 +919,7 @@ export default function StoryMode({
                         it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
                         fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
                         ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
+                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
                       }),
                     },
                     {
@@ -914,6 +931,7 @@ export default function StoryMode({
                         it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
                         fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
                         ar: "وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
+                        zh: "大人们下班后会坐在喷泉周围聊天和休息。",
                       }),
                     },
                   ],

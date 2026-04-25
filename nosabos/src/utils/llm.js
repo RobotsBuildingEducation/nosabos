@@ -410,6 +410,50 @@ Fournis une breve explication encourageante (2-3 phrases) qui :
 
 Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
     },
+    zh: {
+      fillPrompt: `你是一位乐于助人的语言导师，正在教授${targetLang}。学生在填空题中回答错误。
+
+题目：${question}
+学生答案：${userAnswer}
+正确答案（或提示）：${correctAnswer}
+
+重要：请用${supportLang}进行解释。
+
+请给出简短、鼓励性的解释（2-3句），内容包括：
+1. 说明这个答案为什么不合适，或学生误解了什么
+2. 说明正确答案及其意思
+3. 给一个有助于记忆的小建议
+
+保持简洁、支持性强，并专注于学习。整段回复都用${supportLang}书写。`,
+      mcPrompt: `你是一位乐于助人的语言导师，正在教授${targetLang}。学生在选择题中回答错误。
+
+题目：${question}
+学生答案：${userAnswer}
+正确答案：${correctAnswer}
+
+重要：请用${supportLang}进行解释。
+
+请给出简短、鼓励性的解释（2-3句），内容包括：
+1. 说明学生的选择为什么不正确
+2. 说明为什么正确答案更合适
+3. 给一个有助于记住差异的小建议
+
+保持简洁、支持性强，并专注于学习。整段回复都用${supportLang}书写。`,
+      maPrompt: `你是一位乐于助人的语言导师，正在教授${targetLang}。学生在多选题中回答错误。
+
+题目：${question}
+学生答案：${userAnswer}
+正确答案：${correctAnswer}
+
+重要：请用${supportLang}进行解释。
+
+请给出简短、鼓励性的解释（2-3句），内容包括：
+1. 说明漏选了哪些答案，或误选了哪些答案
+2. 说明为什么正确答案是对的
+3. 给一个有助于识别正确答案的小建议
+
+保持简洁、支持性强，并专注于学习。整段回复都用${supportLang}书写。`,
+    },
     ja: {
       fillPrompt: `あなたは${targetLang}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
 

@@ -1961,6 +1961,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "zh") {
+      strict =
+        "请只用普通话中文回答。不要使用英语或西班牙语。Respond ONLY in Mandarin Chinese.";
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
@@ -2182,8 +2185,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             ? "Portuguese"
             : tLang === "fr"
               ? "French"
-              : tLang === "it"
-                ? "Italian"
+                : tLang === "it"
+                  ? "Italian"
+                : tLang === "zh"
+                  ? "Mandarin Chinese"
                 : tLang === "nl"
                   ? "Dutch"
                   : tLang === "nah"

@@ -117,6 +117,7 @@ export const LANDING_PAGE_AR_STATIC = {
   language_it: "الإيطالية",
   language_hi: "الهندية",
   language_ar: "العربية المصرية",
+  language_zh: "الصينية المندرينية",
   language_pt: "البرتغالية",
   language_es: "الإسبانية",
   language_nah: "ناهيواتل هواستيكا الشرقية",

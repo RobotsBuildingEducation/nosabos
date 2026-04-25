@@ -1453,8 +1453,23 @@ export default function RealTimeTest({
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
-        const sttLang =
-          tLang === "es" ? "es" : tLang === "en" ? "en" : undefined;
+        const WHISPER_STT_LANG = {
+          ar: "ar",
+          zh: "zh",
+          en: "en",
+          es: "es",
+          pt: "pt",
+          fr: "fr",
+          it: "it",
+          ja: "ja",
+          nl: "nl",
+          ru: "ru",
+          de: "de",
+          el: "el",
+          pl: "pl",
+          ga: "ga",
+        };
+        const sttLang = WHISPER_STT_LANG[tLang];
 
         dc.send(
           JSON.stringify({
@@ -2640,6 +2655,9 @@ Return ONLY JSON:
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "zh") {
+      strict =
+        "请只用普通话中文回答。不要使用英语或西班牙语。Respond ONLY in Mandarin Chinese.";
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
@@ -2811,6 +2829,8 @@ Return ONLY JSON:
                 ? "Voce aggiornata."
                 : targetLangRef.current === "nl"
                   ? "Stem bijgewerkt."
+                  : targetLangRef.current === "zh"
+                    ? "语音已更新。"
                   : targetLangRef.current === "ja"
                     ? "音声を更新しました。"
                     : targetLangRef.current === "ru"

@@ -12,13 +12,16 @@ import { withHindiFlashcardText } from "./hindiLocalizer.js";
 import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
 import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
 import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
   withArabicFlashcardText(
-    withHindiFlashcardText(
-      withJapaneseFlashcardText(
-        withFrenchFlashcardText(
-          withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
         ),
       ),
     ),

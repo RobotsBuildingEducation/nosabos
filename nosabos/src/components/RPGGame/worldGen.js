@@ -642,6 +642,48 @@ WORLD_BLUEPRINTS.forEach((blueprint, index) => {
   blueprint.summary.ar = blueprint.summary.ar || ar.summary;
 });
 
+const WORLD_BLUEPRINTS_ZH = [
+  {
+    names: ["温馨客厅", "家庭公寓", "邻里之家"],
+    summary: "一个充满日常物品和生活细节的温暖家居空间",
+  },
+  {
+    names: ["热闹市场", "街角集市", "社区商店"],
+    summary: "一个有摊位、柜台和实用词汇的热闹市场",
+  },
+  {
+    names: ["安静图书馆", "学习大厅", "档案阅览室"],
+    summary: "一个安静的学习空间，装满书本、笔记和研究线索",
+  },
+  {
+    names: ["车站大厅", "旅行枢纽", "机场候机区"],
+    summary: "一个适合练习旅行、时间和方向的交通场景",
+  },
+  {
+    names: ["花园小径", "森林空地", "河畔公园"],
+    summary: "一个开放的户外区域，适合观察、移动和描述周围环境",
+  },
+  {
+    names: ["社区中心", "市政广场", "公共大厅"],
+    summary: "一个公共空间，适合讨论服务、社区和日常事务",
+  },
+  {
+    names: ["语言实验室", "研究工作室", "发明者实验室"],
+    summary: "一个实验空间，适合探索工具、流程和复杂想法",
+  },
+  {
+    names: ["节日广场", "表演舞台", "彩旗庭院"],
+    summary: "一个热闹的节日场景，充满表演、食物和庆祝活动",
+  },
+];
+
+WORLD_BLUEPRINTS.forEach((blueprint, index) => {
+  const zh = WORLD_BLUEPRINTS_ZH[index];
+  if (!zh) return;
+  blueprint.names.zh = blueprint.names.zh || zh.names;
+  blueprint.summary.zh = blueprint.summary.zh || zh.summary;
+});
+
 const GATHER_POOLS_BY_THEME = {
   home: {
     es: {
@@ -1115,6 +1157,9 @@ export function buildScenarioEnvironment(
   const themeLabelAr =
     String(rawEnvironment?.themeLabel?.ar || rawEnvironment?.name?.ar || "")
       .trim() || pickRandom(seed.names.ar || seed.names.en);
+  const themeLabelZh =
+    String(rawEnvironment?.themeLabel?.zh || rawEnvironment?.name?.zh || "")
+      .trim() || pickRandom(seed.names.zh || seed.names.en);
 
   return {
     blueprintId: seed.id,
@@ -1127,6 +1172,7 @@ export function buildScenarioEnvironment(
       fr: themeLabelFr,
       ja: themeLabelJa,
       ar: themeLabelAr,
+      zh: themeLabelZh,
     },
     summary: {
       en:
@@ -1149,6 +1195,10 @@ export function buildScenarioEnvironment(
       ar:
         String(rawEnvironment?.summary?.ar || "").trim() ||
         seed.summary.ar ||
+        seed.summary.en,
+      zh:
+        String(rawEnvironment?.summary?.zh || "").trim() ||
+        seed.summary.zh ||
         seed.summary.en,
     },
     details,

@@ -237,7 +237,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar"].some(
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -274,6 +274,7 @@ const TARGET_LANGUAGE_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
+  zh: "Mandarin Chinese",
   nl: "Dutch",
   nah: "Eastern Huasteca Nahuatl",
   ja: "Japanese",
@@ -699,6 +700,7 @@ function TopBar({
     fr: "secondes",
     ja: "秒",
     ar: "ثواني",
+    zh: "秒",
   });
   const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
     minimumFractionDigits: 1,
@@ -714,6 +716,7 @@ function TopBar({
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
       ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
     });
 
   // Japanese is visible for everyone (beta label applied in UI)
@@ -800,6 +803,7 @@ function TopBar({
             es: "Error al guardar",
             it: "Salvataggio non riuscito",
             ja: "保存に失敗しました",
+            zh: "保存失败",
           }),
           description: String(e?.message || e),
         });
@@ -882,6 +886,7 @@ function TopBar({
             es: "Error al guardar",
             it: "Salvataggio non riuscito",
             ja: "保存に失敗しました",
+            zh: "保存失败",
           }),
           description: String(e?.message || e),
         });
@@ -1039,6 +1044,7 @@ function TopBar({
                   es: "Abrir meta diaria",
                   it: "Apri obiettivo giornaliero",
                   ja: "デイリー目標を開く",
+                  zh: "打开每日目标",
                 })}
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
@@ -1068,6 +1074,7 @@ function TopBar({
                   es: "Abrir temporizador",
                   it: "Apri timer",
                   ja: "タイマーを開く",
+                  zh: "打开计时器",
                 })}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
@@ -1085,12 +1092,14 @@ function TopBar({
                           es: "Reanudar temporizador",
                           it: "Riprendi timer",
                           ja: "タイマーを再開",
+                          zh: "继续计时器",
                         })
                       : uiCopy(appLanguage, {
                           en: "Pause timer",
                           es: "Pausar temporizador",
                           it: "Metti in pausa il timer",
                           ja: "タイマーを一時停止",
+                          zh: "暂停计时器",
                         })
                   }
                   {...getTopBarPressProps(
@@ -1584,6 +1593,7 @@ function TopBar({
                             ja: "レベルテストを始める",
                             hi: "प्रवीणता परीक्षण शुरू करें",
                             ar: "ابدأ اختبار المستوى",
+                            zh: "开始水平测试",
                           })}
                         </Button>
                       )}
@@ -3195,6 +3205,7 @@ export default function App() {
           it: "Il codice abbonamento non è configurato",
           fr: "Le code abonne n'est pas configure",
           ja: "サブスクリプションのパスコードが設定されていません",
+          zh: "订阅通行码尚未配置",
         });
         setPasscodeError(msg);
         setLocalError?.(msg);
@@ -3240,6 +3251,7 @@ export default function App() {
             it: "Codice accettato",
             fr: "Code accepte",
             ja: "パスコードを確認しました",
+            zh: "通行码已接受",
           }),
         });
       } catch (error) {
@@ -3250,6 +3262,7 @@ export default function App() {
           it: "Impossibile salvare il codice",
           fr: "Impossible d'enregistrer le code",
           ja: "パスコードを保存できませんでした",
+          zh: "无法保存通行码",
         });
         setPasscodeError(msg);
         setLocalError?.(msg);
@@ -3306,6 +3319,7 @@ export default function App() {
           it: "Collega il tuo account per usare questa funzione.",
           fr: "Connecte ton compte pour utiliser cette fonction.",
           ja: "この機能を使うにはアカウントを接続してください。",
+          zh: "请连接你的账户以使用此功能。",
         });
         throw new Error(message);
       }
@@ -3341,6 +3355,7 @@ export default function App() {
           it: "Collega il tuo account per usare questa funzione.",
           fr: "Connecte ton compte pour utiliser cette fonction.",
           ja: "この機能を使うにはアカウントを接続してください。",
+          zh: "请连接你的账户以使用此功能。",
         });
         throw new Error(message);
       }
@@ -3782,6 +3797,7 @@ export default function App() {
           it: "Impossibile avviare la lezione",
           fr: "Impossible de demarrer la lecon",
           ja: "レッスンを開始できませんでした",
+          zh: "无法开始课程",
         }),
         status: "error",
         duration: 3000,
@@ -3874,6 +3890,7 @@ export default function App() {
             it: "Impossibile salvare i progressi",
             fr: "Impossible d'enregistrer la progression",
             ja: "進捗を保存できませんでした",
+            zh: "无法保存进度",
           }),
           status: "error",
           duration: 3000,
@@ -4490,6 +4507,7 @@ export default function App() {
               it: "Salvataggio non riuscito",
               fr: "Echec de l'enregistrement",
               ja: "保存に失敗しました",
+              zh: "保存失败",
             }),
             description: uiCopy(appLanguage, {
               en: "Couldn't find the current user.",
@@ -4497,6 +4515,7 @@ export default function App() {
               it: "Impossibile trovare l'utente corrente.",
               fr: "Impossible de trouver l'utilisateur actuel.",
               ja: "現在のユーザーが見つかりませんでした。",
+              zh: "找不到当前用户。",
             }),
           });
           return;
@@ -4528,6 +4547,7 @@ export default function App() {
               it: "Salvataggio non riuscito",
               fr: "Echec de l'enregistrement",
               ja: "保存に失敗しました",
+              zh: "保存失败",
             }),
             description: String(error?.message || error),
           });
@@ -4965,6 +4985,7 @@ export default function App() {
               it: "Ottimo lavoro!",
               fr: "Bien joue !",
               ja: "よくできました！",
+              zh: "做得好！",
             });
           const descTpl =
             t?.random_toast_desc ??
@@ -4974,6 +4995,7 @@ export default function App() {
               it: "Hai guadagnato +{xp} XP.",
               fr: "Tu as gagne +{xp} XP.",
               ja: "+{xp} XPを獲得しました。",
+              zh: "你获得了 +{xp} XP。",
             });
           const description = descTpl.replace("{xp}", String(diff));
 
@@ -5207,6 +5229,7 @@ export default function App() {
         pt: "Iniciante absoluto",
         it: "Principiante assoluto",
         fr: "Grand debutant",
+        zh: "零基础入门",
       },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
@@ -5216,6 +5239,7 @@ export default function App() {
         pt: "Primeiras palavras e reconhecimento",
         it: "Prime parole e riconoscimento",
         fr: "Premiers mots et reconnaissance",
+        zh: "最初的词语与识别",
       },
     },
     A1: {
@@ -5225,6 +5249,7 @@ export default function App() {
         pt: "Iniciante",
         it: "Principiante",
         fr: "Debutant",
+        zh: "初学者",
       },
       color: "#3B82F6",
       gradient: "linear(135deg, #60A5FA, #3B82F6)",
@@ -5234,6 +5259,7 @@ export default function App() {
         pt: "Linguagem básica de sobrevivência",
         it: "Lingua essenziale di base",
         fr: "Langue essentielle de base",
+        zh: "基础生存语言",
       },
     },
     A2: {
@@ -5243,6 +5269,7 @@ export default function App() {
         pt: "Elementar",
         it: "Elementare",
         fr: "Elementaire",
+        zh: "初级",
       },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
@@ -5252,6 +5279,7 @@ export default function App() {
         pt: "Comunicação cotidiana simples",
         it: "Comunicazione quotidiana semplice",
         fr: "Communication simple du quotidien",
+        zh: "简单日常交流",
       },
     },
     B1: {
@@ -5261,6 +5289,7 @@ export default function App() {
         pt: "Intermediário",
         it: "Intermedio",
         fr: "Intermediaire",
+        zh: "中级",
       },
       color: "#A855F7",
       gradient: "linear(135deg, #C084FC, #A855F7)",
@@ -5270,6 +5299,7 @@ export default function App() {
         pt: "Lidar com situações do dia a dia",
         it: "Gestire situazioni quotidiane",
         fr: "Gerer les situations quotidiennes",
+        zh: "应对日常情境",
       },
     },
     B2: {
@@ -5279,6 +5309,7 @@ export default function App() {
         pt: "Intermediário avançado",
         it: "Intermedio alto",
         fr: "Intermediaire avance",
+        zh: "中高级",
       },
       color: "#F97316",
       gradient: "linear(135deg, #FB923C, #F97316)",
@@ -5288,6 +5319,7 @@ export default function App() {
         pt: "Discussões complexas",
         it: "Discussioni complesse",
         fr: "Discussions complexes",
+        zh: "复杂讨论",
       },
     },
     C1: {
@@ -5297,6 +5329,7 @@ export default function App() {
         pt: "Avançado",
         it: "Avanzato",
         fr: "Avance",
+        zh: "高级",
       },
       color: "#EF4444",
       gradient: "linear(135deg, #F87171, #EF4444)",
@@ -5306,6 +5339,7 @@ export default function App() {
         pt: "Uso sofisticado do idioma",
         it: "Uso sofisticato della lingua",
         fr: "Usage sophistique de la langue",
+        zh: "成熟精细的语言运用",
       },
     },
     C2: {
@@ -5315,6 +5349,7 @@ export default function App() {
         pt: "Domínio",
         it: "Padronanza",
         fr: "Maitrise",
+        zh: "精通",
       },
       color: "#EC4899",
       gradient: "linear(135deg, #F472B6, #EC4899)",
@@ -5324,6 +5359,7 @@ export default function App() {
         pt: "Proficiência quase nativa",
         it: "Competenza quasi nativa",
         fr: "Competence quasi native",
+        zh: "接近母语水平",
       },
     },
   };
@@ -6674,6 +6710,7 @@ export default function App() {
                     ja: "デイリー目標達成！",
                     hi: "दैनिक लक्ष्य पूरा हुआ!",
                     ar: "الهدف اليومي اكتمل!",
+                    zh: "每日目标已完成！",
                   })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
@@ -6685,6 +6722,7 @@ export default function App() {
                     ja: "今日のXP目標を達成しました。",
                     hi: "आपने आज का XP लक्ष्य पूरा कर लिया।",
                     ar: "حققت هدف XP بتاع النهارده.",
+                    zh: "你已达成今天的 XP 目标。",
                   })}
                 </Text>
               </VStack>
@@ -6710,6 +6748,7 @@ export default function App() {
                           ja: "目標",
                           hi: "लक्ष्य",
                           ar: "الهدف",
+                          zh: "目标",
                         })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
@@ -6726,6 +6765,7 @@ export default function App() {
                       ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
                       hi: "अपनी श्रृंखला बनाए रखें और नए लक्ष्य के लिए कल फिर आएँ!",
                       ar: "كمّل السلسلة وارجع بكرة لهدف جديد!",
+                      zh: "保持连续学习，明天回来挑战新目标！",
                     })}
                   </Text>
                 </VStack>
@@ -6758,6 +6798,7 @@ export default function App() {
                   ja: "学習を続ける",
                   hi: "सीखना जारी रखें",
                   ar: "كمّل تعلّم",
+                  zh: "继续学习",
                 })}
               </Button>
             </VStack>
@@ -6812,6 +6853,7 @@ export default function App() {
                     ja: "レッスン完了！",
                     hi: "पाठ पूरा हुआ!",
                     ar: "الدرس اكتمل!",
+                    zh: "课程完成！",
                   })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
@@ -6846,6 +6888,7 @@ export default function App() {
                       ja: "獲得XP",
                       hi: "प्राप्त XP",
                       ar: "XP المكتسبة",
+                      zh: "获得的 XP",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -6861,6 +6904,7 @@ export default function App() {
                       ja: "経験値",
                       hi: "अनुभव अंक",
                       ar: "نقاط الخبرة",
+                      zh: "经验值",
                     })}
                   </Text>
                 </VStack>
@@ -6888,6 +6932,7 @@ export default function App() {
                   ja: "続ける",
                   hi: "जारी रखें",
                   ar: "كمّل",
+                  zh: "继续",
                 })}
               </Button>
             </VStack>
@@ -6935,6 +6980,7 @@ export default function App() {
                     fr: "Niveau termine !",
                     ja: "レベル完了！",
                     hi: "स्तर पूरा हुआ!",
+                    zh: "等级完成！",
                   })}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
@@ -6965,6 +7011,7 @@ export default function App() {
                       fr: "Felicitations !",
                       ja: "おめでとうございます！",
                       hi: "बधाई हो!",
+                      zh: "恭喜！",
                     })}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
@@ -6977,6 +7024,7 @@ export default function App() {
                           fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
                           ja: `レベル${completedProficiencyData.nextLevel}が開放されました`,
                           hi: `आपने स्तर ${completedProficiencyData.nextLevel} खोल लिया है`,
+                          zh: `你已解锁等级 ${completedProficiencyData.nextLevel}`,
                         })
                       : uiCopy(appLanguage, {
                           en: "You've completed all levels!",
@@ -6986,6 +7034,7 @@ export default function App() {
                           fr: "Tu as termine tous les niveaux !",
                           ja: "すべてのレベルを完了しました！",
                           hi: "आपने सभी स्तर पूरे कर लिए हैं!",
+                          zh: "你已完成所有等级！",
                         })}
                   </Text>
                 </VStack>
@@ -7018,6 +7067,7 @@ export default function App() {
                       fr: "Aller au niveau suivant",
                       ja: "次のレベルへ",
                       hi: "अगले स्तर पर जाएँ",
+                      zh: "前往下一等级",
                     })
                   : uiCopy(appLanguage, {
                       en: "Continue",
@@ -7027,6 +7077,7 @@ export default function App() {
                       fr: "Continuer",
                       ja: "続ける",
                       hi: "जारी रखें",
+                      zh: "继续",
                     })}
               </Button>
             </VStack>

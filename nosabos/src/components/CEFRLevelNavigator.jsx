@@ -21,8 +21,8 @@ const getAppLanguage = () => {
 };
 
 // Translation helper for UI strings
-const getTranslation = (key, params = {}) => {
-  const lang = getAppLanguage();
+const getTranslation = (key, params = {}, langOverride = null) => {
+  const lang = normalizeSupportLanguage(langOverride || getAppLanguage());
   const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
@@ -44,6 +44,7 @@ const CEFR_LEVEL_INFO = {
       ja: "完全初心者",
       hi: "पूर्ण शुरुआती",
       ar: "مبتدئ تمامًا",
+      zh: "完全初学者",
     },
     displayLabel: "A0",
     color: "#8B5CF6",
@@ -57,10 +58,11 @@ const CEFR_LEVEL_INFO = {
       ja: "最初の単語と認識",
       hi: "पहले शब्द और पहचान",
       ar: "أول كلمات والتعرّف عليها",
+      zh: "最初的词语与识别",
     },
   },
   A1: {
-    name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者", hi: "शुरुआती", ar: "مبتدئ" },
+    name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者", hi: "शुरुआती", ar: "مبتدئ", zh: "初学者" },
     color: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6)",
     description: {
@@ -72,10 +74,11 @@ const CEFR_LEVEL_INFO = {
       ja: "基本的なサバイバル表現",
       hi: "बुनियादी रोज़मर्रा की भाषा",
       ar: "لغة أساسية للحياة اليومية",
+      zh: "基础生存表达",
     },
   },
   A2: {
-    name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級", hi: "प्रारंभिक", ar: "أساسي" },
+    name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級", hi: "प्रारंभिक", ar: "أساسي", zh: "初级" },
     color: "#8B5CF6",
     gradient: "linear(135deg, #A78BFA, #8B5CF6)",
     description: {
@@ -87,10 +90,11 @@ const CEFR_LEVEL_INFO = {
       ja: "簡単な日常コミュニケーション",
       hi: "सरल रोज़मर्रा का संचार",
       ar: "تواصل يومي بسيط",
+      zh: "简单日常沟通",
     },
   },
   B1: {
-    name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級", hi: "मध्यवर्ती", ar: "متوسط" },
+    name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級", hi: "मध्यवर्ती", ar: "متوسط", zh: "中级" },
     color: "#A855F7",
     gradient: "linear(135deg, #C084FC, #A855F7)",
     description: {
@@ -102,6 +106,7 @@ const CEFR_LEVEL_INFO = {
       ja: "日常場面に対応",
       hi: "रोज़मर्रा की स्थितियों को संभालना",
       ar: "التعامل مع مواقف الحياة اليومية",
+      zh: "处理日常情境",
     },
   },
   B2: {
@@ -114,6 +119,7 @@ const CEFR_LEVEL_INFO = {
       ja: "中上級",
       hi: "उच्च मध्यवर्ती",
       ar: "متوسط أعلى",
+      zh: "中高级",
     },
     color: "#F97316",
     gradient: "linear(135deg, #FB923C, #F97316)",
@@ -126,10 +132,11 @@ const CEFR_LEVEL_INFO = {
       ja: "複雑な話し合い",
       hi: "जटिल चर्चाएं",
       ar: "نقاشات أكثر تعقيدًا",
+      zh: "复杂讨论",
     },
   },
   C1: {
-    name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級", hi: "उन्नत", ar: "متقدم" },
+    name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級", hi: "उन्नत", ar: "متقدم", zh: "高级" },
     color: "#EF4444",
     gradient: "linear(135deg, #F87171, #EF4444)",
     description: {
@@ -141,10 +148,11 @@ const CEFR_LEVEL_INFO = {
       ja: "洗練された言語運用",
       hi: "भाषा का परिष्कृत उपयोग",
       ar: "استخدام متطور للغة",
+      zh: "成熟的语言运用",
     },
   },
   C2: {
-    name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達", hi: "निपुणता", ar: "إتقان" },
+    name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達", hi: "निपुणता", ar: "إتقان", zh: "精通" },
     color: "#EC4899",
     gradient: "linear(135deg, #F472B6, #EC4899)",
     description: {
@@ -156,6 +164,7 @@ const CEFR_LEVEL_INFO = {
       ja: "ネイティブに近い熟達度",
       hi: "मूल वक्ता जैसी दक्षता",
       ar: "إتقان قريب من المتحدث الأصلي",
+      zh: "接近母语水平",
     },
   },
 };
@@ -168,6 +177,7 @@ export default function CEFRLevelNavigator({
   supportLang = "en",
   levelCompletionStatus = {},
 }) {
+  const resolvedSupportLang = normalizeSupportLanguage(supportLang);
   const currentLevelIndex = CEFR_LEVELS.indexOf(activeCEFRLevel);
   const hasPrevious = currentLevelIndex > 0;
   const hasNext = currentLevelIndex < CEFR_LEVELS.length - 1;
@@ -209,6 +219,14 @@ export default function CEFRLevelNavigator({
 
   const levelInfo = CEFR_LEVEL_INFO[activeCEFRLevel];
   const isCurrentUserLevel = activeCEFRLevel === currentLevel;
+  const levelName =
+    levelInfo.name[resolvedSupportLang] ||
+    levelInfo.name[getAppLanguage()] ||
+    levelInfo.name.en;
+  const levelDescription =
+    levelInfo.description[resolvedSupportLang] ||
+    levelInfo.description[getAppLanguage()] ||
+    levelInfo.description.en;
 
   const handlePrevious = () => {
     if (hasPrevious && previousLevel) {
@@ -272,11 +290,10 @@ export default function CEFRLevelNavigator({
               color="var(--app-text-primary)"
               textAlign={"center"}
             >
-              {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
+              {levelName}
             </Text>
             <Text fontSize="xs" color="gray.400" textAlign="center">
-              {levelInfo.description[getAppLanguage()] ||
-                levelInfo.description.en}
+              {levelDescription}
             </Text>
           </VStack>
 
@@ -328,7 +345,7 @@ export default function CEFRLevelNavigator({
             >
               <RiTrophyLine size={20} />
               <Text fontWeight="bold" fontSize="sm">
-                {getTranslation("cefr_level_completed")}
+                {getTranslation("cefr_level_completed", {}, resolvedSupportLang)}
               </Text>
             </HStack>
           </MotionBox>

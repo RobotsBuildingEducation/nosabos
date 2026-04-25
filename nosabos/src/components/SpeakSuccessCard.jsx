@@ -27,6 +27,8 @@ export function SpeakSuccessCard({
       ? "Dijiste"
       : userLanguage === "ar"
       ? "أنت قلت"
+      : userLanguage === "zh"
+      ? "你说了"
       : "You said");
   const translationLabel =
     t("practice_speak_banner_translation") ||
@@ -38,6 +40,8 @@ export function SpeakSuccessCard({
       ? "Significado"
       : userLanguage === "ar"
       ? "المعنى"
+      : userLanguage === "zh"
+      ? "意思"
       : "Meaning");
 
   return (

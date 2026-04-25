@@ -50,6 +50,14 @@ const spanishTimezones = [
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
 const hindiTimezones = ["Asia/Kolkata", "Asia/Calcutta"];
 const arabicTimezones = ["Africa/Cairo"];
+const chineseTimezones = [
+  "Asia/Shanghai",
+  "Asia/Urumqi",
+  "Asia/Hong_Kong",
+  "Asia/Macau",
+  "Asia/Taipei",
+  "Asia/Singapore",
+];
 
 const portugueseTimezones = [
   "Europe/Lisbon",
@@ -112,6 +120,9 @@ const detectLanguageFromTimezone = () => {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (arabicTimezones.includes(timezone)) {
       return "ar";
+    }
+    if (chineseTimezones.includes(timezone)) {
+      return "zh";
     }
     if (hindiTimezones.includes(timezone)) {
       return "hi";

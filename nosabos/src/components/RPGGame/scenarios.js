@@ -38,17 +38,18 @@ export const MAP_CHOICES = [
       ja: "生成された世界",
       hi: "बनाई गई दुनिया",
       ar: "العالم المتولّد",
+      zh: "生成的世界",
     },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد" },
-  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة" },
-  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान", ar: "الحديقة" },
-  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा", ar: "المطار" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد", zh: "生成的世界" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة", zh: "客厅" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान", ar: "الحديقة", zh: "公园" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा", ar: "المطار", zh: "机场" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية", zh: "问候广场" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -2072,15 +2073,48 @@ const SCENARIO_NAME_HI_BY_EN = {
   "Craft Tent": "शिल्प तंबू",
 };
 
+const SCENARIO_NAME_ZH_BY_EN = {
+  Kitchen: "厨房",
+  Study: "书房",
+  "Garden Patio": "花园露台",
+  "Prep Room": "准备室",
+  Pantry: "储藏室",
+  "Cafe Patio": "咖啡露台",
+  "Archive Wing": "档案侧厅",
+  "Reading Nook": "阅读角",
+  "Front Office": "前台办公室",
+  "Ticket Office": "售票处",
+  "Gate Lounge": "登机口休息区",
+  "Travel Desk": "旅行服务台",
+  "Garden Pavilion": "花园亭",
+  Glasshouse: "温室",
+  "Ranger Station": "护林员站",
+  "Council Room": "会议室",
+  "Records Room": "档案室",
+  "Courtyard Pavilion": "庭院亭",
+  "Prep Lab": "准备实验室",
+  "Analysis Booth": "分析间",
+  "Equipment Store": "设备储藏室",
+  "Performance Stage": "表演舞台",
+  "Food Stall": "食物摊位",
+  "Craft Tent": "手工帐篷",
+};
+
 MAP_CHOICES.forEach((choice) => {
   if (choice?.name?.es && !choice.name.pt) {
     choice.name.pt = SCENARIO_NAME_PT_BY_ES[choice.name.es] || choice.name.en;
+  }
+  if (choice?.name?.en && !choice.name.zh) {
+    choice.name.zh = SCENARIO_NAME_ZH_BY_EN[choice.name.en] || choice.name.en;
   }
 });
 
 Object.values(MAP_NAME_BY_ID).forEach((name) => {
   if (name?.es && !name.pt) {
     name.pt = SCENARIO_NAME_PT_BY_ES[name.es] || name.en;
+  }
+  if (name?.en && !name.zh) {
+    name.zh = SCENARIO_NAME_ZH_BY_EN[name.en] || name.en;
   }
 });
 
@@ -2091,6 +2125,9 @@ Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((specs) => {
     }
     if (spec?.name?.en && !spec.name.hi) {
       spec.name.hi = SCENARIO_NAME_HI_BY_EN[spec.name.en] || spec.name.en;
+    }
+    if (spec?.name?.en && !spec.name.zh) {
+      spec.name.zh = SCENARIO_NAME_ZH_BY_EN[spec.name.en] || spec.name.en;
     }
   });
 });
@@ -2765,6 +2802,9 @@ function buildReviewWorldMaps({
       ar: Array.isArray(environment?.names?.ar)
         ? environment.names.ar[0]
         : environment?.names?.ar || "عالم الدرس",
+      zh: Array.isArray(environment?.names?.zh)
+        ? environment.names.zh[0]
+        : environment?.names?.zh || "课程世界",
     },
     tileSize: 32,
     mapWidth: hubWidth,
@@ -3261,6 +3301,7 @@ async function fallbackScenario(
       ja: getMapName(mapId, "ja"),
       hi: getMapName(mapId, "hi"),
       ar: getMapName(mapId, "ar"),
+      zh: getMapName(mapId, "zh"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -3563,7 +3604,9 @@ function normalizeScenario({
         it: String(raw?.name?.it || getMapName(mapId, "it")),
         fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
         ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
+        hi: String(raw?.name?.hi || getMapName(mapId, "hi")),
         ar: String(raw?.name?.ar || getMapName(mapId, "ar")),
+        zh: String(raw?.name?.zh || getMapName(mapId, "zh")),
       },
       tileSize: 32,
       mapWidth,
@@ -3631,6 +3674,7 @@ function normalizeScenario({
     ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
     hi: String(raw?.name?.hi || (Array.isArray(environment?.names?.hi) ? environment.names.hi[0] : environment?.names?.hi) || getMapName(mapId, "hi")),
     ar: String(raw?.name?.ar || (Array.isArray(environment?.names?.ar) ? environment.names.ar[0] : environment?.names?.ar) || getMapName(mapId, "ar")),
+    zh: String(raw?.name?.zh || (Array.isArray(environment?.names?.zh) ? environment.names.zh[0] : environment?.names?.zh) || getMapName(mapId, "zh")),
   };
   hubMap.name = processedName;
 

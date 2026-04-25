@@ -116,6 +116,31 @@ function getCopy(lang) {
     };
   }
 
+  if (lang === "zh") {
+    return {
+      title: "你的伙伴",
+      subtitle: "完成每日 XP 目标，照顾它的健康。",
+      health: "健康",
+      happy: "开心",
+      healthy: "健康",
+      unhappy: "难过",
+      stressed: "紧张",
+      unhealthy: "不舒服",
+      dead: "未激活",
+      reward: "目标已完成",
+      penalty: "目标未完成",
+      rewardFooter: "健康值提升到 {health}%",
+      penaltyFooter: "健康值下降到 {health}%",
+      latestAchieved: "最新更新：完成目标获得 +{delta}%",
+      latestMissed: "最新更新：未完成目标 {delta}%",
+      managementHint: "完成今天的目标，让它保持强壮。",
+      celebrationHint: "你的伙伴获得了健康提升。",
+      rewardBadge: "奖励 +{delta}%",
+      penaltyBadge: "风险 -{delta}%",
+      previewHint: "这只是预览，不会改变真实健康值。",
+    };
+  }
+
   if (lang === "ja") {
     return {
       title: "あなたの相棒",

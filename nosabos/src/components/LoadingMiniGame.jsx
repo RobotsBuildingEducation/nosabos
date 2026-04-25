@@ -611,6 +611,102 @@ TABLE_MESSAGES.ar = [
   "فيه بازل لسه مخلصش على الترابيزة.",
 ];
 
+OUTDOOR_NAMES.zh = [
+  "城镇广场",
+  "村庄绿地",
+  "森林空地",
+  "河畔公园",
+  "夕阳草地",
+  "月光花园",
+  "鹅卵石广场",
+  "低语树林",
+  "灯笼庭院",
+  "野花田野",
+];
+
+INDOOR_ROOM_TYPES[0].names.zh = [
+  "古老图书馆",
+  "阅读室",
+  "学者书房",
+  "书本角落",
+  "尘封档案室",
+];
+INDOOR_ROOM_TYPES[1].names.zh = [
+  "温馨木屋",
+  "暖和小屋",
+  "旅人休息处",
+  "炉边小屋",
+  "山间小屋",
+];
+INDOOR_ROOM_TYPES[2].names.zh = [
+  "工匠作坊",
+  "手工室",
+  "创作者空间",
+  "修补实验室",
+  "发明者小屋",
+];
+INDOOR_ROOM_TYPES[3].names.zh = [
+  "客房",
+  "温暖卧室",
+  "梦者房间",
+  "午睡房",
+  "休息避风港",
+];
+INDOOR_ROOM_TYPES[4].names.zh = [
+  "休息室",
+  "公共房间",
+  "聚会大厅",
+  "社交角落",
+  "茶室",
+];
+
+SIGN_MESSAGES.zh = [
+  "欢迎你，冒险者！在游戏准备好之前先探索一下吧。",
+  "提示：和主游戏里的角色对话，可以练习词汇！",
+  "有趣事实：学习语言就像给大脑升级。",
+  "高手提示：完成任务可以获得 XP 并解锁新课程！",
+  "桥连接两个世界，语言也是这样。",
+  "试试走进门里，发现新的房间！",
+  "你学会的每个词，都是大冒险的一步。",
+  "探索越多，发现越多！",
+  "小秘密：有些路通向隐藏宝藏...",
+  "你知道吗？这张地图每次加载都会变化！",
+  "语言会打开通往新世界的大门。真的！",
+  "继续探索，总有新东西等着你。",
+];
+
+CHEST_MESSAGES.zh = [
+  "你找到了隐藏宝藏！原来是知识！",
+  "里面有张纸写着：“练习真的有用。”",
+  "你发现了发光符文，上面写着“XP +100”（开玩笑的）。",
+  "里面有一张小地图，标着你将访问的所有世界！",
+  "一枚金币！等等...其实是词汇代币。",
+  "你找到了一卷古老语法卷轴！",
+  "箱子里装着...动力！+10 意志力。",
+  "里面有张纸条：“你做得很棒！”",
+];
+
+LAMP_MESSAGES.zh = [
+  "灯柔和地亮着。这里很温暖。",
+  "柔光照亮了古老文字...但看不清。",
+  "灯光像小火花一样跳动。",
+  "你感到一阵温暖和鼓励。",
+];
+
+PLANT_MESSAGES.zh = [
+  "一株快乐的小植物。它似乎很喜欢这里。",
+  "你走过时，叶子轻轻摆动。",
+  "这株植物已经在这里很久很久了。",
+  "一朵小花正在开放。真漂亮！",
+];
+
+TABLE_MESSAGES.zh = [
+  "一张结实的木桌。有人留下了动词变位笔记。",
+  "桌面上留下了多年学习时光的痕迹。",
+  "书本和纸张散落在桌面上。",
+  "桌上还有一个没完成的谜题。",
+];
+
 // ─── Procedural map generation ──────────────────────────────────────────────
 const MAP_W = 18;
 const MAP_H = 12;
@@ -870,6 +966,7 @@ function generateWorld(seed) {
     ja: pick(rng, OUTDOOR_NAMES.ja),
     hi: pick(rng, OUTDOOR_NAMES.hi),
     ar: pick(rng, OUTDOOR_NAMES.ar),
+    zh: pick(rng, OUTDOOR_NAMES.zh),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -887,6 +984,7 @@ function generateWorld(seed) {
     ja: pick(rng, roomType1.names.ja),
     hi: pick(rng, roomType1.names.hi),
     ar: pick(rng, roomType1.names.ar),
+    zh: pick(rng, roomType1.names.zh),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
@@ -899,6 +997,7 @@ function generateWorld(seed) {
     ja: pick(rng, roomType2.names.ja),
     hi: pick(rng, roomType2.names.hi),
     ar: pick(rng, roomType2.names.ar),
+    zh: pick(rng, roomType2.names.zh),
   };
 
   // Build rooms object

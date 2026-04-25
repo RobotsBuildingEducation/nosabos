@@ -104,6 +104,7 @@ export const LINKS_PAGE_HI_STATIC = {
   language_hi: "हिंदी",
   language_ja: "जापानी",
   language_pt: "पुर्तगाली",
+  language_zh: "मंदारिन चीनी",
 };
 
 export default LINKS_PAGE_HI_STATIC;

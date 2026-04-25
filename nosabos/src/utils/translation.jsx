@@ -4,6 +4,7 @@ import { Button, HStack } from "@chakra-ui/react";
 import { TRANSLATION_AR_STATIC } from "./translationArStatic";
 import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
 import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
+import { TRANSLATION_ZH_STATIC } from "./translationZhStatic";
 
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
@@ -49,7 +50,9 @@ export const translations = {
     random_shuffle: "Shuffle",
     reading_btn_next: "Complete lecture",
     reading_btn_finish: "Complete lecture",
+    reading_loading: "Loading reading settings...",
     reading_generating: "Creating lecture...",
+    reading_generating_title: "Generating reading...",
     reading_skip: "Skip",
     copied_to_clipboard_all: "Question has been copied.",
     copy_all: "Copy question",
@@ -185,6 +188,7 @@ export const translations = {
     common_saving: "Saving",
     common_cancel: "Cancel",
     language_ar: "Egyptian Arabic",
+    language_zh: "Mandarin Chinese",
     language_en: "English",
     language_es: "Spanish",
     language_pt: "Portuguese",
@@ -235,6 +239,7 @@ export const translations = {
     onboarding_support_it: "Italian",
     onboarding_support_ar: "Egyptian Arabic",
     onboarding_support_ja: "Japanese",
+    onboarding_support_zh: "Mandarin Chinese",
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_menu_label: "Practice:",
     onboarding_practice_nah: "East Huasteca Nahuatl",
@@ -244,6 +249,7 @@ export const translations = {
     onboarding_practice_it: "Italian",
     onboarding_practice_hi: "Hindi",
     onboarding_practice_ar: "Egyptian Arabic",
+    onboarding_practice_zh: "Mandarin Chinese",
     onboarding_practice_nl: "Dutch",
     onboarding_practice_ja: "Japanese",
     onboarding_practice_en: "English",
@@ -939,7 +945,9 @@ export const translations = {
     random_shuffle: "Mezclar",
     reading_btn_next: "Completar lección",
     reading_btn_finish: "Completar lección",
+    reading_loading: "Cargando ajustes de lectura...",
     reading_generating: "Creando la lección...",
+    reading_generating_title: "Generando lectura...",
     reading_skip: "Saltar",
     copied_to_clipboard_all: "La pregunta ha sido copiada.",
     copy_all: "Copiar pregunta",
@@ -1183,6 +1191,7 @@ export const translations = {
     language_it: "Italiano",
     language_hi: "Hindi",
     language_ar: "Árabe egipcio",
+    language_zh: "Chino mandarín",
     language_nl: "Holandés",
     language_nah: "Náhuatl huasteco",
     language_ja: "Japonés",
@@ -1410,6 +1419,7 @@ export const translations = {
     onboarding_support_it: "Italiano",
     onboarding_support_ar: "Árabe egipcio",
     onboarding_support_ja: "Japonés",
+    onboarding_support_zh: "Chino mandarín",
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_menu_label: "Práctica:",
     onboarding_practice_nah: "Náhuatl Huasteca Oriental",
@@ -1419,6 +1429,7 @@ export const translations = {
     onboarding_practice_it: "Italiano",
     onboarding_practice_hi: "Hindi",
     onboarding_practice_ar: "Árabe egipcio",
+    onboarding_practice_zh: "Chino mandarín",
     onboarding_practice_nl: "Holandés",
     onboarding_practice_ja: "Japonés",
     onboarding_practice_en: "Inglés",
@@ -1845,7 +1856,9 @@ translations.it = {
   random_shuffle: "Mescola",
   reading_btn_next: "Completa la lettura",
   reading_btn_finish: "Completa la lettura",
+  reading_loading: "Caricamento impostazioni di lettura...",
   reading_generating: "Creazione della lettura...",
+  reading_generating_title: "Generazione lettura...",
   reading_skip: "Salta",
   copied_to_clipboard_all: "La domanda è stata copiata.",
   copy_all: "Copia domanda",
@@ -1978,6 +1991,7 @@ translations.it = {
   common_saving: "Salvataggio",
   common_cancel: "Annulla",
   language_ar: "Arabo egiziano",
+  language_zh: "Cinese mandarino",
   language_en: "Inglese",
   language_es: "Spagnolo",
   language_pt: "Portoghese",
@@ -2022,6 +2036,7 @@ translations.it = {
   onboarding_support_it: "Italiano",
   onboarding_support_ar: "Arabo egiziano",
   onboarding_support_ja: "Giapponese",
+  onboarding_support_zh: "Cinese mandarino",
   onboarding_practice_label_title: "Lingua di pratica",
   onboarding_practice_menu_label: "Pratica:",
   onboarding_practice_nah: "Nahuatl huasteco orientale",
@@ -2031,6 +2046,7 @@ translations.it = {
   onboarding_practice_it: "Italiano",
   onboarding_practice_hi: "Hindi",
   onboarding_practice_ar: "Arabo egiziano",
+  onboarding_practice_zh: "Cinese mandarino",
   onboarding_practice_nl: "Olandese",
   onboarding_practice_ja: "Giapponese",
   onboarding_practice_en: "Inglese",
@@ -2695,7 +2711,9 @@ translations.fr = {
   random_shuffle: "Melanger",
   reading_btn_next: "Terminer la lecture",
   reading_btn_finish: "Terminer la lecture",
+  reading_loading: "Chargement des reglages de lecture...",
   reading_generating: "Creation de la lecture...",
+  reading_generating_title: "Generation de la lecture...",
   reading_skip: "Passer",
   copied_to_clipboard_all: "La question a ete copiee.",
   copy_all: "Copier la question",
@@ -2835,6 +2853,7 @@ translations.fr = {
   language_it: "Italien",
   language_hi: "Hindi",
   language_ar: "Arabe egyptien",
+  language_zh: "Chinois mandarin",
   language_nl: "Neerlandais",
   language_nah: "Nahuatl huasteque oriental",
   language_ja: "Japonais",
@@ -2874,6 +2893,7 @@ translations.fr = {
   onboarding_support_ar: "Arabe egyptien",
   onboarding_support_fr: "Francais",
   onboarding_support_ja: "Japonais",
+  onboarding_support_zh: "Chinois mandarin",
   onboarding_practice_label_title: "Langue de pratique",
   onboarding_practice_menu_label: "Pratique :",
   onboarding_practice_nah: "Nahuatl huasteque oriental",
@@ -2883,6 +2903,7 @@ translations.fr = {
   onboarding_practice_it: "Italien",
   onboarding_practice_hi: "Hindi",
   onboarding_practice_ar: "Arabe egyptien",
+  onboarding_practice_zh: "Chinois mandarin",
   onboarding_practice_nl: "Neerlandais",
   onboarding_practice_ja: "Japonais",
   onboarding_practice_en: "Anglais",
@@ -3550,7 +3571,9 @@ translations.ja = {
   random_shuffle: "シャッフル",
   reading_btn_next: "読解を完了",
   reading_btn_finish: "読解を完了",
+  reading_loading: "読解設定を読み込み中...",
   reading_generating: "読解を作成中...",
+  reading_generating_title: "読解を生成中...",
   reading_skip: "スキップ",
   copied_to_clipboard_all: "質問をコピーしました。",
   copy_all: "質問をコピー",
@@ -3691,6 +3714,7 @@ translations.ja = {
   language_fr: "フランス語",
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
+  language_zh: "中国語（普通話）",
   language_nl: "オランダ語",
   language_nah: "東ワステカ・ナワトル語",
   language_ja: "日本語",
@@ -3728,6 +3752,7 @@ translations.ja = {
   onboarding_support_ar: "エジプトアラビア語",
   onboarding_support_fr: "フランス語",
   onboarding_support_ja: "日本語",
+  onboarding_support_zh: "中国語（普通話）",
   onboarding_practice_label_title: "練習言語",
   onboarding_practice_menu_label: "練習言語を選択",
   onboarding_practice_nah: "東ワステカ・ナワトル語",
@@ -3737,6 +3762,7 @@ translations.ja = {
   onboarding_practice_it: "イタリア語",
   onboarding_practice_hi: "ヒンディー語",
   onboarding_practice_ar: "エジプトアラビア語",
+  onboarding_practice_zh: "中国語（普通話）",
   onboarding_practice_nl: "オランダ語",
   onboarding_practice_ja: "日本語",
   onboarding_practice_en: "英語",
@@ -4693,6 +4719,71 @@ translations.pt = {
             }}
           >
             Pagar uma vez
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+};
+
+translations.zh = {
+  ...translations.en,
+  ...TRANSLATION_ZH_STATIC,
+  "passcode.instructions": (
+    <div>
+      输入订阅通行码以继续。
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>订阅可获得：</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>访问多个 AI 教育应用。</li>
+          <li style={{ marginBottom: 8 }}>个人支持。</li>
+          <li style={{ marginBottom: 8 }}>
+            持续更新的订阅内容，涵盖创业工程、商业和投资。
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            感谢你支持通过学习创造奖学金的使命。
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            订阅
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            一次性付款
           </Button>{" "}
         </HStack>
       </div>

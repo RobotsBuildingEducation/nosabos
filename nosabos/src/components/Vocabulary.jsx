@@ -220,6 +220,7 @@ const LANG_NAME = (code) =>
     en: "English",
     es: "Spanish",
     ar: "Egyptian Arabic",
+    zh: "Mandarin Chinese",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
@@ -4293,11 +4294,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
       isJapaneseUI
         ? "単語マッチング練習です。単語を単語バンクの選択肢と組み合わせて答えてください。"
         : isArabicUI
         ? "تمرين توصيل كلمات. جاوب بوصل الكلمات باختيارات بنك الكلمات."
+        : isChineseUI
+        ? "这是单词配对练习。请把单词与词库中的正确选项配对作答。"
         : isPortugueseUI
         ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
         : isSpanishUI
@@ -4308,6 +4312,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `指示: ${mStem}`
           : isArabicUI
           ? `التعليمات: ${mStem}`
+          : isChineseUI
+          ? `说明：${mStem}`
           : isPortugueseUI
           ? `Instrucao: ${mStem}`
           : isSpanishUI
@@ -4319,6 +4325,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `左の列: ${mLeft.join(" | ")}`
           : isArabicUI
           ? `العمود الشمال: ${mLeft.join(" | ")}`
+          : isChineseUI
+          ? `左侧栏：${mLeft.join(" | ")}`
           : isPortugueseUI
           ? `Coluna esquerda: ${mLeft.join(" | ")}`
           : isSpanishUI
@@ -4330,6 +4338,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `単語バンク: ${mRight.join(" | ")}`
           : isArabicUI
           ? `بنك الكلمات: ${mRight.join(" | ")}`
+          : isChineseUI
+          ? `词库：${mRight.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${mRight.join(" | ")}`
           : isSpanishUI
@@ -4341,6 +4351,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `ヒント: ${mHint}`
           : isArabicUI
           ? `تلميح: ${mHint}`
+          : isChineseUI
+          ? `提示：${mHint}`
           : isPortugueseUI
             ? `Dica: ${mHint}`
           : isSpanishUI
@@ -4365,12 +4377,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const isSpanishUI = userLanguage === "es";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const base =
       sVariant === "translate"
         ? isJapaneseUI
           ? "声に出して言う（翻訳）。与えられた単語を練習言語に翻訳して答えてください。"
           : isArabicUI
           ? "قلها بصوت عالي (ترجمة). قول ترجمة الكلمة دي بلغة التدرّب."
+          : isChineseUI
+          ? "大声说出来（翻译）。请说出给定单词在练习语言中的翻译。"
           : isPortugueseUI
           ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
           : isSpanishUI
@@ -4380,6 +4395,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? "声に出して言う（完成）。学習者が欠けている単語を入れて文全体を言えるよう助けてください。"
           : isArabicUI
           ? "قلها بصوت عالي (إكمال). ساعد المتعلّم يقول الجملة كاملة بالكلمة الناقصة."
+          : isChineseUI
+          ? "大声说出来（补全）。请帮助学习者用缺失的词说完整句子。"
           : isPortugueseUI
           ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
           : isSpanishUI
@@ -4392,6 +4409,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `指示: ${sPrompt}`
           : isArabicUI
           ? `التعليمات: ${sPrompt}`
+          : isChineseUI
+          ? `说明：${sPrompt}`
           : isPortugueseUI
           ? `Instrucao: ${sPrompt}`
           : isSpanishUI
@@ -4403,6 +4422,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `学習者に表示: ${sStimulus}`
           : isArabicUI
           ? `المعروض للمتعلّم: ${sStimulus}`
+          : isChineseUI
+          ? `学习者看到的内容：${sStimulus}`
           : isPortugueseUI
           ? `Mostrado ao aluno: ${sStimulus}`
           : isSpanishUI
@@ -4414,6 +4435,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `期待される発話答え: ${sTarget}`
           : isArabicUI
           ? `الإجابة المنطوقة المتوقعة: ${sTarget}`
+          : isChineseUI
+          ? `预期口头答案：${sTarget}`
           : isPortugueseUI
           ? `Resposta falada esperada: ${sTarget}`
           : isSpanishUI
@@ -4425,6 +4448,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `ヒント: ${sHint}`
           : isArabicUI
           ? `تلميح: ${sHint}`
+          : isChineseUI
+          ? `提示：${sHint}`
           : isPortugueseUI
             ? `Dica: ${sHint}`
           : isSpanishUI
@@ -4436,6 +4461,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `サポート翻訳/文脈: ${sTranslation}`
           : isArabicUI
           ? `ترجمة أو سياق مساعد: ${sTranslation}`
+          : isChineseUI
+          ? `辅助翻译/上下文：${sTranslation}`
           : isPortugueseUI
           ? `Traducao ou contexto de apoio: ${sTranslation}`
           : isSpanishUI

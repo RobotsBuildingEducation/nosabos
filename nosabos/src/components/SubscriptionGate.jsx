@@ -24,7 +24,14 @@ const ARABIC_SUPPORT_COPY = {
   Submit: "إرسال",
 };
 
+const CHINESE_SUPPORT_COPY = {
+  "Enter the passcode": "请输入通行码",
+  Verifying: "正在验证",
+  Submit: "提交",
+};
+
 function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;
     return ARABIC_SUPPORT_COPY[en] || en;

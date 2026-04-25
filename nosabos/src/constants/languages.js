@@ -1,5 +1,6 @@
 import {
   brazilianFlag,
+  chineseFlag,
   egyptianFlag,
   frenchFlag,
   germanFlag,
@@ -20,6 +21,7 @@ export const DEFAULT_TARGET_LANGUAGE = "es";
 
 export const LANGUAGE_FALLBACK_LABELS = {
   ar: "Egyptian Arabic",
+  zh: "Mandarin Chinese",
   en: "English",
   es: "Spanish",
   pt: "Portuguese",
@@ -39,6 +41,7 @@ export const LANGUAGE_FALLBACK_LABELS = {
 
 export const LANGUAGE_PROMPT_LABELS = {
   ar: "Egyptian Arabic (العربية المصرية)",
+  zh: "Mandarin Chinese (普通话中文)",
   es: "Spanish (espanol)",
   en: "English",
   pt: "Portuguese (portugues brasileiro)",
@@ -109,6 +112,15 @@ const LANGUAGE_META = [
     supportTier: "stable",
     practiceEnabled: false,
     flag: indianFlag,
+  },
+  {
+    value: "zh",
+    languageKey: "language_zh",
+    practiceKey: "onboarding_practice_zh",
+    tier: "stable",
+    supportTier: "stable",
+    practiceEnabled: false,
+    flag: chineseFlag,
   },
   {
     value: "pt",
@@ -193,12 +205,14 @@ const SUPPORT_LANGUAGE_CODES_BASE = [
   "ja",
   "hi",
   "ar",
+  "zh",
 ];
 const SUPPORT_LANGUAGE_CODES_SET = new Set(SUPPORT_LANGUAGE_CODES_BASE);
 export const RTL_LANGUAGE_CODES = ["ar"];
 
 export const LANGUAGE_LOCALES = {
   ar: "ar-EG",
+  zh: "zh-CN",
   en: "en-US",
   es: "es-MX",
   pt: "pt-BR",
@@ -218,6 +232,7 @@ export const LANGUAGE_LOCALES = {
 
 const SORT_LOCALES = {
   ar: "ar",
+  zh: "zh",
   en: "en",
   es: "es",
   pt: "pt",
@@ -232,9 +247,11 @@ const normalizeSupportedCode = (raw) => {
   const normalized = normalizeCode(raw);
   if (!normalized) return "";
   if (normalized === "arz") return "ar";
+  if (normalized === "cmn") return "zh";
   if (SUPPORTED_LANGUAGE_CODES_SET.has(normalized)) return normalized;
   const [base] = normalized.split(/[-_]/);
   if (base === "arz" && SUPPORTED_LANGUAGE_CODES_SET.has("ar")) return "ar";
+  if (base === "cmn" && SUPPORTED_LANGUAGE_CODES_SET.has("zh")) return "zh";
   if (SUPPORTED_LANGUAGE_CODES_SET.has(base)) return base;
   return normalized;
 };
@@ -382,6 +399,7 @@ function buildLanguageOptions({
         beta: tier === "beta",
         alpha: tier === "alpha",
         flag: item.flag(),
+        renderFlag: item.flag,
       };
     });
 

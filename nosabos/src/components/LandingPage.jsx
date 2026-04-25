@@ -53,6 +53,7 @@ import {
 import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
 import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
+import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -224,6 +225,7 @@ const translations = {
     language_it: "Italian",
     language_hi: "Hindi",
     language_ar: "Egyptian Arabic",
+    language_zh: "Mandarin Chinese",
     language_pt: "Portuguese",
     language_es: "Spanish",
     language_nah: "Eastern Huasteca Nahuatl",
@@ -355,6 +357,7 @@ const translations = {
     language_it: "Italiano",
     language_hi: "Hindi",
     language_ar: "Árabe egipcio",
+    language_zh: "Chino mandarín",
     language_pt: "Portugués",
     language_es: "Español",
     language_nah: "Náhuatl huasteco oriental",
@@ -484,6 +487,7 @@ const translations = {
     language_it: "Italiano",
     language_hi: "Hindi",
     language_ar: "Arabo egiziano",
+    language_zh: "Cinese mandarino",
     language_pt: "Portoghese",
     language_es: "Spagnolo",
     language_nah: "Nahuatl huasteco orientale",
@@ -498,6 +502,7 @@ const translations = {
 
 translations.pt = LANDING_PAGE_PT_STATIC;
 translations.hi = LANDING_PAGE_HI_STATIC;
+translations.zh = LANDING_PAGE_ZH_STATIC;
 translations.ar = {
   ...translations.en,
   ...LANDING_PAGE_AR_STATIC,
@@ -621,6 +626,7 @@ translations.fr = {
   language_it: "Italien",
   language_hi: "Hindi",
   language_ar: "Arabe egyptien",
+  language_zh: "Chinois mandarin",
   language_pt: "Portugais",
   language_es: "Espagnol",
   language_nah: "Nahuatl huastèque oriental",
@@ -758,6 +764,7 @@ translations.ja = {
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
   language_ar: "エジプトアラビア語",
+  language_zh: "中国語（普通話）",
   language_pt: "ポルトガル語",
   language_es: "スペイン語",
   language_nah: "東ワステカ・ナワトル語",

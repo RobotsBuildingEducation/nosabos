@@ -116,6 +116,7 @@ export const LANDING_PAGE_HI_STATIC = {
   language_de: "जर्मन",
   language_it: "इतालवी",
   language_hi: "हिंदी",
+  language_zh: "मंदारिन चीनी",
   language_pt: "पुर्तगाली",
   language_es: "स्पैनिश",
   language_nah: "ईस्टर्न हुआस्तेका नाहुआत्ल",

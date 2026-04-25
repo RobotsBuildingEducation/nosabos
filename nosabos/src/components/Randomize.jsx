@@ -107,6 +107,7 @@ export default function Randomize() {
           fr: "Histoires",
           ja: "ストーリー",
           ar: "القصص",
+          zh: "故事",
         }),
       grammar:
         t("tabs_grammar") ||
@@ -117,6 +118,7 @@ export default function Randomize() {
           fr: "Grammaire",
           ja: "文法",
           ar: "القواعد",
+          zh: "语法",
         }),
       vocab:
         t("tabs_vocab") ||
@@ -127,6 +129,7 @@ export default function Randomize() {
           fr: "Vocabulaire",
           ja: "語彙",
           ar: "المفردات",
+          zh: "词汇",
         }),
       reading:
         t("tabs_reading") ||
@@ -137,6 +140,7 @@ export default function Randomize() {
           fr: "Lecture",
           ja: "読解",
           ar: "القراءة",
+          zh: "阅读",
         }),
     }),
     [t, uiLang]

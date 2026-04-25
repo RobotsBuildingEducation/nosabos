@@ -98,6 +98,15 @@ const ARABIC_TIMEZONES = [
   'Africa/Cairo',
 ];
 
+const CHINESE_TIMEZONES = [
+  'Asia/Shanghai',
+  'Asia/Urumqi',
+  'Asia/Hong_Kong',
+  'Asia/Macau',
+  'Asia/Taipei',
+  'Asia/Singapore',
+];
+
 const FRENCH_TIMEZONES = [
   'Europe/Paris',
   'Europe/Monaco',
@@ -162,6 +171,7 @@ const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
 const HINDI_LANGUAGE_CODES = ['hi', 'hi-IN', 'hi-Latn', 'hi-Latn-IN', 'hi-Deva', 'hi-Deva-IN'];
 const ARABIC_LANGUAGE_CODES = ['ar', 'ar-EG', 'ar-Arab', 'ar-Arab-EG', 'arz'];
+const CHINESE_LANGUAGE_CODES = ['zh', 'zh-CN', 'zh-Hans', 'zh-Hans-CN', 'zh-SG', 'zh-TW', 'zh-Hant', 'zh-HK', 'zh-MO', 'cmn'];
 const FRENCH_LANGUAGE_CODES = ['fr', 'fr-FR', 'fr-CA', 'fr-BE', 'fr-CH', 'fr-LU', 'fr-MC'];
 const PORTUGUESE_LANGUAGE_CODES = ['pt', 'pt-BR', 'pt-PT', 'pt-AO', 'pt-MZ', 'pt-CV', 'pt-GW', 'pt-ST', 'pt-TL'];
 const JAPANESE_LANGUAGE_CODES = ['ja', 'ja-JP'];
@@ -204,6 +214,16 @@ export function isArabicTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return ARABIC_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isChineseTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return CHINESE_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -296,6 +316,20 @@ export function isArabicBrowserLanguage() {
   }
 }
 
+export function isChineseBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      CHINESE_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
 export function isFrenchBrowserLanguage() {
   try {
     const languages = navigator.languages?.length
@@ -356,6 +390,10 @@ export function detectUserLanguage() {
     return 'ar';
   }
 
+  if (isChineseTimezone()) {
+    return 'zh';
+  }
+
   if (isItalianTimezone()) {
     return 'it';
   }
@@ -383,6 +421,10 @@ export function detectUserLanguage() {
   // Fallback to browser language detection
   if (isArabicBrowserLanguage()) {
     return 'ar';
+  }
+
+  if (isChineseBrowserLanguage()) {
+    return 'zh';
   }
 
   if (isItalianBrowserLanguage()) {
