@@ -1026,7 +1026,7 @@ function ensureAnswersInChoices(choices, answers) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function Vocabulary({
+function Vocabulary({
   userLanguage = "en",
   lesson = null,
   lessonContent = null,
@@ -7001,3 +7001,5 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     </Box>
   );
 }
+
+export default React.memo(Vocabulary);

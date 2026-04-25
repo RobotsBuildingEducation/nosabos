@@ -650,7 +650,7 @@ async function idbGetClip(id) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function RealTimeTest({
+function RealTimeTest({
   auth,
   activeNpub = "",
   activeNsec = "",
@@ -4093,3 +4093,5 @@ Return ONLY JSON:
     </>
   );
 }
+
+export default React.memo(RealTimeTest);
