@@ -61,6 +61,12 @@ import {
   getRealtimeOrbVisualState,
 } from "./realtimeArchiveStream";
 import { translations } from "../utils/translation";
+import {
+  buildMessageTranslationPrompt,
+  getBaseLanguageCode,
+  resolveSupportUiLanguage,
+} from "../utils/supportTranslation";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -79,6 +85,11 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguagePromptName,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -449,7 +460,11 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ display: "inline", boxShadow: "inset 0 -2px transparent" }}
+      style={{
+        display: "inline",
+        boxShadow: "inset 0 -2px transparent",
+        unicodeBidi: "isolate",
+      }}
     >
       {mid}
     </span>,
@@ -479,7 +494,9 @@ function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
 
 function AlignedBubble({
   primaryText,
+  primaryLang = "en",
   secondaryText,
+  secondaryLang = "en",
   pairs,
   showSecondary,
   isTranslating,
@@ -520,6 +537,8 @@ function AlignedBubble({
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
+  const primaryTextProps = getBidiTextProps(primaryLang);
+  const secondaryTextProps = getBidiTextProps(secondaryLang);
 
   return (
     <Box
@@ -567,8 +586,9 @@ function AlignedBubble({
             fontSize="md"
             lineHeight="1.6"
             color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
-            sx={MOBILE_TEXT_SX}
             flex="1"
+            {...primaryTextProps}
+            sx={mergeBidiSx(primaryTextProps, MOBILE_TEXT_SX)}
           >
             {primaryNodes}
           </Box>
@@ -581,16 +601,23 @@ function AlignedBubble({
             mt={1}
             lineHeight="1.55"
             color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-            sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
+            {...secondaryTextProps}
+            sx={mergeBidiSx(secondaryTextProps, MOBILE_TEXT_SX)}
           >
             {secondaryNodes}
           </Box>
         )}
 
         {!!pairs?.length && showSecondary && (
-          <Wrap spacing={3} mt={3} shouldWrapChildren>
+          <Wrap
+            spacing={3}
+            mt={3}
+            shouldWrapChildren
+            dir={primaryTextProps.dir}
+            sx={{ unicodeBidi: "isolate" }}
+          >
             {pairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
@@ -615,7 +642,13 @@ function AlignedBubble({
                     minW="0"
                     maxW="260px"
                   >
-                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="1.4"
+                      {...primaryTextProps}
+                      sx={mergeBidiSx(primaryTextProps)}
+                    >
                       {p.lhs}
                     </Text>
                     <Text
@@ -625,6 +658,8 @@ function AlignedBubble({
                       }
                       mt={1}
                       lineHeight="1.35"
+                      {...secondaryTextProps}
+                      sx={mergeBidiSx(secondaryTextProps)}
                     >
                       {p.rhs}
                     </Text>
@@ -672,9 +707,10 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getBidiTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
@@ -694,7 +730,8 @@ function UserBubble({ label, text }) {
         fontSize="md"
         lineHeight="1.6"
         color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-        sx={MOBILE_TEXT_SX}
+        {...textProps}
+        sx={mergeBidiSx(textProps, MOBILE_TEXT_SX)}
       >
         {text}
       </Box>
@@ -866,10 +903,14 @@ function ArchiveTextAnimation({ animation }) {
 }
 
 function uiStateLabel(uiState, uiLang) {
-  if (uiState === "speaking") return uiLang === "es" ? "Hablando" : "Speaking";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const ui = translations[lang] || translations.en;
+  if (uiState === "speaking")
+    return ui?.proficiency_speaking || translations.en.proficiency_speaking;
   if (uiState === "listening")
-    return uiLang === "es" ? "Escuchando" : "Listening";
-  if (uiState === "thinking") return uiLang === "es" ? "Pensando" : "Thinking";
+    return ui?.proficiency_listening || translations.en.proficiency_listening;
+  if (uiState === "thinking")
+    return ui?.proficiency_thinking || translations.en.proficiency_thinking;
   return "";
 }
 
@@ -1002,6 +1043,8 @@ export default function Conversations({
     conversationSubjects: user?.progress?.conversationSubjects || "",
   });
   const conversationSettingsRef = useRef(conversationSettings);
+  const conversationSubjectsDraftRef = useRef(null);
+  const conversationSubjectsClearTimerRef = useRef(null);
 
   // Settings drawer
   const {
@@ -1059,6 +1102,13 @@ export default function Conversations({
   const handleSettingsChange = useCallback(
     async (newSettings) => {
       const previousSettings = conversationSettingsRef.current;
+      const subjectsChanged =
+        previousSettings.conversationSubjects !==
+        newSettings.conversationSubjects;
+      if (subjectsChanged) {
+        clearTimeout(conversationSubjectsClearTimerRef.current);
+        conversationSubjectsDraftRef.current = newSettings.conversationSubjects;
+      }
       setConversationSettings(newSettings);
 
       // Persist to Firebase
@@ -1073,6 +1123,17 @@ export default function Conversations({
         } catch (e) {
           console.error("Failed to save conversation settings:", e);
         }
+      }
+      if (subjectsChanged) {
+        clearTimeout(conversationSubjectsClearTimerRef.current);
+        conversationSubjectsClearTimerRef.current = setTimeout(() => {
+          if (
+            conversationSubjectsDraftRef.current ===
+            newSettings.conversationSubjects
+          ) {
+            conversationSubjectsDraftRef.current = null;
+          }
+        }, 6000);
       }
 
       // Mark for goal regeneration if proficiency level or subjects changed
@@ -1129,7 +1190,7 @@ export default function Conversations({
     streamingRef.current = true;
 
     // Determine the language for the response
-    const responseLang = supportLang === "es" ? "Spanish" : "English";
+    const responseLang = getLanguagePromptName(resolvedSupportLang) || "English";
 
     // Get current settings from ref (for use in async context)
     const currentSettings = conversationSettingsRef.current;
@@ -1207,7 +1268,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const topicText = fullText.trim();
       if (topicText) {
         setCurrentGoal({
-          text: { en: topicText, es: topicText },
+          text: {
+            en: topicText,
+            [resolvedSupportLang]: topicText,
+          },
           completed: false,
         });
       } else {
@@ -1277,23 +1341,23 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }
   })();
 
-  const normalizeSupportLang = (raw) => {
-    const code = String(raw || "").toLowerCase();
-    if (code === "es" || code.startsWith("es-") || code === "spanish")
-      return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english")
-      return "en";
-    return undefined;
-  };
-
-  const resolvedSupportLang =
-    normalizeSupportLang(supportLangRef.current || supportLang) ||
-    normalizeSupportLang(user?.progress?.supportLang) ||
-    normalizeSupportLang(storedUiLang) ||
-    "en";
+  const resolvedSupportLang = resolveSupportUiLanguage({
+    supportLang: supportLangRef.current || supportLang,
+    persistedSupportLang: user?.progress?.supportLang,
+    storedUiLang,
+  });
 
   const uiLang = resolvedSupportLang;
-  const ui = translations[uiLang];
+  const ui = translations[uiLang] || translations.en;
+  const uiText = (key, fallback = "") =>
+    ui?.[key] || translations.en?.[key] || fallback;
+  const goalTextForUI = (goal) => {
+    const text = goal?.text || {};
+    const localized = text[uiLang];
+    if (localized) return localized;
+    if (uiLang !== "en") return "";
+    return text.en || "";
+  };
   const liveUiState =
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
@@ -1634,17 +1698,26 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             setPauseMs(data.progress.pauseMs);
           }
           // Load conversation settings
-          setConversationSettings((prev) => ({
-            proficiencyLevel:
-              data.progress?.conversationProficiencyLevel ||
-              maxProficiencyLevel ||
-              prev.proficiencyLevel,
-            practicePronunciation:
-              data.progress?.practicePronunciation ??
-              prev.practicePronunciation,
-            conversationSubjects:
-              data.progress?.conversationSubjects || prev.conversationSubjects,
-          }));
+          setConversationSettings((prev) => {
+            const savedSubjects =
+              typeof data.progress?.conversationSubjects === "string"
+                ? data.progress.conversationSubjects
+                : prev.conversationSubjects;
+            const draftSubjects = conversationSubjectsDraftRef.current;
+            return {
+              proficiencyLevel:
+                data.progress?.conversationProficiencyLevel ||
+                maxProficiencyLevel ||
+                prev.proficiencyLevel,
+              practicePronunciation:
+                data.progress?.practicePronunciation ??
+                prev.practicePronunciation,
+              conversationSubjects:
+                draftSubjects !== null && draftSubjects !== savedSubjects
+                  ? draftSubjects
+                  : savedSubjects,
+            };
+          });
         }
       } catch {}
     }
@@ -1652,7 +1725,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   }, [currentNpub, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
-  useEffect(() => () => stop(), []);
+  useEffect(
+    () => () => {
+      clearTimeout(conversationSubjectsClearTimerRef.current);
+      stop();
+    },
+    [],
+  );
   useEffect(
     () => () => {
       stopReplayAudio();
@@ -1882,6 +1961,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "zh") {
+      strict =
+        "请只用普通话中文回答。不要使用英语或西班牙语。Respond ONLY in Mandarin Chinese.";
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
@@ -2095,7 +2177,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     try {
       const goalText = currentGoal.text.en;
       const tLang = targetLangRef.current;
-      const sLang = supportLangRef.current;
+      const sLang = resolvedSupportLang;
       const languageName =
         tLang === "es"
           ? "Spanish"
@@ -2103,8 +2185,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             ? "Portuguese"
             : tLang === "fr"
               ? "French"
-              : tLang === "it"
-                ? "Italian"
+                : tLang === "it"
+                  ? "Italian"
+                : tLang === "zh"
+                  ? "Mandarin Chinese"
                 : tLang === "nl"
                   ? "Dutch"
                   : tLang === "nah"
@@ -2124,7 +2208,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
                                 : tLang === "yua"
                                   ? "Yucatec Maya"
                                   : "English";
-      const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
+      const feedbackLanguage =
+        getLanguagePromptName(
+          normalizeSupportLanguage(sLang, DEFAULT_SUPPORT_LANGUAGE),
+        ) || "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
@@ -2193,6 +2280,18 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultSuccess =
           sLang === "es"
             ? "¡Bien hecho! Completaste la meta."
+            : sLang === "pt"
+              ? "Muito bem! Você concluiu a meta."
+              : sLang === "ar"
+                ? "أحسنت! أنهيت الهدف."
+              : sLang === "it"
+                ? "Ben fatto! Hai completato l'obiettivo."
+                : sLang === "fr"
+                  ? "Bravo ! Tu as atteint l'objectif."
+                  : sLang === "ja"
+                  ? "よくできました！目標を達成しました。"
+                  : sLang === "hi"
+                    ? "बहुत बढ़िया! आपने लक्ष्य पूरा कर लिया।"
             : "Great job! You completed the goal!";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
@@ -2203,6 +2302,18 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         const defaultGuidance =
           sLang === "es"
             ? "Intenta hablar sobre la meta."
+            : sLang === "pt"
+              ? "Tente falar sobre a meta."
+              : sLang === "ar"
+                ? "حاول تتكلم عن الهدف."
+              : sLang === "it"
+                ? "Prova a parlare dell'obiettivo."
+                : sLang === "fr"
+                  ? "Essaie de parler de l'objectif."
+                  : sLang === "ja"
+                  ? "目標について話してみてください。"
+                  : sLang === "hi"
+                    ? "लक्ष्य के बारे में बोलने की कोशिश करें।"
             : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
@@ -2263,7 +2374,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)"}`;
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2280,10 +2391,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       if (!r.ok) {
         // Fallback to default goal
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: getRandomFallbackTopic(selectedLevel),
           completed: false,
         });
         goalCheckPendingRef.current = false;
@@ -2304,26 +2412,27 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         "";
 
       const parsed = safeParseJson(responseText);
-      if (parsed?.en && parsed?.es) {
+      if (parsed?.en || parsed?.[resolvedSupportLang]) {
         setCurrentGoal({
-          text: { en: parsed.en, es: parsed.es },
+          text: {
+            ...parsed,
+            en: parsed.en || parsed[resolvedSupportLang] || "",
+          },
           completed: false,
         });
       } else {
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: getRandomFallbackTopic(selectedLevel),
           completed: false,
         });
       }
     } catch (e) {
       setCurrentGoal({
-        text: {
-          en: "Continue the conversation",
-          es: "Continúa la conversación",
-        },
+        text: getRandomFallbackTopic(
+          conversationSettingsRef.current.proficiencyLevel ||
+            maxProficiencyLevel ||
+            "A1",
+        ),
         completed: false,
       });
     }
@@ -2462,6 +2571,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
           textFinal: text,
           textStream: "",
           translation: "",
+          translationLang: "",
           pairs: [],
           done: true,
           ts: userTs,
@@ -2587,6 +2697,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         textFinal: "",
         textStream: "",
         translation: "",
+        translationLang: "",
         pairs: [],
         done: false,
         hasAudio: false,
@@ -2620,24 +2731,22 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const supportChoice = supportLangRef.current || supportLang || "en";
-    const target = supportChoice === "es" ? "es" : "en";
+    const target = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
-    if ((m.lang || targetLangRef.current) === target) {
-      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+    if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({
+        ...prev,
+        translation: src,
+        translationLang: target,
+        pairs: [],
+      }));
       return;
     }
 
-    const prompt =
-      target === "es"
-        ? `Traduce lo siguiente al español claro y natural.
-Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
-Evita responder con toda la frase en un solo fragmento.`
-        : `Translate the following into natural US English.
-Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
-Do not return the whole sentence as a single chunk.`;
+    const prompt = buildMessageTranslationPrompt(target);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2684,7 +2793,12 @@ Do not return the whole sentence as a single chunk.`;
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
     const pairs = tidyPairs(rawPairs);
 
-    updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
+    updateMessage(id, (prev) => ({
+      ...prev,
+      translation,
+      translationLang: target,
+      pairs,
+    }));
   }
 
   async function handleManualTranslate(id) {
@@ -2701,6 +2815,52 @@ Do not return the whole sentence as a single chunk.`;
       setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
     }
   }
+
+  useEffect(() => {
+    if (!showTranslations) return;
+    const target = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const assistantMessages = messagesRef.current.filter(
+      (message) =>
+        message.role === "assistant" &&
+        message.done &&
+        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
+    );
+
+    assistantMessages.forEach((message) => {
+      const currentTranslationLang = normalizeSupportLanguage(
+        message.translationLang,
+        "",
+      );
+      const sourceLang = getBaseLanguageCode(
+        message.lang || targetLangRef.current,
+      );
+      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
+
+      if (!sourceText) return;
+
+      if (sourceLang === target) {
+        if (
+          currentTranslationLang !== target ||
+          message.translation !== sourceText ||
+          (message.pairs?.length || 0) > 0
+        ) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            translation: sourceText,
+            translationLang: target,
+            pairs: [],
+          }));
+        }
+        return;
+      }
+
+      if (currentTranslationLang === target && message.translation) return;
+      translateMessage(message.id).catch(() => {});
+    });
+  }, [messages, resolvedSupportLang, showTranslations]);
 
   /* ---------------------------
      Render
@@ -2738,7 +2898,7 @@ Do not return the whole sentence as a single chunk.`;
                   }}
                   fontWeight="medium"
                 >
-                  {uiLang === "es" ? "Configuración" : "Conversation settings"}
+                  {uiText("ra_conversation_settings", "Conversation settings")}
                 </Button>
                 <IconButton
                   ref={chatLogButtonRef}
@@ -2750,7 +2910,7 @@ Do not return the whole sentence as a single chunk.`;
                   onClick={openTranscript}
                   _hover={{ opacity: 1 }}
                   isDisabled={!timeline.length}
-                  aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                  aria-label={uiText("ra_chat_log", "Chat log")}
                 />
               </HStack>
 
@@ -2781,9 +2941,7 @@ Do not return the whole sentence as a single chunk.`;
                         flex="1"
                       >
                         {streamingText ||
-                          (uiLang === "es"
-                            ? "Generando nuevo tema..."
-                            : "Generating new topic...")}
+                          uiText("ra_generating_topic", "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
@@ -2794,7 +2952,7 @@ Do not return the whole sentence as a single chunk.`;
                         variant="ghost"
                         color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                         aria-label={
-                          uiLang === "es" ? "Nuevo tema" : "New topic"
+                          uiText("ra_new_topic", "New topic")
                         }
                         onClick={handleShuffleTopic}
                         opacity={0.7}
@@ -2816,7 +2974,11 @@ Do not return the whole sentence as a single chunk.`;
                         }
                         flex="1"
                       >
-                        {currentGoal.text[uiLang] || currentGoal.text.en}
+                        {goalTextForUI(currentGoal) ||
+                          uiText(
+                            "ra_generating_topic",
+                            "Generating new topic...",
+                          )}
                         {goalFeedback &&
                           !isGeneratingGoal &&
                           !currentGoal.completed && (
@@ -2826,9 +2988,7 @@ Do not return the whole sentence as a single chunk.`;
                                   as="button"
                                   type="button"
                                   aria-label={
-                                    uiLang === "es"
-                                      ? "Mostrar sugerencia"
-                                      : "Show suggestion"
+                                    uiText("ra_show_suggestion", "Show suggestion")
                                   }
                                   ml="6px"
                                   width="12px"
@@ -2918,8 +3078,8 @@ Do not return the whole sentence as a single chunk.`;
               {/* XP Progress Bar */}
               <Box w="100%">
                 <XpProgressHeader
-                  levelText={`${uiLang === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
-                  xpText={`${ui.ra_label_xp} ${xp}`}
+                  levelText={`${uiText("ra_label_level", "Level")} ${xpLevelNumber}`}
+                  xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
                   progressPct={progressPct}
                   xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
                 />
@@ -2990,12 +3150,26 @@ Do not return the whole sentence as a single chunk.`;
                     primaryText={`${latestAssistantMessage.textFinal || ""}${
                       latestAssistantMessage.textStream || ""
                     }`}
+                    primaryLang={latestAssistantMessage.lang || targetLang || "es"}
                     secondaryText={
                       showTranslations
-                        ? latestAssistantMessage.translation || ""
+                        ? normalizeSupportLanguage(
+                            latestAssistantMessage.translationLang,
+                            "",
+                          ) === resolvedSupportLang
+                          ? latestAssistantMessage.translation || ""
+                          : ""
                         : ""
                     }
-                    pairs={latestAssistantMessage.pairs || []}
+                    secondaryLang={resolvedSupportLang}
+                    pairs={
+                      normalizeSupportLanguage(
+                        latestAssistantMessage.translationLang,
+                        "",
+                      ) === resolvedSupportLang
+                        ? latestAssistantMessage.pairs || []
+                        : []
+                    }
                     showSecondary={showTranslations}
                     isTranslating={
                       translatingMessageId === latestAssistantMessage.id
@@ -3010,7 +3184,7 @@ Do not return the whole sentence as a single chunk.`;
                     }
                     onReplay={() => playSavedClip(latestAssistantMessage.id)}
                     isReplaying={replayingId === latestAssistantMessage.id}
-                    replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                    replayLabel={uiText("ra_btn_replay", "Replay")}
                   />
                 </Box>
               </Box>
@@ -3075,18 +3249,14 @@ Do not return the whole sentence as a single chunk.`;
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {uiLang === "es" ? "Terminar" : "End"}
+                  <FaStop /> &nbsp; {uiText("ra_btn_end", "End")}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? uiLang === "es"
-                      ? "Iniciando..."
-                      : "Starting..."
-                    : uiLang === "es"
-                      ? "Iniciar"
-                      : "Start"}
+                    ? uiText("ra_btn_starting", "Starting...")
+                    : uiText("ra_btn_start", "Start")}
                 </>
               )}
             </Button>
@@ -3129,7 +3299,7 @@ Do not return the whole sentence as a single chunk.`;
         <ModalOverlay bg="blackAlpha.700" />
         <ModalContent bg="gray.800" color="gray.100" mx={3}>
           <ModalHeader>
-            {uiLang === "es" ? "Historial de conversación" : "Conversation log"}
+            {uiText("ra_conversation_log", "Conversation log")}
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={5}>
@@ -3139,21 +3309,36 @@ Do not return the whole sentence as a single chunk.`;
                 if (isUser) {
                   return (
                     <RowRight key={m.id}>
-                      <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                      <UserBubble
+                        label={ui.ra_label_you}
+                        text={m.textFinal}
+                        textLang={targetLang}
+                      />
                     </RowRight>
                   );
                 }
 
                 const primaryText = (m.textFinal || "") + (m.textStream || "");
-                const secondaryText = m.translation || "";
+                const secondaryText =
+                  normalizeSupportLanguage(m.translationLang, "") ===
+                  resolvedSupportLang
+                    ? m.translation || ""
+                    : "";
 
                 if (!primaryText.trim()) return null;
                 return (
                   <RowLeft key={m.id}>
                     <AlignedBubble
                       primaryText={primaryText}
+                      primaryLang={m.lang || targetLang || "es"}
                       secondaryText={showTranslations ? secondaryText : ""}
-                      pairs={m.pairs || []}
+                      secondaryLang={resolvedSupportLang}
+                      pairs={
+                        normalizeSupportLanguage(m.translationLang, "") ===
+                        resolvedSupportLang
+                          ? m.pairs || []
+                          : []
+                      }
                       showSecondary={showTranslations}
                       isTranslating={translatingMessageId === m.id}
                       canTranslate={showTranslations}
@@ -3163,7 +3348,7 @@ Do not return the whole sentence as a single chunk.`;
                       }
                       onReplay={() => playSavedClip(m.id)}
                       isReplaying={replayingId === m.id}
-                      replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                      replayLabel={uiText("ra_btn_replay", "Replay")}
                     />
                   </RowLeft>
                 );

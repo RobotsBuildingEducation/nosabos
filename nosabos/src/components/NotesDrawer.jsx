@@ -29,6 +29,11 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -62,9 +67,39 @@ const CEFR_TEXT_COLORS = {
 
 // Module type labels
 const MODULE_LABELS = {
-  flashcard: { en: "Flashcard", es: "Tarjeta" },
-  vocabulary: { en: "Vocabulary", es: "Vocabulario" },
-  grammar: { en: "Grammar", es: "Gramática" },
+  flashcard: {
+    en: "Flashcard",
+    es: "Tarjeta",
+    pt: "Cartão",
+    it: "Scheda",
+    fr: "Carte",
+    ja: "フラッシュカード",
+    hi: "फ्लैशकार्ड",
+    ar: "بطاقة",
+    zh: "抽认卡",
+  },
+  vocabulary: {
+    en: "Vocabulary",
+    es: "Vocabulario",
+    pt: "Vocabulário",
+    it: "Vocabolario",
+    fr: "Vocabulaire",
+    ja: "語彙",
+    hi: "शब्दावली",
+    ar: "المفردات",
+    zh: "词汇",
+  },
+  grammar: {
+    en: "Grammar",
+    es: "Gramática",
+    pt: "Gramática",
+    it: "Grammatica",
+    fr: "Grammaire",
+    ja: "文法",
+    hi: "व्याकरण",
+    ar: "القواعد",
+    zh: "语法",
+  },
 };
 
 export default function NotesDrawer({
@@ -82,22 +117,199 @@ export default function NotesDrawer({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
-  const lang = appLanguage === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const locale = getLanguageLocale(lang);
 
   // Filter notes by current target language
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
+  const drawerTitle =
+    lang === "ja"
+      ? "マイメモ"
+      : lang === "zh"
+      ? "我的笔记"
+      : lang === "ar"
+      ? "ملاحظاتي"
+      : lang === "fr"
+      ? "Mes notes"
+      : lang === "pt"
+      ? "Minhas notas"
+      : lang === "it"
+      ? "Le mie note"
+      : lang === "hi"
+      ? "मेरे नोट्स"
+      : lang === "es"
+      ? "Mis Notas"
+      : "My Notes";
   const emptyMessage =
-    lang === "es"
+    lang === "ja"
+      ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
+      : lang === "zh"
+      ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
+      : lang === "fr"
+      ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
+      : lang === "pt"
+      ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
+      : lang === "it"
+      ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
+      : lang === "hi"
+      ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
+      : lang === "ar"
+      ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
+      : lang === "es"
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
-  const clearAllLabel = lang === "es" ? "Borrar todo" : "Clear all";
-  const summaryLabel = lang === "es" ? "Resumen" : "Summary";
-  const lessonLabel = lang === "es" ? "Lección" : "Lesson";
-  const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
+  const clearAllLabel =
+    lang === "ja"
+      ? "すべて削除"
+      : lang === "zh"
+      ? "全部清除"
+      : lang === "fr"
+      ? "Tout effacer"
+      : lang === "pt"
+      ? "Limpar tudo"
+      : lang === "it"
+      ? "Cancella tutto"
+      : lang === "hi"
+      ? "सब साफ़ करें"
+      : lang === "ar"
+      ? "امسح الكل"
+      : lang === "es"
+      ? "Borrar todo"
+      : "Clear all";
+  const lessonLabel =
+    lang === "ja"
+      ? "レッスン"
+      : lang === "zh"
+      ? "课程"
+      : lang === "fr"
+      ? "Lecon"
+      : lang === "pt"
+      ? "Licao"
+      : lang === "it"
+      ? "Lezione"
+      : lang === "hi"
+      ? "पाठ"
+      : lang === "ar"
+      ? "الدرس"
+      : lang === "es"
+      ? "Lección"
+      : "Lesson";
+  const noNotesLabel =
+    lang === "ja"
+      ? "メモなし"
+      : lang === "zh"
+      ? "没有笔记"
+      : lang === "fr"
+      ? "Aucune note"
+      : lang === "pt"
+      ? "Sem notas"
+      : lang === "it"
+      ? "Nessuna nota"
+      : lang === "hi"
+      ? "कोई नोट नहीं"
+      : lang === "ar"
+      ? "مفيش ملاحظات"
+      : lang === "es"
+      ? "Sin notas"
+      : "No notes";
+  const closeLabel =
+    translations[lang]?.teams_drawer_close ||
+    translations.en?.teams_drawer_close ||
+    "Close";
+  const noteTitleFallback =
+    lang === "ja"
+      ? "メモ"
+      : lang === "zh"
+      ? "笔记"
+      : lang === "fr"
+      ? "Note"
+      : lang === "pt"
+      ? "Nota"
+      : lang === "it"
+      ? "Nota"
+      : lang === "hi"
+      ? "नोट"
+      : lang === "ar"
+      ? "ملاحظة"
+      : lang === "es"
+      ? "Nota"
+      : "Note";
+  const formatNoteCountLabel = (count) => {
+    const formattedCount = new Intl.NumberFormat(locale).format(count);
+
+    if (lang === "ja") {
+      return `${formattedCount}件のメモ`;
+    }
+
+    if (lang === "zh") {
+      return `${formattedCount} 条笔记`;
+    }
+
+    if (lang === "ar") {
+      return `${formattedCount} ${count === 1 ? "ملاحظة" : "ملاحظات"}`;
+    }
+
+    if (lang === "fr") {
+      return `${formattedCount} ${count === 1 ? "note" : "notes"}`;
+    }
+
+    if (lang === "pt") {
+      return `${formattedCount} ${count === 1 ? "nota" : "notas"}`;
+    }
+
+    if (lang === "it") {
+      return `${formattedCount} ${count === 1 ? "nota" : "note"}`;
+    }
+
+    if (lang === "hi") {
+      return `${formattedCount} नोट`;
+    }
+
+    if (lang === "es") {
+      return `${formattedCount} ${count === 1 ? "nota" : "notas"}`;
+    }
+
+    return `${formattedCount} ${count === 1 ? "note" : "notes"}`;
+  };
+  const listenLabel =
+    lang === "ja"
+      ? "聞く"
+      : lang === "zh"
+      ? "聆听"
+      : lang === "fr"
+      ? "Ecouter"
+      : lang === "pt"
+      ? "Ouvir"
+      : lang === "it"
+      ? "Ascolta"
+      : lang === "hi"
+      ? "सुनें"
+      : lang === "ar"
+      ? "اسمع"
+      : lang === "es"
+      ? "Escuchar"
+      : "Listen";
+  const deleteNoteLabel =
+    lang === "ja"
+      ? "メモを削除"
+      : lang === "zh"
+      ? "删除笔记"
+      : lang === "fr"
+      ? "Supprimer la note"
+      : lang === "pt"
+      ? "Excluir nota"
+      : lang === "it"
+      ? "Elimina nota"
+      : lang === "hi"
+      ? "नोट हटाएं"
+      : lang === "ar"
+      ? "احذف الملاحظة"
+      : lang === "es"
+      ? "Eliminar nota"
+      : "Delete note";
   const noteUi = useMemo(
     () =>
       isLightTheme
@@ -222,7 +434,7 @@ export default function NotesDrawer({
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -230,7 +442,7 @@ export default function NotesDrawer({
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
     });
@@ -239,8 +451,8 @@ export default function NotesDrawer({
   const renderNoteItem = (note) => {
     const lessonTitle =
       typeof note.lessonTitle === "object"
-        ? note.lessonTitle[lang] || note.lessonTitle.en || "Note"
-        : note.lessonTitle || "Note";
+        ? note.lessonTitle[lang] || note.lessonTitle.en || noteTitleFallback
+        : note.lessonTitle || noteTitleFallback;
 
     const moduleLabel =
       MODULE_LABELS[note.moduleType]?.[lang] ||
@@ -330,7 +542,9 @@ export default function NotesDrawer({
                     <RiVolumeUpLine size={16} />
                   )
                 }
-                aria-label={lang === "es" ? "Escuchar" : "Listen"}
+                aria-label={
+                  listenLabel
+                }
                 size="sm"
                 variant="ghost"
                 colorScheme="blue"
@@ -342,7 +556,9 @@ export default function NotesDrawer({
               />
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
-                aria-label={lang === "es" ? "Eliminar nota" : "Delete note"}
+                aria-label={
+                  deleteNoteLabel
+                }
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
@@ -473,15 +689,7 @@ export default function NotesDrawer({
                               fontWeight="medium"
                             >
                               {hasNotes
-                                ? `${levelNotes.length} ${
-                                    levelNotes.length === 1
-                                      ? lang === "es"
-                                        ? "nota"
-                                        : "note"
-                                      : lang === "es"
-                                        ? "notas"
-                                        : "notes"
-                                  }`
+                                ? formatNoteCountLabel(levelNotes.length)
                                 : noNotesLabel}
                             </Text>
                           </HStack>
@@ -518,7 +726,7 @@ export default function NotesDrawer({
               _hover={{ bg: noteUi.closeHoverBg }}
               onClick={onClose}
             >
-              {translations[appLanguage]["teams_drawer_close"] || "Close"}
+              {closeLabel}
             </Button>
           </Box>
         </DrawerFooter>

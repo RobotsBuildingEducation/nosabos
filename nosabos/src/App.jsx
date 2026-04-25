@@ -193,21 +193,22 @@ import {
   getNextDailyGoalResetAt,
   hasDailyGoalResetExpired,
 } from "./utils/dailyGoalPet";
-import {
-  brazilianFlag,
-  frenchFlag,
-  germanFlag,
-  greekFlag,
-  irishFlag,
-  italianFlag,
-  japaneseFlag,
-  mexicanFlag,
-  netherlandsFlag,
-  polishFlag,
-  russianFlag,
-  usaFlag,
-} from "./components/flagsIcons/flags";
 import { normalizeThemeMode, useThemeStore } from "./useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getLanguageLabel,
+  getLanguageDirection,
+  getLanguageLocale,
+  getLanguagePromptName,
+  getPracticeLanguageOptions,
+  getSortLocale,
+  getSupportLanguageOptions,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "./constants/languages";
+import { syncDocumentLanguage } from "./utils/documentLanguage";
 
 /* ---------------------------
    Small helpers
@@ -224,6 +225,36 @@ const personaDefaultFor = (lang) =>
   translations?.[lang]?.onboarding_persona_default_example ||
   translations?.en?.onboarding_persona_default_example ||
   "";
+
+const normalizePersonaValue = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/g, "")
+    .toLocaleLowerCase();
+
+const isDefaultPersonaValue = (value) => {
+  if (value === undefined || value === null) return true;
+  const normalized = normalizePersonaValue(value);
+  if (!normalized) return false;
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
+    (lang) =>
+      normalized ===
+        normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
+      normalized ===
+        normalizePersonaValue(
+          translations?.[lang]?.onboarding_persona_default_example,
+        ),
+  );
+};
+
+const personaForSupportLanguage = (currentPersona, supportLang) => {
+  if (currentPersona === undefined || currentPersona === null) {
+    return personaDefaultFor(supportLang) || "";
+  }
+  if (!isDefaultPersonaValue(currentPersona)) return currentPersona;
+  return personaDefaultFor(supportLang) || currentPersona || "";
+};
 
 /**
  * Migrate old level values to CEFR levels
@@ -243,6 +274,7 @@ const TARGET_LANGUAGE_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
+  zh: "Mandarin Chinese",
   nl: "Dutch",
   nah: "Eastern Huasteca Nahuatl",
   ja: "Japanese",
@@ -253,6 +285,8 @@ const TARGET_LANGUAGE_LABELS = {
   ga: "Irish",
   yua: "Yucatec Maya",
 };
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
 const SESSION_TIMER_STORAGE_KEY = "sessionTimerState";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -583,11 +617,14 @@ function TopBar({
   // 🆕 mobile detection prop
   isMobile,
   postNostrContent,
+  onSupportLangChange,
+  pendingLangRef,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const navigate = useNavigate();
   const t = translations[appLanguage] || translations.en;
+  const isRtlApp = getLanguageDirection(appLanguage) === "rtl";
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
@@ -599,14 +636,19 @@ function TopBar({
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "Pre-A1");
-  const [supportLang, setSupportLang] = useState(p.supportLang || "en");
+  const [supportLang, setSupportLang] = useState(
+    normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
+  );
   const [voice, setVoice] = useState(p.voice || "alloy");
+  const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
-    p.voicePersona ||
-    personaDefaultFor(p.supportLang || supportLang || appLanguage) ||
+    personaForSupportLanguage(p.voicePersona, defaultPersonaSupportLang) ??
+    personaDefaultFor(defaultPersonaSupportLang) ??
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
-  const [targetLang, setTargetLang] = useState(p.targetLang || "es");
+  const [targetLang, setTargetLang] = useState(
+    normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE),
+  );
   const normalizedTargetLang = String(targetLang || "").toLowerCase();
   const hasProficiencyDecisionForTargetLang =
     Object.prototype.hasOwnProperty.call(
@@ -620,138 +662,84 @@ function TopBar({
     Number.isFinite(p.pauseMs) ? p.pauseMs : 1200,
   );
   const [helpRequest, setHelpRequest] = useState(
-    (p.helpRequest || user?.helpRequest || "").trim(),
+    p.helpRequest ?? user?.helpRequest ?? "",
   );
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation,
   );
-  const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
-  const pauseSeconds = (pauseMs / 1000).toFixed(1);
+  const textDraftRef = useRef({ voicePersona: null, helpRequest: null });
+  const textDraftClearTimersRef = useRef({});
+  const rememberTextDraft = useCallback((key, value) => {
+    clearTimeout(textDraftClearTimersRef.current[key]);
+    textDraftRef.current[key] = { value, at: Date.now() };
+  }, []);
+  const releaseTextDraftSoon = useCallback((key, value) => {
+    clearTimeout(textDraftClearTimersRef.current[key]);
+    textDraftClearTimersRef.current[key] = setTimeout(() => {
+      const draft = textDraftRef.current[key];
+      if (draft && draft.value === value) {
+        textDraftRef.current[key] = null;
+      }
+    }, 6000);
+  }, []);
+  const preferTextDraft = useCallback((key, savedValue) => {
+    const draft = textDraftRef.current[key];
+    return draft ? draft.value : savedValue;
+  }, []);
+  useEffect(
+    () => () => {
+      Object.values(textDraftClearTimersRef.current).forEach(clearTimeout);
+    },
+    [],
+  );
+  const vadSecondsLabel = uiCopy(appLanguage, {
+    en: "seconds",
+    es: "segundos",
+    pt: "segundos",
+    it: "secondi",
+    fr: "secondes",
+    ja: "秒",
+    ar: "ثواني",
+    zh: "秒",
+  });
+  const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(appLanguage), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(pauseMs / 1000);
   const vadHint =
     t.onboarding_vad_hint ||
-    (appLanguage === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+    uiCopy(appLanguage, {
+      en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
+      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
+      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
+    });
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
   const supportLanguageOptions = useMemo(
-    () => [
-      { value: "en", label: t.onboarding_support_en, flag: usaFlag() },
-      { value: "es", label: t.onboarding_support_es, flag: mexicanFlag() },
-    ],
-    [t],
+    () => getSupportLanguageOptions({ ui: t, uiLang: appLanguage }),
+    [appLanguage, t],
   );
 
-  const practiceLanguageOptions = useMemo(() => {
-    const collator = new Intl.Collator(appLanguage === "es" ? "es" : "en");
-    const options = [
-      {
-        value: "nl",
-        label: t.onboarding_practice_nl,
-        beta: false,
-        flag: netherlandsFlag(),
-      },
-      {
-        value: "en",
-        label: t.onboarding_practice_en,
-        beta: false,
-        flag: usaFlag(),
-      },
-      {
-        value: "fr",
-        label: t.onboarding_practice_fr,
-        beta: false,
-        flag: frenchFlag(),
-      },
-      {
-        value: "de",
-        label: t.onboarding_practice_de,
-        beta: false,
-        flag: germanFlag(),
-      },
-      {
-        value: "it",
-        label: t.onboarding_practice_it,
-        beta: false,
-        flag: italianFlag(),
-      },
-      {
-        value: "nah",
-        label: `${t.onboarding_practice_nah} (${appLanguage === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "yua",
-        label: `${t.onboarding_practice_yua} (${appLanguage === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "pt",
-        label: t.onboarding_practice_pt,
-        beta: false,
-        flag: brazilianFlag(),
-      },
-      {
-        value: "es",
-        label: t.onboarding_practice_es,
-        beta: false,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "el",
-        label: t.onboarding_practice_el,
-        beta: true,
-        flag: greekFlag(),
-      },
-      {
-        value: "ja",
-        label: t.onboarding_practice_ja,
-        beta: true,
-        hidden: !showJapanese,
-        flag: japaneseFlag(),
-      },
-      {
-        value: "ru",
-        label: t.onboarding_practice_ru,
-        beta: true,
-        flag: russianFlag(),
-      },
-      {
-        value: "pl",
-        label: t.onboarding_practice_pl,
-        beta: true,
-        flag: polishFlag(),
-      },
-      {
-        value: "ga",
-        label: t.onboarding_practice_ga,
-        beta: true,
-        flag: irishFlag(),
-      },
-    ];
-
-    const visible = options.filter((option) => !option.hidden);
-    const stable = visible
-      .filter((option) => !option.beta && !option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const alpha = visible
-      .filter((option) => option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const beta = visible
-      .filter((option) => option.beta)
-      .sort((a, b) => collator.compare(a.label, b.label));
-
-    return [...stable, ...alpha, ...beta];
-  }, [appLanguage, showJapanese, t]);
+  const practiceLanguageOptions = useMemo(
+    () =>
+      getPracticeLanguageOptions({
+        ui: t,
+        uiLang: appLanguage,
+        showJapanese,
+      }),
+    [appLanguage, showJapanese, t],
+  );
   const selectedSupportOption =
-    supportLanguageOptions.find((option) => option.value === supportLang) ||
-    supportLanguageOptions[0];
+    supportLanguageOptions.find(
+      (option) => option.value === normalizeSupportLanguage(supportLang),
+    ) || supportLanguageOptions[0];
   const selectedPracticeOption =
     practiceLanguageOptions.find((option) => option.value === targetLang) ||
     practiceLanguageOptions[0];
@@ -760,38 +748,45 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
-    setSupportLang(q.supportLang || "en");
-    setVoice(q.voice || "alloy");
-    setVoicePersona(
-      q.voicePersona ??
-        personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
-        translations.en.onboarding_persona_default_example,
+    const incomingLang = normalizeSupportLanguage(
+      q.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
     );
-    setTargetLang(q.targetLang || "es");
+    if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
+      setSupportLang(incomingLang);
+    }
+    setVoice(q.voice || "alloy");
+    const draftSupportLang =
+      pendingLangRef.current || incomingLang || supportLang || appLanguage;
+    const nextVoicePersona =
+      personaForSupportLanguage(q.voicePersona, draftSupportLang) ??
+      personaDefaultFor(draftSupportLang) ??
+      translations.en.onboarding_persona_default_example;
+    setVoicePersona(preferTextDraft("voicePersona", nextVoicePersona));
+    setTargetLang(
+      normalizePracticeLanguage(q.targetLang, DEFAULT_TARGET_LANGUAGE),
+    );
     setShowTranslations(
       typeof q.showTranslations === "boolean" ? q.showTranslations : true,
     );
     setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 1200);
-    setHelpRequest((q.helpRequest || user?.helpRequest || "").trim());
+    const nextHelpRequest = String(q.helpRequest ?? user?.helpRequest ?? "");
+    setHelpRequest(preferTextDraft("helpRequest", nextHelpRequest));
     setPracticePronunciation(!!q.practicePronunciation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress, user?.helpRequest]);
 
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang || appLanguage);
-    const enDefault = personaDefaultFor("en");
-    const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
 
     if (
-      (!current && localizedDefault) ||
-      (current &&
-        current !== localizedDefault &&
-        (current === enDefault || current === esDefault))
+      isDefaultPersonaValue(current) &&
+      localizedDefault &&
+      current !== localizedDefault
     ) {
-      const nextPersona = localizedDefault || current;
-      setVoicePersona(nextPersona);
-      persistSettings({ voicePersona: nextPersona });
+      setVoicePersona(localizedDefault);
+      persistSettings({ voicePersona: localizedDefault });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLanguage, supportLang]);
@@ -803,12 +798,35 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title: uiCopy(appLanguage, {
+            en: "Save failed",
+            es: "Error al guardar",
+            it: "Salvataggio non riuscito",
+            ja: "保存に失敗しました",
+            zh: "保存失败",
+          }),
           description: String(e?.message || e),
         });
       }
     },
     [onPatchSettings, toast, appLanguage],
+  );
+  const persistSettingsAfterPaint = useCallback(
+    (partial = {}) => {
+      const run = () => {
+        void persistSettings(partial);
+      };
+
+      if (typeof window === "undefined" || !window.requestAnimationFrame) {
+        setTimeout(run, 0);
+        return;
+      }
+
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(run);
+      });
+    },
+    [persistSettings],
   );
 
   // Debounced persist for text inputs (voicePersona, helpRequest)
@@ -816,11 +834,16 @@ function TopBar({
   const debouncedPersist = useCallback(
     (partial, delay = 400) => {
       clearTimeout(debounceRef.current);
+      const textKeys = ["voicePersona", "helpRequest"].filter((key) =>
+        Object.prototype.hasOwnProperty.call(partial, key),
+      );
       debounceRef.current = setTimeout(() => {
-        persistSettings(partial);
+        void persistSettings(partial).finally(() => {
+          textKeys.forEach((key) => releaseTextDraftSoon(key, partial[key]));
+        });
       }, delay);
     },
-    [persistSettings],
+    [persistSettings, releaseTextDraftSoon],
   );
 
   useEffect(() => {
@@ -858,7 +881,13 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title: uiCopy(appLanguage, {
+            en: "Save failed",
+            es: "Error al guardar",
+            it: "Salvataggio non riuscito",
+            ja: "保存に失敗しました",
+            zh: "保存失败",
+          }),
           description: String(e?.message || e),
         });
       }
@@ -935,9 +964,7 @@ function TopBar({
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
-    new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US",
-    );
+    new Date(cefrResult.updatedAt).toLocaleString(getSortLocale(appLanguage));
   const recentTopBarPointerRef = useRef({ key: "", at: 0 });
 
   const runTopBarAction = useCallback(
@@ -1012,9 +1039,13 @@ function TopBar({
                 variant="outline"
                 colorScheme="teal"
                 icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-                aria-label={
-                  appLanguage === "es" ? "Abrir meta diaria" : "Open daily goal"
-                }
+                aria-label={uiCopy(appLanguage, {
+                  en: "Open daily goal",
+                  es: "Abrir meta diaria",
+                  it: "Apri obiettivo giornaliero",
+                  ja: "デイリー目標を開く",
+                  zh: "打开每日目标",
+                })}
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
@@ -1038,9 +1069,13 @@ function TopBar({
                 colorScheme="teal"
                 variant={isTimerRunning ? "solid" : "outline"}
                 size="sm"
-                aria-label={
-                  appLanguage === "es" ? "Abrir temporizador" : "Open timer"
-                }
+                aria-label={uiCopy(appLanguage, {
+                  en: "Open timer",
+                  es: "Abrir temporizador",
+                  it: "Apri timer",
+                  ja: "タイマーを開く",
+                  zh: "打开计时器",
+                })}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
                 <FiClock />
@@ -1052,12 +1087,20 @@ function TopBar({
                   size="sm"
                   aria-label={
                     timerPaused
-                      ? appLanguage === "es"
-                        ? "Reanudar temporizador"
-                        : "Resume timer"
-                      : appLanguage === "es"
-                        ? "Pausar temporizador"
-                        : "Pause timer"
+                      ? uiCopy(appLanguage, {
+                          en: "Resume timer",
+                          es: "Reanudar temporizador",
+                          it: "Riprendi timer",
+                          ja: "タイマーを再開",
+                          zh: "继续计时器",
+                        })
+                      : uiCopy(appLanguage, {
+                          en: "Pause timer",
+                          es: "Pausar temporizador",
+                          it: "Metti in pausa il timer",
+                          ja: "タイマーを一時停止",
+                          zh: "暂停计时器",
+                        })
                   }
                   {...getTopBarPressProps(
                     "session-timer-toggle",
@@ -1097,9 +1140,13 @@ function TopBar({
             flex={1}
             minH={0}
           >
-            <Flex justify="flex-end" mt={-2} mb={-2}>
+            <Flex
+              justify={isRtlApp ? "flex-start" : "flex-end"}
+              mt={-2}
+              mb={-2}
+            >
               <IconButton
-                aria-label={t.close || "Close"}
+                aria-label={t.close || t.app_close || "Close"}
                 icon={<CloseIcon boxSize={3} />}
                 size="sm"
                 variant="ghost"
@@ -1329,7 +1376,25 @@ function TopBar({
                             <MenuList
                               borderColor="gray.700"
                               bg="gray.900"
+                              maxH="300px"
+                              overflowY="auto"
                               motionProps={INSTANT_EXIT_MOTION_PROPS}
+                              sx={{
+                                "&::-webkit-scrollbar": {
+                                  width: "8px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  bg: "gray.800",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  bg: "gray.600",
+                                  borderRadius: "4px",
+                                },
+                                "&::-webkit-scrollbar-thumb:hover": {
+                                  bg: "gray.500",
+                                },
+                              }}
                             >
                               <Box
                                 px={3}
@@ -1346,14 +1411,36 @@ function TopBar({
                                 type="radio"
                                 value={supportLang}
                                 onChange={(value) => {
+                                  const normalized = normalizeSupportLanguage(
+                                    value,
+                                    DEFAULT_SUPPORT_LANGUAGE,
+                                  );
                                   playSound(selectSound);
-                                  setSupportLang(value);
-                                  // Defer the Zustand user-store update so the
-                                  // cascade of App-wide re-renders happens
-                                  // after paint, not while the menu is closing.
-                                  setTimeout(() => {
-                                    persistSettings({ supportLang: value });
-                                  }, 0);
+                                  const shouldLocalizePersona =
+                                    isDefaultPersonaValue(voicePersona);
+                                  const nextPersona = shouldLocalizePersona
+                                    ? personaForSupportLanguage(
+                                        voicePersona,
+                                        normalized,
+                                      )
+                                    : voicePersona;
+                                  if (
+                                    shouldLocalizePersona &&
+                                    nextPersona &&
+                                    nextPersona !== voicePersona
+                                  ) {
+                                    setVoicePersona(nextPersona);
+                                  }
+                                  onSupportLangChange?.(
+                                    normalized,
+                                    setSupportLang,
+                                  );
+                                  persistSettingsAfterPaint({
+                                    supportLang: normalized,
+                                    ...(shouldLocalizePersona && nextPersona
+                                      ? { voicePersona: nextPersona }
+                                      : {}),
+                                  });
                                 }}
                               >
                                 {supportLanguageOptions.map((option) => (
@@ -1361,6 +1448,7 @@ function TopBar({
                                     key={option.value}
                                     value={option.value}
                                     padding={5}
+                                    onPointerDown={() => playSound(selectSound)}
                                   >
                                     <HStack spacing={2}>
                                       {option.flag}
@@ -1408,9 +1496,6 @@ function TopBar({
                                 {selectedPracticeOption?.flag}
                                 <Text as="span">
                                   {selectedPracticeOption?.label}
-                                  {selectedPracticeOption?.beta
-                                    ? " (beta)"
-                                    : ""}
                                 </Text>
                               </HStack>
                             </MenuButton>
@@ -1455,9 +1540,9 @@ function TopBar({
                                 onChange={(value) => {
                                   playSound(selectSound);
                                   setTargetLang(value);
-                                  setTimeout(() => {
-                                    persistSettings({ targetLang: value });
-                                  }, 0);
+                                  persistSettingsAfterPaint({
+                                    targetLang: value,
+                                  });
                                 }}
                               >
                                 {practiceLanguageOptions.map((option) => (
@@ -1468,10 +1553,7 @@ function TopBar({
                                   >
                                     <HStack spacing={2}>
                                       {option.flag}
-                                      <Text as="span">
-                                        {option.label}
-                                        {option.beta ? " (beta)" : ""}
-                                      </Text>
+                                      <Text as="span">{option.label}</Text>
                                     </HStack>
                                   </MenuItemOption>
                                 ))}
@@ -1502,9 +1584,17 @@ function TopBar({
                           }}
                           mt={4}
                         >
-                          {appLanguage === "es"
-                            ? "Iniciar prueba de nivel"
-                            : "Start proficiency test"}
+                          {uiCopy(appLanguage, {
+                            en: "Start proficiency test",
+                            es: "Iniciar prueba de nivel",
+                            pt: "Iniciar teste de nível",
+                            it: "Inizia test di livello",
+                            fr: "Commencer le test de niveau",
+                            ja: "レベルテストを始める",
+                            hi: "प्रवीणता परीक्षण शुरू करें",
+                            ar: "ابدأ اختبار المستوى",
+                            zh: "开始水平测试",
+                          })}
                         </Button>
                       )}
 
@@ -1517,6 +1607,7 @@ function TopBar({
                           onChange={(e) => {
                             const next = e.target.value.slice(0, 240);
                             setVoicePersona(next);
+                            rememberTextDraft("voicePersona", next);
                             debouncedPersist({ voicePersona: next });
                           }}
                           bg="gray.700"
@@ -1715,6 +1806,8 @@ export default function App() {
   const initRef = useRef(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+  const isSubscriptionRoute = location.pathname.startsWith("/subscribe");
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
@@ -1772,19 +1865,28 @@ export default function App() {
     }
   }, []);
 
-  const normalizeSupportLang = useCallback(
-    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
-    [],
-  );
+  const normalizeSupportLang = useCallback((raw) => {
+    const normalized = normalizeSupportLanguage(raw, "");
+    return normalized || undefined;
+  }, []);
 
-  const resolvedTargetLang = (user?.progress?.targetLang || "es").toLowerCase();
+  const resolvedTargetLang = normalizePracticeLanguage(
+    user?.progress?.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
-    (storedUiLang === "es" ? "es" : "en");
+    normalizeSupportLanguage(storedUiLang, DEFAULT_SUPPORT_LANGUAGE);
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
-    const nextLang = resolvedSupportLang === "es" ? "es" : "en";
+    const nextLang = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    // Ignore incoming Firestore value if it differs from a pending local selection
+    // (stale snapshot arriving before the write is confirmed).
+    if (pendingLangRef.current && nextLang !== pendingLangRef.current) return;
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
@@ -1804,8 +1906,14 @@ export default function App() {
     ).trim();
     if (!id) return;
 
-    const desiredAppLanguage = resolvedSupportLang === "es" ? "es" : "en";
-    const persistedAppLanguage = user?.appLanguage === "es" ? "es" : "en";
+    const desiredAppLanguage = normalizeSupportLanguage(
+      resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const persistedAppLanguage = normalizeSupportLanguage(
+      user?.appLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     if (persistedAppLanguage === desiredAppLanguage) return;
 
@@ -1921,11 +2029,63 @@ export default function App() {
 
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(() => {
-    if (typeof window === "undefined") return "en";
+    if (typeof window === "undefined") return DEFAULT_SUPPORT_LANGUAGE;
     const stored = localStorage.getItem("appLanguage");
-    return stored === "es" ? "es" : "en";
+    return normalizeSupportLanguage(stored, DEFAULT_SUPPORT_LANGUAGE);
   });
+  // Guards stale Firestore snapshots from reverting an in-flight language change.
+  const pendingLangRef = useRef(null);
+  const pendingLangTimeoutRef = useRef(null);
+  const onSupportLangChange = useCallback(
+    (normalized, setSupportLangFn) => {
+      pendingLangRef.current = normalized;
+      if (pendingLangTimeoutRef.current)
+        clearTimeout(pendingLangTimeoutRef.current);
+      pendingLangTimeoutRef.current = setTimeout(() => {
+        pendingLangRef.current = null;
+      }, 5000);
+
+      try {
+        localStorage.setItem("appLanguage", normalized);
+      } catch {}
+
+      const applyOptimisticLanguage = () => {
+        syncDocumentLanguage(normalized);
+        setAppLanguage(normalized);
+        setSupportLangFn?.(normalized);
+        if (user) {
+          const currentProgress = user.progress || {};
+          const nextVoicePersona = personaForSupportLanguage(
+            currentProgress.voicePersona,
+            normalized,
+          );
+          setUser?.({
+            ...user,
+            appLanguage: normalized,
+            progress: {
+              ...currentProgress,
+              supportLang: normalized,
+              ...(isDefaultPersonaValue(currentProgress.voicePersona) &&
+              nextVoicePersona
+                ? { voicePersona: nextVoicePersona }
+                : {}),
+            },
+          });
+        }
+      };
+
+      try {
+        flushSync(applyOptimisticLanguage);
+      } catch {
+        applyOptimisticLanguage();
+      }
+    },
+    [setUser, user],
+  );
   const t = translations[appLanguage] || translations.en;
+  useEffect(() => {
+    syncDocumentLanguage(appLanguage);
+  }, [appLanguage]);
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
 
@@ -2318,21 +2478,36 @@ export default function App() {
   const showTranslationsEnabled = user?.progress?.showTranslations !== false;
 
   const translationToggleLabel = useMemo(() => {
-    const fallback =
-      appLanguage === "es" ? "Mostrar traducción" : "Show translation";
+    const fallback = uiCopy(appLanguage, {
+      en: "Show translation",
+      es: "Mostrar traducción",
+      it: "Mostra traduzione",
+      fr: "Afficher la traduction",
+      ja: "翻訳を表示",
+    });
     const template = translations[appLanguage]?.onboarding_translations_toggle;
     if (!template) return fallback;
 
     const progress = user?.progress || {};
-    const supportLang = progress.supportLang || "en";
-    const targetLang = progress.targetLang || "es";
+    const supportLang = normalizeSupportLanguage(
+      progress.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const targetLang = normalizePracticeLanguage(
+      progress.targetLang,
+      DEFAULT_TARGET_LANGUAGE,
+    );
     const languageName = (code) =>
       translations[appLanguage]?.[
         `language_${code === "nah" ? "nah" : code}`
       ] || code;
 
     const targetNameKey =
-      targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+      targetLang === supportLang
+        ? targetLang === "en"
+          ? "es"
+          : "en"
+        : supportLang;
 
     return template.replace("{language}", languageName(targetNameKey));
   }, [appLanguage, user?.progress]);
@@ -2392,8 +2567,10 @@ export default function App() {
             local_npub: id,
             createdAt: new Date().toISOString(),
             onboarding: { completed: false, currentStep: 1 },
-            appLanguage:
-              localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+            appLanguage: normalizeSupportLanguage(
+              localStorage.getItem("appLanguage"),
+              DEFAULT_SUPPORT_LANGUAGE,
+            ),
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
@@ -2411,8 +2588,10 @@ export default function App() {
           local_npub: id,
           createdAt: new Date().toISOString(),
           onboarding: { completed: false, currentStep: 1 },
-          appLanguage:
-            localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+          appLanguage: normalizeSupportLanguage(
+            localStorage.getItem("appLanguage"),
+            DEFAULT_SUPPORT_LANGUAGE,
+          ),
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
@@ -2435,11 +2614,11 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc?.progress?.supportLang === "es"
-            ? "es"
-            : userDoc.appLanguage === "es"
-              ? "es"
-              : "en";
+          normalizeSupportLang(userDoc?.progress?.supportLang) ||
+          normalizeSupportLanguage(
+            userDoc.appLanguage,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
@@ -2575,7 +2754,7 @@ export default function App() {
      (start, pause, reset, time-up).
   ----------------------------------- */
   const [timerModalOpen, setTimerModalOpen] = useState(false);
-  const [timerMinutes, setTimerMinutes] = useState("20");
+  const [timerMinutes, setTimerMinutes] = useState("10");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
@@ -2728,7 +2907,7 @@ export default function App() {
       }
 
       const stored = JSON.parse(raw);
-      const storedMinutes = String(stored?.minutes || "20");
+      const storedMinutes = String(stored?.minutes || "10");
       const storedDuration = Number(stored?.durationSeconds);
       const storedRemaining = Number(stored?.remainingSeconds);
       const storedEndsAt = Number(stored?.endsAt);
@@ -2836,6 +3015,26 @@ export default function App() {
     [subscriptionXp, subscriptionVerified],
   );
 
+  useEffect(() => {
+    if (
+      isLoadingApp ||
+      !user ||
+      needsOnboarding ||
+      needsSubscriptionPasscode ||
+      !isOnboardingRoute
+    ) {
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [
+    isLoadingApp,
+    isOnboardingRoute,
+    navigate,
+    needsOnboarding,
+    needsSubscriptionPasscode,
+    user,
+  ]);
+
   const handleResetTimer = useCallback(() => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -2855,7 +3054,13 @@ export default function App() {
       // The modal may pass its local draft value here — prefer it over the
       // parent state to avoid any staleness if the user hadn't blurred yet.
       const source = minutesArg ?? timerMinutes;
-      const parsedMinutes = Math.max(1, Math.round(Number(source) || 0));
+      const parsedSource = Number(source);
+      const parsedMinutes = Math.max(
+        1,
+        Math.round(
+          Number.isFinite(parsedSource) && parsedSource > 0 ? parsedSource : 10,
+        ),
+      );
       const shouldOpenProficiency = shouldShowProficiencyAfterTimer;
 
       flushSync(() => {
@@ -2994,10 +3199,14 @@ export default function App() {
       const normalized = (input || "").trim();
       const expected = (subscriptionPasscode || "").trim();
       if (!expected) {
-        const msg =
-          appLanguage === "es"
-            ? "El código de acceso no está configurado"
-            : "Subscription passcode is not configured";
+        const msg = uiCopy(appLanguage, {
+          en: "Subscription passcode is not configured",
+          es: "El código de acceso no está configurado",
+          it: "Il codice abbonamento non è configurato",
+          fr: "Le code abonne n'est pas configure",
+          ja: "サブスクリプションのパスコードが設定されていません",
+          zh: "订阅通行码尚未配置",
+        });
         setPasscodeError(msg);
         setLocalError?.(msg);
         return;
@@ -3036,14 +3245,25 @@ export default function App() {
         patchUser?.({ subscriptionPasscodeVerified: true });
         toast({
           status: "success",
-          title: appLanguage === "es" ? "Código aceptado" : "Passcode accepted",
+          title: uiCopy(appLanguage, {
+            en: "Passcode accepted",
+            es: "Código aceptado",
+            it: "Codice accettato",
+            fr: "Code accepte",
+            ja: "パスコードを確認しました",
+            zh: "通行码已接受",
+          }),
         });
       } catch (error) {
         console.error("Failed to save subscription passcode", error);
-        const msg =
-          appLanguage === "es"
-            ? "No se pudo guardar el código"
-            : "Failed to save passcode";
+        const msg = uiCopy(appLanguage, {
+          en: "Failed to save passcode",
+          es: "No se pudo guardar el código",
+          it: "Impossibile salvare il codice",
+          fr: "Impossible d'enregistrer le code",
+          ja: "パスコードを保存できませんでした",
+          zh: "无法保存通行码",
+        });
         setPasscodeError(msg);
         setLocalError?.(msg);
       } finally {
@@ -3093,10 +3313,14 @@ export default function App() {
       const id = resolveNpub();
       if (!id) {
         setAllowPosts(previous);
-        const message =
-          appLanguage === "es"
-            ? "Conecta tu cuenta para usar esta función."
-            : "Connect your account to use this feature.";
+        const message = uiCopy(appLanguage, {
+          en: "Connect your account to use this feature.",
+          es: "Conecta tu cuenta para usar esta función.",
+          it: "Collega il tuo account per usare questa funzione.",
+          fr: "Connecte ton compte pour utiliser cette fonction.",
+          ja: "この機能を使うにはアカウントを接続してください。",
+          zh: "请连接你的账户以使用此功能。",
+        });
         throw new Error(message);
       }
       try {
@@ -3125,10 +3349,14 @@ export default function App() {
       if (!id) {
         setSoundEnabled(previous);
         setSoundSettingsEnabled(previous);
-        const message =
-          appLanguage === "es"
-            ? "Conecta tu cuenta para usar esta función."
-            : "Connect your account to use this feature.";
+        const message = uiCopy(appLanguage, {
+          en: "Connect your account to use this feature.",
+          es: "Conecta tu cuenta para usar esta función.",
+          it: "Collega il tuo account per usare questa funzione.",
+          fr: "Connecte ton compte pour utiliser cette fonction.",
+          ja: "この機能を使うにはアカウントを接続してください。",
+          zh: "请连接你的账户以使用此功能。",
+        });
         throw new Error(message);
       }
       try {
@@ -3202,38 +3430,26 @@ export default function App() {
       helpRequest: "",
       practicePronunciation: false,
     };
+    const nextSupportLang = normalizeSupportLanguage(
+      partial.supportLang ?? prev.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const nextVoicePersona =
+      personaForSupportLanguage(
+        partial.voicePersona ?? prev.voicePersona,
+        nextSupportLang,
+      ) ?? "";
 
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
-      supportLang: ["en", "es"].includes(
-        partial.supportLang ?? prev.supportLang,
-      )
-        ? (partial.supportLang ?? prev.supportLang)
-        : "en",
+      supportLang: nextSupportLang,
       voice: partial.voice ?? prev.voice ?? "alloy",
-      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
-        0,
-        240,
+      voicePersona: nextVoicePersona.slice(0, 240),
+      targetLang: normalizePracticeLanguage(
+        partial.targetLang ?? prev.targetLang,
+        DEFAULT_TARGET_LANGUAGE,
       ),
-      targetLang: [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(partial.targetLang ?? prev.targetLang)
-        ? (partial.targetLang ?? prev.targetLang)
-        : "es",
       showTranslations:
         typeof (partial.showTranslations ?? prev.showTranslations) === "boolean"
           ? (partial.showTranslations ?? prev.showTranslations)
@@ -3270,7 +3486,10 @@ export default function App() {
     } catch {}
 
     // Derive appLanguage from supportLang to keep them in sync
-    const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
+    const derivedAppLanguage = normalizeSupportLanguage(
+      next.supportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
     // Strip subcollection-backed data from the progress field before writing
     // to the user document. languageLessons and languageFlashcards live in
@@ -3350,36 +3569,26 @@ export default function App() {
 
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
+      const normalizedSupportLang = normalizeSupportLanguage(
+        payload.supportLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      );
+      const incomingPersona = safe(
+        payload.voicePersona,
+        personaDefaultFor(normalizedSupportLang),
+      );
 
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
-        supportLang: ["en", "es"].includes(payload.supportLang)
-          ? payload.supportLang
-          : "en",
-        voicePersona: safe(
-          payload.voicePersona,
-          translations[appLanguage]?.onboarding_persona_default_example ||
-            translations.en.onboarding_persona_default_example,
+        supportLang: normalizedSupportLang,
+        voicePersona:
+          personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
+          personaDefaultFor(normalizedSupportLang),
+        targetLang: normalizePracticeLanguage(
+          payload.targetLang,
+          DEFAULT_TARGET_LANGUAGE,
         ),
-        targetLang: [
-          "nah",
-          "es",
-          "pt",
-          "en",
-          "fr",
-          "it",
-          "nl",
-          "ja",
-          "ru",
-          "de",
-          "el",
-          "pl",
-          "ga",
-          "yua",
-        ].includes(payload.targetLang)
-          ? payload.targetLang
-          : "es",
         pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
         xp: 0,
         streak: 0,
@@ -3394,6 +3603,12 @@ export default function App() {
       // This prevents stale locale defaults from overwriting the user's choice
       // when returning from proficiency/back to home.
       const uiLangForPersist = normalized.supportLang;
+
+      try {
+        localStorage.setItem("appLanguage", uiLangForPersist);
+      } catch {}
+      syncDocumentLanguage(uiLangForPersist);
+      setAppLanguage(uiLangForPersist);
 
       await setDoc(
         doc(database, "users", id),
@@ -3575,11 +3790,15 @@ export default function App() {
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
-        description:
-          appLanguage === "es"
-            ? "No se pudo iniciar la lección"
-            : "Failed to start lesson",
+        title: "Error",
+        description: uiCopy(appLanguage, {
+          en: "Failed to start lesson",
+          es: "No se pudo iniciar la lección",
+          it: "Impossibile avviare la lezione",
+          fr: "Impossible de demarrer la lecon",
+          ja: "レッスンを開始できませんでした",
+          zh: "无法开始课程",
+        }),
         status: "error",
         duration: 3000,
       });
@@ -3664,11 +3883,15 @@ export default function App() {
       } catch (error) {
         console.error("Failed to save flashcard review:", error);
         toast({
-          title: appLanguage === "es" ? "Error" : "Error",
-          description:
-            appLanguage === "es"
-              ? "No se pudo guardar el progreso"
-              : "Failed to save progress",
+          title: "Error",
+          description: uiCopy(appLanguage, {
+            en: "Failed to save progress",
+            es: "No se pudo guardar el progreso",
+            it: "Impossibile salvare i progressi",
+            fr: "Impossible d'enregistrer la progression",
+            ja: "進捗を保存できませんでした",
+            zh: "无法保存进度",
+          }),
           status: "error",
           duration: 3000,
         });
@@ -4029,12 +4252,22 @@ export default function App() {
       if (!activeNpub) {
         const title =
           t.app_cefr_need_account_title ||
-          (appLanguage === "es" ? "Cuenta requerida" : "Account required");
+          uiCopy(appLanguage, {
+            en: "Account required",
+            es: "Cuenta requerida",
+            it: "Account richiesto",
+            fr: "Compte requis",
+            ja: "アカウントが必要です",
+          });
         const description =
           t.app_cefr_need_account ||
-          (appLanguage === "es"
-            ? "Conéctate para analizar tu nivel con la IA."
-            : "Connect your account to analyze your level.");
+          uiCopy(appLanguage, {
+            en: "Connect your account to analyze your level.",
+            es: "Conéctate para analizar tu nivel con la IA.",
+            it: "Collega il tuo account per analizzare il tuo livello con l'IA.",
+            fr: "Connecte ton compte pour analyser ton niveau avec l'IA.",
+            ja: "AIでレベルを分析するにはアカウントを接続してください。",
+          });
         toast({ title, description, status: "info", duration: 2200 });
         return;
       }
@@ -4063,7 +4296,7 @@ export default function App() {
           updatedAt: user?.updatedAt || null,
         };
 
-        const localeName = appLanguage === "es" ? "Spanish" : "English";
+        const localeName = getLanguagePromptName(appLanguage) || "English";
         const prompt = [
           "You are an expert language placement coach.",
           "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
@@ -4114,12 +4347,22 @@ export default function App() {
 
         const successTitle =
           t.app_cefr_success_title ||
-          (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
+          uiCopy(appLanguage, {
+            en: "Analysis complete",
+            es: "Análisis completado",
+            it: "Analisi completata",
+            fr: "Analyse terminee",
+            ja: "分析が完了しました",
+          });
         const successDescTemplate =
           t.app_cefr_success_desc ||
-          (appLanguage === "es"
-            ? "Nivel asignado: {level}."
-            : "Assigned level: {level}.");
+          uiCopy(appLanguage, {
+            en: "Assigned level: {level}.",
+            es: "Nivel asignado: {level}.",
+            it: "Livello assegnato: {level}.",
+            fr: "Niveau attribue : {level}.",
+            ja: "判定レベル: {level}",
+          });
 
         toast({
           title: successTitle,
@@ -4131,12 +4374,22 @@ export default function App() {
         console.error("CEFR analysis failed:", err);
         const errorTitle =
           t.app_cefr_error_title ||
-          (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
+          uiCopy(appLanguage, {
+            en: "Analysis failed",
+            es: "No se pudo analizar",
+            it: "Analisi non riuscita",
+            fr: "Analyse impossible",
+            ja: "分析できませんでした",
+          });
         const errorDesc =
           t.app_cefr_error ||
-          (appLanguage === "es"
-            ? "Vuelve a intentarlo más tarde."
-            : "Please try again later.");
+          uiCopy(appLanguage, {
+            en: "Please try again later.",
+            es: "Vuelve a intentarlo más tarde.",
+            it: "Riprova piu tardi.",
+            fr: "Reessaie plus tard.",
+            ja: "あとでもう一度試してください。",
+          });
         setCefrError(errorDesc);
         toast({
           title: errorTitle,
@@ -4248,11 +4501,22 @@ export default function App() {
         if (!activeNpub) {
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
-            description:
-              appLanguage === "es"
-                ? "No se encontró el usuario actual."
-                : "Couldn't find the current user.",
+            title: uiCopy(appLanguage, {
+              en: "Save failed",
+              es: "Error al guardar",
+              it: "Salvataggio non riuscito",
+              fr: "Echec de l'enregistrement",
+              ja: "保存に失敗しました",
+              zh: "保存失败",
+            }),
+            description: uiCopy(appLanguage, {
+              en: "Couldn't find the current user.",
+              es: "No se encontró el usuario actual.",
+              it: "Impossibile trovare l'utente corrente.",
+              fr: "Impossible de trouver l'utilisateur actuel.",
+              ja: "現在のユーザーが見つかりませんでした。",
+              zh: "找不到当前用户。",
+            }),
           });
           return;
         }
@@ -4277,7 +4541,14 @@ export default function App() {
           console.error("Failed to save daily goal:", error);
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+            title: uiCopy(appLanguage, {
+              en: "Save failed",
+              es: "Error al guardar",
+              it: "Salvataggio non riuscito",
+              fr: "Echec de l'enregistrement",
+              ja: "保存に失敗しました",
+              zh: "保存失败",
+            }),
             description: String(error?.message || error),
           });
         });
@@ -4708,12 +4979,24 @@ export default function App() {
         if (currentTab === "random") {
           const title =
             t?.random_toast_title ??
-            (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
+            uiCopy(appLanguage, {
+              en: "Nice job!",
+              es: "¡Buen trabajo!",
+              it: "Ottimo lavoro!",
+              fr: "Bien joue !",
+              ja: "よくできました！",
+              zh: "做得好！",
+            });
           const descTpl =
             t?.random_toast_desc ??
-            (appLanguage === "es"
-              ? "Ganaste +{xp} XP."
-              : "You earned +{xp} XP.");
+            uiCopy(appLanguage, {
+              en: "You earned +{xp} XP.",
+              es: "Ganaste +{xp} XP.",
+              it: "Hai guadagnato +{xp} XP.",
+              fr: "Tu as gagne +{xp} XP.",
+              ja: "+{xp} XPを獲得しました。",
+              zh: "你获得了 +{xp} XP。",
+            });
           const description = descTpl.replace("{xp}", String(diff));
 
           toast({
@@ -4940,63 +5223,143 @@ export default function App() {
 
   const CEFR_LEVEL_INFO = {
     "Pre-A1": {
-      name: { en: "Ultimate Beginner", es: "Principiante Total" },
+      name: {
+        en: "Ultimate Beginner",
+        es: "Principiante Total",
+        pt: "Iniciante absoluto",
+        it: "Principiante assoluto",
+        fr: "Grand debutant",
+        zh: "零基础入门",
+      },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
       description: {
         en: "First words and recognition",
         es: "Primeras palabras y reconocimiento",
+        pt: "Primeiras palavras e reconhecimento",
+        it: "Prime parole e riconoscimento",
+        fr: "Premiers mots et reconnaissance",
+        zh: "最初的词语与识别",
       },
     },
     A1: {
-      name: { en: "Beginner", es: "Principiante" },
+      name: {
+        en: "Beginner",
+        es: "Principiante",
+        pt: "Iniciante",
+        it: "Principiante",
+        fr: "Debutant",
+        zh: "初学者",
+      },
       color: "#3B82F6",
       gradient: "linear(135deg, #60A5FA, #3B82F6)",
       description: {
         en: "Basic survival language",
         es: "Lenguaje básico de supervivencia",
+        pt: "Linguagem básica de sobrevivência",
+        it: "Lingua essenziale di base",
+        fr: "Langue essentielle de base",
+        zh: "基础生存语言",
       },
     },
     A2: {
-      name: { en: "Elementary", es: "Elemental" },
+      name: {
+        en: "Elementary",
+        es: "Elemental",
+        pt: "Elementar",
+        it: "Elementare",
+        fr: "Elementaire",
+        zh: "初级",
+      },
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
       description: {
         en: "Simple everyday communication",
         es: "Comunicación cotidiana simple",
+        pt: "Comunicação cotidiana simples",
+        it: "Comunicazione quotidiana semplice",
+        fr: "Communication simple du quotidien",
+        zh: "简单日常交流",
       },
     },
     B1: {
-      name: { en: "Intermediate", es: "Intermedio" },
+      name: {
+        en: "Intermediate",
+        es: "Intermedio",
+        pt: "Intermediário",
+        it: "Intermedio",
+        fr: "Intermediaire",
+        zh: "中级",
+      },
       color: "#A855F7",
       gradient: "linear(135deg, #C084FC, #A855F7)",
       description: {
         en: "Handle everyday situations",
         es: "Manejo de situaciones cotidianas",
+        pt: "Lidar com situações do dia a dia",
+        it: "Gestire situazioni quotidiane",
+        fr: "Gerer les situations quotidiennes",
+        zh: "应对日常情境",
       },
     },
     B2: {
-      name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+      name: {
+        en: "Upper Intermediate",
+        es: "Intermedio Alto",
+        pt: "Intermediário avançado",
+        it: "Intermedio alto",
+        fr: "Intermediaire avance",
+        zh: "中高级",
+      },
       color: "#F97316",
       gradient: "linear(135deg, #FB923C, #F97316)",
-      description: { en: "Complex discussions", es: "Discusiones complejas" },
+      description: {
+        en: "Complex discussions",
+        es: "Discusiones complejas",
+        pt: "Discussões complexas",
+        it: "Discussioni complesse",
+        fr: "Discussions complexes",
+        zh: "复杂讨论",
+      },
     },
     C1: {
-      name: { en: "Advanced", es: "Avanzado" },
+      name: {
+        en: "Advanced",
+        es: "Avanzado",
+        pt: "Avançado",
+        it: "Avanzato",
+        fr: "Avance",
+        zh: "高级",
+      },
       color: "#EF4444",
       gradient: "linear(135deg, #F87171, #EF4444)",
       description: {
         en: "Sophisticated language use",
         es: "Uso sofisticado del idioma",
+        pt: "Uso sofisticado do idioma",
+        it: "Uso sofisticato della lingua",
+        fr: "Usage sophistique de la langue",
+        zh: "成熟精细的语言运用",
       },
     },
     C2: {
-      name: { en: "Mastery", es: "Maestría" },
+      name: {
+        en: "Mastery",
+        es: "Maestría",
+        pt: "Domínio",
+        it: "Padronanza",
+        fr: "Maitrise",
+        zh: "精通",
+      },
       color: "#EC4899",
       gradient: "linear(135deg, #F472B6, #EC4899)",
       description: {
         en: "Near-native proficiency",
         es: "Competencia casi nativa",
+        pt: "Proficiência quase nativa",
+        it: "Competenza quasi nativa",
+        fr: "Competence quasi native",
+        zh: "接近母语水平",
       },
     },
   };
@@ -5704,8 +6067,6 @@ export default function App() {
     );
   }
 
-  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const isSubscriptionRoute = location.pathname.startsWith("/subscribe");
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
@@ -5729,9 +6090,9 @@ export default function App() {
     );
   }
 
-  if (isOnboardingRoute) {
-    return <Navigate to="/" replace />;
-  }
+  // When onboarding completes, the route may still be /onboarding for one
+  // paint. Render the app immediately and let the effect above replace the
+  // URL, avoiding a blank Navigate-only frame on mobile.
 
   if (isSubscriptionRoute) {
     if (!needsSubscriptionPasscode) {
@@ -5815,6 +6176,8 @@ export default function App() {
           testSound={submitActionSound}
           isMobile={isMobile}
           postNostrContent={postNostrContent}
+          onSupportLangChange={onSupportLangChange}
+          pendingLangRef={pendingLangRef}
         />
       )}
 
@@ -6207,6 +6570,7 @@ export default function App() {
         isRunning={isTimerRunning}
         helper={null}
         t={t}
+        lang={appLanguage}
         useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
@@ -6257,7 +6621,11 @@ export default function App() {
           <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
             {t.timer_times_up_title || "Time's up!"}
           </ModalHeader>
-          <ModalCloseButton color="white" />
+          <ModalCloseButton
+            color="white"
+            left={appLanguage === "ar" ? 3 : undefined}
+            right={appLanguage === "ar" ? "auto" : undefined}
+          />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
             <VStack spacing={5} textAlign="center">
               <Box
@@ -6334,14 +6702,28 @@ export default function App() {
             <VStack spacing={{ base: 4, md: 5 }} textAlign="center">
               <VStack spacing={2}>
                 <Text fontSize={{ base: "2xl", md: "3xl" }} fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Meta diaria alcanzada!"
-                    : "Daily Goal Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Daily Goal Complete!",
+                    es: "¡Meta diaria alcanzada!",
+                    it: "Obiettivo giornaliero raggiunto!",
+                    fr: "Objectif quotidien atteint !",
+                    ja: "デイリー目標達成！",
+                    hi: "दैनिक लक्ष्य पूरा हुआ!",
+                    ar: "الهدف اليومي اكتمل!",
+                    zh: "每日目标已完成！",
+                  })}
                 </Text>
                 <Text fontSize={{ base: "md", md: "lg" }} opacity={0.9}>
-                  {appLanguage === "es"
-                    ? "Alcanzaste tu objetivo de XP de hoy."
-                    : "You hit today’s XP target."}
+                  {uiCopy(appLanguage, {
+                    en: "You hit today’s XP target.",
+                    es: "Alcanzaste tu objetivo de XP de hoy.",
+                    it: "Hai raggiunto il tuo obiettivo XP di oggi.",
+                    fr: "Tu as atteint ton objectif XP d'aujourd'hui.",
+                    ja: "今日のXP目標を達成しました。",
+                    hi: "आपने आज का XP लक्ष्य पूरा कर लिया।",
+                    ar: "حققت هدف XP بتاع النهارده.",
+                    zh: "你已达成今天的 XP 目标。",
+                  })}
                 </Text>
               </VStack>
 
@@ -6358,7 +6740,16 @@ export default function App() {
                   <HStack spacing={6} justify="center">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "es" ? "Meta" : "Goal"}
+                        {uiCopy(appLanguage, {
+                          en: "Goal",
+                          es: "Meta",
+                          it: "Obiettivo",
+                          fr: "Objectif",
+                          ja: "目標",
+                          hi: "लक्ष्य",
+                          ar: "الهدف",
+                          zh: "目标",
+                        })}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -6366,9 +6757,16 @@ export default function App() {
                     </VStack>
                   </HStack>
                   <Text fontSize="sm" opacity={0.85}>
-                    {appLanguage === "es"
-                      ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
-                      : "Keep the streak going and come back tomorrow for a new goal!"}
+                    {uiCopy(appLanguage, {
+                      en: "Keep the streak going and come back tomorrow for a new goal!",
+                      es: "¡Sigue la racha y vuelve mañana para un nuevo objetivo!",
+                      it: "Mantieni la serie e torna domani per un nuovo obiettivo!",
+                      fr: "Garde la serie et reviens demain pour un nouvel objectif !",
+                      ja: "連続記録を続けて、明日また新しい目標に挑戦しましょう！",
+                      hi: "अपनी श्रृंखला बनाए रखें और नए लक्ष्य के लिए कल फिर आएँ!",
+                      ar: "كمّل السلسلة وارجع بكرة لهدف جديد!",
+                      zh: "保持连续学习，明天回来挑战新目标！",
+                    })}
                   </Text>
                 </VStack>
               </Box>
@@ -6391,7 +6789,17 @@ export default function App() {
                 fontSize={{ base: "md", md: "lg" }}
                 py={{ base: 5, md: 6 }}
               >
-                {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
+                {uiCopy(appLanguage, {
+                  en: "Keep learning",
+                  es: "Seguir practicando",
+                  pt: "Continuar aprendendo",
+                  it: "Continua ad imparare",
+                  fr: "Continuer a apprendre",
+                  ja: "学習を続ける",
+                  hi: "सीखना जारी रखें",
+                  ar: "كمّل تعلّم",
+                  zh: "继续学习",
+                })}
               </Button>
             </VStack>
           </ModalBody>
@@ -6436,9 +6844,17 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Lección Completada!"
-                    : "Lesson Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Lesson Complete!",
+                    es: "¡Lección Completada!",
+                    pt: "Lição concluída!",
+                    it: "Lezione Completata!",
+                    fr: "Lecon terminee !",
+                    ja: "レッスン完了！",
+                    hi: "पाठ पूरा हुआ!",
+                    ar: "الدرس اكتمل!",
+                    zh: "课程完成！",
+                  })}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {completedLessonData?.title?.[appLanguage] ||
@@ -6463,15 +6879,33 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
+                    {uiCopy(appLanguage, {
+                      en: "XP Earned",
+                      es: "XP Ganado",
+                      pt: "XP ganho",
+                      it: "XP Guadagnato",
+                      fr: "XP gagne",
+                      ja: "獲得XP",
+                      hi: "प्राप्त XP",
+                      ar: "XP المكتسبة",
+                      zh: "获得的 XP",
+                    })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "es"
-                      ? "Puntos de Experiencia"
-                      : "Experience Points"}
+                    {uiCopy(appLanguage, {
+                      en: "Experience Points",
+                      es: "Puntos de Experiencia",
+                      pt: "Pontos de experiência",
+                      it: "Punti Esperienza",
+                      fr: "Points d'experience",
+                      ja: "経験値",
+                      hi: "अनुभव अंक",
+                      ar: "نقاط الخبرة",
+                      zh: "经验值",
+                    })}
                   </Text>
                 </VStack>
               </Box>
@@ -6489,7 +6923,17 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "es" ? "Continuar" : "Continue"}
+                {uiCopy(appLanguage, {
+                  en: "Continue",
+                  es: "Continuar",
+                  pt: "Continuar",
+                  it: "Continua",
+                  fr: "Continuer",
+                  ja: "続ける",
+                  hi: "जारी रखें",
+                  ar: "كمّل",
+                  zh: "继续",
+                })}
               </Button>
             </VStack>
           </ModalBody>
@@ -6529,17 +6973,22 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Nivel Completado!"
-                    : "Level Complete!"}
+                  {uiCopy(appLanguage, {
+                    en: "Level Complete!",
+                    es: "¡Nivel Completado!",
+                    it: "Livello completato!",
+                    fr: "Niveau termine !",
+                    ja: "レベル完了！",
+                    hi: "स्तर पूरा हुआ!",
+                    zh: "等级完成！",
+                  })}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
                   {completedProficiencyData?.level} -{" "}
-                  {
-                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
-                      appLanguage
-                    ]
-                  }
+                  {CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
+                    appLanguage
+                  ] ||
+                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name.en}
                 </Text>
               </VStack>
 
@@ -6555,18 +7004,38 @@ export default function App() {
               >
                 <VStack spacing={3}>
                   <Text fontSize="lg" fontWeight="bold">
-                    {appLanguage === "es"
-                      ? "¡Felicitaciones!"
-                      : "Congratulations!"}
+                    {uiCopy(appLanguage, {
+                      en: "Congratulations!",
+                      es: "¡Felicitaciones!",
+                      it: "Congratulazioni!",
+                      fr: "Felicitations !",
+                      ja: "おめでとうございます！",
+                      hi: "बधाई हो!",
+                      zh: "恭喜！",
+                    })}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
                     {completedProficiencyData?.nextLevel
-                      ? appLanguage === "es"
-                        ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
-                        : `You've unlocked level ${completedProficiencyData.nextLevel}`
-                      : appLanguage === "es"
-                        ? "¡Has completado todos los niveles!"
-                        : "You've completed all levels!"}
+                      ? uiCopy(appLanguage, {
+                          en: `You've unlocked level ${completedProficiencyData.nextLevel}`,
+                          es: `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`,
+                          pt: `Você desbloqueou o nível ${completedProficiencyData.nextLevel}`,
+                          it: `Hai sbloccato il livello ${completedProficiencyData.nextLevel}`,
+                          fr: `Tu as debloque le niveau ${completedProficiencyData.nextLevel}`,
+                          ja: `レベル${completedProficiencyData.nextLevel}が開放されました`,
+                          hi: `आपने स्तर ${completedProficiencyData.nextLevel} खोल लिया है`,
+                          zh: `你已解锁等级 ${completedProficiencyData.nextLevel}`,
+                        })
+                      : uiCopy(appLanguage, {
+                          en: "You've completed all levels!",
+                          es: "¡Has completado todos los niveles!",
+                          pt: "Você concluiu todos os níveis!",
+                          it: "Hai completato tutti i livelli!",
+                          fr: "Tu as termine tous les niveaux !",
+                          ja: "すべてのレベルを完了しました！",
+                          hi: "आपने सभी स्तर पूरे कर लिए हैं!",
+                          zh: "你已完成所有等级！",
+                        })}
                   </Text>
                 </VStack>
               </Box>
@@ -6590,12 +7059,26 @@ export default function App() {
                 py={6}
               >
                 {completedProficiencyData?.nextLevel
-                  ? appLanguage === "es"
-                    ? "Ir al Siguiente Nivel"
-                    : "Go to Next Level"
-                  : appLanguage === "es"
-                    ? "Continuar"
-                    : "Continue"}
+                  ? uiCopy(appLanguage, {
+                      en: "Go to Next Level",
+                      es: "Ir al Siguiente Nivel",
+                      pt: "Ir para o próximo nível",
+                      it: "Vai al livello successivo",
+                      fr: "Aller au niveau suivant",
+                      ja: "次のレベルへ",
+                      hi: "अगले स्तर पर जाएँ",
+                      zh: "前往下一等级",
+                    })
+                  : uiCopy(appLanguage, {
+                      en: "Continue",
+                      es: "Continuar",
+                      pt: "Continuar",
+                      it: "Continua",
+                      fr: "Continuer",
+                      ja: "続ける",
+                      hi: "जारी रखें",
+                      zh: "继续",
+                    })}
               </Button>
             </VStack>
           </ModalBody>
@@ -6638,11 +7121,21 @@ function BottomActionBar({
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
   const helpChatLabel =
-    helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
+    helpLabel ||
+    t?.app_help_chat ||
+    uiCopy(appLanguage, { en: "Help", es: "Ayuda", it: "Aiuto", ja: "ヘルプ" });
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const tasksLabel =
-    appLanguage === "es" ? "Práctica de inmersión" : "Immersion practice";
-  const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
+    t?.real_world_tasks_title ||
+    uiCopy(appLanguage, {
+      en: "Immersion practice",
+      es: "Práctica de inmersión",
+      it: "Pratica di immersione",
+      ja: "イマージョン練習",
+    });
+  const notesLabel =
+    t?.app_notes ||
+    uiCopy(appLanguage, { en: "Notes", es: "Notas", it: "Note", ja: "ノート" });
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -6666,24 +7159,52 @@ function BottomActionBar({
       ? [
           {
             id: "alphabet",
-            label: appLanguage === "es" ? "Alfabeto" : "Alphabet",
+            label:
+              t?.app_mode_alphabet ||
+              uiCopy(appLanguage, {
+                en: "Alphabet",
+                es: "Alfabeto",
+                it: "Alfabeto",
+                ja: "文字",
+              }),
             icon: LuLanguages,
           },
         ]
       : []),
     {
       id: "path",
-      label: appLanguage === "es" ? "Ruta" : "Path",
+      label:
+        t?.app_mode_path ||
+        uiCopy(appLanguage, {
+          en: "Path",
+          es: "Ruta",
+          it: "Percorso",
+          ja: "学習パス",
+        }),
       icon: PiPath,
     },
     {
       id: "flashcards",
-      label: appLanguage === "es" ? "Tarjetas" : "Cards",
+      label:
+        t?.app_mode_cards ||
+        uiCopy(appLanguage, {
+          en: "Cards",
+          es: "Tarjetas",
+          it: "Schede",
+          ja: "カード",
+        }),
       icon: PiCardsBold,
     },
     {
       id: "conversations",
-      label: appLanguage === "es" ? "Conversación" : "Conversation",
+      label:
+        t?.app_mode_conversation ||
+        uiCopy(appLanguage, {
+          en: "Conversation",
+          es: "Conversación",
+          it: "Conversazione",
+          ja: "会話",
+        }),
       icon: RiChat3Line,
     },
   ];
@@ -6691,7 +7212,14 @@ function BottomActionBar({
   const currentMode =
     PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
-  const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
+  const modeMenuLabel =
+    t?.app_mode_menu ||
+    uiCopy(appLanguage, {
+      en: "Mode",
+      es: "Modo",
+      it: "Modalità",
+      ja: "モード",
+    });
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
@@ -6830,7 +7358,7 @@ function BottomActionBar({
         >
           <ChevronUpIcon boxSize={4} color="gray.300" />
           <Box as="span" fontSize="xs" color="gray.400" fontWeight="medium">
-            Menu
+            {modeMenuLabel}
           </Box>
         </Box>
       </Box>
@@ -7108,6 +7636,17 @@ function BottomActionBar({
                 bg="white"
                 color="blue"
                 boxShadow="0 4px 0 blue"
+                _hover={{
+                  bg: "rgba(255, 255, 255, 0.92)",
+                  color: "blue.500",
+                  boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
+                }}
+                _active={{
+                  bg: "rgba(255, 255, 255, 0.78)",
+                  color: "blue.600",
+                  boxShadow: "none",
+                  transform: "translateY(4px)",
+                }}
                 zIndex={50}
                 flexShrink={0}
               />

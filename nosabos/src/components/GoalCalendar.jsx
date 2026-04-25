@@ -6,6 +6,10 @@ import selectSound from "../assets/select.mp3";
 
 const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const WEEKDAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const WEEKDAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
+const WEEKDAYS_AR = ["ح", "ن", "ث", "ر", "خ", "ج", "س"];
+const WEEKDAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
 
 const MONTHS_EN = [
   "January", "February", "March", "April", "May", "June",
@@ -14,6 +18,22 @@ const MONTHS_EN = [
 const MONTHS_ES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+const MONTHS_PT = [
+  "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+const MONTHS_JA = [
+  "1月", "2月", "3月", "4月", "5月", "6月",
+  "7月", "8月", "9月", "10月", "11月", "12月"
+];
+const MONTHS_AR = [
+  "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
+];
+const MONTHS_ZH = [
+  "一月", "二月", "三月", "四月", "五月", "六月",
+  "七月", "八月", "九月", "十月", "十一月", "十二月"
 ];
 
 // Gradient for completed days
@@ -70,8 +90,30 @@ export default function GoalCalendar({
   const displayYear = year ?? today.getFullYear();
   const displayMonth = month ?? today.getMonth();
 
-  const weekdays = lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
-  const months = lang === "es" ? MONTHS_ES : MONTHS_EN;
+  const weekdays =
+    lang === "ja"
+      ? WEEKDAYS_JA
+      : lang === "zh"
+        ? WEEKDAYS_ZH
+      : lang === "ar"
+        ? WEEKDAYS_AR
+      : lang === "pt"
+        ? WEEKDAYS_PT
+        : lang === "es"
+          ? WEEKDAYS_ES
+          : WEEKDAYS_EN;
+  const months =
+    lang === "ja"
+      ? MONTHS_JA
+      : lang === "zh"
+        ? MONTHS_ZH
+      : lang === "ar"
+        ? MONTHS_AR
+      : lang === "pt"
+        ? MONTHS_PT
+        : lang === "es"
+          ? MONTHS_ES
+          : MONTHS_EN;
 
   // Parse startDate if provided
   const goalStartDate = useMemo(() => {
@@ -179,7 +221,17 @@ export default function GoalCalendar({
             colorScheme={colors.navButtonScheme}
             color={colors.headerText}
             onClick={handlePrevMonth}
-            aria-label={lang === "es" ? "Mes anterior" : "Previous month"}
+            aria-label={
+              lang === "ja"
+                ? "前の月"
+                : lang === "zh"
+                ? "上个月"
+                : lang === "pt"
+                ? "Mes anterior"
+                : lang === "es"
+                ? "Mes anterior"
+                : "Previous month"
+            }
           />
         ) : (
           <Box w="32px" />
@@ -201,7 +253,17 @@ export default function GoalCalendar({
             colorScheme={colors.navButtonScheme}
             color={colors.headerText}
             onClick={handleNextMonth}
-            aria-label={lang === "es" ? "Mes siguiente" : "Next month"}
+            aria-label={
+              lang === "ja"
+                ? "次の月"
+                : lang === "zh"
+                ? "下个月"
+                : lang === "pt"
+                ? "Proximo mes"
+                : lang === "es"
+                ? "Mes siguiente"
+                : "Next month"
+            }
           />
         ) : (
           <Box w="32px" />
@@ -284,13 +346,31 @@ export default function GoalCalendar({
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={COMPLETED_GRADIENT_LEGEND} />
           <Text fontSize="xs" color={colors.legendText}>
-            {completedLabel || (lang === "es" ? "Completado" : "Completed")}
+            {completedLabel ||
+              (lang === "ja"
+                ? "完了"
+                : lang === "zh"
+                ? "已完成"
+                : lang === "pt"
+                ? "Concluido"
+                : lang === "es"
+                ? "Completado"
+                : "Completed")}
           </Text>
         </HStack>
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={colors.legendIncompleteBg} />
           <Text fontSize="xs" color={colors.legendText}>
-            {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
+            {incompleteLabel ||
+              (lang === "ja"
+                ? "未完了"
+                : lang === "zh"
+                ? "未完成"
+                : lang === "pt"
+                ? "Pendente"
+                : lang === "es"
+                ? "Pendiente"
+                : "Incomplete")}
           </Text>
         </HStack>
         <HStack spacing={1}>
@@ -303,7 +383,15 @@ export default function GoalCalendar({
             borderColor={colors.todayBorder}
           />
           <Text fontSize="xs" color={colors.legendText}>
-            {lang === "es" ? "Hoy" : "Today"}
+            {lang === "ja"
+              ? "今日"
+              : lang === "zh"
+                ? "今天"
+              : lang === "pt"
+                ? "Hoje"
+                : lang === "es"
+                  ? "Hoy"
+                  : "Today"}
           </Text>
         </HStack>
       </HStack>

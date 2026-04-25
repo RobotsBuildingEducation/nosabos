@@ -13,6 +13,11 @@ import {
   HStack,
   Input,
   Link,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -21,7 +26,6 @@ import {
   ModalHeader,
   ModalOverlay,
   Stack,
-  Switch,
   Text,
   IconButton,
   useDisclosure,
@@ -52,6 +56,11 @@ import { analytics, database } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
+import {
+  getLanguageDirection,
+  getSupportLanguageOptions,
+} from "../constants/languages";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
@@ -129,78 +138,343 @@ const LINKS_PAPER_PAGE_SX = {
   },
 };
 
-const ThemeModeToggle = ({ themeMode, onModeChange }) => {
-  const modes = [
-    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
-    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
-  ];
+const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
+  en: {
+    bg:
+      "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
+    canton: "#3c3b6e",
+  },
+  es: {
+    bg: "linear-gradient(90deg, #006847 0 33.33%, #fff 33.33% 66.66%, #ce1126 66.66% 100%)",
+    emblem: "#c79a2b",
+  },
+  pt: {
+    bg: "#009b3a",
+    diamond: "#ffdf00",
+    orb: "#002776",
+    band: "rgba(255,255,255,0.92)",
+  },
+  fr: {
+    bg: "linear-gradient(90deg, #0055a4 0 33.33%, #fff 33.33% 66.66%, #ef4135 66.66% 100%)",
+  },
+  it: {
+    bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
+  },
+  hi: {
+    bg: "linear-gradient(180deg, #ff9933 0 33.33%, #fff 33.33% 66.66%, #138808 66.66% 100%)",
+    chakra: "#1a4ba0",
+    chakraSize: "10px",
+  },
+  zh: {
+    bg: "#de2910",
+    emblem: "#ffde00",
+    emblemSize: "10px",
+  },
+  ja: {
+    bg: "linear-gradient(180deg, #ffffff 0%, #ffffff 100%)",
+    emblem: "#bc002d",
+    emblemSize: "12px",
+  },
+  ar: {
+    bg: "linear-gradient(180deg, #ce1126 0 33.33%, #ffffff 33.33% 66.66%, #000000 66.66% 100%)",
+    emblem: "#c9a227",
+    emblemSize: "10px",
+  },
+};
+
+const getTopControlProps = (isLightTheme) => ({
+  bg: "transparent",
+  color: isLightTheme ? "#33291f" : "rgba(255, 255, 255, 0.92)",
+  borderColor: isLightTheme
+    ? "rgba(77, 58, 36, 0.34)"
+    : "rgba(148, 163, 184, 0.26)",
+  boxShadow: isLightTheme ? "none" : "0 10px 24px rgba(0, 0, 0, 0.22)",
+  backdropFilter: "blur(20px)",
+  _hover: {
+    bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "rgba(255, 255, 255, 0.07)",
+  },
+  _active: {
+    bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "rgba(255, 255, 255, 0.1)",
+  },
+});
+
+const SupportLanguageFlagSwatch = ({ value }) => {
+  const flag = SUPPORT_LANGUAGE_FLAG_SWATCHES[value] || SUPPORT_LANGUAGE_FLAG_SWATCHES.en;
 
   return (
     <Box
-      style={{
-        position: "fixed",
-        top: "18px",
-        right: "16px",
-        left: "auto",
-        bottom: "auto",
-        width: "fit-content",
-        maxWidth: "calc(100vw - 32px)",
-        zIndex: 120,
+      as="span"
+      aria-hidden="true"
+      display="inline-flex"
+      position="relative"
+      w="24px"
+      h="24px"
+      flexShrink={0}
+      overflow="hidden"
+      rounded="full"
+      bg={flag.bg}
+      boxShadow="0 0 0 1px rgba(15,23,42,0.16), inset 0 0 0 1px rgba(255,255,255,0.16)"
+      _before={
+        flag.canton
+          ? {
+              content: '""',
+              position: "absolute",
+              top: 0,
+              left: 0,
+              w: "52%",
+              h: "54%",
+              bg: flag.canton,
+            }
+          : undefined
+      }
+      _after={
+        flag.emblem && !flag.orb
+          ? {
+              content: '""',
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              w: flag.emblemSize || "4px",
+              h: flag.emblemSize || "4px",
+              rounded: "full",
+              bg: flag.emblem,
+              transform: "translate(-50%, -50%)",
+            }
+          : undefined
+      }
+    >
+      {flag.diamond ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="66%"
+          h="66%"
+          bg={flag.diamond}
+          transform="translate(-50%, -50%) rotate(45deg)"
+          borderRadius="sm"
+        />
+      ) : null}
+      {flag.orb ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="44%"
+          h="44%"
+          bg={flag.orb}
+          borderRadius="full"
+          transform="translate(-50%, -50%)"
+          overflow="hidden"
+        >
+          {flag.band ? (
+            <Box
+              as="span"
+              position="absolute"
+              top="52%"
+              left="50%"
+              w="135%"
+              h="2px"
+              bg={flag.band}
+              transform="translate(-50%, -50%) rotate(14deg)"
+              opacity={0.95}
+            />
+          ) : null}
+        </Box>
+      ) : null}
+      {flag.chakra ? (
+        <Box
+          as="span"
+          position="absolute"
+          top="50%"
+          left="50%"
+          w={flag.chakraSize || "10px"}
+          h={flag.chakraSize || "10px"}
+          transform="translate(-50%, -50%)"
+          borderRadius="full"
+          border="1px solid"
+          borderColor={flag.chakra}
+          bg="rgba(255,255,255,0.92)"
+          backgroundImage={[
+            "linear-gradient(90deg, transparent 47%, var(--chakra-wheel-color) 47% 53%, transparent 53%)",
+            "linear-gradient(0deg, transparent 47%, var(--chakra-wheel-color) 47% 53%, transparent 53%)",
+            "linear-gradient(45deg, transparent 48%, var(--chakra-wheel-color) 48% 52%, transparent 52%)",
+            "linear-gradient(-45deg, transparent 48%, var(--chakra-wheel-color) 48% 52%, transparent 52%)",
+          ].join(", ")}
+          sx={{ "--chakra-wheel-color": flag.chakra }}
+        >
+          <Box
+            as="span"
+            position="absolute"
+            top="50%"
+            left="50%"
+            w="2px"
+            h="2px"
+            borderRadius="full"
+            bg={flag.chakra}
+            transform="translate(-50%, -50%)"
+          />
+        </Box>
+      ) : null}
+    </Box>
+  );
+};
+
+const LanguageFlagIcon = ({ option, value }) => {
+  const renderedFlag = option?.renderFlag?.() || option?.flag;
+
+  return (
+    <Box
+      as="span"
+      aria-hidden="true"
+      display="inline-flex"
+      alignItems="center"
+      justifyContent="center"
+      w="24px"
+      h="24px"
+      flexShrink={0}
+      sx={{
+        "& svg": {
+          display: "block",
+          width: "24px",
+          height: "24px",
+        },
       }}
     >
-      <HStack
-        spacing="3px"
-        p="3px"
-        rounded="full"
-        bg={APP_SURFACE_ELEVATED}
-        border="1px solid"
-        borderColor={APP_BORDER}
-        boxShadow={APP_SHADOW}
-        backdropFilter="blur(20px)"
-        display="inline-flex"
-        width="fit-content"
-        flexShrink={0}
-      >
-        {modes.map((mode) => {
-          const isActive = themeMode === mode.id;
-          return (
-            <IconButton
-              key={mode.id}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={mode.label}
-              title={mode.label}
-              onClick={() => onModeChange(mode.id)}
-              icon={mode.icon}
-              size="sm"
-              minW="34px"
-              h="34px"
-              rounded="full"
-              border="none"
-              bg={
-                isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : "transparent"
-              }
-              color={isActive ? "#ffffff" : APP_TEXT_SECONDARY}
-              boxShadow={
-                isActive ? "0 8px 18px rgba(20, 184, 166, 0.18)" : "none"
-              }
-              _hover={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-              _active={{
-                bg: isActive
-                  ? "linear-gradient(135deg, #14b8a6 0%, #3b82f6 100%)"
-                  : APP_SURFACE_MUTED,
-              }}
-            />
-          );
-        })}
-      </HStack>
+      {renderedFlag || <SupportLanguageFlagSwatch value={value || option?.value} />}
     </Box>
+  );
+};
+
+const LanguageMenuFixed = ({
+  language,
+  onSelect,
+  playSound,
+  translations,
+  isLightTheme = false,
+}) => {
+  const activeLanguage = language || "en";
+  const menuDirection = getLanguageDirection(activeLanguage);
+  const topControlProps = getTopControlProps(isLightTheme);
+  const langOptions = getSupportLanguageOptions({
+    ui: translations,
+    uiLang: activeLanguage,
+  });
+  const selected =
+    langOptions.find((o) => o.value === activeLanguage) ||
+    langOptions.find((o) => o.value === "en") ||
+    langOptions[0];
+
+  return (
+    <Box>
+      <Menu placement="bottom-start">
+        <MenuButton
+          as={Button}
+          type="button"
+          aria-label={`Select language${selected?.label ? `: ${selected.label}` : ""}`}
+          size="sm"
+          minW="40px"
+          w="40px"
+          h="40px"
+          p={0}
+          lineHeight="1"
+          rounded="full"
+          border="1px solid"
+          {...topControlProps}
+        >
+          <LanguageFlagIcon option={selected} value={activeLanguage} />
+        </MenuButton>
+        <MenuList
+          dir={menuDirection}
+          bg={APP_SURFACE_ELEVATED}
+          borderColor={APP_BORDER}
+          boxShadow={APP_SHADOW}
+          minW="160px"
+          maxH="300px"
+          overflowY="auto"
+          py={1}
+          zIndex={122}
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: APP_SURFACE,
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: APP_BORDER_STRONG,
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: APP_TEXT_MUTED,
+            },
+          }}
+        >
+          <MenuOptionGroup
+            value={activeLanguage}
+            type="radio"
+            onChange={(val) => {
+              playSound?.();
+              onSelect(val);
+            }}
+          >
+            {langOptions.map((opt) => (
+              <MenuItemOption
+                key={opt.value}
+                value={opt.value}
+                bg="transparent"
+                _hover={{ bg: APP_SURFACE_MUTED }}
+                _checked={{ fontWeight: "bold" }}
+                fontSize="sm"
+                fontFamily="monospace"
+              >
+                <HStack
+                  spacing={2}
+                  justify="flex-start"
+                >
+                  <LanguageFlagIcon option={opt} value={opt.value} />
+                  <Text
+                    color={APP_TEXT_PRIMARY}
+                    textAlign={menuDirection === "rtl" ? "right" : "left"}
+                    flex="1"
+                    sx={{ unicodeBidi: "plaintext" }}
+                  >
+                    {opt.label}
+                  </Text>
+                </HStack>
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
+    </Box>
+  );
+};
+
+const ThemeModeToggle = ({ themeMode, onModeChange }) => {
+  const isDark = themeMode === "dark";
+  const isLightTheme = !isDark;
+  const topControlProps = getTopControlProps(isLightTheme);
+  const nextMode = isDark ? "light" : "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+
+  return (
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => onModeChange(nextMode)}
+      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
+      size="sm"
+      minW="40px"
+      h="40px"
+      rounded="full"
+      border="1px solid"
+      {...topControlProps}
+    />
   );
 };
 
@@ -363,12 +637,14 @@ function LinkCard({
   launchAppText,
   secondaryAction,
   isLightTheme = false,
+  textDirection = "ltr",
 }) {
   const primaryActionColor = isLightTheme ? "#0f766e" : "#00ffff";
   const secondaryActionColor =
     isLightTheme && secondaryAction?.color === "#4da3ff"
       ? "#1d4ed8"
       : secondaryAction?.color || "#4da3ff";
+  const descriptionAlign = textDirection === "rtl" ? "right" : "left";
 
   const primaryActionProps = onLaunch
     ? {
@@ -455,7 +731,9 @@ function LinkCard({
             fontSize={{ base: "xs", md: "md" }}
             maxW="520px"
             fontFamily="monospace"
-            textAlign={"left"}
+            dir={textDirection}
+            textAlign={descriptionAlign}
+            sx={{ unicodeBidi: "plaintext" }}
           >
             {description}
           </Text>
@@ -539,8 +817,12 @@ export default function LinksPage() {
   const isLightTheme = themeMode === "light";
 
   // Language state
-  const { language, initLanguage, toggleLanguage, t } = useLanguage();
+  const { language, initLanguage, setLanguage, t } = useLanguage();
   const translations = t(linksPageTranslations);
+  const activeLanguage = language || "en";
+  const pageDirection = getLanguageDirection(activeLanguage);
+  const isRtl = pageDirection === "rtl";
+  const directionalTextAlign = isRtl ? "right" : "left";
   const [npub, setNpub] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [usernameInput, setUsernameInput] = useState("");
@@ -676,6 +958,10 @@ export default function LinksPage() {
   useEffect(() => {
     initLanguage();
   }, [initLanguage]);
+
+  useEffect(() => {
+    syncDocumentLanguage(language);
+  }, [language]);
 
   // Load stored npub, displayName, and profilePicture
   useEffect(() => {
@@ -1151,6 +1437,7 @@ export default function LinksPage() {
 
   return (
     <Box
+      dir={pageDirection}
       minH="100dvh"
       bg={isLightTheme ? APP_PAGE_BG : "rgba(7,16,29)"}
       color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
@@ -1164,11 +1451,6 @@ export default function LinksPage() {
       }}
     >
       <RetroStarfield isLightTheme={isLightTheme} />
-      <ThemeModeToggle
-        themeMode={themeMode}
-        onModeChange={handleThemeModeChange}
-      />
-
       <Container
         maxW="container.md"
         position="relative"
@@ -1177,6 +1459,27 @@ export default function LinksPage() {
         pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
+          {/* Top bar: language menu left, theme toggle right */}
+          <Box
+            w="100%"
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+            px={{ base: 3, sm: 4, md: 0 }}
+            pt={{ base: 3, md: 1 }}
+          >
+            <LanguageMenuFixed
+              language={language}
+              onSelect={setLanguage}
+              playSound={handleSelectSound}
+              translations={translations}
+              isLightTheme={isLightTheme}
+            />
+            <ThemeModeToggle
+              themeMode={themeMode}
+              onModeChange={handleThemeModeChange}
+            />
+          </Box>
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
             <Box
@@ -1257,53 +1560,16 @@ export default function LinksPage() {
             </Button>
           </HStack>
 
-          {/* Language Toggle */}
-          <HStack
-            spacing={3}
-            justify="center"
-            bg="transparent"
-            px={4}
-            py={2}
-            borderRadius="md"
-            mb={4}
-          >
-            <Text
-              fontSize="sm"
-              color={language === "en" ? primaryAccent : helperColor}
-              fontWeight={language === "en" ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.english}
-            </Text>
-            <Switch
-              isChecked={language === "es"}
-              onChange={() => {
-                handleSelectSound();
-                toggleLanguage();
-              }}
-              colorScheme="cyan"
-              size="md"
-            />
-            <Text
-              fontSize="sm"
-              color={language === "es" ? primaryAccent : helperColor}
-              fontWeight={language === "es" ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.spanish}
-            </Text>
-          </HStack>
         </VStack>
 
         {/* Links List */}
-        <VStack spacing={6} w="100%">
+        <VStack spacing={6} w="100%" mt={6}>
           {links.map((link) => (
             <LinkCard
               key={link.title}
               {...link}
               isLightTheme={isLightTheme}
+              textDirection={pageDirection}
               onLaunchSound={handleSubmitActionSound}
               onLaunchEvent={() => {
                 if (!isLocalhost() && !link.onLaunch) {
@@ -1380,6 +1646,7 @@ export default function LinksPage() {
       <Modal isOpen={isRbeOpen} onClose={onRbeClose} isCentered size="md">
         <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
+          dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
@@ -1392,17 +1659,25 @@ export default function LinksPage() {
             borderBottom="1px solid"
             borderColor={modalBorderSoft}
             color={modalHeadingColor}
+            textAlign={directionalTextAlign}
           >
             {translations.rbeModalTitle}
           </ModalHeader>
           <ModalCloseButton
             color={modalHeadingColor}
             onClick={handleSelectSound}
+            left={isRtl ? 3 : undefined}
+            right={isRtl ? "auto" : undefined}
             _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
           />
           <ModalBody py={6}>
             <VStack spacing={4} align="stretch">
-              <Text fontSize="sm" color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}>
+              <Text
+                fontSize="sm"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                textAlign={directionalTextAlign}
+                sx={{ unicodeBidi: "plaintext" }}
+              >
                 {translations.rbeModalDescription}
               </Text>
               <Button
@@ -1456,6 +1731,7 @@ export default function LinksPage() {
           <ModalFooter
             borderTop="1px solid"
             borderColor={modalBorderSoft}
+            justifyContent={isRtl ? "flex-start" : "flex-end"}
           >
             <Button
               onClick={() => {
@@ -1482,6 +1758,7 @@ export default function LinksPage() {
       >
         <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
+          dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
@@ -1500,22 +1777,26 @@ export default function LinksPage() {
             borderBottom="1px solid"
             borderColor={modalBorderSoft}
             color={modalHeadingColor}
+            textAlign={directionalTextAlign}
           >
             {translations.customizeProfileTitle}
           </ModalHeader>
           <ModalCloseButton
             color={modalHeadingColor}
             onClick={handleSelectSound}
+            left={isRtl ? 3 : undefined}
+            right={isRtl ? "auto" : undefined}
             _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
           />
           <ModalBody py={6} overflowY="auto" sx={modalScrollSx}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
                   {translations.username}
                 </Text>
                 <Input
+                  dir={pageDirection}
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
                   placeholder={translations.enterUsername}
@@ -1535,10 +1816,11 @@ export default function LinksPage() {
 
               {/* Profile Picture Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
                   {translations.profilePictureUrl}
                 </Text>
                 <Input
+                  dir="ltr"
                   value={profilePictureUrlInput}
                   onChange={(e) => setProfilePictureUrlInput(e.target.value)}
                   placeholder={translations.profilePicturePlaceholder}
@@ -1581,7 +1863,7 @@ export default function LinksPage() {
 
               {/* Secret Key Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2}>
+                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
                   {translations.secretKey}
                 </Text>
                 <Button
@@ -1602,7 +1884,7 @@ export default function LinksPage() {
                 >
                   {translations.copySecretKey}
                 </Button>
-                <Text fontSize="xs" color={helperColor} mt={2}>
+                <Text fontSize="xs" color={helperColor} mt={2} textAlign={directionalTextAlign}>
                   {translations.secretKeyWarning}
                 </Text>
               </Box>
@@ -1610,7 +1892,7 @@ export default function LinksPage() {
               <Accordion allowToggle>
                 <AccordionItem border="none">
                   <AccordionButton px={0} _hover={{ bg: "transparent" }}>
-                    <Box flex="1" textAlign="left">
+                    <Box flex="1" textAlign={directionalTextAlign}>
                       <Text fontSize="sm" color={labelColor}>
                         {translations.switchAccount}
                       </Text>
@@ -1620,6 +1902,7 @@ export default function LinksPage() {
                   <AccordionPanel px={0} pt={3}>
                     <VStack spacing={3} align="stretch">
                       <Input
+                        dir="ltr"
                         value={nsecInput}
                         onChange={(e) => setNsecInput(e.target.value)}
                         placeholder={translations.pasteNsec}
@@ -1657,7 +1940,7 @@ export default function LinksPage() {
                       >
                         {translations.switchAccount}
                       </Button>
-                      <Text fontSize="xs" color={helperColor}>
+                      <Text fontSize="xs" color={helperColor} textAlign={directionalTextAlign}>
                         {translations.switchAccountHelp}
                       </Text>
                     </VStack>
@@ -1674,15 +1957,21 @@ export default function LinksPage() {
                 border="1px solid"
                 borderColor={walletAccent}
               >
-                <Text fontSize="sm" color={walletAccent} fontWeight="bold" mb={3}>
+                <Text
+                  fontSize="sm"
+                  color={walletAccent}
+                  fontWeight="bold"
+                  mb={3}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.bitcoinWallet}
                 </Text>
 
-                <Text fontSize="xs" color={labelColor} mb={4}>
+                <Text fontSize="xs" color={labelColor} mb={4} textAlign={directionalTextAlign}>
                   {translations.walletDescription1}
                 </Text>
 
-                <Text fontSize="xs" color={labelColor} mb={4}>
+                <Text fontSize="xs" color={labelColor} mb={4} textAlign={directionalTextAlign}>
                   {translations.walletDescription2}
                 </Text>
 
@@ -1724,20 +2013,25 @@ export default function LinksPage() {
                             : "rgba(255, 0, 255, 0.3)"
                         }
                       >
-                        <HStack mb={2}>
+                        <HStack
+                          mb={2}
+                          justify="flex-start"
+                        >
                           <FaKey color={secondaryAccent} />
                           <Text
                             fontSize="sm"
                             fontWeight="semibold"
                             color={secondaryAccent}
+                            textAlign={directionalTextAlign}
                           >
                             {translations.secretKeyRequired}
                           </Text>
                         </HStack>
-                        <Text fontSize="xs" color={labelColor} mb={3}>
+                        <Text fontSize="xs" color={labelColor} mb={3} textAlign={directionalTextAlign}>
                           {translations.nip07Warning}
                         </Text>
                         <Input
+                          dir="ltr"
                           type="password"
                           value={nsecForWallet}
                           onChange={(e) => setNsecForWallet(e.target.value)}
@@ -1757,6 +2051,7 @@ export default function LinksPage() {
                         <Text
                           fontSize="xs"
                           color={isLightTheme ? "#92400e" : "orange.300"}
+                          textAlign={directionalTextAlign}
                         >
                           {translations.keyNotStored}
                         </Text>
@@ -1938,6 +2233,7 @@ export default function LinksPage() {
           <ModalFooter
             borderTop="1px solid"
             borderColor={modalBorderSoft}
+            justifyContent={isRtl ? "flex-start" : "flex-end"}
           >
             <Button
               onClick={() => {
@@ -1964,6 +2260,7 @@ export default function LinksPage() {
       >
         <ModalOverlay bg={modalOverlayBg} />
         <ModalContent
+          dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"
@@ -1982,12 +2279,15 @@ export default function LinksPage() {
             borderBottom="1px solid"
             borderColor={modalBorderSoft}
             color={modalHeadingColor}
+            textAlign={directionalTextAlign}
           >
             {translations.aboutTitle}
           </ModalHeader>
           <ModalCloseButton
             color={modalHeadingColor}
             onClick={handleSelectSound}
+            left={isRtl ? 3 : undefined}
+            right={isRtl ? "auto" : undefined}
             _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
           />
           <ModalBody py={6} overflowY="auto" sx={modalScrollSx}>
@@ -2002,9 +2302,13 @@ export default function LinksPage() {
                 fontSize="sm"
                 lineHeight="tall"
                 mt={"-6"}
+                dir={pageDirection}
+                textAlign={directionalTextAlign}
                 sx={{
                   "& p": {
                     marginBottom: "12px",
+                    textAlign: directionalTextAlign,
+                    unicodeBidi: "plaintext",
                   },
                   "& span": {
                     fontWeight: 600,
@@ -2021,6 +2325,7 @@ export default function LinksPage() {
           <ModalFooter
             borderTop="1px solid"
             borderColor={modalBorderSoft}
+            justifyContent={isRtl ? "flex-start" : "flex-end"}
           >
             <Button
               onClick={() => {

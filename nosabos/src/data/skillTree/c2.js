@@ -2,7 +2,28 @@
  * C2 Level Skill Tree Data
  */
 
-export const SKILL_TREE_C2 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
+import { withHindiSkillTreeText } from "./hindiLocalizer.js";
+import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./portugueseLocalizer.js";
+import { withArabicSkillTreeText } from "./arabicLocalizer.js";
+import { withChineseSkillTreeText } from "./chineseLocalizer.js";
+
+const withLocalizedSkillTreeText = (skillTree) =>
+  withArabicSkillTreeText(
+    withChineseSkillTreeText(
+      withHindiSkillTreeText(
+        withJapaneseSkillTreeText(
+          withFrenchSkillTreeText(
+            withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const SKILL_TREE_C2 = withLocalizedSkillTreeText([
   {
     id: "unit-c2-1",
     title: {
@@ -1090,7 +1111,7 @@ export const SKILL_TREE_C2 = [
         },
       },],
   }
-];
+]);
 
 const SUB_LEVEL_SEGMENTS = {
   A1: ["A1.1", "A1.2", "A1.3"],
@@ -1579,7 +1600,13 @@ function applyCEFRScaffolding(path) {
   return stagedPath;
 }
 
-const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+const baseLearningPath = {
+  C2: SKILL_TREE_C2,
+};
+
+const cefrAlignedLearningPath = withLocalizedSkillTreeText(
+  applyCEFRScaffolding(baseLearningPath),
+);
 
 const SUPPORTED_TARGET_LANGS = new Set([
   "en",

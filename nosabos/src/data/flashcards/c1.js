@@ -3,7 +3,28 @@
  * Total: 100 flashcards
  */
 
-export const FLASHCARDS_C1 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARDS_C1 = withLocalizedFlashcardText([
   {
     id: "c1-vocab-1",
     concept: { en: "Comprehend", es: "Comprender" },
@@ -776,4 +797,4 @@ export const FLASHCARDS_C1 = [
     category: "subtle",
     type: "phrase",
   }
-];
+]);

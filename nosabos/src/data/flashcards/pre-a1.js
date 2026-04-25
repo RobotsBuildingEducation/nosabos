@@ -6,7 +6,28 @@
  * Focus on recognition, single words, and survival basics.
  */
 
-export const FLASHCARDS_PRE_A1 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARDS_PRE_A1 = withLocalizedFlashcardText([
   // ============================================
   // Category 1: People & Family (12 flashcards)
   // ============================================
@@ -742,4 +763,4 @@ export const FLASHCARDS_PRE_A1 = [
     category: "foundations",
     type: "word",
   },
-];
+]);

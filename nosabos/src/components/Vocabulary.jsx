@@ -87,6 +87,14 @@ import {
   getQuestionToolButtonProps,
   questionAssistantText,
 } from "./questionUiStyles";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -99,6 +107,24 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
+function getLanguageInputProps(lang) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    textAlign: dir === "rtl" ? "right" : "left",
+  };
+}
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -169,7 +195,7 @@ function buildFallbackDistractors(words = [], answerLang = "en") {
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -193,9 +219,12 @@ const LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
+    zh: "Mandarin Chinese",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -236,33 +265,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
@@ -289,12 +304,8 @@ function vocabDifficulty(cefrLevel) {
 --------------------------- */
 const resolveSupportLang = (supportLang, appUILang) =>
   supportLang === "bilingual"
-    ? appUILang === "es"
-      ? "es"
-      : "en"
-    : supportLang === "es"
-      ? "es"
-      : "en";
+    ? normalizeSupportLanguage(appUILang, DEFAULT_SUPPORT_LANGUAGE)
+    : normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
 
 /* ---------------------------
    Anti-repetition helper
@@ -1143,47 +1154,44 @@ export default function Vocabulary({
           pct: lessonProgressPct,
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
-          label:
-            userLanguage === "es"
-              ? "Progreso de la lección"
-              : "Lesson progress",
+          label: t("vocab_lesson_progress"),
         }
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = [
-    "en",
-    "es",
-    "pt",
-    "nah",
-    "fr",
-    "it",
-    "nl",
-    "ja",
-    "ru",
-    "de",
-    "el",
-    "pl",
-    "ga",
-    "yua",
-  ].includes(progress.targetLang)
-    ? progress.targetLang
-    : "en";
-  const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
-    ? progress.supportLang
-    : "en";
+  const targetLang = normalizePracticeLanguage(
+    progress.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
+  const supportLang =
+    progress.supportLang === "bilingual"
+      ? "bilingual"
+      : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations =
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
       : true;
   const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetTextCenterProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "center" }),
+    [targetLang],
+  );
+  const targetInputProps = useMemo(
+    () => getLanguageInputProps(targetLang),
+    [targetLang],
+  );
 
   // UI language labels
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
       es: t("language_es"),
+      ar: t("language_ar"),
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
@@ -1241,9 +1249,13 @@ export default function Vocabulary({
     toast({
       title:
         t("copied_to_clipboard_all") ||
-        (userLanguage === "es"
-          ? "Copiado (pregunta + pista + traducción)"
-          : "Copied (question + hint + translation)"),
+        (userLanguage === "pt"
+          ? "Copiado (pergunta + dica + traducao)"
+          : userLanguage === "ar"
+            ? "اتنسخ (السؤال + التلميح + الترجمة)"
+          : userLanguage === "es"
+            ? "Copiado (pregunta + pista + traducción)"
+            : "Copied (question + hint + translation)"),
       duration: 1200,
       isClosable: true,
       position: "top",
@@ -1254,10 +1266,10 @@ export default function Vocabulary({
     const lines = [];
     if (q?.trim()) lines.push(q.trim());
     if (h?.trim())
-      lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
+      lines.push((t("vocab_speak_hint_label") + ": ") + h.trim());
     if (tr?.trim())
       lines.push(
-        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim(),
+        (t("vocab_speak_translation_label") + ": ") + tr.trim(),
       );
     return lines.join("\n");
   }
@@ -1345,19 +1357,12 @@ export default function Vocabulary({
           input: prompt,
         });
         setAssistantSupportText(
-          response ||
-            (userLanguage === "es"
-              ? "No se pudo generar una respuesta en este momento."
-              : "Could not generate a response at this time."),
+          response || t("vocab_assistant_error"),
         );
       }
     } catch (error) {
       console.error("Failed to generate assistant support:", error);
-      setAssistantSupportText(
-        userLanguage === "es"
-          ? "No se pudo generar una respuesta en este momento."
-          : "Could not generate a response at this time.",
-      );
+      setAssistantSupportText(t("vocab_assistant_error"));
     } finally {
       setIsLoadingAssistantSupport(false);
     }
@@ -1426,7 +1431,10 @@ export default function Vocabulary({
 
       // Get the prompt template based on question type and user language
       const getLangPrompt = (type) => {
-        const langKey = userLanguage === "es" ? "es" : "en";
+        const langKey = normalizeSupportLanguage(
+          userLanguage,
+          DEFAULT_SUPPORT_LANGUAGE,
+        );
         const prompts = {
           en: {
             fill: `You are a helpful language tutor teaching ${targetName}. A student answered a fill-in-the-blank question incorrectly.
@@ -1570,8 +1578,70 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
           },
+          ja: {
+            fill: `あなたは${targetName}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解（またはヒント）: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その答えが合わない理由、または誤解している点
+2. 正しい答えとその意味
+3. 覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            mc: `あなたは${targetName}を教える親切な語学チューターです。学習者が選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. その選択が間違いだった理由
+2. 正解が正しい理由
+3. 違いを覚えるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            ma: `あなたは${targetName}を教える親切な語学チューターです。学習者が複数選択問題に間違えて答えました。
+
+問題: ${question}
+学習者の答え: ${userAnswer}
+正解: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、次を含めてください。
+1. 選び忘れた答え、または誤って選んだ答え
+2. 正解が正しい理由
+3. 正しい答えを見分けるための役立つコツ
+
+簡潔で前向きに、学習に集中してください。回答全体を${supportName}で書いてください。`,
+            speak: `あなたは${targetName}を教える親切な語学チューターです。学習者が${targetName}で発話しようとしましたが、正しく理解されませんでした。
+
+目標フレーズ: ${correctAnswer}
+学習者の発話: ${userAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、発音や言い方の問題、正しい発音のコツ、再挑戦への励ましを含めてください。回答全体を${supportName}で書いてください。`,
+            match: `あなたは${targetName}を教える親切な語学チューターです。学習者がマッチング問題で誤った組み合わせをしました。
+
+問題: ${question}
+学習者の組み合わせ: ${userAnswer}
+ヒント: ${correctAnswer}
+
+重要: 説明は${supportName}で書いてください。
+
+短く励ましになる説明（2〜3文）で、違っていた組み合わせ、正しい関係、覚えるコツを含めてください。回答全体を${supportName}で書いてください。`,
+          },
         };
-        return prompts[langKey][type] || prompts[langKey].fill;
+        const promptSet = prompts[langKey] || prompts.en;
+        return promptSet[type] || promptSet.fill;
       };
 
       const prompt = getLangPrompt(questionType);
@@ -1607,19 +1677,12 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           input: prompt,
         });
         setExplanationText(
-          explanation ||
-            (userLanguage === "es"
-              ? "No se pudo generar una explicación en este momento."
-              : "Could not generate an explanation at this time."),
+          explanation || t("vocab_explanation_error"),
         );
       }
     } catch (error) {
       console.error("Failed to generate explanation:", error);
-      setExplanationText(
-        userLanguage === "es"
-          ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time.",
-      );
+      setExplanationText(t("vocab_explanation_error"));
     } finally {
       setIsLoadingExplanation(false);
     }
@@ -1697,10 +1760,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
-        title:
-          userLanguage === "es"
-            ? "Error al crear nota"
-            : "Could not create note",
+        title: t("vocab_create_note_error"),
         status: "error",
         duration: 2500,
       });
@@ -3262,7 +3322,12 @@ Return JSON ONLY:
           fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
         setSVariant(normalizeSpeakVariant(fallbackVariant));
         if (fallbackVariant === "translate") {
-          const supportWord = supportCode === "es" ? "bosque" : "forest";
+          const supportWord =
+            supportCode === "ja"
+              ? "森"
+              : supportCode === "es"
+              ? "bosque"
+              : "forest";
           setSStimulus(supportWord);
           setSTarget(
             targetLang === "es"
@@ -3279,13 +3344,17 @@ Return JSON ONLY:
                 : `Translate aloud: ${supportWord}.`,
           );
           setSHint(
-            supportCode === "es"
+            supportCode === "ja"
+              ? "目標言語で言いましょう"
+              : supportCode === "es"
               ? "Di la versión en español"
               : "Say it in the target language",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "森"
+                : supportCode === "es"
                 ? "bosque"
                 : "forest"
               : "",
@@ -3313,13 +3382,17 @@ Return JSON ONLY:
                 : "Say the full sentence with the missing word.",
           );
           setSHint(
-            supportCode === "es"
+            supportCode === "ja"
+              ? "動詞は「歌う」です"
+              : supportCode === "es"
               ? "El verbo es 'cantar'"
               : "The verb is 'to sing'",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "女の子が歌を歌います。"
+                : supportCode === "es"
                 ? "La niña canta una canción."
                 : "The girl sings a song."
               : "",
@@ -3341,11 +3414,17 @@ Return JSON ONLY:
                 : "Say this word out loud: harmony.",
           );
           setSHint(
-            supportCode === "es" ? "significa felicidad" : "means happiness",
+            supportCode === "ja"
+              ? "幸せという意味です"
+              : supportCode === "es"
+              ? "significa felicidad"
+              : "means happiness",
           );
           setSTranslation(
             showTranslations
-              ? supportCode === "es"
+              ? supportCode === "ja"
+                ? "調和"
+                : supportCode === "es"
                 ? "sonrisa"
                 : "harmony"
               : "",
@@ -4026,12 +4105,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       if (!sTarget) return;
       if (error) {
         toast({
-          title:
-            userLanguage === "es" ? "No se pudo evaluar" : "Could not evaluate",
-          description:
-            userLanguage === "es"
-              ? "Vuelve a intentarlo con una conexión estable."
-              : "Please try again with a stable connection.",
+          title: t("flashcard_eval_error_title"),
+          description: t("flashcard_eval_error_desc"),
           status: "error",
           duration: 2500,
         });
@@ -4093,7 +4168,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         });
         const retryTitle =
           t("vocab_speak_retry_title") ||
-          (userLanguage === "es" ? "Intenta otra vez" : "Try again");
+          (userLanguage === "pt"
+            ? "Tente novamente"
+            : userLanguage === "es"
+              ? "Intenta otra vez"
+              : "Try again");
         toast({
           title: retryTitle,
           description: tips.join(" "),
@@ -4211,27 +4290,75 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const sendMatchHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
-      isSpanishUI
+      isJapaneseUI
+        ? "単語マッチング練習です。単語を単語バンクの選択肢と組み合わせて答えてください。"
+        : isArabicUI
+        ? "تمرين توصيل كلمات. جاوب بوصل الكلمات باختيارات بنك الكلمات."
+        : isChineseUI
+        ? "这是单词配对练习。请把单词与词库中的正确选项配对作答。"
+        : isPortugueseUI
+        ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
+        : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
         : "Match the words exercise. Respond by matching the words with the word bank options.",
       mStem
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `指示: ${mStem}`
+          : isArabicUI
+          ? `التعليمات: ${mStem}`
+          : isChineseUI
+          ? `说明：${mStem}`
+          : isPortugueseUI
+          ? `Instrucao: ${mStem}`
+          : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
         : null,
       mLeft.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `左の列: ${mLeft.join(" | ")}`
+          : isArabicUI
+          ? `العمود الشمال: ${mLeft.join(" | ")}`
+          : isChineseUI
+          ? `左侧栏：${mLeft.join(" | ")}`
+          : isPortugueseUI
+          ? `Coluna esquerda: ${mLeft.join(" | ")}`
+          : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
         : null,
       mRight.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `単語バンク: ${mRight.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${mRight.join(" | ")}`
+          : isChineseUI
+          ? `词库：${mRight.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${mRight.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
         : null,
-      mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
+      mHint
+        ? isJapaneseUI
+          ? `ヒント: ${mHint}`
+          : isArabicUI
+          ? `تلميح: ${mHint}`
+          : isChineseUI
+          ? `提示：${mHint}`
+          : isPortugueseUI
+            ? `Dica: ${mHint}`
+          : isSpanishUI
+            ? `Pista: ${mHint}`
+            : `Hint: ${mHint}`
+        : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
   }, [
@@ -4246,35 +4373,99 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const sendSpeakHelp = useCallback(() => {
     if (isLoadingAssistantSupport || assistantSupportText) return;
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const base =
       sVariant === "translate"
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? "声に出して言う（翻訳）。与えられた単語を練習言語に翻訳して答えてください。"
+          : isArabicUI
+          ? "قلها بصوت عالي (ترجمة). قول ترجمة الكلمة دي بلغة التدرّب."
+          : isChineseUI
+          ? "大声说出来（翻译）。请说出给定单词在练习语言中的翻译。"
+          : isPortugueseUI
+          ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
+          : isSpanishUI
           ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
           : "Say it aloud (translate). Provide the target language translation for the given word."
-        : isSpanishUI
+        : isJapaneseUI
+          ? "声に出して言う（完成）。学習者が欠けている単語を入れて文全体を言えるよう助けてください。"
+          : isArabicUI
+          ? "قلها بصوت عالي (إكمال). ساعد المتعلّم يقول الجملة كاملة بالكلمة الناقصة."
+          : isChineseUI
+          ? "大声说出来（补全）。请帮助学习者用缺失的词说完整句子。"
+          : isPortugueseUI
+          ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
+          : isSpanishUI
           ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
           : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
 
     const details = [
       sPrompt
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `指示: ${sPrompt}`
+          : isArabicUI
+          ? `التعليمات: ${sPrompt}`
+          : isChineseUI
+          ? `说明：${sPrompt}`
+          : isPortugueseUI
+          ? `Instrucao: ${sPrompt}`
+          : isSpanishUI
           ? `Consigna o indicación: ${sPrompt}`
           : `Prompt: ${sPrompt}`
         : null,
       sStimulus
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `学習者に表示: ${sStimulus}`
+          : isArabicUI
+          ? `المعروض للمتعلّم: ${sStimulus}`
+          : isChineseUI
+          ? `学习者看到的内容：${sStimulus}`
+          : isPortugueseUI
+          ? `Mostrado ao aluno: ${sStimulus}`
+          : isSpanishUI
           ? `Mostrado al estudiante: ${sStimulus}`
           : `Shown to learner: ${sStimulus}`
         : null,
       sTarget
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `期待される発話答え: ${sTarget}`
+          : isArabicUI
+          ? `الإجابة المنطوقة المتوقعة: ${sTarget}`
+          : isChineseUI
+          ? `预期口头答案：${sTarget}`
+          : isPortugueseUI
+          ? `Resposta falada esperada: ${sTarget}`
+          : isSpanishUI
           ? `Respuesta hablada esperada: ${sTarget}`
           : `Expected spoken answer: ${sTarget}`
         : null,
-      sHint ? (isSpanishUI ? `Pista: ${sHint}` : `Hint: ${sHint}`) : null,
+      sHint
+        ? isJapaneseUI
+          ? `ヒント: ${sHint}`
+          : isArabicUI
+          ? `تلميح: ${sHint}`
+          : isChineseUI
+          ? `提示：${sHint}`
+          : isPortugueseUI
+            ? `Dica: ${sHint}`
+          : isSpanishUI
+            ? `Pista: ${sHint}`
+            : `Hint: ${sHint}`
+        : null,
       sTranslation
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `サポート翻訳/文脈: ${sTranslation}`
+          : isArabicUI
+          ? `ترجمة أو سياق مساعد: ${sTranslation}`
+          : isChineseUI
+          ? `辅助翻译/上下文：${sTranslation}`
+          : isPortugueseUI
+          ? `Traducao ou contexto de apoio: ${sTranslation}`
+          : isSpanishUI
           ? `Traducción o contexto de apoyo: ${sTranslation}`
           : `Support translation/context: ${sTranslation}`
         : null,
@@ -4315,20 +4506,36 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       case "translate":
         return (
           t("vocab_speak_variant_translate") ||
-          (userLanguage === "es" ? "Traduce la palabra" : "Translate the word")
+          (userLanguage === "pt"
+            ? "Traduza a palavra"
+            : userLanguage === "ar"
+              ? "ترجم الكلمة"
+            : userLanguage === "es"
+              ? "Traduce la palabra"
+              : "Translate the word")
         );
       case "complete":
         return (
           t("vocab_speak_variant_complete") ||
-          (userLanguage === "es"
-            ? "Completa la oración"
-            : "Complete the sentence")
+          (userLanguage === "pt"
+            ? "Complete a frase"
+            : userLanguage === "ar"
+              ? "كمّل الجملة"
+            : userLanguage === "es"
+              ? "Completa la oración"
+              : "Complete the sentence")
         );
       case "repeat":
       default:
         return (
           t("vocab_speak_variant_repeat") ||
-          (userLanguage === "es" ? "Pronuncia la palabra" : "Speak the word")
+          (userLanguage === "pt"
+            ? "Fale a palavra"
+            : userLanguage === "ar"
+              ? "قل الكلمة"
+            : userLanguage === "es"
+              ? "Pronuncia la palabra"
+              : "Speak the word")
         );
     }
   }, [sVariant, t, userLanguage]);
@@ -4353,7 +4560,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     if (!has) return null;
     return (
       <IconButton
-        aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
+        aria-label={t("vocab_ask_assistant")}
         icon={
           isLoadingAssistantSupport ? (
             <VoiceOrb
@@ -4390,7 +4597,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         <HStack spacing={2} mb={2}>
           <MdOutlineSupportAgent color={questionAssistantText.accent} />
           <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-            {userLanguage === "es" ? "Asistente" : "Assistant"}
+            {t("vocab_assistant")}
           </Text>
           {isLoadingAssistantSupport && (
             <VoiceOrb
@@ -4406,7 +4613,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           color={APP_TEXT_PRIMARY}
           lineHeight="1.6"
           sx={{
-            "& p": { mb: 2 },
+            "& p": { mb: 2, unicodeBidi: "plaintext" },
             "& p:last-child": { mb: 0 },
             "& strong": {
               fontWeight: "bold",
@@ -4414,7 +4621,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             },
             "& em": { fontStyle: "italic" },
             "& ul, & ol": { pl: 4, mb: 2 },
-            "& li": { mb: 1 },
+            "& li": { mb: 1, unicodeBidi: "plaintext" },
             "& code": {
               bg: APP_SURFACE,
               px: 1,
@@ -4432,9 +4639,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const dragPlaceholderLabel =
     t("practice_drag_drop_slot_placeholder") ||
-    (userLanguage === "es"
-      ? "Suelta la respuesta aquí"
-      : "Drop the answer here");
+    (userLanguage === "pt"
+      ? "Solte a resposta aqui"
+      : userLanguage === "ar"
+        ? "حط الإجابة هنا"
+      : userLanguage === "es"
+        ? "Suelta la respuesta aquí"
+        : "Drop the answer here");
 
   const renderMcPrompt = () => {
     if (!qMC) return null;
@@ -4660,21 +4871,48 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const nextLabel =
     t("practice_next_question") ||
-    (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
+    (userLanguage === "pt"
+      ? "Proxima pergunta"
+      : userLanguage === "ar"
+        ? "السؤال التالي"
+      : userLanguage === "es"
+        ? "Siguiente pregunta"
+        : "Next question");
+  const translatedSkipLabel = t("practice_skip_question");
   const skipLabel =
-    t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
+    translatedSkipLabel &&
+    translatedSkipLabel !== "practice_skip_question"
+      ? translatedSkipLabel
+      : userLanguage === "ar"
+        ? "تخطي"
+      : userLanguage === "pt"
+        ? "Pular"
+        : userLanguage === "es"
+          ? "Saltar"
+          : "Skip";
   const canSkip = !isFinalQuiz && !quizCompleted;
   const showNextButton = isFinalQuiz
     ? Boolean(nextAction)
     : Boolean(lastOk === true && nextAction);
-  const questionListenLabel =
-    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
-  const speakListenLabel =
-    userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+  const questionListenLabel = t("vocab_listen_question");
+  const speakListenLabel = t("vocab_listen_example");
   const synthLabel =
     t("tts_synthesizing") ||
-    (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
+    (userLanguage === "pt"
+      ? "Sintetizando..."
+      : userLanguage === "ar"
+        ? "جارٍ التركيب..."
+      : userLanguage === "es"
+        ? "Sintetizando..."
+        : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
+  const isTranslateTargetToSupport = tDirection === "target-to-support";
+  const translateSourceLang = isTranslateTargetToSupport
+    ? targetLang
+    : supportCode;
+  const translateAnswerLang = isTranslateTargetToSupport
+    ? supportCode
+    : targetLang;
 
   const createWarmAudio = useCallback(async () => {
     try {
@@ -4963,7 +5201,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
-                    {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                    {t("vocab_final_quiz")}
                   </Badge>
                   <Badge
                     colorScheme={
@@ -5039,9 +5277,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </HStack>
 
                 <Text fontSize="xs" color="gray.400" textAlign="center">
-                  {userLanguage === "es"
-                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
-                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                  {t("vocab_quiz_score_failed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
                 </Text>
               </VStack>
             ) : (
@@ -5061,9 +5297,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
-              {userLanguage === "es"
-                ? "Completa el espacio"
-                : "Fill in the blank"}
+              {t("vocab_btn_fill")}
             </Text>
             <Box
               bg={APP_SURFACE_ELEVATED}
@@ -5099,6 +5333,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...targetTextProps}
                   >
                     {qFill || (loadingQFill ? "…" : "")}
                   </Text>
@@ -5114,6 +5349,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               placeholder={t("vocab_input_placeholder_word")}
               isDisabled={loadingGFill}
               fontSize="16px"
+              {...targetInputProps}
             />
 
             {showKeyboard && showKeyboardButton && (
@@ -5140,13 +5376,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   px={{ base: 4, md: 6 }}
                   py={{ base: 3, md: 4 }}
                 >
-                  {showKeyboard
-                    ? userLanguage === "es"
-                      ? "Cerrar teclado"
-                      : "Close keyboard"
-                    : userLanguage === "es"
-                      ? "Abrir teclado"
-                      : "Open keyboard"}
+                  {showKeyboard ? t("history_keyboard_close") : t("history_keyboard_open")}
                 </Button>
               )}
               {canSkip && (
@@ -5210,9 +5440,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
-              {userLanguage === "es"
-                ? "Elige la respuesta correcta"
-                : "Choose the correct answer"}
+              {t("vocab_mc_instruction")}
             </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
@@ -5247,6 +5475,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
@@ -5300,7 +5529,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5351,6 +5583,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMC || (loadingQMC ? "…" : "")}
                       </Text>
@@ -5401,7 +5634,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             <Box w="8px" h="8px" rounded="full" bg="white" />
                           )}
                         </Box>
-                        <Text flex="1" fontSize="md">
+                        <Text flex="1" fontSize="md" {...targetTextProps}>
                           {c}
                         </Text>
                       </HStack>
@@ -5480,9 +5713,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
-              {userLanguage === "es"
-                ? "Selecciona todas las respuestas correctas"
-                : "Select all correct answers"}
+              {t("vocab_ma_instruction")}
             </Text>
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
@@ -5517,6 +5748,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           fontWeight="medium"
                           flex="1"
                           lineHeight="tall"
+                          {...targetTextProps}
                         >
                           {renderMaPrompt() || (loadingQMA ? "…" : "")}
                         </Text>
@@ -5570,7 +5802,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
-                                textAlign="left"
+                                textAlign={targetTextProps.textAlign}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
+                                sx={{ unicodeBidi: "plaintext" }}
                                 _hover={{
                                   bg: APP_SURFACE_MUTED,
                                   borderColor: "purple.200",
@@ -5621,6 +5856,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         fontWeight="medium"
                         flex="1"
                         lineHeight="tall"
+                        {...targetTextProps}
                       >
                         {qMA || (loadingQMA ? "…" : "")}
                       </Text>
@@ -5683,7 +5919,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                               </Text>
                             )}
                           </Box>
-                          <Text flex="1" fontSize="md">
+                          <Text flex="1" fontSize="md" {...targetTextProps}>
                             {c}
                           </Text>
                         </HStack>
@@ -5764,13 +6000,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           <>
             <HStack justify="space-between" align="center" mb={2}>
               <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
-                {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+                {t("vocab_say_it_aloud")}
               </Text>
               {sVariant === "translate" || sVariant === "complete" ? (
                 <IconButton
-                  aria-label={
-                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
-                  }
+                  aria-label={t("vocab_ask_assistant")}
                   icon={
                     isLoadingAssistantSupport ? (
                       <VoiceOrb
@@ -5800,9 +6034,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Box textAlign="center" py={12}>
                 <VoiceOrb />
                 <Text mt={4} fontSize="sm" opacity={0.7}>
-                  {userLanguage === "es"
-                    ? "Generando pregunta..."
-                    : "Generating question..."}
+                  {t("history_generating_question")}
                 </Text>
               </Box>
             ) : (
@@ -5833,7 +6065,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     })}
                   />
 
-                  <Text fontSize="3xl" fontWeight="700">
+                  <Text
+                    fontSize="3xl"
+                    fontWeight="700"
+                    {...targetTextCenterProps}
+                  >
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
@@ -5844,7 +6080,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Text fontSize="sm" mt={3} color="teal.200">
                 <Text as="span" fontWeight="600">
                   {t("vocab_speak_last_heard") ||
-                    (userLanguage === "es" ? "Último intento" : "Last attempt")}
+                    (userLanguage === "pt"
+                      ? "Ultima tentativa"
+                      : userLanguage === "ar"
+                        ? "آخر محاولة"
+                      : userLanguage === "es"
+                        ? "Último intento"
+                        : "Last attempt")}
                   :
                 </Text>{" "}
                 {sRecognized}
@@ -5916,39 +6158,28 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       toast({
                         title:
                           t("vocab_speak_unavailable") ||
-                          (userLanguage === "es"
-                            ? "Reconocimiento de voz no disponible"
-                            : "Speech recognition unavailable"),
-                        description:
-                          userLanguage === "es"
-                            ? "Usa un navegador Chromium con acceso al micrófono."
-                            : "Use a Chromium-based browser with microphone access.",
+                          (userLanguage === "pt"
+                            ? "Reconhecimento de voz indisponivel"
+                            : userLanguage === "ar"
+                              ? "التعرّف على الصوت غير متاح"
+                            : userLanguage === "es"
+                              ? "Reconocimiento de voz no disponible"
+                              : "Speech recognition unavailable"),
+                        description: t("flashcard_speech_unavailable_desc"),
                         status: "warning",
                         duration: 3200,
                       });
                     } else if (code === "mic-denied") {
                       toast({
-                        title:
-                          userLanguage === "es"
-                            ? "Permiso de micrófono denegado"
-                            : "Microphone denied",
-                        description:
-                          userLanguage === "es"
-                            ? "Activa el micrófono en la configuración del navegador."
-                            : "Enable microphone access in your browser settings.",
+                        title: t("flashcard_mic_denied_title"),
+                        description: t("flashcard_mic_denied_desc"),
                         status: "error",
                         duration: 3200,
                       });
                     } else {
                       toast({
-                        title:
-                          userLanguage === "es"
-                            ? "No se pudo iniciar la grabación"
-                            : "Recording failed",
-                        description:
-                          userLanguage === "es"
-                            ? "Inténtalo nuevamente."
-                            : "Please try again.",
+                        title: t("vocab_recording_failed"),
+                        description: t("vocab_recording_failed_desc"),
                         status: "error",
                         duration: 2500,
                       });
@@ -5968,14 +6199,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 }
               >
                 {isSpeakConnecting
-                  ? userLanguage === "es"
-                    ? "Conectando..."
-                    : "Connecting..."
+                  ? t("vocab_connecting")
                   : isSpeakRecording
                     ? t("vocab_speak_stop") ||
-                      (userLanguage === "es" ? "Detener" : "Stop")
+                      (userLanguage === "pt"
+                        ? "Parar"
+                        : userLanguage === "ar"
+                          ? "إيقاف"
+                        : userLanguage === "es"
+                          ? "Detener"
+                          : "Stop")
                     : t("vocab_speak_record") ||
-                      (userLanguage === "es" ? "Grabar" : "Record")}
+                      (userLanguage === "pt"
+                        ? "Gravar"
+                        : userLanguage === "ar"
+                          ? "سجّل"
+                        : userLanguage === "es"
+                          ? "Grabar"
+                          : "Record")}
               </Button>
             </Stack>
 
@@ -6000,16 +6241,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <SpeakSuccessCard
                 title={
                   t("vocab_speak_success_title") ||
-                  (userLanguage === "es"
-                    ? "¡Gran pronunciación!"
-                    : "Great pronunciation!")
+                  (userLanguage === "pt"
+                    ? "Otima pronunciacao!"
+                    : userLanguage === "ar"
+                      ? "نطق ممتاز!"
+                    : userLanguage === "es"
+                      ? "¡Gran pronunciación!"
+                      : "Great pronunciation!")
                 }
                 scoreLabel={
                   sEval
                     ? t("vocab_speak_success_desc", { score: sEval.score }) ||
-                      (userLanguage === "es"
-                        ? `Puntaje ${sEval.score}%`
-                        : `Score ${sEval.score}%`)
+                      (userLanguage === "pt"
+                        ? `Pontuacao ${sEval.score}%`
+                        : userLanguage === "ar"
+                          ? `النتيجة ${sEval.score}%`
+                        : userLanguage === "es"
+                          ? `Puntaje ${sEval.score}%`
+                          : `Score ${sEval.score}%`)
                     : ""
                 }
                 xp={recentXp}
@@ -6047,14 +6296,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               {/* Header */}
               <HStack justify="space-between" align="center" mb={2}>
                 <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
-                  {userLanguage === "es"
-                    ? "Empareja las palabras"
-                    : "Match the words"}
+                  {t("vocab_match_instruction")}
                 </Text>
                 <IconButton
-                  aria-label={
-                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
-                  }
+                  aria-label={t("vocab_ask_assistant")}
                   icon={
                     isLoadingAssistantSupport ? (
                       <VoiceOrb
@@ -6105,11 +6350,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         flexShrink={0}
                       >
                         <IconButton
-                          aria-label={
-                            userLanguage === "es"
-                              ? "Escuchar palabra"
-                              : "Listen to word"
-                          }
+                          aria-label={t("vocab_listen_word")}
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"
@@ -6410,6 +6651,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
@@ -6442,6 +6685,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               correctAnswer={tCorrectWords}
               hint={tHint}
               loading={loadingTQ}
+              sourceLang={translateSourceLang}
+              answerLang={translateAnswerLang}
               userLanguage={userLanguage}
               t={t}
               onSubmit={submitTranslate}
@@ -6584,12 +6829,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!"}
+                  {t("vocab_quiz_passed")}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
-                  {userLanguage === "es"
-                    ? "¡Felicitaciones!"
-                    : "Congratulations!"}
+                  {t("vocab_quiz_congratulations")}
                 </Text>
               </VStack>
 
@@ -6610,15 +6853,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                    {t("story_score")}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     {quizCorrectAnswers}/{quizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {userLanguage === "es"
-                      ? `${quizCorrectAnswers} correctas • Necesitabas ${quizConfig.passingScore}`
-                      : `${quizCorrectAnswers} correct • Needed ${quizConfig.passingScore}`}
+                    {t("vocab_quiz_score_passed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
                   </Text>
                 </VStack>
               </Box>
@@ -6636,7 +6877,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 fontSize="lg"
                 py={6}
               >
-                {userLanguage === "es" ? "Continuar" : "Continue"}
+                {t("flashcard_continue")}
               </Button>
             </VStack>
           </ModalBody>
@@ -6686,12 +6927,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {userLanguage === "es"
-                    ? "Prueba No Aprobada"
-                    : "Quiz Not Passed"}
+                  {t("vocab_quiz_not_passed")}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
-                  {userLanguage === "es" ? "Inténtalo de nuevo" : "Try again"}
+                  {t("try_again")}
                 </Text>
               </VStack>
 
@@ -6712,15 +6951,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                    {t("story_score")}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="red.200">
                     {quizCorrectAnswers}/{quizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {userLanguage === "es"
-                      ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
-                      : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                    {t("vocab_quiz_score_failed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
                   </Text>
                 </VStack>
               </Box>
@@ -6739,7 +6976,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   fontSize="lg"
                   py={6}
                 >
-                  {userLanguage === "es" ? "Intentar de Nuevo" : "Try Again"}
+                  {t("flashcard_try_again")}
                 </Button>
                 <Button
                   size="lg"
@@ -6754,9 +6991,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   fontSize="lg"
                   py={6}
                 >
-                  {userLanguage === "es"
-                    ? "Volver al Árbol"
-                    : "Back to Skill Tree"}
+                  {t("vocab_back_to_skill_tree")}
                 </Button>
               </VStack>
             </VStack>

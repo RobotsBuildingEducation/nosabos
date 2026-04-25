@@ -36,6 +36,34 @@ import { GREEK_ALPHABET } from "../data/greekAlphabet";
 import { POLISH_ALPHABET } from "../data/polishAlphabet";
 import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
+import {
+  translateAlphabetMeaningToArabic,
+  withArabicAlphabetSupport,
+} from "../data/alphabetArabicLocalizer";
+import {
+  translateAlphabetMeaningToItalian,
+  withItalianAlphabetSupport,
+} from "../data/alphabetItalianLocalizer";
+import {
+  translateAlphabetMeaningToFrench,
+  withFrenchAlphabetSupport,
+} from "../data/alphabetFrenchLocalizer";
+import {
+  translateAlphabetMeaningToPortuguese,
+  withPortugueseAlphabetSupport,
+} from "../data/alphabetPortugueseLocalizer";
+import {
+  translateAlphabetMeaningToJapanese,
+  withJapaneseAlphabetSupport,
+} from "../data/alphabetJapaneseLocalizer";
+import {
+  translateAlphabetMeaningToHindi,
+  withHindiAlphabetSupport,
+} from "../data/alphabetHindiLocalizer";
+import {
+  translateAlphabetMeaningToChinese,
+  withChineseAlphabetSupport,
+} from "../data/alphabetChineseLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -70,6 +98,10 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -134,6 +166,137 @@ const LANGUAGE_NAMES_ES = {
   yua: "Maya yucateco",
 };
 
+const LANGUAGE_NAMES_IT = {
+  ru: "Russo",
+  ja: "Giapponese",
+  en: "Inglese",
+  es: "Spagnolo",
+  pt: "Portoghese",
+  fr: "Francese",
+  it: "Italiano",
+  nl: "Neerlandese",
+  de: "Tedesco",
+  nah: "Nahuatl",
+  el: "Greco",
+  pl: "Polacco",
+  ga: "Irlandese",
+  yua: "Maya yucateco",
+};
+
+const LANGUAGE_NAMES_PT = {
+  ru: "Russo",
+  ja: "Japonês",
+  en: "Inglês",
+  es: "Espanhol",
+  pt: "Português",
+  fr: "Francês",
+  it: "Italiano",
+  nl: "Holandês",
+  de: "Alemão",
+  nah: "Náuatle",
+  el: "Grego",
+  pl: "Polonês",
+  ga: "Irlandês",
+  yua: "Maia iucateque",
+};
+
+const LANGUAGE_NAMES_FR = {
+  ru: "Russe",
+  ja: "Japonais",
+  en: "Anglais",
+  es: "Espagnol",
+  pt: "Portugais",
+  fr: "Francais",
+  it: "Italien",
+  nl: "Neerlandais",
+  de: "Allemand",
+  nah: "Nahuatl",
+  el: "Grec",
+  pl: "Polonais",
+  ga: "Irlandais",
+  yua: "Maya yucateque",
+};
+
+const LANGUAGE_NAMES_JA = {
+  ru: "ロシア語",
+  ja: "日本語",
+  en: "英語",
+  es: "スペイン語",
+  pt: "ポルトガル語",
+  fr: "フランス語",
+  it: "イタリア語",
+  nl: "オランダ語",
+  de: "ドイツ語",
+  nah: "ナワトル語",
+  el: "ギリシャ語",
+  pl: "ポーランド語",
+  ga: "アイルランド語",
+  yua: "ユカテコ・マヤ語",
+};
+
+const LANGUAGE_NAMES_HI = {
+  ru: "रूसी",
+  ja: "जापानी",
+  en: "अंग्रेज़ी",
+  es: "स्पेनिश",
+  pt: "पुर्तगाली",
+  fr: "फ़्रेंच",
+  it: "इतालवी",
+  nl: "डच",
+  de: "जर्मन",
+  nah: "नाहुआत्ल",
+  el: "ग्रीक",
+  pl: "पोलिश",
+  ga: "आयरिश",
+  yua: "युकातेक माया",
+};
+
+const LANGUAGE_NAMES_AR = {
+  ru: "الروسية",
+  ja: "اليابانية",
+  en: "الإنجليزية",
+  es: "الإسبانية",
+  pt: "البرتغالية",
+  fr: "الفرنسية",
+  it: "الإيطالية",
+  nl: "الهولندية",
+  de: "الألمانية",
+  nah: "الناواتل",
+  el: "اليونانية",
+  pl: "البولندية",
+  ga: "الأيرلندية",
+  yua: "المايا اليوكاتيكية",
+};
+
+const LANGUAGE_NAMES_ZH = {
+  ru: "俄语",
+  ja: "日语",
+  en: "英语",
+  es: "西班牙语",
+  pt: "葡萄牙语",
+  fr: "法语",
+  it: "意大利语",
+  nl: "荷兰语",
+  de: "德语",
+  nah: "纳瓦特尔语",
+  el: "希腊语",
+  pl: "波兰语",
+  ga: "爱尔兰语",
+  yua: "尤卡坦玛雅语",
+};
+
+const LANGUAGE_NAMES_BY_UI = {
+  en: LANGUAGE_NAMES_EN,
+  es: LANGUAGE_NAMES_ES,
+  pt: LANGUAGE_NAMES_PT,
+  it: LANGUAGE_NAMES_IT,
+  fr: LANGUAGE_NAMES_FR,
+  ja: LANGUAGE_NAMES_JA,
+  hi: LANGUAGE_NAMES_HI,
+  ar: LANGUAGE_NAMES_AR,
+  zh: LANGUAGE_NAMES_ZH,
+};
+
 const LANGUAGE_SCRIPTS = {
   ru: "Cyrillic",
   ja: "hiragana or katakana",
@@ -151,16 +314,630 @@ const LANGUAGE_SCRIPTS = {
   yua: "Latin alphabet",
 };
 
-const normalizeMeaning = (meaning) => {
-  if (!meaning) return { en: "", es: "" };
-  if (typeof meaning === "string") {
-    return { en: meaning, es: meaning };
+const LANGUAGE_SCRIPTS_IT = {
+  ru: "alfabeto cirillico",
+  ja: "hiragana o katakana",
+  en: "alfabeto latino",
+  es: "alfabeto latino",
+  pt: "alfabeto latino",
+  fr: "alfabeto latino",
+  it: "alfabeto latino",
+  nl: "alfabeto latino",
+  de: "alfabeto latino",
+  nah: "alfabeto latino",
+  el: "alfabeto greco",
+  pl: "alfabeto latino",
+  ga: "alfabeto latino",
+  yua: "alfabeto latino",
+};
+
+const LANGUAGE_SCRIPTS_PT = {
+  ru: "alfabeto cirílico",
+  ja: "hiragana ou katakana",
+  en: "alfabeto latino",
+  es: "alfabeto latino",
+  pt: "alfabeto latino",
+  fr: "alfabeto latino",
+  it: "alfabeto latino",
+  nl: "alfabeto latino",
+  de: "alfabeto latino",
+  nah: "alfabeto latino",
+  el: "alfabeto grego",
+  pl: "alfabeto latino",
+  ga: "alfabeto latino",
+  yua: "alfabeto latino",
+};
+
+const LANGUAGE_SCRIPTS_FR = {
+  ru: "alphabet cyrillique",
+  ja: "hiragana ou katakana",
+  en: "alphabet latin",
+  es: "alphabet latin",
+  pt: "alphabet latin",
+  fr: "alphabet latin",
+  it: "alphabet latin",
+  nl: "alphabet latin",
+  de: "alphabet latin",
+  nah: "alphabet latin",
+  el: "alphabet grec",
+  pl: "alphabet latin",
+  ga: "alphabet latin",
+  yua: "alphabet latin",
+};
+
+const LANGUAGE_SCRIPTS_JA = {
+  ru: "キリル文字",
+  ja: "ひらがなまたはカタカナ",
+  en: "ラテン文字",
+  es: "ラテン文字",
+  pt: "ラテン文字",
+  fr: "ラテン文字",
+  it: "ラテン文字",
+  nl: "ラテン文字",
+  de: "ラテン文字",
+  nah: "ラテン文字",
+  el: "ギリシャ文字",
+  pl: "ラテン文字",
+  ga: "ラテン文字",
+  yua: "ラテン文字",
+};
+
+const LANGUAGE_SCRIPTS_HI = {
+  ru: "सिरिलिक लिपि",
+  ja: "हिरागाना या काताकाना",
+  en: "लैटिन वर्णमाला",
+  es: "लैटिन वर्णमाला",
+  pt: "लैटिन वर्णमाला",
+  fr: "लैटिन वर्णमाला",
+  it: "लैटिन वर्णमाला",
+  nl: "लैटिन वर्णमाला",
+  de: "लैटिन वर्णमाला",
+  nah: "लैटिन वर्णमाला",
+  el: "ग्रीक वर्णमाला",
+  pl: "लैटिन वर्णमाला",
+  ga: "लैटिन वर्णमाला",
+  yua: "लैटिन वर्णमाला",
+};
+
+const LANGUAGE_SCRIPTS_AR = {
+  ru: "الأبجدية السيريلية",
+  ja: "الهيراجانا أو الكاتاكانا",
+  en: "الأبجدية اللاتينية",
+  es: "الأبجدية اللاتينية",
+  pt: "الأبجدية اللاتينية",
+  fr: "الأبجدية اللاتينية",
+  it: "الأبجدية اللاتينية",
+  nl: "الأبجدية اللاتينية",
+  de: "الأبجدية اللاتينية",
+  nah: "الأبجدية اللاتينية",
+  el: "الأبجدية اليونانية",
+  pl: "الأبجدية اللاتينية",
+  ga: "الأبجدية اللاتينية",
+  yua: "الأبجدية اللاتينية",
+};
+
+const LANGUAGE_SCRIPTS_ZH = {
+  ru: "西里尔字母",
+  ja: "平假名或片假名",
+  en: "拉丁字母",
+  es: "拉丁字母",
+  pt: "拉丁字母",
+  fr: "拉丁字母",
+  it: "拉丁字母",
+  nl: "拉丁字母",
+  de: "拉丁字母",
+  nah: "拉丁字母",
+  el: "希腊字母",
+  pl: "拉丁字母",
+  ga: "拉丁字母",
+  yua: "拉丁字母",
+};
+
+const LANGUAGE_SCRIPTS_BY_UI = {
+  en: LANGUAGE_SCRIPTS,
+  es: {
+    ru: "alfabeto cirílico",
+    ja: "hiragana o katakana",
+    en: "alfabeto latino",
+    es: "alfabeto latino",
+    pt: "alfabeto latino",
+    fr: "alfabeto latino",
+    it: "alfabeto latino",
+    nl: "alfabeto latino",
+    de: "alfabeto latino",
+    nah: "alfabeto latino",
+    el: "alfabeto griego",
+    pl: "alfabeto latino",
+    ga: "alfabeto latino",
+    yua: "alfabeto latino",
+  },
+  pt: LANGUAGE_SCRIPTS_PT,
+  it: LANGUAGE_SCRIPTS_IT,
+  fr: LANGUAGE_SCRIPTS_FR,
+  ja: LANGUAGE_SCRIPTS_JA,
+  hi: LANGUAGE_SCRIPTS_HI,
+  ar: LANGUAGE_SCRIPTS_AR,
+  zh: LANGUAGE_SCRIPTS_ZH,
+};
+
+const ALPHABET_UI_TEXT = {
+  en: {
+    vowel: "Vowel",
+    consonant: "Consonant",
+    sign: "Sign",
+    practice: "Practice",
+    playSound: "Play sound",
+    playWord: "Play word",
+    close: "Close",
+    sayThisWord: "Say this word:",
+    grading: "Grading...",
+    nextWord: "Next word",
+    tryAgain: "Try again",
+    back: "Back",
+    connecting: "Connecting...",
+    stop: "Stop",
+    record: "Record",
+    recordingErrorTitle: "Recording error",
+    recordingErrorDescription: "Could not record. Please try again.",
+    gradingErrorTitle: "Grading error",
+    gradingErrorDescription: "Could not grade your answer.",
+    speechUnsupportedTitle: "Speech not supported",
+    speechUnsupportedDescription:
+      "Your browser doesn't support speech recognition.",
+    micDeniedTitle: "Microphone denied",
+    micDeniedDescription: "Please allow microphone access to record.",
+    generateWordErrorTitle: "Couldn't generate a new word",
+    level: "Level",
+    progress: "Progress",
+    alphabetHeadline: "{language} Alphabet",
+    alphabetSubhead: "Start by learning {language} letters and sounds.",
+    note: "After this, switch to Path mode in the menu to explore lessons.",
+    complete: "Congratulations! You've completed the alphabet.",
+    startSkillTree: "Start skill tree",
+    collection: "Collection",
+    loadError: "We couldn't load the alphabet. Please try again.",
+  },
+  es: {
+    vowel: "Vocal",
+    consonant: "Consonante",
+    sign: "Signo",
+    practice: "Practicar",
+    playSound: "Reproducir sonido",
+    playWord: "Reproducir palabra",
+    close: "Cerrar",
+    sayThisWord: "Di esta palabra:",
+    grading: "Evaluando...",
+    nextWord: "Siguiente palabra",
+    tryAgain: "Otra vez",
+    back: "Volver",
+    connecting: "Conectando...",
+    stop: "Detener",
+    record: "Grabar",
+    recordingErrorTitle: "Error de grabación",
+    recordingErrorDescription: "No se pudo grabar. Intenta de nuevo.",
+    gradingErrorTitle: "Error al evaluar",
+    gradingErrorDescription: "No pudimos evaluar tu respuesta.",
+    speechUnsupportedTitle: "Sin soporte de voz",
+    speechUnsupportedDescription:
+      "Tu navegador no soporta reconocimiento de voz.",
+    micDeniedTitle: "Micrófono denegado",
+    micDeniedDescription: "Permite el acceso al micrófono para grabar.",
+    generateWordErrorTitle: "No pudimos generar una palabra",
+    level: "Nivel",
+    progress: "Progreso",
+    alphabetHeadline: "Alfabeto {language}",
+    alphabetSubhead:
+      "Empieza aprendiendo las letras y sonidos del {language}.",
+    note:
+      "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones.",
+    complete: "¡Felicidades! Has completado el alfabeto.",
+    startSkillTree: "Iniciar árbol de habilidades",
+    collection: "Colección",
+    loadError: "No pudimos cargar el alfabeto. Intenta nuevamente.",
+  },
+  it: {
+    vowel: "Vocale",
+    consonant: "Consonante",
+    sign: "Segno",
+    practice: "Esercitati",
+    playSound: "Riproduci suono",
+    playWord: "Riproduci parola",
+    close: "Chiudi",
+    sayThisWord: "Pronuncia questa parola:",
+    grading: "Valutazione...",
+    nextWord: "Prossima parola",
+    tryAgain: "Riprova",
+    back: "Indietro",
+    connecting: "Connessione...",
+    stop: "Ferma",
+    record: "Registra",
+    recordingErrorTitle: "Errore di registrazione",
+    recordingErrorDescription: "Non è stato possibile registrare. Riprova.",
+    gradingErrorTitle: "Errore di valutazione",
+    gradingErrorDescription: "Non abbiamo potuto valutare la tua risposta.",
+    speechUnsupportedTitle: "Voce non supportata",
+    speechUnsupportedDescription:
+      "Il tuo browser non supporta il riconoscimento vocale.",
+    micDeniedTitle: "Microfono negato",
+    micDeniedDescription: "Consenti l'accesso al microfono per registrare.",
+    generateWordErrorTitle: "Non abbiamo potuto generare una nuova parola",
+    level: "Livello",
+    progress: "Progressi",
+    alphabetHeadline: "Alfabeto {language}",
+    alphabetSubhead:
+      "Inizia imparando le lettere e i suoni del {language}.",
+    note:
+      "Dopo questo, passa alla modalità Percorso nel menu per esplorare le lezioni.",
+    complete: "Congratulazioni! Hai completato l'alfabeto.",
+    startSkillTree: "Inizia l'albero delle abilità",
+    collection: "Collezione",
+    loadError: "Non siamo riusciti a caricare l'alfabeto. Riprova.",
+  },
+  fr: {
+    vowel: "Voyelle",
+    consonant: "Consonne",
+    sign: "Signe",
+    practice: "Pratiquer",
+    playSound: "Lire le son",
+    playWord: "Lire le mot",
+    close: "Fermer",
+    sayThisWord: "Dis ce mot :",
+    grading: "Evaluation...",
+    nextWord: "Mot suivant",
+    tryAgain: "Reessaie",
+    back: "Retour",
+    connecting: "Connexion...",
+    stop: "Arreter",
+    record: "Enregistrer",
+    recordingErrorTitle: "Erreur d'enregistrement",
+    recordingErrorDescription: "Impossible d'enregistrer. Reessaie.",
+    gradingErrorTitle: "Erreur d'evaluation",
+    gradingErrorDescription: "Impossible d'evaluer ta reponse.",
+    speechUnsupportedTitle: "Voix non prise en charge",
+    speechUnsupportedDescription:
+      "Ton navigateur ne prend pas en charge la reconnaissance vocale.",
+    micDeniedTitle: "Micro refuse",
+    micDeniedDescription: "Autorise l'acces au micro pour enregistrer.",
+    generateWordErrorTitle: "Impossible de generer un nouveau mot",
+    level: "Niveau",
+    progress: "Progres",
+    alphabetHeadline: "Alphabet {language}",
+    alphabetSubhead:
+      "Commence par apprendre les lettres et les sons du {language}.",
+    note:
+      "Ensuite, passe au mode Parcours dans le menu pour explorer les lecons.",
+    complete: "Felicitations ! Tu as termine l'alphabet.",
+    startSkillTree: "Commencer l'arbre",
+    collection: "Collection",
+    loadError: "Impossible de charger l'alphabet. Reessaie.",
+  },
+  ja: {
+    vowel: "母音",
+    consonant: "子音",
+    sign: "記号",
+    practice: "練習",
+    playSound: "音を再生",
+    playWord: "単語を再生",
+    close: "閉じる",
+    sayThisWord: "この単語を言ってください:",
+    grading: "採点中...",
+    nextWord: "次の単語",
+    tryAgain: "もう一度",
+    back: "戻る",
+    connecting: "接続中...",
+    stop: "停止",
+    record: "録音",
+    recordingErrorTitle: "録音エラー",
+    recordingErrorDescription: "録音できませんでした。もう一度お試しください。",
+    gradingErrorTitle: "採点エラー",
+    gradingErrorDescription: "答えを採点できませんでした。",
+    speechUnsupportedTitle: "音声はサポートされていません",
+    speechUnsupportedDescription:
+      "このブラウザは音声認識に対応していません。",
+    micDeniedTitle: "マイクが拒否されました",
+    micDeniedDescription: "録音するにはマイクアクセスを許可してください。",
+    generateWordErrorTitle: "新しい単語を生成できませんでした",
+    level: "レベル",
+    progress: "進捗",
+    alphabetHeadline: "{language}の文字",
+    alphabetSubhead: "{language}の文字と音から始めましょう。",
+    note: "この後は、メニューでパスモードに切り替えてレッスンを探索しましょう。",
+    complete: "おめでとうございます！文字練習を完了しました。",
+    startSkillTree: "スキルツリーを始める",
+    collection: "コレクション",
+    loadError: "文字データを読み込めませんでした。もう一度お試しください。",
+  },
+  hi: {
+    vowel: "स्वर",
+    consonant: "व्यंजन",
+    sign: "चिह्न",
+    practice: "अभ्यास",
+    playSound: "ध्वनि चलाएं",
+    playWord: "शब्द चलाएं",
+    close: "बंद करें",
+    sayThisWord: "यह शब्द बोलें:",
+    grading: "मूल्यांकन हो रहा है...",
+    nextWord: "अगला शब्द",
+    tryAgain: "फिर से कोशिश करें",
+    back: "वापस",
+    connecting: "कनेक्ट हो रहा है...",
+    stop: "रोकें",
+    record: "रिकॉर्ड करें",
+    recordingErrorTitle: "रिकॉर्डिंग त्रुटि",
+    recordingErrorDescription: "रिकॉर्ड नहीं हो सका। कृपया फिर प्रयास करें।",
+    gradingErrorTitle: "मूल्यांकन त्रुटि",
+    gradingErrorDescription: "हम आपके उत्तर का मूल्यांकन नहीं कर सके।",
+    speechUnsupportedTitle: "वॉइस सपोर्ट उपलब्ध नहीं है",
+    speechUnsupportedDescription:
+      "आपका ब्राउज़र वॉइस रिकग्निशन का समर्थन नहीं करता।",
+    micDeniedTitle: "माइक्रोफोन अस्वीकृत",
+    micDeniedDescription: "रिकॉर्ड करने के लिए माइक्रोफोन की अनुमति दें।",
+    generateWordErrorTitle: "नया शब्द तैयार नहीं किया जा सका",
+    level: "स्तर",
+    progress: "प्रगति",
+    alphabetHeadline: "{language} वर्णमाला",
+    alphabetSubhead: "{language} की ध्वनियां और अक्षर सीखकर शुरुआत करें।",
+    note: "इसके बाद मेनू में पाथ मोड पर जाकर पाठों को देखें।",
+    complete: "बधाई हो! आपने वर्णमाला पूरी कर ली है।",
+    startSkillTree: "स्किल ट्री शुरू करें",
+    collection: "संग्रह",
+    loadError: "हम वर्णमाला लोड नहीं कर सके। कृपया फिर कोशिश करें।",
+  },
+  ar: {
+    vowel: "حرف علّة",
+    consonant: "حرف ساكن",
+    sign: "علامة",
+    practice: "اتدرّب",
+    playSound: "شغّل الصوت",
+    playWord: "شغّل الكلمة",
+    close: "اقفل",
+    sayThisWord: "قول الكلمة دي:",
+    grading: "جارٍ التقييم...",
+    nextWord: "الكلمة اللي بعد كده",
+    tryAgain: "حاول تاني",
+    back: "رجوع",
+    connecting: "جارٍ الاتصال...",
+    stop: "إيقاف",
+    record: "سجّل",
+    recordingErrorTitle: "خطأ في التسجيل",
+    recordingErrorDescription: "ما قدرناش نسجّل. جرّب تاني.",
+    gradingErrorTitle: "خطأ في التقييم",
+    gradingErrorDescription: "ما قدرناش نقيّم إجابتك.",
+    speechUnsupportedTitle: "الصوت غير مدعوم",
+    speechUnsupportedDescription:
+      "المتصفح ده مش بيدعم التعرّف على الكلام.",
+    micDeniedTitle: "المايك مرفوض",
+    micDeniedDescription: "اسمح للمايك علشان تسجّل.",
+    generateWordErrorTitle: "ما قدرناش نطلّع كلمة جديدة",
+    level: "المستوى",
+    progress: "التقدّم",
+    alphabetHeadline: "أبجدية {language}",
+    alphabetSubhead: "ابدأ بتعلّم حروف وأصوات {language}.",
+    note:
+      "بعد كده بدّل لوضع المسار من القائمة علشان تستكشف الدروس.",
+    complete: "مبروك! خلّصت الأبجدية.",
+    startSkillTree: "ابدأ شجرة المهارات",
+    collection: "المجموعة",
+    loadError: "ما قدرناش نحمّل الأبجدية. جرّب تاني.",
+  },
+  zh: {
+    vowel: "元音",
+    consonant: "辅音",
+    sign: "符号",
+    practice: "练习",
+    playSound: "播放发音",
+    playWord: "播放单词",
+    close: "关闭",
+    sayThisWord: "说这个词：",
+    grading: "正在评分...",
+    nextWord: "下一个词",
+    tryAgain: "再试一次",
+    back: "返回",
+    connecting: "正在连接...",
+    stop: "停止",
+    record: "录音",
+    recordingErrorTitle: "录音出错",
+    recordingErrorDescription: "无法录音。请再试一次。",
+    gradingErrorTitle: "评分出错",
+    gradingErrorDescription: "无法评估你的回答。",
+    speechUnsupportedTitle: "不支持语音",
+    speechUnsupportedDescription:
+      "你的浏览器不支持语音识别。",
+    micDeniedTitle: "麦克风被拒绝",
+    micDeniedDescription: "请允许麦克风权限以便录音。",
+    generateWordErrorTitle: "无法生成新单词",
+    level: "等级",
+    progress: "进度",
+    alphabetHeadline: "{language}字母",
+    alphabetSubhead: "从学习{language}的字母和发音开始。",
+    note:
+      "完成后，在菜单中切换到路径模式继续学习课程。",
+    complete: "恭喜！你已完成字母练习。",
+    startSkillTree: "开始技能树",
+    collection: "收藏",
+    loadError: "无法加载字母数据。请再试一次。",
+  },
+};
+
+ALPHABET_UI_TEXT.pt = {
+  title: "Modo Alfabeto",
+  vowel: "Vogal",
+  consonant: "Consoante",
+  sign: "Sinal",
+  practice: "Praticar",
+  playSound: "Reproduzir som",
+  playWord: "Reproduzir palavra",
+  close: "Fechar",
+  sayThisWord: "Diga esta palavra:",
+  grading: "Avaliando...",
+  nextWord: "Próxima palavra",
+  tryAgain: "Tentar novamente",
+  back: "Voltar",
+  connecting: "Conectando...",
+  stop: "Parar",
+  record: "Gravar",
+  recordingErrorTitle: "Erro de gravação",
+  recordingErrorDescription: "Não foi possível gravar. Tente novamente.",
+  gradingErrorTitle: "Erro de avaliação",
+  gradingErrorDescription: "Não foi possível avaliar a resposta.",
+  speechUnsupportedTitle: "Fala não suportada",
+  speechUnsupportedDescription:
+    "Este navegador não oferece suporte a reconhecimento de voz.",
+  micDeniedTitle: "Microfone bloqueado",
+  micDeniedDescription:
+    "Permita o acesso ao microfone para gravar.",
+  generateWordErrorTitle: "Não foi possível gerar uma nova palavra",
+  level: "Nível",
+  progress: "Progresso",
+  alphabetHeadline: "Alfabeto {language}",
+  alphabetSubhead:
+    "Comece aprendendo as letras e os sons do {language}.",
+  note:
+    "Depois disso, mude para o modo Caminho no menu para explorar as lições.",
+  complete: "Parabéns! Você concluiu a prática do alfabeto.",
+  startSkillTree: "Iniciar árvore de habilidades",
+  collection: "Coleção",
+  loadError:
+    "Não foi possível carregar os dados do alfabeto. Tente novamente.",
+};
+
+const uiText = (lang, key, params = {}) => {
+  const normalizedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const raw =
+    ALPHABET_UI_TEXT[normalizedLang]?.[key] ??
+    ALPHABET_UI_TEXT.en[key] ??
+    key;
+  return raw.replace(/\{(\w+)\}/g, (_, token) =>
+    params[token] != null ? String(params[token]) : `{${token}}`,
+  );
+};
+
+const getLanguageName = (code, uiLang) =>
+  LANGUAGE_NAMES_BY_UI[uiLang]?.[code] ||
+  LANGUAGE_NAMES_EN[code] ||
+  LANGUAGE_NAMES[code] ||
+  "Language";
+
+const getScriptName = (code, uiLang) =>
+  LANGUAGE_SCRIPTS_BY_UI[uiLang]?.[code] ||
+  LANGUAGE_SCRIPTS[code] ||
+  "native script";
+
+const LOCALIZED_FIELD_SUFFIX = {
+  en: "",
+  es: "Es",
+  pt: "Pt",
+  it: "It",
+  fr: "Fr",
+  ja: "Ja",
+  hi: "Hi",
+  ar: "Ar",
+  zh: "Zh",
+};
+
+const getLocalizedLetterField = (letter, uiLang, baseKey) => {
+  if (!letter || !baseKey) return "";
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const suffix = LOCALIZED_FIELD_SUFFIX[normalizedLang];
+  const fieldName = suffix ? `${baseKey}${suffix}` : baseKey;
+  const value = letter[fieldName];
+  return typeof value === "string" ? value.trim() : "";
+};
+
+const getMeaningText = (meaning, uiLang) => {
+  if (!meaning || typeof meaning !== "object") return "";
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (normalizedLang === "en") {
+    return (
+      meaning.en ||
+      meaning.es ||
+      meaning.ar ||
+      meaning.hi ||
+      meaning.pt ||
+      meaning.it ||
+      meaning.fr ||
+      meaning.ja ||
+      meaning.zh ||
+      ""
+    );
+  }
+  return meaning[normalizedLang] || "";
+};
+
+const getLetterName = (letter, uiLang) => {
+  const localizedName = getLocalizedLetterField(letter, uiLang, "name");
+  if (localizedName) {
+    return localizedName;
   }
 
-  const en = meaning.en || meaning.es || "";
-  const es = meaning.es || meaning.en || "";
+  const normalizedLang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  if (normalizedLang === "en") {
+    return letter.name || "";
+  }
 
-  return { en, es };
+  if (letter?.type === "phrase") {
+    return getMeaningText(normalizeMeaning(letter.practiceWordMeaning), normalizedLang);
+  }
+
+  return "";
+};
+
+const getLetterSound = (letter, uiLang) =>
+  getLocalizedLetterField(letter, uiLang, "sound");
+
+const getLetterTip = (letter, uiLang) =>
+  getLocalizedLetterField(letter, uiLang, "tip");
+
+const normalizeMeaning = (meaning) => {
+  if (!meaning) {
+    return {
+      en: "",
+      es: "",
+      pt: "",
+      it: "",
+      fr: "",
+      ja: "",
+      hi: "",
+      ar: "",
+      zh: "",
+    };
+  }
+  if (typeof meaning === "string") {
+    const source = String(meaning || "").trim();
+    return {
+      en: source,
+      es: "",
+      pt: translateAlphabetMeaningToPortuguese(source) || "",
+      it: translateAlphabetMeaningToItalian(source) || "",
+      fr: translateAlphabetMeaningToFrench(source) || "",
+      ja: translateAlphabetMeaningToJapanese(source) || "",
+      hi: translateAlphabetMeaningToHindi(source) || "",
+      ar: translateAlphabetMeaningToArabic(source) || "",
+      zh: translateAlphabetMeaningToChinese(source) || "",
+    };
+  }
+
+  const en =
+    meaning.en ||
+    meaning.es ||
+    meaning.ar ||
+    meaning.hi ||
+    meaning.pt ||
+    meaning.it ||
+    meaning.fr ||
+    meaning.ja ||
+    meaning.zh ||
+    "";
+  const es = meaning.es || "";
+  const pt = meaning.pt || translateAlphabetMeaningToPortuguese(meaning) || "";
+  const it = meaning.it || translateAlphabetMeaningToItalian(meaning) || "";
+  const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
+  const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
+  const hi = meaning.hi || translateAlphabetMeaningToHindi(meaning) || "";
+  const ar = meaning.ar || translateAlphabetMeaningToArabic(meaning) || "";
+  const zh = meaning.zh || translateAlphabetMeaningToChinese(meaning) || "";
+
+  return { en, es, pt, it, fr, ja, hi, ar, zh };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -336,6 +1113,7 @@ function LetterCard({
   onCardCollected,
   pauseMs = 2000,
 }) {
+  const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
@@ -387,19 +1165,13 @@ function LetterCard({
   }, [letter.type]);
 
   const typeLabel =
-    appLanguage === "es"
-      ? letter.type === "vowel"
-        ? "Vocal"
-        : letter.type === "consonant"
-          ? "Consonante"
-          : "Signo"
-      : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
+    uiText(uiLang, letter.type) ||
+    letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
-  const sound =
-    appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
-  const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
-  const practiceWordMeaningText =
-    practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
+  const displayName = getLetterName(letter, uiLang);
+  const sound = getLetterSound(letter, uiLang);
+  const tip = getLetterTip(letter, uiLang);
+  const practiceWordMeaningText = getMeaningText(practiceWordMeaningData, uiLang);
   const showMeaning = Boolean(practiceWordMeaningText);
   const practiceMarker = getPracticeLetterMarker(letter);
   const highlightedPracticeWord = useMemo(
@@ -420,12 +1192,8 @@ function LetterCard({
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
         toast({
-          title:
-            appLanguage === "es" ? "Error de grabación" : "Recording error",
-          description:
-            appLanguage === "es"
-              ? "No se pudo grabar. Intenta de nuevo."
-              : "Could not record. Please try again.",
+          title: uiText(uiLang, "recordingErrorTitle"),
+          description: uiText(uiLang, "recordingErrorDescription"),
           status: "error",
           duration: 2500,
         });
@@ -507,11 +1275,8 @@ function LetterCard({
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
-        title: appLanguage === "es" ? "Error al evaluar" : "Grading error",
-        description:
-          appLanguage === "es"
-            ? "No pudimos evaluar tu respuesta."
-            : "Could not grade your answer.",
+        title: uiText(uiLang, "gradingErrorTitle"),
+        description: uiText(uiLang, "gradingErrorDescription"),
         status: "error",
         duration: 3000,
       });
@@ -553,25 +1318,15 @@ function LetterCard({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title:
-            appLanguage === "es"
-              ? "Sin soporte de voz"
-              : "Speech not supported",
-          description:
-            appLanguage === "es"
-              ? "Tu navegador no soporta reconocimiento de voz."
-              : "Your browser doesn't support speech recognition.",
+          title: uiText(uiLang, "speechUnsupportedTitle"),
+          description: uiText(uiLang, "speechUnsupportedDescription"),
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title:
-            appLanguage === "es" ? "Micrófono denegado" : "Microphone denied",
-          description:
-            appLanguage === "es"
-              ? "Permite el acceso al micrófono para grabar."
-              : "Please allow microphone access to record.",
+          title: uiText(uiLang, "micDeniedTitle"),
+          description: uiText(uiLang, "micDeniedDescription"),
           status: "error",
           duration: 3200,
         });
@@ -655,10 +1410,7 @@ function LetterCard({
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
-        title:
-          appLanguage === "es"
-            ? "No pudimos generar una palabra"
-            : "Couldn't generate a new word",
+        title: uiText(uiLang, "generateWordErrorTitle"),
         status: "warning",
         duration: 2500,
       });
@@ -685,12 +1437,13 @@ function LetterCard({
   const generateNewPracticeWord = useCallback(
     async (currentWord) => {
       const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
-      const scriptName = LANGUAGE_SCRIPTS[targetLang] || "native script";
+      const scriptName = getScriptName(targetLang, uiLang);
+      const letterNameForPrompt = getLetterName(letter, uiLang) || letter.name || letter.letter;
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
-{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
+      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letterNameForPrompt}). Respond ONLY with JSON in this shape:
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>","meaning_it":"<short italian meaning>","meaning_fr":"<short french meaning>","meaning_ja":"<short Japanese meaning>","meaning_hi":"<short Hindi meaning>","meaning_ar":"<short Egyptian Arabic meaning>","meaning_zh":"<short Mandarin Chinese meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
@@ -706,6 +1459,12 @@ function LetterCard({
         const meaning = normalizeMeaning({
           en: parsed.meaning_en || parsed.meaning || "",
           es: parsed.meaning_es || parsed.meaning || "",
+          it: parsed.meaning_it || parsed.meaning || "",
+          fr: parsed.meaning_fr || parsed.meaning || "",
+          ja: parsed.meaning_ja || parsed.meaning || "",
+          hi: parsed.meaning_hi || parsed.meaning || "",
+          ar: parsed.meaning_ar || parsed.meaning || "",
+          zh: parsed.meaning_zh || parsed.meaning || "",
         });
 
         if (!word) return null;
@@ -716,7 +1475,16 @@ function LetterCard({
         return null;
       }
     },
-    [letter.letter, letter.name, targetLang],
+    [
+      letter.letter,
+      letter.name,
+      letter.nameAr,
+      letter.nameHi,
+      letter.nameJa,
+      letter.nameZh,
+      targetLang,
+      uiLang,
+    ],
   );
 
   // Cleanup on unmount
@@ -788,7 +1556,7 @@ function LetterCard({
                 fontSize="xs"
                 _hover={{ bg: APP_SURFACE_MUTED }}
               >
-                {appLanguage === "es" ? "Practicar" : "Practice"}
+                  {uiText(uiLang, "practice")}
               </Button>
             )}
           </HStack>
@@ -799,14 +1567,16 @@ function LetterCard({
                 <Text fontSize="2xl" fontWeight="bold">
                   {letter.letter}
                 </Text>
-                <Text fontSize="lg" fontWeight="semibold">
-                  {letter.name}
-                </Text>
+                {displayName ? (
+                  <Text fontSize="lg" fontWeight="semibold">
+                    {displayName}
+                  </Text>
+                ) : null}
               </VStack>
               {onPlay && (
                 <Flex
                   as="button"
-                  aria-label="Play sound"
+                  aria-label={uiText(uiLang, "playSound")}
                   align="center"
                   justify="center"
                   bg={APP_SURFACE_MUTED}
@@ -827,12 +1597,16 @@ function LetterCard({
               )}
             </Flex>
 
-            <Text color={APP_TEXT_PRIMARY} fontSize="sm">
-              {sound}
-            </Text>
-            <Text fontSize="2xs" color={APP_TEXT_SECONDARY}>
-              {tip}
-            </Text>
+            {sound ? (
+              <Text color={APP_TEXT_PRIMARY} fontSize="sm">
+                {sound}
+              </Text>
+            ) : null}
+            {tip ? (
+              <Text fontSize="2xs" color={APP_TEXT_SECONDARY}>
+                {tip}
+              </Text>
+            ) : null}
           </VStack>
         </VStack>
 
@@ -867,7 +1641,7 @@ function LetterCard({
 
           {/* Close button */}
           <IconButton
-            aria-label={appLanguage === "es" ? "Cerrar" : "Close"}
+            aria-label={uiText(uiLang, "close")}
             icon={<RiCloseLine size={18} />}
             size="xs"
             bg="transparent"
@@ -884,7 +1658,7 @@ function LetterCard({
 
           {/* Practice Word Display */}
           <Text fontSize="xs" color={APP_TEXT_SECONDARY} fontWeight="medium">
-            {appLanguage === "es" ? "Di esta palabra:" : "Say this word:"}
+            {uiText(uiLang, "sayThisWord")}
           </Text>
 
           <HStack spacing={2} align="center">
@@ -900,7 +1674,7 @@ function LetterCard({
               ))}
             </Text>
             <IconButton
-              aria-label="Play word"
+              aria-label={uiText(uiLang, "playWord")}
               icon={
                 isLoadingTts || isPlayingWord ? (
                   <Spinner size="xs" />
@@ -935,7 +1709,7 @@ function LetterCard({
                 size={32}
               />
               <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                {appLanguage === "es" ? "Evaluando..." : "Grading..."}
+                {uiText(uiLang, "grading")}
               </Text>
             </VStack>
           ) : showResult ? (
@@ -963,7 +1737,7 @@ function LetterCard({
                     onClick={handleNextWord}
                     _hover={{ bg: "green.400" }}
                   >
-                    {appLanguage === "es" ? "Siguiente palabra" : "Next word"}
+                    {uiText(uiLang, "nextWord")}
                   </Button>
                 ) : (
                   <Button
@@ -973,7 +1747,7 @@ function LetterCard({
                     onClick={handleTryAgain}
                     _hover={{ bg: APP_SURFACE_MUTED }}
                   >
-                    {appLanguage === "es" ? "Otra vez" : "Try again"}
+                    {uiText(uiLang, "tryAgain")}
                   </Button>
                 )}
                 <Button
@@ -983,7 +1757,7 @@ function LetterCard({
                   onClick={handleFlipBack}
                   _hover={{ bg: APP_SURFACE_MUTED }}
                 >
-                  {appLanguage === "es" ? "Volver" : "Back"}
+                  {uiText(uiLang, "back")}
                 </Button>
               </HStack>
             </VStack>
@@ -1014,16 +1788,10 @@ function LetterCard({
                 }}
               >
                 {isConnecting
-                  ? appLanguage === "es"
-                    ? "Conectando..."
-                    : "Connecting..."
+                  ? uiText(uiLang, "connecting")
                   : isRecording
-                    ? appLanguage === "es"
-                      ? "Detener"
-                      : "Stop"
-                    : appLanguage === "es"
-                      ? "Grabar"
-                      : "Record"}
+                    ? uiText(uiLang, "stop")
+                    : uiText(uiLang, "record")}
               </Button>
             </VStack>
           )}
@@ -1033,21 +1801,34 @@ function LetterCard({
   );
 }
 
+const withLocalizedAlphabetSupport = (letters) =>
+  withChineseAlphabetSupport(
+    withArabicAlphabetSupport(
+      withHindiAlphabetSupport(
+        withJapaneseAlphabetSupport(
+          withFrenchAlphabetSupport(
+            withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+          ),
+        ),
+      ),
+    ),
+  );
+
 const LANGUAGE_ALPHABETS = {
-  ru: RUSSIAN_ALPHABET,
-  ja: JAPANESE_ALPHABET,
-  en: ENGLISH_ALPHABET,
-  es: SPANISH_ALPHABET,
-  pt: PORTUGUESE_ALPHABET,
-  fr: FRENCH_ALPHABET,
-  it: ITALIAN_ALPHABET,
-  nl: DUTCH_ALPHABET,
-  de: GERMAN_ALPHABET,
-  nah: NAHUATL_ALPHABET,
-  el: GREEK_ALPHABET,
-  pl: POLISH_ALPHABET,
-  ga: IRISH_ALPHABET,
-  yua: YUCATEC_MAYA_ALPHABET,
+  ru: withLocalizedAlphabetSupport(RUSSIAN_ALPHABET),
+  ja: withLocalizedAlphabetSupport(JAPANESE_ALPHABET),
+  en: withLocalizedAlphabetSupport(ENGLISH_ALPHABET),
+  es: withLocalizedAlphabetSupport(SPANISH_ALPHABET),
+  pt: withLocalizedAlphabetSupport(PORTUGUESE_ALPHABET),
+  fr: withLocalizedAlphabetSupport(FRENCH_ALPHABET),
+  it: withLocalizedAlphabetSupport(ITALIAN_ALPHABET),
+  nl: withLocalizedAlphabetSupport(DUTCH_ALPHABET),
+  de: withLocalizedAlphabetSupport(GERMAN_ALPHABET),
+  nah: withLocalizedAlphabetSupport(NAHUATL_ALPHABET),
+  el: withLocalizedAlphabetSupport(GREEK_ALPHABET),
+  pl: withLocalizedAlphabetSupport(POLISH_ALPHABET),
+  ga: withLocalizedAlphabetSupport(IRISH_ALPHABET),
+  yua: withLocalizedAlphabetSupport(YUCATEC_MAYA_ALPHABET),
 };
 
 // Fisher-Yates shuffle
@@ -1068,6 +1849,7 @@ export default function AlphabetBootcamp({
   pauseMs = 2000,
   onStartSkillTree,
 }) {
+  const uiLang = normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE);
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
   const playbackRequestRef = useRef(0);
@@ -1097,22 +1879,14 @@ export default function AlphabetBootcamp({
     onStartSkillTree?.();
   }, [onStartSkillTree, playSound]);
 
-  const targetLanguage =
-    appLanguage === "es"
-      ? LANGUAGE_NAMES_ES[targetLang]
-      : LANGUAGE_NAMES_EN[targetLang] || "Language";
-  const headline =
-    appLanguage === "es"
-      ? `Alfabeto ${targetLanguage}`
-      : `${targetLanguage} Alphabet`;
-  const subhead =
-    appLanguage === "es"
-      ? `Empieza aprendiendo las letras y sonidos del ${targetLanguage}.`
-      : `Start by learning ${targetLanguage} letters and sounds.`;
-  const note =
-    appLanguage === "es"
-      ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
-      : "After this, switch to Path mode in the menu to explore lessons.";
+  const targetLanguage = getLanguageName(targetLang, uiLang);
+  const headline = uiText(uiLang, "alphabetHeadline", {
+    language: targetLanguage,
+  });
+  const subhead = uiText(uiLang, "alphabetSubhead", {
+    language: targetLanguage,
+  });
+  const note = uiText(uiLang, "note");
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
   const isComplete =
     hasLetters &&
@@ -1315,7 +2089,7 @@ export default function AlphabetBootcamp({
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <XpProgressHeader
-          levelText={`${appLanguage === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
+          levelText={`${uiText(uiLang, "level")} ${xpLevelNumber}`}
           xpText={`XP ${currentXp}`}
           progressPct={nextLevelProgressPct}
           barProps={{
@@ -1362,9 +2136,9 @@ export default function AlphabetBootcamp({
               <Box w="100%" maxW="400px" mx="auto">
                 <HStack justify="space-between" mb={1}>
                   <Text fontSize="xs" color={APP_TEXT_SECONDARY}>
-                    {appLanguage === "es" ? "Progreso" : "Progress"}
+                    {uiText(uiLang, "progress")}
                   </Text>
-                  <Text fontSize="xs" color="yellow.300" fontWeight="bold">
+                  <Text fontSize="xs" color={APP_TEXT_PRIMARY} fontWeight="bold">
                     {collectedLetters.length} / {alphabet.length}
                   </Text>
                 </HStack>
@@ -1447,9 +2221,7 @@ export default function AlphabetBootcamp({
                 <VStack spacing={2}>
                   <Text fontSize="2xl">🎉</Text>
                   <Text color="green.200" fontWeight="bold" textAlign="center">
-                    {appLanguage === "es"
-                      ? "¡Felicidades! Has completado el alfabeto."
-                      : "Congratulations! You've completed the alphabet."}
+                    {uiText(uiLang, "complete")}
                   </Text>
                 </VStack>
               </Flex>
@@ -1459,9 +2231,7 @@ export default function AlphabetBootcamp({
                   size="lg"
                   onClick={handleStartSkillTreeClick}
                 >
-                  {appLanguage === "es"
-                    ? "Iniciar árbol de habilidades"
-                    : "Start skill tree"}
+                  {uiText(uiLang, "startSkillTree")}
                 </Button>
               )}
             </VStack>
@@ -1472,7 +2242,7 @@ export default function AlphabetBootcamp({
             <VStack spacing={4} w="100%">
               {/* <HStack spacing={2}>
                 <Badge colorScheme="green" px={3} py={1} borderRadius="full">
-                  {appLanguage === "es" ? "Colección" : "Collection"}:{" "}
+                  {uiText(uiLang, "collection")}:{" "}
                   {collectedLetters.length}
                 </Badge>
               </HStack> */}
@@ -1521,9 +2291,7 @@ export default function AlphabetBootcamp({
           boxShadow={APP_SHADOW}
         >
           <Text color={APP_TEXT_SECONDARY}>
-            {appLanguage === "es"
-              ? "No pudimos cargar el alfabeto. Intenta nuevamente."
-              : "We couldn't load the alphabet. Please try again."}
+            {uiText(uiLang, "loadError")}
           </Text>
         </Flex>
       )}

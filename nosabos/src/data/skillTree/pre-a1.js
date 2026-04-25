@@ -5,7 +5,28 @@
  * Focus on recognition, single words, and survival basics before tackling A1.
  */
 
-export const SKILL_TREE_PRE_A1 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
+import { withHindiSkillTreeText } from "./hindiLocalizer.js";
+import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./portugueseLocalizer.js";
+import { withArabicSkillTreeText } from "./arabicLocalizer.js";
+import { withChineseSkillTreeText } from "./chineseLocalizer.js";
+
+const withLocalizedSkillTreeText = (skillTree) =>
+  withArabicSkillTreeText(
+    withChineseSkillTreeText(
+      withHindiSkillTreeText(
+        withJapaneseSkillTreeText(
+          withFrenchSkillTreeText(
+            withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
   // Tutorial Unit - always at the very beginning
   {
     id: "unit-tutorial-pre-a1",
@@ -74,6 +95,7 @@ export const SKILL_TREE_PRE_A1 = [
             prompt: "Practice saying hello in a live chat",
             successCriteria: "The learner says hello.",
             successCriteria_es: 'El estudiante dice "hola".',
+            successCriteria_fr: 'L\'apprenant dit "bonjour".',
             tutorialDescription: {
               en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
               es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
@@ -1213,4 +1235,4 @@ export const SKILL_TREE_PRE_A1 = [
       },
     ],
   },
-];
+]);

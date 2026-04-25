@@ -3,7 +3,28 @@
  * Total: 50 flashcards
  */
 
-export const FLASHCARDS_C2 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARDS_C2 = withLocalizedFlashcardText([
   {
     id: "c2-vocab-1",
     concept: { en: "Ubiquitous", es: "Ubicuo" },
@@ -426,4 +447,4 @@ export const FLASHCARDS_C2 = [
     category: "literary",
     type: "phrase",
   }
-];
+]);

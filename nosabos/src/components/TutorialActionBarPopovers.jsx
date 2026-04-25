@@ -30,6 +30,7 @@ import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import { getLanguageDirection } from "../constants/languages";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -55,10 +56,16 @@ const BUTTON_EXPLANATIONS = [
     id: "back",
     tutorialId: "back",
     icon: ArrowBackIcon,
-    label: { en: "Back Button", es: "Botón Atrás" },
+    label: { en: "Back Button", es: "Botón Atrás", it: "Tasto Indietro", fr: "Bouton retour", ja: "戻るボタン", hi: "वापस बटन", ar: "زر الرجوع", zh: "返回按钮" },
     description: {
       en: "Returns you to the skill tree to choose another lesson",
       es: "Te regresa al árbol de habilidades para elegir otra lección",
+      it: "Ti riporta all'albero delle abilità per scegliere un'altra lezione",
+      fr: "Te ramene a l'arbre de competences pour choisir une autre lecon",
+      ja: "スキルツリーに戻り、別のレッスンを選べます",
+      hi: "यह आपको स्किल ट्री पर वापस ले जाता है ताकि आप दूसरा पाठ चुन सकें।",
+      ar: "يرجّعك لشجرة المهارات عشان تختار درس تاني.",
+      zh: "返回技能树，选择另一节课程。",
     },
     position: 0,
   },
@@ -66,10 +73,16 @@ const BUTTON_EXPLANATIONS = [
     id: "realWorldTasks",
     tutorialId: "teams",
     icon: FiCompass,
-    label: { en: "Immersion Practice", es: "Práctica de Inmersión" },
+    label: { en: "Immersion Practice", es: "Práctica de Inmersión", it: "Pratica di Immersione", fr: "Pratique d'immersion", ja: "イマージョン練習", hi: "इमर्शन अभ्यास", ar: "تدريب الانغماس", zh: "沉浸练习" },
     description: {
       en: "Complete tasks outside of the app to immerse and practice the language.",
       es: "Completa tareas fuera de la app para sumergirte y practicar el idioma.",
+      it: "Completa attività fuori dall'app per immergerti e praticare la lingua.",
+      fr: "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
+      ja: "アプリの外でタスクを完了し、言語に浸って練習します。",
+      hi: "ऐप के बाहर के काम पूरे करें ताकि आप भाषा में डूबकर उसका अभ्यास कर सकें।",
+      ar: "كمّل مهام برّه التطبيق عشان تندمج في اللغة وتتدرّب عليها.",
+      zh: "完成应用外任务，让自己沉浸并练习语言。",
     },
     position: 1,
   },
@@ -77,10 +90,16 @@ const BUTTON_EXPLANATIONS = [
     id: "settings",
     tutorialId: "settings",
     icon: SettingsIcon,
-    label: { en: "Settings", es: "Configuración" },
+    label: { en: "Settings", es: "Configuración", it: "Impostazioni", fr: "Parametres", ja: "設定", hi: "सेटिंग्स", ar: "الإعدادات", zh: "设置" },
     description: {
       en: "Open settings and account tabs for your learning preferences, voice, and account details",
       es: "Abre las pestañas de configuración y cuenta para tus preferencias, voz y detalles de cuenta",
+      it: "Apri le schede impostazioni e account per le preferenze, la voce e i dettagli dell'account",
+      fr: "Ouvre les onglets parametres et compte pour tes preferences, ta voix et tes details de compte",
+      ja: "学習設定、音声、アカウント詳細の設定とアカウントタブを開きます",
+      hi: "अपनी सीखने की पसंद, आवाज़ और खाते की जानकारी के लिए सेटिंग्स और अकाउंट टैब खोलें।",
+      ar: "افتح تبويبات الإعدادات والحساب عشان تظبط تفضيلاتك والصوت وبيانات الحساب.",
+      zh: "打开设置和账户标签，调整学习偏好、声音和账户信息。",
     },
     position: 2,
   },
@@ -88,10 +107,16 @@ const BUTTON_EXPLANATIONS = [
     id: "notes",
     tutorialId: "notes",
     icon: RiBookmarkLine,
-    label: { en: "Notes", es: "Notas" },
+    label: { en: "Notes", es: "Notas", it: "Note", fr: "Notes", ja: "メモ", hi: "नोट्स", ar: "الملاحظات", zh: "笔记" },
     description: {
       en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
+      it: "Visualizza le tue note di studio. Le note si creano quando esegui o completi esercizi e schede.",
+      fr: "Consulte tes notes d'etude. Elles peuvent etre creees quand tu tentes ou termines des exercices et des cartes.",
+      ja: "学習メモを表示します。練習やカードを試す・完了するとメモを作成できます。",
+      hi: "अपने अध्ययन नोट्स देखें। नोट्स तब बन सकते हैं जब आप अभ्यासों और फ़्लैशकार्डों को आज़माते या पूरा करते हैं।",
+      ar: "شوف ملاحظات المذاكرة بتاعتك. الملاحظات ممكن تتعمل لما تجرّب أو تكمّل التمارين والكروت.",
+      zh: "查看学习笔记。尝试或完成练习和闪卡时可以创建笔记。",
     },
     position: 3,
   },
@@ -99,10 +124,16 @@ const BUTTON_EXPLANATIONS = [
     id: "help",
     tutorialId: "help",
     icon: MdOutlineSupportAgent,
-    label: { en: "Assistant", es: "Asistente" },
+    label: { en: "Assistant", es: "Asistente", it: "Assistente", fr: "Assistant", ja: "アシスタント", hi: "सहायक", ar: "المساعد", zh: "助手" },
     description: {
       en: "Get instant help and answers from our learning assistant",
       es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
+      it: "Ottieni aiuto immediato e risposte dal nostro assistente di apprendimento",
+      fr: "Obtiens une aide immediate et des reponses de notre assistant d'apprentissage",
+      ja: "学習アシスタントからすぐに助けや答えを得られます",
+      hi: "हमारे सीखने वाले सहायक से तुरंत मदद और उत्तर पाएँ।",
+      ar: "خد مساعدة وإجابات فورية من مساعد التعلّم.",
+      zh: "从学习助手那里即时获得帮助和答案。",
     },
     position: 5,
   },
@@ -110,10 +141,16 @@ const BUTTON_EXPLANATIONS = [
     id: "mode",
     tutorialId: "mode",
     icon: PiPath,
-    label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje", it: "Modalità di Apprendimento", fr: "Mode d'apprentissage", ja: "学習モード", hi: "सीखने का मोड", ar: "وضع التعلّم", zh: "学习模式" },
     description: {
       en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
       es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
+      it: "Passa tra percorso di apprendimento, schede di pratica e modalità di conversazione libera. L'icona cambia in base alla modalità attuale.",
+      fr: "Passe entre le parcours, les cartes de pratique et les modes de conversation libre. L'icone change selon le mode actuel.",
+      ja: "学習パス、練習カード、自由会話モードを切り替えます。現在のモードに応じてアイコンが変わります。",
+      hi: "लर्निंग पाथ, अभ्यास कार्ड और मुक्त बातचीत मोड के बीच बदलें। आइकन आपके वर्तमान मोड के अनुसार बदलता है।",
+      ar: "بدّل بين مسار التعلّم وكروت التدريب وأوضاع المحادثة الحرة. الأيقونة بتتغيّر حسب وضعك الحالي.",
+      zh: "在学习路径、练习卡片和自由会话模式之间切换。图标会根据当前模式变化。",
     },
     position: 6,
   },
@@ -141,6 +178,7 @@ export default function TutorialActionBarPopovers({
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const isRtl = getLanguageDirection(lang) === "rtl";
 
   // Measure the target button and compute arrow position
   const measureArrow = useCallback(
@@ -337,7 +375,7 @@ export default function TutorialActionBarPopovers({
                 )}
               </Box>
               <Text fontSize="lg" fontWeight="bold" color={headingColor}>
-                {currentButton.label[lang]}
+                {currentButton.label[lang] || currentButton.label.en}
               </Text>
             </HStack>
 
@@ -355,7 +393,7 @@ export default function TutorialActionBarPopovers({
                 textAlign="center"
                 lineHeight="1.5"
               >
-                {currentButton.description[lang]}
+                {currentButton.description[lang] || currentButton.description.en}
               </Text>
             </Box>
 
@@ -376,10 +414,34 @@ export default function TutorialActionBarPopovers({
             {/* Navigation buttons */}
             <HStack spacing={3} mt={2} w="100%" justify="center">
               <IconButton
-                icon={<ChevronLeftIcon boxSize={5} />}
+                icon={
+                  isRtl ? (
+                    <ChevronRightIcon boxSize={5} />
+                  ) : (
+                    <ChevronLeftIcon boxSize={5} />
+                  )
+                }
                 onClick={handlePrevious}
                 isDisabled={isFirstStep}
-                aria-label={lang === "es" ? "Anterior" : "Previous"}
+                aria-label={
+                  lang === "ja"
+                    ? "前へ"
+                    : lang === "zh"
+                    ? "上一步"
+                    : lang === "ar"
+                    ? "السابق"
+                    : lang === "fr"
+                    ? "Precedent"
+                    : lang === "hi"
+                    ? "पिछला"
+                    : lang === "pt"
+                    ? "Anterior"
+                    : lang === "es"
+                    ? "Anterior"
+                    : lang === "it"
+                    ? "Precedente"
+                    : "Previous"
+                }
                 size="sm"
                 {...navButtonStyles}
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
@@ -401,13 +463,53 @@ export default function TutorialActionBarPopovers({
                   px={4}
                   {...doneButtonStyles}
                 >
-                  {lang === "es" ? "Listo" : "Done"}
+                  {lang === "ja"
+                    ? "完了"
+                    : lang === "zh"
+                    ? "完成"
+                    : lang === "ar"
+                    ? "تم"
+                    : lang === "fr"
+                    ? "Termine"
+                    : lang === "hi"
+                    ? "पूरा"
+                    : lang === "pt"
+                    ? "Concluir"
+                    : lang === "es"
+                    ? "Listo"
+                    : lang === "it"
+                    ? "Fatto"
+                    : "Done"}
                 </Button>
               ) : (
                 <IconButton
-                  icon={<ChevronRightIcon boxSize={5} />}
+                  icon={
+                    isRtl ? (
+                      <ChevronLeftIcon boxSize={5} />
+                    ) : (
+                      <ChevronRightIcon boxSize={5} />
+                    )
+                  }
                   onClick={handleNext}
-                  aria-label={lang === "es" ? "Siguiente" : "Next"}
+                  aria-label={
+                    lang === "ja"
+                      ? "次へ"
+                      : lang === "zh"
+                      ? "下一步"
+                      : lang === "ar"
+                      ? "التالي"
+                      : lang === "fr"
+                      ? "Suivant"
+                      : lang === "hi"
+                      ? "अगला"
+                      : lang === "pt"
+                      ? "Proximo"
+                      : lang === "es"
+                      ? "Siguiente"
+                      : lang === "it"
+                      ? "Avanti"
+                      : "Next"
+                  }
                   size="sm"
                   {...navButtonStyles}
                 />

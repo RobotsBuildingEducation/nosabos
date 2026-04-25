@@ -1,5 +1,10 @@
 // src/utils/speechEvaluation.js
 
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
 const STOPWORDS = {
   es: new Set([
     "de",
@@ -260,6 +265,25 @@ const STOPWORDS = {
     "stessa", "stessi", "stesse", "solo", "sola", "soli", "sole", "già", "ora",
     "ancora", "sempre", "mai", "qui", "qua", "là", "lì", "così", "bene",
   ]),
+  hi: new Set([
+    "का", "की", "के", "को", "से", "में", "पर", "और", "या", "तो", "भी", "ही",
+    "यह", "ये", "वह", "वे", "मैं", "हम", "तुम", "आप", "वो", "जो", "क्या", "क्यों",
+    "कब", "कहाँ", "कैसे", "एक", "कुछ", "बहुत", "नहीं", "हाँ", "था", "थी", "थे",
+    "है", "हूँ", "हो", "हैं", "कर", "करना", "किया", "गया", "गई", "अगर", "लेकिन",
+    "जब", "तक", "लिए", "द्वारा", "अपने", "अपनी", "अपना", "उनका", "उसका", "मेरा",
+    "मेरी", "मेरे", "तुम्हारा", "तुम्हारी", "तुम्हारे", "हमारा", "हमारी", "हमारे",
+  ]),
+  ar: new Set([
+    "ال", "و", "في", "من", "على", "إلى", "عن", "مع", "ده", "دي", "هو", "هي",
+    "أنا", "إنت", "انت", "احنا", "هم", "كان", "كانت", "يكون", "بتاع", "لسه",
+    "مش", "ما", "أو", "او", "كل", "بعض", "أي", "اي", "مين", "فين", "ليه", "إزاي",
+    "ازاي", "إمتى", "امتى", "ده", "دي", "دول", "فيه", "فيها", "عشان", "علشان",
+  ]),
+  zh: new Set([
+    "的", "了", "和", "是", "我", "你", "他", "她", "它", "我们", "你们", "他们",
+    "在", "有", "不", "也", "就", "都", "很", "这", "那", "一个", "什么", "怎么",
+    "为什么", "可以", "要", "会", "说", "做", "去", "来", "给", "对", "跟", "把",
+  ]),
 };
 
 function removeDiacritics(s) {
@@ -271,7 +295,7 @@ function removeDiacritics(s) {
 function normalizeGeneric(str, lang) {
   const s = removeDiacritics(str || "").toLowerCase();
   return s
-    .replace(/[^a-zñáéíóúüʼ' -]/gi, " ")
+    .replace(/[^\p{L}\p{N}ʼ' -]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -528,19 +552,108 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Incluye las palabras clave del contenido.",
     "low-confidence": "Pronuncia con claridad y reduce el ruido de fondo.",
   },
+  pt: {
+    "speech-quality": "Fale um pouco mais alto e mantenha um ritmo constante.",
+    "not-target-lang": (targetLabel) => `Tente falar em ${targetLabel}.`,
+    "low-char-sim": "Aproxime-se mais do texto original.",
+    "low-word-f1": "Inclua as palavras-chave do conteudo.",
+    "low-confidence": "Pronuncie com clareza e reduza o ruido de fundo.",
+  },
+  it: {
+    "speech-quality": "Parla un po' più forte e mantieni un ritmo regolare.",
+    "not-target-lang": (targetLabel) => `Prova a parlare in ${targetLabel}.`,
+    "low-char-sim": "Avvicinati di più al testo originale.",
+    "low-word-f1": "Includi le parole chiave del contenuto.",
+    "low-confidence": "Pronuncia con chiarezza e riduci il rumore di fondo.",
+  },
+  hi: {
+    "speech-quality": "थोड़ा ज़ोर से और स्थिर गति में बोलिए।",
+    "not-target-lang": (targetLabel) => `${targetLabel} में बोलने की कोशिश कीजिए।`,
+    "low-char-sim": "मूल वाक्य के शब्दों के और करीब बोलिए।",
+    "low-word-f1": "मुख्य अर्थ वाले शब्द ज़रूर शामिल कीजिए।",
+    "low-confidence": "स्पष्ट बोलिए और आसपास का शोर कम कीजिए।",
+  },
+  ar: {
+    "speech-quality": "اتكلم بصوت أوضح وحافظ على سرعة ثابتة.",
+    "not-target-lang": (targetLabel) => `حاول تتكلم بـ ${targetLabel}.`,
+    "low-char-sim": "قرّب كلامك أكتر من الجملة الأصلية.",
+    "low-word-f1": "حاول تدخل الكلمات الأساسية في المحتوى.",
+    "low-confidence": "انطق بوضوح وقلل الضوضاء حواليك.",
+  },
+  fr: {
+    "speech-quality": "Parle un peu plus fort et garde un rythme regulier.",
+    "not-target-lang": (targetLabel) => `Essaie de parler en ${targetLabel}.`,
+    "low-char-sim": "Rapproche-toi davantage du texte original.",
+    "low-word-f1": "Inclue les mots cles du contenu.",
+    "low-confidence": "Prononce clairement et reduis le bruit de fond.",
+  },
+  ja: {
+    "speech-quality": "もう少し大きな声で、一定のペースで話してみましょう。",
+    "not-target-lang": (targetLabel) => `${targetLabel}で話してみましょう。`,
+    "low-char-sim": "元の文にもっと近づけてみましょう。",
+    "low-word-f1": "重要な内容語を入れてみましょう。",
+    "low-confidence": "はっきり発音し、周囲の雑音を減らしましょう。",
+  },
+  zh: {
+    "speech-quality": "请声音更清楚一些，并保持稳定语速。",
+    "not-target-lang": (targetLabel) => `请尝试用${targetLabel}说。`,
+    "low-char-sim": "请更接近原句内容。",
+    "low-word-f1": "请包含关键词。",
+    "low-confidence": "请清楚发音，并减少背景噪音。",
+  },
 };
 
 export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = {}) {
-  const lang = uiLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const msgs = SPEECH_REASON_MESSAGES[lang];
   const tips = [];
   reasons.forEach((reason) => {
     const msg = msgs[reason];
-    if (typeof msg === "function") tips.push(msg(targetLabel || (lang === "es" ? "el idioma objetivo" : "the target language")));
+    if (typeof msg === "function")
+      tips.push(
+        msg(
+          targetLabel ||
+            (lang === "es"
+              ? "el idioma objetivo"
+              : lang === "pt"
+                ? "o idioma alvo"
+              : lang === "it"
+                ? "la lingua obiettivo"
+                : lang === "hi"
+                  ? "लक्ष्य भाषा"
+                : lang === "zh"
+                  ? "目标语言"
+                : lang === "fr"
+                  ? "la langue cible"
+                  : lang === "ja"
+                    ? "目標言語"
+                    : lang === "ar"
+                      ? "اللغة الهدف"
+                      : "the target language"),
+        ),
+      );
     else if (msg) tips.push(msg);
   });
   if (!tips.length) {
-    tips.push(lang === "es" ? "Vuelve a intentarlo hablando con claridad." : "Try again, speaking clearly.");
+    tips.push(
+      lang === "es"
+        ? "Vuelve a intentarlo hablando con claridad."
+        : lang === "pt"
+          ? "Tente novamente falando com clareza."
+        : lang === "it"
+          ? "Riprova parlando chiaramente."
+          : lang === "hi"
+            ? "स्पष्ट बोलते हुए फिर से कोशिश कीजिए।"
+          : lang === "zh"
+            ? "请清楚地说，然后再试一次。"
+          : lang === "fr"
+            ? "Reessaie en parlant clairement."
+          : lang === "ja"
+              ? "はっきり話して、もう一度試してみましょう。"
+              : lang === "ar"
+                ? "حاول مرة تانية واتكلم بوضوح."
+                : "Try again, speaking clearly.",
+    );
   }
   return tips;
 }

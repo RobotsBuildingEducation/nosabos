@@ -4,7 +4,43 @@
  * AI grades the response and determines XP reward
  */
 
-export const FLASHCARD_DATA = [
+import { withItalianFlashcardText } from "./flashcards/italianLocalizer.js";
+import { withFrenchFlashcardText } from "./flashcards/frenchLocalizer.js";
+import {
+  translateFlashcardConceptToArabic,
+  withArabicFlashcardText,
+} from "./flashcards/arabicLocalizer.js";
+import {
+  translateFlashcardConceptToHindi,
+  withHindiFlashcardText,
+} from "./flashcards/hindiLocalizer.js";
+import {
+  translateFlashcardConceptToPortuguese,
+  withPortugueseFlashcardText,
+} from "./flashcards/portugueseLocalizer.js";
+import {
+  translateFlashcardConceptToJapanese,
+  withJapaneseFlashcardText,
+} from "./flashcards/japaneseLocalizer.js";
+import {
+  translateFlashcardConceptToChinese,
+  withChineseFlashcardText,
+} from "./flashcards/chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARD_DATA = withLocalizedFlashcardText([
   // ============================================
   // A1 LEVEL - 250 Flashcards
   // Category 1: Essential Greetings & Politeness (30)
@@ -7820,7 +7856,7 @@ export const FLASHCARD_DATA = [
     category: "literary",
     type: "phrase",
   },
-];
+]);
 
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
@@ -7860,9 +7896,50 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es"];
+    const languages = ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"];
     const selectedLang = languages[hash % languages.length];
+    if (selectedLang === "pt" && !card.concept.pt) {
+      return translateFlashcardConceptToPortuguese(
+        card.concept.en,
+        card.concept.es,
+      );
+    }
+    if (selectedLang === "ja" && !card.concept.ja) {
+      return translateFlashcardConceptToJapanese(card.concept.en);
+    }
+    if (selectedLang === "hi" && !card.concept.hi) {
+      return translateFlashcardConceptToHindi(card.concept.en || card.concept.es);
+    }
+    if (selectedLang === "ar" && !card.concept.ar) {
+      return translateFlashcardConceptToArabic(card.concept.en || card.concept.es);
+    }
+    if (selectedLang === "zh" && !card.concept.zh) {
+      return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
+    }
     return card.concept[selectedLang] || card.concept.en;
+  }
+
+  if (supportLang === "pt" && !card.concept.pt) {
+    return translateFlashcardConceptToPortuguese(
+      card.concept.en,
+      card.concept.es,
+    );
+  }
+
+  if (supportLang === "ja" && !card.concept.ja) {
+    return translateFlashcardConceptToJapanese(card.concept.en);
+  }
+
+  if (supportLang === "hi" && !card.concept.hi) {
+    return translateFlashcardConceptToHindi(card.concept.en || card.concept.es);
+  }
+
+  if (supportLang === "ar" && !card.concept.ar) {
+    return translateFlashcardConceptToArabic(card.concept.en || card.concept.es);
+  }
+
+  if (supportLang === "zh" && !card.concept.zh) {
+    return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
   }
 
   // Otherwise use the specified language, fallback to English

@@ -4,6 +4,10 @@ import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages.js";
+import {
   DAILY_GOAL_PET_DEFAULT_HEALTH,
   DAILY_GOAL_PET_HEALTH_GAIN,
   DAILY_GOAL_PET_HEALTH_LOSS,
@@ -60,6 +64,187 @@ function px(ctx, fill, x, y, width, height) {
 }
 
 function getCopy(lang) {
+  if (lang === "ar") {
+    return {
+      title: "صاحبك",
+      subtitle: "حافظ على صحته لما تحقق هدف XP اليومي.",
+      health: "الصحة",
+      happy: "مبسوط",
+      healthy: "صحي",
+      unhappy: "زعلان",
+      stressed: "متوتر",
+      unhealthy: "تعبان",
+      dead: "غير نشط",
+      reward: "الهدف اتحقق",
+      penalty: "الهدف فاتك",
+      rewardFooter: "الصحة بتعلى لحد {health}%",
+      penaltyFooter: "الصحة بتنزل لحد {health}%",
+      latestAchieved: "آخر تحديث: +{delta}% بعد تحقيق الهدف",
+      latestMissed: "آخر تحديث: {delta}% بعد فوات الهدف",
+      managementHint: "حقق هدف النهارده علشان يفضل قوي.",
+      celebrationHint: "صحة صاحبك زادت النهارده.",
+      rewardBadge: "مكافأة +{delta}%",
+      penaltyBadge: "خطر -{delta}%",
+      previewHint:
+        "دي مجرد معاينة ومش هتغير الصحة الحقيقية لصاحبك.",
+    };
+  }
+
+  if (lang === "hi") {
+    return {
+      title: "आपका साथी",
+      subtitle: "अपना रोज़ का XP लक्ष्य पूरा करके इसकी सेहत अच्छी रखें।",
+      health: "सेहत",
+      happy: "खुश",
+      healthy: "स्वस्थ",
+      unhappy: "उदास",
+      stressed: "तनावग्रस्त",
+      unhealthy: "अस्वस्थ",
+      dead: "निष्क्रिय",
+      reward: "लक्ष्य पूरा",
+      penalty: "लक्ष्य छूटा",
+      rewardFooter: "सेहत {health}% तक बढ़ती है",
+      penaltyFooter: "सेहत {health}% तक घटती है",
+      latestAchieved: "नवीनतम अपडेट: लक्ष्य पूरा करने पर +{delta}%",
+      latestMissed: "नवीनतम अपडेट: लक्ष्य चूकने पर {delta}%",
+      managementHint: "इसे मजबूत रखने के लिए आज का लक्ष्य पूरा करें।",
+      celebrationHint: "आज आपके साथी की सेहत बढ़ी है।",
+      rewardBadge: "इनाम +{delta}%",
+      penaltyBadge: "जोखिम -{delta}%",
+      previewHint:
+        "यह केवल पूर्वावलोकन है। इससे आपके कुत्ते की असली सेहत नहीं बदलती।",
+    };
+  }
+
+  if (lang === "zh") {
+    return {
+      title: "你的伙伴",
+      subtitle: "完成每日 XP 目标，照顾它的健康。",
+      health: "健康",
+      happy: "开心",
+      healthy: "健康",
+      unhappy: "难过",
+      stressed: "紧张",
+      unhealthy: "不舒服",
+      dead: "未激活",
+      reward: "目标已完成",
+      penalty: "目标未完成",
+      rewardFooter: "健康值提升到 {health}%",
+      penaltyFooter: "健康值下降到 {health}%",
+      latestAchieved: "最新更新：完成目标获得 +{delta}%",
+      latestMissed: "最新更新：未完成目标 {delta}%",
+      managementHint: "完成今天的目标，让它保持强壮。",
+      celebrationHint: "你的伙伴获得了健康提升。",
+      rewardBadge: "奖励 +{delta}%",
+      penaltyBadge: "风险 -{delta}%",
+      previewHint: "这只是预览，不会改变真实健康值。",
+    };
+  }
+
+  if (lang === "ja") {
+    return {
+      title: "あなたの相棒",
+      subtitle: "毎日のXP目標を達成して元気を保ちましょう。",
+      health: "健康",
+      happy: "ごきげん",
+      healthy: "元気",
+      unhappy: "悲しい",
+      stressed: "ストレス",
+      unhealthy: "弱っています",
+      dead: "力尽きた",
+      reward: "目標達成",
+      penalty: "目標未達",
+      rewardFooter: "健康度が{health}%に上がります",
+      penaltyFooter: "健康度が{health}%に下がります",
+      latestAchieved: "最新更新: 目標達成で+{delta}%",
+      latestMissed: "最新更新: 目標未達で{delta}%",
+      managementHint: "今日の目標を達成して元気を保ちましょう。",
+      celebrationHint: "相棒の健康度が上がりました。",
+      rewardBadge: "報酬 +{delta}%",
+      penaltyBadge: "リスク -{delta}%",
+      previewHint:
+        "プレビューのみです。実際の健康度は変わりません。",
+    };
+  }
+
+  if (lang === "fr") {
+    return {
+      title: "Ton compagnon",
+      subtitle: "Garde sa sante elevee en atteignant ton objectif XP quotidien.",
+      health: "Sante",
+      happy: "Heureux",
+      healthy: "En forme",
+      unhappy: "Triste",
+      stressed: "Stresse",
+      unhealthy: "Fragile",
+      dead: "Epuise",
+      reward: "Objectif atteint",
+      penalty: "Objectif manque",
+      rewardFooter: "La sante monte a {health}%",
+      penaltyFooter: "La sante descend a {health}%",
+      latestAchieved: "Derniere mise a jour : +{delta}% pour l'objectif atteint",
+      latestMissed: "Derniere mise a jour : {delta}% pour l'objectif manque",
+      managementHint: "Atteins l'objectif aujourd'hui pour le garder fort.",
+      celebrationHint: "Ton compagnon a recu un bonus de sante.",
+      rewardBadge: "Recompense +{delta}%",
+      penaltyBadge: "Risque -{delta}%",
+      previewHint:
+        "Apercu seulement. Cela ne change pas sa vraie sante.",
+    };
+  }
+
+  if (lang === "it") {
+    return {
+      title: "Il tuo compagno",
+      subtitle: "Mantieni alta la sua salute raggiungendo il tuo obiettivo XP giornaliero.",
+      health: "Salute",
+      happy: "Felice",
+      healthy: "In salute",
+      unhappy: "Triste",
+      stressed: "Stressato",
+      unhealthy: "Malaticcio",
+      dead: "Morto",
+      reward: "Obiettivo raggiunto",
+      penalty: "Obiettivo mancato",
+      rewardFooter: "La salute sale a {health}%",
+      penaltyFooter: "La salute scende a {health}%",
+      latestAchieved: "Ultimo aggiornamento: +{delta}% per aver raggiunto l'obiettivo",
+      latestMissed: "Ultimo aggiornamento: {delta}% per aver mancato l'obiettivo",
+      managementHint: "Raggiungi l'obiettivo oggi per mantenerlo forte.",
+      celebrationHint: "Il tuo cane ha ricevuto un aumento di salute.",
+      rewardBadge: "Ricompensa +{delta}%",
+      penaltyBadge: "Rischio -{delta}%",
+      previewHint:
+        "Solo anteprima. Non cambia la salute reale del cane.",
+    };
+  }
+
+  if (lang === "pt") {
+    return {
+      title: "Seu companheiro",
+      subtitle: "Cuide da saude dele alcancando sua meta diaria de XP.",
+      health: "Saude",
+      happy: "Feliz",
+      healthy: "Saudavel",
+      unhappy: "Triste",
+      stressed: "Estressado",
+      unhealthy: "Doentinho",
+      dead: "Morto",
+      reward: "Meta concluida",
+      penalty: "Meta nao concluida",
+      rewardFooter: "A saude sobe para {health}%",
+      penaltyFooter: "A saude cai para {health}%",
+      latestAchieved: "Ultima atualizacao: +{delta}% por cumprir sua meta",
+      latestMissed: "Ultima atualizacao: {delta}% por nao cumprir sua meta",
+      managementHint: "Cumpra a meta de hoje para mante-lo forte.",
+      celebrationHint: "Seu cachorrinho recebeu um aumento de saude.",
+      rewardBadge: "Recompensa +{delta}%",
+      penaltyBadge: "Risco -{delta}%",
+      previewHint:
+        "Isto e apenas uma visualizacao. Nao muda a saude real do seu cachorro.",
+    };
+  }
+
   if (lang === "es") {
     return {
       title: "Tu compañero",
@@ -102,7 +287,11 @@ function getCopy(lang) {
     penaltyFooter: "Health drops to {health}%",
     latestAchieved: "Latest update: +{delta}% for hitting your goal",
     latestMissed: "Latest update: {delta}% for missing your goal",
+    managementHint: "Hit today's goal to keep it strong.",
     celebrationHint: "Your dog got a health boost today.",
+    rewardBadge: "Reward +{delta}%",
+    penaltyBadge: "Risk -{delta}%",
+    previewHint: "Preview only. This does not change your dog's real health.",
   };
 }
 
@@ -491,9 +680,14 @@ function drawDogCharacter(ctx, frame, stage) {
   drawAliveDog(ctx, frame, stage);
 }
 
-function DogCanvas({ stage, isLightTheme }) {
+function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
   const canvasRef = useRef(null);
   const [frame, setFrame] = useState(0);
+  const canvasBackground = isCelebration
+    ? isLightTheme
+      ? "rgba(255, 253, 249, 0.52)"
+      : "rgba(255, 255, 255, 0.22)"
+    : stage.background;
 
   useEffect(() => {
     if (stage.key === "dead") {
@@ -516,8 +710,6 @@ function DogCanvas({ stage, isLightTheme }) {
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, T, T);
-    ctx.fillStyle = stage.background;
-    ctx.fillRect(0, 0, T, T);
 
     drawDogCharacter(ctx, frame, stage);
   }, [frame, stage]);
@@ -530,8 +722,14 @@ function DogCanvas({ stage, isLightTheme }) {
       h={{ base: "96px", md: "144px" }}
       borderRadius={{ base: "lg", md: "xl" }}
       border="1px solid"
-      borderColor={isLightTheme ? "rgba(91, 75, 58, 0.12)" : "whiteAlpha.300"}
-      bg={isLightTheme ? "rgba(255, 253, 249, 0.38)" : "blackAlpha.250"}
+      borderColor={
+        isCelebration
+          ? "rgba(255, 255, 255, 0.38)"
+          : isLightTheme
+            ? "rgba(91, 75, 58, 0.12)"
+            : "whiteAlpha.300"
+      }
+      bg={canvasBackground}
       sx={{ imageRendering: "pixelated" }}
     />
   );
@@ -547,7 +745,7 @@ export default function DailyGoalPetPanel({
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
-  const resolvedLang = lang === "es" ? "es" : "en";
+  const resolvedLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const copy = useMemo(() => getCopy(resolvedLang), [resolvedLang]);
   const safeHealth = clampDailyGoalPetHealth(health);
   const stage = useMemo(
@@ -558,12 +756,22 @@ export default function DailyGoalPetPanel({
   const rewardColor = isLightTheme ? "#48765f" : "green.200";
   const penaltyColor = isLightTheme ? "#a06a3b" : "orange.200";
   const previewCardBg = isLightTheme ? APP_SURFACE_ELEVATED : "blackAlpha.220";
+  const panelBg = isCelebration
+    ? isLightTheme
+      ? stage.background
+      : "rgba(255, 255, 255, 0.18)"
+    : stage.background;
+  const panelBorderColor = isCelebration
+    ? "rgba(255, 255, 255, 0.38)"
+    : isLightTheme
+      ? APP_BORDER
+      : "transparent";
 
   return (
     <Box
-      bg={stage.background}
+      bg={panelBg}
       border="1px solid"
-      borderColor={isLightTheme ? APP_BORDER : "transparent"}
+      borderColor={panelBorderColor}
       borderRadius="2xl"
       p={{ base: isCelebration ? 2.5 : 3, md: isCelebration ? 4 : 5 }}
       w="100%"
@@ -576,7 +784,11 @@ export default function DailyGoalPetPanel({
           flexDirection="row"
         >
           <VStack align="stretch" spacing={{ base: 1.5, md: 2 }} flexShrink={0}>
-            <DogCanvas stage={stage} isLightTheme={isLightTheme} />
+            <DogCanvas
+              stage={stage}
+              isLightTheme={isLightTheme}
+              isCelebration={isCelebration}
+            />
             <Badge
               colorScheme={stage.colorScheme}
               bg={isLightTheme ? stage.badgeBg : undefined}

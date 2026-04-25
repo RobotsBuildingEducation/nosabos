@@ -21,6 +21,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
+import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
@@ -39,6 +40,16 @@ const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
 /**
  * TranslateSentence - A Duolingo-style translation exercise component
  *
@@ -53,6 +64,8 @@ export default function TranslateSentence({
   correctAnswer = [], // Array of correct words in order (validation handled by parent)
   hint = "",
   loading = false,
+  sourceLang = "en",
+  answerLang = "en",
 
   // User language / UI
   userLanguage = "en",
@@ -92,6 +105,25 @@ export default function TranslateSentence({
   characterImage = null,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const sourceTextProps = getLanguageTextProps(sourceLang);
+  const answerTextProps = getLanguageTextProps(answerLang);
+  const answerDir = answerTextProps.dir;
+  const assistantLabel =
+    t("vocab_assistant") !== "vocab_assistant"
+      ? t("vocab_assistant")
+      : userLanguage === "hi"
+        ? "सहायक"
+        : userLanguage === "ar"
+          ? "المساعد"
+        : userLanguage === "zh"
+          ? "助手"
+        : userLanguage === "ja"
+          ? "アシスタント"
+          : userLanguage === "pt" || userLanguage === "it"
+            ? "Assistente"
+            : userLanguage === "es"
+              ? "Asistente"
+              : "Assistant";
   // Word bank state - indices of words still available
   const [bankOrder, setBankOrder] = useState([]);
   // Selected words - indices of words user has chosen, in order
@@ -221,39 +253,93 @@ export default function TranslateSentence({
 
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
+    const isFrenchUI = userLanguage === "fr";
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
-      isSpanishUI
+      isJapaneseUI
+        ? "提供された単語バンクを使って、この文を翻訳してください。"
+        : isArabicUI
+        ? "ترجم الجملة دي باستخدام بنك الكلمات الموجود."
+        : isChineseUI
+        ? "请使用提供的词库翻译这个句子。"
+        : isFrenchUI
+        ? "Traduis cette phrase avec la banque de mots fournie."
+        : isPortugueseUI
+        ? "Traduza esta frase usando o banco de palavras fornecido."
+        : isSpanishUI
         ? "Traduce esta oración usando el banco de palabras proporcionado."
         : "Translate this sentence using the provided word bank.",
       sourceSentence
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `翻訳する文: ${sourceSentence}`
+          : isArabicUI
+          ? `الجملة المطلوب ترجمتها: ${sourceSentence}`
+          : isChineseUI
+          ? `要翻译的句子：${sourceSentence}`
+          : isFrenchUI
+          ? `Phrase a traduire : ${sourceSentence}`
+          : isPortugueseUI
+          ? `Frase para traduzir: ${sourceSentence}`
+          : isSpanishUI
           ? `Oración para traducir: ${sourceSentence}`
           : `Sentence to translate: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `単語バンク: ${wordBank.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${wordBank.join(" | ")}`
+          : isChineseUI
+          ? `词库：${wordBank.join(" | ")}`
+          : isFrenchUI
+          ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${wordBank.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
-      isSpanishUI
+      hint
+        ? isJapaneseUI
+          ? `ヒント: ${hint}`
+          : isArabicUI
+          ? `تلميح: ${hint}`
+          : isChineseUI
+          ? `提示：${hint}`
+          : isFrenchUI
+          ? `Indice : ${hint}`
+          : isPortugueseUI
+          ? `Dica: ${hint}`
+          : isSpanishUI
+          ? `Pista: ${hint}`
+          : `Hint: ${hint}`
+        : null,
+      isJapaneseUI
+        ? "単語バンクの選択肢を組み合わせて、正しい翻訳で答えてください。"
+        : isArabicUI
+        ? "جاوب بالترجمة الصحيحة المكوّنة من اختيارات بنك الكلمات."
+        : isChineseUI
+        ? "请组合词库中的选项，回答正确翻译。"
+        : isFrenchUI
+        ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
+        : isPortugueseUI
+        ? "Responda com a traducao correta montada com as opcoes do banco de palavras."
+        : isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
         : "Respond with the correct translation assembled from the word bank options.",
     ].filter(Boolean);
     onAskAssistant(promptLines.join("\n"));
   }, [hint, onAskAssistant, isLoadingAssistantSupport, assistantSupportText, sourceSentence, userLanguage, wordBank]);
 
-  const translateLabel =
-    userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
-  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
-  const nextLabel =
-    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
-  const instructionLabel =
-    userLanguage === "es"
-      ? "Toca las palabras para formar tu respuesta"
-      : "Tap the words to form your answer";
+  const translateLabel = t("translate_sentence_heading");
+  const skipLabel = t("practice_skip_question");
+  const submitLabel = t("quiz_submit");
+  const nextLabel = t("practice_next_question");
+  const instructionLabel = t("translate_sentence_instruction");
 
   const createWarmAudio = useCallback(async () => {
     try {
@@ -359,7 +445,15 @@ export default function TranslateSentence({
                   {onAskAssistant && (
                     <IconButton
                       aria-label={
-                        userLanguage === "es"
+                        userLanguage === "ja"
+                          ? "アシスタントに聞く"
+                          : userLanguage === "zh"
+                          ? "询问助手"
+                          : userLanguage === "ar"
+                            ? "اسأل المساعد"
+                          : userLanguage === "pt"
+                          ? "Pedir ajuda"
+                          : userLanguage === "es"
                           ? "Pedir ayuda"
                           : "Ask the assistant"
                       }
@@ -373,7 +467,19 @@ export default function TranslateSentence({
                     />
                   )}
                   <IconButton
-                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
+                    aria-label={
+                      userLanguage === "ja"
+                        ? "聞く"
+                        : userLanguage === "zh"
+                          ? "聆听"
+                        : userLanguage === "ar"
+                          ? "استمع"
+                        : userLanguage === "pt"
+                          ? "Ouvir"
+                        : userLanguage === "es"
+                          ? "Escuchar"
+                          : "Listen"
+                    }
                     icon={renderSpeakerIcon(isSynthesizing)}
                     size="sm"
                     fontSize="lg"
@@ -387,6 +493,7 @@ export default function TranslateSentence({
                     fontWeight="medium"
                     flex="1"
                     lineHeight="tall"
+                    {...sourceTextProps}
                   >
                     {sourceSentence || (loading ? "..." : "")}
                   </Text>
@@ -406,7 +513,7 @@ export default function TranslateSentence({
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
               <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {userLanguage === "es" ? "Asistente" : "Assistant"}
+                {assistantLabel}
               </Text>
               {isLoadingAssistantSupport && <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />}
             </HStack>
@@ -463,6 +570,8 @@ export default function TranslateSentence({
                 gap={2}
                 minH="48px"
                 align="center"
+                justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+                dir={answerDir}
                 bg={
                   snapshot.isDraggingOver
                     ? "rgba(128, 90, 213, 0.08)"
@@ -502,6 +611,9 @@ export default function TranslateSentence({
                           dragging: dragSnapshot.isDragging,
                         })}
                         fontSize="sm"
+                        dir={answerTextProps.dir}
+                        lang={answerTextProps.lang}
+                        sx={{ unicodeBidi: "plaintext" }}
                         cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() => {
                           if (lastOk !== true) {
@@ -537,6 +649,7 @@ export default function TranslateSentence({
               justify="center"
               p={2}
               minH="60px"
+              dir={answerDir}
               bg={
                 snapshot.isDraggingOver
                   ? "rgba(128, 90, 213, 0.05)"
@@ -564,6 +677,9 @@ export default function TranslateSentence({
                         dragging: dragSnapshot.isDragging,
                       })}
                       fontSize="sm"
+                      dir={answerTextProps.dir}
+                      lang={answerTextProps.lang}
+                      sx={{ unicodeBidi: "plaintext" }}
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {

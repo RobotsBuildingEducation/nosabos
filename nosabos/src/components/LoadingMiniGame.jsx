@@ -3,6 +3,11 @@ import { Box, Text } from "@chakra-ui/react";
 import * as Tone from "tone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  SUPPORT_LANGUAGE_CODES,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 const TILE = 16;
@@ -102,6 +107,16 @@ const OUTDOOR_NAMES = {
        "Moonlit Garden", "Cobblestone Square", "Whispering Grove", "Lantern Court", "Wildflower Field"],
   es: ["Plaza del Pueblo", "Jardín del Pueblo", "Claro del Bosque", "Parque del Río", "Pradera del Atardecer",
        "Jardín de Luna", "Plaza de Adoquines", "Arboleda Susurrante", "Patio de Faroles", "Campo de Flores"],
+  pt: ["Praça da Cidade", "Jardim do Vilarejo", "Clareira da Floresta", "Parque à Beira do Rio", "Prado do Pôr do Sol",
+       "Jardim ao Luar", "Praça de Paralelepípedos", "Bosque Sussurrante", "Pátio das Lanternas", "Campo de Flores Silvestres"],
+  it: ["Piazza del paese", "Prato del villaggio", "Radura del bosco", "Parco sul fiume", "Prato del tramonto",
+       "Giardino al chiaro di luna", "Piazza di ciottoli", "Boschetto sussurrante", "Cortile delle lanterne", "Campo di fiori"],
+  fr: ["Place du village", "Prairie du village", "Clairiere de la foret", "Parc de la riviere", "Prairie du couchant",
+       "Jardin au clair de lune", "Place pavee", "Bosquet murmureur", "Cour des lanternes", "Champ de fleurs"],
+  ja: ["町の広場", "村の緑地", "森の空き地", "川辺の公園", "夕焼けの草原",
+       "月明かりの庭", "石畳の広場", "ささやく木立", "ランタンの中庭", "野花の野原"],
+  hi: ["नगर चौक", "गाँव का मैदान", "जंगल की खुली जगह", "नदी किनारे का उद्यान", "सूर्यास्त का मैदान",
+       "चाँदनी बगीचा", "पत्थरों वाला चौक", "फुसफुसाता उपवन", "लालटेन आँगन", "जंगली फूलों का मैदान"],
 };
 
 const INDOOR_ROOM_TYPES = [
@@ -110,6 +125,11 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Ancient Library", "Reading Room", "Scholar's Study", "Book Nook", "Dusty Archives"],
       es: ["Biblioteca Antigua", "Sala de Lectura", "Estudio del Erudito", "Rincón de Libros", "Archivos Polvorientos"],
+      pt: ["Biblioteca Antiga", "Sala de Leitura", "Estúdio do Erudito", "Cantinho dos Livros", "Arquivos empoeirados"],
+      it: ["Biblioteca antica", "Sala di lettura", "Studio dello studioso", "Angolo dei libri", "Archivi polverosi"],
+      fr: ["Bibliotheque ancienne", "Salle de lecture", "Bureau du savant", "Coin des livres", "Archives poussiereuses"],
+      ja: ["古い図書館", "読書室", "学者の書斎", "本の小部屋", "ほこりっぽい資料室"],
+      hi: ["प्राचीन पुस्तकालय", "पठन कक्ष", "विद्वान का अध्ययन कक्ष", "पुस्तक कोना", "धूल भरा अभिलेखागार"],
     },
     wallFurniture: [BOOKSHELF, WINDOW_TILE],
     centerFurniture: [TABLE, DESK, PLANT_POT],
@@ -120,6 +140,11 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Cozy Cabin", "Warm Cottage", "Traveler's Rest", "Fireside Lodge", "Mountain Hut"],
       es: ["Cabaña Acogedora", "Casita Cálida", "Descanso del Viajero", "Refugio junto al Fuego", "Cabaña de Montaña"],
+      pt: ["Cabana Aconchegante", "Casinha Quentinha", "Descanso do Viajante", "Refúgio da Lareira", "Cabana da Montanha"],
+      it: ["Baita accogliente", "Casetta calda", "Riposo del viaggiatore", "Rifugio del focolare", "Capanna di montagna"],
+      fr: ["Cabane douillette", "Maison chaleureuse", "Repos du voyageur", "Refuge du foyer", "Cabane de montagne"],
+      ja: ["居心地のよい小屋", "暖かなコテージ", "旅人の休憩所", "暖炉のロッジ", "山小屋"],
+      hi: ["आरामदायक कुटिया", "गरमाहट भरी कुटिया", "यात्री विश्राम", "अंगीठी वाला आश्रय", "पहाड़ी झोंपड़ी"],
     },
     wallFurniture: [FIREPLACE, WINDOW_TILE, BED],
     centerFurniture: [TABLE, SOFA, PLANT_POT],
@@ -130,6 +155,11 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Artisan Workshop", "Craft Room", "Maker's Space", "Tinkerer's Lab", "Inventor's Den"],
       es: ["Taller Artesanal", "Sala de Manualidades", "Espacio Creativo", "Laboratorio del Inventor", "Guarida del Creador"],
+      pt: ["Oficina Artesanal", "Sala de Artesanato", "Espaço Criativo", "Laboratório do Inventor", "Refúgio do Criador"],
+      it: ["Bottega artigiana", "Stanza dei lavori manuali", "Spazio creativo", "Laboratorio dell'inventore", "Rifugio del creatore"],
+      fr: ["Atelier artisanal", "Salle de creation", "Espace creatif", "Laboratoire de l'inventeur", "Repaire du createur"],
+      ja: ["職人の工房", "クラフトルーム", "ものづくり空間", "発明家のラボ", "創作者の隠れ家"],
+      hi: ["कारीगर कार्यशाला", "हुनर कक्ष", "निर्माता का स्थान", "जुगाड़ू की प्रयोगशाला", "आविष्कारक का अड्डा"],
     },
     wallFurniture: [BOOKSHELF, DESK, WINDOW_TILE],
     centerFurniture: [TABLE, PLANT_POT, DESK],
@@ -140,6 +170,11 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Guest Room", "Cozy Bedroom", "Dreamer's Chamber", "Nap Room", "Rest Haven"],
       es: ["Habitación de Huéspedes", "Dormitorio Acogedor", "Cámara del Soñador", "Sala de Siesta", "Refugio de Descanso"],
+      pt: ["Quarto de Hóspedes", "Quarto Aconchegante", "Quarto do Sonhador", "Sala da Soneca", "Refúgio do Descanso"],
+      it: ["Camera degli ospiti", "Camera accogliente", "Stanza del sognatore", "Sala del riposo", "Rifugio tranquillo"],
+      fr: ["Chambre d'amis", "Chambre douillette", "Chambre du reveur", "Salle de sieste", "Havre de repos"],
+      ja: ["客室", "居心地のよい寝室", "夢見る人の部屋", "昼寝の部屋", "休息の隠れ家"],
+      hi: ["अतिथि कक्ष", "आरामदायक शयनकक्ष", "स्वप्नदर्शी का कक्ष", "झपकी कक्ष", "विश्राम आश्रय"],
     },
     wallFurniture: [BED, WINDOW_TILE, BOOKSHELF],
     centerFurniture: [DESK, PLANT_POT, TABLE],
@@ -150,6 +185,11 @@ const INDOOR_ROOM_TYPES = [
     names: {
       en: ["Lounge", "Common Room", "Gathering Hall", "Social Corner", "Tea Room"],
       es: ["Salón", "Sala Común", "Sala de Reuniones", "Rincón Social", "Sala de Té"],
+      pt: ["Sala", "Sala Comum", "Salão de Encontros", "Cantinho Social", "Sala de Chá"],
+      it: ["Salotto", "Sala comune", "Sala degli incontri", "Angolo sociale", "Sala da tè"],
+      fr: ["Salon", "Salle commune", "Hall de rencontre", "Coin social", "Salon de the"],
+      ja: ["ラウンジ", "談話室", "集会ホール", "交流コーナー", "ティールーム"],
+      hi: ["बैठक", "सामान्य कक्ष", "मिलन सभागार", "सामाजिक कोना", "चाय कक्ष"],
     },
     wallFurniture: [WINDOW_TILE, FIREPLACE, BOOKSHELF],
     centerFurniture: [SOFA, TABLE, PLANT_POT],
@@ -187,6 +227,76 @@ const SIGN_MESSAGES = {
     "Los idiomas abren puertas a nuevos mundos. ¡Literalmente!",
     "¡Sigue explorando! Siempre hay algo nuevo que encontrar.",
   ],
+  pt: [
+    "Bem-vindo, aventureiro! Explore enquanto o jogo carrega.",
+    "Dica: fale com os NPCs no jogo principal para praticar!",
+    "Curiosidade: aprender idiomas é como subir de nível no cérebro.",
+    "Dica extra: complete missões para ganhar XP e desbloquear lições!",
+    "A ponte liga dois mundos... assim como os idiomas.",
+    "Tente entrar pelas portas para descobrir salas novas!",
+    "Cada palavra aprendida é um passo em uma grande aventura.",
+    "Quanto mais você explora, mais descobre!",
+    "Segredo: alguns caminhos levam a tesouros escondidos...",
+    "Sabia? Este mapa muda toda vez que você carrega!",
+    "Os idiomas abrem portas para mundos novos. Literalmente!",
+    "Continue explorando! Sempre há algo novo para encontrar.",
+  ],
+  it: [
+    "Benvenuto, avventuriero! Esplora mentre il gioco carica.",
+    "Consiglio: parla con i personaggi nel gioco per fare pratica.",
+    "Curiosità: imparare lingue è come far salire di livello il cervello.",
+    "Consiglio pro: completa missioni per guadagnare XP e sbloccare nuove lezioni.",
+    "Il ponte collega due mondi... proprio come fanno le lingue.",
+    "Prova a entrare dalle porte per scoprire nuove stanze.",
+    "Ogni parola che impari è un passo in una grande avventura.",
+    "Più esplori, più scopri.",
+    "Segreto: alcuni sentieri portano a tesori nascosti...",
+    "Lo sapevi? Questa mappa cambia ogni volta che carichi.",
+    "Le lingue aprono porte verso nuovi mondi. Letteralmente.",
+    "Continua a esplorare! C'è sempre qualcosa di nuovo da trovare.",
+  ],
+  fr: [
+    "Bienvenue, aventurier ! Explore pendant que ton jeu charge.",
+    "Astuce : parle aux PNJ dans le vrai jeu pour pratiquer le vocabulaire.",
+    "Le savais-tu ? Apprendre une langue, c'est comme faire monter ton cerveau de niveau.",
+    "Astuce pro : termine des quetes pour gagner de l'XP et debloquer des lecons.",
+    "Le pont relie deux mondes... comme les langues.",
+    "Essaie d'entrer par les portes pour decouvrir de nouvelles salles.",
+    "Chaque mot appris est un pas dans une grande aventure.",
+    "Plus tu explores, plus tu decouvres.",
+    "Secret : certains chemins menent a des tresors caches...",
+    "Le savais-tu ? Cette carte change a chaque chargement.",
+    "Les langues ouvrent des portes vers de nouveaux mondes. Litteralement.",
+    "Continue a explorer ! Il y a toujours quelque chose de nouveau.",
+  ],
+  ja: [
+    "ようこそ、冒険者！ゲームの読み込み中に探索しましょう。",
+    "ヒント: 本編ではNPCと話して語彙を練習できます。",
+    "豆知識: 言語学習は脳のレベルアップに似ています。",
+    "プロのヒント: クエストを完了してXPを獲得し、新しいレッスンを開放しましょう。",
+    "橋は2つの世界をつなぎます。言語と同じです。",
+    "入口に入って新しい部屋を見つけてみましょう。",
+    "覚える単語はどれも大冒険の一歩です。",
+    "探索するほど、発見が増えます。",
+    "秘密: 隠された宝物へ続く道もあります...",
+    "知っていましたか？このマップは読み込むたびに変わります。",
+    "言語は新しい世界への扉を開きます。文字通りです。",
+    "探索を続けましょう！いつも新しい発見があります。",
+  ],
+  hi: [
+    "स्वागत है, साहसी यात्री! खेल लोड होते समय घूमिए।",
+    "सुझाव: असली गेम में NPC से बात करके शब्दावली का अभ्यास करें!",
+    "मज़ेदार बात: भाषा सीखना अपने दिमाग को लेवल अप करने जैसा है।",
+    "प्रो टिप: क्वेस्ट पूरी करके XP कमाएँ और नए पाठ खोलें!",
+    "यह पुल दो दुनियाओं को जोड़ता है... ठीक भाषाओं की तरह।",
+    "नई जगहें खोजने के लिए दरवाज़ों से अंदर जाएँ!",
+    "आप जो भी शब्द सीखते हैं, वह एक बड़े रोमांच की ओर कदम है।",
+    "जितना ज़्यादा खोजेंगे, उतना ज़्यादा पाएँगे!",
+    "राज़: कुछ रास्ते छिपे खज़ानों तक ले जाते हैं...",
+    "क्या आप जानते हैं? हर बार लोड होने पर यह नक्शा बदल जाता है!",
+    "भाषाएँ नई दुनियाओं के दरवाज़े खोलती हैं। सचमुच!",
+    "खोज जारी रखें! हमेशा कुछ नया मिलता है।",
+  ],
 };
 
 const CHEST_MESSAGES = {
@@ -210,6 +320,56 @@ const CHEST_MESSAGES = {
     "El cofre contiene... ¡motivación! +10 voluntad.",
     "Dentro encuentras una nota: '¡Lo estás haciendo genial!'",
   ],
+  pt: [
+    "Você encontrou um tesouro escondido!... é conhecimento!",
+    "Um pergaminho diz: 'a prática leva à melhora'.",
+    "Você descobre uma runa brilhante... nela está escrito 'XP +100' (brincadeira).",
+    "Dentro: um mapinha de todos os mundos que você vai explorar!",
+    "Uma moeda de ouro! Espera... é um token de vocabulário.",
+    "Você encontrou um pergaminho antigo de gramática!",
+    "O baú contém... motivação! +10 de força de vontade.",
+    "Lá dentro há um bilhete: 'Você está indo muito bem!'",
+  ],
+  it: [
+    "Hai trovato un tesoro nascosto! ...è conoscenza.",
+    "Una pergamena dice: 'La pratica rende perfetti'",
+    "Scopri una runa luminosa... dice 'XP +100' (scherzo)",
+    "Dentro c'è una piccola mappa di tutti i mondi che esplorerai.",
+    "Una moneta d'oro! Aspetta... è un gettone di vocabolario.",
+    "Hai trovato un'antica pergamena di grammatica.",
+    "Il baule contiene... motivazione! +10 forza di volontà.",
+    "Dentro trovi una nota: 'Stai andando alla grande!'",
+  ],
+  fr: [
+    "Tu as trouve un tresor cache ! ...c'est de la connaissance.",
+    "Un parchemin indique : 'C'est en pratiquant qu'on progresse'",
+    "Tu decouvres une rune brillante... elle dit 'XP +100' (je plaisante)",
+    "Dedans : une petite carte de tous les mondes que tu exploreras.",
+    "Une piece d'or ! Attends... c'est un jeton de vocabulaire.",
+    "Tu as trouve un ancien parchemin de grammaire.",
+    "Le coffre contient... de la motivation ! +10 volonte.",
+    "Dedans tu trouves une note : 'Tu t'en sors tres bien !'",
+  ],
+  ja: [
+    "隠された宝物を見つけました！それは知識です！",
+    "中の巻物には「練習は力なり」と書かれています。",
+    "光るルーンを見つけました...「XP +100」と書いてあります（冗談です）。",
+    "中には、これから探索するすべての世界の小さな地図があります！",
+    "金貨です！待って...語彙トークンでした。",
+    "古代の文法の巻物を見つけました！",
+    "箱の中身は...やる気です！意志力+10。",
+    "中にメモがあります。「とてもよくできています！」",
+  ],
+  hi: [
+    "आपको एक छिपा खज़ाना मिला! ...यह ज्ञान है!",
+    "अंदर की पर्ची कहती है: 'अभ्यास से निपुणता आती है'",
+    "आपको चमकता रून मिला... उस पर 'XP +100' लिखा है (मज़ाक कर रहे हैं)",
+    "अंदर: उन सभी दुनियाओं का छोटा नक्शा जिन्हें आप खोजेंगे!",
+    "एक सोने का सिक्का! ठहरिए... यह शब्दावली टोकन है।",
+    "आपको व्याकरण का एक प्राचीन स्क्रॉल मिला!",
+    "इस संदूक में है... प्रेरणा! +10 इच्छाशक्ति।",
+    "अंदर एक नोट है: 'आप बहुत अच्छा कर रहे हैं!'",
+  ],
 };
 
 const LAMP_MESSAGES = {
@@ -224,6 +384,36 @@ const LAMP_MESSAGES = {
     "Un brillo suave ilumina un texto antiguo... ilegible.",
     "La luz baila como pequeñas luciérnagas.",
     "Sientes un cálido resplandor de ánimo.",
+  ],
+  pt: [
+    "A luminária pisca suavemente. O lugar parece aconchegante.",
+    "Um brilho suave ilumina um texto antigo... ilegível.",
+    "A luz dança como pequenas faíscas.",
+    "Você sente um brilho caloroso de encorajamento.",
+  ],
+  it: [
+    "La lampada tremola con calore. Qui si sta bene.",
+    "Una luce soffusa illumina un testo antico... illeggibile.",
+    "La luce danza come piccole scintille.",
+    "Senti un caldo bagliore di incoraggiamento.",
+  ],
+  fr: [
+    "La lampe vacille doucement. L'endroit semble accueillant.",
+    "Une lueur douce eclaire un texte ancien... illisible.",
+    "La lumiere danse comme de petites etincelles.",
+    "Tu ressens une douce lueur d'encouragement.",
+  ],
+  ja: [
+    "ランプが暖かくゆらめいています。ここは居心地がよさそうです。",
+    "柔らかな光が古い文字を照らしています...読めません。",
+    "光が小さな火花のように踊っています。",
+    "励ましの暖かな光を感じます。",
+  ],
+  hi: [
+    "दीपक गरमाहट से टिमटिमा रहा है। यहाँ बहुत आरामदायक लगता है।",
+    "मुलायम रोशनी किसी प्राचीन लेख को प्रकाशित कर रही है... पढ़ा नहीं जा रहा।",
+    "रोशनी छोटी जुगनुओं की तरह नाच रही है।",
+    "आपको हौसले की एक गरम चमक महसूस होती है।",
   ],
 };
 
@@ -240,6 +430,36 @@ const PLANT_MESSAGES = {
     "Esta planta lleva aquí más tiempo del que nadie recuerda.",
     "Una pequeña flor está floreciendo. ¡Qué bonito!",
   ],
+  pt: [
+    "Uma plantinha feliz. Parece gostar deste lugar.",
+    "As folhas se mexem suavemente quando você passa.",
+    "Esta planta está aqui há mais tempo do que qualquer um lembra.",
+    "Uma florzinha está desabrochando. Que bonito!",
+  ],
+  it: [
+    "Una piantina felice. Sembra che le piaccia questo posto.",
+    "Le foglie frusciano dolcemente mentre passi.",
+    "Questa pianta è qui da più tempo di quanto chiunque ricordi.",
+    "Un piccolo fiore sta sbocciando. Che bello!",
+  ],
+  fr: [
+    "Une petite plante heureuse. Elle semble aimer cet endroit.",
+    "Les feuilles frissonnent doucement quand tu passes.",
+    "Cette plante est ici depuis plus longtemps que personne ne s'en souvient.",
+    "Une petite fleur est en train d'eclore. Comme c'est joli !",
+  ],
+  ja: [
+    "幸せそうな小さな植物です。この場所が気に入っているようです。",
+    "通り過ぎると葉がやさしく揺れます。",
+    "この植物は誰の記憶よりも長くここにあります。",
+    "小さな花が咲いています。素敵ですね！",
+  ],
+  hi: [
+    "एक खुश छोटी पौधी। लगता है इसे यह जगह पसंद है।",
+    "आपके गुजरते ही पत्तियाँ धीरे-धीरे सरसराती हैं।",
+    "यह पौधा यहाँ उतने समय से है जितना किसी को याद भी नहीं।",
+    "एक छोटा फूल खिल रहा है। कितना सुंदर!",
+  ],
 };
 
 const TABLE_MESSAGES = {
@@ -255,6 +475,36 @@ const TABLE_MESSAGES = {
     "Libros y papeles están esparcidos por la superficie.",
     "Un rompecabezas a medio terminar está sobre la mesa.",
   ],
+  pt: [
+    "Uma mesa resistente. Alguém deixou anotações sobre conjugações.",
+    "A mesa tem marcas de muitos anos de estudo.",
+    "Livros e papéis estão espalhados pela superfície.",
+    "Há um quebra-cabeça pela metade sobre a mesa.",
+  ],
+  it: [
+    "Un tavolo robusto. Qualcuno ha lasciato appunti sulle coniugazioni.",
+    "Il tavolo porta i segni di anni di sessioni di studio.",
+    "Libri e fogli sono sparsi sulla superficie.",
+    "Un rompicapo a metà è appoggiato sul tavolo.",
+  ],
+  fr: [
+    "Une table robuste. Quelqu'un a laisse des notes sur les conjugaisons.",
+    "La table porte des marques de nombreuses sessions d'etude.",
+    "Des livres et papiers sont eparpilles sur la surface.",
+    "Un puzzle a moitie termine est pose sur la table.",
+  ],
+  ja: [
+    "丈夫な木のテーブルです。誰かが動詞の活用メモを残しています。",
+    "テーブルには長年の勉強会でできた傷があります。",
+    "本や紙が表面に散らばっています。",
+    "途中まで解いたパズルがテーブルに置かれています。",
+  ],
+  hi: [
+    "मजबूत लकड़ी की मेज़। किसी ने क्रिया-रूपों पर नोट्स छोड़ रखे हैं।",
+    "इस मेज़ पर वर्षों के अध्ययन सत्रों के निशान हैं।",
+    "सतह पर किताबें और कागज़ बिखरे हुए हैं।",
+    "मेज़ पर आधा पूरा हुआ एक पज़ल रखा है।",
+  ],
 };
 
 const ALL_MESSAGES = {
@@ -264,6 +514,198 @@ const ALL_MESSAGES = {
   [PLANT_POT]: PLANT_MESSAGES,
   [TABLE]: TABLE_MESSAGES,
 };
+
+OUTDOOR_NAMES.ar = [
+  "ميدان المدينة",
+  "ساحة القرية",
+  "فسحة الغابة",
+  "حديقة ضفة النهر",
+  "مرج الغروب",
+  "حديقة ضوء القمر",
+  "ساحة الحجارة",
+  "البستان الهامس",
+  "ساحة الفوانيس",
+  "حقل الزهور البرية",
+];
+
+INDOOR_ROOM_TYPES[0].names.ar = [
+  "المكتبة القديمة",
+  "غرفة القراءة",
+  "مكتب الباحث",
+  "ركن الكتب",
+  "الأرشيف الترابي",
+];
+INDOOR_ROOM_TYPES[1].names.ar = [
+  "الكوخ الدافي",
+  "البيت الدافي",
+  "استراحة المسافر",
+  "ملجأ المدفأة",
+  "كوخ الجبل",
+];
+INDOOR_ROOM_TYPES[2].names.ar = [
+  "الورشة الحرفية",
+  "غرفة الأشغال",
+  "مساحة الصنع",
+  "معمل المصلّح",
+  "مخبأ المخترع",
+];
+INDOOR_ROOM_TYPES[3].names.ar = [
+  "غرفة الضيوف",
+  "أوضة نوم دافية",
+  "غرفة الحالم",
+  "غرفة القيلولة",
+  "ملاذ الراحة",
+];
+INDOOR_ROOM_TYPES[4].names.ar = [
+  "الاستراحة",
+  "الغرفة المشتركة",
+  "قاعة التجمع",
+  "الركن الاجتماعي",
+  "غرفة الشاي",
+];
+
+SIGN_MESSAGES.ar = [
+  "أهلا بيك يا مغامر! استكشف لحد ما لعبتك تجهز.",
+  "تلميح: كلم الشخصيات في اللعبة الأصلية عشان تتمرن على المفردات!",
+  "معلومة لطيفة: تعلم اللغة شبه إنك بترفع مستوى مخك.",
+  "نصيحة محترفين: خلص المهام عشان تاخد XP وتفتح دروس جديدة!",
+  "الكوبري بيوصل بين عالمين... زي اللغات بالظبط.",
+  "جرّب تدخل من المداخل عشان تكتشف أوض جديدة!",
+  "كل كلمة بتتعلمها هي خطوة في مغامرة كبيرة.",
+  "كل ما تستكشف أكتر، تكتشف أكتر!",
+  "سر صغير: بعض الطرق بتودّي لكنوز مخفية...",
+  "تعرف؟ الخريطة دي بتتغير كل مرة تتحمل فيها!",
+  "اللغات بتفتح أبواب لعوالم جديدة. حرفيًا!",
+  "كمّل استكشاف! دايمًا فيه حاجة جديدة تلاقيها.",
+];
+
+CHEST_MESSAGES.ar = [
+  "لقيت كنز مخفي!... طلع معرفة!",
+  "جوه ورقة مكتوب: \"التمرين بيعمل فرق\"",
+  "اكتشفت رون مضيء... مكتوب عليه \"XP +100\" (بهزر)",
+  "جواها خريطة صغيرة لكل العوالم اللي هتزورها!",
+  "عملة دهب! استنى... ده توكن مفردات.",
+  "لقيت مخطوطة قديمة في القواعد!",
+  "الصندوق فيه... حماس! +10 قوة إرادة.",
+  "جوه لقيت ملاحظة: \"إنت ماشي كويس جدًا!\"",
+];
+
+LAMP_MESSAGES.ar = [
+  "اللمبة بتنور بنعومة. المكان هنا دافي.",
+  "نور هادي بينوّر كتابة قديمة... مش مقروءة.",
+  "النور بيرقص زي شرارات صغيرة.",
+  "بتحس بدفا وتشجيع.",
+];
+
+PLANT_MESSAGES.ar = [
+  "نبتة صغيرة سعيدة. واضح إن المكان ده عاجبها.",
+  "الورق بيتحرك بهدوء وإنت ماشي.",
+  "النبتة دي موجودة هنا من زمان جدًا.",
+  "زهرة صغيرة بتتفتح. جميل أوي!",
+];
+
+TABLE_MESSAGES.ar = [
+  "ترابيزة خشب متينة. حد سايب ملاحظات عن تصريف الأفعال.",
+  "على الترابيزة آثار سنين من جلسات المذاكرة.",
+  "كتب وورق متبهدلين على السطح.",
+  "فيه بازل لسه مخلصش على الترابيزة.",
+];
+
+OUTDOOR_NAMES.zh = [
+  "城镇广场",
+  "村庄绿地",
+  "森林空地",
+  "河畔公园",
+  "夕阳草地",
+  "月光花园",
+  "鹅卵石广场",
+  "低语树林",
+  "灯笼庭院",
+  "野花田野",
+];
+
+INDOOR_ROOM_TYPES[0].names.zh = [
+  "古老图书馆",
+  "阅读室",
+  "学者书房",
+  "书本角落",
+  "尘封档案室",
+];
+INDOOR_ROOM_TYPES[1].names.zh = [
+  "温馨木屋",
+  "暖和小屋",
+  "旅人休息处",
+  "炉边小屋",
+  "山间小屋",
+];
+INDOOR_ROOM_TYPES[2].names.zh = [
+  "工匠作坊",
+  "手工室",
+  "创作者空间",
+  "修补实验室",
+  "发明者小屋",
+];
+INDOOR_ROOM_TYPES[3].names.zh = [
+  "客房",
+  "温暖卧室",
+  "梦者房间",
+  "午睡房",
+  "休息避风港",
+];
+INDOOR_ROOM_TYPES[4].names.zh = [
+  "休息室",
+  "公共房间",
+  "聚会大厅",
+  "社交角落",
+  "茶室",
+];
+
+SIGN_MESSAGES.zh = [
+  "欢迎你，冒险者！在游戏准备好之前先探索一下吧。",
+  "提示：和主游戏里的角色对话，可以练习词汇！",
+  "有趣事实：学习语言就像给大脑升级。",
+  "高手提示：完成任务可以获得 XP 并解锁新课程！",
+  "桥连接两个世界，语言也是这样。",
+  "试试走进门里，发现新的房间！",
+  "你学会的每个词，都是大冒险的一步。",
+  "探索越多，发现越多！",
+  "小秘密：有些路通向隐藏宝藏...",
+  "你知道吗？这张地图每次加载都会变化！",
+  "语言会打开通往新世界的大门。真的！",
+  "继续探索，总有新东西等着你。",
+];
+
+CHEST_MESSAGES.zh = [
+  "你找到了隐藏宝藏！原来是知识！",
+  "里面有张纸写着：“练习真的有用。”",
+  "你发现了发光符文，上面写着“XP +100”（开玩笑的）。",
+  "里面有一张小地图，标着你将访问的所有世界！",
+  "一枚金币！等等...其实是词汇代币。",
+  "你找到了一卷古老语法卷轴！",
+  "箱子里装着...动力！+10 意志力。",
+  "里面有张纸条：“你做得很棒！”",
+];
+
+LAMP_MESSAGES.zh = [
+  "灯柔和地亮着。这里很温暖。",
+  "柔光照亮了古老文字...但看不清。",
+  "灯光像小火花一样跳动。",
+  "你感到一阵温暖和鼓励。",
+];
+
+PLANT_MESSAGES.zh = [
+  "一株快乐的小植物。它似乎很喜欢这里。",
+  "你走过时，叶子轻轻摆动。",
+  "这株植物已经在这里很久很久了。",
+  "一朵小花正在开放。真漂亮！",
+];
+
+TABLE_MESSAGES.zh = [
+  "一张结实的木桌。有人留下了动词变位笔记。",
+  "桌面上留下了多年学习时光的痕迹。",
+  "书本和纸张散落在桌面上。",
+  "桌上还有一个没完成的谜题。",
+];
 
 // ─── Procedural map generation ──────────────────────────────────────────────
 const MAP_W = 18;
@@ -518,6 +960,13 @@ function generateWorld(seed) {
   const outdoorName = {
     en: pick(rng, OUTDOOR_NAMES.en),
     es: pick(rng, OUTDOOR_NAMES.es),
+    pt: pick(rng, OUTDOOR_NAMES.pt),
+    it: pick(rng, OUTDOOR_NAMES.it),
+    fr: pick(rng, OUTDOOR_NAMES.fr),
+    ja: pick(rng, OUTDOOR_NAMES.ja),
+    hi: pick(rng, OUTDOOR_NAMES.hi),
+    ar: pick(rng, OUTDOOR_NAMES.ar),
+    zh: pick(rng, OUTDOOR_NAMES.zh),
   };
 
   // Pick 2 random room types for the indoor rooms
@@ -529,12 +978,26 @@ function generateWorld(seed) {
   const indoor1Name = {
     en: pick(rng, roomType1.names.en),
     es: pick(rng, roomType1.names.es),
+    pt: pick(rng, roomType1.names.pt),
+    it: pick(rng, roomType1.names.it),
+    fr: pick(rng, roomType1.names.fr),
+    ja: pick(rng, roomType1.names.ja),
+    hi: pick(rng, roomType1.names.hi),
+    ar: pick(rng, roomType1.names.ar),
+    zh: pick(rng, roomType1.names.zh),
   };
 
   const indoor2 = generateIndoor(rng, roomType2);
   const indoor2Name = {
     en: pick(rng, roomType2.names.en),
     es: pick(rng, roomType2.names.es),
+    pt: pick(rng, roomType2.names.pt),
+    it: pick(rng, roomType2.names.it),
+    fr: pick(rng, roomType2.names.fr),
+    ja: pick(rng, roomType2.names.ja),
+    hi: pick(rng, roomType2.names.hi),
+    ar: pick(rng, roomType2.names.ar),
+    zh: pick(rng, roomType2.names.zh),
   };
 
   // Build rooms object
@@ -583,10 +1046,10 @@ function generateWorld(seed) {
   // Pick shuffled messages for this session
   const messages = {};
   for (const [tile, msgs] of Object.entries(ALL_MESSAGES)) {
-    messages[tile] = {
-      en: shuffle(rng, msgs.en),
-      es: shuffle(rng, msgs.es),
-    };
+    messages[tile] = SUPPORT_LANGUAGE_CODES.reduce((acc, lang) => {
+      acc[lang] = shuffle(rng, msgs[lang] || msgs.en);
+      return acc;
+    }, {});
   }
 
   return { rooms, palette, messages };
@@ -1068,8 +1531,8 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
       const tile = room.map[tileY]?.[tileX];
       if (!tile || !world.messages[tile]) return;
 
-      const lang = supportLang === "es" ? "es" : "en";
-      const msgs = world.messages[tile][lang];
+      const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
+      const msgs = world.messages[tile][lang] || world.messages[tile].en || [];
       const key = `${s.currentRoom}:${tileX},${tileY}`;
       const idxKey = `${tile}`;
       if (!s.msgIdx[idxKey]) s.msgIdx[idxKey] = 0;
@@ -1308,8 +1771,14 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
           const door = s.transitionTarget;
           s.currentRoom = door.target; s.px = door.tx; s.py = door.ty;
           s.transitionTarget = null;
-          const lang = supportLang === "es" ? "es" : "en";
-          showRoomName(world.rooms[s.currentRoom].name[lang]);
+          const lang = normalizeSupportLanguage(
+            supportLang,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
+          const roomName =
+            world.rooms[s.currentRoom].name[lang] ||
+            world.rooms[s.currentRoom].name.en;
+          showRoomName(roomName);
         }
         if (s.transitionProgress >= 1) { s.transitioning = false; s.transitionProgress = 0; }
       }
@@ -1367,8 +1836,8 @@ export default function LoadingMiniGame({ supportLang = "en" }) {
   }, []);
 
   useEffect(() => {
-    const lang = supportLang === "es" ? "es" : "en";
-    showRoomName(world.rooms.outdoor.name[lang]);
+    const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
+    showRoomName(world.rooms.outdoor.name[lang] || world.rooms.outdoor.name.en);
   }, [supportLang, showRoomName, world]);
 
   return (

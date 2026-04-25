@@ -1,6 +1,10 @@
 // src/utils/translation.jsx
 
 import { Button, HStack } from "@chakra-ui/react";
+import { TRANSLATION_AR_STATIC } from "./translationArStatic";
+import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
+import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
+import { TRANSLATION_ZH_STATIC } from "./translationZhStatic";
 
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
@@ -46,7 +50,9 @@ export const translations = {
     random_shuffle: "Shuffle",
     reading_btn_next: "Complete lecture",
     reading_btn_finish: "Complete lecture",
+    reading_loading: "Loading reading settings...",
     reading_generating: "Creating lecture...",
+    reading_generating_title: "Generating reading...",
     reading_skip: "Skip",
     copied_to_clipboard_all: "Question has been copied.",
     copy_all: "Copy question",
@@ -107,6 +113,7 @@ export const translations = {
     history_format_question: "Question",
     history_format_speech: "Read aloud",
     history_speech_heading: "Reading practice",
+    history_speech_listening: "Listening...",
     history_speech_instructions:
       "Read the paragraph above out loud. You'll get feedback on your reading!",
     history_speech_start_mic: "Start reading",
@@ -131,6 +138,21 @@ export const translations = {
     ra_title: "No Sabo — {language} Learning Coach",
     ra_label_you: "You",
     ra_label_xp: "XP",
+    ra_label_level: "Level",
+    ra_conversation_settings: "Conversation settings",
+    ra_chat_log: "Chat log",
+    ra_conversation_log: "Conversation log",
+    ra_new_topic: "New topic",
+    ra_new_goal: "New goal",
+    ra_show_suggestion: "Show suggestion",
+    ra_generating: "Generating...",
+    ra_generating_topic: "Generating new topic...",
+    ra_btn_start: "Start",
+    ra_btn_starting: "Starting...",
+    ra_btn_end: "End",
+    ra_btn_skip: "Skip",
+    ra_btn_next: "Next",
+    ra_btn_replay: "Replay",
     ra_btn_settings: "Settings",
     ra_btn_delete_convo: "Delete conversation",
     ra_btn_connect: "Connect",
@@ -144,6 +166,15 @@ export const translations = {
     ra_progress_xp_to_level: "{remaining} XP to level",
     ra_vad_label: "Voice activity pause (seconds)",
     ra_translating: "Translating…",
+    ra_goal_skip: "Skip",
+    ra_goal_criteria: "Criteria:",
+    ra_goal_completed: "Goal completed!",
+    ra_free_practice_title: "Free practice mode",
+    ra_free_practice_desc:
+      "In free mode, use the Connect button to practice conversation.",
+    ra_toast_translation_failed_title: "Translation failed",
+    ra_toast_no_audio_replay: "No audio available to replay.",
+    ra_auto_stop_desc: "The session closed automatically after 15 seconds.",
     ra_delete_confirm:
       "Delete all saved turns for this account? This cannot be undone.",
     ra_toast_no_account_title: "No account",
@@ -156,11 +187,14 @@ export const translations = {
     common_id_label: "ID:",
     common_saving: "Saving",
     common_cancel: "Cancel",
+    language_ar: "Egyptian Arabic",
+    language_zh: "Mandarin Chinese",
     language_en: "English",
     language_es: "Spanish",
     language_pt: "Portuguese",
     language_fr: "French",
     language_it: "Italian",
+    language_hi: "Hindi",
     language_nl: "Dutch",
     language_nah: "Eastern Huasteca Nahuatl",
     language_ja: "Japanese",
@@ -202,6 +236,10 @@ export const translations = {
     onboarding_support_en: "English",
     onboarding_support_bilingual: "Bilingual",
     onboarding_support_es: "Spanish",
+    onboarding_support_it: "Italian",
+    onboarding_support_ar: "Egyptian Arabic",
+    onboarding_support_ja: "Japanese",
+    onboarding_support_zh: "Mandarin Chinese",
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_menu_label: "Practice:",
     onboarding_practice_nah: "East Huasteca Nahuatl",
@@ -209,6 +247,9 @@ export const translations = {
     onboarding_practice_pt: "Portuguese",
     onboarding_practice_fr: "French",
     onboarding_practice_it: "Italian",
+    onboarding_practice_hi: "Hindi",
+    onboarding_practice_ar: "Egyptian Arabic",
+    onboarding_practice_zh: "Mandarin Chinese",
     onboarding_practice_nl: "Dutch",
     onboarding_practice_ja: "Japanese",
     onboarding_practice_en: "English",
@@ -258,6 +299,14 @@ export const translations = {
     bitcoin_modal_close: "Close",
     app_install_aria: "Install",
     app_account_aria: "Account",
+    app_help_chat: "Help",
+    app_notes: "Notes",
+    real_world_tasks_title: "Immersion practice",
+    app_mode_menu: "Mode",
+    app_mode_alphabet: "Alphabet",
+    app_mode_path: "Path",
+    app_mode_cards: "Cards",
+    app_mode_conversation: "Conversation",
     app_lang_en: "EN",
     app_lang_es: "ES",
     app_install_title: "Install as app",
@@ -491,6 +540,86 @@ export const translations = {
     story_of: "of",
     story_congrats_title: "Congrats!",
     story_congrats_done: "Story completed! You earned {xp} XP this session.",
+    story_header_roleplay: "Role Play",
+    story_role_prompt: "Who do you want to role play as?",
+    story_role_placeholder: "e.g. a teacher helping new students",
+    story_start_role: "Start role play",
+    story_update_role: "Update",
+    story_edit_role: "Edit",
+    story_cancel_edit: "Cancel",
+    story_play_target: "Play {name}",
+    story_no_role: "Set a role to kick off your role play.",
+    story_generating_role_title: "Preparing your story…",
+    story_generating_role_sub: "Shaping a role play scene around your role.",
+    story_finish_role: "Finish Role Play",
+    repeat_hear_heading: "Tap what you hear",
+    repeat_hear_instruction: "Listen and tap the words in order",
+    translate_sentence_heading: "Translate this sentence",
+    translate_sentence_instruction: "Tap the words to form your answer",
+    story_skip_unavailable_title: "Not available",
+    story_skip_unavailable_desc: "You can only skip when in lesson mode.",
+    story_roleplay_completed: "Role play completed!",
+    story_sentences: "sentences",
+    proficiency_modal_already_know: "Already know some {lang}?",
+    proficiency_modal_description:
+      "We can have a quick conversation to figure out your level and place you in the right spot.",
+    proficiency_modal_exchange_info:
+      "A short 10-exchange chat — we'll assess your pronunciation, grammar, and confidence.",
+    proficiency_modal_take_test: "Let's do it",
+    proficiency_modal_skip: "No thanks",
+    proficiency_modal_skip_note:
+      '"No thanks" will start you from the beginner level.',
+    proficiency_test_title: "Proficiency Test",
+    proficiency_test_instruction:
+      "Speak naturally — we're assessing your level",
+    proficiency_test_rubric: "Grading rubric",
+    proficiency_test_evaluating: "Evaluating",
+    proficiency_test_analyzing:
+      "Analyzing your conversation to determine your level...",
+    proficiency_test_assessor: "Assessor",
+    proficiency_test_start: "Start",
+    proficiency_test_you: "You",
+    proficiency_test_final_result: "Final result",
+    proficiency_test_complete: "Assessment Complete",
+    proficiency_test_summary: "Assessment summary",
+    proficiency_test_breakdown: "Breakdown",
+    proficiency_test_composite: "Composite score",
+    proficiency_test_level_label: "Level {level}",
+    proficiency_test_eval_error:
+      "There was a problem with automatic evaluation. You can try again.",
+    proficiency_test_return_app: "Return to app",
+    proficiency_test_rubric_desc:
+      "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability.",
+    proficiency_test_what_scored: "What gets scored",
+    proficiency_test_what_scored_desc:
+      "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension.",
+    proficiency_test_scoring_heading: "Scoring mechanism",
+    proficiency_test_scoring_1:
+      "Comprehension and fluency are weighted more heavily than confidence.",
+    proficiency_test_scoring_2:
+      "Very short or low-substance responses cap the result at Pre-A1/A1.",
+    proficiency_test_scoring_3:
+      'Frequent filler or "I don\'t know" responses automatically lower the placement.',
+    proficiency_test_scoring_4:
+      "Final placement never exceeds what your conversation evidence supports.",
+    proficiency_test_got_it: "Got it",
+    proficiency_test_exit_title: "Exit proficiency test?",
+    proficiency_test_exit_desc:
+      "Your progress won't be saved. You can retake the test later from settings.",
+    proficiency_test_yes_exit: "Yes, exit",
+    proficiency_test_continue: "Continue test",
+    proficiency_test_assess_fallback:
+      "Assessment complete. Review your results below.",
+    proficiency_test_assess_error:
+      "Assessment error. Conservatively placing you at Pre-A1/A0.",
+    proficiency_speaking: "Speaking",
+    proficiency_listening: "Listening",
+    proficiency_thinking: "Thinking",
+    app_install_subtitle:
+      "For the best experience, install the app on your device.",
+    app_install_step6: "Copy secret key to sign in.",
+    app_install_got_it: "Got it!",
+    app_install_copied: "Copied!",
     generic_loading: "Loading...",
     intro:
       "Thanks for trying out the app! It's currently under development and will improve daily.",
@@ -514,6 +643,7 @@ export const translations = {
     skill_tree_learning_activities: "Learning Activities:",
     skill_tree_xp_reward: "XP to complete:",
     skill_tree_start_lesson: "Start Lesson",
+    skill_tree_starting_lesson: "Starting lesson...",
     skill_tree_unlock_at: "Unlock at {xpRequired} XP",
     skill_tree_unlock_sequential: "Complete the previous lesson to unlock",
     skill_tree_level: "Level {level}",
@@ -557,6 +687,8 @@ export const translations = {
     flashcard_try_again: "Try Again",
     flashcard_explain_answer: "Explain my answer",
     flashcard_explanation_heading: "Explanation",
+    flashcard_xp_level: "Level {level}",
+    flashcard_total_xp: "Total XP {xp}",
     flashcard_error_loading: "Error loading answer",
     flashcard_eval_error_title: "Could not evaluate",
     flashcard_eval_error_desc: "Please try again with a stable connection.",
@@ -651,6 +783,7 @@ export const translations = {
     mode_reading: "Reading",
     mode_realtime: "Chat",
     mode_stories: "Stories",
+    mode_game: "Game",
     // PathSwitcher tabs
     path_switcher_path: "Path",
     path_switcher_flashcards: "Cards",
@@ -753,6 +886,32 @@ export const translations = {
     teams_view_pending_members: "Invites waiting",
     teams_view_delete: "Delete team",
     teams_view_leave: "Leave team",
+    vocab_ask_assistant: "Ask the assistant",
+    vocab_assistant: "Assistant",
+    vocab_listen_question: "Listen to question",
+    vocab_listen_example: "Listen to example",
+    vocab_listen_word: "Listen to word",
+    vocab_connecting: "Connecting...",
+    vocab_say_it_aloud: "Say it aloud",
+    vocab_final_quiz: "Final Quiz",
+    vocab_quiz_passed: "Quiz Passed!",
+    vocab_quiz_congratulations: "Congratulations!",
+    vocab_quiz_not_passed: "Quiz Not Passed",
+    vocab_quiz_score_passed: "{correct} correct • Needed {needed}",
+    vocab_quiz_score_failed: "{correct} correct • Need {needed} to pass",
+    vocab_back_to_skill_tree: "Back to Skill Tree",
+    vocab_mc_instruction: "Choose the correct answer",
+    vocab_ma_instruction: "Select all correct answers",
+    vocab_match_instruction: "Match the words",
+    vocab_assistant_error: "Could not generate a response at this time.",
+    vocab_explanation_error: "Could not generate an explanation at this time.",
+    vocab_create_note_error: "Could not create note",
+    vocab_recording_failed: "Recording failed",
+    vocab_recording_failed_desc: "Please try again.",
+    vocab_eval_error_mic_desc: "Check microphone permissions and try again.",
+    vocab_create_note: "Create note",
+    vocab_note_saved: "Note saved!",
+    vocab_lesson_progress: "Lesson progress",
   },
   es: {
     correct: "¡Correcto!",
@@ -786,7 +945,9 @@ export const translations = {
     random_shuffle: "Mezclar",
     reading_btn_next: "Completar lección",
     reading_btn_finish: "Completar lección",
+    reading_loading: "Cargando ajustes de lectura...",
     reading_generating: "Creando la lección...",
+    reading_generating_title: "Generando lectura...",
     reading_skip: "Saltar",
     copied_to_clipboard_all: "La pregunta ha sido copiada.",
     copy_all: "Copiar pregunta",
@@ -863,9 +1024,99 @@ export const translations = {
     story_congrats_title: "¡Felicidades!",
     story_congrats_done:
       "¡Completaste el narrativo! Ganaste {xp} XP en esta sesión.",
+    story_header_roleplay: "Juego de roles",
+    story_role_prompt: "¿Con qué personaje quieres jugar a los roles?",
+    story_role_placeholder: "Por ejemplo: una doctora ayudando a pacientes",
+    story_start_role: "Comenzar",
+    story_update_role: "Actualizar rol",
+    story_edit_role: "Editar",
+    story_cancel_edit: "Cancelar",
+    story_play_target: "Reproducir {name}",
+    story_no_role: "Define un rol para comenzar a jugar.",
+    story_generating_role_title: "Generando tu narrativo",
+    story_generating_role_sub: "Preparando una escena basada en tu rol.",
+    story_finish_role: "Terminar juego",
+    repeat_hear_heading: "Toca lo que escuchas",
+    repeat_hear_instruction: "Escucha y toca las palabras en orden",
+    translate_sentence_heading: "Traduce esta frase",
+    translate_sentence_instruction:
+      "Toca las palabras para formar tu respuesta",
+    story_skip_unavailable_title: "No disponible",
+    story_skip_unavailable_desc:
+      "Solo puedes saltar cuando estás en un modo de lección.",
+    story_roleplay_completed: "¡Juego de roles completado!",
+    story_sentences: "oraciones",
+    proficiency_modal_already_know: "¿Ya conoces algo de {lang}?",
+    proficiency_modal_description:
+      "Podemos tener una conversación rápida para determinar tu nivel y colocarte en el lugar correcto.",
+    proficiency_modal_exchange_info:
+      "Una charla breve de 10 intercambios — evaluaremos tu pronunciación, gramática y confianza.",
+    proficiency_modal_take_test: "¡Hagámoslo!",
+    proficiency_modal_skip: "No gracias",
+    proficiency_modal_skip_note:
+      '"No gracias" te iniciará desde el nivel principiante.',
+    proficiency_test_title: "Prueba de Nivel",
+    proficiency_test_instruction:
+      "Habla naturalmente — estamos evaluando tu nivel",
+    proficiency_test_rubric: "Rúbrica",
+    proficiency_test_evaluating: "Evaluando",
+    proficiency_test_analyzing:
+      "Analizando tu conversación para determinar tu nivel...",
+    proficiency_test_assessor: "Evaluador",
+    proficiency_test_start: "Comenzar",
+    proficiency_test_you: "Tú",
+    proficiency_test_final_result: "Resultado final",
+    proficiency_test_complete: "Evaluación Completa",
+    proficiency_test_summary: "Resumen de la evaluación",
+    proficiency_test_breakdown: "Desglose",
+    proficiency_test_composite: "Puntaje compuesto",
+    proficiency_test_level_label: "Nivel {level}",
+    proficiency_test_eval_error:
+      "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo.",
+    proficiency_test_return_app: "Volver a la aplicación",
+    proficiency_test_rubric_desc:
+      "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio.",
+    proficiency_test_what_scored: "Qué puntúa el sistema",
+    proficiency_test_what_scored_desc:
+      "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión.",
+    proficiency_test_scoring_heading: "Mecanismo de calificación",
+    proficiency_test_scoring_1:
+      "Comprensión y fluidez pesan más que confianza.",
+    proficiency_test_scoring_2:
+      "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1.",
+    proficiency_test_scoring_3:
+      'Si hay muchos "no sé"/relleno, el nivel baja automáticamente.',
+    proficiency_test_scoring_4:
+      "El nivel final nunca supera la evidencia real de tu conversación.",
+    proficiency_test_got_it: "Entendido",
+    proficiency_test_exit_title: "¿Salir de la prueba de nivel?",
+    proficiency_test_exit_desc:
+      "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración.",
+    proficiency_test_yes_exit: "Sí, salir",
+    proficiency_test_continue: "Continuar la prueba",
+    proficiency_test_assess_fallback:
+      "Evaluación completada. Revisa tus resultados abajo.",
+    proficiency_test_assess_error:
+      "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad.",
+    proficiency_speaking: "Hablando",
+    proficiency_listening: "Escuchando",
+    proficiency_thinking: "Pensando",
+    app_install_subtitle:
+      "Para la mejor experiencia, instala la app en tu dispositivo.",
+    app_install_step6: "Copia la llave secreta para iniciar sesión.",
+    app_install_got_it: "¡Entendido!",
+    app_install_copied: "¡Copiada!",
     app_settings_aria: "Configuración",
     app_install_aria: "Instalar App",
     app_account_aria: "Cuenta",
+    app_help_chat: "Ayuda",
+    app_notes: "Notas",
+    real_world_tasks_title: "Práctica de inmersión",
+    app_mode_menu: "Modo",
+    app_mode_alphabet: "Alfabeto",
+    app_mode_path: "Ruta",
+    app_mode_cards: "Tarjetas",
+    app_mode_conversation: "Conversación",
     onboarding_final_step_title:
       "Copia tu llave secreta para iniciar sesión en tu cuenta",
     onboarding_final_step_description:
@@ -903,15 +1154,12 @@ export const translations = {
     app_switch: "Cambiar",
     app_switch_note:
       "Si la cuenta no existe, la crearemos en tu colección de usuarios.",
-    app_install_title: "Instalar App",
-    app_install_step1:
-      "1. Abre esta página en tu navegador con el botón de Más Opciones",
-    app_install_step2: "2. Abre en el navegador.",
-    app_install_step3: "3. Presiona el botón de Compartir",
-    app_install_step4:
-      "4. Presiona el botón de Agregar a la pantalla de inicio",
-    app_install_step5:
-      "5. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
+    app_install_title: "Instalar como app",
+    app_install_step1: "Abre el menú del navegador.",
+    app_install_step2: "Abre en el navegador.",
+    app_install_step3: "Elige 'Compartir' o 'Instalar'.",
+    app_install_step4: "Agregar a la pantalla de inicio.",
+    app_install_step5: "Abre desde tu pantalla de inicio.",
     app_close: "Cerrar",
     app_sign_out: "Cerrar sesión",
     app_sign_out_confirm_title: "¿Cerrar sesión?",
@@ -941,6 +1189,9 @@ export const translations = {
     language_pt: "Portugués",
     language_fr: "Francés",
     language_it: "Italiano",
+    language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
+    language_zh: "Chino mandarín",
     language_nl: "Holandés",
     language_nah: "Náhuatl huasteco",
     language_ja: "Japonés",
@@ -1053,6 +1304,7 @@ export const translations = {
     history_format_question: "Pregunta",
     history_format_speech: "Leer en voz alta",
     history_speech_heading: "Práctica de lectura",
+    history_speech_listening: "Escuchando...",
     history_speech_instructions:
       "Intenta leer el párrafo de arriba en voz alta. ¡Recibirás retroalimentación!",
     history_speech_start_mic: "Empezar a leer",
@@ -1164,6 +1416,10 @@ export const translations = {
     onboarding_support_en: "Inglés",
     onboarding_support_bilingual: "Bilingüe",
     onboarding_support_es: "Español",
+    onboarding_support_it: "Italiano",
+    onboarding_support_ar: "Árabe egipcio",
+    onboarding_support_ja: "Japonés",
+    onboarding_support_zh: "Chino mandarín",
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_menu_label: "Práctica:",
     onboarding_practice_nah: "Náhuatl Huasteca Oriental",
@@ -1171,6 +1427,9 @@ export const translations = {
     onboarding_practice_pt: "Portugués",
     onboarding_practice_fr: "Francés",
     onboarding_practice_it: "Italiano",
+    onboarding_practice_hi: "Hindi",
+    onboarding_practice_ar: "Árabe egipcio",
+    onboarding_practice_zh: "Chino mandarín",
     onboarding_practice_nl: "Holandés",
     onboarding_practice_ja: "Japonés",
     onboarding_practice_en: "Inglés",
@@ -1221,11 +1480,35 @@ export const translations = {
     ra_title: "No Sabo — Entrenador de {language}",
     ra_label_you: "Tú",
     ra_label_xp: "XP",
+    ra_label_level: "Nivel",
+    ra_conversation_settings: "Configuración de conversación",
+    ra_chat_log: "Historial",
+    ra_conversation_log: "Historial de conversación",
+    ra_new_topic: "Nuevo tema",
+    ra_new_goal: "Nueva meta",
+    ra_show_suggestion: "Mostrar sugerencia",
+    ra_generating: "Generando...",
+    ra_generating_topic: "Generando nuevo tema...",
+    ra_btn_start: "Iniciar",
+    ra_btn_starting: "Iniciando...",
+    ra_btn_end: "Terminar",
+    ra_btn_skip: "Saltar",
+    ra_btn_next: "Siguiente",
+    ra_btn_replay: "Reproducir",
     ra_btn_settings: "Ajustes",
     ra_btn_delete_convo: "Borrar conversación",
     ra_btn_connect: "Conectar",
     ra_btn_connecting: "Conectando…",
     ra_btn_disconnect: "Desconectar",
+    ra_goal_skip: "Saltar",
+    ra_goal_criteria: "Criterios:",
+    ra_goal_completed: "¡Meta lograda!",
+    ra_free_practice_title: "Modo de práctica libre",
+    ra_free_practice_desc:
+      "En modo libre, usa el botón Conectar para practicar conversación.",
+    ra_toast_translation_failed_title: "Error de traducción",
+    ra_toast_no_audio_replay: "No hay audio para reproducir.",
+    ra_auto_stop_desc: "La sesión se cerró automáticamente tras 15 segundos.",
     ra_progress_header: "Progreso",
     ra_progress_xp_to_level: "{remaining} XP para subir de nivel",
     ra_translating: "Traduciendo…",
@@ -1258,6 +1541,7 @@ export const translations = {
     skill_tree_learning_activities: "Actividades de Aprendizaje:",
     skill_tree_xp_reward: "XP para terminar:",
     skill_tree_start_lesson: "Comenzar Lección",
+    skill_tree_starting_lesson: "Iniciando lección...",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
     skill_tree_unlock_sequential:
       "Completa la lección anterior para desbloquear",
@@ -1303,6 +1587,8 @@ export const translations = {
     flashcard_try_again: "Intentar de Nuevo",
     flashcard_explain_answer: "Explica mi respuesta",
     flashcard_explanation_heading: "Explicación",
+    flashcard_xp_level: "Nivel {level}",
+    flashcard_total_xp: "XP total {xp}",
     flashcard_error_loading: "Error al cargar respuesta",
     flashcard_eval_error_title: "No se pudo evaluar",
     flashcard_eval_error_desc:
@@ -1398,6 +1684,7 @@ export const translations = {
     mode_reading: "Lectura",
     mode_realtime: "Chat",
     mode_stories: "Narrativos",
+    mode_game: "Juego",
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
@@ -1505,7 +1792,3003 @@ export const translations = {
     teams_view_pending_members: "Invitaciones en espera",
     teams_view_delete: "Eliminar equipo",
     teams_view_leave: "Salir del equipo",
+    vocab_ask_assistant: "Pedir ayuda",
+    vocab_assistant: "Asistente",
+    vocab_listen_question: "Escuchar pregunta",
+    vocab_listen_example: "Escuchar ejemplo",
+    vocab_listen_word: "Escuchar palabra",
+    vocab_connecting: "Conectando...",
+    vocab_say_it_aloud: "Dilo en voz alta",
+    vocab_final_quiz: "Prueba Final",
+    vocab_quiz_passed: "¡Prueba Aprobada!",
+    vocab_quiz_congratulations: "¡Felicitaciones!",
+    vocab_quiz_not_passed: "Prueba No Aprobada",
+    vocab_quiz_score_passed: "{correct} correctas • Necesitabas {needed}",
+    vocab_quiz_score_failed:
+      "{correct} correctas • Necesitas {needed} para aprobar",
+    vocab_back_to_skill_tree: "Volver al Árbol",
+    vocab_mc_instruction: "Elige la respuesta correcta",
+    vocab_ma_instruction: "Selecciona todas las respuestas correctas",
+    vocab_match_instruction: "Empareja las palabras",
+    vocab_assistant_error: "No se pudo generar una respuesta en este momento.",
+    vocab_explanation_error:
+      "No se pudo generar una explicación en este momento.",
+    vocab_create_note_error: "Error al crear nota",
+    vocab_recording_failed: "No se pudo iniciar la grabación",
+    vocab_recording_failed_desc: "Inténtalo de nuevo.",
+    vocab_eval_error_mic_desc:
+      "Revisa permisos de micrófono e inténtalo otra vez.",
+    vocab_create_note: "Crear nota",
+    vocab_note_saved: "¡Nota guardada!",
+    vocab_lesson_progress: "Progreso de la lección",
   },
+};
+
+translations.it = {
+  ...translations.en,
+  correct: "Corretto!",
+  dailyGoalProgress: "Obiettivo",
+  daily_goal_title: "Gestione obiettivi",
+  daily_goal_subtitle: "Quanti XP vuoi guadagnare al giorno?",
+  daily_goal_input_label: "XP al giorno",
+  daily_goal_save: "Salva",
+  daily_goal_quick_picks: "Scelte rapide",
+  daily_goal_fine_tune: "Regola",
+  daily_goal_xp_unit: "XP / giorno",
+  daily_goal_level_explainer: "Ogni livello vale 100 XP.",
+  daily_goal_preview: "Anteprima obiettivo",
+  daily_goal_resets_in: "Si azzera tra 24 h · {when}",
+  daily_goal_error_no_user: "ID utente mancante",
+  daily_goal_error_no_user_desc: "Accedi di nuovo.",
+  daily_goal_error_save: "Impossibile salvare l'obiettivo",
+  daily_goal_activity_title: "Attività XP",
+  daily_goal_activity_subtitle: "Quest'anno",
+  daily_goal_activity_empty: "Nessun XP",
+  daily_goal_activity_some: "Qualche XP",
+  daily_goal_activity_goal: "Obiettivo giornaliero raggiunto",
+  daily_goal_calendar_title: "I tuoi progressi",
+  daily_goal_calendar_completed: "Completato",
+  daily_goal_calendar_incomplete: "Incompleto",
+  try_again: "Riprova",
+  tabs_random: "Casuale",
+  random_toast_title: "Ottimo lavoro!",
+  random_toast_desc: "Hai guadagnato +{xp} XP.",
+  random_shuffle: "Mescola",
+  reading_btn_next: "Completa la lettura",
+  reading_btn_finish: "Completa la lettura",
+  reading_loading: "Caricamento impostazioni di lettura...",
+  reading_generating: "Creazione della lettura...",
+  reading_generating_title: "Generazione lettura...",
+  reading_skip: "Salta",
+  copied_to_clipboard_all: "La domanda è stata copiata.",
+  copy_all: "Copia domanda",
+  grammar_next: "Avanti",
+  practice_next_question: "Prossima domanda",
+  practice_skip_question: "Salta",
+  practice_speak_banner_you_said: "Hai detto",
+  practice_speak_banner_translation: "Significato",
+  practice_drag_drop_instruction:
+    "Trascina o seleziona la risposta corretta nello spazio vuoto.",
+  practice_drag_drop_slot_placeholder: "Rilascia la risposta qui",
+  practice_drag_drop_multi_instruction:
+    "Trascina o seleziona ogni risposta corretta nello spazio corrispondente.",
+  practice_drag_blank_label: "Spazio {index}",
+  practice_next_ready: "Ottimo lavoro! Continua la serie.",
+  practice_try_again_hint: "Rivedi la consegna e riprova.",
+  quiz_correct: "Corretto",
+  quiz_try_again: "Riprova",
+  quiz_checked: "Controllato",
+  quiz_submit: "Invia",
+  quiz_placeholder_open: "Scrivi la risposta...",
+  quiz_placeholder_oneword: "Una parola...",
+  quiz_select_placeholder: "Seleziona...",
+  reading_title: "Lettura",
+  reading_badge_level: "Livello {level}",
+  reading_badge_xp: "XP {xp}",
+  reading_btn_generate: "Genera la prossima lettura",
+  reading_list_show: "Mostra letture",
+  reading_list_hide: "Nascondi letture",
+  reading_prev_lectures_label: "Letture precedenti",
+  reading_none_yet: "Ancora nulla — generane una per iniziare.",
+  reading_no_lecture: "Nessuna lettura creata finora.",
+  reading_read_in: "Leggi in {language}",
+  reading_stop_aria: "Ferma",
+  history_read_sentences: "Leggi righe",
+  history_read_all: "Leggi tutto",
+  history_stop: "Ferma lettura",
+  history_generating_question: "Generazione domanda...",
+  history_review_heading: "Ripasso",
+  history_fill_blank_placeholder: "Completa lo spazio...",
+  history_answer_placeholder: "La tua risposta...",
+  history_check_answer: "Controlla",
+  history_correct: "Corretto!",
+  history_not_quite: "Non proprio.",
+  history_keep_going: "Ottimo lavoro! Continua così.",
+  history_answer_label: "Risposta: {answer}",
+  history_explain_answer: "Spiega la risposta",
+  history_explanation_heading: "Spiegazione",
+  history_generate_review: "Genera domanda di ripasso",
+  history_translate: "Traduci",
+  history_translating: "Traduzione",
+  history_show_translation: "Mostra traduzione",
+  history_hide_translation: "Nascondi traduzione",
+  history_keyboard_open: "Apri tastiera",
+  history_keyboard_close: "Chiudi tastiera",
+  history_format_question: "Domanda",
+  history_format_speech: "Leggi ad alta voce",
+  history_speech_heading: "Pratica di lettura",
+  history_speech_listening: "Ascolto...",
+  history_speech_instructions:
+    "Leggi ad alta voce il paragrafo qui sopra. Riceverai un feedback sulla lettura.",
+  history_speech_start_mic: "Inizia a leggere",
+  history_speech_stop_mic: "Ferma",
+  history_speech_start_over: "Ricomincia",
+  history_speech_submit: "Valuta",
+  history_speech_submitting: "Valutazione...",
+  history_speech_complete: "Bel tentativo!",
+  history_speech_breakdown: "Dettaglio",
+  history_speech_total_score: "Punteggio totale",
+  reading_takeaways_heading: "Punti chiave",
+  reading_xp_awarded_line: "XP assegnati: {xp}{reason}",
+  ra_goal_label: "Obiettivo",
+  onboarding_help_title: "Con cosa vorresti aiuto?",
+  onboarding_help_placeholder:
+    "es. pratica di conversazione per colloqui; ripasso dei tempi passati; spagnolo da viaggio...",
+  onboarding_help_hint:
+    "Condividi temi, obiettivi o situazioni. Questo guida il tuo coach IA.",
+  onboarding_pron_label: "Pratica pronuncia",
+  onboarding_pron_hint:
+    "Se attiva, il coach ti chiederà di ripetere frasi e lavorare su suoni e intonazione.",
+  ra_title: "No Sabo — Coach di {language}",
+  ra_label_you: "Tu",
+  ra_label_xp: "XP",
+  ra_label_level: "Livello",
+  ra_conversation_settings: "Impostazioni conversazione",
+  ra_chat_log: "Registro chat",
+  ra_conversation_log: "Registro conversazione",
+  ra_new_topic: "Nuovo tema",
+  ra_new_goal: "Nuovo obiettivo",
+  ra_show_suggestion: "Mostra suggerimento",
+  ra_generating: "Generazione...",
+  ra_generating_topic: "Generazione nuovo tema...",
+  ra_btn_start: "Inizia",
+  ra_btn_starting: "Avvio...",
+  ra_btn_end: "Termina",
+  ra_btn_skip: "Salta",
+  ra_btn_next: "Avanti",
+  ra_btn_replay: "Riproduci",
+  ra_btn_settings: "Impostazioni",
+  ra_btn_delete_convo: "Elimina conversazione",
+  ra_btn_connect: "Connetti",
+  ra_btn_connecting: "Connessione...",
+  ra_btn_disconnect: "Disconnetti",
+  ra_settings_title: "Impostazioni",
+  ra_persona_label: "Personalità",
+  ra_persona_placeholder: "es. {example}",
+  ra_persona_help: "Un breve suggerimento di tono/stile per la voce IA.",
+  ra_progress_header: "Progressi",
+  ra_progress_xp_to_level: "{remaining} XP al livello",
+  ra_vad_label: "Pausa tra i turni (secondi)",
+  ra_translating: "Traduzione...",
+  ra_goal_skip: "Salta",
+  ra_goal_criteria: "Criteri:",
+  ra_goal_completed: "Obiettivo completato!",
+  ra_free_practice_title: "Modalità pratica libera",
+  ra_free_practice_desc:
+    "In modalità libera, usa il pulsante Connetti per fare pratica di conversazione.",
+  ra_toast_translation_failed_title: "Traduzione non riuscita",
+  ra_toast_no_audio_replay: "Nessun audio disponibile da riprodurre.",
+  ra_auto_stop_desc: "La sessione si è chiusa automaticamente dopo 15 secondi.",
+  ra_delete_confirm:
+    "Eliminare tutti i turni salvati per questo account? L'azione non può essere annullata.",
+  ra_toast_no_account_title: "Nessun account",
+  ra_toast_no_account_desc: "ID utente non trovato.",
+  ra_toast_delete_success: "Conversazione eliminata",
+  ra_toast_delete_failed_title: "Eliminazione non riuscita",
+  ra_toast_rt_failed_title: "Connessione Realtime non riuscita",
+  ra_toast_rt_error_title: "Errore Realtime",
+  DEFAULT_PERSONA: "Un assistente amichevole e disponibile",
+  common_saving: "Salvataggio",
+  common_cancel: "Annulla",
+  language_ar: "Arabo egiziano",
+  language_zh: "Cinese mandarino",
+  language_en: "Inglese",
+  language_es: "Spagnolo",
+  language_pt: "Portoghese",
+  language_fr: "Francese",
+  language_it: "Italiano",
+  language_hi: "Hindi",
+  language_nl: "Olandese",
+  language_nah: "Nahuatl huasteco orientale",
+  language_ja: "Giapponese",
+  language_ru: "Russo",
+  language_de: "Tedesco",
+  language_el: "Greco",
+  language_pl: "Polacco",
+  language_ga: "Irlandese",
+  language_yua: "Maya yucateco",
+  onboarding_title: "Benvenuto",
+  onboarding_subtitle: "Configuriamo la tua esperienza prima di iniziare.",
+  onboarding_app_language_title: "Lingua dell'app",
+  onboarding_app_language_desc:
+    "Scegli la lingua dell'interfaccia e delle istruzioni.",
+  onboarding_support_language_title: "Lingua di supporto",
+  onboarding_support_language_desc:
+    "La lingua usata per spiegazioni, suggerimenti e contenuti di aiuto.",
+  onboarding_practice_language_title: "Lingua di pratica",
+  onboarding_practice_language_desc:
+    "La lingua che vuoi imparare e praticare parlando.",
+  onboarding_section_difficulty_support: "Difficoltà e supporto linguistico",
+  onboarding_section_voice_persona: "Voce e personalità",
+  onboarding_vad_title: "Rilevamento attività vocale",
+  onboarding_vad_explanation:
+    "Le funzioni vocali faranno una breve pausa prima di accettare la risposta. Così hai tempo di finire di parlare prima che l'assistente risponda.",
+  onboarding_language_tag_alpha: "alfa",
+  onboarding_language_tag_beta: "beta",
+  onboarding_section_first_goal: "Primo obiettivo",
+  onboarding_level_beginner: "Principiante",
+  onboarding_level_intermediate: "Intermedio",
+  onboarding_level_advanced: "Avanzato",
+  onboarding_support_menu_label: "Supporto:",
+  onboarding_support_en: "Inglese",
+  onboarding_support_bilingual: "Bilingue",
+  onboarding_support_es: "Spagnolo",
+  onboarding_support_it: "Italiano",
+  onboarding_support_ar: "Arabo egiziano",
+  onboarding_support_ja: "Giapponese",
+  onboarding_support_zh: "Cinese mandarino",
+  onboarding_practice_label_title: "Lingua di pratica",
+  onboarding_practice_menu_label: "Pratica:",
+  onboarding_practice_nah: "Nahuatl huasteco orientale",
+  onboarding_practice_es: "Spagnolo",
+  onboarding_practice_pt: "Portoghese",
+  onboarding_practice_fr: "Francese",
+  onboarding_practice_it: "Italiano",
+  onboarding_practice_hi: "Hindi",
+  onboarding_practice_ar: "Arabo egiziano",
+  onboarding_practice_zh: "Cinese mandarino",
+  onboarding_practice_nl: "Olandese",
+  onboarding_practice_ja: "Giapponese",
+  onboarding_practice_en: "Inglese",
+  onboarding_practice_ru: "Russo",
+  onboarding_practice_de: "Tedesco",
+  onboarding_practice_el: "Greco",
+  onboarding_practice_pl: "Polacco",
+  onboarding_practice_ga: "Irlandese",
+  onboarding_practice_yua: "Maya yucateco",
+  onboarding_persona_default_example: "Un assistente amichevole e disponibile",
+  onboarding_persona_input_placeholder: "es. {example}",
+  onboarding_persona_help_text:
+    "Guida il tono e lo stile del tuo assistente vocale.",
+  onboarding_translations_toggle: "Mostra traduzione in {language}",
+  onboarding_step_indicator: "Passaggio {current} di {total}",
+  onboarding_step1_title: "Basi",
+  onboarding_step2_title: "Voce e personalità",
+  onboarding_step3_title: "Impostazioni sessione",
+  onboarding_step4_title: "Supporta con Bitcoin",
+  onboarding_challenge_default: "Di' ciao.",
+  onboarding_cta_next: "Avanti",
+  onboarding_cta_start: "Inizia sessione",
+  onboarding_bitcoin_optional_title: "Depositi Bitcoin opzionali",
+  onboarding_bitcoin_optional_desc:
+    "Scegli un'identità da supportare con i depositi o salta questo passaggio per ora.",
+  bitcoin_modal_title: "Supporta con Bitcoin",
+  tutorial_bitcoin_modal_title: "Crea borse di studio",
+  tutorial_bitcoin_modal_subtitle:
+    "Invia Bitcoin agli educatori ogni volta che guadagni XP",
+  tutorial_bitcoin_modal_body: "Puoi farlo più tardi dalle impostazioni.",
+  tutorial_bitcoin_modal_skip: "Forse più tardi",
+  tutorial_bitcoin_modal_done: "Fatto",
+  bitcoin_modal_reload_note:
+    "Quando il deposito sarà confermato, ricaricheremo l'app per aggiornare il saldo.",
+  bitcoin_modal_scholarship_note:
+    "I tuoi depositi ci aiutano a creare borse di studio tramite l'apprendimento con ",
+  bitcoin_modal_success:
+    "Deposito ricevuto! Ricarichiamo per aggiornare il saldo...",
+  bitcoin_modal_skip: "Salta per ora",
+  bitcoin_modal_close: "Chiudi",
+  app_install_aria: "Installa",
+  app_account_aria: "Account",
+  app_help_chat: "Aiuto",
+  app_notes: "Note",
+  real_world_tasks_title: "Pratica di immersione",
+  app_mode_menu: "Modalità",
+  app_mode_alphabet: "Alfabeto",
+  app_mode_path: "Percorso",
+  app_mode_cards: "Schede",
+  app_mode_conversation: "Conversazione",
+  app_install_title: "Installa come app",
+  app_install_step1: "Apri il menu del browser.",
+  app_install_step2: "Apri nel browser.",
+  app_install_step3: "Scegli 'Condividi' o 'Installa'.",
+  app_install_step4: "Aggiungi alla schermata Home.",
+  app_install_step5: "Avvia dalla schermata Home.",
+  app_close: "Chiudi",
+  app_sign_out: "Esci",
+  app_sign_out_confirm_title: "Uscire?",
+  app_sign_out_confirm_body:
+    "Vuoi davvero uscire? Assicurati di avere salvato la chiave segreta prima di uscire.",
+  app_sign_out_confirm: "Esci",
+  app_copy_id: "Copia ID utente",
+  app_copy_secret: "Copia chiave segreta",
+  account_final_step_title: "Copia la chiave segreta per accedere.",
+  account_final_step_description:
+    "Questa chiave è l'unico modo per accedere ai tuoi account nelle app Robots Building Education. Conservala in un gestore di password o in un posto sicuro. Non possiamo recuperarla per te.",
+  account_copy_secret: "Copia chiave segreta",
+  app_account_title: "Account",
+  app_your_id: "Il tuo ID",
+  app_copy: "Copia",
+  app_secret_key: "Chiave segreta",
+  app_secret_note:
+    "Tieni al sicuro il segreto. Chiunque lo abbia può accedere al tuo account.",
+  app_switch_account: "Cambia account",
+  app_nsec_placeholder: "Incolla una chiave nsec per cambiare",
+  app_switch: "Cambia",
+  app_switching: "Cambio...",
+  generic_loading: "Caricamento...",
+  app_switch_note:
+    "Deriveremo la chiave pubblica (npub) dal segreto e cambieremo in modo sicuro.",
+  app_cefr_heading: "Analisi CEFR",
+  app_cefr_subtitle: "Chiedi all'IA di valutare il tuo livello attuale.",
+  app_cefr_level_label: "Livello {level}",
+  app_cefr_empty:
+    "Nessuna analisi. Avvia la valutazione per vedere il livello.",
+  app_cefr_updated: "Ultima analisi {timestamp}",
+  app_cefr_run: "Analizza livello",
+  app_cefr_loading: "Analisi...",
+  app_cefr_need_account_title: "Account richiesto",
+  app_cefr_need_account: "Connetti l'account per analizzare il tuo livello.",
+  app_cefr_success_title: "Analisi completata",
+  app_cefr_success_desc: "Livello assegnato: {level}.",
+  app_cefr_error_title: "Analisi non riuscita",
+  app_cefr_error: "Riprova più tardi.",
+  toast_copied: "Copiato",
+  toast_id_copied: "ID copiato",
+  toast_secret_copied: "Segreto copiato",
+  toast_copy_failed: "Copia non riuscita",
+  toast_paste_nsec: "Incolla il tuo nsec",
+  toast_invalid_key: "Chiave non valida",
+  toast_must_start_nsec: "La chiave deve iniziare con 'nsec'.",
+  toast_switch_failed: "Cambio non riuscito",
+  toast_switched_account: "Account cambiato",
+  toast_save_lang_failed: "Impossibile salvare la lingua",
+  "passcode.label": "Codice abbonato",
+  "passcode.instructions": (
+    <div>
+      Inserisci il codice abbonamento per continuare.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>L'abbonamento ti dà accesso a:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Accesso a più app educative con intelligenza artificiale.
+          </li>
+          <li style={{ marginBottom: 8 }}>Supporto personale.</li>
+          <li style={{ marginBottom: 8 }}>
+            Una raccolta in crescita di contenuti per abbonati orientati
+            all'ingegneria startup e agli investimenti.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            Riconoscimento per il supporto alla missione di creare borse di
+            studio attraverso l'apprendimento.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            Abbonati
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Paga una volta
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+  invalid: "Codice non valido. Riprova.",
+  bannedTitle: "Accesso negato",
+  bannedBody:
+    "Sei stato bloccato e il codice è stato modificato. Contatta il proprietario dell'app su Patreon se si tratta di un errore.",
+  goToPatreon: "Vai su Patreon",
+  passcodeLink: "Link al codice abbonato",
+  backToQuestion9: "Torna alla domanda 9",
+  app_err_save_language_title: "Impossibile salvare la lingua",
+  tabs_realtime: "Chat",
+  tabs_stories: "Storie",
+  tabs_reading: "Lettura",
+  tabs_grammar: "Grammatica",
+  tabs_vocab: "Vocabolario",
+  tabs_game: "Gioco",
+  story_header: "Modalità storia",
+  story_generate: "Genera storia",
+  story_playing: "Riproduzione...",
+  tts_synthesizing: "Sintesi...",
+  story_listen: "Ascolta",
+  story_stop: "Ferma",
+  story_start_practice: "Inizia pratica per frasi",
+  story_practice_this: "Pratica questa frase:",
+  story_skip: "Salta frase",
+  story_finish: "Termina storia",
+  story_record: "Registra frase",
+  story_stop_recording: "Ferma registrazione",
+  story_progress: "Progressi",
+  story_no_story: "Nessuna storia. Generane una per iniziare.",
+  story_generating_title: "Generazione della tua storia...",
+  story_generating_sub: "Creazione di una storia personalizzata",
+  story_almost: "Ci sei quasi — riprova",
+  story_well_done: "Ben fatto!",
+  story_score: "Punteggio",
+  story_level: "Livello",
+  story_story_label: "Storia",
+  story_back_aria: "Torna alla pratica",
+  story_demo_title: "Uso storia demo",
+  story_demo_desc: "API non disponibile. Uso una storia demo per i test.",
+  story_speech_unavailable_title: "Riconoscimento vocale non disponibile",
+  story_speech_unavailable_desc:
+    "Per la valutazione usa un browser basato su Chromium con accesso al microfono.",
+  story_mic_error_title: "Errore microfono",
+  story_mic_error_desc: "Controlla i permessi e riprova.",
+  story_audio_eval_error_title: "Impossibile valutare l'audio",
+  story_audio_eval_error_desc:
+    "Riprova parlando chiaramente nella lingua obiettivo.",
+  story_sentence_label: "Frase",
+  story_of: "di",
+  story_congrats_title: "Congratulazioni!",
+  story_congrats_done:
+    "Storia completata! Hai guadagnato {xp} XP in questa sessione.",
+  story_header_roleplay: "Gioco di ruolo",
+  story_role_prompt: "Con chi vuoi fare il gioco di ruolo?",
+  story_role_placeholder: "es. un insegnante che aiuta nuovi studenti",
+  story_start_role: "Inizia",
+  story_update_role: "Aggiorna ruolo",
+  story_edit_role: "Modifica",
+  story_cancel_edit: "Annulla",
+  story_play_target: "Riproduci {name}",
+  story_no_role: "Imposta un ruolo per iniziare il gioco di ruolo.",
+  story_generating_role_title: "Preparazione della storia...",
+  story_generating_role_sub: "Creazione di una scena di gioco di ruolo.",
+  story_finish_role: "Termina gioco di ruolo",
+  repeat_hear_heading: "Tocca ciò che senti",
+  repeat_hear_instruction: "Ascolta e tocca le parole in ordine",
+  translate_sentence_heading: "Traduci questa frase",
+  translate_sentence_instruction: "Tocca le parole per formare la tua risposta",
+  story_skip_unavailable_title: "Non disponibile",
+  story_skip_unavailable_desc: "Puoi saltare solo nella modalità lezione.",
+  story_roleplay_completed: "Gioco di ruolo completato!",
+  story_sentences: "frasi",
+  proficiency_modal_already_know: "Conosci già un po' di {lang}?",
+  proficiency_modal_description:
+    "Possiamo fare una breve conversazione per determinare il tuo livello e collocarti nel posto giusto.",
+  proficiency_modal_exchange_info:
+    "Una breve chat di 10 scambi — valuteremo la tua pronuncia, grammatica e sicurezza.",
+  proficiency_modal_take_test: "Facciamolo!",
+  proficiency_modal_skip: "No grazie",
+  proficiency_modal_skip_note:
+    '"No grazie" ti farà iniziare dal livello principiante.',
+  proficiency_test_title: "Test di livello",
+  proficiency_test_instruction:
+    "Parla naturalmente — stiamo valutando il tuo livello",
+  proficiency_test_rubric: "Rubrica di valutazione",
+  proficiency_test_evaluating: "Valutazione",
+  proficiency_test_analyzing:
+    "Analisi della conversazione per determinare il tuo livello...",
+  proficiency_test_assessor: "Valutatore",
+  proficiency_test_start: "Inizia",
+  proficiency_test_you: "Tu",
+  proficiency_test_final_result: "Risultato finale",
+  proficiency_test_complete: "Valutazione completata",
+  proficiency_test_summary: "Riepilogo della valutazione",
+  proficiency_test_breakdown: "Ripartizione",
+  proficiency_test_composite: "Punteggio complessivo",
+  proficiency_test_level_label: "Livello {level}",
+  proficiency_test_eval_error:
+    "Si è verificato un problema con la valutazione automatica. Puoi riprovare.",
+  proficiency_test_return_app: "Torna all'app",
+  proficiency_test_rubric_desc:
+    "Ecco come viene calcolato il tuo livello. La valutazione è rigorosa per evitare di sovrastimare le abilità.",
+  proficiency_test_what_scored: "Cosa viene valutato",
+  proficiency_test_what_scored_desc:
+    "Vengono valutate 6 categorie (1-10): pronuncia, grammatica, vocabolario, fluidità, sicurezza e comprensione.",
+  proficiency_test_scoring_heading: "Meccanismo di punteggio",
+  proficiency_test_scoring_1:
+    "Comprensione e fluidità pesano più della sicurezza.",
+  proficiency_test_scoring_2:
+    "Risposte molto brevi o senza contenuto limitano il risultato a Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    'Risposte frequenti con filler o "non so" abbassano automaticamente il livello.',
+  proficiency_test_scoring_4:
+    "Il livello finale non supera mai ciò che la conversazione dimostra.",
+  proficiency_test_got_it: "Capito",
+  proficiency_test_exit_title: "Uscire dal test di livello?",
+  proficiency_test_exit_desc:
+    "I tuoi progressi non verranno salvati. Puoi ripetere il test più tardi dalle impostazioni.",
+  proficiency_test_yes_exit: "Sì, esci",
+  proficiency_test_continue: "Continua il test",
+  proficiency_test_assess_fallback:
+    "Valutazione completata. Controlla i risultati qui sotto.",
+  proficiency_test_assess_error:
+    "Errore di valutazione. Ti collochiamo a Pre-A1/A0 per sicurezza.",
+  proficiency_speaking: "Parlando",
+  proficiency_listening: "Ascoltando",
+  proficiency_thinking: "Pensando",
+  app_install_subtitle:
+    "Per la migliore esperienza, installa l'app sul tuo dispositivo.",
+  app_install_step6: "Copia la chiave segreta per accedere.",
+  app_install_got_it: "Capito!",
+  app_install_copied: "Copiato!",
+  grammar_badge_level: "Livello {level}",
+  grammar_badge_xp: "XP {xp}",
+  grammar_btn_fill: "Completa lo spazio",
+  grammar_btn_mc: "Scelta multipla",
+  grammar_btn_ma: "Risposte multiple",
+  grammar_btn_match: "Abbina",
+  grammar_btn_speak: "Pronuncia",
+  grammar_input_placeholder_answer: "Scrivi la risposta...",
+  grammar_submit: "Controlla",
+  grammar_select_all_apply: "Seleziona tutte quelle corrette.",
+  grammar_dnd_bank: "Banco",
+  grammar_result_good: "✅ Va bene · +{xp} XP",
+  grammar_result_not_fit: "❌ Non va bene · +{xp} XP",
+  grammar_result_correct: "✅ Corretto · +{xp} XP",
+  grammar_result_try_again: "❌ Riprova · +{xp} XP",
+  grammar_speak_instruction_label: "Pronuncia questa frase ad alta voce",
+  grammar_speak_hint_label: "Suggerimento grammaticale",
+  grammar_speak_translation_label: "Traduzione",
+  grammar_speak_last_heard: "Ultimo tentativo",
+  grammar_speak_record: "Registra",
+  grammar_speak_stop: "Ferma",
+  grammar_speak_success_title: "Pronuncia approvata!",
+  grammar_speak_success_desc: "Punteggio {score}%",
+  grammar_speak_retry_title: "Riprova",
+  grammar_speak_score: "Punteggio {score}%",
+  grammar_speak_unavailable: "Riconoscimento vocale non disponibile",
+  vocab_badge_level: "Livello {level}",
+  vocab_badge_xp: "XP {xp}",
+  vocab_btn_fill: "Completa lo spazio",
+  vocab_btn_mc: "Scelta multipla",
+  vocab_btn_ma: "Risposte multiple",
+  vocab_btn_match: "Abbina",
+  vocab_btn_speak: "Pronuncia",
+  vocab_input_placeholder_word: "Scrivi la parola...",
+  vocab_submit: "Controlla",
+  vocab_select_all_apply: "Seleziona tutte quelle corrette.",
+  vocab_dnd_drop_here: "Rilascia qui",
+  vocab_dnd_bank: "Banco",
+  vocab_result_nice: "✅ Bene! · +{xp} XP",
+  vocab_result_not_quite: "❌ Non proprio · +{xp} XP",
+  vocab_result_correct: "✅ Corretto · +{xp} XP",
+  vocab_result_try_again: "❌ Riprova · +{xp} XP",
+  vocab_speak_instruction_label: "Pronuncia la parola ad alta voce",
+  vocab_speak_hint_label: "Suggerimento",
+  vocab_speak_translation_label: "Traduzione",
+  vocab_speak_last_heard: "Ultimo tentativo",
+  vocab_speak_record: "Registra",
+  vocab_speak_stop: "Ferma",
+  vocab_speak_success_title: "Ottima pronuncia!",
+  vocab_speak_success_desc: "Punteggio {score}%",
+  vocab_speak_retry_title: "Riprova",
+  vocab_speak_score: "Punteggio {score}%",
+  vocab_speak_unavailable: "Riconoscimento vocale non disponibile",
+  vocab_speak_variant_repeat: "Pronuncia la parola",
+  vocab_speak_variant_translate: "Traduci ad alta voce",
+  vocab_speak_variant_complete: "Completa la frase",
+  stories_sentence_success_title: "Ottimo lavoro!",
+  stories_sentence_success_score: "Punteggio: {score}%",
+  stories_next_sentence: "Frase successiva",
+  stories_finish: "Termina pratica",
+  skill_tree_learning_activities: "Attività di apprendimento:",
+  skill_tree_xp_reward: "XP per completare:",
+  skill_tree_start_lesson: "Inizia lezione",
+  skill_tree_starting_lesson: "Avvio lezione...",
+  skill_tree_unlock_at: "Sblocca a {xpRequired} XP",
+  skill_tree_unlock_sequential: "Completa la lezione precedente per sbloccare",
+  skill_tree_level: "Livello {level}",
+  skill_tree_no_path:
+    "Non c'è ancora un percorso di apprendimento per questa lingua.",
+  skill_tree_check_back: "Torna presto per lezioni strutturate!",
+  skill_tree_your_path: "Il tuo percorso",
+  skill_tree_collapse: "Comprimi",
+  skill_tree_expand: "Espandi",
+  skill_tree_lesson_active: "Lezione attiva",
+  skill_tree_cefr_a1_desc:
+    "Livello iniziale centrato su linguaggio essenziale e scambi di base.",
+  skill_tree_cefr_a2_desc:
+    "Livello elementare per gestire routine semplici e comunicazione quotidiana.",
+  skill_tree_cefr_b1_desc:
+    "Livello intermedio per sostenere conversazioni su esperienze e piani.",
+  skill_tree_cefr_b2_desc:
+    "Intermedio alto per discutere temi astratti e idee complesse con dettaglio.",
+  skill_tree_cefr_c1_desc:
+    "Livello avanzato per usare la lingua in modo flessibile, strutturato e sfumato.",
+  skill_tree_cefr_c2_desc:
+    "Padronanza quasi nativa, con controllo di sfumature e stile.",
+  skill_tree_cefr_default_desc: "Livello di competenza CEFR",
+  skill_tree_passing_score: "Punteggio minimo",
+  skill_tree_game_reward: "Ricompensa gioco",
+  skill_tree_tutorial_goal: "Obiettivo",
+  skill_tree_tutorial_activities: "Completa le 6 attività di apprendimento",
+  flashcard_translate_to: "Traduci in {language}:",
+  flashcard_show_answer: "Mostra risposta",
+  flashcard_answer_label: "Risposta:",
+  flashcard_tap_to_flip: "Tocca per girare",
+  flashcard_grading: "Valutazione della risposta...",
+  flashcard_record_answer: "Registra risposta",
+  flashcard_stop_recording: "Ferma registrazione",
+  flashcard_recognized: "Riconosciuto:",
+  flashcard_type_placeholder: "Scrivi la risposta...",
+  flashcard_submit: "Invia risposta",
+  flashcard_cancel: "Annulla",
+  flashcard_correct: "Corretto!",
+  flashcard_incorrect: "Non proprio...",
+  flashcard_try_again: "Riprova",
+  flashcard_explain_answer: "Spiega la mia risposta",
+  flashcard_explanation_heading: "Spiegazione",
+  flashcard_xp_level: "Livello {level}",
+  flashcard_total_xp: "XP totali {xp}",
+  flashcard_error_loading: "Errore nel caricamento della risposta",
+  flashcard_eval_error_title: "Impossibile valutare",
+  flashcard_eval_error_desc: "Riprova con una connessione stabile.",
+  flashcard_grading_error_title: "Errore di valutazione",
+  flashcard_grading_error_desc: "Impossibile valutare la risposta. Riprova.",
+  flashcard_speech_unavailable_title: "Riconoscimento vocale non disponibile",
+  flashcard_speech_unavailable_desc:
+    "Usa un browser basato su Chromium con accesso al microfono.",
+  flashcard_mic_denied_title: "Microfono negato",
+  flashcard_mic_denied_desc:
+    "Abilita l'accesso al microfono nelle impostazioni del browser.",
+  flashcard_all_done: "Tutto fatto!",
+  flashcard_all_completed: "Hai completato tutte le flashcard!",
+  flashcard_listen: "Ascolta",
+  flashcard_listening: "Riproduzione...",
+  flashcard_practice_random: "Pratica una carta casuale",
+  flashcard_random_xp_toast: "+{xp} XP per la pratica!",
+  flashcard_due_now: "Da ripassare ora",
+  flashcard_new_card: "Carta nuova",
+  flashcard_review_now: "Ripassa ora",
+  flashcard_learning_card: "In apprendimento",
+  flashcard_scheduled_card: "Programmato",
+  flashcard_mastery_stage: "Fase {stage}",
+  flashcard_next_review: "Prossimo ripasso {time}",
+  flashcard_next_review_label: "Prossimo ripasso",
+  flashcard_recall_hint:
+    "Prova a ricordare attivamente prima di mostrare la risposta. Prima le carte in scadenza, poi le nuove.",
+  flashcard_memory_saved:
+    "Bel recupero. Questa carta è stata riprogrammata per rivederla prima che il ricordo svanisca.",
+  flashcard_memory_retry:
+    "Quella fatica è utile. Riprova o rivedi la risposta, poi torna presto su questa carta.",
+  flashcard_continue: "Continua",
+  flashcard_rate_recall: "Valuta il ricordo",
+  flashcard_ai_suggests: "L'IA suggerisce {rating}",
+  flashcard_self_grade_prompt:
+    "Scegli quanto bene la ricordavi. Questo programmerà il prossimo ripasso.",
+  flashcard_rating_help_aria: "Cosa significano questi pulsanti di ripasso",
+  flashcard_rating_help_title: "Cosa significa ogni pulsante",
+  flashcard_button_again: "Mi serve aiuto",
+  flashcard_button_again_help:
+    "Usalo quando hai sbagliato o hai avuto bisogno di vedere la risposta.",
+  flashcard_button_hard: "Sto ancora imparando",
+  flashcard_button_hard_help:
+    "Usalo quando sembrava familiare, ma non riuscivi a ricordarlo con sicurezza.",
+  flashcard_button_good: "Lo so",
+  flashcard_button_good_help:
+    "Usalo quando lo hai ricordato correttamente, anche con un po' di sforzo.",
+  flashcard_button_easy: "Dominato",
+  flashcard_button_easy_help:
+    "Usalo quando la risposta è arrivata subito ed è sembrata facile.",
+  flashcard_session_title: "Flusso flashcard",
+  flashcard_session_subtitle:
+    "Un ritmo più stabile: ripassa ciò che è dovuto, poi aggiungi solo il nuovo necessario.",
+  flashcard_review_first:
+    "La pratica basata sulla scienza funziona meglio quando le carte scadute vengono risolte prima di quelle nuove.",
+  flashcard_reviews_due: "Ripassi dovuti",
+  flashcard_new_queue: "Carte nuove",
+  flashcard_mastered_cards: "Carte imparate",
+  flashcard_streak: "Serie di studio",
+  flashcard_activity: "Attività",
+  flashcard_activity_subtitle: "Quest'anno",
+  flashcard_activity_empty: "Nessuno studio",
+  flashcard_activity_some: "Progressi",
+  flashcard_activity_goal: "Obiettivo giornaliero",
+  flashcard_daily_target: "Obiettivo giornaliero",
+  flashcard_cards_done_today: "{count}/{target} carte completate oggi",
+  flashcard_caught_up:
+    "Obiettivo giornaliero raggiunto. Se vuoi fare di più, ripassa una carta debole o lascia che i ripassi di domani arrivino naturalmente.",
+  flashcard_start_reviews: "Inizia ripassi",
+  flashcard_learn_next: "Impara la prossima carta",
+  flashcard_strengthen_weak: "Ripassa carte deboli",
+  flashcard_session_loading: "Preparazione della coda di ripasso...",
+  flashcard_due_subtitle:
+    "Queste sono pronte ora. Risolverle prima costruisce spaziatura e protegge i ricordi vecchi.",
+  flashcard_new_subtitle:
+    "Solo la prossima carta non vista è attiva. Le altre restano bloccate per non sovraccaricare lo studente.",
+  flashcard_weak_queue: "Carte deboli",
+  flashcard_weak_subtitle:
+    "Carte già imparate ma non ancora dovute, più a rischio di scivolare senza rinforzo.",
+  flashcard_weak_reason_lapses: "Errori recenti",
+  flashcard_weak_reason_mastery: "Padronanza bassa",
+  flashcard_weak_reason_slipping: "Continua a sfuggire",
+  flashcard_scheduled_queue: "Programmate per dopo",
+  flashcard_scheduled_subtitle:
+    "Carte già imparate in attesa della prossima finestra ideale di ripasso.",
+  flashcard_next_up: "Prossima",
+  cefr_level_completed: "Livello completato!",
+  mode_vocabulary: "Vocabolario",
+  mode_grammar: "Grammatica",
+  mode_reading: "Lettura",
+  mode_realtime: "Chat",
+  mode_stories: "Storie",
+  mode_game: "Gioco",
+  path_switcher_path: "Percorso",
+  path_switcher_flashcards: "Carte",
+  path_switcher_conversations: "Chat",
+  timer_modal_title: "Timer sessione",
+  timer_modal_description: "Imposta per quanto tempo vuoi concentrarti.",
+  timer_modal_minutes_label: "Minuti",
+  timer_modal_quick_picks: "Scelte rapide",
+  timer_modal_cancel: "Annulla",
+  timer_modal_close: "Chiudi",
+  timer_modal_start: "Avvia timer",
+  timer_modal_restart: "Riavvia timer",
+  timer_modal_max_hint: "max 240 minuti (4 ore)",
+  timer_times_up_title: "Tempo scaduto!",
+  timer_times_up_subtitle: "Sessione di concentrazione completata",
+  timer_times_up_duration: "Sei rimasto concentrato per {minutes} minuti.",
+  timer_times_up_no_duration: "Bel lavoro nel chiudere il timer.",
+  timer_times_up_close: "Chiudi",
+  timer_times_up_restart: "Avvia un altro timer",
+  teams_drawer_title: "Team e community",
+  teams_tab_feed: "Feed globale",
+  teams_tab_create: "Crea team",
+  teams_tab_view: "Vedi team",
+  teams_drawer_close: "Chiudi",
+  teams_feed_instructions:
+    "Condividi i tuoi progressi con la community usando #LearnWithNostr e mostra cosa stai praticando.",
+  teams_feed_copy_button: "Copia chiave privata",
+  teams_feed_copy_title: "Chiave copiata",
+  teams_feed_copy_desc: "La tua chiave è stata copiata negli appunti.",
+  teams_feed_allow_label: "Consenti post automatici",
+  teams_feed_allow_enabled: "I post automatici sono attivi.",
+  teams_feed_allow_disabled: "I post automatici sono disattivati.",
+  sound_effects_label: "Effetti sonori",
+  sound_effects_enabled: "Gli effetti sonori sono attivi.",
+  sound_effects_disabled: "Gli effetti sonori sono silenziati.",
+  sound_volume_label: "Volume",
+  theme_mode_label: "Tema",
+  theme_mode_description:
+    "Scegli l'aspetto dell'app. La modalità chiara usa una palette calda, tipo carta.",
+  theme_mode_dark: "Mezzanotte",
+  theme_mode_dark_description:
+    "Pannelli blu notte e contrasto più forte per concentrarti.",
+  theme_mode_light: "Carta",
+  theme_mode_light_description:
+    "Superfici morbide tipo pergamena con testo scuro e ombre leggere.",
+  test_sound: "Prova suono",
+  teams_feed_refresh: "Aggiorna",
+  teams_feed_loading: "Sincronizzazione con la community...",
+  teams_feed_empty: "Ancora nessun post. Inizia tu la conversazione!",
+  teams_feed_error: "Impossibile caricare il feed.",
+  teams_feed_copy_fallback: "Impossibile copiare la chiave.",
+  teams_create_error: "Errore",
+  teams_create_invalid: "Inserisci un npub valido da invitare",
+  teams_create_invalid_format:
+    "Formato npub non valido. Gli npub iniziano con 'npub'",
+  teams_create_duplicate: "Questo npub è già nella lista",
+  teams_create_missing_name: "Scegli un nome per il team",
+  teams_create_missing_member: "Aggiungi almeno un compagno prima di creare",
+  teams_create_unknown_user: "Nuovo studente",
+  teams_create_dm_template:
+    'Ciao! Sei stato invitato a unirti a "{team}" su Robots Building Education. Crea un account per seguire i progressi con il team.',
+  teams_create_success: "Team creato",
+  teams_create_invites: "inviti inviati",
+  teams_create_failed: "non riusciti",
+  teams_create_heading: "Crea un nuovo team",
+  teams_create_name_label: "Nome team",
+  teams_create_name_placeholder: "es. Studio del weekend",
+  teams_create_member_label: "Invita compagni",
+  teams_create_member_placeholder: "npub1...",
+  teams_create_add_button: "Aggiungi",
+  teams_create_members_heading: "Inviti in sospeso",
+  teams_create_remove: "Rimuovi",
+  teams_create_creating: "Creazione",
+  teams_create_submit: "Crea team",
+  teams_view_error: "Errore",
+  teams_view_invite_accepted: "Invito accettato",
+  teams_view_invite_rejected: "Invito rifiutato",
+  teams_view_delete_confirm: "Eliminare {team}?",
+  teams_view_deleted: "Team eliminato",
+  teams_view_leave_confirm: "Lasciare {team}?",
+  teams_view_left: "Hai lasciato il team",
+  teams_view_loading: "Caricamento team...",
+  teams_view_pending: "Inviti in sospeso",
+  teams_view_invited_by: "Invitato da",
+  teams_view_accept: "Accetta",
+  teams_view_decline: "Rifiuta",
+  teams_view_my_teams: "I miei team",
+  teams_view_empty: "Crea un team per seguire i progressi insieme.",
+  teams_view_member_one: "membro",
+  teams_view_member_many: "membri",
+  teams_view_badge_creator: "Creatore",
+  teams_view_badge_member: "Membro",
+  teams_view_progress: "Progressi",
+  teams_view_total_xp: "XP totali",
+  teams_view_goal_completion: "Completamento obiettivo giornaliero",
+  teams_view_daily_goal: "Obiettivo di oggi",
+  teams_view_daily_xp: "XP giornalieri",
+  teams_view_level: "Livello",
+  teams_view_no_members: "Ancora nessun membro accettato.",
+  teams_view_pending_members: "Inviti in attesa",
+  teams_view_delete: "Elimina team",
+  teams_view_leave: "Lascia team",
+  vocab_ask_assistant: "Chiedi all'assistente",
+  vocab_assistant: "Assistente",
+  vocab_listen_question: "Ascolta la domanda",
+  vocab_listen_example: "Ascolta l'esempio",
+  vocab_listen_word: "Ascolta la parola",
+  vocab_connecting: "Connessione...",
+  vocab_say_it_aloud: "Dillo ad alta voce",
+  vocab_final_quiz: "Quiz finale",
+  vocab_quiz_passed: "Quiz superato!",
+  vocab_quiz_congratulations: "Congratulazioni!",
+  vocab_quiz_not_passed: "Quiz non superato",
+  vocab_quiz_score_passed: "{correct} corrette • Servivano {needed}",
+  vocab_quiz_score_failed: "{correct} corrette • Servono {needed} per passare",
+  vocab_back_to_skill_tree: "Torna all'Albero",
+  vocab_mc_instruction: "Scegli la risposta corretta",
+  vocab_ma_instruction: "Seleziona tutte le risposte corrette",
+  vocab_match_instruction: "Abbina le parole",
+  vocab_assistant_error: "Impossibile generare una risposta al momento.",
+  vocab_explanation_error: "Impossibile generare una spiegazione al momento.",
+  vocab_create_note_error: "Impossibile creare nota",
+  vocab_recording_failed: "Registrazione non riuscita",
+  vocab_recording_failed_desc: "Riprova.",
+  vocab_eval_error_mic_desc: "Controlla i permessi del microfono e riprova.",
+  vocab_create_note: "Crea nota",
+  vocab_note_saved: "Nota salvata!",
+  vocab_lesson_progress: "Avanzamento lezione",
+};
+
+translations.fr = {
+  ...translations.en,
+  correct: "Correct !",
+  dailyGoalProgress: "Objectif",
+  daily_goal_title: "Gestionnaire d'objectifs",
+  daily_goal_subtitle: "Combien d'XP veux-tu gagner par jour ?",
+  daily_goal_input_label: "XP par jour",
+  daily_goal_save: "Enregistrer",
+  daily_goal_quick_picks: "Choix rapides",
+  daily_goal_fine_tune: "Ajuster",
+  daily_goal_xp_unit: "XP / jour",
+  daily_goal_level_explainer: "Chaque niveau vaut 100 XP.",
+  daily_goal_preview: "Apercu de l'objectif",
+  daily_goal_resets_in: "Reinitialisation dans 24 h · {when}",
+  daily_goal_error_no_user: "ID utilisateur manquant",
+  daily_goal_error_no_user_desc: "Reconnecte-toi.",
+  daily_goal_error_save: "Impossible d'enregistrer l'objectif",
+  daily_goal_activity_title: "Activite XP",
+  daily_goal_activity_subtitle: "Cette annee",
+  daily_goal_activity_empty: "Aucun XP",
+  daily_goal_activity_some: "Quelques XP",
+  daily_goal_activity_goal: "Objectif quotidien atteint",
+  daily_goal_calendar_title: "Tes progres",
+  daily_goal_calendar_completed: "Termine",
+  daily_goal_calendar_incomplete: "Incomplet",
+  try_again: "Reessaie",
+  tabs_random: "Aleatoire",
+  random_toast_title: "Beau travail !",
+  random_toast_desc: "Tu as gagne +{xp} XP.",
+  random_shuffle: "Melanger",
+  reading_btn_next: "Terminer la lecture",
+  reading_btn_finish: "Terminer la lecture",
+  reading_loading: "Chargement des reglages de lecture...",
+  reading_generating: "Creation de la lecture...",
+  reading_generating_title: "Generation de la lecture...",
+  reading_skip: "Passer",
+  copied_to_clipboard_all: "La question a ete copiee.",
+  copy_all: "Copier la question",
+  grammar_next: "Suivant",
+  practice_next_question: "Question suivante",
+  practice_skip_question: "Passer",
+  practice_speak_banner_you_said: "Tu as dit",
+  practice_speak_banner_translation: "Sens",
+  practice_drag_drop_instruction:
+    "Glisse ou selectionne la bonne reponse dans le blanc.",
+  practice_drag_drop_slot_placeholder: "Depose la reponse ici",
+  practice_drag_drop_multi_instruction:
+    "Glisse ou selectionne chaque bonne reponse dans le blanc correspondant.",
+  practice_drag_blank_label: "Blanc {index}",
+  practice_next_ready: "Tres bien ! Continue la serie.",
+  practice_try_again_hint: "Relis la consigne et reessaie.",
+  quiz_correct: "Correct",
+  quiz_try_again: "Reessaie",
+  quiz_checked: "Verifie",
+  quiz_submit: "Envoyer",
+  quiz_placeholder_open: "Ecris ta reponse...",
+  quiz_placeholder_oneword: "Un mot...",
+  quiz_select_placeholder: "Selectionner...",
+  reading_title: "Lecture",
+  reading_badge_level: "Niveau {level}",
+  reading_badge_xp: "XP {xp}",
+  reading_btn_generate: "Generer la prochaine lecture",
+  reading_list_show: "Afficher les lectures",
+  reading_list_hide: "Masquer les lectures",
+  reading_prev_lectures_label: "Lectures precedentes",
+  reading_none_yet: "Rien pour l'instant - genere une lecture pour commencer.",
+  reading_no_lecture: "Aucune lecture creee pour l'instant.",
+  reading_read_in: "Lire en {language}",
+  reading_stop_aria: "Arreter",
+  history_read_sentences: "Lire les lignes",
+  history_read_all: "Tout lire",
+  history_stop: "Arreter la lecture",
+  history_generating_question: "Generation de la question...",
+  history_review_heading: "Revision",
+  history_fill_blank_placeholder: "Complete le blanc...",
+  history_answer_placeholder: "Ta reponse...",
+  history_check_answer: "Verifier",
+  history_correct: "Correct !",
+  history_not_quite: "Pas tout a fait.",
+  history_keep_going: "Beau travail ! Continue.",
+  history_answer_label: "Reponse : {answer}",
+  history_explain_answer: "Expliquer la reponse",
+  history_explanation_heading: "Explication",
+  history_generate_review: "Generer une question de revision",
+  history_translate: "Traduire",
+  history_translating: "Traduction",
+  history_show_translation: "Afficher la traduction",
+  history_hide_translation: "Masquer la traduction",
+  history_keyboard_open: "Ouvrir le clavier",
+  history_keyboard_close: "Fermer le clavier",
+  history_format_question: "Question",
+  history_format_speech: "Lire a voix haute",
+  history_speech_heading: "Pratique de lecture",
+  history_speech_listening: "Ecoute...",
+  history_speech_instructions:
+    "Lis le paragraphe ci-dessus a voix haute. Tu recevras un retour sur ta lecture.",
+  history_speech_start_mic: "Commencer la lecture",
+  history_speech_stop_mic: "Arreter",
+  history_speech_start_over: "Recommencer",
+  history_speech_submit: "Evaluer",
+  history_speech_submitting: "Evaluation...",
+  history_speech_complete: "Bel effort !",
+  history_speech_breakdown: "Detail",
+  history_speech_total_score: "Score total",
+  reading_takeaways_heading: "Points cles",
+  reading_xp_awarded_line: "XP attribues : {xp}{reason}",
+  ra_goal_label: "Objectif",
+  onboarding_help_title: "Sur quoi veux-tu de l'aide ?",
+  onboarding_help_placeholder:
+    "ex. pratique de conversation pour entretiens ; revoir les temps du passe ; espagnol de voyage...",
+  onboarding_help_hint:
+    "Partage des sujets, objectifs ou situations. Cela guide ton coach IA.",
+  onboarding_pron_label: "Pratiquer la prononciation",
+  onboarding_pron_hint:
+    "Quand c'est active, ton coach te demandera de repeter des phrases et de travailler les sons et l'intonation.",
+  ra_title: "No Sabo - Coach d'apprentissage {language}",
+  ra_label_you: "Toi",
+  ra_label_xp: "XP",
+  ra_label_level: "Niveau",
+  ra_conversation_settings: "Parametres de conversation",
+  ra_chat_log: "Journal du chat",
+  ra_conversation_log: "Journal de conversation",
+  ra_new_topic: "Nouveau sujet",
+  ra_new_goal: "Nouvel objectif",
+  ra_show_suggestion: "Afficher une suggestion",
+  ra_generating: "Generation...",
+  ra_generating_topic: "Generation d'un nouveau sujet...",
+  ra_btn_start: "Commencer",
+  ra_btn_starting: "Demarrage...",
+  ra_btn_end: "Terminer",
+  ra_btn_skip: "Passer",
+  ra_btn_next: "Suivant",
+  ra_btn_replay: "Rejouer",
+  ra_btn_settings: "Parametres",
+  ra_btn_delete_convo: "Supprimer la conversation",
+  ra_btn_connect: "Connecter",
+  ra_btn_connecting: "Connexion...",
+  ra_btn_disconnect: "Deconnecter",
+  ra_settings_title: "Parametres",
+  ra_persona_label: "Personnalite",
+  ra_persona_placeholder: "ex. {example}",
+  ra_persona_help: "Une courte indication de ton/style pour la voix IA.",
+  ra_progress_header: "Progres",
+  ra_progress_xp_to_level: "{remaining} XP avant le niveau",
+  ra_vad_label: "Pause d'activite vocale (secondes)",
+  ra_translating: "Traduction...",
+  ra_goal_skip: "Passer",
+  ra_goal_criteria: "Criteres :",
+  ra_goal_completed: "Objectif termine !",
+  ra_free_practice_title: "Mode pratique libre",
+  ra_free_practice_desc:
+    "En mode libre, utilise le bouton Connecter pour pratiquer la conversation.",
+  ra_toast_translation_failed_title: "Echec de la traduction",
+  ra_toast_no_audio_replay: "Aucun audio disponible a rejouer.",
+  ra_auto_stop_desc:
+    "La session s'est fermee automatiquement apres 15 secondes.",
+  ra_delete_confirm:
+    "Supprimer tous les tours sauvegardes pour ce compte ? Cette action est definitive.",
+  ra_toast_no_account_title: "Aucun compte",
+  ra_toast_no_account_desc: "ID utilisateur introuvable.",
+  ra_toast_delete_success: "Conversation supprimee",
+  ra_toast_delete_failed_title: "Echec de la suppression",
+  ra_toast_rt_failed_title: "Echec de connexion Realtime",
+  ra_toast_rt_error_title: "Erreur Realtime",
+  DEFAULT_PERSONA: "Un assistant amical et serviable",
+  common_saving: "Enregistrement",
+  common_cancel: "Annuler",
+  language_en: "Anglais",
+  language_es: "Espagnol",
+  language_pt: "Portugais",
+  language_fr: "Francais",
+  language_it: "Italien",
+  language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
+  language_zh: "Chinois mandarin",
+  language_nl: "Neerlandais",
+  language_nah: "Nahuatl huasteque oriental",
+  language_ja: "Japonais",
+  language_ru: "Russe",
+  language_de: "Allemand",
+  language_el: "Grec",
+  language_pl: "Polonais",
+  language_ga: "Irlandais",
+  language_yua: "Maya yucateque",
+  onboarding_title: "Bienvenue",
+  onboarding_subtitle: "Configurons ton experience avant de commencer.",
+  onboarding_app_language_title: "Langue de l'app",
+  onboarding_app_language_desc:
+    "Choisis la langue de l'interface et des consignes.",
+  onboarding_support_language_title: "Langue de support",
+  onboarding_support_language_desc:
+    "La langue utilisee pour les explications, indices et contenus d'aide.",
+  onboarding_practice_language_title: "Langue de pratique",
+  onboarding_practice_language_desc:
+    "La langue que tu veux apprendre et pratiquer a l'oral.",
+  onboarding_section_difficulty_support: "Difficulte et support linguistique",
+  onboarding_section_voice_persona: "Voix et personnalite",
+  onboarding_vad_title: "Detection d'activite vocale",
+  onboarding_vad_explanation:
+    "Les fonctions vocales attendent un court instant avant d'accepter la reponse. Cela te laisse finir de parler avant que l'assistant reponde.",
+  onboarding_language_tag_alpha: "alpha",
+  onboarding_language_tag_beta: "beta",
+  onboarding_section_first_goal: "Premier objectif",
+  onboarding_level_beginner: "Debutant",
+  onboarding_level_intermediate: "Intermediaire",
+  onboarding_level_advanced: "Avance",
+  onboarding_support_menu_label: "Support :",
+  onboarding_support_en: "Anglais",
+  onboarding_support_bilingual: "Bilingue",
+  onboarding_support_es: "Espagnol",
+  onboarding_support_it: "Italien",
+  onboarding_support_ar: "Arabe egyptien",
+  onboarding_support_fr: "Francais",
+  onboarding_support_ja: "Japonais",
+  onboarding_support_zh: "Chinois mandarin",
+  onboarding_practice_label_title: "Langue de pratique",
+  onboarding_practice_menu_label: "Pratique :",
+  onboarding_practice_nah: "Nahuatl huasteque oriental",
+  onboarding_practice_es: "Espagnol",
+  onboarding_practice_pt: "Portugais",
+  onboarding_practice_fr: "Francais",
+  onboarding_practice_it: "Italien",
+  onboarding_practice_hi: "Hindi",
+  onboarding_practice_ar: "Arabe egyptien",
+  onboarding_practice_zh: "Chinois mandarin",
+  onboarding_practice_nl: "Neerlandais",
+  onboarding_practice_ja: "Japonais",
+  onboarding_practice_en: "Anglais",
+  onboarding_practice_ru: "Russe",
+  onboarding_practice_de: "Allemand",
+  onboarding_practice_el: "Grec",
+  onboarding_practice_pl: "Polonais",
+  onboarding_practice_ga: "Irlandais",
+  onboarding_practice_yua: "Maya yucateque",
+  onboarding_persona_default_example: "Un assistant amical et serviable",
+  onboarding_persona_input_placeholder: "ex. {example}",
+  onboarding_persona_help_text:
+    "Guide le ton et le style de ton assistant vocal.",
+  onboarding_translations_toggle: "Afficher la traduction en {language}",
+  onboarding_step_indicator: "Etape {current} sur {total}",
+  onboarding_step1_title: "Bases",
+  onboarding_step2_title: "Voix et personnalite",
+  onboarding_step3_title: "Parametres de session",
+  onboarding_step4_title: "Soutenir avec Bitcoin",
+  onboarding_challenge_default: "Dis bonjour.",
+  onboarding_cta_next: "Suivant",
+  onboarding_cta_start: "Commencer la session",
+  onboarding_bitcoin_optional_title: "Depots Bitcoin optionnels",
+  onboarding_bitcoin_optional_desc:
+    "Choisis une identite a soutenir avec tes depots ou passe cette etape pour l'instant.",
+  bitcoin_modal_title: "Soutenir avec Bitcoin",
+  tutorial_bitcoin_modal_title: "Creer des bourses",
+  tutorial_bitcoin_modal_subtitle:
+    "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
+  tutorial_bitcoin_modal_body:
+    "Tu pourras le faire plus tard dans les parametres.",
+  tutorial_bitcoin_modal_skip: "Peut-etre plus tard",
+  tutorial_bitcoin_modal_done: "Termine",
+  bitcoin_modal_reload_note:
+    "Quand le depot sera confirme, nous rechargerons l'app pour mettre le solde a jour.",
+  bitcoin_modal_scholarship_note:
+    "Tes depots nous aident a creer des bourses grace a l'apprentissage avec ",
+  bitcoin_modal_success:
+    "Depot recu ! Rechargement pour mettre le solde a jour...",
+  bitcoin_modal_skip: "Passer pour l'instant",
+  bitcoin_modal_close: "Fermer",
+  app_install_aria: "Installer",
+  app_account_aria: "Compte",
+  app_help_chat: "Aide",
+  app_notes: "Notes",
+  real_world_tasks_title: "Pratique d'immersion",
+  app_mode_menu: "Mode",
+  app_mode_alphabet: "Alphabet",
+  app_mode_path: "Parcours",
+  app_mode_cards: "Cartes",
+  app_mode_conversation: "Conversation",
+  app_install_title: "Installer comme app",
+  app_install_step1: "Ouvre le menu du navigateur.",
+  app_install_step2: "Ouvre dans le navigateur.",
+  app_install_step3: "Choisis Partager ou Installer.",
+  app_install_step4: "Ajoute a l'ecran d'accueil.",
+  app_install_step5: "Lance depuis l'ecran d'accueil.",
+  app_close: "Fermer",
+  app_sign_out: "Se deconnecter",
+  app_sign_out_confirm_title: "Se deconnecter ?",
+  app_sign_out_confirm_body:
+    "Veux-tu vraiment te deconnecter ? Assure-toi d'avoir sauvegarde ta cle secrete avant de partir.",
+  app_sign_out_confirm: "Se deconnecter",
+  app_copy_id: "Copier l'ID utilisateur",
+  app_copy_secret: "Copier la cle secrete",
+  account_final_step_title: "Copie ta cle secrete pour te reconnecter.",
+  account_final_step_description:
+    "Cette cle est le seul moyen d'acceder a tes comptes dans les apps Robots Building Education. Garde-la dans un gestionnaire de mots de passe ou un endroit sur. Nous ne pouvons pas la recuperer pour toi.",
+  account_copy_secret: "Copier la cle secrete",
+  app_account_title: "Compte",
+  app_your_id: "Ton ID",
+  app_copy: "Copier",
+  app_secret_key: "Cle secrete",
+  app_secret_note:
+    "Garde ce secret en securite. Toute personne qui l'a peut acceder a ton compte.",
+  app_switch_account: "Changer de compte",
+  app_nsec_placeholder: "Colle une cle nsec pour changer",
+  app_switch: "Changer",
+  app_switching: "Changement...",
+  generic_loading: "Chargement...",
+  app_switch_note:
+    "Nous deduirons la cle publique (npub) depuis le secret et changerons de compte en securite.",
+  app_cefr_heading: "Analyse CEFR",
+  app_cefr_subtitle: "Demande a l'IA d'estimer ton niveau actuel.",
+  app_cefr_level_label: "Niveau {level}",
+  app_cefr_empty: "Aucune analyse. Lance l'evaluation pour voir ton niveau.",
+  app_cefr_updated: "Derniere analyse {timestamp}",
+  app_cefr_run: "Analyser le niveau",
+  app_cefr_loading: "Analyse...",
+  app_cefr_need_account_title: "Compte requis",
+  app_cefr_need_account: "Connecte ton compte pour analyser ton niveau.",
+  app_cefr_success_title: "Analyse terminee",
+  app_cefr_success_desc: "Niveau attribue : {level}.",
+  app_cefr_error_title: "Echec de l'analyse",
+  app_cefr_error: "Reessaie plus tard.",
+  toast_copied: "Copie",
+  toast_id_copied: "ID copie",
+  toast_secret_copied: "Secret copie",
+  toast_copy_failed: "Echec de la copie",
+  toast_paste_nsec: "Colle ton nsec",
+  toast_invalid_key: "Cle invalide",
+  toast_must_start_nsec: "La cle doit commencer par 'nsec'.",
+  toast_switch_failed: "Echec du changement",
+  toast_switched_account: "Compte change",
+  toast_save_lang_failed: "Impossible d'enregistrer la langue",
+  "passcode.label": "Code abonne",
+  "passcode.instructions": (
+    <div>
+      Saisis le code abonne pour continuer.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>L'abonnement te donne acces a :</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Plusieurs apps educatives avec intelligence artificielle.
+          </li>
+          <li style={{ marginBottom: 8 }}>Un accompagnement personnel.</li>
+          <li style={{ marginBottom: 8 }}>
+            Une bibliotheque croissante de contenus abonnes sur l'ingenierie,
+            les startups et l'investissement.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            Une reconnaissance pour ton soutien a la mission de creer des
+            bourses par l'apprentissage.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            S'abonner
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Payer une fois
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+  invalid: "Code invalide. Reessaie.",
+  bannedTitle: "Acces refuse",
+  bannedBody:
+    "Tu as ete bloque et le code a change. Contacte le proprietaire de l'app sur Patreon s'il s'agit d'une erreur.",
+  goToPatreon: "Aller sur Patreon",
+  passcodeLink: "Lien du code abonne",
+  backToQuestion9: "Retour a la question 9",
+  app_err_save_language_title: "Impossible d'enregistrer la langue",
+  tabs_realtime: "Chat",
+  tabs_stories: "Histoires",
+  tabs_reading: "Lecture",
+  tabs_grammar: "Grammaire",
+  tabs_vocab: "Vocabulaire",
+  tabs_game: "Jeu",
+  story_header: "Mode histoire",
+  story_generate: "Generer une histoire",
+  story_playing: "Lecture...",
+  tts_synthesizing: "Synthese...",
+  story_listen: "Ecouter",
+  story_stop: "Arreter",
+  story_start_practice: "Commencer la pratique phrase par phrase",
+  story_practice_this: "Pratique cette phrase :",
+  story_skip: "Passer la phrase",
+  story_finish: "Terminer l'histoire",
+  story_record: "Enregistrer la phrase",
+  story_stop_recording: "Arreter l'enregistrement",
+  story_progress: "Progres",
+  story_no_story: "Aucune histoire. Genere-en une pour commencer.",
+  story_generating_title: "Generation de ton histoire...",
+  story_generating_sub: "Creation d'une histoire personnalisee",
+  story_almost: "Presque - reessaie",
+  story_well_done: "Bien joue !",
+  story_score: "Score",
+  story_level: "Niveau",
+  story_story_label: "Histoire",
+  story_back_aria: "Retour a la pratique",
+  story_demo_title: "Histoire demo utilisee",
+  story_demo_desc:
+    "API indisponible. Utilisation d'une histoire demo pour les tests.",
+  story_speech_unavailable_title: "Reconnaissance vocale indisponible",
+  story_speech_unavailable_desc:
+    "Pour l'evaluation, utilise un navigateur Chromium avec acces au micro.",
+  story_mic_error_title: "Erreur micro",
+  story_mic_error_desc: "Verifie les autorisations et reessaie.",
+  story_audio_eval_error_title: "Impossible d'evaluer l'audio",
+  story_audio_eval_error_desc:
+    "Reessaie en parlant clairement dans la langue cible.",
+  story_sentence_label: "Phrase",
+  story_of: "sur",
+  story_congrats_title: "Felicitations !",
+  story_congrats_done:
+    "Histoire terminee ! Tu as gagne {xp} XP dans cette session.",
+  story_header_roleplay: "Jeu de role",
+  story_role_prompt: "Avec qui veux-tu faire un jeu de role ?",
+  story_role_placeholder: "ex. un enseignant qui aide de nouveaux eleves",
+  story_start_role: "Commencer",
+  story_update_role: "Mettre a jour le role",
+  story_edit_role: "Modifier",
+  story_cancel_edit: "Annuler",
+  story_play_target: "Lire {name}",
+  story_no_role: "Definis un role pour commencer.",
+  story_generating_role_title: "Preparation de l'histoire...",
+  story_generating_role_sub: "Creation d'une scene de jeu de role.",
+  story_finish_role: "Terminer le jeu de role",
+  repeat_hear_heading: "Touche ce que tu entends",
+  repeat_hear_instruction: "Ecoute et touche les mots dans l'ordre",
+  translate_sentence_heading: "Traduis cette phrase",
+  translate_sentence_instruction: "Touche les mots pour former ta reponse",
+  story_skip_unavailable_title: "Indisponible",
+  story_skip_unavailable_desc: "Tu ne peux passer qu'en mode lecon.",
+  story_roleplay_completed: "Jeu de role termine !",
+  story_sentences: "phrases",
+  proficiency_modal_already_know: "Tu connais deja un peu {lang} ?",
+  proficiency_modal_description:
+    "Nous pouvons faire une courte conversation pour determiner ton niveau et te placer au bon endroit.",
+  proficiency_modal_exchange_info:
+    "Un court chat de 10 echanges - nous evaluerons ta prononciation, ta grammaire et ta confiance.",
+  proficiency_modal_take_test: "Allons-y !",
+  proficiency_modal_skip: "Non merci",
+  proficiency_modal_skip_note:
+    '"Non merci" te fera commencer au niveau debutant.',
+  proficiency_test_title: "Test de niveau",
+  proficiency_test_instruction:
+    "Parle naturellement - nous evaluons ton niveau",
+  proficiency_test_rubric: "Grille d'evaluation",
+  proficiency_test_evaluating: "Evaluation",
+  proficiency_test_analyzing:
+    "Analyse de la conversation pour determiner ton niveau...",
+  proficiency_test_assessor: "Evaluateur",
+  proficiency_test_start: "Commencer",
+  proficiency_test_you: "Toi",
+  proficiency_test_final_result: "Resultat final",
+  proficiency_test_complete: "Evaluation terminee",
+  proficiency_test_summary: "Resume de l'evaluation",
+  proficiency_test_breakdown: "Repartition",
+  proficiency_test_composite: "Score global",
+  proficiency_test_level_label: "Niveau {level}",
+  proficiency_test_eval_error:
+    "Un probleme est survenu avec l'evaluation automatique. Tu peux reessayer.",
+  proficiency_test_return_app: "Retour a l'app",
+  proficiency_test_rubric_desc:
+    "Voici comment ton niveau est calcule. L'evaluation est stricte pour eviter de surestimer les competences.",
+  proficiency_test_what_scored: "Ce qui est evalue",
+  proficiency_test_what_scored_desc:
+    "Six categories sont notees (1-10) : prononciation, grammaire, vocabulaire, fluidite, confiance et comprehension.",
+  proficiency_test_scoring_heading: "Mecanisme de notation",
+  proficiency_test_scoring_1:
+    "La comprehension et la fluidite pesent plus que la confiance.",
+  proficiency_test_scoring_2:
+    "Les reponses tres courtes ou sans contenu limitent le resultat a Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    "Les reponses frequentes avec remplissage ou 'je ne sais pas' baissent automatiquement le niveau.",
+  proficiency_test_scoring_4:
+    "Le niveau final ne depasse jamais ce que la conversation demontre.",
+  proficiency_test_got_it: "Compris",
+  proficiency_test_exit_title: "Quitter le test de niveau ?",
+  proficiency_test_exit_desc:
+    "Tes progres ne seront pas sauvegardes. Tu peux refaire le test plus tard depuis les parametres.",
+  proficiency_test_yes_exit: "Oui, quitter",
+  proficiency_test_continue: "Continuer le test",
+  proficiency_test_assess_fallback:
+    "Evaluation terminee. Consulte les resultats ci-dessous.",
+  proficiency_test_assess_error:
+    "Erreur d'evaluation. Nous te placons a Pre-A1/A0 par securite.",
+  proficiency_speaking: "Parle",
+  proficiency_listening: "Ecoute",
+  proficiency_thinking: "Reflechit",
+  app_install_subtitle:
+    "Pour la meilleure experience, installe l'app sur ton appareil.",
+  app_install_step6: "Copie la cle secrete pour te reconnecter.",
+  app_install_got_it: "Compris !",
+  app_install_copied: "Copie !",
+  grammar_badge_level: "Niveau {level}",
+  grammar_badge_xp: "XP {xp}",
+  grammar_btn_fill: "Completer le blanc",
+  grammar_btn_mc: "Choix multiple",
+  grammar_btn_ma: "Reponses multiples",
+  grammar_btn_match: "Associer",
+  grammar_btn_speak: "Prononcer",
+  grammar_input_placeholder_answer: "Ecris la reponse...",
+  grammar_submit: "Verifier",
+  grammar_select_all_apply: "Selectionne toutes les reponses correctes.",
+  grammar_dnd_bank: "Banque",
+  grammar_result_good: "✅ Bien · +{xp} XP",
+  grammar_result_not_fit: "❌ Pas bon · +{xp} XP",
+  grammar_result_correct: "✅ Correct · +{xp} XP",
+  grammar_result_try_again: "❌ Reessaie · +{xp} XP",
+  grammar_speak_instruction_label: "Prononce cette phrase a voix haute",
+  grammar_speak_hint_label: "Indice de grammaire",
+  grammar_speak_translation_label: "Traduction",
+  grammar_speak_last_heard: "Derniere tentative",
+  grammar_speak_record: "Enregistrer",
+  grammar_speak_stop: "Arreter",
+  grammar_speak_success_title: "Prononciation validee !",
+  grammar_speak_success_desc: "Score {score}%",
+  grammar_speak_retry_title: "Reessaie",
+  grammar_speak_score: "Score {score}%",
+  grammar_speak_unavailable: "Reconnaissance vocale indisponible",
+  vocab_badge_level: "Niveau {level}",
+  vocab_badge_xp: "XP {xp}",
+  vocab_btn_fill: "Completer le blanc",
+  vocab_btn_mc: "Choix multiple",
+  vocab_btn_ma: "Reponses multiples",
+  vocab_btn_match: "Associer",
+  vocab_btn_speak: "Prononcer",
+  vocab_input_placeholder_word: "Ecris le mot...",
+  vocab_submit: "Verifier",
+  vocab_select_all_apply: "Selectionne toutes les reponses correctes.",
+  vocab_dnd_drop_here: "Depose ici",
+  vocab_dnd_bank: "Banque",
+  vocab_result_nice: "✅ Bien ! · +{xp} XP",
+  vocab_result_not_quite: "❌ Pas tout a fait · +{xp} XP",
+  vocab_result_correct: "✅ Correct · +{xp} XP",
+  vocab_result_try_again: "❌ Reessaie · +{xp} XP",
+  vocab_speak_instruction_label: "Prononce le mot a voix haute",
+  vocab_speak_hint_label: "Indice",
+  vocab_speak_translation_label: "Traduction",
+  vocab_speak_last_heard: "Derniere tentative",
+  vocab_speak_record: "Enregistrer",
+  vocab_speak_stop: "Arreter",
+  vocab_speak_success_title: "Super prononciation !",
+  vocab_speak_success_desc: "Score {score}%",
+  vocab_speak_retry_title: "Reessaie",
+  vocab_speak_score: "Score {score}%",
+  vocab_speak_unavailable: "Reconnaissance vocale indisponible",
+  vocab_speak_variant_repeat: "Prononce le mot",
+  vocab_speak_variant_translate: "Traduis a voix haute",
+  vocab_speak_variant_complete: "Complete la phrase",
+  stories_sentence_success_title: "Beau travail !",
+  stories_sentence_success_score: "Score : {score}%",
+  stories_next_sentence: "Phrase suivante",
+  stories_finish: "Terminer la pratique",
+  skill_tree_learning_activities: "Activites d'apprentissage :",
+  skill_tree_xp_reward: "XP a gagner :",
+  skill_tree_start_lesson: "Commencer la lecon",
+  skill_tree_starting_lesson: "Demarrage de la lecon...",
+  skill_tree_unlock_at: "Debloque a {xpRequired} XP",
+  skill_tree_unlock_sequential: "Termine la lecon precedente pour debloquer",
+  skill_tree_level: "Niveau {level}",
+  skill_tree_no_path:
+    "Il n'y a pas encore de parcours d'apprentissage pour cette langue.",
+  skill_tree_check_back: "Reviens bientot pour des lecons structurees !",
+  skill_tree_your_path: "Ton parcours",
+  skill_tree_collapse: "Reduire",
+  skill_tree_expand: "Developper",
+  skill_tree_lesson_active: "Lecon active",
+  skill_tree_cefr_a1_desc:
+    "Niveau initial centre sur le langage essentiel et les echanges de base.",
+  skill_tree_cefr_a2_desc:
+    "Niveau elementaire pour gerer des routines simples et la communication quotidienne.",
+  skill_tree_cefr_b1_desc:
+    "Niveau intermediaire pour soutenir des conversations sur experiences et projets.",
+  skill_tree_cefr_b2_desc:
+    "Intermediaire avance pour discuter de sujets abstraits et d'idees complexes avec detail.",
+  skill_tree_cefr_c1_desc:
+    "Niveau avance pour utiliser la langue de facon souple, structuree et nuancee.",
+  skill_tree_cefr_c2_desc:
+    "Maitrise presque native, avec controle des nuances et du style.",
+  skill_tree_cefr_default_desc: "Niveau de competence CEFR",
+  skill_tree_passing_score: "Score minimum",
+  skill_tree_game_reward: "Recompense jeu",
+  skill_tree_tutorial_goal: "Objectif",
+  skill_tree_tutorial_activities: "Termine les 6 activites d'apprentissage",
+  flashcard_translate_to: "Traduis en {language} :",
+  flashcard_show_answer: "Afficher la reponse",
+  flashcard_answer_label: "Reponse :",
+  flashcard_tap_to_flip: "Touche pour retourner",
+  flashcard_grading: "Evaluation de la reponse...",
+  flashcard_record_answer: "Enregistrer la reponse",
+  flashcard_stop_recording: "Arreter l'enregistrement",
+  flashcard_recognized: "Reconnu :",
+  flashcard_type_placeholder: "Ecris la reponse...",
+  flashcard_submit: "Envoyer la reponse",
+  flashcard_cancel: "Annuler",
+  flashcard_correct: "Correct !",
+  flashcard_incorrect: "Pas tout a fait...",
+  flashcard_try_again: "Reessaie",
+  flashcard_explain_answer: "Expliquer ma reponse",
+  flashcard_explanation_heading: "Explication",
+  flashcard_xp_level: "Niveau {level}",
+  flashcard_total_xp: "XP totaux {xp}",
+  flashcard_error_loading: "Erreur lors du chargement de la reponse",
+  flashcard_eval_error_title: "Impossible d'evaluer",
+  flashcard_eval_error_desc: "Reessaie avec une connexion stable.",
+  flashcard_grading_error_title: "Erreur d'evaluation",
+  flashcard_grading_error_desc: "Impossible d'evaluer la reponse. Reessaie.",
+  flashcard_speech_unavailable_title: "Reconnaissance vocale indisponible",
+  flashcard_speech_unavailable_desc:
+    "Utilise un navigateur Chromium avec acces au micro.",
+  flashcard_mic_denied_title: "Micro refuse",
+  flashcard_mic_denied_desc:
+    "Active l'acces au micro dans les parametres du navigateur.",
+  flashcard_all_done: "Tout est fait !",
+  flashcard_all_completed: "Tu as termine toutes les flashcards !",
+  flashcard_listen: "Ecouter",
+  flashcard_listening: "Lecture...",
+  flashcard_practice_random: "Pratiquer une carte aleatoire",
+  flashcard_random_xp_toast: "+{xp} XP pour la pratique !",
+  flashcard_due_now: "A reviser maintenant",
+  flashcard_new_card: "Nouvelle carte",
+  flashcard_review_now: "Reviser maintenant",
+  flashcard_learning_card: "En apprentissage",
+  flashcard_scheduled_card: "Programme",
+  flashcard_mastery_stage: "Etape {stage}",
+  flashcard_next_review: "Prochaine revision {time}",
+  flashcard_next_review_label: "Prochaine revision",
+  flashcard_recall_hint:
+    "Essaie de te souvenir activement avant d'afficher la reponse. D'abord les cartes dues, puis les nouvelles.",
+  flashcard_memory_saved:
+    "Belle recuperation. Cette carte a ete reprogrammee avant que le souvenir s'efface.",
+  flashcard_memory_retry:
+    "Cet effort est utile. Reessaie ou revois la reponse, puis reviens bientot sur cette carte.",
+  flashcard_continue: "Continuer",
+  flashcard_rate_recall: "Evalue le souvenir",
+  flashcard_ai_suggests: "L'IA suggere {rating}",
+  flashcard_self_grade_prompt:
+    "Choisis a quel point tu t'en souvenais. Cela programmera la prochaine revision.",
+  flashcard_rating_help_aria: "Que signifient ces boutons de revision",
+  flashcard_rating_help_title: "Ce que signifie chaque bouton",
+  flashcard_button_again: "J'ai besoin d'aide",
+  flashcard_button_again_help:
+    "Utilise-le quand tu t'es trompe ou as eu besoin de voir la reponse.",
+  flashcard_button_hard: "J'apprends encore",
+  flashcard_button_hard_help:
+    "Utilise-le quand c'etait familier, mais difficile a rappeler avec confiance.",
+  flashcard_button_good: "Je le sais",
+  flashcard_button_good_help:
+    "Utilise-le quand tu l'as retrouve correctement, meme avec un peu d'effort.",
+  flashcard_button_easy: "Maitrise",
+  flashcard_button_easy_help:
+    "Utilise-le quand la reponse est venue tout de suite et semblait facile.",
+  flashcard_session_title: "Flux de flashcards",
+  flashcard_session_subtitle:
+    "Un rythme plus stable : revise ce qui est du, puis ajoute seulement le nouveau necessaire.",
+  flashcard_review_first:
+    "La pratique espacee fonctionne mieux quand les cartes dues sont resolues avant les nouvelles.",
+  flashcard_reviews_due: "Revisions dues",
+  flashcard_new_queue: "Nouvelles cartes",
+  flashcard_mastered_cards: "Cartes apprises",
+  flashcard_streak: "Serie d'etude",
+  flashcard_activity: "Activite",
+  flashcard_activity_subtitle: "Cette annee",
+  flashcard_activity_empty: "Aucune etude",
+  flashcard_activity_some: "Progres",
+  flashcard_activity_goal: "Objectif quotidien",
+  flashcard_daily_target: "Objectif quotidien",
+  flashcard_cards_done_today: "{count}/{target} cartes terminees aujourd'hui",
+  flashcard_caught_up:
+    "Objectif quotidien atteint. Si tu veux en faire plus, revise une carte fragile ou laisse les revisions de demain arriver naturellement.",
+  flashcard_start_reviews: "Commencer les revisions",
+  flashcard_learn_next: "Apprendre la prochaine carte",
+  flashcard_strengthen_weak: "Reviser les cartes faibles",
+  flashcard_session_loading: "Preparation de la file de revision...",
+  flashcard_due_subtitle:
+    "Celles-ci sont pretes maintenant. Les traiter d'abord renforce l'espacement et protege les souvenirs anciens.",
+  flashcard_new_subtitle:
+    "Seule la prochaine carte non vue est active. Les autres restent verrouillees pour eviter de surcharger l'apprenant.",
+  flashcard_weak_queue: "Cartes faibles",
+  flashcard_weak_subtitle:
+    "Cartes deja apprises mais pas encore dues, avec plus de risque de s'effacer sans renforcement.",
+  flashcard_weak_reason_lapses: "Erreurs recentes",
+  flashcard_weak_reason_mastery: "Maitrise faible",
+  flashcard_weak_reason_slipping: "Continue de s'echapper",
+  flashcard_scheduled_queue: "Programmees pour plus tard",
+  flashcard_scheduled_subtitle:
+    "Cartes deja apprises en attente de la prochaine fenetre ideale de revision.",
+  flashcard_next_up: "Suivante",
+  cefr_level_completed: "Niveau termine !",
+  mode_vocabulary: "Vocabulaire",
+  mode_grammar: "Grammaire",
+  mode_reading: "Lecture",
+  mode_realtime: "Chat",
+  mode_stories: "Histoires",
+  mode_game: "Jeu",
+  path_switcher_path: "Parcours",
+  path_switcher_flashcards: "Cartes",
+  path_switcher_conversations: "Chat",
+  timer_modal_title: "Minuteur de session",
+  timer_modal_description: "Choisis combien de temps tu veux te concentrer.",
+  timer_modal_minutes_label: "Minutes",
+  timer_modal_quick_picks: "Choix rapides",
+  timer_modal_cancel: "Annuler",
+  timer_modal_close: "Fermer",
+  timer_modal_start: "Demarrer le minuteur",
+  timer_modal_restart: "Redemarrer le minuteur",
+  timer_modal_max_hint: "max 240 minutes (4 heures)",
+  timer_times_up_title: "Temps ecoule !",
+  timer_times_up_subtitle: "Session de concentration terminee",
+  timer_times_up_duration: "Tu es reste concentre pendant {minutes} minutes.",
+  timer_times_up_no_duration: "Beau travail pour avoir termine le minuteur.",
+  timer_times_up_close: "Fermer",
+  timer_times_up_restart: "Lancer un autre minuteur",
+  teams_drawer_title: "Equipes et communaute",
+  teams_tab_feed: "Fil global",
+  teams_tab_create: "Creer une equipe",
+  teams_tab_view: "Voir les equipes",
+  teams_drawer_close: "Fermer",
+  teams_feed_instructions:
+    "Partage tes progres avec la communaute avec #LearnWithNostr et montre ce que tu pratiques.",
+  teams_feed_copy_button: "Copier la cle privee",
+  teams_feed_copy_title: "Cle copiee",
+  teams_feed_copy_desc: "Ta cle a ete copiee dans le presse-papiers.",
+  teams_feed_allow_label: "Autoriser les publications automatiques",
+  teams_feed_allow_enabled: "Les publications automatiques sont activees.",
+  teams_feed_allow_disabled: "Les publications automatiques sont desactivees.",
+  sound_effects_label: "Effets sonores",
+  sound_effects_enabled: "Les effets sonores sont actifs.",
+  sound_effects_disabled: "Les effets sonores sont coupes.",
+  sound_volume_label: "Volume",
+  theme_mode_label: "Theme",
+  theme_mode_description:
+    "Choisis l'apparence de l'app. Le mode clair utilise une palette chaude, type papier.",
+  theme_mode_dark: "Minuit",
+  theme_mode_dark_description:
+    "Panneaux bleu nuit et contraste plus fort pour te concentrer.",
+  theme_mode_light: "Papier",
+  theme_mode_light_description:
+    "Surfaces douces type parchemin avec texte sombre et ombres legeres.",
+  test_sound: "Tester le son",
+  teams_feed_refresh: "Actualiser",
+  teams_feed_loading: "Synchronisation avec la communaute...",
+  teams_feed_empty: "Aucun post pour l'instant. Lance la conversation !",
+  teams_feed_error: "Impossible de charger le fil.",
+  teams_feed_copy_fallback: "Impossible de copier la cle.",
+  teams_create_error: "Erreur",
+  teams_create_invalid: "Saisis un npub valide a inviter",
+  teams_create_invalid_format:
+    "Format npub invalide. Les npub commencent par 'npub'",
+  teams_create_duplicate: "Ce npub est deja dans la liste",
+  teams_create_missing_name: "Choisis un nom d'equipe",
+  teams_create_missing_member: "Ajoute au moins un camarade avant de creer",
+  teams_create_unknown_user: "Nouvel apprenant",
+  teams_create_dm_template:
+    'Salut ! Tu as ete invite a rejoindre "{team}" sur Robots Building Education. Cree un compte pour suivre les progres avec ton equipe.',
+  teams_create_success: "Equipe creee",
+  teams_create_invites: "invitations envoyees",
+  teams_create_failed: "echouees",
+  teams_create_heading: "Creer une nouvelle equipe",
+  teams_create_name_label: "Nom de l'equipe",
+  teams_create_name_placeholder: "ex. Etude du week-end",
+  teams_create_member_label: "Inviter des camarades",
+  teams_create_member_placeholder: "npub1...",
+  teams_create_add_button: "Ajouter",
+  teams_create_members_heading: "Invitations en attente",
+  teams_create_remove: "Retirer",
+  teams_create_creating: "Creation",
+  teams_create_submit: "Creer l'equipe",
+  teams_view_error: "Erreur",
+  teams_view_invite_accepted: "Invitation acceptee",
+  teams_view_invite_rejected: "Invitation refusee",
+  teams_view_delete_confirm: "Supprimer {team} ?",
+  teams_view_deleted: "Equipe supprimee",
+  teams_view_leave_confirm: "Quitter {team} ?",
+  teams_view_left: "Tu as quitte l'equipe",
+  teams_view_loading: "Chargement des equipes...",
+  teams_view_pending: "Invitations en attente",
+  teams_view_invited_by: "Invite par",
+  teams_view_accept: "Accepter",
+  teams_view_decline: "Refuser",
+  teams_view_my_teams: "Mes equipes",
+  teams_view_empty: "Cree une equipe pour suivre les progres ensemble.",
+  teams_view_member_one: "membre",
+  teams_view_member_many: "membres",
+  teams_view_badge_creator: "Createur",
+  teams_view_badge_member: "Membre",
+  teams_view_progress: "Progres",
+  teams_view_total_xp: "XP totaux",
+  teams_view_goal_completion: "Realisation de l'objectif quotidien",
+  teams_view_daily_goal: "Objectif du jour",
+  teams_view_daily_xp: "XP quotidiens",
+  teams_view_level: "Niveau",
+  teams_view_no_members: "Aucun membre accepte pour l'instant.",
+  teams_view_pending_members: "Invitations en attente",
+  teams_view_delete: "Supprimer l'equipe",
+  teams_view_leave: "Quitter l'equipe",
+  vocab_ask_assistant: "Demander a l'assistant",
+  vocab_assistant: "Assistant",
+  vocab_listen_question: "Ecouter la question",
+  vocab_listen_example: "Ecouter l'exemple",
+  vocab_listen_word: "Ecouter le mot",
+  vocab_connecting: "Connexion...",
+  vocab_say_it_aloud: "Dis-le a voix haute",
+  vocab_final_quiz: "Quiz final",
+  vocab_quiz_passed: "Quiz reussi !",
+  vocab_quiz_congratulations: "Felicitations !",
+  vocab_quiz_not_passed: "Quiz non reussi",
+  vocab_quiz_score_passed: "{correct} correctes • Il fallait {needed}",
+  vocab_quiz_score_failed:
+    "{correct} correctes • Il faut {needed} pour reussir",
+  vocab_back_to_skill_tree: "Retour a l'arbre",
+  vocab_mc_instruction: "Choisis la bonne reponse",
+  vocab_ma_instruction: "Selectionne toutes les bonnes reponses",
+  vocab_match_instruction: "Associe les mots",
+  vocab_assistant_error: "Impossible de generer une reponse pour l'instant.",
+  vocab_explanation_error:
+    "Impossible de generer une explication pour l'instant.",
+  vocab_create_note_error: "Impossible de creer la note",
+  vocab_recording_failed: "Echec de l'enregistrement",
+  vocab_recording_failed_desc: "Reessaie.",
+  vocab_eval_error_mic_desc: "Verifie les autorisations micro et reessaie.",
+  vocab_create_note: "Creer une note",
+  vocab_note_saved: "Note enregistree !",
+  vocab_lesson_progress: "Progression de la lecon",
+};
+
+translations.ja = {
+  ...translations.en,
+  correct: "正解！",
+  dailyGoalProgress: "目標",
+  daily_goal_title: "目標マネージャー",
+  daily_goal_subtitle: "1日にどれくらいXPを獲得しますか？",
+  daily_goal_input_label: "1日あたりのXP",
+  daily_goal_save: "保存",
+  daily_goal_quick_picks: "クイック選択",
+  daily_goal_fine_tune: "微調整",
+  daily_goal_xp_unit: "XP / 日",
+  daily_goal_level_explainer: "各レベルは100 XPです。",
+  daily_goal_preview: "目標プレビュー",
+  daily_goal_resets_in: "24時間後にリセット · {when}",
+  daily_goal_error_no_user: "ユーザーIDがありません",
+  daily_goal_error_no_user_desc: "もう一度サインインしてください。",
+  daily_goal_error_save: "目標を保存できませんでした",
+  daily_goal_activity_title: "XPアクティビティ",
+  daily_goal_activity_subtitle: "今年",
+  daily_goal_activity_empty: "XPなし",
+  daily_goal_activity_some: "少しXP",
+  daily_goal_activity_goal: "日次目標達成",
+  daily_goal_calendar_title: "あなたの進捗",
+  daily_goal_calendar_completed: "完了",
+  daily_goal_calendar_incomplete: "未完了",
+  try_again: "もう一度",
+  tabs_random: "ランダム",
+  random_toast_title: "よくできました！",
+  random_toast_desc: "+{xp} XPを獲得しました。",
+  random_shuffle: "シャッフル",
+  reading_btn_next: "読解を完了",
+  reading_btn_finish: "読解を完了",
+  reading_loading: "読解設定を読み込み中...",
+  reading_generating: "読解を作成中...",
+  reading_generating_title: "読解を生成中...",
+  reading_skip: "スキップ",
+  copied_to_clipboard_all: "質問をコピーしました。",
+  copy_all: "質問をコピー",
+  grammar_next: "次へ",
+  practice_next_question: "次の質問",
+  practice_skip_question: "スキップ",
+  practice_speak_banner_you_said: "あなたの発話",
+  practice_speak_banner_translation: "意味",
+  practice_speak_banner_xp: "+{xp} XP",
+  practice_drag_drop_instruction:
+    "正しい答えを空欄にドラッグするか選択してください。",
+  practice_drag_drop_slot_placeholder: "ここに答えを置く",
+  practice_drag_drop_multi_instruction:
+    "それぞれの空欄に正しい答えをドラッグするか選択してください。",
+  practice_drag_blank_label: "空欄 {index}",
+  practice_next_ready: "いいですね！この調子で続けましょう。",
+  practice_try_again_hint: "問題を見直して、もう一度試してください。",
+  quiz_correct: "正解",
+  quiz_try_again: "もう一度",
+  quiz_checked: "確認済み",
+  quiz_submit: "送信",
+  quiz_placeholder_open: "答えを入力…",
+  quiz_placeholder_oneword: "1語…",
+  quiz_select_placeholder: "選択…",
+  reading_title: "読解",
+  reading_badge_level: "レベル {level}",
+  reading_badge_xp: "XP {xp}",
+  reading_btn_generate: "次の読解を生成",
+  reading_list_show: "読解を表示",
+  reading_list_hide: "読解を非表示",
+  reading_prev_lectures_label: "以前の読解",
+  reading_none_yet: "まだありません。まず1つ生成しましょう。",
+  reading_no_lecture: "まだ読解は作成されていません。",
+  reading_read_in: "{language}で読む",
+  reading_stop_aria: "停止",
+  history_read_sentences: "文を読む",
+  history_read_all: "すべて読む",
+  history_stop: "読み上げ停止",
+  history_generating_question: "質問を生成中...",
+  history_review_heading: "復習",
+  history_fill_blank_placeholder: "空欄を埋める...",
+  history_answer_placeholder: "あなたの答え...",
+  history_check_answer: "確認",
+  history_correct: "正解！",
+  history_not_quite: "惜しいです。",
+  history_keep_going: "よくできました！続けましょう。",
+  history_answer_label: "答え: {answer}",
+  history_explain_answer: "答えを説明",
+  history_explanation_heading: "説明",
+  history_generate_review: "復習問題を生成",
+  history_translate: "翻訳",
+  history_translating: "翻訳中",
+  history_show_translation: "翻訳を表示",
+  history_hide_translation: "翻訳を隠す",
+  history_keyboard_open: "キーボードを開く",
+  history_keyboard_close: "キーボードを閉じる",
+  history_format_question: "質問",
+  history_format_speech: "音読",
+  history_speech_heading: "音読練習",
+  history_speech_listening: "聞き取り中...",
+  history_speech_instructions:
+    "上の段落を声に出して読んでください。読み方についてフィードバックします。",
+  history_speech_start_mic: "読み始める",
+  history_speech_stop_mic: "停止",
+  history_speech_start_over: "最初から",
+  history_speech_submit: "評価",
+  history_speech_submitting: "評価中...",
+  history_speech_complete: "よく頑張りました！",
+  history_speech_breakdown: "内訳",
+  history_speech_total_score: "合計スコア",
+  reading_takeaways_heading: "ポイント",
+  reading_xp_awarded_line: "獲得XP: {xp}{reason}",
+  ra_goal_label: "目標",
+  onboarding_help_title: "どんなサポートが必要ですか？",
+  onboarding_help_placeholder:
+    "例: 就職面接の会話練習、過去形の復習、旅行スペイン語…",
+  onboarding_help_hint:
+    "トピック、目標、場面を共有してください。AIコーチが参考にします。",
+  onboarding_pron_label: "発音を練習",
+  onboarding_pron_hint:
+    "オンにすると、コーチがリピート練習と音・イントネーションのヒントを出します。",
+  ra_title: "No Sabo — {language} 学習コーチ",
+  ra_label_you: "あなた",
+  ra_label_xp: "XP",
+  ra_label_level: "レベル",
+  ra_conversation_settings: "会話設定",
+  ra_chat_log: "チャットログ",
+  ra_conversation_log: "会話ログ",
+  ra_new_topic: "新しいトピック",
+  ra_new_goal: "新しい目標",
+  ra_show_suggestion: "提案を表示",
+  ra_generating: "生成中...",
+  ra_generating_topic: "新しいトピックを生成中...",
+  ra_btn_start: "開始",
+  ra_btn_starting: "開始中...",
+  ra_btn_end: "終了",
+  ra_btn_skip: "スキップ",
+  ra_btn_next: "次へ",
+  ra_btn_replay: "再生",
+  ra_btn_settings: "設定",
+  ra_btn_delete_convo: "会話を削除",
+  ra_btn_connect: "接続",
+  ra_btn_connecting: "接続中…",
+  ra_btn_disconnect: "切断",
+  ra_settings_title: "設定",
+  ra_persona_label: "ペルソナ",
+  ra_persona_placeholder: "例: {example}",
+  ra_persona_help: "AI音声の雰囲気や話し方を短く指定します。",
+  ra_progress_header: "進捗",
+  ra_progress_xp_to_level: "次のレベルまで{remaining} XP",
+  ra_vad_label: "音声停止判定（秒）",
+  ra_translating: "翻訳中…",
+  ra_goal_skip: "スキップ",
+  ra_goal_criteria: "条件:",
+  ra_goal_completed: "目標達成！",
+  ra_free_practice_title: "自由練習モード",
+  ra_free_practice_desc:
+    "自由モードでは、接続ボタンを使って会話練習をします。",
+  ra_toast_translation_failed_title: "翻訳に失敗しました",
+  ra_toast_no_audio_replay: "再生できる音声がありません。",
+  ra_auto_stop_desc: "セッションは15秒後に自動で終了しました。",
+  ra_delete_confirm:
+    "このアカウントの保存済み会話をすべて削除しますか？元に戻せません。",
+  ra_toast_no_account_title: "アカウントがありません",
+  ra_toast_no_account_desc: "ユーザーIDが見つかりません。",
+  ra_toast_delete_success: "会話を削除しました",
+  ra_toast_delete_failed_title: "削除に失敗しました",
+  ra_toast_rt_failed_title: "リアルタイム接続に失敗しました",
+  ra_toast_rt_error_title: "リアルタイムエラー",
+  DEFAULT_PERSONA: "親切でフレンドリーなアシスタント",
+  common_id_label: "ID:",
+  common_saving: "保存中",
+  common_cancel: "キャンセル",
+  language_ar: "エジプトアラビア語",
+  language_en: "英語",
+  language_es: "スペイン語",
+  language_pt: "ポルトガル語",
+  language_fr: "フランス語",
+  language_it: "イタリア語",
+  language_hi: "ヒンディー語",
+  language_zh: "中国語（普通話）",
+  language_nl: "オランダ語",
+  language_nah: "東ワステカ・ナワトル語",
+  language_ja: "日本語",
+  language_ru: "ロシア語",
+  language_de: "ドイツ語",
+  language_el: "ギリシャ語",
+  language_pl: "ポーランド語",
+  language_ga: "アイルランド語",
+  language_yua: "ユカテコ・マヤ語",
+  onboarding_title: "ようこそ",
+  onboarding_subtitle: "始める前に体験を設定しましょう。",
+  onboarding_app_language_title: "アプリの言語",
+  onboarding_app_language_desc:
+    "アプリの画面表示と説明に使う言語を選びます。",
+  onboarding_support_language_title: "サポート言語",
+  onboarding_support_language_desc:
+    "説明、ヒント、学習補助コンテンツに使う言語です。",
+  onboarding_practice_language_title: "練習する言語",
+  onboarding_practice_language_desc:
+    "学び、話す練習をしたい言語を選びます。",
+  onboarding_section_difficulty_support: "難易度と言語サポート",
+  onboarding_section_voice_persona: "音声と性格",
+  onboarding_vad_title: "音声活動検出",
+  onboarding_vad_explanation:
+    "話し終わったと判定するまでの待ち時間を調整します。",
+  onboarding_section_first_goal: "最初の目標",
+  onboarding_level_beginner: "初心者",
+  onboarding_level_intermediate: "中級",
+  onboarding_level_advanced: "上級",
+  onboarding_support_menu_label: "サポート言語",
+  onboarding_support_en: "英語",
+  onboarding_support_bilingual: "バイリンガル",
+  onboarding_support_es: "スペイン語",
+  onboarding_support_it: "イタリア語",
+  onboarding_support_ar: "エジプトアラビア語",
+  onboarding_support_fr: "フランス語",
+  onboarding_support_ja: "日本語",
+  onboarding_support_zh: "中国語（普通話）",
+  onboarding_practice_label_title: "練習言語",
+  onboarding_practice_menu_label: "練習言語を選択",
+  onboarding_practice_nah: "東ワステカ・ナワトル語",
+  onboarding_practice_es: "スペイン語",
+  onboarding_practice_pt: "ポルトガル語",
+  onboarding_practice_fr: "フランス語",
+  onboarding_practice_it: "イタリア語",
+  onboarding_practice_hi: "ヒンディー語",
+  onboarding_practice_ar: "エジプトアラビア語",
+  onboarding_practice_zh: "中国語（普通話）",
+  onboarding_practice_nl: "オランダ語",
+  onboarding_practice_ja: "日本語",
+  onboarding_practice_en: "英語",
+  onboarding_practice_ru: "ロシア語",
+  onboarding_practice_de: "ドイツ語",
+  onboarding_practice_el: "ギリシャ語",
+  onboarding_practice_pl: "ポーランド語",
+  onboarding_practice_ga: "アイルランド語",
+  onboarding_practice_yua: "ユカテコ・マヤ語",
+  onboarding_persona_default_example: "親切でフレンドリーなアシスタント",
+  onboarding_persona_input_placeholder:
+    "例: 落ち着いたコーチ、楽しい先生、面接官...",
+  onboarding_persona_help_text:
+    "AIコーチの雰囲気や話し方を短く書いてください。",
+  onboarding_translations_toggle: "翻訳を表示",
+  onboarding_step_indicator: "ステップ {current}/{total}",
+  onboarding_step1_title: "言語",
+  onboarding_step2_title: "音声",
+  onboarding_step3_title: "効果",
+  onboarding_step4_title: "完了",
+  onboarding_challenge_default:
+    "会話、語彙、文法、発音を練習したいです。",
+  onboarding_challenge_label_en: "英語の説明",
+  onboarding_challenge_label_es: "スペイン語の説明",
+  onboarding_cta_next: "次へ",
+  onboarding_cta_start: "始める",
+  onboarding_bitcoin_optional_title: "任意: 学習で奨学金を作る",
+  onboarding_bitcoin_optional_desc:
+    "後で設定からBitcoinウォレットを作成できます。",
+  bitcoin_modal_title: "Bitcoinで学習を支援",
+  tutorial_bitcoin_modal_title: "奨学金を作る",
+  tutorial_bitcoin_modal_subtitle:
+    "XPを獲得するたびに教育者へBitcoinを送れます",
+  tutorial_bitcoin_modal_body: "これは後で設定から行えます。",
+  tutorial_bitcoin_modal_skip: "後で",
+  tutorial_bitcoin_modal_done: "完了",
+  bitcoin_modal_reload_note: "ウォレットを再読み込みしています...",
+  bitcoin_modal_scholarship_note:
+    "あなたの入金は学習による奨学金作成を支援します。",
+  bitcoin_modal_success: "ウォレットの準備ができました",
+  bitcoin_modal_skip: "スキップ",
+  bitcoin_modal_close: "閉じる",
+  app_install_aria: "アプリをインストール",
+  app_account_aria: "アカウント",
+  app_help_chat: "ヘルプチャット",
+  app_notes: "メモ",
+  real_world_tasks_title: "イマージョン練習",
+  app_mode_menu: "モード",
+  app_mode_alphabet: "文字",
+  app_mode_path: "パス",
+  app_mode_cards: "カード",
+  app_mode_conversation: "会話",
+  app_lang_en: "英語",
+  app_lang_es: "スペイン語",
+  app_install_title: "アプリをインストール",
+  app_install_step1: "共有ボタンをタップします。",
+  app_install_step2: "「ホーム画面に追加」を選びます。",
+  app_install_step3: "追加をタップします。",
+  app_install_step4: "ホーム画面からアプリを開きます。",
+  app_install_step5: "必要ならシークレットキーでサインインします。",
+  app_install_step6: "サインイン用のシークレットキーをコピーします。",
+  app_install_subtitle:
+    "最高の体験のために、このアプリを端末にインストールしてください。",
+  app_install_got_it: "了解",
+  app_install_copied: "コピーしました！",
+  app_close: "閉じる",
+  app_sign_out: "サインアウト",
+  app_sign_out_confirm_title: "サインアウトしますか？",
+  app_sign_out_confirm_body:
+    "この端末で再びサインインするにはシークレットキーが必要です。",
+  app_sign_out_confirm: "サインアウト",
+  app_copy_id: "IDをコピー",
+  app_copy_secret: "シークレットをコピー",
+  account_final_step_title: "最後のステップ",
+  account_final_step_description:
+    "シークレットキーを安全に保存してください。アカウントへのアクセスに必要です。",
+  account_copy_secret: "シークレットキーをコピー",
+  app_account_title: "アカウント",
+  app_your_id: "あなたのID",
+  app_copy: "コピー",
+  app_secret_key: "シークレットキー",
+  app_secret_note:
+    "シークレットは安全に保管してください。知っている人はアカウントにアクセスできます。",
+  app_switch_account: "アカウントを切り替え",
+  app_nsec_placeholder: "切り替えるnsecキーを貼り付け",
+  app_switch: "切り替え",
+  app_switching: "切り替え中…",
+  app_switch_note:
+    "シークレットから公開鍵（npub）を作成し、安全に切り替えます。",
+  app_cefr_heading: "CEFR診断",
+  app_cefr_subtitle: "AIに現在の言語レベルを評価してもらいます。",
+  app_cefr_level_label: "レベル {level}",
+  app_cefr_empty: "まだ分析がありません。評価を実行して確認しましょう。",
+  app_cefr_updated: "最終分析 {timestamp}",
+  app_cefr_run: "レベルを分析",
+  app_cefr_loading: "分析中…",
+  app_cefr_need_account_title: "アカウントが必要です",
+  app_cefr_need_account: "レベル分析にはアカウント接続が必要です。",
+  app_cefr_success_title: "分析完了",
+  app_cefr_success_desc: "判定レベル: {level}。",
+  app_cefr_error_title: "分析に失敗しました",
+  app_cefr_error: "後でもう一度お試しください。",
+  toast_copied: "コピーしました",
+  toast_id_copied: "IDをコピーしました",
+  toast_secret_copied: "シークレットをコピーしました",
+  toast_copy_failed: "コピーに失敗しました",
+  toast_paste_nsec: "nsecを貼り付けてください",
+  toast_invalid_key: "無効なキー",
+  toast_must_start_nsec: "キーは「nsec」で始まる必要があります。",
+  toast_switch_failed: "切り替えに失敗しました",
+  toast_switched_account: "アカウントを切り替えました",
+  toast_save_lang_failed: "言語を保存できませんでした",
+  "passcode.label": "サブスク用パスコード",
+  "passcode.instructions": (
+    <div>
+      続行するにはサブスク用パスコードを入力してください。
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>サブスクすると利用できること:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>複数のAI教育アプリへのアクセス。</li>
+          <li style={{ marginBottom: 8 }}>個別サポート。</li>
+          <li style={{ marginBottom: 8 }}>
+            スタートアップ開発や投資に関する購読者向けコンテンツ。
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            学習で奨学金を作るミッションへの支援。
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            サブスクする
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            1回払い
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+  intro:
+    "アプリを試してくださりありがとうございます。現在開発中で、日々改善されます。",
+  benefitsTitle:
+    "Patreonに登録するとアプリの全機能にアクセスできます。できること:",
+  benefits: [
+    "10種類の教育アプリにアクセス",
+    "集中講座、株式市場、起業、スタートアップ開発コンテンツにアクセス",
+    "プログラミング教育アプリを誰でも無料で使えるよう支援",
+    "より高度なソフトウェアエンジニアリング教材とプロジェクトにアクセス",
+    "コミュニティの奨学金づくりを支援",
+    "個別チュータリング/起業サポート（近日）",
+  ],
+  goToPatreon: "Patreonへ",
+  passcodeLink: "購読者パスコードへのリンク",
+  label: "購読者パスコード",
+  invalid: "パスコードが無効です。もう一度お試しください。",
+  bannedTitle: "アクセス拒否",
+  bannedBody:
+    "あなたはブロックされ、パスコードは変更されました。誤りだと思う場合はPatreonでアプリ所有者に連絡してください。",
+  backToQuestion9: "質問9へ戻る",
+  vocab_badge_level: "レベル {level}",
+  vocab_badge_xp: "XP {xp}",
+  vocab_btn_fill: "空欄補充",
+  vocab_btn_mc: "選択問題",
+  vocab_btn_ma: "複数選択",
+  vocab_btn_match: "マッチ",
+  vocab_btn_speak: "話す",
+  vocab_input_placeholder_word: "単語を入力…",
+  vocab_submit: "送信",
+  vocab_select_all_apply: "当てはまるものをすべて選んでください。",
+  vocab_dnd_drop_here: "",
+  vocab_dnd_bank: "候補",
+  vocab_speak_instruction_label: "声に出して言ってください",
+  vocab_speak_hint_label: "ヒント",
+  vocab_speak_translation_label: "翻訳",
+  vocab_speak_last_heard: "最後の試行",
+  vocab_speak_record: "録音",
+  vocab_speak_stop: "停止",
+  vocab_speak_success_title: "発音OK！",
+  vocab_speak_success_desc: "スコア {score}%",
+  vocab_speak_retry_title: "もう一度",
+  vocab_speak_score: "スコア {score}%",
+  vocab_speak_unavailable: "音声認識は利用できません",
+  vocab_speak_variant_repeat: "リピート",
+  vocab_speak_variant_translate: "声に出して翻訳",
+  vocab_speak_variant_complete: "文を完成",
+  vocab_result_nice: "✅ いいですね · +{xp} XP",
+  vocab_result_not_quite: "❌ 惜しい · +{xp} XP",
+  vocab_result_correct: "✅ 正解 · +{xp} XP",
+  vocab_result_try_again: "❌ もう一度 · +{xp} XP",
+  grammar_badge_level: "レベル {level}",
+  grammar_badge_xp: "XP {xp}",
+  grammar_btn_fill: "空欄補充",
+  grammar_btn_mc: "選択問題",
+  grammar_btn_ma: "複数選択",
+  grammar_btn_match: "マッチ",
+  grammar_btn_speak: "話す",
+  grammar_input_placeholder_answer: "答えを入力…",
+  grammar_submit: "送信",
+  grammar_select_all_apply: "当てはまるものをすべて選んでください。",
+  grammar_dnd_drop_here: "",
+  grammar_dnd_bank: "候補",
+  grammar_result_good: "✅ よさそうです · +{xp} XP",
+  grammar_result_not_fit: "❌ 合いません · +{xp} XP",
+  grammar_result_correct: "✅ 正解 · +{xp} XP",
+  grammar_result_try_again: "❌ もう一度 · +{xp} XP",
+  grammar_speak_instruction_label: "この文を声に出して読んでください",
+  grammar_speak_hint_label: "文法ヒント",
+  grammar_speak_translation_label: "翻訳",
+  grammar_speak_last_heard: "最後の試行",
+  grammar_speak_record: "録音",
+  grammar_speak_stop: "停止",
+  grammar_speak_success_title: "発音OK！",
+  grammar_speak_success_desc: "スコア {score}%",
+  grammar_speak_retry_title: "もう一度",
+  grammar_speak_score: "スコア {score}%",
+  grammar_speak_unavailable: "音声認識は利用できません",
+  app_settings_aria: "設定",
+  ra_pron_label: "発音を練習",
+  ra_pron_help: "各ターンに小さな合図とゆっくりしたリピートを追加します。",
+  ra_help_label: "どんなサポートが必要ですか？",
+  ra_help_placeholder:
+    "例: 就職面接の会話練習、過去形の復習、旅行スペイン語…",
+  ra_help_help: "目標や状況を書いてください（体験の参考になります）。",
+  app_secret_placeholder: "nsec...",
+  app_id_placeholder: "npub...",
+  app_err_save_language_title: "言語を保存できませんでした",
+  tabs_realtime: "チャット",
+  tabs_stories: "ストーリー",
+  tabs_reading: "読解",
+  tabs_grammar: "文法",
+  tabs_vocab: "語彙",
+  story_header: "ストーリーモード",
+  story_generate: "ストーリーを生成",
+  story_playing: "再生中…",
+  tts_synthesizing: "音声を作成中…",
+  story_listen: "聞く",
+  story_stop: "停止",
+  story_start_practice: "文ごとの練習を開始",
+  story_practice_this: "この文を練習:",
+  story_skip: "文をスキップ",
+  story_finish: "ストーリーを終了",
+  story_record: "文を録音",
+  story_stop_recording: "録音停止",
+  story_progress: "進捗",
+  story_no_story: "まだストーリーがありません。生成して始めましょう。",
+  story_generating_title: "ストーリーを生成中…",
+  story_generating_sub: "あなた向けのストーリーを作成中",
+  story_almost: "あと少し。もう一度",
+  story_well_done: "よくできました！",
+  story_score: "スコア",
+  story_level: "レベル",
+  story_story_label: "ストーリー",
+  story_back_aria: "練習へ戻る",
+  story_demo_title: "デモストーリーを使用中",
+  story_demo_desc: "APIが利用できません。テスト用デモストーリーを使います。",
+  story_speech_unavailable_title: "音声認識は利用できません",
+  story_speech_unavailable_desc:
+    "採点には、マイクアクセスのあるChromium系ブラウザを使ってください。",
+  story_mic_error_title: "マイクエラー",
+  story_mic_error_desc: "権限を確認してもう一度お試しください。",
+  story_audio_eval_error_title: "音声を評価できませんでした",
+  story_audio_eval_error_desc:
+    "もう一度、練習言語ではっきり話してください。",
+  story_sentence_label: "文",
+  story_of: "/",
+  story_congrats_title: "おめでとう！",
+  story_congrats_done:
+    "ストーリー完了！このセッションで{xp} XPを獲得しました。",
+  story_header_roleplay: "ロールプレイ",
+  story_role_prompt: "どんな役でロールプレイしますか？",
+  story_role_placeholder: "例: 新入生を助ける先生",
+  story_start_role: "開始",
+  story_update_role: "更新",
+  story_edit_role: "編集",
+  story_cancel_edit: "キャンセル",
+  story_play_target: "{name}を再生",
+  story_no_role: "ロールプレイを始めるには役を設定してください。",
+  story_generating_role_title: "ストーリーを準備中…",
+  story_generating_role_sub: "役に合わせた場面を作っています。",
+  story_finish_role: "ロールプレイ終了",
+  repeat_hear_heading: "聞こえたものをタップ",
+  repeat_hear_instruction: "聞いて、単語を順番にタップしてください",
+  translate_sentence_heading: "この文を翻訳",
+  translate_sentence_instruction: "単語をタップして答えを作ってください",
+  story_skip_unavailable_title: "利用できません",
+  story_skip_unavailable_desc: "レッスンモードのときだけスキップできます。",
+  story_roleplay_completed: "ロールプレイ完了！",
+  story_sentences: "文",
+  proficiency_modal_already_know: "{lang}を少し知っていますか？",
+  proficiency_modal_description:
+    "短い会話でレベルを確認し、適切な場所から始められます。",
+  proficiency_modal_exchange_info:
+    "10往復ほどの短いチャットで、発音・文法・自信を評価します。",
+  proficiency_modal_take_test: "やってみる",
+  proficiency_modal_skip: "いいえ",
+  proficiency_modal_skip_note:
+    "「いいえ」を選ぶと初心者レベルから始まります。",
+  proficiency_test_title: "レベルテスト",
+  proficiency_test_instruction: "自然に話してください。レベルを評価します",
+  proficiency_test_rubric: "採点基準",
+  proficiency_test_evaluating: "評価中",
+  proficiency_test_analyzing: "会話を分析してレベルを判定しています...",
+  proficiency_test_assessor: "評価者",
+  proficiency_test_start: "開始",
+  proficiency_test_you: "あなた",
+  proficiency_test_final_result: "最終結果",
+  proficiency_test_complete: "評価完了",
+  proficiency_test_summary: "評価サマリー",
+  proficiency_test_breakdown: "内訳",
+  proficiency_test_composite: "総合スコア",
+  proficiency_test_level_label: "レベル {level}",
+  proficiency_test_eval_error:
+    "自動評価に問題がありました。もう一度試せます。",
+  proficiency_test_return_app: "アプリへ戻る",
+  proficiency_test_rubric_desc:
+    "レベル計算の方法です。能力を高く見積もりすぎないよう、評価は厳しめです。",
+  proficiency_test_what_scored: "評価される項目",
+  proficiency_test_what_scored_desc:
+    "発音、文法、語彙、流暢さ、自信、理解の6項目を1〜10で採点します。",
+  proficiency_test_scoring_heading: "採点のしくみ",
+  proficiency_test_scoring_1:
+    "理解と流暢さは、自信よりも重く評価されます。",
+  proficiency_test_scoring_2:
+    "短すぎる、内容が少ない回答はPre-A1/A1に制限されます。",
+  proficiency_test_scoring_3:
+    "つなぎ言葉や「わかりません」が多いと判定が下がります。",
+  proficiency_test_scoring_4:
+    "最終レベルは、会話で示された証拠を超えません。",
+  proficiency_test_got_it: "了解",
+  proficiency_test_exit_title: "レベルテストを終了しますか？",
+  proficiency_test_exit_desc:
+    "進捗は保存されません。後で設定から再受験できます。",
+  proficiency_test_yes_exit: "終了する",
+  proficiency_test_continue: "テストを続ける",
+  proficiency_test_assess_fallback: "評価完了。下で結果を確認してください。",
+  proficiency_test_assess_error:
+    "評価エラーです。安全側にPre-A1/A0として配置します。",
+  proficiency_speaking: "発話中",
+  proficiency_listening: "聞き取り中",
+  proficiency_thinking: "考え中",
+  generic_loading: "読み込み中...",
+  skill_tree_learning_activities: "学習アクティビティ:",
+  skill_tree_xp_reward: "完了に必要なXP:",
+  skill_tree_start_lesson: "レッスン開始",
+  skill_tree_starting_lesson: "レッスン開始中...",
+  skill_tree_unlock_at: "{xpRequired} XPで解放",
+  skill_tree_unlock_sequential: "前のレッスンを完了すると解放されます",
+  skill_tree_level: "レベル {level}",
+  skill_tree_no_path: "この言語の学習パスはまだありません。",
+  skill_tree_check_back: "構造化レッスンを近日追加予定です。",
+  skill_tree_your_path: "あなたの学習パス",
+  skill_tree_collapse: "折りたたむ",
+  skill_tree_expand: "展開",
+  skill_tree_lesson_active: "レッスン中",
+  skill_tree_cefr_a1_desc:
+    "基本的なサバイバル表現と必須のやり取りに集中する完全初心者レベル。",
+  skill_tree_cefr_a2_desc:
+    "簡単な日常会話やルーティンに対応する初級レベル。",
+  skill_tree_cefr_b1_desc:
+    "経験や予定について会話を続けられる中級レベル。",
+  skill_tree_cefr_b2_desc:
+    "抽象的な話題や複雑な考えを詳しく話せる中上級レベル。",
+  skill_tree_cefr_c1_desc:
+    "柔軟で構造的、ニュアンスのある表現ができる上級レベル。",
+  skill_tree_cefr_c2_desc:
+    "ネイティブに近い運用力、細かなニュアンス、文体の幅を示す熟達レベル。",
+  skill_tree_cefr_default_desc: "CEFR熟達度レベル",
+  skill_tree_passing_score: "合格点",
+  skill_tree_game_reward: "ゲーム報酬",
+  skill_tree_tutorial_goal: "目標",
+  skill_tree_tutorial_activities: "6つの学習アクティビティを完了",
+  flashcard_translate_to: "{language}に翻訳:",
+  flashcard_show_answer: "答えを表示",
+  flashcard_answer_label: "答え:",
+  flashcard_tap_to_flip: "タップして戻る",
+  flashcard_grading: "答えを採点中...",
+  flashcard_record_answer: "答えを録音",
+  flashcard_stop_recording: "録音停止",
+  flashcard_recognized: "認識結果:",
+  flashcard_type_placeholder: "答えを入力...",
+  flashcard_submit: "答えを送信",
+  flashcard_cancel: "キャンセル",
+  flashcard_correct: "正解！",
+  flashcard_incorrect: "惜しい...",
+  flashcard_try_again: "もう一度",
+  flashcard_explain_answer: "答えを説明して",
+  flashcard_explanation_heading: "説明",
+  flashcard_xp_level: "レベル {level}",
+  flashcard_total_xp: "合計XP {xp}",
+  flashcard_error_loading: "答えの読み込みエラー",
+  flashcard_eval_error_title: "評価できませんでした",
+  flashcard_eval_error_desc: "安定した接続でもう一度お試しください。",
+  flashcard_grading_error_title: "採点エラー",
+  flashcard_grading_error_desc: "答えを採点できませんでした。もう一度お試しください。",
+  flashcard_speech_unavailable_title: "音声認識は利用できません",
+  flashcard_speech_unavailable_desc:
+    "マイクアクセスのあるChromium系ブラウザを使用してください。",
+  flashcard_mic_denied_title: "マイクが拒否されました",
+  flashcard_mic_denied_desc:
+    "ブラウザ設定でマイクアクセスを有効にしてください。",
+  flashcard_all_done: "すべて完了！",
+  flashcard_all_completed: "すべてのフラッシュカードを完了しました！",
+  flashcard_listen: "聞く",
+  flashcard_listening: "再生中...",
+  flashcard_practice_random: "ランダムカードを練習",
+  flashcard_random_xp_toast: "練習で+{xp} XP！",
+  flashcard_due_now: "今すぐ復習",
+  flashcard_new_card: "新しいカード",
+  flashcard_review_now: "今すぐ復習",
+  flashcard_learning_card: "学習中",
+  flashcard_scheduled_card: "予定済み",
+  flashcard_mastery_stage: "ステージ {stage}",
+  flashcard_next_review: "次の復習 {time}",
+  flashcard_next_review_label: "次の復習",
+  flashcard_recall_hint:
+    "答えを見る前に思い出してみましょう。期限切れカードが先で、その後に新カードです。",
+  flashcard_memory_saved:
+    "よく思い出せました。記憶が薄れる直前にまた出るよう、このカードを再スケジュールしました。",
+  flashcard_memory_retry:
+    "その引っかかりは役に立ちます。もう一度試すか答えを確認して、近いうちに戻しましょう。",
+  flashcard_continue: "続ける",
+  flashcard_rate_recall: "思い出しやすさを評価",
+  flashcard_ai_suggests: "AIの提案: {rating}",
+  flashcard_self_grade_prompt:
+    "どれくらい覚えていたか選んでください。次の復習予定に使います。",
+  flashcard_rating_help_aria: "復習ボタンの意味",
+  flashcard_rating_help_title: "各ボタンの意味",
+  flashcard_button_again: "助けが必要",
+  flashcard_button_again_help:
+    "間違えた、または答えを見る必要があった場合に使います。",
+  flashcard_button_hard: "まだ学習中",
+  flashcard_button_hard_help:
+    "見覚えはあるが自信を持って思い出せなかった場合に使います。",
+  flashcard_button_good: "覚えている",
+  flashcard_button_good_help:
+    "少し時間がかかっても正しく思い出せた場合に使います。",
+  flashcard_button_easy: "習得済み",
+  flashcard_button_easy_help:
+    "答えがすぐに自然に出た場合に使います。",
+  flashcard_session_title: "フラッシュカード",
+  flashcard_session_subtitle:
+    "安定したリズムで、期限のカードを復習し、少しずつ新しい内容を追加します。",
+  flashcard_review_first:
+    "間隔反復は、期限切れカードを新しいカードより先に片付けると効果的です。",
+  flashcard_reviews_due: "期限の復習",
+  flashcard_new_queue: "新しいカード",
+  flashcard_mastered_cards: "学習済みカード",
+  flashcard_streak: "学習連続日数",
+  flashcard_activity: "アクティビティ",
+  flashcard_activity_subtitle: "今年",
+  flashcard_activity_empty: "学習なし",
+  flashcard_activity_some: "進捗",
+  flashcard_activity_goal: "日次目標",
+  flashcard_daily_target: "日次目標",
+  flashcard_cards_done_today: "今日は{count}/{target}枚完了",
+  flashcard_caught_up:
+    "日次目標達成。さらに進めたい場合は弱いカードを復習するか、明日の復習を自然に待ちましょう。",
+  flashcard_start_reviews: "復習開始",
+  flashcard_learn_next: "次のカードを学習",
+  flashcard_strengthen_weak: "弱いカードを復習",
+  flashcard_session_loading: "復習キューを準備中...",
+  flashcard_due_subtitle:
+    "今すぐ復習できます。先に片付けると間隔が整い、記憶を守れます。",
+  flashcard_new_subtitle:
+    "次の未学習カードだけが使えます。残りは学習者を圧倒しないようロックされます。",
+  flashcard_weak_queue: "弱いカード",
+  flashcard_weak_subtitle:
+    "まだ期限ではない学習済みカードのうち、少し補強しないと忘れやすいものです。",
+  flashcard_weak_reason_lapses: "最近のミス",
+  flashcard_weak_reason_mastery: "習熟度が低い",
+  flashcard_weak_reason_slipping: "何度も忘れる",
+  flashcard_scheduled_queue: "後で予定",
+  flashcard_scheduled_subtitle:
+    "すでに学習済みで、次の理想的な復習タイミングを待っているカードです。",
+  flashcard_next_up: "次",
+  cefr_level_completed: "レベル完了！",
+  mode_vocabulary: "語彙",
+  mode_grammar: "文法",
+  mode_reading: "読解",
+  mode_realtime: "チャット",
+  mode_stories: "ストーリー",
+  mode_game: "ゲーム",
+  path_switcher_path: "パス",
+  path_switcher_flashcards: "カード",
+  path_switcher_conversations: "チャット",
+  timer_modal_title: "セッションタイマー",
+  timer_modal_description: "集中する時間を設定してください。",
+  timer_modal_minutes_label: "分",
+  timer_modal_quick_picks: "クイック選択",
+  timer_modal_cancel: "キャンセル",
+  timer_modal_close: "閉じる",
+  timer_modal_start: "タイマー開始",
+  timer_modal_restart: "タイマー再開",
+  timer_modal_max_hint: "最大240分（4時間）",
+  timer_times_up_title: "時間です！",
+  timer_times_up_subtitle: "集中セッション完了",
+  timer_times_up_duration: "{minutes}分集中しました。",
+  timer_times_up_no_duration: "タイマー完了、お疲れさまでした！",
+  timer_times_up_close: "閉じる",
+  timer_times_up_restart: "別のタイマーを開始",
+  teams_drawer_title: "チームとコミュニティ",
+  teams_tab_feed: "グローバルフィード",
+  teams_tab_create: "チーム作成",
+  teams_tab_view: "チームを見る",
+  teams_drawer_close: "閉じる",
+  teams_feed_instructions:
+    "#LearnWithNostr を使って進捗をコミュニティと共有し、練習内容を見せましょう。",
+  teams_feed_copy_button: "シークレットキーをコピー",
+  teams_feed_copy_title: "キーをコピーしました",
+  teams_feed_copy_desc: "キーをクリップボードにコピーしました。",
+  teams_feed_allow_label: "投稿を許可",
+  teams_feed_allow_enabled: "自動コミュニティ投稿が有効です。",
+  teams_feed_allow_disabled: "自動コミュニティ投稿は無効です。",
+  sound_effects_label: "効果音",
+  sound_effects_enabled: "効果音はオンです。",
+  sound_effects_disabled: "効果音はミュートです。",
+  sound_volume_label: "音量",
+  theme_mode_label: "テーマ",
+  theme_mode_description: "アプリの見た目を選びます。",
+  theme_mode_dark: "ミッドナイト",
+  theme_mode_dark_description:
+    "集中しやすい濃紺のパネルと高いコントラスト。",
+  theme_mode_light: "ペーパー",
+  theme_mode_light_description:
+    "やわらかな紙のような面と濃い文字、軽い影。",
+  test_sound: "音をテスト",
+  teams_feed_refresh: "更新",
+  teams_feed_loading: "コミュニティと同期中...",
+  teams_feed_empty: "まだ投稿がありません。会話を始めましょう！",
+  teams_feed_error: "フィードを読み込めません。",
+  teams_feed_copy_fallback: "キーをコピーできません。",
+  teams_create_error: "エラー",
+  teams_create_invalid: "招待する有効なnpubを入力してください",
+  teams_create_invalid_format: "npub形式が無効です。npubは「npub」で始まります",
+  teams_create_duplicate: "このnpubはすでにリストにあります",
+  teams_create_missing_name: "チーム名を選んでください",
+  teams_create_missing_member: "作成前に少なくとも1人の仲間を追加してください",
+  teams_create_unknown_user: "新しい学習者",
+  teams_create_dm_template:
+    "こんにちは！Robots Building Educationの「{team}」に招待されました。チームで進捗を追跡するにはアカウントを作成してください。",
+  teams_create_success: "チームを作成しました",
+  teams_create_invites: "招待を送信",
+  teams_create_failed: "失敗",
+  teams_create_heading: "新しいチームを作成",
+  teams_create_name_label: "チーム名",
+  teams_create_name_placeholder: "例: 週末学習",
+  teams_create_member_label: "仲間を招待",
+  teams_create_member_placeholder: "npub1...",
+  teams_create_add_button: "追加",
+  teams_create_members_heading: "保留中の招待",
+  teams_create_remove: "削除",
+  teams_create_creating: "作成中",
+  teams_create_submit: "チーム作成",
+  teams_view_error: "エラー",
+  teams_view_invite_accepted: "招待を承認しました",
+  teams_view_invite_rejected: "招待を辞退しました",
+  teams_view_delete_confirm: "{team}を削除しますか？",
+  teams_view_deleted: "チームを削除しました",
+  teams_view_leave_confirm: "{team}を退出しますか？",
+  teams_view_left: "チームを退出しました",
+  teams_view_loading: "チームを読み込み中...",
+  teams_view_pending: "保留中の招待",
+  teams_view_invited_by: "招待者",
+  teams_view_accept: "承認",
+  teams_view_decline: "辞退",
+  teams_view_my_teams: "自分のチーム",
+  teams_view_empty: "チームを作成して一緒に進捗を追跡しましょう。",
+  teams_view_member_one: "メンバー",
+  teams_view_member_many: "メンバー",
+  teams_view_badge_creator: "作成者",
+  teams_view_badge_member: "メンバー",
+  teams_view_progress: "進捗",
+  teams_view_total_xp: "合計XP",
+  teams_view_goal_completion: "日次目標達成率",
+  teams_view_daily_goal: "今日の目標",
+  teams_view_daily_xp: "日次XP",
+  teams_view_level: "レベル",
+  teams_view_no_members: "承認済みメンバーはまだいません。",
+  teams_view_pending_members: "招待待ち",
+  teams_view_delete: "チームを削除",
+  teams_view_leave: "チームを退出",
+  vocab_ask_assistant: "アシスタントに聞く",
+  vocab_assistant: "アシスタント",
+  vocab_listen_question: "質問を聞く",
+  vocab_listen_example: "例を聞く",
+  vocab_listen_word: "単語を聞く",
+  vocab_connecting: "接続中...",
+  vocab_say_it_aloud: "声に出して言う",
+  vocab_final_quiz: "最終クイズ",
+  vocab_quiz_passed: "クイズ合格！",
+  vocab_quiz_congratulations: "おめでとう！",
+  vocab_quiz_not_passed: "クイズ不合格",
+  vocab_quiz_score_passed: "{correct}問正解 • 必要 {needed}",
+  vocab_quiz_score_failed: "{correct}問正解 • 合格には{needed}必要",
+  vocab_back_to_skill_tree: "スキルツリーへ戻る",
+  vocab_mc_instruction: "正しい答えを選んでください",
+  vocab_ma_instruction: "正しい答えをすべて選んでください",
+  vocab_match_instruction: "単語をマッチさせてください",
+  vocab_assistant_error: "現在、応答を生成できません。",
+  vocab_explanation_error: "現在、説明を生成できません。",
+  vocab_create_note_error: "メモを作成できませんでした",
+  vocab_recording_failed: "録音に失敗しました",
+  vocab_recording_failed_desc: "もう一度お試しください。",
+  vocab_eval_error_mic_desc: "マイク権限を確認してもう一度お試しください。",
+  vocab_create_note: "メモを作成",
+  vocab_note_saved: "メモを保存しました！",
+  vocab_lesson_progress: "レッスン進捗",
+};
+
+translations.ar = {
+  ...translations.en,
+  ...TRANSLATION_AR_STATIC,
+  "passcode.instructions": (
+    <div>
+      اكتب كود الاشتراك علشان تكمل.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>الاشتراك بيديك:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            دخول لعدة تطبيقات تعليمية بالذكاء الاصطناعي.
+          </li>
+          <li style={{ marginBottom: 8 }}>دعم شخصي.</li>
+          <li style={{ marginBottom: 8 }}>
+            محتوى متزايد للمشتركين عن هندسة البرمجيات، المشاريع، والاستثمار.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            فرصة تدعم مهمة صناعة منح دراسية من خلال التعلم.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            اشترك
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            ادفع مرة واحدة
+          </Button>
+        </HStack>
+      </div>
+    </div>
+  ),
+};
+
+translations.hi = {
+  ...translations.en,
+  ...TRANSLATION_HI_STATIC,
+  "passcode.instructions": (
+    <div>
+      जारी रखने के लिए सदस्यता पासकोड दर्ज करें।
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>सदस्यता लेने पर आपको मिलेगा:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            कई AI शिक्षा ऐप्स तक पहुँच।
+          </li>
+          <li style={{ marginBottom: 8 }}>व्यक्तिगत सहायता।</li>
+          <li style={{ marginBottom: 8 }}>
+            स्टार्टअप इंजीनियरिंग, निवेश और निर्माण पर बढ़ती हुई सदस्य सामग्री।
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            सीखते हुए छात्रवृत्तियाँ बनाने के मिशन को सहयोग देने का अवसर।
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            सदस्यता लें
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            एक बार भुगतान करें
+          </Button>
+        </HStack>
+      </div>
+    </div>
+  ),
+};
+
+translations.pt = {
+  ...TRANSLATION_PT_STATIC,
+  daily_goal_title: "Gerenciador de metas",
+  daily_goal_xp_unit: "XP / dia",
+  app_mode_cards: "Cartões",
+  story_story_label: "História",
+  story_demo_title: "Usando história de demonstração",
+  story_demo_desc:
+    "API indisponível. Usando uma história de demonstração para testes.",
+  story_speech_unavailable_title: "Reconhecimento de voz indisponível",
+  story_speech_unavailable_desc:
+    "Para avaliar, use um navegador Chromium com acesso ao microfone.",
+  story_sentence_label: "Frase",
+  story_congrats_title: "Parabéns!",
+  story_congrats_done:
+    "Você concluiu a história! Ganhou {xp} XP nesta sessão.",
+  story_play_target: "Reproduzir {name}",
+  repeat_hear_heading: "Toque no que ouvir",
+  translate_sentence_heading: "Traduza esta frase",
+  translate_sentence_instruction:
+    "Toque nas palavras para formar sua resposta",
+  proficiency_modal_already_know: "Você já sabe um pouco de {lang}?",
+  proficiency_modal_description:
+    "Podemos ter uma conversa rápida para determinar seu nível e colocá-lo no lugar certo.",
+  proficiency_modal_exchange_info:
+    "Uma conversa breve de 10 trocas — avaliaremos sua pronúncia, gramática e confiança.",
+  proficiency_modal_take_test: "Vamos lá!",
+  proficiency_modal_skip: "Agora não",
+  proficiency_modal_skip_note:
+    '"Agora não" vai iniciar você no nível iniciante.',
+  proficiency_test_title: "Teste de nível",
+  proficiency_test_instruction:
+    "Fale naturalmente — estamos avaliando seu nível",
+  proficiency_test_evaluating: "Avaliando",
+  proficiency_test_analyzing:
+    "Analisando sua conversa para determinar seu nível...",
+  proficiency_test_rubric: "Rubrica de avaliação",
+  proficiency_test_assessor: "Avaliador",
+  proficiency_test_start: "Começar",
+  proficiency_test_final_result: "Resultado final",
+  proficiency_test_complete: "Avaliação concluída",
+  proficiency_test_summary: "Resumo da avaliação",
+  proficiency_test_breakdown: "Detalhamento",
+  proficiency_test_composite: "Pontuação composta",
+  proficiency_test_level_label: "Nível {level}",
+  proficiency_test_return_app: "Voltar ao aplicativo",
+  proficiency_test_what_scored: "O que o sistema avalia",
+  proficiency_test_what_scored_desc:
+    "Avaliamos 6 áreas (1-10): pronúncia, gramática, vocabulário, fluência, confiança e compreensão.",
+  proficiency_test_scoring_heading: "Como a pontuação funciona",
+  proficiency_test_scoring_1:
+    "Compreensão e fluência pesam mais do que confiança.",
+  proficiency_test_scoring_2:
+    "Respostas muito curtas ou com pouco conteúdo limitam o resultado a Pre-A1/A1.",
+  proficiency_test_scoring_3:
+    'Se houver muitos "não sei"/muletas, o nível cai automaticamente.',
+  proficiency_test_scoring_4:
+    "O nível final nunca supera a evidência real da sua conversa.",
+  proficiency_test_got_it: "Entendi",
+  proficiency_test_exit_title: "Sair do teste de nível?",
+  proficiency_test_exit_desc:
+    "Seu progresso não será salvo. Você pode refazer o teste mais tarde nas configurações.",
+  proficiency_test_eval_error:
+    "Houve um problema ao avaliar automaticamente. Você pode tentar novamente.",
+  proficiency_test_assess_fallback:
+    "Avaliação concluída. Veja seus resultados abaixo.",
+  proficiency_test_assess_error:
+    "Erro na avaliação. Nós o colocamos em Pre-A1/A0 por segurança.",
+  proficiency_test_you: "Você",
+  proficiency_test_yes_exit: "Sim, sair",
+  proficiency_test_continue: "Continuar teste",
+  proficiency_speaking: "Falando",
+  proficiency_listening: "Ouvindo",
+  proficiency_thinking: "Pensando",
+  app_install_subtitle:
+    "Para a melhor experiência, instale o app no seu dispositivo.",
+  app_install_step1: "Abra o menu do navegador.",
+  app_install_step2: "Abra no navegador.",
+  app_install_step6: "Copie a chave secreta para entrar.",
+  onboarding_final_step_title:
+    "Copie sua chave secreta para entrar na sua conta",
+  onboarding_go_back: "Voltar",
+  onboarding_copy_key: "Copiar chave",
+  ra_btn_replay: "Reproduzir novamente",
+  ra_toast_no_audio_replay: "Não há áudio disponível para reproduzir.",
+  ra_help_help: "Descreva sua meta ou contexto (isso orienta a experiência).",
+  flashcard_session_title: "Fluxo de cartões",
+  flashcard_new_queue: "Cartões novos",
+  flashcard_mastered_cards: "Cartões aprendidos",
+  flashcard_cards_done_today: "{count}/{target} cartões concluídos hoje",
+  flashcard_strengthen_weak: "Revisar cartões fracos",
+  flashcard_due_subtitle:
+    "Esses cartões já estão prontos para revisão. Resolver isso primeiro fortalece o espaçamento e protege lembranças anteriores.",
+  flashcard_weak_queue: "Cartões fracos",
+  path_switcher_flashcards: "Cartões",
+  teams_feed_copy_title: "Chave copiada",
+  app_sign_out: "Encerrar sessão",
+  app_sign_out_confirm_title: "Encerrar sessão?",
+  app_sign_out_confirm_body:
+    "Tem certeza de que deseja sair? Verifique se sua chave secreta está salva antes de encerrar a sessão.",
+  app_sign_out_confirm: "Encerrar sessão",
+  app_copy_secret: "Copiar chave secreta",
+  toast_copy_failed: "Falha ao copiar",
+  toast_paste_nsec: "Cole seu nsec primeiro",
+  toast_must_start_nsec: "Deve começar com nsec…",
+  toast_switch_failed: "Falha ao trocar de conta",
+  grammar_input_placeholder_answer: "Escreva sua resposta…",
+  quiz_placeholder_open: "Escreva sua resposta…",
+  history_answer_placeholder: "Sua resposta...",
+  history_speech_listening: "Ouvindo...",
+  history_speech_submitting: "Avaliando...",
+  app_cefr_loading: "Analisando…",
+  flashcard_grading: "Avaliando sua resposta...",
+  flashcard_speech_unavailable_desc:
+    "Use um navegador baseado em Chromium com acesso ao microfone.",
+  flashcard_mic_denied_desc:
+    "Habilite o acesso ao microfone nas configurações do seu navegador.",
+  theme_mode_description:
+    "Escolha como o app aparece. O modo claro usa uma paleta quente, com aparência de papel.",
+  vocab_match_instruction: "Associe as palavras",
+  "passcode.instructions": (
+    <div>
+      Digite o código de assinatura para continuar.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>Ao assinar, você recebe:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Acesso a vários aplicativos educacionais com IA.
+          </li>
+          <li style={{ marginBottom: 8 }}>Suporte pessoal.</li>
+          <li style={{ marginBottom: 8 }}>
+            Uma coleção crescente de conteúdo para assinantes sobre engenharia
+            de startups, negócios e investimentos.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            A chance de apoiar a missão de criar bolsas de estudo por meio da
+            aprendizagem.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            Assinar
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Pagar uma vez
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
+};
+
+translations.zh = {
+  ...translations.en,
+  ...TRANSLATION_ZH_STATIC,
+  "passcode.instructions": (
+    <div>
+      输入订阅通行码以继续。
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>订阅可获得：</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>访问多个 AI 教育应用。</li>
+          <li style={{ marginBottom: 8 }}>个人支持。</li>
+          <li style={{ marginBottom: 8 }}>
+            持续更新的订阅内容，涵盖创业工程、商业和投资。
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            感谢你支持通过学习创造奖学金的使命。
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            订阅
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            一次性付款
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
 };
 
 export default translations;

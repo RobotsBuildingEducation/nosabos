@@ -27,6 +27,18 @@ import {
   FaSun,
 } from "react-icons/fa";
 
+import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+  HStack,
+  Text as ChakraText,
+  Button as ChakraButton,
+  IconButton,
+} from "@chakra-ui/react";
+import { ChevronDownIcon } from "@chakra-ui/icons";
 import VoiceOrb from "./VoiceOrb";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
@@ -35,9 +47,14 @@ import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import {
-  LANGUAGE_FALLBACK_LABELS,
   getPracticeLanguageOptions,
+  getSupportLanguageOptions,
 } from "../constants/languages";
+import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
+import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
+import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
+import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
@@ -195,9 +212,29 @@ const translations = {
     signin_placeholder: "Paste your secret key",
     signin_button: "Sign In",
     signin_extension: "Sign in with Extension",
+    signin_or: "or",
+    signin_error_invalid_key:
+      "Invalid secret key. Please check it and try again.",
+    signin_error_extension: "Extension sign-in failed. Please try again.",
+    signin_error_generic: "Sign in failed. Please try again.",
     back_button: "Back",
+    language_nl: "Dutch",
     language_en: "English",
-    language_es: "Español",
+    language_fr: "French",
+    language_de: "German",
+    language_it: "Italian",
+    language_hi: "Hindi",
+    language_ar: "Egyptian Arabic",
+    language_zh: "Mandarin Chinese",
+    language_pt: "Portuguese",
+    language_es: "Spanish",
+    language_nah: "Eastern Huasteca Nahuatl",
+    language_yua: "Yucatec Maya",
+    language_el: "Greek",
+    language_ja: "Japanese",
+    language_ru: "Russian",
+    language_pl: "Polish",
+    language_ga: "Irish",
   },
   es: {
     nav_signin: "Iniciar Sesión",
@@ -306,10 +343,532 @@ const translations = {
     signin_placeholder: "Pega tu llave secreta",
     signin_button: "Iniciar Sesión",
     signin_extension: "Iniciar con Extensión",
+    signin_or: "o",
+    signin_error_invalid_key:
+      "Llave secreta no válida. Revísala e inténtalo de nuevo.",
+    signin_error_extension:
+      "No se pudo iniciar sesión con la extensión. Inténtalo de nuevo.",
+    signin_error_generic: "No se pudo iniciar sesión. Inténtalo de nuevo.",
     back_button: "Regresar",
-    language_en: "English",
+    language_nl: "Holandés",
+    language_en: "Inglés",
+    language_fr: "Francés",
+    language_de: "Alemán",
+    language_it: "Italiano",
+    language_hi: "Hindi",
+    language_ar: "Árabe egipcio",
+    language_zh: "Chino mandarín",
+    language_pt: "Portugués",
     language_es: "Español",
+    language_nah: "Náhuatl huasteco oriental",
+    language_yua: "Maya yucateco",
+    language_el: "Griego",
+    language_ja: "Japonés",
+    language_ru: "Ruso",
+    language_pl: "Polaco",
+    language_ga: "Irlandés",
   },
+  it: {
+    nav_signin: "Accedi",
+    hero_title: "Il Tuo Tutor",
+    hero_title_accent: "Linguistico Personale",
+    hero_subtitle:
+      "Usa strumenti intelligenti per praticare e imparare nuove lingue.",
+    cta_start: "Inizia",
+    cta_signin: "Ho già una Chiave",
+    languages_label: "LINGUE",
+    languages_title: "Pratica in",
+    languages_title_accent: "14 Lingue",
+    languages_stable: "Stabile",
+    languages_beta: "Beta",
+    languages_alpha: "Alfa",
+    features_label: "FUNZIONALITÀ",
+    features_title: "Tutto ciò che ti serve per",
+    features_title_accent: "Diventare Fluente",
+    feature_conversations: "Conversazioni in Tempo Reale",
+    feature_conversations_desc:
+      "Dialoghi immersivi che si adattano al tuo livello, guidandoti nel parlato e nell'ascolto in tempo reale.",
+    feature_stories: "Storie Interattive",
+    feature_stories_desc:
+      "Narrazioni coinvolgenti che ti invitano a leggere ad alta voce, riassumere e fare role-play nella tua lingua target.",
+    feature_reading: "Pratica di Lettura",
+    feature_reading_desc:
+      "Lezioni tematiche che ampliano il vocabolario e le conoscenze culturali con esercizi di comprensione.",
+    feature_grammar: "Libro di Grammatica",
+    feature_grammar_desc:
+      "Riferimenti rapidi alle regole, esercizi concettuali e set di revisione adattivi per rafforzare le basi.",
+    feature_skilltree: "Albero delle Abilità",
+    feature_skilltree_desc:
+      "Percorsi di apprendimento strutturati che costruiscono le abilità passo dopo passo con una visualizzazione chiara dei progressi.",
+    feature_flashcards: "Vocabolario",
+    feature_flashcards_desc:
+      "Pratica nuove parole in base al tuo livello e a situazioni quotidiane.",
+    feature_goals: "Obiettivi Giornalieri",
+    feature_goals_desc:
+      "Target personalizzati che monitorano i progressi e celebrano le serie per mantenerti motivato.",
+    feature_notes: "Genera Note",
+    feature_notes_desc:
+      "Crea note di studio complete dalle tue lezioni da rivedere in seguito.",
+    feature_immersion: "Pratica di Immersione",
+    feature_immersion_desc:
+      "Completa attività fuori dall'app per immergerti e praticare la lingua.",
+    feature_assistant: "Assistente Personale",
+    feature_assistant_desc:
+      "Ottieni guida e raccomandazioni personalizzate quando ne hai bisogno.",
+    feature_flashcards_spaced: "Flashcard di Ripetizione",
+    feature_flashcards_spaced_desc:
+      "Padroneggia oltre 1.000 parole e frasi con flashcard a ripetizione spaziata organizzate per livello CEFR, dal principiante all'avanzato.",
+    feature_game_review: "Gioco RPG di Revisione",
+    feature_game_review_desc:
+      "Esplora mondi con missioni, parla con PNG e raccogli oggetti — tutto nella tua lingua target — per ripassare il vocabolario delle lezioni.",
+    feature_proficiency_test: "Test di Livello",
+    feature_proficiency_test_desc:
+      "Sostieni una conversazione vocale di 10 scambi con un'IA che si adatta in tempo reale per collocarti al tuo livello CEFR esatto.",
+    feature_phonics: "Fonetica",
+    feature_phonics_desc:
+      "Pratica parole e suoni con la modalità Alfabeto per padroneggiare la pronuncia dalle basi.",
+    value_label: "PERCHÉ NO SABOS",
+    value_title: "Apprendimento che",
+    value_title_accent: "Funziona Davvero",
+    value_1:
+      "IA che si adatta in tempo reale — conversazioni, esercizi e feedback adeguati al tuo livello esatto",
+    value_2:
+      "Sei modalità di pratica per ogni stile: parlato, lettura, scrittura, ascolto, grammatica e vocabolario",
+    value_3:
+      "Progressione CEFR strutturata da A1 principiante a C2 maestria con 324 lezioni e traguardi chiari",
+    value_4:
+      "Coaching della pronuncia in tempo reale che ascolta, corregge e costruisce la tua fiducia nel parlare",
+    scholarship_label: "DAI QUALCOSA IN CAMBIO",
+    scholarship_title: "Crea Borse di Studio",
+    scholarship_title_accent: "con Bitcoin",
+    scholarship_desc:
+      "Ricarica il tuo portafoglio Bitcoin nell'app per aiutare a creare borse di studio attraverso l'apprendimento con",
+    scholarship_link: "RobotsBuildingEducation.com",
+    scholarship_note:
+      "Scegli un'identità comunitaria nell'app in modo che ogni satoshi che spendi supporti persone reali.",
+    faq_label: "DOMANDE",
+    faq_title: "Domande Frequenti",
+    faq_q1: "Cosa succede quando creo un account?",
+    faq_a1:
+      "Generiamo una chiave sicura che sblocca il tuo spazio di studio personale. Conservala bene — è l'unico modo per accedere da un altro dispositivo.",
+    faq_q2: "Devo sapere qualcosa su blockchain o Nostr?",
+    faq_a2:
+      "No. Ci occupiamo noi dei dettagli tecnici. Hai solo bisogno della tua chiave per tornare alle lezioni.",
+    faq_q3: "Quali lingue posso praticare?",
+    faq_a3:
+      "Inizia subito con spagnolo, inglese, portoghese, francese o italiano, poi esplora i moduli culturali ispirati al nahuatl.",
+    faq_q4: "Ha un costo?",
+    faq_a4:
+      "Gli strumenti principali sono gratuiti. Alcuni laboratori avanzati potrebbero richiedere borse di studio o accesso a pagamento.",
+    cta_final_title: "Pronto a Iniziare il tuo",
+    cta_final_accent: "Viaggio Linguistico?",
+    cta_final_subtitle:
+      "Crea il tuo profilo sicuro in pochi secondi, salva la chiave e sblocca un mondo di apprendimento linguistico.",
+    placeholder_name: "Il tuo nome visualizzato",
+    footer_brand: "No Sabos",
+    footer_tagline: "Rendere l'apprendimento delle lingue accessibile a tutti.",
+    signin_title: "Bentornato",
+    signin_subtitle:
+      "Incolla la chiave segreta che hai salvato quando hai creato il tuo account.",
+    signin_placeholder: "Incolla la tua chiave segreta",
+    signin_button: "Accedi",
+    signin_extension: "Accedi con Estensione",
+    signin_or: "o",
+    signin_error_invalid_key:
+      "Chiave segreta non valida. Controllala e riprova.",
+    signin_error_extension:
+      "Accesso con estensione non riuscito. Riprova.",
+    signin_error_generic: "Accesso non riuscito. Riprova.",
+    back_button: "Indietro",
+    language_nl: "Olandese",
+    language_en: "Inglese",
+    language_fr: "Francese",
+    language_de: "Tedesco",
+    language_it: "Italiano",
+    language_hi: "Hindi",
+    language_ar: "Arabo egiziano",
+    language_zh: "Cinese mandarino",
+    language_pt: "Portoghese",
+    language_es: "Spagnolo",
+    language_nah: "Nahuatl huasteco orientale",
+    language_yua: "Maya yucateco",
+    language_el: "Greco",
+    language_ja: "Giapponese",
+    language_ru: "Russo",
+    language_pl: "Polacco",
+    language_ga: "Irlandese",
+  },
+};
+
+translations.pt = LANDING_PAGE_PT_STATIC;
+translations.hi = LANDING_PAGE_HI_STATIC;
+translations.zh = LANDING_PAGE_ZH_STATIC;
+translations.ar = {
+  ...translations.en,
+  ...LANDING_PAGE_AR_STATIC,
+};
+
+translations.fr = {
+  ...translations.en,
+  nav_signin: "Connexion",
+  hero_title: "Ton Tuteur",
+  hero_title_accent: "Linguistique Personnel",
+  hero_subtitle:
+    "Utilise des outils intelligents pour pratiquer et apprendre de nouvelles langues.",
+  cta_start: "Commencer",
+  cta_signin: "J'ai deja une cle",
+  languages_label: "LANGUES",
+  languages_title: "Pratique en",
+  languages_title_accent: "14 Langues",
+  languages_stable: "Stable",
+  languages_beta: "Beta",
+  languages_alpha: "Alpha",
+  features_label: "FONCTIONNALITES",
+  features_title: "Tout ce qu'il faut pour",
+  features_title_accent: "Devenir Fluide",
+  feature_conversations: "Conversations en Temps Reel",
+  feature_conversations_desc:
+    "Des dialogues immersifs qui s'adaptent a ton niveau et t'accompagnent en expression orale et comprehension en temps reel.",
+  feature_stories: "Histoires Interactives",
+  feature_stories_desc:
+    "Des recits engageants qui t'invitent a lire a voix haute, resumer et jouer des roles dans ta langue cible.",
+  feature_reading: "Pratique de Lecture",
+  feature_reading_desc:
+    "Des lectures thematiques qui developpent ton vocabulaire et ta culture avec des exercices de comprehension.",
+  feature_grammar: "Livre de Grammaire",
+  feature_grammar_desc:
+    "References rapides, exercices de notions et revisions adaptatives pour renforcer tes bases.",
+  feature_skilltree: "Arbre de Competences",
+  feature_skilltree_desc:
+    "Des parcours structures qui construisent tes competences etape par etape avec une visualisation claire des progres.",
+  feature_flashcards: "Vocabulaire",
+  feature_flashcards_desc:
+    "Pratique de nouveaux mots selon ton niveau et des situations courantes.",
+  feature_goals: "Objectifs Quotidiens",
+  feature_goals_desc:
+    "Des cibles personnalisees qui suivent tes progres et celebrent tes series.",
+  feature_notes: "Generer des Notes",
+  feature_notes_desc:
+    "Cree des notes d'etude completes depuis tes lecons pour les revoir plus tard.",
+  feature_immersion: "Pratique d'Immersion",
+  feature_immersion_desc:
+    "Complete des taches hors de l'app pour t'immerger et pratiquer la langue.",
+  feature_assistant: "Assistant Personnel",
+  feature_assistant_desc:
+    "Obtiens une aide et des recommandations personnalisees quand tu en as besoin.",
+  feature_flashcards_spaced: "Flashcards Espacees",
+  feature_flashcards_spaced_desc:
+    "Maitrise plus de 1 000 mots et phrases avec des flashcards a repetition espacee par niveau CEFR.",
+  feature_game_review: "RPG de Revision",
+  feature_game_review_desc:
+    "Explore des mondes a quetes, parle a des PNJ et collecte des objets dans ta langue cible pour reviser le vocabulaire.",
+  feature_proficiency_test: "Test de Niveau",
+  feature_proficiency_test_desc:
+    "Passe une conversation vocale de 10 echanges avec une IA qui s'adapte en temps reel pour te placer au bon niveau CEFR.",
+  feature_phonics: "Phonetique",
+  feature_phonics_desc:
+    "Pratique les sons et les mots avec le mode Alphabet pour maitriser la prononciation depuis les bases.",
+  value_label: "POURQUOI NO SABOS",
+  value_title: "Un apprentissage qui",
+  value_title_accent: "Fonctionne Vraiment",
+  value_1:
+    "Une IA qui s'adapte en temps reel - conversations, exercices et retours ajustes a ton niveau exact",
+  value_2:
+    "Six modes de pratique pour tous les styles : parler, lire, ecrire, ecouter, grammaire et vocabulaire",
+  value_3:
+    "Progression CEFR structuree de A1 debutant a C2 maitrise avec 324 lecons et jalons clairs",
+  value_4:
+    "Coaching de prononciation en temps reel qui ecoute, corrige et renforce ta confiance a l'oral",
+  scholarship_label: "REDONNER",
+  scholarship_title: "Creer des Bourses",
+  scholarship_title_accent: "avec Bitcoin",
+  scholarship_desc:
+    "Recharge ton portefeuille Bitcoin dans l'app pour aider a creer des bourses grace a l'apprentissage avec",
+  scholarship_note:
+    "Choisis une identite communautaire dans l'app afin que chaque satoshi depense soutienne de vraies personnes.",
+  faq_label: "QUESTIONS",
+  faq_title: "Questions Frequentes",
+  faq_q1: "Que se passe-t-il quand je cree un compte ?",
+  faq_a1:
+    "Nous generons une cle securisee qui debloque ton espace d'etude personnel. Garde-la bien : c'est le seul moyen de te connecter depuis un autre appareil.",
+  faq_q2: "Dois-je connaitre les blockchains ou Nostr ?",
+  faq_a2:
+    "Non. Nous gerons les details techniques pour toi. Tu as seulement besoin de ta cle pour revenir a tes lecons.",
+  faq_q3: "Quelles langues puis-je pratiquer ?",
+  faq_a3:
+    "Commence avec l'espagnol, l'anglais, le portugais, le francais ou l'italien, puis explore les modules culturels inspires du nahuatl.",
+  faq_q4: "Est-ce payant ?",
+  faq_a4:
+    "Les outils principaux sont gratuits. Certains laboratoires avances peuvent demander une bourse ou un acces payant.",
+  cta_final_title: "Pret a commencer ton",
+  cta_final_accent: "Voyage Linguistique ?",
+  cta_final_subtitle:
+    "Cree ton profil securise en quelques secondes, sauvegarde ta cle et debloque un monde d'apprentissage linguistique.",
+  placeholder_name: "Ton nom d'affichage",
+  footer_tagline: "Rendre l'apprentissage des langues accessible a tous.",
+  signin_title: "Bon retour",
+  signin_subtitle:
+    "Colle la cle secrete que tu as sauvegardee lors de la creation du compte.",
+  signin_placeholder: "Colle ta cle secrete",
+  signin_button: "Connexion",
+  signin_extension: "Connexion avec extension",
+  signin_or: "ou",
+  signin_error_invalid_key:
+    "Cle secrete invalide. Verifie-la et reessaie.",
+  signin_error_extension:
+    "La connexion avec l'extension a echoue. Reessaie.",
+  signin_error_generic: "Connexion impossible. Reessaie.",
+  back_button: "Retour",
+  language_nl: "Néerlandais",
+  language_en: "Anglais",
+  language_fr: "Français",
+  language_de: "Allemand",
+  language_it: "Italien",
+  language_hi: "Hindi",
+  language_ar: "Arabe egyptien",
+  language_zh: "Chinois mandarin",
+  language_pt: "Portugais",
+  language_es: "Espagnol",
+  language_nah: "Nahuatl huastèque oriental",
+  language_yua: "Maya yucatèque",
+  language_el: "Grec",
+  language_ja: "Japonais",
+  language_ru: "Russe",
+  language_pl: "Polonais",
+  language_ga: "Irlandais",
+};
+
+translations.ja = {
+  ...translations.en,
+  nav_signin: "サインイン",
+  hero_title: "あなた専用の",
+  hero_title_accent: "言語チューター",
+  hero_subtitle: "インテリジェントなツールで新しい言語を練習し、学びましょう。",
+  cta_start: "学習を始める",
+  cta_signin: "キーを持っています",
+  languages_label: "言語",
+  languages_title: "練習できる",
+  languages_title_accent: "14言語",
+  languages_stable: "安定版",
+  languages_beta: "ベータ",
+  languages_alpha: "アルファ",
+  features_label: "機能",
+  features_title: "流暢さに必要な",
+  features_title_accent: "すべて",
+  feature_conversations: "リアルタイム会話",
+  feature_conversations_desc:
+    "あなたのレベルに合わせた没入型の対話で、話す・聞く練習をリアルタイムにサポートします。",
+  feature_stories: "インタラクティブストーリー",
+  feature_stories_desc:
+    "音読、要約、ロールプレイを通じて練習できる魅力的な物語です。",
+  feature_reading: "読解練習",
+  feature_reading_desc:
+    "テーマ別の読解で語彙と文化知識を広げ、理解問題で確認します。",
+  feature_grammar: "文法ブック",
+  feature_grammar_desc:
+    "短いルール解説、概念ドリル、適応型復習で基礎を強化します。",
+  feature_skilltree: "スキルツリー",
+  feature_skilltree_desc:
+    "段階的な学習パスと進捗の見える化で、着実に力を伸ばします。",
+  feature_flashcards: "語彙",
+  feature_flashcards_desc:
+    "レベルやよくある場面に合わせて新しい単語を練習します。",
+  feature_goals: "日次目標",
+  feature_goals_desc:
+    "毎日のXP目標と進捗トラッキングで学習習慣を育てます。",
+  feature_notes: "ノート生成",
+  feature_notes_desc:
+    "レッスン内容から、あとで見返せる学習ノートを自動で作成します。",
+  feature_immersion: "没入型練習",
+  feature_immersion_desc:
+    "アプリの外でも課題に取り組み、言語に浸りながら実践練習します。",
+  feature_assistant: "パーソナルアシスタント",
+  feature_assistant_desc:
+    "困ったときに、あなたに合った案内やおすすめを受け取れます。",
+  feature_flashcards_spaced: "フラッシュカード演習",
+  feature_flashcards_spaced_desc:
+    "CEFRレベル別に整理された間隔反復フラッシュカードで、1,000以上の単語や表現を身につけます。",
+  feature_game_review: "RPG復習",
+  feature_game_review_desc:
+    "クエスト型の世界を探索し、NPCと話し、アイテムを集めながら、学習中の言語でレッスン語彙を復習します。",
+  feature_proficiency_test: "レベル判定テスト",
+  feature_proficiency_test_desc:
+    "AIとの10往復の音声会話で、リアルタイムに適応しながらあなたのCEFRレベルを正確に判定します。",
+  feature_phonics: "フォニックス",
+  feature_phonics_desc:
+    "アルファベット・ブートキャンプで単語と音を練習し、発音を基礎から身につけます。",
+  value_label: "学習のしくみ",
+  value_title: "練習を",
+  value_title_accent: "実際の成長へ",
+  value_1:
+    "リアルタイムに適応するAI。会話、練習、フィードバックがあなたの今のレベルに合わせて変化します。",
+  value_2:
+    "話す、読む、書く、聞く、文法、語彙の6つの練習モードで、学び方に合わせて学べます。",
+  value_3:
+    "A1の初級からC2の習熟まで、324レッスンと明確なマイルストーンで進むCEFR学習パスです。",
+  value_4:
+    "聞き取り、修正し、話す自信を育てるリアルタイム発音コーチングです。",
+  value_adaptive: "適応型",
+  value_adaptive_desc: "練習はあなたのレベル、回答、目標に合わせて変化します。",
+  value_voice: "音声対応",
+  value_voice_desc: "話して、聞いて、すぐにフィードバックを受け取れます。",
+  value_private: "自分のキー",
+  value_private_desc: "自分のアカウントキーでプロフィールと進捗に戻れます。",
+  scholarship_label: "ミッション",
+  scholarship_title: "Bitcoinで",
+  scholarship_title_accent: "奨学金をつくる",
+  scholarship_desc:
+    "アプリ内のBitcoinウォレットにチャージして、学びを通じた奨学金づくりを支援しましょう。",
+  scholarship_link: "RobotsBuildingEducation.com",
+  scholarship_note:
+    "アプリでコミュニティアイデンティティを選ぶと、使うサトシが実際の人々の支援につながります。",
+  scholarship_cta: "詳しく見る",
+  faq_label: "FAQ",
+  faq_title: "よくある質問",
+  faq_q1: "何を練習できますか？",
+  faq_a1:
+    "会話、語彙、文法、読解、ストーリー、発音などを練習できます。",
+  faq_q2: "キーについて知る必要がありますか？",
+  faq_a2:
+    "いいえ。技術的な部分はこちらで処理します。レッスンに戻るには保存したキーだけが必要です。",
+  faq_q3: "どの言語を練習できますか？",
+  faq_a3:
+    "スペイン語、英語、ポルトガル語、フランス語、イタリア語から始め、ナワトル語などの文化的モジュールも探索できます。",
+  faq_q4: "料金はかかりますか？",
+  faq_a4:
+    "主要ツールは無料です。一部の高度なラボは奨学金または有料アクセスが必要な場合があります。",
+  cta_final_title: "言語学習の旅を",
+  cta_final_accent: "始めませんか？",
+  cta_final_subtitle:
+    "数秒で安全なプロフィールを作り、キーを保存して、言語学習の世界を開きましょう。",
+  placeholder_name: "表示名",
+  footer_brand: "No Sabos",
+  footer_tagline: "誰でも言語学習にアクセスできるように。",
+  signin_title: "おかえりなさい",
+  signin_subtitle: "アカウント作成時に保存したシークレットキーを貼り付けてください。",
+  signin_placeholder: "シークレットキーを貼り付け",
+  signin_button: "サインイン",
+  signin_extension: "拡張機能でサインイン",
+  signin_or: "または",
+  signin_error_invalid_key:
+    "シークレットキーが無効です。確認してもう一度お試しください。",
+  signin_error_extension:
+    "拡張機能でのサインインに失敗しました。もう一度お試しください。",
+  signin_error_generic:
+    "サインインに失敗しました。もう一度お試しください。",
+  back_button: "戻る",
+  language_nl: "オランダ語",
+  language_en: "英語",
+  language_fr: "フランス語",
+  language_de: "ドイツ語",
+  language_it: "イタリア語",
+  language_hi: "ヒンディー語",
+  language_ar: "エジプトアラビア語",
+  language_zh: "中国語（普通話）",
+  language_pt: "ポルトガル語",
+  language_es: "スペイン語",
+  language_nah: "東ワステカ・ナワトル語",
+  language_yua: "ユカテコ・マヤ語",
+  language_el: "ギリシャ語",
+  language_ja: "日本語",
+  language_ru: "ロシア語",
+  language_pl: "ポーランド語",
+  language_ga: "アイルランド語",
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LANGUAGE MENU COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LanguageMenu = ({ lang, setLang, playSound }) => {
+  const options = getSupportLanguageOptions({
+    ui: translations[lang] || translations.en,
+    uiLang: lang,
+  });
+  const selected = options.find((o) => o.value === lang) || options[0];
+
+  return (
+    <div style={{ display: "flex", justifyContent: "center", marginTop: "8px" }}>
+      <Menu autoSelect={false} isLazy>
+        <MenuButton
+          as={ChakraButton}
+          rightIcon={<ChevronDownIcon />}
+          variant="outline"
+          size="sm"
+          borderColor="var(--app-border)"
+          bg="var(--app-glass-bg)"
+          color="var(--app-text-primary)"
+          _hover={{ bg: "var(--app-glass-bg-soft)" }}
+          _active={{ bg: "var(--app-glass-bg-soft)" }}
+          backdropFilter="blur(20px)"
+          rounded="xl"
+          px={4}
+          py={5}
+          minW="150px"
+          textAlign="left"
+          onClick={() => playSound(selectSound)}
+        >
+          <HStack spacing={2}>
+            {selected?.flag}
+            <ChakraText as="span" fontSize="sm" fontWeight="semibold">
+              {selected?.label}
+            </ChakraText>
+          </HStack>
+        </MenuButton>
+        <MenuList
+          borderColor="var(--app-border)"
+          bg="var(--app-surface)"
+          shadow="xl"
+          minW="160px"
+          maxH="300px"
+          overflowY="auto"
+          sx={{
+            "&::-webkit-scrollbar": {
+              width: "8px",
+            },
+            "&::-webkit-scrollbar-track": {
+              background: "var(--app-glass-bg-soft)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb": {
+              background: "var(--app-border-strong)",
+              borderRadius: "4px",
+            },
+            "&::-webkit-scrollbar-thumb:hover": {
+              background: "var(--app-text-muted)",
+            },
+          }}
+        >
+          <MenuOptionGroup
+            type="radio"
+            value={lang}
+            onChange={(value) => {
+              playSound(selectSound);
+              setLang(value);
+            }}
+          >
+            {options.map((opt) => (
+              <MenuItemOption
+                key={opt.value}
+                value={opt.value}
+                bg="transparent"
+                _hover={{ bg: "var(--app-surface-elevated)" }}
+                _checked={{ fontWeight: "semibold" }}
+                py={3}
+              >
+                <HStack spacing={2}>
+                  {opt.flag}
+                  <ChakraText as="span" fontSize="sm">
+                    {opt.label}
+                  </ChakraText>
+                </HStack>
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
+    </div>
+  );
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -483,68 +1042,41 @@ const Logo = ({ size = 48 }) => (
 );
 
 const ThemeModeToggle = ({ themeMode, onModeChange }) => {
-  const modes = [
-    { id: "dark", label: "Dark mode", icon: <FaMoon size={11} /> },
-    { id: "light", label: "Light mode", icon: <FaSun size={11} /> },
-  ];
+  const isDark = themeMode === "dark";
+  const isLightTheme = !isDark;
+  const nextMode = isDark ? "light" : "dark";
+  const label = isDark ? "Switch to light mode" : "Switch to dark mode";
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "18px",
-        right: "20px",
-        zIndex: 120,
+    <IconButton
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={() => onModeChange(nextMode)}
+      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
+      size="sm"
+      minW="40px"
+      h="40px"
+      rounded="full"
+      position="fixed"
+      top="18px"
+      right="20px"
+      zIndex={120}
+      bg={isLightTheme ? "transparent" : "var(--app-surface-elevated)"}
+      color={isLightTheme ? "#33291f" : "var(--app-text-primary)"}
+      border="1px solid"
+      borderColor={
+        isLightTheme ? "rgba(77, 58, 36, 0.34)" : "var(--app-border)"
+      }
+      boxShadow={isLightTheme ? "none" : "var(--app-shadow-soft)"}
+      backdropFilter="blur(20px)"
+      _hover={{
+        bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "var(--app-surface-muted)",
       }}
-    >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: "3px",
-          padding: "3px",
-          borderRadius: "999px",
-          background: theme.colors.bg.elevated,
-          backdropFilter: "blur(20px)",
-          border: `1px solid ${theme.colors.border.subtle}`,
-          boxShadow: "var(--app-shadow-soft)",
-        }}
-      >
-        {modes.map((mode) => {
-          const isActive = themeMode === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={mode.label}
-              title={mode.label}
-              onClick={() => onModeChange(mode.id)}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "34px",
-                height: "34px",
-                borderRadius: "999px",
-                border: "none",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                background: isActive
-                  ? `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`
-                  : "transparent",
-                color: isActive ? "#ffffff" : theme.colors.text.secondary,
-                boxShadow: isActive
-                  ? "0 8px 18px rgba(20, 184, 166, 0.18)"
-                  : "none",
-              }}
-            >
-              {mode.icon}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+      _active={{
+        bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "var(--app-surface-muted)",
+      }}
+    />
   );
 };
 
@@ -887,6 +1419,26 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
   const [error, setError] = useState("");
   const playSound = useSoundSettings((s) => s.playSound);
 
+  const resolveSignInError = useCallback(
+    (err) => {
+      const message = String(err?.message || err || "").toLowerCase();
+      if (message.includes("extension")) {
+        return copy.signin_error_extension || copy.signin_error_generic;
+      }
+      if (
+        message.includes("invalid") ||
+        message.includes("secret") ||
+        message.includes("key") ||
+        message.includes("nsec") ||
+        message.includes("bech32")
+      ) {
+        return copy.signin_error_invalid_key || copy.signin_error_generic;
+      }
+      return copy.signin_error_generic || "Sign in failed. Please try again.";
+    },
+    [copy],
+  );
+
   const handleSignIn = async () => {
     if (!secretKey.trim()) return;
     playSound(submitActionSound);
@@ -895,7 +1447,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
     try {
       await onSignIn(secretKey);
     } catch (e) {
-      setError(e.message || "Sign in failed");
+      setError(resolveSignInError(e));
     } finally {
       setLoading(false);
     }
@@ -998,7 +1550,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
                     fontSize: "0.875rem",
                   }}
                 >
-                  or
+                  {copy.signin_or}
                 </span>
                 <div
                   style={{
@@ -1067,7 +1619,7 @@ const LandingPage = ({ onAuthenticated }) => {
     return HERO_VOICE_ORB_STATES[randomIndex];
   });
 
-  const copy = translations[lang];
+  const copy = translations[lang] || translations.en;
 
   useEffect(() => {
     setHasExtension(isNip07Available());
@@ -1080,6 +1632,10 @@ const LandingPage = ({ onAuthenticated }) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("appLanguage", lang);
     }
+  }, [lang]);
+
+  useEffect(() => {
+    syncDocumentLanguage(lang);
   }, [lang]);
 
   const handleCreate = useCallback(async () => {
@@ -1350,36 +1906,8 @@ const LandingPage = ({ onAuthenticated }) => {
               {copy.cta_signin}
             </Button>
 
-            {/* Language Toggle */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: "8px",
-                marginTop: "8px",
-              }}
-            >
-              <Button
-                variant={lang === "en" ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  playSound(selectSound);
-                  setLang("en");
-                }}
-              >
-                {copy.language_en}
-              </Button>
-              <Button
-                variant={lang === "es" ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => {
-                  playSound(selectSound);
-                  setLang("es");
-                }}
-              >
-                {copy.language_es}
-              </Button>
-            </div>
+            {/* Language Menu */}
+            <LanguageMenu lang={lang} setLang={setLang} playSound={playSound} />
           </motion.div>
         </div>
       </section>
@@ -1424,7 +1952,11 @@ const LandingPage = ({ onAuthenticated }) => {
               justifyItems: "center",
             }}
           >
-            {getPracticeLanguageOptions({ uiLang: lang }).map(
+            {getPracticeLanguageOptions({
+              ui: translations[lang] || translations.en,
+              uiLang: lang,
+              includeTierTagInLabel: false,
+            }).map(
               (langOption, i) => (
                 <motion.div
                   key={langOption.value}
@@ -1457,9 +1989,7 @@ const LandingPage = ({ onAuthenticated }) => {
                       textAlign: "center",
                     }}
                   >
-                    {langOption.value === "nah"
-                      ? "Huasteca Nahuatl"
-                      : LANGUAGE_FALLBACK_LABELS[langOption.value]}
+                    {langOption.label}
                   </span>
                   <span
                     style={{

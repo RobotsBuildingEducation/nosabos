@@ -5,11 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { evaluateAttemptStrict } from "../utils/speechEvaluation";
 
 const BCP47_TO_WHISPER = {
+  ar: "ar",
+  zh: "zh",
   es: "es",
   en: "en",
   pt: "pt",
   fr: "fr",
   it: "it",
+  hi: "hi",
   nl: "nl",
   nah: "es", // Nahuatl fallback to Spanish
   ru: "ru",

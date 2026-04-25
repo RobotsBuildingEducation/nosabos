@@ -1,0 +1,1005 @@
+import { translateFlashcardConceptToItalian } from "./flashcards/italianLocalizer.js";
+
+const normalizeKey = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
+
+const capitalizeFirst = (value) => {
+  if (!value) return value;
+  return value.charAt(0).toLocaleUpperCase("it-IT") + value.slice(1);
+};
+
+const applySourceCase = (source, translation) => {
+  if (!source || !translation) return translation;
+  const trimmed = String(source).trim();
+  const first = trimmed.charAt(0);
+  if (first && first === first.toLocaleUpperCase("en-US") && /[A-Z]/i.test(first)) {
+    return capitalizeFirst(translation);
+  }
+  return translation;
+};
+
+const escapeRegExp = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const LETTER_CLASS = "A-Za-zÀ-ÖØ-öø-ÿ";
+
+const applyMatchCase = (matched, replacement) => {
+  if (!matched || !replacement) return replacement;
+  const hasLetters = /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(matched);
+  if (!hasLetters) return replacement;
+  if (matched === matched.toLocaleUpperCase("es-ES")) {
+    return replacement.toLocaleUpperCase("it-IT");
+  }
+  const first = matched.charAt(0);
+  if (first === first.toLocaleUpperCase("es-ES")) {
+    return capitalizeFirst(replacement);
+  }
+  return replacement;
+};
+
+const replaceToken = (text, source, translation) => {
+  const pattern = new RegExp(
+    `(^|[^${LETTER_CLASS}])(${escapeRegExp(source)})(?=$|[^${LETTER_CLASS}])`,
+    "giu",
+  );
+  return text.replace(pattern, (match, prefix, token) => {
+    if (source.length === 1 && token === token.toLocaleUpperCase("es-ES")) {
+      return `${prefix}${token}`;
+    }
+    return `${prefix}${applyMatchCase(token, translation)}`;
+  });
+};
+
+const PHRASE_TRANSLATIONS = [
+  ["al final de palabra", "alla fine della parola"],
+  ["al final de palabras", "alla fine delle parole"],
+  ["al final de sílaba", "alla fine della sillaba"],
+  ["al final de sílabas", "alla fine delle sillabe"],
+  ["al final", "alla fine"],
+  ["al inicio de palabra", "all'inizio della parola"],
+  ["al inicio", "all'inizio"],
+  ["antes de e/i", "prima di e/i"],
+  ["antes de a/o/u", "prima di a/o/u"],
+  ["antes de i/e", "prima di i/e"],
+  ["antes de vocal", "prima di una vocale"],
+  ["antes de", "prima di"],
+  ["después de", "dopo"],
+  ["detrás de dientes superiores", "dietro i denti superiori"],
+  ["detrás de los dientes", "dietro i denti"],
+  ["detrás de", "dietro"],
+  ["desde la garganta", "dalla gola"],
+  ["parte posterior", "parte posteriore"],
+  ["cuerdas vocales", "corde vocali"],
+  ["labio inferior", "labbro inferiore"],
+  ["dientes superiores", "denti superiori"],
+  ["labios redondeados", "labbra arrotondate"],
+  ["labios neutrales", "labbra neutre"],
+  ["aire por nariz", "aria dal naso"],
+  ["aire va por nariz", "l'aria passa dal naso"],
+  ["aire va por nariz y boca", "l'aria passa dal naso e dalla bocca"],
+  ["sin aspiración", "senza aspirazione"],
+  ["sin vibración", "senza vibrazione"],
+  ["con vibración", "con vibrazione"],
+  ["sin acento", "non accentata"],
+  ["con acento", "accentata"],
+  ["sonido gutural", "suono gutturale"],
+  ["sonido único", "suono unico"],
+  ["sonido puro", "suono puro"],
+  ["sonido lateral", "suono laterale"],
+  ["sonido final", "suono finale"],
+  ["mismo sonido", "stesso suono"],
+  ["misma posición", "stessa posizione"],
+  ["palabras prestadas", "prestiti linguistici"],
+  ["palabras extranjeras", "parole straniere"],
+  ["palabras nativas", "parole native"],
+  ["holandés nativo", "olandese nativo"],
+  ["habla casual", "parlato informale"],
+  ["en algunas regiones", "in alcune regioni"],
+  ["algunas áreas", "alcune aree"],
+  ["en algunos dialectos", "in alcuni dialetti"],
+  ["por región", "in base alla regione"],
+  ["en el oeste", "nell'ovest"],
+  ["en Brasil", "in Brasile"],
+  ["en Portugal", "in Portogallo"],
+  ["en España", "in Spagna"],
+  ["en Bélgica", "in Belgio"],
+  ["a menudo", "spesso"],
+  ["a veces", "a volte"],
+  ["según palabra", "a seconda della parola"],
+  ["según la palabra", "a seconda della parola"],
+  ["según contexto", "a seconda del contesto"],
+  ["según origen", "a seconda dell'origine"],
+  ["estilo americano", "stile americano"],
+  ["estándar", "standard"],
+  ["muda", "muta"],
+  ["mudas", "mute"],
+  ["no muda", "non muta"],
+  ["nunca muda", "mai muta"],
+  ["siempre muda", "sempre muta"],
+  ["siempre sorda", "sempre sorda"],
+  ["siempre igual", "sempre uguale"],
+  ["sin sonido", "senza suono"],
+  ["se pronuncia separada", "si pronuncia separata"],
+  ["se pronuncia", "si pronuncia"],
+  ["se escribe", "si scrive"],
+  ["se usa", "si usa"],
+  ["se capitalizan", "si scrivono maiuscole"],
+  ["se vuelve", "diventa"],
+  ["se convierte", "diventa"],
+  ["suena como", "suona come"],
+  ["suenan como", "suonano come"],
+  ["hacen el mismo sonido", "hanno lo stesso suono"],
+  ["hace sonido", "produce il suono"],
+  ["hace que", "fa sì che"],
+  ["igual que", "uguale a"],
+  ["similar al", "simile allo"],
+  ["similar a", "simile a"],
+  ["diferente de", "diverso da"],
+  ["a diferencia del", "a differenza dello"],
+  ["a diferencia de", "a differenza di"],
+  ["más abierta", "più aperta"],
+  ["más abierta que", "più aperta di"],
+  ["más larga", "più lunga"],
+  ["más corta", "più breve"],
+  ["más común", "più comune"],
+  ["más fuerte", "più forte"],
+  ["más suave", "più dolce"],
+  ["más atrás", "più indietro"],
+  ["menos aire", "meno aria"],
+  ["menos común", "meno comune"],
+  ["muy común", "molto comune"],
+  ["muy corta", "molto breve"],
+  ["muy diferente", "molto diverso"],
+  ["único del", "unico del"],
+  ["sin equivalente", "senza equivalente"],
+  ["diptongo único", "dittongo unico"],
+  ["letra en", "lettera in"],
+  ["letra separada", "lettera separata"],
+  ["dos sílabas", "due sillabe"],
+  ["sílaba separada", "sillaba separata"],
+  ["sílabas sin acento", "sillabe non accentate"],
+  ["marca el acento", "marca l'accento"],
+  ["marca acento", "marca l'accento"],
+  ["marca énfasis", "marca l'accento"],
+  ["marca una pequeña pausa", "marca una piccola pausa"],
+  ["marca cambio histórico", "marca un cambiamento storico"],
+  ["ortográfica es histórica", "ortografica è storica"],
+  ["histórica", "storica"],
+  ["cambio histórico", "cambiamento storico"],
+  ["g alemán", "G tedesca"],
+  ["ch alemán", "ch tedesco"],
+  ["ö alemán", "Ö tedesca"],
+  ["u francesa", "U francese"],
+  ["eu francés", "eu francese"],
+  ["j francesa", "J francese"],
+  ["i griega", "I greca"],
+  ["j inglesa", "J inglese"],
+  ["f inglesa", "F inglese"],
+  ["h inglesa", "H inglese"],
+  ["s inglesa", "S inglese"],
+  ["v inglesa", "V inglese"],
+  ["w inglesa", "W inglese"],
+  ["z inglesa", "Z inglese"],
+  ["ch inglesa", "CH inglese"],
+  ["ng inglés", "ng inglese"],
+  ["inglés", "inglese"],
+  ["inglesa", "inglese"],
+  ["español", "spagnolo"],
+  ["española", "spagnola"],
+  ["francés", "francese"],
+  ["francesa", "francese"],
+  ["alemán", "tedesco"],
+  ["alemana", "tedesca"],
+  ["portugués", "portoghese"],
+  ["polaca", "polacca"],
+  ["holandés", "olandese"],
+  ["holandesa", "olandese"],
+  ["rusa", "russa"],
+  ["japonés", "giapponese"],
+  ["griego", "greco"],
+  ["irlandés", "irlandese"],
+  ["maya", "maya"],
+  ["náhuat", "nahuatl"],
+  ["náhuatl", "nahuatl"],
+  ["la N NO se pronuncia", "la N NON si pronuncia"],
+  ["NO como", "NON come"],
+  ["NO vibrante", "NON vibrante"],
+  ["NO existe", "NON esiste"],
+  ["NO se pronuncia", "NON si pronuncia"],
+  ["NO como U", "NON come U"],
+  ["No uses", "Non usare"],
+  ["No hay", "Non c'e"],
+  ["como aclarándose", "come schiarirsi la gola"],
+  ["Practica gargarizando", "Esercitati facendo gargarismi"],
+  ["del todo", "del tutto"],
+  ["S + G gutural", "S + G gutturale"],
+  ["Corta:", "Breve:"],
+  ["Larga:", "Lunga:"],
+  ["Estándar:", "Standard:"],
+  ["Brasil:", "Brasile:"],
+  ["Portugal:", "Portogallo:"],
+  ["Bélgica/algunas áreas", "Belgio/alcune aree"],
+  ["Latinoamérica", "America Latina"],
+  ["Argentina/Uruguay", "Argentina/Uruguay"],
+  ["Río/Portugal", "Rio/Portogallo"],
+];
+
+const WORD_TRANSLATIONS = [
+  ["como", "come"],
+  ["sonido", "suono"],
+  ["sonidos", "suoni"],
+  ["suena", "suona"],
+  ["suenan", "suonano"],
+  ["sonar", "suonare"],
+  ["pronuncia", "pronuncia"],
+  ["pronunciada", "pronunciata"],
+  ["pronunciadas", "pronunciate"],
+  ["separada", "separata"],
+  ["separado", "separato"],
+  ["separa", "separa"],
+  ["trema", "dieresi"],
+  ["muestra", "mostra"],
+  ["corta", "breve"],
+  ["corto", "breve"],
+  ["cortas", "brevi"],
+  ["larga", "lunga"],
+  ["largo", "lungo"],
+  ["largas", "lunghe"],
+  ["abierta", "aperta"],
+  ["abierto", "aperto"],
+  ["cerrada", "chiusa"],
+  ["cerrado", "chiuso"],
+  ["vocal", "vocale"],
+  ["vocales", "vocali"],
+  ["consonante", "consonante"],
+  ["consonantes", "consonanti"],
+  ["sílaba", "sillaba"],
+  ["sílabas", "sillabe"],
+  ["letra", "lettera"],
+  ["letras", "lettere"],
+  ["palabra", "parola"],
+  ["palabras", "parole"],
+  ["prestadas", "prestate"],
+  ["extranjeras", "straniere"],
+  ["nativo", "nativo"],
+  ["nativa", "nativa"],
+  ["usa", "usa"],
+  ["usan", "usano"],
+  ["usualmente", "di solito"],
+  ["mayormente", "soprattutto"],
+  ["forma", "forma"],
+  ["origen", "origine"],
+  ["contexto", "contesto"],
+  ["regiones", "regioni"],
+  ["dialectos", "dialetti"],
+  ["áreas", "aree"],
+  ["siempre", "sempre"],
+  ["nunca", "mai"],
+  ["solo", "solo"],
+  ["casi", "quasi"],
+  ["tanto", "sia"],
+  ["ambas", "entrambe"],
+  ["ambos", "entrambi"],
+  ["mismo", "stesso"],
+  ["misma", "stessa"],
+  ["igual", "uguale"],
+  ["diferente", "diverso"],
+  ["diferencia", "differenza"],
+  ["común", "comune"],
+  ["comunes", "comuni"],
+  ["único", "unico"],
+  ["única", "unica"],
+  ["fácil", "facile"],
+  ["difícil", "difficile"],
+  ["idénticas", "identiche"],
+  ["idénticos", "identici"],
+  ["identicas", "identiche"],
+  ["identicos", "identici"],
+  ["moderno", "moderno"],
+  ["tradicionalmente", "tradizionalmente"],
+  ["limpia", "pulita"],
+  ["considerada", "considerata"],
+  ["juntas", "insieme"],
+  ["juntos", "insieme"],
+  ["describir", "descrivere"],
+  ["primeras", "prime"],
+  ["notar", "notare"],
+  ["ligera", "leggera"],
+  ["ligero", "leggero"],
+  ["aligera", "alleggerisce"],
+  ["toques", "tocchi"],
+  ["rápidos", "rapidi"],
+  ["pareja", "coppia"],
+  ["siseo", "sibilo"],
+  ["retrae", "ritrai"],
+  ["suene", "suoni"],
+  ["ablanda", "ammorbidisce"],
+  ["anterior", "precedente"],
+  ["préstamos", "prestiti"],
+  ["pequeña", "piccola"],
+  ["pocas", "poche"],
+  ["nítida", "nitida"],
+  ["versión", "versione"],
+  ["existen", "esistono"],
+  ["también", "anche"],
+  ["partícula", "particella"],
+  ["siga", "segue"],
+  ["sigue", "segue"],
+  ["mostrar", "mostrare"],
+  ["lenición", "lenizione"],
+  ["suavización", "addolcimento"],
+  ["cuenta", "conta"],
+  ["luego", "poi"],
+  ["voz", "voce"],
+  ["sonrisa", "sorriso"],
+  ["sonriendo", "sorridendo"],
+  ["escrito", "scritto"],
+  ["rápida", "rapida"],
+  ["cierran", "si chiudono"],
+  ["uses", "usare"],
+  ["pregunta", "domanda"],
+  ["exclamación", "esclamazione"],
+  ["aparece", "appare"],
+  ["tres", "tre"],
+  ["importa", "conta"],
+  ["dígrafos", "digrammi"],
+  ["estable", "stabile"],
+  ["pura", "pura"],
+  ["puro", "puro"],
+  ["relajada", "rilassata"],
+  ["relajados", "rilassate"],
+  ["relaja", "rilassa"],
+  ["tensa", "tesa"],
+  ["suave", "dolce"],
+  ["suaves", "dolci"],
+  ["suavemente", "dolcemente"],
+  ["suaviza", "addolcisce"],
+  ["sorda", "sorda"],
+  ["sonora", "sonora"],
+  ["sonoro", "sonoro"],
+  ["gutural", "gutturale"],
+  ["uvular", "uvulare"],
+  ["vibrante", "vibrante"],
+  ["aspiración", "aspirazione"],
+  ["vibración", "vibrazione"],
+  ["explosión", "esplosione"],
+  ["pausa", "pausa"],
+  ["flujo", "flusso"],
+  ["golpe", "colpo"],
+  ["desliz", "scivolamento"],
+  ["redondeados", "arrotondate"],
+  ["redondeadas", "arrotondate"],
+  ["redondeada", "arrotondata"],
+  ["redondear", "arrotondare"],
+  ["redondea", "arrotonda"],
+  ["labios", "labbra"],
+  ["labio", "labbro"],
+  ["lengua", "lingua"],
+  ["boca", "bocca"],
+  ["dientes", "denti"],
+  ["garganta", "gola"],
+  ["paladar", "palato"],
+  ["nariz", "naso"],
+  ["aire", "aria"],
+  ["punta", "punta"],
+  ["cresta", "cresta"],
+  ["mandíbula", "mandibola"],
+  ["medio", "centro"],
+  ["parte", "parte"],
+  ["posterior", "posteriore"],
+  ["inferior", "inferiore"],
+  ["superiores", "superiori"],
+  ["clara", "chiara"],
+  ["tiene", "ha"],
+  ["toca", "tocca"],
+  ["tocan", "toccano"],
+  ["sube", "sale"],
+  ["baja", "abbassa"],
+  ["abre", "apri"],
+  ["empieza", "inizia"],
+  ["mueve", "muovi"],
+  ["muévete", "muoviti"],
+  ["evita", "evita"],
+  ["añade", "aggiunge"],
+  ["alarga", "allunga"],
+  ["convierte", "trasforma"],
+  ["vuelve", "diventa"],
+  ["cambia", "cambia"],
+  ["varía", "varia"],
+  ["puede", "può"],
+  ["sale", "esce"],
+  ["suelta", "rilascia"],
+  ["siente", "senti"],
+  ["escucha", "ascolta"],
+  ["mantenla", "mantienila"],
+  ["mantén", "mantieni"],
+  ["practica", "esercitati"],
+  ["sonríe", "sorridi"],
+  ["compara", "confronta"],
+  ["compárala", "confrontala"],
+  ["redondea", "arrotonda"],
+  ["con", "con"],
+  ["sin", "senza"],
+  ["entre", "tra"],
+  ["antes", "prima"],
+  ["después", "dopo"],
+  ["desde", "da"],
+  ["detrás", "dietro"],
+  ["para", "per"],
+  ["por", "da"],
+  ["según", "secondo"],
+  ["cuando", "quando"],
+  ["pero", "ma"],
+  ["que", "che"],
+  ["y", "e"],
+  ["o", "o"],
+  ["en", "in"],
+  ["de", "di"],
+  ["del", "del"],
+  ["la", "la"],
+  ["el", "il"],
+  ["los", "i"],
+  ["las", "le"],
+  ["un", "un"],
+  ["una", "una"],
+  ["al", "al"],
+  ["es", "è"],
+  ["son", "sono"],
+  ["está", "è"],
+  ["esta", "questa"],
+  ["este", "questo"],
+  ["muy", "molto"],
+  ["más", "più"],
+  ["menos", "meno"],
+  ["mucho", "molto"],
+  ["mucha", "molta"],
+  ["poco", "poco"],
+  ["rápido", "veloce"],
+  ["ligeramente", "leggermente"],
+  ["justo", "appena"],
+  ["contra", "contro"],
+  ["algunos", "alcuni"],
+  ["algunas", "alcune"],
+  ["alemán", "tedesco"],
+  ["alemana", "tedesca"],
+  ["Bélgica", "Belgio"],
+  ["Brasil", "Brasile"],
+  ["Portugal", "Portogallo"],
+  ["España", "Spagna"],
+  ["Río", "Rio"],
+  ["Latinoamérica", "America Latina"],
+];
+
+const ENGLISH_MEANING_TRANSLATIONS = {
+  about: "riguardo a",
+  above: "sopra",
+  "all/everything": "tutto",
+  and: "e",
+  apple: "mela",
+  avocado: "avocado",
+  badly: "male",
+  ball: "palla",
+  banana: "banana",
+  bear: "orso",
+  beetle: "scarabeo",
+  bicycle: "bicicletta",
+  bird: "uccello",
+  but: "ma",
+  butterfly: "farfalla",
+  "cabbage soup": "zuppa di cavolo",
+  café: "caffè",
+  camera: "macchina fotografica",
+  cat: "gatto",
+  cent: "centesimo",
+  "cheers/health": "salute",
+  "cherry blossom": "fiore di ciliegio",
+  "chili pepper": "peperoncino",
+  Christmas: "Natale",
+  church: "chiesa",
+  clock: "orologio",
+  "color/flower": "colore/fiore",
+  "companion/friend": "compagno/amico",
+  cow: "mucca",
+  cup: "tazza",
+  day: "giorno",
+  deer: "cervo",
+  dice: "dado",
+  dog: "cane",
+  eagle: "aquila",
+  earth: "terra",
+  "earth/land": "terra",
+  egg: "uovo",
+  egoist: "egoista",
+  eighth: "ottavo",
+  exam: "esame",
+  "flame / llama": "fiamma / lama",
+  flour: "farina",
+  "flower/nose": "fiore/naso",
+  forest: "foresta",
+  French: "francese",
+  frog: "rana",
+  "from/of": "da/di",
+  full: "pieno",
+  garden: "giardino",
+  German: "tedesco",
+  gift: "regalo",
+  hand: "mano",
+  "hand/arm": "mano/braccio",
+  heart: "cuore",
+  hearts: "cuori",
+  hedgehog: "riccio",
+  "Hello!": "Ciao!",
+  "his/her": "suo/sua",
+  honored: "onorato",
+  horse: "cavallo",
+  hotel: "hotel",
+  hour: "ora",
+  in: "in",
+  "I/me": "io/me",
+  Irish: "irlandese",
+  "Irish (language)": "irlandese",
+  is: "è",
+  "is (location/state)": "è",
+  island: "isola",
+  jaguar: "giaguaro",
+  Japan: "Giappone",
+  jump: "salto",
+  kilogram: "chilogrammo",
+  king: "re",
+  kiwi: "kiwi",
+  knee: "ginocchio",
+  knight: "cavaliere",
+  "land/country": "terra/paese",
+  last: "ultimo",
+  law: "legge",
+  lemon: "limone",
+  life: "vita",
+  long: "lungo",
+  man: "uomo",
+  "Maya (language/people)": "maya (lingua/popolo)",
+  me: "me",
+  measure: "misura",
+  menu: "menù",
+  "mess/chaos": "confusione/caos",
+  moon: "luna",
+  moth: "falena",
+  "mother (respectful)": "madre (rispettoso)",
+  my: "mio",
+  Nahuatl: "nahuatl",
+  "Nahuatl language": "lingua nahuatl",
+  naive: "ingenuo",
+  needle: "ago",
+  "next year": "l'anno prossimo",
+  no: "no",
+  nose: "naso",
+  object: "oggetto",
+  "oh/alas": "oh/ahimè",
+  olive: "oliva",
+  "one/a": "uno/un",
+  "over/about": "sopra/riguardo a",
+  penguin: "pinguino",
+  people: "gente",
+  photograph: "fotografia",
+  "place/square": "luogo/piazza",
+  quiz: "quiz",
+  rose: "rosa",
+  "sacred force/god": "forza sacra/dio",
+  school: "scuola",
+  screen: "schermo",
+  sea: "mare",
+  ship: "nave",
+  shoe: "scarpa",
+  sing: "cantare",
+  sit: "sedersi",
+  song: "canzone",
+  source: "fonte",
+  south: "sud",
+  "speech/language": "parola/lingua",
+  "star (animate form)": "stella (forma animata)",
+  stone: "pietra",
+  style: "stile",
+  "sun/day": "sole/giorno",
+  sure: "sicuro",
+  taxi: "taxi",
+  that: "quello",
+  "that/what": "quello/che cosa",
+  the: "il/la",
+  "the (article)": "il/la (articolo)",
+  "the friends": "gli amici",
+  theater: "teatro",
+  think: "pensare",
+  this: "questo",
+  "through/door": "attraverso/porta",
+  time: "tempo",
+  "time/weather": "tempo/meteo",
+  "to be / his": "essere / suo",
+  "to eat": "mangiare",
+  "to play": "giocare",
+  "to read/learn": "leggere/imparare",
+  "to walk": "camminare",
+  town: "città",
+  "type/guy": "tipo/ragazzo",
+  umbrella: "ombrello",
+  very: "molto",
+  wagon: "vagone",
+  watermelon: "anguria",
+  wave: "onda",
+  web: "web",
+  "well/good": "bene/buono",
+  wifi: "wifi",
+  "wind (root form)": "vento (radice)",
+  "woman/Mrs.": "donna/signora",
+  wood: "legno",
+  world: "mondo",
+  writing: "scrittura",
+  year: "anno",
+  yoga: "yoga",
+  "you (formal)": "lei/voi",
+  zero: "zero",
+  zoo: "zoo",
+};
+
+const SPANISH_MEANING_TRANSLATIONS = {
+  "acerca de": "riguardo a",
+  "todo/todos": "tutto/tutti",
+  aguacate: "avocado",
+  águila: "aquila",
+  "ah/ay": "oh/ahimè",
+  agua: "acqua",
+  "alas/ay": "oh/ahimè",
+  "amigo/compañero": "amico/compagno",
+  ancla: "ancora",
+  anguila: "anguilla",
+  "año": "anno",
+  "año próximo": "l'anno prossimo",
+  "aquí": "qui",
+  araña: "ragno",
+  árbol: "albero",
+  arena: "sabbia",
+  "armadillo": "armadillo",
+  "arriba": "sopra",
+  avión: "aereo",
+  ballena: "balena",
+  belleza: "bellezza",
+  beso: "bacio",
+  bicicleta: "bicicletta",
+  bien: "bene",
+  "bien/bueno": "bene/buono",
+  brazo: "braccio",
+  bueno: "buono",
+  "bueno/bien": "buono/bene",
+  caballo: "cavallo",
+  café: "caffè",
+  caja: "scatola",
+  "cámara": "macchina fotografica",
+  "caos": "caos",
+  casa: "casa",
+  "casa/hogar": "casa",
+  cero: "zero",
+  chile: "peperoncino",
+  ciudad: "città",
+  "ciudad/pueblo": "città/paese",
+  coche: "auto",
+  color: "colore",
+  "color/flor": "colore/fiore",
+  "comer": "mangiare",
+  "corazón": "cuore",
+  "corazones": "cuori",
+  dedo: "dito",
+  día: "giorno",
+  "día/sol": "giorno/sole",
+  "dios/fuerza sagrada": "dio/forza sacra",
+  "donde": "dove",
+  "dos": "due",
+  "el/la": "il/la",
+  "el/la (artículo)": "il/la (articolo)",
+  "ellos": "loro",
+  "es": "è",
+  escuela: "scuola",
+  "escritura": "scrittura",
+  "estilo": "stile",
+  "esto": "questo",
+  "examen": "esame",
+  familia: "famiglia",
+  flor: "fiore",
+  "flor/nariz": "fiore/naso",
+  fotografía: "fotografia",
+  francés: "francese",
+  "fuego": "fuoco",
+  gato: "gatto",
+  gente: "gente",
+  "gente/personas": "gente/persone",
+  griego: "greco",
+  huevo: "uovo",
+  "idioma irlandés": "lingua irlandese",
+  "idioma maya/persona": "lingua maya/persona",
+  "idioma náhuatl": "lingua nahuatl",
+  inglés: "inglese",
+  irlandés: "irlandese",
+  isla: "isola",
+  "jugar": "giocare",
+  limón: "limone",
+  luna: "luna",
+  madre: "madre",
+  "madre (resp.)": "madre (risp.)",
+  mano: "mano",
+  "mano/brazo": "mano/braccio",
+  mar: "mare",
+  mariposa: "farfalla",
+  mesa: "tavolo",
+  "mi": "mio",
+  mundo: "mondo",
+  mujer: "donna",
+  "mujer/Sra.": "donna/signora",
+  niño: "bambino",
+  noche: "notte",
+  no: "no",
+  objeto: "oggetto",
+  ola: "onda",
+  olivo: "ulivo",
+  oro: "oro",
+  oso: "orso",
+  "palabra/idioma": "parola/lingua",
+  "pan": "pane",
+  paraguas: "ombrello",
+  "para/sobre": "per/su",
+  país: "paese",
+  "país/tierra": "paese/terra",
+  perro: "cane",
+  piedra: "pietra",
+  "por/de": "da/di",
+  "por/puerta": "attraverso/porta",
+  "pregunta": "domanda",
+  pueblo: "paese",
+  "qué": "che cosa",
+  "¿Qué?": "Che cosa?",
+  queso: "formaggio",
+  rey: "re",
+  rojo: "rosso",
+  rosa: "rosa",
+  salud: "salute",
+  "salud/brindis": "salute/brindisi",
+  sol: "sole",
+  "sol/día": "sole/giorno",
+  "sopa de col": "zuppa di cavolo",
+  sur: "sud",
+  teatro: "teatro",
+  tiempo: "tempo",
+  "tiempo/clima": "tempo/meteo",
+  tierra: "terra",
+  "tierra/suelo": "terra/suolo",
+  tipo: "tipo",
+  "tipo/chico": "tipo/ragazzo",
+  todo: "tutto",
+  "todo/todos": "tutto/tutti",
+  uno: "uno",
+  "uno/un": "uno/un",
+  ventana: "finestra",
+  vida: "vita",
+  viento: "vento",
+  "viento (raíz)": "vento (radice)",
+  vino: "vino",
+  "yo": "io",
+  "yo/mí": "io/me",
+  zapato: "scarpa",
+  zoológico: "zoo",
+};
+
+const applyPhraseTranslations = (text) => {
+  return [...PHRASE_TRANSLATIONS]
+    .sort((a, b) => b[0].length - a[0].length)
+    .reduce((result, [source, translation]) => {
+      const pattern = new RegExp(escapeRegExp(source), "giu");
+      return result.replace(pattern, (match) =>
+        applyMatchCase(match, translation),
+      );
+    }, text);
+};
+
+const applyWordTranslationsOutsideQuotes = (text) =>
+  text
+    .split(/('[^']*')/g)
+    .map((part) => {
+      if (part.startsWith("'") && part.endsWith("'")) return part;
+      return WORD_TRANSLATIONS.reduce(
+        (result, [source, translation]) =>
+          replaceToken(result, source, translation),
+        part,
+      );
+    })
+    .join("");
+
+const ITALIAN_NAME_PATTERNS = [
+  [/^(.+)\s+fada$/i, (base) => `${base.toUpperCase()} con fada`],
+  [/^(.+)\s+met trema$/i, (base) => `${base.toUpperCase()} con trema`],
+  [/^(.+)\s+tréma$/i, (base) => `${base.toUpperCase()} con trema`],
+  [/^(.+)\s+accent aigu$/i, (base) => `${base.toUpperCase()} con accento acuto`],
+  [/^(.+)\s+accent grave$/i, (base) => `${base.toUpperCase()} con accento grave`],
+  [/^(.+)\s+accent circonflexe$/i, (base) => `${base.toUpperCase()} con circonflesso`],
+  [/^(.+)\s+ogonek$/i, (base) => `${base.toUpperCase()} con ogonek`],
+  [/^(.+)-umlaut$/i, (base) => `${base.toUpperCase()} con umlaut`],
+];
+
+const ITALIAN_SOURCE_LEAK_PATTERN =
+  /\b(?:como|sonido|sonidos|suena|suenan|usado|salud|significa|respuesta|delgada|delgadas|ancha|anchas|circundantes|palabras?|prestadas|extranjeras|siempre|nunca|igual|letra|letras|fuerte|suave|corta|larga|before|after|like|sound|used|literally|slender|broad|surrounding|consonants?|greeting|response|health)\b/i;
+
+const finalizeItalianInstruction = (translated, source) => {
+  const candidate = String(translated || "").trim();
+  if (!candidate) return "";
+  if (normalizeKey(candidate) === normalizeKey(source)) return "";
+  if (ITALIAN_SOURCE_LEAK_PATTERN.test(candidate)) return "";
+  return candidate;
+};
+
+const EXACT_INSTRUCTION_TRANSLATIONS = {
+  "o corta. una vocal ancha (a, o, u).":
+    "O breve. Una vocale ampia (a, o, u).",
+  "u corta. una vocal ancha.":
+    "U breve. Una vocale ampia.",
+  "i corta. una vocal delgada que afecta las consonantes circundantes.":
+    "I breve. Una vocale sottile che influenza le consonanti vicine.",
+  "sonido e corto. una de las vocales delgadas (e, i).":
+    "Suono E breve. Una delle vocali sottili (e, i).",
+  "a corta es común. puede ser ancha o delgada según el contexto.":
+    "La A breve e comune. Puo essere ampia o sottile a seconda del contesto.",
+  "'dee-ah gwit' - dios esté contigo":
+    "'Dee-ah gwit' - Dio sia con te.",
+  "el saludo más común. literalmente 'dios a ti'. respuesta: 'dia is muire duit'.":
+    "E il saluto piu comune. Significa letteralmente « Dio a te ». Risposta: « Dia is Muire duit ».",
+  "'slawn-cha' - salud!":
+    "'Slawn-cha' - Salute!",
+  "usado como brindis. literalmente significa 'salud'.":
+    "Usato per brindare. Significa letteralmente « salute ».",
+  "'sa' con s sorda": "'sa' con s sorda.",
+  "'ta' con t dental": "'ta' con t dentale.",
+  "'na'": "'na'.",
+  "'ma'": "'ma'.",
+  "'ya'": "'ya'.",
+  "'wa'": "'wa'.",
+  "como 'g' en 'gato' - siempre fuerte":
+    "Come la 'g' di 'gatto', sempre dura.",
+  "siempre g fuerte, nunca suave como en 'gema'.":
+    "Sempre G dura, mai dolce come in 'gema'.",
+  "como 'l' al inicio; como 'w' al final en brasil":
+    "Come la 'l' all'inizio; in Brasile, a fine sillaba puo suonare come 'w'.",
+  "como 's' al inicio; como 'z' entre vocales; como 'sh' en río":
+    "Come la 's' all'inizio, come la 'z' tra vocali e come 'sh' a Rio.",
+  "r vibrante": "R vibrante.",
+  "como la 'j' fuerte en 'jamón' o la 'ch' alemana en 'bach'":
+    "Come la 'j' forte di 'jamon' o la 'ch' tedesca di 'Bach'.",
+  "como 'j' en 'jamón', fuerte y gutural":
+    "Come la 'j' di 'jamon', forte e gutturale.",
+  "r vibrante múltiple": "R vibrante multipla.",
+  "marca el acento o distingue palabras: 'el' vs 'él'.":
+    "Segna l'accento o distingue parole: 'el' vs 'el'.",
+  "una 'r' vibrante o simple": "Una R vibrante o un colpo singolo.",
+  "sigma final usa la forma ς.": "Il sigma finale usa la forma ς.",
+  "sustituye c/qu del clásico.": "Sostituisce c/qu del classico.",
+  "sustituye hu/uh.": "Sostituisce hu/uh.",
+  "africada lateral sorda": "Affricata laterale sorda.",
+  "sustituye tz.": "Sostituisce tz.",
+  "oclusiva glotal (corte breve)": "Occlusiva glottale (breve interruzione).",
+  "kal- + -li → kali.": "kal- + -li -> kali.",
+};
+
+export const translateAlphabetInstructionToItalian = (text) => {
+  if (!text || typeof text !== "string") return text;
+
+  const exact = EXACT_INSTRUCTION_TRANSLATIONS[normalizeKey(text)];
+  if (exact) return exact;
+
+  const withoutInvertedPunctuation = text.replace(/[¡¿]/g, "");
+  const phraseTranslated = applyPhraseTranslations(withoutInvertedPunctuation);
+  const wordTranslated = applyWordTranslationsOutsideQuotes(phraseTranslated);
+
+  const cleaned = wordTranslated
+    .replace(/\bIL\b/g, "Il")
+    .replace(/\bIl (inglese|irlandese|olandese)/g, "L'$1")
+    .replace(/\bdel inglese\b/g, "dell'inglese")
+    .replace(/\bdel olandese\b/g, "dell'olandese")
+    .replace(/\bdel irlandese\b/g, "dell'irlandese")
+    .replace(/\bdel spagnolo\b/g, "dello spagnolo")
+    .replace(/\bdel portoghese\b/g, "del portoghese")
+    .replace(/\bdi la\b/g, "della")
+    .replace(/\bdi le\b/g, "delle")
+    .replace(/\bin la\b/g, "nella")
+    .replace(/\ba la\b/g, "alla")
+    .replace(/\bi labbra\b/g, "le labbra")
+    .replace(/\bLabbra insieme\b/g, "Labbra unite")
+    .replace(/\bStessa posizione che\b/g, "Stessa posizione di")
+    .replace(/\banche è\b/g, "è anche")
+    .replace(/\bEntrambe lettere\b/g, "Entrambe le lettere")
+    .replace(/\bdifficile di descrivere\b/g, "difficile da descrivere")
+    .replace(/\b([AEIOU]) breve è diverso\b/g, "$1 breve è diversa")
+    .replace(/\s+([.,;:!?])/g, "$1")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return finalizeItalianInstruction(cleaned, text);
+};
+
+const translateKnownMeaning = (text) => {
+  if (!text || typeof text !== "string") return text;
+
+  const exact =
+    ENGLISH_MEANING_TRANSLATIONS[text] ||
+    ENGLISH_MEANING_TRANSLATIONS[normalizeKey(text)] ||
+    SPANISH_MEANING_TRANSLATIONS[text] ||
+    SPANISH_MEANING_TRANSLATIONS[normalizeKey(text)];
+  if (exact) return applySourceCase(text, exact);
+
+  const flashcardTranslation = translateFlashcardConceptToItalian(text);
+  if (flashcardTranslation && flashcardTranslation !== text) {
+    return flashcardTranslation;
+  }
+
+  if (text.includes("/")) {
+    const translatedParts = text
+      .split("/")
+      .map((part) => translateKnownMeaning(part.trim()))
+      .join("/");
+    if (translatedParts !== text) return translatedParts;
+  }
+
+  return "";
+};
+
+export const translateAlphabetMeaningToItalian = (meaning) => {
+  if (!meaning) return "";
+  if (typeof meaning === "string") {
+    return translateKnownMeaning(meaning) || "";
+  }
+
+  return (
+    meaning.it ||
+    translateKnownMeaning(meaning.en) ||
+    translateKnownMeaning(meaning.es) ||
+    ""
+  );
+};
+
+export const translateAlphabetNameToItalian = (value, letter = null) => {
+  const source = String(value || "").trim();
+  if (!source) return "";
+  if (/^[A-ZÀ-ÖØ-Þ]$/u.test(source)) return "";
+
+  if (letter?.type === "phrase") {
+    const phraseMeaning = translateAlphabetMeaningToItalian(letter.practiceWordMeaning);
+    if (phraseMeaning) return phraseMeaning;
+  }
+
+  const directMeaning = translateKnownMeaning(source);
+  if (directMeaning) return directMeaning;
+
+  for (const [pattern, formatter] of ITALIAN_NAME_PATTERNS) {
+    const match = source.match(pattern);
+    if (match) return formatter(match[1]);
+  }
+
+  return "";
+};
+
+const addItalianAlphabetCopy = (letter) => {
+  if (!letter || typeof letter !== "object") return letter;
+
+  const sourceSound = letter.soundEs || letter.sound || "";
+  const sourceTip = letter.tipEs || letter.tip || "";
+  const practiceWordMeaning = letter.practiceWordMeaning || {};
+
+  return {
+    ...letter,
+    nameIt: letter.nameIt || translateAlphabetNameToItalian(letter.name, letter),
+    soundIt: letter.soundIt || translateAlphabetInstructionToItalian(sourceSound),
+    tipIt: letter.tipIt || translateAlphabetInstructionToItalian(sourceTip),
+    practiceWordMeaning: {
+      ...practiceWordMeaning,
+      it: translateAlphabetMeaningToItalian(practiceWordMeaning),
+    },
+  };
+};
+
+export const withItalianAlphabetSupport = (letters) =>
+  Array.isArray(letters) ? letters.map(addItalianAlphabetCopy) : letters;

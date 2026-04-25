@@ -2,7 +2,28 @@
  * B1 Level Skill Tree Data
  */
 
-export const SKILL_TREE_B1 = [
+import { withItalianSkillTreeText } from "./italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./frenchLocalizer.js";
+import { withHindiSkillTreeText } from "./hindiLocalizer.js";
+import { withJapaneseSkillTreeText } from "./japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./portugueseLocalizer.js";
+import { withArabicSkillTreeText } from "./arabicLocalizer.js";
+import { withChineseSkillTreeText } from "./chineseLocalizer.js";
+
+const withLocalizedSkillTreeText = (skillTree) =>
+  withArabicSkillTreeText(
+    withChineseSkillTreeText(
+      withHindiSkillTreeText(
+        withJapaneseSkillTreeText(
+          withFrenchSkillTreeText(
+            withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const SKILL_TREE_B1 = withLocalizedSkillTreeText([
   {
     id: "unit-b1-1",
       title: {
@@ -2032,4 +2053,4 @@ export const SKILL_TREE_B1 = [
         },
       },],
     }
-];
+]);

@@ -1,3 +1,9 @@
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -548,11 +554,20 @@ export function formatRelativeReviewTime(
   now = new Date(),
 ) {
   const reviewDate = coerceDate(nextReviewAt);
+  const lang = normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE);
   if (!reviewDate) {
-    return language === "es" ? "Sin programar" : "Unscheduled";
+    if (lang === "es") return "Sin programar";
+    if (lang === "pt") return "Nao agendado";
+    if (lang === "it") return "Non programmato";
+    if (lang === "fr") return "Non programme";
+    if (lang === "hi") return "निर्धारित नहीं";
+    if (lang === "ja") return "未スケジュール";
+    if (lang === "ar") return "غير مجدول";
+    if (lang === "zh") return "未安排";
+    return "Unscheduled";
   }
 
-  const locale = language === "es" ? "es" : "en";
+  const locale = getLanguageLocale(lang);
   const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
   const diffMs = reviewDate.getTime() - now.getTime();
   const absDiffMs = Math.abs(diffMs);
@@ -585,28 +600,49 @@ export function formatAbsoluteReviewTime(
   now = new Date(),
 ) {
   const reviewDate = coerceDate(nextReviewAt);
+  const lang = normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE);
   if (!reviewDate) {
-    return language === "es" ? "Sin programar" : "Unscheduled";
+    if (lang === "es") return "Sin programar";
+    if (lang === "pt") return "Nao agendado";
+    if (lang === "it") return "Non programmato";
+    if (lang === "fr") return "Non programme";
+    if (lang === "hi") return "निर्धारित नहीं";
+    if (lang === "ja") return "未スケジュール";
+    if (lang === "ar") return "غير مجدول";
+    if (lang === "zh") return "未安排";
+    return "Unscheduled";
   }
 
-  const locale = language === "es" ? "es-MX" : "en-US";
+  const locale = getLanguageLocale(lang);
   const timeLabel = new Intl.DateTimeFormat(locale, {
     hour: "numeric",
     minute: "2-digit",
   }).format(reviewDate);
 
   if (isSameLocalDay(reviewDate, now)) {
-    return language === "es"
-      ? `Hoy a las ${timeLabel}`
-      : `Today at ${timeLabel}`;
+    if (lang === "es") return `Hoy a las ${timeLabel}`;
+    if (lang === "pt") return `Hoje as ${timeLabel}`;
+    if (lang === "it") return `Oggi alle ${timeLabel}`;
+    if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
+    if (lang === "hi") return `आज ${timeLabel} बजे`;
+    if (lang === "ja") return `今日 ${timeLabel}`;
+    if (lang === "ar") return `اليوم الساعة ${timeLabel}`;
+    if (lang === "zh") return `今天 ${timeLabel}`;
+    return `Today at ${timeLabel}`;
   }
 
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   if (isSameLocalDay(reviewDate, tomorrow)) {
-    return language === "es"
-      ? `Mañana a las ${timeLabel}`
-      : `Tomorrow at ${timeLabel}`;
+    if (lang === "es") return `Mañana a las ${timeLabel}`;
+    if (lang === "pt") return `Amanha as ${timeLabel}`;
+    if (lang === "it") return `Domani alle ${timeLabel}`;
+    if (lang === "fr") return `Demain a ${timeLabel}`;
+    if (lang === "hi") return `कल ${timeLabel} बजे`;
+    if (lang === "ja") return `明日 ${timeLabel}`;
+    if (lang === "ar") return `بكرة الساعة ${timeLabel}`;
+    if (lang === "zh") return `明天 ${timeLabel}`;
+    return `Tomorrow at ${timeLabel}`;
   }
 
   const dateLabel = new Intl.DateTimeFormat(locale, {
@@ -617,9 +653,15 @@ export function formatAbsoluteReviewTime(
       : {}),
   }).format(reviewDate);
 
-  return language === "es"
-    ? `${dateLabel} a las ${timeLabel}`
-    : `${dateLabel} at ${timeLabel}`;
+  if (lang === "es") return `${dateLabel} a las ${timeLabel}`;
+  if (lang === "pt") return `${dateLabel} as ${timeLabel}`;
+  if (lang === "it") return `${dateLabel} alle ${timeLabel}`;
+  if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
+  if (lang === "hi") return `${dateLabel} ${timeLabel} बजे`;
+  if (lang === "ja") return `${dateLabel} ${timeLabel}`;
+  if (lang === "ar") return `${dateLabel} الساعة ${timeLabel}`;
+  if (lang === "zh") return `${dateLabel} ${timeLabel}`;
+  return `${dateLabel} at ${timeLabel}`;
 }
 
 export function formatShortDelay(nextReviewAt, now = new Date()) {

@@ -38,19 +38,16 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
 import {
-  brazilianFlag,
-  frenchFlag,
-  germanFlag,
-  greekFlag,
-  irishFlag,
-  italianFlag,
-  japaneseFlag,
-  mexicanFlag,
-  netherlandsFlag,
-  polishFlag,
-  russianFlag,
-  usaFlag,
-} from "./flagsIcons/flags";
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getDefaultTargetForSupport,
+  getLanguageLocale,
+  getPracticeLanguageOptions,
+  getSupportLanguageOptions,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+import { syncDocumentLanguage } from "../utils/documentLanguage";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
 import { useThemeStore } from "../useThemeStore";
@@ -73,7 +70,39 @@ const personaDefaultFor = (lang) =>
   translations?.en?.onboarding_persona_default_example ||
   "";
 
+const normalizePersonaValue = (value) =>
+  String(value || "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/[.!]+$/g, "")
+    .toLocaleLowerCase();
+
+const isDefaultPersonaValue = (value) => {
+  if (value === undefined || value === null) return true;
+  const normalized = normalizePersonaValue(value);
+  if (!normalized) return false;
+  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
+    (lang) =>
+      normalized ===
+        normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
+      normalized ===
+        normalizePersonaValue(
+          translations?.[lang]?.onboarding_persona_default_example,
+        ),
+  );
+};
+
+const personaForSupportLanguage = (currentPersona, supportLang) => {
+  if (currentPersona === undefined || currentPersona === null) {
+    return personaDefaultFor(supportLang) || "";
+  }
+  if (!isDefaultPersonaValue(currentPersona)) return currentPersona;
+  return personaDefaultFor(supportLang) || currentPersona || "";
+};
+
 const STEPS = ["languages", "voice", "extra"];
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
 
 export default function Onboarding({
   onComplete,
@@ -85,8 +114,14 @@ export default function Onboarding({
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [step, setStep] = useState(0);
 
-  const normalizedUserLang = userLanguage === "es" ? "es" : "en";
-  const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
+  const normalizedUserLang = normalizeSupportLanguage(
+    userLanguage,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const initialSupportLang = normalizeSupportLanguage(
+    initialDraft.supportLang || normalizedUserLang,
+    normalizedUserLang,
+  );
   const [supportLang, setSupportLang] = useState(initialSupportLang);
   const ui = translations[supportLang] || translations.en;
   const storedThemeMode = useThemeStore((s) => s.themeMode);
@@ -96,11 +131,16 @@ export default function Onboarding({
     return {
       level: initialDraft.level || "beginner",
       supportLang: initialSupportLang,
-      targetLang:
-        initialDraft.targetLang || (initialSupportLang === "es" ? "en" : "es"),
+      targetLang: normalizePracticeLanguage(
+        initialDraft.targetLang,
+        getDefaultTargetForSupport(initialSupportLang),
+      ),
       voicePersona:
-        initialDraft.voicePersona ||
-        personaDefaultFor(initialSupportLang) ||
+        personaForSupportLanguage(
+          initialDraft.voicePersona,
+          initialSupportLang,
+        ) ??
+        personaDefaultFor(initialSupportLang) ??
         translations.en.onboarding_persona_default_example,
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
@@ -140,122 +180,47 @@ export default function Onboarding({
     syncThemeMode(themeMode);
   }, [syncThemeMode, themeMode]);
 
+  useEffect(() => {
+    syncDocumentLanguage(supportLang);
+  }, [supportLang]);
+
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
-  const practiceLanguageOptions = useMemo(() => {
-    const collator = new Intl.Collator(supportLang === "es" ? "es" : "en");
-    const options = [
-      {
-        value: "nl",
-        label: ui.onboarding_practice_nl,
-        beta: false,
-        flag: netherlandsFlag(),
-      },
-      {
-        value: "en",
-        label: ui.onboarding_practice_en,
-        beta: false,
-        flag: usaFlag(),
-      },
-      {
-        value: "fr",
-        label: ui.onboarding_practice_fr,
-        beta: false,
-        flag: frenchFlag(),
-      },
-      {
-        value: "de",
-        label: ui.onboarding_practice_de,
-        beta: false,
-        flag: germanFlag(),
-      },
-      {
-        value: "it",
-        label: ui.onboarding_practice_it,
-        beta: false,
-        flag: italianFlag(),
-      },
-      {
-        value: "nah",
-        label: `${ui.onboarding_practice_nah} (${supportLang === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "yua",
-        label: `${ui.onboarding_practice_yua} (${supportLang === "es" ? "alfa" : "alpha"})`,
-        beta: false,
-        alpha: true,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "pt",
-        label: ui.onboarding_practice_pt,
-        beta: false,
-        flag: brazilianFlag(),
-      },
-      {
-        value: "es",
-        label: ui.onboarding_practice_es,
-        beta: false,
-        flag: mexicanFlag(),
-      },
-      {
-        value: "el",
-        label: ui.onboarding_practice_el,
-        beta: true,
-        flag: greekFlag(),
-      },
-      {
-        value: "ja",
-        label: ui.onboarding_practice_ja,
-        beta: true,
-        hidden: !showJapanese,
-        flag: japaneseFlag(),
-      },
-      {
-        value: "ru",
-        label: ui.onboarding_practice_ru,
-        beta: true,
-        flag: russianFlag(),
-      },
-      {
-        value: "pl",
-        label: ui.onboarding_practice_pl,
-        beta: true,
-        flag: polishFlag(),
-      },
-      {
-        value: "ga",
-        label: ui.onboarding_practice_ga,
-        beta: true,
-        flag: irishFlag(),
-      },
-    ];
+  const supportLanguageOptions = useMemo(
+    () => getSupportLanguageOptions({ ui, uiLang: supportLang }),
+    [supportLang, ui],
+  );
 
-    const visible = options.filter((option) => !option.hidden);
-    const stable = visible
-      .filter((option) => !option.beta && !option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const alpha = visible
-      .filter((option) => option.alpha)
-      .sort((a, b) => collator.compare(a.label, b.label));
-    const beta = visible
-      .filter((option) => option.beta)
-      .sort((a, b) => collator.compare(a.label, b.label));
+  const practiceLanguageOptions = useMemo(
+    () =>
+      getPracticeLanguageOptions({
+        ui,
+        uiLang: supportLang,
+        showJapanese,
+      }),
+    [supportLang, ui, showJapanese],
+  );
 
-    return [...stable, ...alpha, ...beta];
-  }, [supportLang, ui, showJapanese]);
+  const handleSupportLanguageChange = (value) => {
+    playSound(selectSound);
+    const normalized = normalizeSupportLanguage(
+      value,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const nextPersona = personaForSupportLanguage(voicePersona, normalized);
+
+    setSupportLang(normalized);
+    if (nextPersona && nextPersona !== voicePersona) {
+      setVoicePersona(nextPersona);
+    }
+  };
 
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang);
-    const enDefault = personaDefaultFor("en");
-    const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
 
-    if (!current || current === enDefault || current === esDefault) {
+    if (isDefaultPersonaValue(current)) {
       const next = localizedDefault || current;
       if (next && next !== current) {
         setVoicePersona(next);
@@ -304,25 +269,58 @@ export default function Onboarding({
 
   const VAD_LABEL =
     ui.ra_vad_label ||
-    (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
+    uiCopy(supportLang, {
+      en: "Pause between replies",
+      es: "Pausa entre turnos",
+      pt: "Pausa entre respostas",
+      it: "Pausa tra le risposte",
+      fr: "Pause entre les reponses",
+      ja: "返答の間のポーズ",
+      ar: "الوقفة بين الردود",
+      zh: "回答之间的停顿",
+    });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
-    (supportLang === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
-  const pauseSeconds = (pauseMs / 1000).toFixed(1);
-  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+    uiCopy(supportLang, {
+      en: "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
+      es: "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+      pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
+      it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+      fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
+      ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
+      ar: "الأقصر = استجابة أسرع، والأطول = يديك وقت تخلص كلامك. 1.2 ثانية مناسبة للكلام الطبيعي.",
+      zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",
+    });
+  const pauseSeconds = new Intl.NumberFormat(getLanguageLocale(supportLang), {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(pauseMs / 1000);
+  const secondsLabel = uiCopy(supportLang, {
+    en: "seconds",
+    es: "segundos",
+    pt: "segundos",
+    it: "secondi",
+    fr: "secondes",
+    ja: "秒",
+    ar: "ثانية",
+    zh: "秒",
+  });
   const supportOption =
-    supportLang === "es"
-      ? { flag: mexicanFlag(), label: ui.onboarding_support_es }
-      : { flag: usaFlag(), label: ui.onboarding_support_en };
+    supportLanguageOptions.find((option) => option.value === supportLang) ||
+    supportLanguageOptions[0];
   const selectedPracticeOption =
     practiceLanguageOptions.find((option) => option.value === targetLang) ||
     practiceLanguageOptions[0];
-  const stepLabels =
-    supportLang === "es"
-      ? ["Idiomas", "Voz", "Efectos"]
-      : ["Languages", "Voice", "Effects"];
+  const stepLabels = uiCopy(supportLang, {
+    en: ["Languages", "Voice", "Effects"],
+    es: ["Idiomas", "Voz", "Efectos"],
+    pt: ["Idiomas", "Voz", "Efeitos"],
+    it: ["Lingue", "Voce", "Effetti"],
+    fr: ["Langues", "Voix", "Effets"],
+    ja: ["言語", "音声", "効果"],
+    ar: ["اللغات", "الصوت", "المؤثرات"],
+    zh: ["语言", "声音", "效果"],
+  });
 
   return (
     <Box
@@ -443,18 +441,30 @@ export default function Onboarding({
                 justifyContent="center"
                 mb={{ base: 4, md: 5 }}
                 animation={`${stepContentReveal} 0.28s ease`}
-                key={`${supportLang}-${step}`}
+                key={step}
               >
                 <VStack align="stretch" spacing={4} w="100%">
                   {/* ── Step 1: Languages ── */}
                   {step === 0 && (
                     <>
                       {/* Support Language */}
-                      <Box bg="gray.800" p={3} rounded="md">
+                      <Box
+                        bg="gray.800"
+                        p={3}
+                        rounded="md"
+                        minH={{ base: "158px", md: "146px" }}
+                        display="flex"
+                        flexDirection="column"
+                      >
                         <Text fontSize="sm" fontWeight="semibold" mb={1}>
                           {ui.onboarding_support_language_title}
                         </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
+                        <Text
+                          fontSize="xs"
+                          opacity={0.7}
+                          mb={3}
+                          minH={{ base: "42px", md: "36px" }}
+                        >
                           {ui.onboarding_support_language_desc}
                         </Text>
                         <Menu autoSelect={false} isLazy>
@@ -470,6 +480,7 @@ export default function Onboarding({
                             w="100%"
                             textAlign="left"
                             padding={5}
+                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>
@@ -477,7 +488,28 @@ export default function Onboarding({
                               <Text as="span">{supportOption.label}</Text>
                             </HStack>
                           </MenuButton>
-                          <MenuList borderColor="gray.700" bg="gray.900">
+                          <MenuList
+                            borderColor="gray.700"
+                            bg="gray.900"
+                            maxH="300px"
+                            overflowY="auto"
+                            sx={{
+                              "&::-webkit-scrollbar": {
+                                width: "8px",
+                              },
+                              "&::-webkit-scrollbar-track": {
+                                bg: "gray.800",
+                                borderRadius: "4px",
+                              },
+                              "&::-webkit-scrollbar-thumb": {
+                                bg: "gray.600",
+                                borderRadius: "4px",
+                              },
+                              "&::-webkit-scrollbar-thumb:hover": {
+                                bg: "gray.500",
+                              },
+                            }}
+                          >
                             <Box
                               px={3}
                               pt={2}
@@ -491,38 +523,44 @@ export default function Onboarding({
                             <MenuOptionGroup
                               type="radio"
                               value={supportLang}
-                              onChange={(value) => {
-                                playSound(selectSound);
-                                setSupportLang(value);
-                              }}
+                              onChange={handleSupportLanguageChange}
                             >
-                              <MenuItemOption value="en" padding={5} pl={1}>
-                                <HStack spacing={2}>
-                                  {usaFlag()}
-                                  <Text as="span">
-                                    {ui.onboarding_support_en}
-                                  </Text>
-                                </HStack>
-                              </MenuItemOption>
-                              <MenuItemOption value="es" padding={5} pl={1}>
-                                <HStack spacing={2}>
-                                  {mexicanFlag()}
-                                  <Text as="span">
-                                    {ui.onboarding_support_es}
-                                  </Text>
-                                </HStack>
-                              </MenuItemOption>
+                              {supportLanguageOptions.map((option) => (
+                                <MenuItemOption
+                                  key={option.value}
+                                  value={option.value}
+                                  padding={5}
+                                  pl={1}
+                                >
+                                  <HStack spacing={2}>
+                                    {option.flag}
+                                    <Text as="span">{option.label}</Text>
+                                  </HStack>
+                                </MenuItemOption>
+                              ))}
                             </MenuOptionGroup>
                           </MenuList>
                         </Menu>
                       </Box>
 
                       {/* Practice Language */}
-                      <Box bg="gray.800" p={3} rounded="md">
+                      <Box
+                        bg="gray.800"
+                        p={3}
+                        rounded="md"
+                        minH={{ base: "158px", md: "146px" }}
+                        display="flex"
+                        flexDirection="column"
+                      >
                         <Text fontSize="sm" fontWeight="semibold" mb={1}>
                           {ui.onboarding_practice_language_title}
                         </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
+                        <Text
+                          fontSize="xs"
+                          opacity={0.7}
+                          mb={3}
+                          minH={{ base: "42px", md: "36px" }}
+                        >
                           {ui.onboarding_practice_language_desc}
                         </Text>
                         <Menu autoSelect={false} isLazy>
@@ -539,14 +577,12 @@ export default function Onboarding({
                             textAlign="left"
                             title={ui.onboarding_practice_label_title}
                             padding={5}
+                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>
                               {selectedPracticeOption?.flag}
-                              <Text as="span">
-                                {selectedPracticeOption?.label}
-                                {selectedPracticeOption?.beta ? " (beta)" : ""}
-                              </Text>
+                              <Text as="span">{selectedPracticeOption?.label}</Text>
                             </HStack>
                           </MenuButton>
                           <MenuList
@@ -586,7 +622,12 @@ export default function Onboarding({
                               value={targetLang}
                               onChange={(value) => {
                                 playSound(selectSound);
-                                setTargetLang(value);
+                                setTargetLang(
+                                  normalizePracticeLanguage(
+                                    value,
+                                    DEFAULT_TARGET_LANGUAGE,
+                                  ),
+                                );
                               }}
                             >
                               {practiceLanguageOptions.map((option) => (
@@ -599,7 +640,6 @@ export default function Onboarding({
                                   <div style={{ display: "inline-flex" }}>
                                     {option?.flag}&nbsp;
                                     {option.label}
-                                    {option.beta ? " (beta)" : ""}
                                   </div>
                                 </MenuItemOption>
                               ))}
@@ -772,7 +812,16 @@ export default function Onboarding({
                     }}
                     w="100%"
                   >
-                    {supportLang === "es" ? "Atrás" : "Back"}
+                    {uiCopy(supportLang, {
+                      en: "Back",
+                      es: "Atrás",
+                      pt: "Voltar",
+                      it: "Indietro",
+                      fr: "Retour",
+                      ja: "戻る",
+                      ar: "رجوع",
+                      zh: "返回",
+                    })}
                   </Button>
                 )}
                 {step < STEPS.length - 1 ? (
@@ -785,7 +834,17 @@ export default function Onboarding({
                     }}
                     w="100%"
                   >
-                    {supportLang === "es" ? "Siguiente" : "Next"}
+                    {ui.onboarding_cta_next ||
+                      uiCopy(supportLang, {
+                        en: "Next",
+                        es: "Siguiente",
+                        pt: "Próximo",
+                        it: "Avanti",
+                        fr: "Suivant",
+                        ja: "次へ",
+                        ar: "التالي",
+                        zh: "下一步",
+                      })}
                   </Button>
                 ) : (
                   <Button

@@ -10,6 +10,30 @@
  * - Skill: Completion state for a lesson (locked, available, in_progress, completed)
  */
 
+import { withItalianSkillTreeText } from "./skillTree/italianLocalizer.js";
+import { withFrenchSkillTreeText } from "./skillTree/frenchLocalizer.js";
+import {
+  translateSkillTreeTextToHindi,
+  withHindiSkillTreeText,
+} from "./skillTree/hindiLocalizer.js";
+import { withJapaneseSkillTreeText } from "./skillTree/japaneseLocalizer.js";
+import { withPortugueseSkillTreeText } from "./skillTree/portugueseLocalizer.js";
+import { withArabicSkillTreeText } from "./skillTree/arabicLocalizer.js";
+import { withChineseSkillTreeText } from "./skillTree/chineseLocalizer.js";
+
+const withLocalizedSkillTreeText = (skillTree) =>
+  withArabicSkillTreeText(
+    withChineseSkillTreeText(
+      withHindiSkillTreeText(
+        withJapaneseSkillTreeText(
+          withFrenchSkillTreeText(
+            withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+          ),
+        ),
+      ),
+    ),
+  );
+
 export const SKILL_STATUS = {
   LOCKED: "locked",
   AVAILABLE: "available",
@@ -28,7 +52,7 @@ export const SKILL_STATUS = {
  * C1: Advanced - Flexible, sophisticated language use
  * C2: Mastery - Near-native proficiency
  */
-const baseLearningPath = {
+const baseLearningPath = withLocalizedSkillTreeText({
   "Pre-A1": [
     // Tutorial Unit - always at the very beginning
     {
@@ -10178,7 +10202,7 @@ const baseLearningPath = {
       ],
     },
   ],
-};
+});
 
 const LESSON_XP_RANGE = { min: 55, max: 80 };
 const LESSON_XP_STEP = 5;
@@ -10722,9 +10746,14 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     );
 
     return {
-      scenario: template.scenario,
-      prompt: template.prompt,
-      successCriteria: template.successCriteria,
+      ...withGoalUiLocalizations(
+        {
+          scenario: template.scenario,
+          prompt: template.prompt,
+          successCriteria: template.successCriteria,
+        },
+        topicLabel,
+      ),
       focusPoints: allFocus,
       goalVariations: goalVariations,
       goalIndex: 0,
@@ -10743,17 +10772,23 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     };
 
     // Create variations for focus points
-    const variations = [baseGoal];
-    allFocus.slice(1, 3).forEach((focus, i) => {
-      variations.push({
-        scenario: `Practice ${focus} in a real situation`,
-        prompt: `Create a situation where the learner must use ${focus}. Ask follow-up questions.`,
-        successCriteria: `User uses ${focus} correctly in context`,
-      });
+    const variations = [withGoalUiLocalizations(baseGoal, topicLabel, firstFocus)];
+    allFocus.slice(1, 3).forEach((focus) => {
+      variations.push(
+        withGoalUiLocalizations(
+          {
+            scenario: `Practice ${focus} in a real situation`,
+            prompt: `Create a situation where the learner must use ${focus}. Ask follow-up questions.`,
+            successCriteria: `User uses ${focus} correctly in context`,
+          },
+          topicLabel,
+          focus,
+        ),
+      );
     });
 
     return {
-      ...baseGoal,
+      ...withGoalUiLocalizations(baseGoal, topicLabel, firstFocus),
       focusPoints: allFocus,
       goalVariations: variations,
       goalIndex: 0,
@@ -10762,9 +10797,14 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
 
   // Final fallback - still more specific than before
   return {
-    scenario: `Have a conversation about ${topicLabel}`,
-    prompt: `Engage the learner in a natural conversation about ${topicLabel}. Ask questions and encourage responses.`,
-    successCriteria: `User participates meaningfully in conversation about ${topicLabel}`,
+    ...withGoalUiLocalizations(
+      {
+        scenario: `Have a conversation about ${topicLabel}`,
+        prompt: `Engage the learner in a natural conversation about ${topicLabel}. Ask questions and encourage responses.`,
+        successCriteria: `User participates meaningfully in conversation about ${topicLabel}`,
+      },
+      topicLabel,
+    ),
     focusPoints: [],
     goalVariations: [],
     goalIndex: 0,
@@ -10813,81 +10853,89 @@ function translateGoalTextToEs(text, topicLabel, focus) {
   return hit ? hit.build() : text;
 }
 
+function translateGoalTextToHi(text) {
+  if (!text) return "";
+  return translateSkillTreeTextToHindi(text);
+}
+
+function withGoalUiLocalizations(goal, topicLabel, focus) {
+  if (!goal) return goal;
+  return {
+    ...goal,
+    scenario_es:
+      goal.scenario_es || translateGoalTextToEs(goal.scenario, topicLabel, focus),
+    scenario_hi: goal.scenario_hi || translateGoalTextToHi(goal.scenario),
+    successCriteria_es:
+      goal.successCriteria_es ||
+      translateGoalTextToEs(goal.successCriteria, topicLabel, focus),
+    successCriteria_hi:
+      goal.successCriteria_hi || translateGoalTextToHi(goal.successCriteria),
+  };
+}
+
 function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
   const variations = [
-    {
-      scenario: baseTemplate.scenario,
-      scenario_es: translateGoalTextToEs(baseTemplate.scenario, topicLabel),
-      prompt: baseTemplate.prompt,
-      prompt_es: translateGoalTextToEs(baseTemplate.prompt, topicLabel),
-      successCriteria: baseTemplate.successCriteria,
-      successCriteria_es: translateGoalTextToEs(
-        baseTemplate.successCriteria,
-        topicLabel,
-      ),
-    },
+    withGoalUiLocalizations(
+      {
+        scenario: baseTemplate.scenario,
+        prompt: baseTemplate.prompt,
+        prompt_es: translateGoalTextToEs(baseTemplate.prompt, topicLabel),
+        successCriteria: baseTemplate.successCriteria,
+      },
+      topicLabel,
+    ),
   ];
 
   // Add "respond to questions" variation
-  variations.push({
-    scenario: `Answer questions about ${topicLabel}`,
-    scenario_es: translateGoalTextToEs(
-      `Answer questions about ${topicLabel}`,
+  variations.push(
+    withGoalUiLocalizations(
+      {
+        scenario: `Answer questions about ${topicLabel}`,
+        prompt: `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
+        prompt_es: translateGoalTextToEs(
+          `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
+          topicLabel,
+        ),
+        successCriteria: `User answers questions using ${topicLabel} vocabulary correctly`,
+      },
       topicLabel,
     ),
-    prompt: `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
-    prompt_es: translateGoalTextToEs(
-      `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
-      topicLabel,
-    ),
-    successCriteria: `User answers questions using ${topicLabel} vocabulary correctly`,
-    successCriteria_es: translateGoalTextToEs(
-      `User answers questions using ${topicLabel} vocabulary correctly`,
-      topicLabel,
-    ),
-  });
+  );
 
   // Add "start a conversation" variation
-  variations.push({
-    scenario: `Start a conversation about ${topicLabel}`,
-    scenario_es: translateGoalTextToEs(
-      `Start a conversation about ${topicLabel}`,
+  variations.push(
+    withGoalUiLocalizations(
+      {
+        scenario: `Start a conversation about ${topicLabel}`,
+        prompt: `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
+        prompt_es: translateGoalTextToEs(
+          `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
+          topicLabel,
+        ),
+        successCriteria: `User initiates and sustains conversation about ${topicLabel}`,
+      },
       topicLabel,
     ),
-    prompt: `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
-    prompt_es: translateGoalTextToEs(
-      `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
-      topicLabel,
-    ),
-    successCriteria: `User initiates and sustains conversation about ${topicLabel}`,
-    successCriteria_es: translateGoalTextToEs(
-      `User initiates and sustains conversation about ${topicLabel}`,
-      topicLabel,
-    ),
-  });
+  );
 
   // Add focus-point specific variations if available
   if (focusPoints.length > 0) {
-    variations.push({
-      scenario: `Use ${focusPoints[0]} in a real situation`,
-      scenario_es: translateGoalTextToEs(
-        `Use ${focusPoints[0]} in a real situation`,
+    variations.push(
+      withGoalUiLocalizations(
+        {
+          scenario: `Use ${focusPoints[0]} in a real situation`,
+          prompt: `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
+          prompt_es: translateGoalTextToEs(
+            `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
+            topicLabel,
+            focusPoints[0],
+          ),
+          successCriteria: `User demonstrates correct use of ${focusPoints[0]}`,
+        },
         topicLabel,
         focusPoints[0],
       ),
-      prompt: `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
-      prompt_es: translateGoalTextToEs(
-        `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
-        topicLabel,
-        focusPoints[0],
-      ),
-      successCriteria: `User demonstrates correct use of ${focusPoints[0]}`,
-      successCriteria_es: translateGoalTextToEs(
-        `User demonstrates correct use of ${focusPoints[0]}`,
-        topicLabel,
-        focusPoints[0],
-      ),
-    });
+    );
   }
 
   return variations;
@@ -10924,7 +10972,11 @@ function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
   // First, check for topic-specific templates - these are handcrafted and best
   const topicSpecificGoals = INTEGRATED_PRACTICE_TEMPLATES[topicKey];
   if (topicSpecificGoals && topicSpecificGoals.length > 0) {
-    goalVariations.push(...topicSpecificGoals);
+    goalVariations.push(
+      ...topicSpecificGoals.map((goal) =>
+        withGoalUiLocalizations(goal, unitTitle),
+      ),
+    );
   }
 
   // Generate creative roleplay scenarios based on the unit topic
@@ -10934,15 +10986,22 @@ function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
     unitTitle,
     lessonTitles,
   );
-  goalVariations.push(...creativeGoals);
+  goalVariations.push(
+    ...creativeGoals.map((goal) => withGoalUiLocalizations(goal, unitTitle)),
+  );
 
   // Ensure we have at least one goal
   if (goalVariations.length === 0) {
-    goalVariations.push({
-      scenario: `Have a conversation about ${unitTitle}`,
-      prompt: `Start a natural conversation about ${unitTitle}. Ask the learner questions and respond to their answers. Build on what they say.`,
-      successCriteria: `User participates actively in a conversation about ${unitTitle}`,
-    });
+    goalVariations.push(
+      withGoalUiLocalizations(
+        {
+          scenario: `Have a conversation about ${unitTitle}`,
+          prompt: `Start a natural conversation about ${unitTitle}. Ask the learner questions and respond to their answers. Build on what they say.`,
+          successCriteria: `User participates actively in a conversation about ${unitTitle}`,
+        },
+        unitTitle,
+      ),
+    );
   }
 
   // Return first goal as default, with variations array for progression
@@ -11670,7 +11729,9 @@ function applyCEFRScaffolding(path) {
   return stagedPath;
 }
 
-const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+const cefrAlignedLearningPath = withLocalizedSkillTreeText(
+  applyCEFRScaffolding(baseLearningPath),
+);
 
 const SUPPORTED_TARGET_LANGS = new Set([
   "en",

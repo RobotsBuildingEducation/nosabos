@@ -14,6 +14,13 @@ import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // Lazy-load modules
 const StoryMode = React.lazy(() => import("./Stories"));
@@ -25,7 +32,7 @@ const History = React.lazy(() => import("./History"));
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -44,6 +51,9 @@ const MODES = [
   { key: "vocab" },
   { key: "reading" },
 ];
+
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
 
 function strongNpub(user) {
   return (
@@ -65,7 +75,10 @@ export default function Randomize() {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
   const nsec = strongNsec();
-  const uiLang = user?.appLanguage || "en";
+  const uiLang = normalizeSupportLanguage(
+    user?.appLanguage,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const t = useT(uiLang);
   const toast = useToast();
 
@@ -85,11 +98,50 @@ export default function Randomize() {
   // Mode labels from translations
   const modeLabels = useMemo(
     () => ({
-      story: t("tabs_stories") || (uiLang === "es" ? "Narrativos" : "Stories"),
-      grammar: t("tabs_grammar") || (uiLang === "es" ? "Gramática" : "Grammar"),
+      story:
+        t("tabs_stories") ||
+        uiCopy(uiLang, {
+          en: "Stories",
+          es: "Narrativos",
+          it: "Storie",
+          fr: "Histoires",
+          ja: "ストーリー",
+          ar: "القصص",
+          zh: "故事",
+        }),
+      grammar:
+        t("tabs_grammar") ||
+        uiCopy(uiLang, {
+          en: "Grammar",
+          es: "Gramática",
+          it: "Grammatica",
+          fr: "Grammaire",
+          ja: "文法",
+          ar: "القواعد",
+          zh: "语法",
+        }),
       vocab:
-        t("tabs_vocab") || (uiLang === "es" ? "Vocabulario" : "Vocabulary"),
-      reading: t("tabs_reading") || (uiLang === "es" ? "Lectura" : "Reading"),
+        t("tabs_vocab") ||
+        uiCopy(uiLang, {
+          en: "Vocabulary",
+          es: "Vocabulario",
+          it: "Vocabolario",
+          fr: "Vocabulaire",
+          ja: "語彙",
+          ar: "المفردات",
+          zh: "词汇",
+        }),
+      reading:
+        t("tabs_reading") ||
+        uiCopy(uiLang, {
+          en: "Reading",
+          es: "Lectura",
+          it: "Lettura",
+          fr: "Lecture",
+          ja: "読解",
+          ar: "القراءة",
+          zh: "阅读",
+        }),
     }),
     [t, uiLang]
   );
@@ -101,24 +153,9 @@ export default function Randomize() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
       const newXp = Number.isFinite(langXp) ? langXp : 0;
       const languageChanged = targetLangRef.current !== targetLang;
@@ -154,12 +191,24 @@ export default function Randomize() {
         // Celebration toast (localized)
         const title =
           t("random_toast_title") ||
-          (uiLang === "es" ? "¡Buen trabajo!" : "Nice job!");
+          uiCopy(uiLang, {
+            en: "Nice job!",
+            es: "¡Buen trabajo!",
+            it: "Ottimo lavoro!",
+            fr: "Bien joue !",
+            ja: "よくできました！",
+            ar: "شغل ممتاز!",
+          });
         const desc =
           t("random_toast_desc", { xp: diff }) ||
-          (uiLang === "es"
-            ? `Ganaste +${diff} XP.`
-            : `You earned +${diff} XP.`);
+          uiCopy(uiLang, {
+            en: `You earned +${diff} XP.`,
+            es: `Ganaste +${diff} XP.`,
+            it: `Hai guadagnato +${diff} XP.`,
+            fr: `Tu as gagne +${diff} XP.`,
+            ja: `+${diff} XPを獲得しました。`,
+            ar: `كسبت +${diff} XP.`,
+          });
 
         toast({
           title,
@@ -206,18 +255,54 @@ export default function Randomize() {
   const STR = {
     level:
       t("grammar_badge_level", { level: levelNumber }) ||
-      (uiLang === "es" ? `Nivel ${levelNumber}` : `Level ${levelNumber}`),
+      uiCopy(uiLang, {
+        en: `Level ${levelNumber}`,
+        es: `Nivel ${levelNumber}`,
+        it: `Livello ${levelNumber}`,
+        fr: `Niveau ${levelNumber}`,
+        ja: `レベル ${levelNumber}`,
+        ar: `المستوى ${levelNumber}`,
+      }),
     xpBadge:
       t("grammar_badge_xp", { xp }) ||
-      (uiLang === "es" ? `XP ${xp}` : `XP ${xp}`),
-    shuffle: t("random_shuffle") || (uiLang === "es" ? "Mezclar" : "Shuffle"),
+      uiCopy(uiLang, {
+        en: `XP ${xp}`,
+        es: `XP ${xp}`,
+        it: `XP ${xp}`,
+        fr: `XP ${xp}`,
+        ja: `XP ${xp}`,
+        ar: `XP ${xp}`,
+      }),
+    shuffle:
+      t("random_shuffle") ||
+      uiCopy(uiLang, {
+        en: "Shuffle",
+        es: "Mezclar",
+        it: "Mescola",
+        fr: "Melanger",
+        ja: "シャッフル",
+        ar: "بدّل",
+      }),
     picking:
       t("randomize_picking_surprise") ||
-      (uiLang === "es"
-        ? "Eligiendo una sorpresa para ti…"
-        : "Picking a surprise for you…"),
+      uiCopy(uiLang, {
+        en: "Picking a surprise for you...",
+        es: "Eligiendo una sorpresa para ti...",
+        it: "Scelta di una sorpresa per te...",
+        fr: "Choix d'une surprise pour toi...",
+        ja: "サプライズを選んでいます...",
+        ar: "بنختار لك مفاجأة...",
+      }),
     loading:
-      t("generic_loading") || (uiLang === "es" ? "Cargando..." : "Loading..."),
+      t("generic_loading") ||
+      uiCopy(uiLang, {
+        en: "Loading...",
+        es: "Cargando...",
+        it: "Caricamento...",
+        fr: "Chargement...",
+        ja: "読み込み中...",
+        ar: "جارٍ التحميل...",
+      }),
   };
 
   return (

@@ -45,6 +45,13 @@ import useUserStore from "../hooks/useUserStore";
 import VoiceOrb from "./VoiceOrb";
 import { translations } from "../utils/translation";
 import {
+  buildMessageTranslationPrompt,
+  buildSimpleTranslationPrompt,
+  getBaseLanguageCode,
+  resolveSupportUiLanguage,
+} from "../utils/supportTranslation";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
+import {
   ArchiveTextAnimation,
   getChatLogButtonHighlightProps,
   getRealtimeOrbVisualState,
@@ -64,6 +71,13 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import { useThemeStore } from "../useThemeStore";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getLanguagePromptName,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -147,10 +161,15 @@ const APP_TEXT_SECONDARY = "var(--app-text-secondary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
-function uiStateLabel(uiState, isEs) {
-  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
-  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
-  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+function uiStateLabel(uiState, uiLang = "en") {
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+  const ui = translations[lang] || translations.en;
+  if (uiState === "speaking")
+    return ui?.proficiency_speaking || translations.en.proficiency_speaking;
+  if (uiState === "listening")
+    return ui?.proficiency_listening || translations.en.proficiency_listening;
+  if (uiState === "thinking")
+    return ui?.proficiency_thinking || translations.en.proficiency_thinking;
   return "";
 }
 const isoNow = () => {
@@ -304,7 +323,11 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ display: "inline", boxShadow: "inset 0 -2px transparent" }}
+      style={{
+        display: "inline",
+        boxShadow: "inset 0 -2px transparent",
+        unicodeBidi: "isolate",
+      }}
     >
       {mid}
     </span>,
@@ -336,7 +359,9 @@ function AlignedBubble({
   primaryLabel,
   secondaryLabel,
   primaryText,
+  primaryLang = "en",
   secondaryText,
+  secondaryLang = "en",
   pairs,
   showSecondary,
   isTranslating,
@@ -377,6 +402,8 @@ function AlignedBubble({
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs"),
   );
+  const primaryTextProps = getBidiTextProps(primaryLang);
+  const secondaryTextProps = getBidiTextProps(secondaryLang);
 
   return (
     <Box
@@ -420,8 +447,9 @@ function AlignedBubble({
             fontSize="md"
             lineHeight="1.6"
             color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
-            sx={MOBILE_TEXT_SX}
             flex="1"
+            {...primaryTextProps}
+            sx={mergeBidiSx(primaryTextProps, MOBILE_TEXT_SX)}
           >
             {primaryNodes}
           </Box>
@@ -434,16 +462,23 @@ function AlignedBubble({
             mt={1}
             lineHeight="1.55"
             color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-            sx={MOBILE_TEXT_SX}
             transition="opacity 120ms ease-out"
             opacity={1}
+            {...secondaryTextProps}
+            sx={mergeBidiSx(secondaryTextProps, MOBILE_TEXT_SX)}
           >
             {secondaryNodes}
           </Box>
         )}
 
         {!!pairs?.length && showSecondary && (
-          <Wrap spacing={3} mt={3} shouldWrapChildren>
+          <Wrap
+            spacing={3}
+            mt={3}
+            shouldWrapChildren
+            dir={primaryTextProps.dir}
+            sx={{ unicodeBidi: "isolate" }}
+          >
             {pairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
@@ -468,7 +503,13 @@ function AlignedBubble({
                     minW="0"
                     maxW="260px"
                   >
-                    <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    <Text
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="1.4"
+                      {...primaryTextProps}
+                      sx={mergeBidiSx(primaryTextProps)}
+                    >
                       {p.lhs}
                     </Text>
                     <Text
@@ -478,6 +519,8 @@ function AlignedBubble({
                       }
                       mt={1}
                       lineHeight="1.35"
+                      {...secondaryTextProps}
+                      sx={mergeBidiSx(secondaryTextProps)}
                     >
                       {p.rhs}
                     </Text>
@@ -525,9 +568,10 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getBidiTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "blue.500"}
@@ -547,7 +591,8 @@ function UserBubble({ label, text }) {
         fontSize="md"
         lineHeight="1.6"
         color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-        sx={MOBILE_TEXT_SX}
+        {...textProps}
+        sx={mergeBidiSx(textProps, MOBILE_TEXT_SX)}
       >
         {text}
       </Box>
@@ -612,6 +657,7 @@ export default function RealTimeTest({
   onSwitchedAccount,
   lesson = null,
   lessonContent = null,
+  supportLang: initialSupportLang = "",
   onSkip = null,
 }) {
   const toast = useToast();
@@ -645,6 +691,14 @@ export default function RealTimeTest({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+  const initialSupportLanguage = normalizeSupportLanguage(
+    initialSupportLang ||
+      user?.progress?.supportLang ||
+      (typeof window !== "undefined"
+        ? window.localStorage.getItem("appLanguage")
+        : ""),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
 
   // Extract CEFR level from lesson
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
@@ -694,7 +748,7 @@ export default function RealTimeTest({
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
-  const [supportLang, setSupportLang] = useState("en");
+  const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState("alloy");
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example,
@@ -796,29 +850,33 @@ export default function RealTimeTest({
     }
   }, []);
 
-  const normalizeSupportLang = (raw) => {
-    const code = String(raw || "").toLowerCase();
-    if (code === "es" || code.startsWith("es-") || code === "spanish")
-      return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english")
-      return "en";
-    return undefined;
-  };
-
-  const uiLang =
-    normalizeSupportLang(supportLangRef.current || supportLang) ||
-    normalizeSupportLang(storedUiLang) ||
-    "en";
-  const ui = translations[uiLang];
+  const uiLang = resolveSupportUiLanguage({
+    supportLang: supportLangRef.current || supportLang,
+    persistedSupportLang: user?.progress?.supportLang,
+    storedUiLang,
+  });
+  const ui = translations[uiLang] || translations.en;
+  const uiText = (key, fallback = "") =>
+    ui?.[key] || translations.en?.[key] || fallback;
 
   // ✅ Which language to show in secondary lane
   const secondaryPref =
-    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+    targetLang === uiLang ? (uiLang === "en" ? "es" : "en") : uiLang;
   const toggleLabel =
     translations[uiLang].onboarding_translations_toggle?.replace(
       "{language}",
       translations[uiLang][`language_${secondaryPref}`],
-    ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
+    ) ||
+    ({
+      en: "Show translation",
+      es: "Mostrar traducción",
+      pt: "Mostrar tradução",
+      it: "Mostra traduzione",
+      fr: "Afficher la traduction",
+      ja: "翻訳を表示",
+      hi: "अनुवाद दिखाएं",
+      ar: "إظهار الترجمة",
+    }[uiLang] || "Show translation");
 
   /* ---------------------------
      Replay playback helpers
@@ -863,9 +921,7 @@ export default function RealTimeTest({
       toast({
         status: "warning",
         description:
-          uiLang === "es"
-            ? "No hay audio para reproducir."
-            : "No audio available to replay.",
+          uiText("ra_toast_no_audio_replay", "No audio available to replay."),
         duration: 3000,
         position: "top",
       });
@@ -873,7 +929,9 @@ export default function RealTimeTest({
   }
 
   const languageNameFor = (code) =>
-    translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
+    translations[uiLang]?.[`language_${code === "nah" ? "nah" : code}`] ||
+    translations.en?.[`language_${code === "nah" ? "nah" : code}`] ||
+    code;
 
   const levelLabel = translations[uiLang][`onboarding_level_${level}`] || level;
   const levelColor =
@@ -888,26 +946,46 @@ export default function RealTimeTest({
     languageNameFor(targetLang),
   );
   // Goal-UI language routing
-  const goalUiLang = (() => {
-    const s = supportLangRef.current || supportLang;
-    if (s === "es") return "es";
-    if (s === "en") return "en";
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "es";
-    if (t === "en") return "en";
-    return uiLang === "es" ? "es" : "en";
-  })();
+  const goalUiLang = uiLang;
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
     translations[goalUiLang]?.ra_goal_label ||
-    (goalUiLang === "es" ? "Meta" : "Goal");
+    (goalUiLang === "fr"
+      ? "Objectif"
+      : goalUiLang === "es"
+      ? "Meta"
+      : goalUiLang === "pt"
+      ? "Meta"
+      : goalUiLang === "it"
+      ? "Obiettivo"
+      : goalUiLang === "hi"
+      ? "लक्ष्य"
+      : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
-    (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
+    (goalUiLang === "es"
+      ? "¡Meta lograda!"
+      : goalUiLang === "pt"
+      ? "Meta concluída!"
+      : goalUiLang === "it"
+        ? "Obiettivo completato!"
+        : goalUiLang === "hi"
+          ? "लक्ष्य पूरा हुआ!"
+        : "Goal completed!");
   const tGoalSkip =
-    gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
-  const tGoalCriteria =
-    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "" : "");
+    gtr?.ra_goal_skip ||
+    (goalUiLang === "fr"
+      ? "Passer"
+      : goalUiLang === "es"
+      ? "Saltar"
+      : goalUiLang === "pt"
+      ? "Pular"
+      : goalUiLang === "it"
+      ? "Salta"
+      : goalUiLang === "hi"
+      ? "छोड़ें"
+      : "Skip");
+  const tGoalCriteria = gtr?.ra_goal_criteria || "";
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
 
@@ -920,13 +998,14 @@ export default function RealTimeTest({
     [],
   );
 
-  // Backfill localized goal text for Spanish support when older goals lack it
+  // Backfill localized goal text for supported UI languages when older goals lack it
   useEffect(() => {
-    const prefersSpanish = (supportLangRef.current || supportLang) === "es";
+    const goalLang = uiLang;
+    const needsBackfill = goalLang !== "en";
     const goal = currentGoal;
-    if (!prefersSpanish || !goal) return;
+    if (!needsBackfill || !goal) return;
     if (goalLocalizationBusyRef.current) return;
-    if (goal.title_es && goal.rubric_es) return;
+    if (goal[`title_${goalLang}`] && goal[`rubric_${goalLang}`]) return;
 
     goalLocalizationBusyRef.current = true;
     (async () => {
@@ -934,18 +1013,29 @@ export default function RealTimeTest({
         const titleSource =
           goal.title_en || goal.scenario || goal.lessonScenario || "";
         const rubricSource = goal.rubric_en || goal.successCriteria || "";
-        const [title_es, rubric_es] = await Promise.all([
-          goal.title_es ? goal.title_es : translateGoalText(titleSource, "es"),
-          goal.rubric_es
-            ? goal.rubric_es
-            : translateGoalText(rubricSource || titleSource, "es"),
+        const [localizedTitle, localizedRubric] = await Promise.all([
+          goal[`title_${goalLang}`]
+            ? goal[`title_${goalLang}`]
+            : translateGoalText(titleSource, goalLang),
+          goal[`rubric_${goalLang}`]
+            ? goal[`rubric_${goalLang}`]
+            : translateGoalText(rubricSource || titleSource, goalLang),
         ]);
 
-        const patched = {
-          ...goal,
-          title_es: goal.title_es || title_es,
-          rubric_es: goal.rubric_es || rubric_es,
-        };
+        const patched = { ...goal };
+        if (!goal[`title_${goalLang}`] && localizedTitle) {
+          patched[`title_${goalLang}`] = localizedTitle;
+        }
+        if (!goal[`rubric_${goalLang}`] && localizedRubric) {
+          patched[`rubric_${goalLang}`] = localizedRubric;
+        }
+
+        if (
+          patched[`title_${goalLang}`] === goal[`title_${goalLang}`] &&
+          patched[`rubric_${goalLang}`] === goal[`rubric_${goalLang}`]
+        ) {
+          return;
+        }
 
         setCurrentGoal(patched);
         goalRef.current = patched;
@@ -956,7 +1046,7 @@ export default function RealTimeTest({
         goalLocalizationBusyRef.current = false;
       }
     })();
-  }, [currentGoal, supportLang]);
+  }, [currentGoal, uiLang]);
 
   // Keep local_npub cached
   useEffect(() => {
@@ -1100,8 +1190,17 @@ export default function RealTimeTest({
      Helpers for priming prefs
   --------------------------- */
   function normalizeSupport(code) {
-    return ["en", "es", "bilingual"].includes(code) ? code : "en";
+    if (code === "bilingual") return code;
+    return normalizeSupportLanguage(code, DEFAULT_SUPPORT_LANGUAGE);
   }
+
+  useEffect(() => {
+    if (!initialSupportLang) return;
+    const v = normalizeSupport(initialSupportLang);
+    supportLangRef.current = v;
+    setSupportLang(v);
+  }, [initialSupportLang]);
+
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {
       levelRef.current = p.level;
@@ -1120,26 +1219,10 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (
-      [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-    ) {
-      targetLangRef.current = p.targetLang;
-      setTargetLang(p.targetLang);
+    if (p.targetLang) {
+      const v = normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE);
+      targetLangRef.current = v;
+      setTargetLang(v);
     }
     if (typeof p.showTranslations === "boolean") {
       setShowTranslations(p.showTranslations);
@@ -1273,10 +1356,10 @@ export default function RealTimeTest({
       stop();
       toast({
         status: "info",
-        description:
-          uiLang === "es"
-            ? "La sesión se cerró automáticamente tras 15 segundos."
-            : "The session closed automatically after 15 seconds.",
+        description: uiText(
+          "ra_auto_stop_desc",
+          "The session closed automatically after 15 seconds.",
+        ),
         duration: 2500,
         position: "top",
       });
@@ -1370,8 +1453,23 @@ export default function RealTimeTest({
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
-        const sttLang =
-          tLang === "es" ? "es" : tLang === "en" ? "en" : undefined;
+        const WHISPER_STT_LANG = {
+          ar: "ar",
+          zh: "zh",
+          en: "en",
+          es: "es",
+          pt: "pt",
+          fr: "fr",
+          it: "it",
+          ja: "ja",
+          nl: "nl",
+          ru: "ru",
+          de: "de",
+          el: "el",
+          pl: "pl",
+          ga: "ga",
+        };
+        const sttLang = WHISPER_STT_LANG[tLang];
 
         dc.send(
           JSON.stringify({
@@ -1528,22 +1626,66 @@ export default function RealTimeTest({
      🎯 Goal helpers
   --------------------------- */
   function buildTutorialGoal() {
-    const goalLang =
-      supportLangRef.current || supportLang || (uiLang === "es" ? "es" : "en");
-    const scenario = goalLang === "es" ? "Di hola" : "Say hello";
+    const goalLang = uiLang;
+    const scenario =
+      goalLang === "ja"
+        ? "こんにちはと言う"
+        : goalLang === "fr"
+        ? "Dis bonjour"
+        : goalLang === "es"
+        ? "Di hola"
+        : goalLang === "pt"
+        ? "Diga olá"
+        : goalLang === "it"
+        ? "Di' ciao"
+        : goalLang === "hi"
+        ? "नमस्ते कहें"
+        : goalLang === "ar"
+        ? "قول أهلا"
+        : "Say hello";
     const successCriteria =
-      goalLang === "es"
+      goalLang === "ja"
+        ? "学習者がこんにちはと言う。"
+        : goalLang === "es"
         ? "El estudiante dice hola."
-        : "The learner says hello.";
+        : goalLang === "pt"
+        ? 'O aluno diz "olá".'
+        : goalLang === "it"
+          ? "Lo studente dice ciao."
+          : goalLang === "hi"
+            ? "सीखने वाला नमस्ते कहता है।"
+            : goalLang === "ar"
+              ? "المتعلم يقول أهلًا."
+          : goalLang === "fr"
+            ? "L'apprenant dit bonjour."
+          : "The learner says hello.";
     return {
       id: `goal_tutorial_${Date.now()}`,
       title_en: "Say hello",
       title_es: "Di hola",
+      title_pt: "Diga olá",
+      title_it: "Di' ciao",
+      title_fr: "Dis bonjour",
+      title_ja: "こんにちはと言う",
+      title_hi: "नमस्ते कहें",
+      title_ar: "قول أهلا",
       rubric_en: "The learner says hello.",
       rubric_es: "El estudiante dice hola.",
+      rubric_pt: 'O aluno diz "olá".',
+      rubric_it: "Lo studente dice ciao.",
+      rubric_fr: "L'apprenant dit bonjour.",
+      rubric_ja: "学習者がこんにちはと言う。",
+      rubric_hi: "सीखने वाला नमस्ते कहता है।",
+      rubric_ar: "المتعلم يقول أهلًا.",
       lessonScenario: scenario,
       successCriteria,
       successCriteria_es: "El estudiante dice hola.",
+      successCriteria_pt: 'O aluno diz "olá".',
+      successCriteria_it: "Lo studente dice ciao.",
+      successCriteria_fr: "L'apprenant dit bonjour.",
+      successCriteria_ja: "学習者がこんにちはと言う。",
+      successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
+      successCriteria_ar: "المتعلم يقول أهلًا.",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
@@ -1573,24 +1715,8 @@ export default function RealTimeTest({
     const lessonDesc = lessonData?.description?.en || "";
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
-    const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName =
-      {
-        es: "Spanish",
-        en: "English",
-        pt: "Portuguese",
-        fr: "French",
-        it: "Italian",
-        nl: "Dutch",
-        nah: "Eastern Huasteca Nahuatl",
-        ja: "Japanese",
-        ru: "Russian",
-        de: "German",
-        el: "Greek",
-        pl: "Polish",
-        ga: "Irish",
-        yua: "Yucatec Maya",
-      }[goalLangCode] || "English";
+    const goalLangCode = uiLang;
+    const goalLangName = getLanguagePromptName(goalLangCode) || "English";
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -1635,7 +1761,7 @@ The goal must be:
 3. Something that demonstrates understanding of ${topic}
 4. CONCISE: Maximum 10-15 words regardless of level. Higher levels use sophisticated vocabulary, NOT longer sentences.
 
-The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
+The goal must be written entirely in ${goalLangName}. Do NOT output English unless the goal language is English.
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[5-15 word specific task - be concise even for advanced levels]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
@@ -1671,7 +1797,12 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: parsed.scenario,
           prompt: parsed.prompt,
           successCriteria:
-            parsed.successCriteria || `Complete the ${topic} task`,
+            parsed.successCriteria ||
+            (goalLangCode === "pt"
+              ? `Conclua a tarefa sobre ${topic}`
+              : goalLangCode === "hi"
+                ? `${topic} से जुड़ा कार्य पूरा करें`
+                : `Complete the ${topic} task`),
         };
       }
     } catch (err) {
@@ -1681,59 +1812,244 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Fallback if AI fails - use topic-specific defaults
     const topicFallbacks = {
       greetings: {
-        scenario: "Say hello and ask how someone is",
-        prompt:
-          "Greet the learner and have them respond with a proper greeting exchange.",
-        successCriteria:
-          "User says hello and responds appropriately to 'how are you'",
+        en: {
+          scenario: "Say hello and ask how someone is",
+          prompt:
+            "Greet the learner and have them respond with a proper greeting exchange.",
+          successCriteria:
+            "User says hello and responds appropriately to 'how are you'",
+        },
+        pt: {
+          scenario: "Diga olá e pergunte como a pessoa está",
+          prompt:
+            "Cumprimente o aluno e faça com que ele responda com uma troca de cumprimentos adequada.",
+          successCriteria:
+            'O aluno diz "olá" e responde adequadamente a "como vai?"',
+        },
+        hi: {
+          scenario: "नमस्ते कहें और किसी का हाल पूछें",
+          prompt:
+            "सीखने वाले का अभिवादन करें और उससे सही तरीके से अभिवादन का उत्तर दिलवाएं।",
+          successCriteria:
+            "सीखने वाला नमस्ते कहता है और हाल पूछने पर सही प्रतिक्रिया देता है",
+        },
+        ar: {
+          scenario: "سلّم واسأل الشخص عامل إيه",
+          prompt:
+            "ابدأ بتحية بسيطة وخلي المتعلم يرد برد مناسب ويكمل سؤال قصير عن الحال.",
+          successCriteria:
+            "المتعلم يسلّم ويرد بشكل مناسب على سؤال عن الحال",
+        },
       },
       numbers: {
-        scenario: "Give your phone number or age",
-        prompt:
-          "Ask the learner for their phone number, age, or another number in context.",
-        successCriteria:
-          "User correctly produces numbers in a meaningful context",
+        en: {
+          scenario: "Give your phone number or age",
+          prompt:
+            "Ask the learner for their phone number, age, or another number in context.",
+          successCriteria:
+            "User correctly produces numbers in a meaningful context",
+        },
+        pt: {
+          scenario: "Diga seu número de telefone ou sua idade",
+          prompt:
+            "Peça ao aluno o número de telefone, a idade ou outro número em contexto.",
+          successCriteria:
+            "O aluno produz números corretamente em um contexto com significado",
+        },
+        hi: {
+          scenario: "अपना फोन नंबर या उम्र बताएं",
+          prompt:
+            "सीखने वाले से उसका फोन नंबर, उम्र या संदर्भ के भीतर कोई और संख्या पूछें।",
+          successCriteria:
+            "सीखने वाला अर्थपूर्ण संदर्भ में संख्याएं सही तरह से बोलता है",
+        },
+        ar: {
+          scenario: "قل رقم تليفونك أو سنك",
+          prompt:
+            "اسأل المتعلم عن رقم تليفونه أو سنه أو أي رقم تاني في سياق واضح.",
+          successCriteria:
+            "المتعلم يقول الأرقام بشكل صحيح في سياق له معنى",
+        },
       },
       food: {
-        scenario: "Order something to eat or drink",
-        prompt:
-          "You are a waiter/barista. Take the learner's order for food or drinks.",
-        successCriteria:
-          "User successfully orders at least one item using appropriate phrases",
+        en: {
+          scenario: "Order something to eat or drink",
+          prompt:
+            "You are a waiter/barista. Take the learner's order for food or drinks.",
+          successCriteria:
+            "User successfully orders at least one item using appropriate phrases",
+        },
+        pt: {
+          scenario: "Peça algo para comer ou beber",
+          prompt:
+            "Você é um garçom/barista. Anote o pedido de comida ou bebida do aluno.",
+          successCriteria:
+            "O aluno faz pelo menos um pedido usando expressões adequadas",
+        },
+        hi: {
+          scenario: "कुछ खाने या पीने का ऑर्डर दें",
+          prompt:
+            "आप वेटर या बरिस्ता हैं। सीखने वाले से खाना या पेय ऑर्डर करवाएं।",
+          successCriteria:
+            "सीखने वाला उचित वाक्यांशों का उपयोग करके कम से कम एक चीज़ ऑर्डर करता है",
+        },
+        ar: {
+          scenario: "اطلب حاجة تاكلها أو تشربها",
+          prompt:
+            "أنت نادل أو باريستا. خلّي المتعلم يطلب أكل أو مشروب باستخدام عبارات مناسبة.",
+          successCriteria:
+            "المتعلم يطلب حاجة واحدة على الأقل بعبارات مناسبة",
+        },
       },
       places: {
-        scenario: "Describe where you live or want to visit",
-        prompt:
-          "Ask the learner about a place - where they live, want to visit, or their favorite place.",
-        successCriteria: "User describes a location with at least 2-3 details",
+        en: {
+          scenario: "Describe where you live or want to visit",
+          prompt:
+            "Ask the learner about a place - where they live, want to visit, or their favorite place.",
+          successCriteria:
+            "User describes a location with at least 2-3 details",
+        },
+        pt: {
+          scenario: "Descreva onde você mora ou quer visitar",
+          prompt:
+            "Pergunte ao aluno sobre um lugar: onde mora, quer visitar ou seu lugar favorito.",
+          successCriteria:
+            "O aluno descreve um lugar com pelo menos 2 ou 3 detalhes",
+        },
+        hi: {
+          scenario: "बताएं कि आप कहाँ रहते हैं या कहाँ जाना चाहते हैं",
+          prompt:
+            "सीखने वाले से किसी जगह के बारे में पूछें: वह कहाँ रहता है, कहाँ जाना चाहता है, या उसकी पसंदीदा जगह कौन सी है।",
+          successCriteria:
+            "सीखने वाला कम से कम 2 या 3 विवरणों के साथ किसी स्थान का वर्णन करता है",
+        },
+        ar: {
+          scenario: "اوصف فين ساكن أو فين نفسك تزور",
+          prompt:
+            "اسأل المتعلم عن مكان: فين ساكن، أو عايز يزوره، أو مكانه المفضل.",
+          successCriteria:
+            "المتعلم يوصف مكان بتفصيلتين أو تلاتة على الأقل",
+        },
       },
       shopping: {
-        scenario: "Buy something at a store",
-        prompt:
-          "You are a shopkeeper. Help the learner buy an item, discussing price and options.",
-        successCriteria:
-          "User asks about an item and completes a simple transaction",
+        en: {
+          scenario: "Buy something at a store",
+          prompt:
+            "You are a shopkeeper. Help the learner buy an item, discussing price and options.",
+          successCriteria:
+            "User asks about an item and completes a simple transaction",
+        },
+        pt: {
+          scenario: "Compre algo em uma loja",
+          prompt:
+            "Você é um vendedor. Ajude o aluno a comprar um item, falando sobre preço e opções.",
+          successCriteria:
+            "O aluno pergunta sobre um item e conclui uma transação simples",
+        },
+        hi: {
+          scenario: "दुकान से कुछ खरीदें",
+          prompt:
+            "आप दुकानदार हैं। कीमत और विकल्पों पर बात करते हुए सीखने वाले की किसी वस्तु को खरीदने में मदद करें।",
+          successCriteria:
+            "सीखने वाला किसी वस्तु के बारे में पूछता है और एक सरल खरीद पूरी करता है",
+        },
+        ar: {
+          scenario: "اشتري حاجة من محل",
+          prompt:
+            "أنت البايع. ساعد المتعلم يشتري حاجة ويتكلم عن السعر والاختيارات.",
+          successCriteria:
+            "المتعلم يسأل عن غرض ويكمل عملية شراء بسيطة",
+        },
       },
       travel: {
-        scenario: "Ask for or give directions",
-        prompt:
-          "Either give directions to a place or ask the learner how to get somewhere.",
-        successCriteria:
-          "User understands or produces directions with location vocabulary",
+        en: {
+          scenario: "Ask for or give directions",
+          prompt:
+            "Either give directions to a place or ask the learner how to get somewhere.",
+          successCriteria:
+            "User understands or produces directions with location vocabulary",
+        },
+        pt: {
+          scenario: "Peça ou dê direções",
+          prompt:
+            "Dê direções para um lugar ou pergunte ao aluno como chegar a algum lugar.",
+          successCriteria:
+            "O aluno entende ou produz direções com vocabulário de localização",
+        },
+        hi: {
+          scenario: "रास्ता पूछें या बताएं",
+          prompt:
+            "किसी स्थान तक पहुँचने का रास्ता बताएं या सीखने वाले से पूछें कि वह किसी जगह तक कैसे पहुँचेगा।",
+          successCriteria:
+            "सीखने वाला स्थान-संबंधी शब्दावली के साथ दिशा समझता है या बताता है",
+        },
+        ar: {
+          scenario: "اسأل عن الطريق أو اشرحه",
+          prompt:
+            "إما تشرح طريق لمكان، أو تسأل المتعلم يوصل لمكان إزاي.",
+          successCriteria:
+            "المتعلم يفهم أو يدي اتجاهات باستخدام كلمات المكان",
+        },
       },
       family: {
-        scenario: "Describe your family members",
-        prompt:
-          "Ask the learner about their family - who is in it, ages, names, etc.",
-        successCriteria:
-          "User describes at least 2 family members with some details",
+        en: {
+          scenario: "Describe your family members",
+          prompt:
+            "Ask the learner about their family - who is in it, ages, names, etc.",
+          successCriteria:
+            "User describes at least 2 family members with some details",
+        },
+        pt: {
+          scenario: "Descreva seus familiares",
+          prompt:
+            "Pergunte ao aluno sobre a família: quem faz parte dela, idades, nomes etc.",
+          successCriteria:
+            "O aluno descreve pelo menos 2 familiares com alguns detalhes",
+        },
+        hi: {
+          scenario: "अपने परिवार के सदस्यों का वर्णन करें",
+          prompt:
+            "सीखने वाले से उसके परिवार के बारे में पूछें: उसमें कौन हैं, उम्र, नाम आदि।",
+          successCriteria:
+            "सीखने वाला कम से कम 2 परिवार सदस्यों का कुछ विवरण के साथ वर्णन करता है",
+        },
+        ar: {
+          scenario: "اوصف أفراد عيلتك",
+          prompt:
+            "اسأل المتعلم عن عيلته: مين فيها، أعمارهم، أسماؤهم، وهكذا.",
+          successCriteria:
+            "المتعلم يوصف فردين على الأقل من عيلته مع شوية تفاصيل",
+        },
       },
       time: {
-        scenario: "Discuss your daily schedule",
-        prompt:
-          "Ask the learner what they do at different times of day - morning routine, meals, etc.",
-        successCriteria:
-          "User describes activities connected to specific times",
+        en: {
+          scenario: "Discuss your daily schedule",
+          prompt:
+            "Ask the learner what they do at different times of day - morning routine, meals, etc.",
+          successCriteria:
+            "User describes activities connected to specific times",
+        },
+        pt: {
+          scenario: "Fale sobre sua rotina diária",
+          prompt:
+            "Pergunte ao aluno o que faz em diferentes momentos do dia: rotina da manhã, refeições etc.",
+          successCriteria:
+            "O aluno descreve atividades ligadas a horários específicos",
+        },
+        hi: {
+          scenario: "अपनी रोज़मर्रा की दिनचर्या बताएं",
+          prompt:
+            "सीखने वाले से पूछें कि वह दिन के अलग-अलग समय पर क्या करता है, जैसे सुबह की दिनचर्या, भोजन आदि।",
+          successCriteria:
+            "सीखने वाला खास समयों से जुड़ी गतिविधियों का वर्णन करता है",
+        },
+        ar: {
+          scenario: "احكي عن روتينك اليومي",
+          prompt:
+            "اسأل المتعلم بيعمل إيه في أوقات مختلفة من اليوم، زي الصبح أو وقت الأكل.",
+          successCriteria:
+            "المتعلم يوصف أنشطة مرتبطة بأوقات معينة",
+        },
       },
     };
 
@@ -1743,7 +2059,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     );
 
     if (matchedFallback) {
-      return matchedFallback[1];
+      return matchedFallback[1][goalLangCode] || matchedFallback[1].en;
     }
 
     // Generic fallback with focus points if available
@@ -1751,6 +2067,51 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       focusPoints.length > 0
         ? `Use ${focusPoints[0]} in a real situation`
         : `Share something about ${topic}`;
+
+    if (goalLangCode === "pt") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `Use ${focusPoints[0]} em uma situação real`
+            : `Compartilhe algo sobre ${topic}`,
+        prompt: `Crie um cenário realista em que o aluno precise usar vocabulário sobre ${topic}. ${
+          focusPoints.length
+            ? `Pratique especificamente: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "Faça perguntas de acompanhamento para incentivar respostas mais longas."
+        }`,
+        successCriteria: `O aluno produz várias palavras ou expressões relevantes sobre ${topic} em contexto`,
+      };
+    }
+
+    if (goalLangCode === "hi") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `${focusPoints[0]} का किसी वास्तविक स्थिति में उपयोग करें`
+            : `${topic} के बारे में कुछ साझा करें`,
+        prompt: `${topic} से जुड़ी शब्दावली का उपयोग करने के लिए सीखने वाले के लिए एक वास्तविक स्थिति बनाएं। ${
+          focusPoints.length
+            ? `विशेष रूप से इसका अभ्यास कराएं: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "और बोलने के लिए आगे के प्रश्न पूछें।"
+        }`,
+        successCriteria: `सीखने वाला ${topic} से जुड़े कई शब्द या वाक्यांश संदर्भ में बोलता है`,
+      };
+    }
+
+    if (goalLangCode === "ar") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `استخدم ${focusPoints[0]} في موقف حقيقي`
+            : `شارك حاجة عن ${topic}`,
+        prompt: `اعمل موقف واقعي يخلّي المتعلم يستخدم مفردات عن ${topic}. ${
+          focusPoints.length
+            ? `ركز خصوصًا على: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "اسأله أسئلة متابعة تشجّعه يتكلم أكتر."
+        }`,
+        successCriteria: `المتعلم يقول كلمات أو عبارات مناسبة عن ${topic} في سياق واضح`,
+      };
+    }
 
     return {
       scenario: focusAction,
@@ -1795,24 +2156,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const lessonDesc = lesson?.description?.en || "";
     const cefrLvl = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
-    const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName =
-      {
-        es: "Spanish",
-        en: "English",
-        pt: "Portuguese",
-        fr: "French",
-        it: "Italian",
-        nl: "Dutch",
-        nah: "Eastern Huasteca Nahuatl",
-        ja: "Japanese",
-        ru: "Russian",
-        de: "German",
-        el: "Greek",
-        pl: "Polish",
-        ga: "Irish",
-        yua: "Yucatec Maya",
-      }[goalLangCode] || "English";
+    const goalLangCode = uiLang;
+    const goalLangName = getLanguagePromptName(goalLangCode) || "English";
 
     // Get current goal for context
     const currentScenario =
@@ -1861,12 +2206,29 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
       const goalText = fullText.trim();
       if (goalText) {
+        const goalLang = goalUiLangCode();
+        const localizedTitleKey = `title_${goalLang}`;
+        const localizedRubricKey = `rubric_${goalLang}`;
         const newGoal = {
           id: `goal_${Date.now()}`,
-          title_en: goalText,
-          title_es: goalText,
+          title_en: goalLang === "en" ? goalText : "",
+          title_es: goalLang === "es" ? goalText : "",
+          title_pt: goalLang === "pt" ? goalText : "",
+          title_it: goalLang === "it" ? goalText : "",
+          title_fr: goalLang === "fr" ? goalText : "",
+          title_ja: goalLang === "ja" ? goalText : "",
+          title_hi: goalLang === "hi" ? goalText : "",
+          title_ar: goalLang === "ar" ? goalText : "",
           rubric_en: "",
           rubric_es: "",
+          rubric_pt: "",
+          rubric_it: "",
+          rubric_fr: "",
+          rubric_ja: "",
+          rubric_hi: "",
+          rubric_ar: "",
+          [localizedTitleKey]: goalText,
+          [localizedRubricKey]: "",
           lessonScenario: goalText,
           successCriteria: "",
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
@@ -1898,6 +2260,12 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       es:
         translations.es.onboarding_challenge_default ||
         "Haz una petición cortés.",
+      it:
+        translations.it.onboarding_challenge_default ||
+        "Fai una richiesta cortese.",
+      fr:
+        translations.fr.onboarding_challenge_default ||
+        "Fais une demande polie.",
     };
   }
   async function ensureCurrentGoalSeed(npub, userData) {
@@ -1910,27 +2278,39 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
 
   function goalUiLangCode() {
-    const s = supportLangRef.current || supportLang;
-    if (s === "es") return "es";
-    if (s === "en") return "en";
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "es";
-    if (t === "en") return "en";
-    return uiLang === "es" ? "es" : "en";
+    return uiLang;
   }
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return gLang === "es"
-      ? goal.title_es || goal.scenario_es || goal.title_en || ""
-      : goal.title_en || goal.title_es || goal.scenario || "";
+    const localized =
+      goal[`title_${gLang}`] ||
+      goal[`scenario_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
+      goal.title_en ||
+      goal.title_es ||
+      goal.scenario ||
+      ""
+    );
   }
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    return gLang === "es"
-      ? goal.rubric_es || goal.successCriteria_es || goal.rubric_en || ""
-      : goal.rubric_en || goal.rubric_es || goal.successCriteria || "";
+    const localized =
+      goal[`rubric_${gLang}`] ||
+      goal[`successCriteria_${gLang}`] ||
+      "";
+    if (localized) return localized;
+    if (gLang !== "en") return "";
+    return (
+      goal.successCriteria ||
+      goal.rubric_en ||
+      goal.rubric_es ||
+      ""
+    );
   }
   function goalTitleForTarget(goal) {
     if (!goal) return "";
@@ -2000,11 +2380,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   async function translateGoalText(text, target = "es") {
     const trimmed = String(text || "").trim();
     if (!trimmed) return "";
-
-    const prompt =
-      target === "es"
-        ? `Traduce al español neutral y conciso. Devuelve solo JSON {"translation":"..."}.\n${trimmed}`
-        : `Translate to natural US English. Return only JSON {"translation":"..."}.\n${trimmed}`;
+    const prompt = `${buildSimpleTranslationPrompt(target)}\n${trimmed}`;
 
     try {
       const r = await fetch(RESPONSES_URL, {
@@ -2050,7 +2426,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
       return (parsed?.translation || merged || trimmed).trim();
     } catch (err) {
       console.warn("Goal translation failed", err?.message || err);
-      return trimmed;
+      return target === "en" ? trimmed : "";
     }
   }
 
@@ -2098,11 +2474,12 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
 
     // Not in lesson mode - show a message
     toast({
-      title: uiLang === "es" ? "Modo de práctica libre" : "Free practice mode",
+      title: uiText("ra_free_practice_title", "Free practice mode"),
       description:
-        uiLang === "es"
-          ? "En modo libre, usa el botón Conectar para practicar conversación."
-          : "In free mode, use the Connect button to practice conversation.",
+        uiText(
+          "ra_free_practice_desc",
+          "In free mode, use the Connect button to practice conversation.",
+        ),
       status: "info",
       duration: 2000,
     });
@@ -2167,14 +2544,14 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     const rubricTL = goalRubricForTarget(goal);
     const titleTL = goalTitleForTarget(goal);
     const gLang = goalUiLangCode();
-    const uiLangName = gLang === "es" ? "Spanish" : "English";
+    const uiLangName = getLanguagePromptName(gLang) || "English";
 
     const judgePrompt =
       targetLangRef.current === "es"
         ? `Evalúa si el siguiente enunciado cumple esta meta en español: "${titleTL}". Criterio: ${rubricTL}.
 Devuelve SOLO JSON:
 {"met":true|false,"confidence":0..1,"feedback_tl":"mensaje breve y amable en el idioma meta (≤12 palabras)","feedback_ui":"mensaje breve y amable en ${
-            gLang === "es" ? "español" : "inglés"
+            uiLangName
           } (≤12 palabras)"}`
         : `Evaluate whether the following utterance meets this goal in ${
             targetLangRef.current === "en" ? "English" : "the target language"
@@ -2278,6 +2655,9 @@ Return ONLY JSON:
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "zh") {
+      strict =
+        "请只用普通话中文回答。不要使用英语或西班牙语。Respond ONLY in Mandarin Chinese.";
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
@@ -2449,6 +2829,8 @@ Return ONLY JSON:
                 ? "Voce aggiornata."
                 : targetLangRef.current === "nl"
                   ? "Stem bijgewerkt."
+                  : targetLangRef.current === "zh"
+                    ? "语音已更新。"
                   : targetLangRef.current === "ja"
                     ? "音声を更新しました。"
                     : targetLangRef.current === "ru"
@@ -2714,6 +3096,7 @@ Return ONLY JSON:
           textFinal: text,
           textStream: "",
           translation: "",
+          translationLang: "",
           pairs: [],
           done: true,
           ts: userTs,
@@ -2798,6 +3181,18 @@ Return ONLY JSON:
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
+        const shouldAutoTranslate =
+          showTranslations &&
+          normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE) !==
+            normalizePracticeLanguage(
+              targetLangRef.current || targetLang,
+              DEFAULT_TARGET_LANGUAGE,
+            );
+        if (shouldAutoTranslate) {
+          window.setTimeout(() => {
+            translateMessage(mid).catch(() => {});
+          }, 0);
+        }
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
@@ -2827,6 +3222,7 @@ Return ONLY JSON:
         textFinal: "",
         textStream: "",
         translation: "",
+        translationLang: "",
         pairs: [],
         done: false,
         hasAudio: false,
@@ -2853,11 +3249,18 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const supportChoice = supportLangRef.current || supportLang || "en";
-    const target = supportChoice === "es" ? "es" : "en";
+    const target = normalizeSupportLanguage(
+      uiLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
-    if ((m.lang || targetLangRef.current) === target) {
-      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+    if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({
+        ...prev,
+        translation: src,
+        translationLang: target,
+        pairs: [],
+      }));
       await upsertAssistantTurn(id, {
         text: src,
         lang: m.lang || targetLangRef.current || "es",
@@ -2867,16 +3270,7 @@ Return ONLY JSON:
       return;
     }
 
-    const prompt =
-      target === "es"
-        ? `Traduce lo siguiente al español claro y natural.
-Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
-Evita responder con toda la frase en un solo fragmento.`
-        : `Translate the following into natural US English.
-Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
-Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
-Do not return the whole sentence as a single chunk.`;
+    const prompt = buildMessageTranslationPrompt(target);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2923,7 +3317,12 @@ Do not return the whole sentence as a single chunk.`;
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
     const pairs = tidyPairs(rawPairs);
 
-    updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
+    updateMessage(id, (prev) => ({
+      ...prev,
+      translation,
+      translationLang: target,
+      pairs,
+    }));
     await upsertAssistantTurn(id, {
       text: src,
       lang: m.lang || targetLangRef.current || "es",
@@ -2931,6 +3330,49 @@ Do not return the whole sentence as a single chunk.`;
       pairs,
     });
   }
+
+  useEffect(() => {
+    if (!showTranslations) return;
+    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
+    const assistantMessages = messagesRef.current.filter(
+      (message) =>
+        message.role === "assistant" &&
+        message.done &&
+        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
+    );
+
+    assistantMessages.forEach((message) => {
+      const currentTranslationLang = normalizeSupportLanguage(
+        message.translationLang,
+        "",
+      );
+      const sourceLang = getBaseLanguageCode(
+        message.lang || targetLangRef.current,
+      );
+      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
+
+      if (!sourceText) return;
+
+      if (sourceLang === target) {
+        if (
+          currentTranslationLang !== target ||
+          message.translation !== sourceText ||
+          (message.pairs?.length || 0) > 0
+        ) {
+          updateMessage(message.id, (prev) => ({
+            ...prev,
+            translation: sourceText,
+            translationLang: target,
+            pairs: [],
+          }));
+        }
+        return;
+      }
+
+      if (currentTranslationLang === target && message.translation) return;
+      translateMessage(message.id).catch(() => {});
+    });
+  }, [uiLang, showTranslations]);
 
   async function upsertAssistantTurn(mid, { text, lang, translation, pairs }) {
     const npub = strongNpub(user);
@@ -2948,10 +3390,16 @@ Do not return the whole sentence as a single chunk.`;
           helpRequest: helpRequestRef.current || "",
           progress: {
             level: levelRef.current,
-            supportLang: supportLangRef.current,
+            supportLang: normalizeSupportLanguage(
+              uiLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            ),
             voice: voiceRef.current,
             voicePersona: voicePersonaRef.current,
-            targetLang: targetLangRef.current,
+            targetLang: normalizePracticeLanguage(
+              targetLangRef.current,
+              DEFAULT_TARGET_LANGUAGE,
+            ),
             showTranslations,
             helpRequest: helpRequestRef.current || "",
             practicePronunciation: !!practicePronunciationRef.current,
@@ -2979,10 +3427,16 @@ Do not return the whole sentence as a single chunk.`;
 
     const nextProgress = {
       level: partial.level ?? levelRef.current,
-      supportLang: partial.supportLang ?? supportLangRef.current,
+      supportLang: normalizeSupportLanguage(
+        partial.supportLang ?? uiLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      ),
       voice: partial.voice ?? voiceRef.current,
       voicePersona: partial.voicePersona ?? voicePersonaRef.current,
-      targetLang: partial.targetLang ?? targetLangRef.current,
+      targetLang: normalizePracticeLanguage(
+        partial.targetLang ?? targetLangRef.current,
+        DEFAULT_TARGET_LANGUAGE,
+      ),
       showTranslations: partial.showTranslations ?? showTranslations,
       pauseMs: Number.isFinite(partial.pauseMs)
         ? partial.pauseMs
@@ -3088,7 +3542,9 @@ Do not return the whole sentence as a single chunk.`;
     getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
   const orbUiState = getRealtimeOrbVisualState(uiState);
 
-  const liveStateLabel = uiStateLabel(uiState, uiLang === "es");
+  const liveStateLabel = uiStateLabel(uiState, uiLang);
+  const currentGoalTitleText = goalTitleForUI(currentGoal);
+  const currentGoalRubricText = goalRubricForUI(currentGoal);
 
   async function handleManualTranslate(id) {
     if (!id || translatingMessageId === id) return;
@@ -3099,7 +3555,7 @@ Do not return the whole sentence as a single chunk.`;
       await translateMessage(id);
     } catch (e) {
       toast({
-        title: uiLang === "es" ? "Error de traducción" : "Translation failed",
+        title: uiText("ra_toast_translation_failed_title", "Translation failed"),
         description: e?.message || String(e),
         status: "error",
         duration: 2200,
@@ -3191,7 +3647,7 @@ Do not return the whole sentence as a single chunk.`;
                       size="xs"
                       variant="ghost"
                       color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
-                      aria-label={uiLang === "es" ? "Nueva meta" : "New goal"}
+                      aria-label={uiText("ra_new_goal", "New goal")}
                       onClick={generateGoalVariation}
                       opacity={0.7}
                       bg={isLightTheme ? APP_SURFACE : undefined}
@@ -3218,8 +3674,11 @@ Do not return the whole sentence as a single chunk.`;
                     >
                       {isGeneratingGoal
                         ? streamingGoalText ||
-                          (uiLang === "es" ? "Generando..." : "Generating...")
-                        : goalTitleForUI(currentGoal) || "—"}
+                          uiText("ra_generating", "Generating...")
+                        : currentGoalTitleText ||
+                          (uiLang === "en"
+                            ? "—"
+                            : uiText("ra_generating", "Generating..."))}
                     </Text>
                   </HStack>
                   <IconButton
@@ -3232,19 +3691,19 @@ Do not return the whole sentence as a single chunk.`;
                     _hover={{ opacity: 1 }}
                     onClick={() => setShowChatLog(true)}
                     isDisabled={!timeline.length}
-                    aria-label={uiLang === "es" ? "Historial" : "Chat log"}
+                    aria-label={uiText("ra_chat_log", "Chat log")}
                   />
                 </HStack>
-                {!!currentGoal && !isGeneratingGoal && (
+                {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                   <Text
                     fontSize="xs"
                     opacity={0.8}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                   >
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                    {goalRubricForUI(currentGoal)}
+                    {currentGoalRubricText}
                   </Text>
-                )}
+                ) : null}
                 {goalFeedback && !isGeneratingGoal ? (
                   <HStack
                     mt={2}
@@ -3293,8 +3752,10 @@ Do not return the whole sentence as a single chunk.`;
 
                 <Box mt={3}>
                   <XpProgressHeader
-                    levelText={`${uiLang === "es" ? "Nivel" : "Level"} ${xpLevelNumber}`}
-                    xpText={`${ui.ra_label_xp} ${xp}`}
+                    levelText={`${
+                      uiText("ra_label_level", "Level")
+                    } ${xpLevelNumber}`}
+                    xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
                     progressPct={progressPct}
                     xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
                   />
@@ -3339,16 +3800,34 @@ Do not return the whole sentence as a single chunk.`;
                   primaryText={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
+                  primaryLang={latestAssistantMessage.lang || targetLang || "es"}
                   secondaryText={
                     showTranslations
                       ? latestAssistantMessage.source === "hist"
-                        ? (secondaryPref === "es"
-                            ? latestAssistantMessage.trans_es
-                            : latestAssistantMessage.trans_en) || ""
-                        : latestAssistantMessage.translation || ""
+                        ? latestAssistantMessage[`trans_${secondaryPref}`] ||
+                          latestAssistantMessage.translation ||
+                          latestAssistantMessage.trans_en ||
+                          latestAssistantMessage.trans_es ||
+                          ""
+                        : normalizeSupportLanguage(
+                            latestAssistantMessage.translationLang,
+                            "",
+                          ) === uiLang
+                          ? latestAssistantMessage.translation || ""
+                          : ""
                       : ""
                   }
-                  pairs={latestAssistantMessage.pairs || []}
+                  secondaryLang={uiLang}
+                  pairs={
+                    latestAssistantMessage.source === "hist"
+                      ? latestAssistantMessage.pairs || []
+                      : normalizeSupportLanguage(
+                          latestAssistantMessage.translationLang,
+                          "",
+                        ) === uiLang
+                        ? latestAssistantMessage.pairs || []
+                        : []
+                  }
                   showSecondary={showTranslations}
                   isTranslating={translatingMessageId === latestAssistantMessage.id}
                   canReplay={
@@ -3357,7 +3836,7 @@ Do not return the whole sentence as a single chunk.`;
                   }
                   onReplay={() => playSavedClip(latestAssistantMessage.id)}
                   isReplaying={replayingId === latestAssistantMessage.id}
-                  replayLabel={uiLang === "es" ? "Reproducir" : "Replay"}
+                  replayLabel={uiText("ra_btn_replay", "Replay")}
                   canTranslate={showTranslations}
                   onTranslate={() =>
                     handleManualTranslate(latestAssistantMessage.id)
@@ -3398,7 +3877,7 @@ Do not return the whole sentence as a single chunk.`;
               textShadow={isLightTheme ? "none" : "0 0 16px rgba(0,0,0,0.9)"}
               mb={20}
             >
-              {uiLang === "es" ? "Saltar" : "Skip"}
+              {uiText("ra_btn_skip", "Skip")}
             </Button>
             <Button
               onClick={status === "connected" ? stop : start}
@@ -3511,7 +3990,7 @@ Do not return the whole sentence as a single chunk.`;
               }
               disabled={!goalCompleted}
             >
-              {uiLang === "es" ? "Siguiente" : "Next"}
+              {uiText("ra_btn_next", "Next")}
             </Button>
           </HStack>
         </Center>
@@ -3519,7 +3998,7 @@ Do not return the whole sentence as a single chunk.`;
         <Modal isOpen={showChatLog} onClose={() => setShowChatLog(false)} size="xl">
           <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
           <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
-            <ModalHeader>{uiLang === "es" ? "Historial" : "Chat log"}</ModalHeader>
+            <ModalHeader>{uiText("ra_chat_log", "Chat log")}</ModalHeader>
             <ModalCloseButton />
             <ModalBody pb={6}>
               <VStack align="stretch" spacing={3}>
@@ -3527,15 +4006,27 @@ Do not return the whole sentence as a single chunk.`;
                   if (m.role === "user") {
                     return (
                       <RowRight key={m.id}>
-                        <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                        <UserBubble
+                          label={ui.ra_label_you}
+                          text={m.textFinal}
+                          textLang={targetLang}
+                        />
                       </RowRight>
                     );
                   }
                   const secondaryText =
                     m.source === "hist"
-                      ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
-                      : m.translation || "";
-                  const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
+                      ? m[`trans_${secondaryPref}`] ||
+                        m.translation ||
+                        m.trans_en ||
+                        m.trans_es ||
+                        ""
+                      : normalizeSupportLanguage(m.translationLang, "") ===
+                          uiLang
+                        ? m.translation || ""
+                        : "";
+                  const replayLabel =
+                    uiText("ra_btn_replay", "Replay");
                   return (
                     <RowLeft key={m.id}>
                       <AlignedBubble
@@ -3546,8 +4037,19 @@ Do not return the whole sentence as a single chunk.`;
                             : translations[uiLang][`language_${secondaryPref}`]
                         }
                         primaryText={`${m.textFinal || ""}${m.textStream || ""}`}
+                        primaryLang={m.lang || targetLang || "es"}
                         secondaryText={showTranslations ? secondaryText : ""}
-                        pairs={m.pairs || []}
+                        secondaryLang={uiLang}
+                        pairs={
+                          m.source === "hist"
+                            ? m.pairs || []
+                            : normalizeSupportLanguage(
+                                m.translationLang,
+                                "",
+                              ) === uiLang
+                              ? m.pairs || []
+                              : []
+                        }
                         showSecondary={showTranslations}
                         isTranslating={translatingMessageId === m.id}
                         canReplay={

@@ -220,7 +220,15 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
+import { translateSkillTreeTextToChinese } from "../data/skillTree/chineseLocalizer";
+import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
+import { translateSkillTreeTextToJapanese } from "../data/skillTree/japaneseLocalizer";
 import { translations } from "../utils/translation";
+import {
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import {
@@ -303,15 +311,27 @@ const getDisplayText = (textObj, supportLang = "en") => {
     }
     return en || es || fallback;
   }
+  if (supportLang === "ja" && !textObj.ja) {
+    return translateSkillTreeTextToJapanese(fallback);
+  }
+  if (supportLang === "hi" && !textObj.hi) {
+    return translateSkillTreeTextToHindi(fallback);
+  }
+  if (supportLang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
+  }
+  if (supportLang === "zh" && !textObj.zh) {
+    return translateSkillTreeTextToChinese(fallback);
+  }
   return textObj[supportLang] || fallback;
 };
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(localStorage.getItem("appLanguage"));
   }
-  return "en";
+  return normalizeSupportLanguage();
 };
 
 // Helper to get UI display text using appLanguage (for titles, descriptions, etc.)
@@ -320,13 +340,25 @@ const getUIDisplayText = (textObj) => {
   if (typeof textObj === "string") return textObj;
   const lang = getAppLanguage();
   const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
+  if (lang === "ja" && !textObj.ja) {
+    return translateSkillTreeTextToJapanese(fallback);
+  }
+  if (lang === "hi" && !textObj.hi) {
+    return translateSkillTreeTextToHindi(fallback);
+  }
+  if (lang === "ar" && !textObj.ar) {
+    return translateSkillTreeTextToArabic(fallback);
+  }
+  if (lang === "zh" && !textObj.zh) {
+    return translateSkillTreeTextToChinese(fallback);
+  }
   return textObj[lang] || fallback;
 };
 
 // Helper to get translations for UI elements - uses appLanguage for UI text
-const getTranslation = (key, params = {}) => {
-  const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+const getTranslation = (key, params = {}, languageOverride) => {
+  const lang = normalizeSupportLanguage(languageOverride || getAppLanguage());
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
@@ -1642,6 +1674,76 @@ const GAME_LOADING_MESSAGES = {
     "Ambientando la escena...",
     "Creando tu aventura...",
   ],
+  it: [
+    "Costruendo il tuo mondo...",
+    "Posizionando i personaggi...",
+    "Scrivendo i dialoghi della missione...",
+    "Generando sfide di vocabolario...",
+    "Progettando la mappa...",
+    "Preparando i rompicapo linguistici...",
+    "Ambientando la scena...",
+    "Creando la tua avventura...",
+  ],
+  pt: [
+    "Construindo o seu mundo...",
+    "Posicionando NPCs...",
+    "Escrevendo diálogos da missão...",
+    "Gerando desafios de vocabulário...",
+    "Desenhando o mapa...",
+    "Preparando enigmas de idioma...",
+    "Montando a cena...",
+    "Criando a sua aventura...",
+  ],
+  fr: [
+    "Construction de votre monde...",
+    "Placement des PNJ...",
+    "Ecriture des dialogues de quete...",
+    "Generation des defis de vocabulaire...",
+    "Conception de la carte...",
+    "Preparation des enigmes de langue...",
+    "Mise en scene...",
+    "Creation de votre aventure...",
+  ],
+  ja: [
+    "あなたの世界を作っています...",
+    "NPCを配置しています...",
+    "クエストの会話を書いています...",
+    "語彙チャレンジを生成しています...",
+    "マップを設計しています...",
+    "言語パズルを準備しています...",
+    "場面を整えています...",
+    "冒険を組み立てています...",
+  ],
+  hi: [
+    "आपकी दुनिया बनाई जा रही है...",
+    "NPC को रखा जा रहा है...",
+    "क्वेस्ट के संवाद लिखे जा रहे हैं...",
+    "शब्दावली चुनौतियां तैयार की जा रही हैं...",
+    "मानचित्र का लेआउट बनाया जा रहा है...",
+    "भाषा पहेलियां तैयार की जा रही हैं...",
+    "दृश्य सजाया जा रहा है...",
+    "आपका रोमांच तैयार किया जा रहा है...",
+  ],
+  ar: [
+    "بنكوّن عالمك...",
+    "بنحط الشخصيات...",
+    "بنكتب حوار المهمة...",
+    "بنجهز تحديات المفردات...",
+    "بنرسم خريطة المكان...",
+    "بنحضّر ألغاز اللغة...",
+    "بنظبط المشهد...",
+    "بنصنع مغامرتك...",
+  ],
+  zh: [
+    "正在构建你的世界...",
+    "正在放置角色...",
+    "正在编写任务对话...",
+    "正在生成词汇挑战...",
+    "正在设计地图布局...",
+    "正在准备语言谜题...",
+    "正在布置场景...",
+    "正在打造你的冒险...",
+  ],
 };
 
 function LessonDetailModal({
@@ -1664,8 +1766,15 @@ function LessonDetailModal({
   const generationTokenRef = useRef(0);
   const isTransitioningToLesson = gameLoading || lessonLoading;
   const blockModalClose = useCallback(() => undefined, []);
+  const resolvedSupportLang = normalizeSupportLanguage(supportLang);
+  const isRtl = getLanguageDirection(resolvedSupportLang) === "rtl";
+  const t = useCallback(
+    (key, params = {}) => getTranslation(key, params, resolvedSupportLang),
+    [resolvedSupportLang],
+  );
 
-  const loadingMessages = GAME_LOADING_MESSAGES[supportLang] || GAME_LOADING_MESSAGES.en;
+  const loadingMessages =
+    GAME_LOADING_MESSAGES[resolvedSupportLang] || GAME_LOADING_MESSAGES.en;
 
   const captureModalSize = useCallback(() => {
     if (!isDesktop || !modalContentRef.current) return;
@@ -1886,17 +1995,13 @@ function LessonDetailModal({
               zIndex={2}
               px={{ base: 3, md: 4 }}
               py={{ base: 3, md: 4 }}
-              bgGradient={
-                isLightTheme
-                  ? "linear(to-b, rgba(255, 252, 247, 0.98), rgba(255, 252, 247, 0.76), transparent)"
-                  : "linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
-              }
+              bgGradient="linear(to-b, rgba(10, 13, 27, 0.96), rgba(10, 13, 27, 0.72), transparent)"
             >
               <Flex align="center" justify="space-between" gap={3}>
                 <Text
                   flex="1"
                   fontSize={{ base: "sm", md: "md" }}
-                  color={isLightTheme ? "gray.200" : "blue.100"}
+                  color="blue.100"
                   minH="24px"
                   key={loadingMsgIdx}
                   fontFamily="monospace"
@@ -1928,7 +2033,7 @@ function LessonDetailModal({
                         : "whiteAlpha.300",
                     }}
                   >
-                    {getTranslation("practice_skip_question")}
+                    {t("practice_skip_question")}
                   </Button>
                 ) : null}
               </Flex>
@@ -1984,7 +2089,8 @@ function LessonDetailModal({
               }}
               borderRadius="lg"
               top={4}
-              right={4}
+              left={isRtl ? 4 : undefined}
+              right={isRtl ? "auto" : 4}
               isDisabled={lessonLoading}
             />
             <ModalBody pb={6} pt={6} position="relative">
@@ -2011,15 +2117,15 @@ function LessonDetailModal({
                     color={isLightTheme ? "var(--app-text-primary)" : "white"}
                     fontSize="sm"
                   >
-                    {getTranslation("skill_tree_learning_activities")}
+                    {t("skill_tree_learning_activities")}
                   </Text>
                   <Flex gap={2} flexWrap="wrap">
                     {lesson.modes.map((mode) => {
                       const Icon = MODE_ICONS[mode] || RiStarLine;
                       const modeKey = `mode_${mode}`;
                       const modeName =
-                        getTranslation(modeKey) !== modeKey
-                          ? getTranslation(modeKey)
+                        t(modeKey) !== modeKey
+                          ? t(modeKey)
                           : mode;
                       return (
                         <Badge
@@ -2045,7 +2151,13 @@ function LessonDetailModal({
                           }
                         >
                           <Icon size={16} />
-                          <Text textTransform="capitalize">{modeName}</Text>
+                          <Text
+                            textTransform={
+                              resolvedSupportLang === "ar" ? "none" : "capitalize"
+                            }
+                          >
+                            {modeName}
+                          </Text>
                         </Badge>
                       );
                     })}
@@ -2167,13 +2279,13 @@ function LessonDetailModal({
                         fontSize="md"
                       >
                         {lesson.isTutorial
-                          ? getTranslation("skill_tree_tutorial_goal")
+                          ? t("skill_tree_tutorial_goal")
                           : lesson.isGame
-                            ? getTranslation("skill_tree_game_reward") ||
+                            ? t("skill_tree_game_reward") ||
                               "Game Reward"
                             : lesson.isFinalQuiz
-                              ? getTranslation("skill_tree_passing_score")
-                              : getTranslation("skill_tree_xp_reward")}
+                              ? t("skill_tree_passing_score")
+                              : t("skill_tree_xp_reward")}
                       </Text>
                     </HStack>
                     <Text
@@ -2191,13 +2303,14 @@ function LessonDetailModal({
                       maxW={{ base: "140px", sm: "200px", md: "none" }}
                     >
                       {lesson.isTutorial
-                        ? getTranslation("skill_tree_tutorial_activities")
+                        ? t("skill_tree_tutorial_activities")
                         : lesson.isGame
                           ? `+${lesson.xpReward} XP`
                           : lesson.isFinalQuiz
                             ? `${Math.round(
-                                (lesson.quizConfig?.passingScore /
-                                  lesson.quizConfig?.questionsRequired) *
+                                ((lesson.quizConfig?.passingScore ?? 8) /
+                                  (lesson.quizConfig?.questionsRequired ??
+                                    10)) *
                                   100,
                               )}%`
                             : `+${lesson.xpReward} XP`}
@@ -2217,7 +2330,7 @@ function LessonDetailModal({
                     }
                   }}
                   isLoading={lessonLoading}
-                  loadingText={getTranslation("generic_loading")}
+                  loadingText={t("skill_tree_starting_lesson")}
                   bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
                   color="white"
                   fontSize="lg"
@@ -2234,7 +2347,7 @@ function LessonDetailModal({
                   }}
                   transition="all 0.2s"
                 >
-                  {getTranslation("skill_tree_start_lesson")}
+                  {t("skill_tree_start_lesson")}
                 </Button>
               </VStack>
             </ModalBody>

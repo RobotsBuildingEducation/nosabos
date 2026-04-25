@@ -1,4 +1,216 @@
-export const ITALIAN_ALPHABET = [
+const ITALIAN_BOOTCAMP_COPY = {
+  a: {
+    soundIt: "Come 'a' in 'casa' - sempre uguale",
+    tipIt: "Pura e aperta. Non cambia mai.",
+    meaningIt: "amore",
+  },
+  b: {
+    soundIt: "Come 'b' in 'barca'",
+    tipIt: "Come la B inglese. Quando è doppia (BB), tienila più a lungo.",
+    meaningIt: "bello",
+  },
+  c: {
+    soundIt: "Come 'k' davanti a a/o/u; come 'ci' in 'ciao' davanti a e/i",
+    tipIt: "C davanti a e/i produce il suono dolce di 'ciao'.",
+    meaningIt: "ciao/arrivederci",
+  },
+  d: {
+    soundIt: "Come 'd' in 'dado'",
+    tipIt: "D dentale: la lingua tocca il retro dei denti.",
+    meaningIt: "dolce",
+  },
+  e: {
+    soundIt: "E aperta o chiusa a seconda della parola",
+    tipIt: "Due suoni: E aperta ed E chiusa. La pronuncia varia per regione.",
+    meaningIt: "bene/buono",
+  },
+  f: {
+    soundIt: "Come 'f' in 'fame'",
+    tipIt: "Come la F inglese.",
+    meaningIt: "famiglia",
+  },
+  g: {
+    soundIt: "Come 'g' dura davanti a a/o/u; come 'gi' davanti a e/i",
+    tipIt: "G davanti a e/i produce il suono dolce di 'gente'.",
+    meaningIt: "gente",
+  },
+  h: {
+    soundIt: "Sempre muta",
+    tipIt: "È muta, ma cambia C, G e SC: 'che' = ke, 'ghe' = ghe.",
+    meaningIt: "hotel",
+  },
+  i: {
+    soundIt: "Come 'i' in 'isola'",
+    tipIt: "Suono puro, come la I italiana.",
+    meaningIt: "Italia",
+  },
+  l: {
+    soundIt: "Come 'l' in 'luna'",
+    tipIt: "L chiara e stabile.",
+    meaningIt: "luna",
+  },
+  m: {
+    soundIt: "Come 'm' in 'mamma'",
+    tipIt: "Come la M inglese.",
+    meaningIt: "mamma",
+  },
+  n: {
+    soundIt: "Come 'n' in 'notte'",
+    tipIt: "Come la N inglese.",
+    meaningIt: "notte",
+  },
+  o: {
+    soundIt: "O aperta o chiusa a seconda della parola",
+    tipIt: "Due suoni: O aperta e O chiusa. La pronuncia varia per regione.",
+    meaningIt: "oggi",
+  },
+  p: {
+    soundIt: "Come 'p' in 'papà'",
+    tipIt: "Non aspirata, come la P italiana.",
+    meaningIt: "pizza",
+  },
+  q: {
+    soundIt: "Come 'k', sempre seguita da U",
+    tipIt: "QU produce il suono 'kw'. La U si pronuncia sempre: 'quando'.",
+    meaningIt: "quando",
+  },
+  r: {
+    soundIt: "R vibrante o arrotata",
+    tipIt: "R semplice = vibrazione leggera; RR = vibrazione forte.",
+    meaningIt: "rosso",
+  },
+  s: {
+    soundIt: "Come 's' sorda o 'z' sonora a seconda della posizione",
+    tipIt: "Davanti a consonanti sonore spesso diventa 'z'. Tra vocali varia per regione.",
+    meaningIt: "sole",
+  },
+  t: {
+    soundIt: "Come 't' in 'tempo'",
+    tipIt: "T dentale e non aspirata. La lingua tocca i denti.",
+    meaningIt: "tempo",
+  },
+  u: {
+    soundIt: "Come 'u' in 'uno'",
+    tipIt: "Suono puro, come la U italiana.",
+    meaningIt: "uno",
+  },
+  v: {
+    soundIt: "Come 'v' in 'vino'",
+    tipIt: "I denti superiori toccano il labbro inferiore. Diversa da B.",
+    meaningIt: "vino",
+  },
+  z: {
+    soundIt: "Come 'ts' sorda o 'dz' sonora",
+    tipIt: "Due suoni: 'pizza' = ts, 'zero' = dz. Varia per regione.",
+    meaningIt: "zero",
+  },
+  à: {
+    soundIt: "A aperta con accento sulla sillaba finale",
+    tipIt: "Compare alla fine delle parole: 'città', 'papà'.",
+    meaningIt: "città",
+  },
+  è: {
+    soundIt: "E aperta e accentata",
+    tipIt: "E aperta finale. 'È' significa 'is/è'. 'Caffè' ha E aperta.",
+    meaningIt: "caffè",
+  },
+  é: {
+    soundIt: "E chiusa e accentata",
+    tipIt: "E chiusa finale. 'Perché' ha E chiusa.",
+    meaningIt: "perché",
+  },
+  ì: {
+    soundIt: "I accentata, come 'i' in 'isola'",
+    tipIt: "Compare alla fine delle parole: 'così', 'lì'.",
+    meaningIt: "così",
+  },
+  ò: {
+    soundIt: "O aperta e accentata",
+    tipIt: "O aperta finale. 'Però' significa 'but/however'.",
+    meaningIt: "però/tuttavia",
+  },
+  ó: {
+    soundIt: "O chiusa e accentata, meno comune",
+    tipIt: "L'accento acuto sulla O è raro; molte parole usano Ò.",
+    meaningIt: "metropolitana",
+  },
+  ù: {
+    soundIt: "U accentata, come 'u' in 'uno'",
+    tipIt: "Compare alla fine delle parole: 'più', 'gioventù'.",
+    meaningIt: "più",
+  },
+  ch: {
+    soundIt: "Come 'k' - mantiene C dura davanti a e/i",
+    tipIt: "H rende dura la C davanti a e/i: 'che' = ke, 'chi' = ki.",
+    meaningIt: "che",
+  },
+  gh: {
+    soundIt: "Come 'g' dura - mantiene G dura davanti a e/i",
+    tipIt: "H rende dura la G davanti a e/i: 'ghetto', 'spaghetti'.",
+    meaningIt: "spaghetti",
+  },
+  gl: {
+    soundIt: "Suono laterale palatale, come GLI in 'famiglia'",
+    tipIt: "GLI produce un suono morbido: 'famiglia' = fa-MI-glia.",
+    meaningIt: "famiglia",
+  },
+  gn: {
+    soundIt: "Come 'gn' in 'gnocchi'",
+    tipIt: "Stesso suono di GN in italiano: 'gnocchi', 'lasagna', 'bagno'.",
+    meaningIt: "gnocchi",
+  },
+  sc: {
+    soundIt: "Come 'sh' davanti a e/i",
+    tipIt: "SC davanti a e/i = suono 'sh'. Aggiungi H per 'sk': 'schema'.",
+    meaningIt: "pesce",
+  },
+  "double-consonants": {
+    soundIt: "Pronunciate più lunghe, con una breve pausa",
+    tipIt: "Le doppie italiane cambiano il significato: 'fato' vs 'fatto'.",
+    meaningIt: "mamma",
+  },
+  "foreign-j": {
+    soundIt: "Come 'y' in parole straniere",
+    tipIt: "Solo in parole straniere: 'jeans', 'jazz'. L'italiano nativo usa I o GI.",
+    meaningIt: "jeans",
+  },
+  "foreign-k": {
+    soundIt: "Come 'k' in parole straniere",
+    tipIt: "Solo in parole straniere. L'italiano nativo usa C o CH.",
+    meaningIt: "kiwi",
+  },
+  "foreign-w": {
+    soundIt: "Come 'w' o 'v' in parole straniere",
+    tipIt: "Solo in parole straniere: 'weekend', 'web'. Spesso si pronuncia come V.",
+    meaningIt: "weekend",
+  },
+  "foreign-x": {
+    soundIt: "Come 'ks' in parole straniere",
+    tipIt: "Solo in parole straniere: 'taxi', 'extra'.",
+    meaningIt: "taxi",
+  },
+  "foreign-y": {
+    soundIt: "Come 'i' in parole straniere",
+    tipIt: "Solo in parole straniere: 'yoga', 'yogurt'.",
+    meaningIt: "yogurt",
+  },
+};
+
+const withItalianBootcampCopy = (letters) =>
+  letters.map((letter) => {
+    const copy = ITALIAN_BOOTCAMP_COPY[letter.id] || {};
+    return {
+      ...letter,
+      soundIt: copy.soundIt || letter.sound,
+      tipIt: copy.tipIt || letter.tip,
+      practiceWordMeaning: {
+        ...(letter.practiceWordMeaning || {}),
+        it: copy.meaningIt || letter.practiceWordMeaning?.en || "",
+      },
+    };
+  });
+
+export const ITALIAN_ALPHABET = withItalianBootcampCopy([
   {
     id: "a",
     letter: "A a",
@@ -506,4 +718,4 @@ export const ITALIAN_ALPHABET = [
     practiceWordMeaning: { en: "yogurt", es: "yogur" },
     tts: "yogurt",
   },
-];
+]);

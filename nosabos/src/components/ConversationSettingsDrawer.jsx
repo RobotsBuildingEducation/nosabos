@@ -27,6 +27,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -40,71 +44,190 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 const CEFR_LEVELS = [
   {
     level: "Pre-A1",
-    name: { en: "Foundations", es: "Fundamentos" },
+    name: {
+      en: "Foundations",
+      es: "Fundamentos",
+      pt: "Fundamentos",
+      it: "Fondamenti",
+      fr: "Fondations",
+      ja: "基礎",
+      hi: "नींव",
+      ar: "الأساسيات",
+      zh: "基础",
+    },
     description: {
       en: "First words and phrases",
       es: "Primeras palabras y frases",
+      pt: "Primeiras palavras e frases",
+      it: "Prime parole e frasi",
+      fr: "Premiers mots et phrases",
+      ja: "最初の単語とフレーズ",
+      hi: "पहले शब्द और वाक्यांश",
+      ar: "أول كلمات وعبارات",
+      zh: "最初的单词和短语",
     },
     color: "#8B5CF6",
   },
   {
     level: "A1",
-    name: { en: "Beginner", es: "Principiante" },
+    name: {
+      en: "Beginner",
+      es: "Principiante",
+      pt: "Iniciante",
+      it: "Principiante",
+      fr: "Debutant",
+      ja: "初心者",
+      hi: "शुरुआती",
+      ar: "مبتدئ",
+      zh: "初学者",
+    },
     description: {
       en: "Basic survival language",
       es: "Lenguaje básico de supervivencia",
+      pt: "Linguagem básica de sobrevivência",
+      it: "Lingua essenziale di base",
+      fr: "Langue essentielle de base",
+      ja: "基本的なサバイバル表現",
+      hi: "बुनियादी रोज़मर्रा की भाषा",
+      ar: "لغة أساسية للحياة اليومية",
+      zh: "基础生存语言",
     },
     color: "#3B82F6",
   },
   {
     level: "A2",
-    name: { en: "Elementary", es: "Elemental" },
+    name: {
+      en: "Elementary",
+      es: "Elemental",
+      pt: "Elementar",
+      it: "Elementare",
+      fr: "Elementaire",
+      ja: "初級",
+      hi: "प्रारंभिक",
+      ar: "أساسي",
+      zh: "初级",
+    },
     description: {
       en: "Simple everyday communication",
       es: "Comunicación cotidiana simple",
+      pt: "Comunicação cotidiana simples",
+      it: "Comunicazione quotidiana semplice",
+      fr: "Communication simple du quotidien",
+      ja: "簡単な日常コミュニケーション",
+      hi: "सरल दैनिक संवाद",
+      ar: "تواصل يومي بسيط",
+      zh: "简单日常交流",
     },
     color: "#8B5CF6",
   },
   {
     level: "B1",
-    name: { en: "Intermediate", es: "Intermedio" },
+    name: {
+      en: "Intermediate",
+      es: "Intermedio",
+      pt: "Intermediário",
+      it: "Intermedio",
+      fr: "Intermediaire",
+      ja: "中級",
+      hi: "मध्यम",
+      ar: "متوسط",
+      zh: "中级",
+    },
     description: {
       en: "Handle everyday situations",
       es: "Manejo de situaciones cotidianas",
+      pt: "Lidar com situações do dia a dia",
+      it: "Gestire situazioni quotidiane",
+      fr: "Gerer les situations quotidiennes",
+      ja: "日常場面に対応",
+      hi: "रोज़मर्रा की स्थितियाँ संभालना",
+      ar: "التعامل مع مواقف الحياة اليومية",
+      zh: "应对日常情境",
     },
     color: "#A855F7",
   },
   {
     level: "B2",
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    name: {
+      en: "Upper Intermediate",
+      es: "Intermedio Alto",
+      pt: "Intermediário avançado",
+      it: "Intermedio alto",
+      fr: "Intermediaire avance",
+      ja: "中上級",
+      hi: "उच्च मध्यम",
+      ar: "متوسط متقدم",
+      zh: "中高级",
+    },
     description: {
       en: "Complex discussions",
       es: "Discusiones complejas",
+      pt: "Discussões complexas",
+      it: "Discussioni complesse",
+      fr: "Discussions complexes",
+      ja: "複雑な話し合い",
+      hi: "जटिल चर्चाएँ",
+      ar: "مناقشات معقدة",
+      zh: "复杂讨论",
     },
     color: "#F97316",
   },
   {
     level: "C1",
-    name: { en: "Advanced", es: "Avanzado" },
+    name: {
+      en: "Advanced",
+      es: "Avanzado",
+      pt: "Avançado",
+      it: "Avanzato",
+      fr: "Avance",
+      ja: "上級",
+      hi: "उन्नत",
+      ar: "متقدم",
+      zh: "高级",
+    },
     description: {
       en: "Sophisticated language use",
       es: "Uso sofisticado del idioma",
+      pt: "Uso sofisticado do idioma",
+      it: "Uso sofisticato della lingua",
+      fr: "Usage sophistique de la langue",
+      ja: "洗練された言語運用",
+      hi: "परिष्कृत भाषा प्रयोग",
+      ar: "استخدام متقن للغة",
+      zh: "成熟精细的语言运用",
     },
     color: "#EF4444",
   },
   {
     level: "C2",
-    name: { en: "Mastery", es: "Maestría" },
+    name: {
+      en: "Mastery",
+      es: "Maestría",
+      pt: "Domínio",
+      it: "Padronanza",
+      fr: "Maitrise",
+      ja: "熟達",
+      hi: "निपुणता",
+      ar: "إتقان",
+      zh: "精通",
+    },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
+      pt: "Proficiência quase nativa",
+      it: "Competenza quasi nativa",
+      fr: "Competence quasi native",
+      ja: "ネイティブに近い熟達度",
+      hi: "लगभग मातृभाषी दक्षता",
+      ar: "طلاقة قريبة من المتحدث الأصلي",
+      zh: "接近母语水平",
     },
     color: "#EC4899",
   },
 ];
 
 function getConversationSettingsUi(lang) {
-  return {
+  const copy = {
     en: {
       title: "Conversation Settings",
       proficiencyLabel: "Proficiency Level",
@@ -134,7 +257,109 @@ function getConversationSettingsUi(lang) {
       save: "Guardar",
       close: "Cerrar",
     },
-  }[lang];
+    it: {
+      title: "Impostazioni conversazione",
+      proficiencyLabel: "Livello di competenza",
+      proficiencyHint:
+        "Imposta il livello di difficoltà per i temi di conversazione",
+      pronunciationLabel: "Pratica pronuncia",
+      pronunciationHint: "L'IA ti aiuterà a migliorare la pronuncia",
+      subjectLabel: "Temi personalizzati",
+      subjectHint:
+        "Definisci i temi che vuoi praticare (es. medicina, lavoro, viaggi)",
+      subjectPlaceholder:
+        "es. Sono medico e voglio praticare conversazioni con i pazienti...",
+      save: "Salva",
+      close: "Chiudi",
+    },
+    fr: {
+      title: "Parametres de conversation",
+      proficiencyLabel: "Niveau de competence",
+      proficiencyHint:
+        "Definis le niveau de difficulte des sujets de conversation",
+      pronunciationLabel: "Pratique de prononciation",
+      pronunciationHint: "L'IA t'aidera a ameliorer ta prononciation",
+      subjectLabel: "Sujets personnalises",
+      subjectHint:
+        "Definis les sujets que tu veux pratiquer (ex. medecine, travail, voyage)",
+      subjectPlaceholder:
+        "ex. Je suis medecin et je veux pratiquer des conversations avec des patients...",
+      save: "Enregistrer",
+      close: "Fermer",
+    },
+    ja: {
+      title: "会話設定",
+      proficiencyLabel: "熟達度レベル",
+      proficiencyHint: "会話トピックの難易度を設定します",
+      pronunciationLabel: "発音練習",
+      pronunciationHint: "AIが発音改善をサポートします",
+      subjectLabel: "カスタムトピック",
+      subjectHint:
+        "練習したいテーマを指定します（例: 医療用語、ビジネス、旅行）",
+      subjectPlaceholder:
+        "例: 私は医師で、患者との医療会話を練習したいです...",
+      save: "保存",
+      close: "閉じる",
+    },
+    pt: {
+      title: "Configurações da conversa",
+      proficiencyLabel: "Nível de proficiência",
+      proficiencyHint: "Defina o nível de dificuldade dos temas de conversa",
+      pronunciationLabel: "Prática de pronúncia",
+      pronunciationHint: "A IA vai ajudar você a melhorar a pronúncia",
+      subjectLabel: "Tópicos personalizados",
+      subjectHint:
+        "Defina os temas que você quer praticar (ex.: medicina, trabalho, viagens)",
+      subjectPlaceholder:
+        "ex.: Sou médica e quero praticar conversas médicas com pacientes...",
+      save: "Salvar",
+      close: "Fechar",
+    },
+    hi: {
+      title: "बातचीत सेटिंग्स",
+      proficiencyLabel: "दक्षता स्तर",
+      proficiencyHint: "बातचीत के विषयों की कठिनाई तय करें",
+      pronunciationLabel: "उच्चारण अभ्यास",
+      pronunciationHint: "AI आपकी उच्चारण सुधारने में मदद करेगा",
+      subjectLabel: "कस्टम विषय",
+      subjectHint:
+        "वे विषय लिखें जिनका आप अभ्यास करना चाहते हैं (जैसे: चिकित्सा, काम, यात्रा)",
+      subjectPlaceholder:
+        "जैसे: मैं डॉक्टर हूँ और मरीजों के साथ बातचीत का अभ्यास करना चाहता/चाहती हूँ...",
+      save: "सहेजें",
+      close: "बंद करें",
+    },
+    ar: {
+      title: "إعدادات المحادثة",
+      proficiencyLabel: "مستوى الكفاءة",
+      proficiencyHint: "حدّد درجة صعوبة مواضيع المحادثة",
+      pronunciationLabel: "تدريب النطق",
+      pronunciationHint: "الذكاء الاصطناعي هيساعدك تحسّن النطق",
+      subjectLabel: "مواضيع مخصصة",
+      subjectHint:
+        "اكتب المواضيع اللي عايز تتدرّب عليها (مثال: طب، شغل، سفر)",
+      subjectPlaceholder:
+        "مثال: أنا دكتور وعايز أتدرّب على محادثات طبية مع المرضى...",
+      save: "حفظ",
+      close: "إغلاق",
+    },
+    zh: {
+      title: "会话设置",
+      proficiencyLabel: "熟练度等级",
+      proficiencyHint: "设置会话主题的难度等级",
+      pronunciationLabel: "发音练习",
+      pronunciationHint: "AI 会帮助你提升单词发音",
+      subjectLabel: "自定义主题",
+      subjectHint:
+        "定义你想练习的主题（例如：医疗术语、商务、旅行）",
+      subjectPlaceholder:
+        "例如：我是医生，想练习与患者进行医疗会话...",
+      save: "保存",
+      close: "关闭",
+    },
+  };
+
+  return copy[lang] || copy.en;
 }
 
 export function ConversationSettingsPanel({
@@ -145,7 +370,7 @@ export function ConversationSettingsPanel({
   onSave,
   showActions = true,
 }) {
-  const lang = supportLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -229,10 +454,10 @@ export function ConversationSettingsPanel({
               </Badge>
               <Box minW={0} flex={1}>
                 <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                  {currentLevel.name[lang]}
+                  {currentLevel.name[lang] || currentLevel.name.en}
                 </Text>
                 <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                  {currentLevel.description[lang]}
+                  {currentLevel.description[lang] || currentLevel.description.en}
                 </Text>
               </Box>
             </HStack>
@@ -273,13 +498,13 @@ export function ConversationSettingsPanel({
                   </Badge>
                   <Box minW={0} flex={1}>
                     <Text fontSize="sm" fontWeight="medium">
-                      {level.name[lang]}
+                      {level.name[lang] || level.name.en}
                     </Text>
                     <Text
                       fontSize="xs"
                       color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
                     >
-                      {level.description[lang]}
+                      {level.description[lang] || level.description.en}
                     </Text>
                   </Box>
                 </HStack>
@@ -369,7 +594,7 @@ export default function ConversationSettingsDrawer({
   onSettingsChange,
   supportLang = "en",
 }) {
-  const lang = supportLang === "es" ? "es" : "en";
+  const lang = normalizeSupportLanguage(supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const t = useMemo(() => getConversationSettingsUi(lang), [lang]);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";

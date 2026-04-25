@@ -74,6 +74,7 @@ import RandomCharacter from "../RandomCharacter";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  DEFAULT_SUPPORT_LANGUAGE,
   getLanguagePromptName,
   normalizePracticeLanguage,
   normalizeSupportLanguage,
@@ -83,6 +84,7 @@ import {
   SOFT_STOP_BUTTON_SOLID_BG,
   SOFT_STOP_BUTTON_SOLID_HOVER_BG,
 } from "../../utils/softStopButton";
+import { getBidiTextProps, mergeBidiSx } from "../../utils/bidiText";
 import { useThemeStore } from "../../useThemeStore";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
@@ -118,6 +120,54 @@ const OBJECT_SEARCH_TEST_COPY = {
     alreadyChecked: "Ya revisaste este objeto.",
     nothingFound: "No hay nada util aqui.",
     continueSearching: "Seguir buscando",
+  },
+  it: {
+    intro: (itemName) =>
+      `Ho bisogno di ${itemName}. Cerca tra gli oggetti in qualsiasi stanza di questa mappa. Ognuno nasconde un oggetto. Portami quello giusto.`,
+    wrongItem: (wrongName, correctName) =>
+      `Questo è ${wrongName}. Ho ancora bisogno di ${correctName}. Continua a controllare gli oggetti.`,
+    success: (itemName) => `Perfetto. ${itemName} è esattamente ciò di cui avevo bisogno.`,
+    chooseItem: "Scegli un oggetto da consegnare:",
+    foundItem: (itemName) => `Trovato: ${itemName}`,
+    alreadyChecked: "Hai già controllato questo oggetto.",
+    nothingFound: "Niente di utile qui.",
+    continueSearching: "Continua a cercare",
+  },
+  fr: {
+    intro: (itemName) =>
+      `J'ai besoin de ${itemName}. Fouille les objets dans n'importe quelle salle de cette carte. Chacun cache un objet. Rapporte-moi le bon.`,
+    wrongItem: (wrongName, correctName) =>
+      `C'est ${wrongName}. J'ai encore besoin de ${correctName}. Continue a verifier les objets.`,
+    success: (itemName) => `Parfait. ${itemName} est exactement ce qu'il me fallait.`,
+    chooseItem: "Choisis un objet a donner :",
+    foundItem: (itemName) => `Trouve : ${itemName}`,
+    alreadyChecked: "Tu as deja verifie cet objet.",
+    nothingFound: "Rien d'utile ici.",
+    continueSearching: "Continuer a chercher",
+  },
+  ja: {
+    intro: (itemName) =>
+      `${itemName}が必要です。このマップのどの部屋でも、調べられる物を探してください。それぞれに1つずつアイテムが隠れています。正しいものを持ってきてください。`,
+    wrongItem: (wrongName, correctName) =>
+      `それは${wrongName}です。まだ${correctName}が必要です。ほかの物も調べてください。`,
+    success: (itemName) => `完璧です。${itemName}こそ必要なものです。`,
+    chooseItem: "渡すアイテムを選んでください:",
+    foundItem: (itemName) => `見つけたもの: ${itemName}`,
+    alreadyChecked: "この物はもう調べました。",
+    nothingFound: "役に立つものはありません。",
+    continueSearching: "探し続ける",
+  },
+  hi: {
+    intro: (itemName) =>
+      `मुझे ${itemName} चाहिए। इस नक्शे के किसी भी कमरे में मौजूद वस्तुओं को खोजिए। हर एक के भीतर एक चीज़ छिपी है। सही चीज़ मेरे पास लाइए।`,
+    wrongItem: (wrongName, correctName) =>
+      `यह ${wrongName} है। मुझे अभी भी ${correctName} चाहिए। वस्तुओं को देखते रहिए।`,
+    success: (itemName) => `बिलकुल सही। मुझे ठीक ${itemName} ही चाहिए था।`,
+    chooseItem: "देने के लिए एक वस्तु चुनें:",
+    foundItem: (itemName) => `मिला: ${itemName}`,
+    alreadyChecked: "आप इस वस्तु को पहले ही देख चुके हैं।",
+    nothingFound: "यहाँ कुछ उपयोगी नहीं मिला।",
+    continueSearching: "खोज जारी रखें",
   },
 };
 
@@ -159,6 +209,174 @@ const QUEST_LOG_COPY = {
     speechTask: (npcName) => `Habla con ${npcName} y responde con tu voz.`,
     continueTask: (npcName) => `Habla con ${npcName} para continuar.`,
   },
+  it: {
+    title: "Diario delle missioni",
+    button: "Diario missioni",
+    currentTask: "Compito attuale",
+    progress: (done, total) => `Progresso: ${done}/${total}`,
+    complete: "Missione completata! Ottimo lavoro.",
+    defaultTask: "Continua ad esplorare e parla con il prossimo personaggio.",
+    startObjectSearch: (npcName, itemName) =>
+      `Parla con ${npcName} per iniziare la ricerca di ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Esamina gli oggetti in qualsiasi stanza per trovare ${itemName}. Ogni oggetto nasconde un elemento.`,
+    returnItem: (itemName, npcName) => `Porta ${itemName} da ${npcName}.`,
+    gatherSearch: (itemName) => `Cerca ${itemName} in questa zona.`,
+    gatherHint: (hint) => `Suggerimento: ${hint}`,
+    choiceTask: (npcName) => `Parla con ${npcName} e scegli una risposta.`,
+    speechTask: (npcName) => `Parla con ${npcName} e rispondi con la tua voce.`,
+    continueTask: (npcName) => `Parla con ${npcName} per continuare.`,
+  },
+  fr: {
+    title: "Journal de quetes",
+    button: "Journal de quetes",
+    currentTask: "Tache actuelle",
+    progress: (done, total) => `Progres : ${done}/${total}`,
+    complete: "Quete terminee ! Beau travail.",
+    defaultTask: "Continue a explorer et parle au prochain personnage.",
+    startObjectSearch: (npcName, itemName) =>
+      `Parle a ${npcName} pour commencer la recherche de ${itemName}.`,
+    searchObjects: (itemName) =>
+      `Fouille les objets examinables dans n'importe quelle salle pour trouver ${itemName}. Chaque objet cache un element.`,
+    returnItem: (itemName, npcName) => `Rapporte ${itemName} a ${npcName}.`,
+    gatherSearch: (itemName) => `Cherche ${itemName} dans cette zone.`,
+    gatherHint: (hint) => `Indice : ${hint}`,
+    choiceTask: (npcName) => `Parle a ${npcName} et choisis une reponse.`,
+    speechTask: (npcName) => `Parle a ${npcName} et reponds avec ta voix.`,
+    continueTask: (npcName) => `Parle a ${npcName} pour continuer.`,
+  },
+  ja: {
+    title: "クエストログ",
+    button: "クエストログ",
+    currentTask: "現在のタスク",
+    progress: (done, total) => `進捗: ${done}/${total}`,
+    complete: "クエスト完了！よくできました。",
+    defaultTask: "探索を続けて、次のキャラクターに話しかけましょう。",
+    startObjectSearch: (npcName, itemName) =>
+      `${npcName}に話しかけて、${itemName}探しを始めましょう。`,
+    searchObjects: (itemName) =>
+      `どの部屋でも、調べられる物から${itemName}を探しましょう。それぞれの物に1つずつアイテムが隠れています。`,
+    returnItem: (itemName, npcName) => `${itemName}を${npcName}に持っていきましょう。`,
+    gatherSearch: (itemName) => `このエリアで${itemName}を探しましょう。`,
+    gatherHint: (hint) => `ヒント: ${hint}`,
+    choiceTask: (npcName) => `${npcName}に話しかけて、返答を選びましょう。`,
+    speechTask: (npcName) => `${npcName}に話しかけて、声で答えましょう。`,
+    continueTask: (npcName) => `${npcName}に話しかけて続けましょう。`,
+  },
+  hi: {
+    title: "क्वेस्ट लॉग",
+    button: "क्वेस्ट लॉग",
+    currentTask: "वर्तमान कार्य",
+    progress: (done, total) => `प्रगति: ${done}/${total}`,
+    complete: "क्वेस्ट पूरी हुई! बहुत बढ़िया।",
+    defaultTask: "खोज जारी रखें और अगले पात्र से बात करें।",
+    startObjectSearch: (npcName, itemName) =>
+      `${itemName} की खोज शुरू करने के लिए ${npcName} से बात करें।`,
+    searchObjects: (itemName) =>
+      `${itemName} ढूँढ़ने के लिए किसी भी कमरे की जाँचने योग्य वस्तुओं को देखें। हर वस्तु के भीतर एक चीज़ छिपी है।`,
+    returnItem: (itemName, npcName) => `${itemName} को वापस ${npcName} के पास ले जाएँ।`,
+    gatherSearch: (itemName) => `इस इलाके में ${itemName} खोजें।`,
+    gatherHint: (hint) => `संकेत: ${hint}`,
+    choiceTask: (npcName) => `${npcName} से बात करें और एक उत्तर चुनें।`,
+    speechTask: (npcName) => `${npcName} से बात करें और अपनी आवाज़ में उत्तर दें।`,
+    continueTask: (npcName) => `आगे बढ़ने के लिए ${npcName} से बात करें।`,
+  },
+};
+
+OBJECT_SEARCH_TEST_COPY.pt = {
+  intro: (itemName) =>
+    `Preciso de ${itemName}. Procure nos objetos de qualquer sala deste mapa. Cada um esconde um item. Traga o certo para mim.`,
+  wrongItem: (wrongName, correctName) =>
+    `Isso é ${wrongName}. Ainda preciso de ${correctName}. Continue procurando nos objetos.`,
+  success: (itemName) => `Perfeito. ${itemName} é exatamente o que eu precisava.`,
+  chooseItem: "Escolha um item para entregar:",
+  foundItem: (itemName) => `Encontrado: ${itemName}`,
+  alreadyChecked: "Você já verificou este objeto.",
+  nothingFound: "Não há nada útil aqui.",
+  continueSearching: "Continue procurando",
+};
+
+QUEST_LOG_COPY.pt = {
+  title: "Registro de missões",
+  button: "Registro de missões",
+  currentTask: "Tarefa atual",
+  progress: (done, total) => `Progresso: ${done}/${total}`,
+  complete: "Missão concluída! Bom trabalho.",
+  defaultTask: "Continue explorando e fale com o próximo personagem.",
+  startObjectSearch: (npcName, itemName) =>
+    `Fale com ${npcName} para começar a procura por ${itemName}.`,
+  searchObjects: (itemName) =>
+    `Procure ${itemName} nos objetos examináveis de qualquer sala. Cada objeto esconde um item.`,
+  returnItem: (itemName, npcName) => `Leve ${itemName} de volta para ${npcName}.`,
+  gatherSearch: (itemName) => `Procure ${itemName} nesta área.`,
+  gatherHint: (hint) => `Dica: ${hint}`,
+  choiceTask: (npcName) => `Fale com ${npcName} e escolha uma resposta.`,
+  speechTask: (npcName) => `Fale com ${npcName} e responda com a sua voz.`,
+  continueTask: (npcName) => `Fale com ${npcName} para continuar.`,
+};
+
+OBJECT_SEARCH_TEST_COPY.ar = {
+  intro: (itemName) =>
+    `أنا محتاج ${itemName}. دوّر في الأشياء الموجودة في أي أوضة على الخريطة. كل حاجة مخبية غرض. هاتلي الحاجة الصح.`,
+  wrongItem: (wrongName, correctName) =>
+    `ده ${wrongName}. أنا لسه محتاج ${correctName}. كمّل تدوير في الأشياء.`,
+  success: (itemName) => `تمام. ${itemName} هو بالظبط اللي كنت محتاجه.`,
+  chooseItem: "اختَر غرض عشان تسلّمه:",
+  foundItem: (itemName) => `لقيت: ${itemName}`,
+  alreadyChecked: "إنت فحصت الحاجة دي قبل كده.",
+  nothingFound: "مفيش حاجة مفيدة هنا.",
+  continueSearching: "كمّل تدوير",
+};
+
+QUEST_LOG_COPY.ar = {
+  title: "سجل المهام",
+  button: "سجل المهام",
+  currentTask: "المهمة الحالية",
+  progress: (done, total) => `التقدم: ${done}/${total}`,
+  complete: "المهمة خلصت! شغل ممتاز.",
+  defaultTask: "كمّل استكشاف وكلم الشخصية اللي بعدها.",
+  startObjectSearch: (npcName, itemName) =>
+    `كلم ${npcName} عشان تبدأ تدور على ${itemName}.`,
+  searchObjects: (itemName) =>
+    `فتش الأشياء اللي ينفع تفحصها في أي أوضة عشان تلاقي ${itemName}. كل حاجة مخبية غرض.`,
+  returnItem: (itemName, npcName) => `رجّع ${itemName} لـ ${npcName}.`,
+  gatherSearch: (itemName) => `دوّر على ${itemName} في المنطقة دي.`,
+  gatherHint: (hint) => `تلميح: ${hint}`,
+  choiceTask: (npcName) => `كلم ${npcName} واختَر رد.`,
+  speechTask: (npcName) => `كلم ${npcName} ورد بصوتك.`,
+  continueTask: (npcName) => `كلم ${npcName} عشان تكمل.`,
+};
+
+OBJECT_SEARCH_TEST_COPY.zh = {
+  intro: (itemName) =>
+    `我需要${itemName}。请在这张地图的任意房间里查看物品。每个物品都藏着一样东西。把正确的东西带给我。`,
+  wrongItem: (wrongName, correctName) =>
+    `这是${wrongName}。我还需要${correctName}。继续查看物品吧。`,
+  success: (itemName) => `太好了。${itemName}正是我需要的东西。`,
+  chooseItem: "选择要交出的物品：",
+  foundItem: (itemName) => `找到：${itemName}`,
+  alreadyChecked: "你已经检查过这个物品了。",
+  nothingFound: "这里没有有用的东西。",
+  continueSearching: "继续寻找",
+};
+
+QUEST_LOG_COPY.zh = {
+  title: "任务日志",
+  button: "任务日志",
+  currentTask: "当前任务",
+  progress: (done, total) => `进度：${done}/${total}`,
+  complete: "任务完成！做得好。",
+  defaultTask: "继续探索，并和下一个角色对话。",
+  startObjectSearch: (npcName, itemName) =>
+    `与 ${npcName} 对话，开始寻找${itemName}。`,
+  searchObjects: (itemName) =>
+    `在任意房间中搜索可检查物品，寻找${itemName}。每个物品都藏着一样东西。`,
+  returnItem: (itemName, npcName) => `把${itemName}带回给 ${npcName}。`,
+  gatherSearch: (itemName) => `在这个区域寻找${itemName}。`,
+  gatherHint: (hint) => `提示：${hint}`,
+  choiceTask: (npcName) => `与 ${npcName} 对话并选择一个回答。`,
+  speechTask: (npcName) => `与 ${npcName} 对话并用语音回答。`,
+  continueTask: (npcName) => `与 ${npcName} 对话以继续。`,
 };
 
 function clampGatherVisualInt(value, min, max, fallback) {
@@ -1430,6 +1648,17 @@ const UI_TEXT = {
     disableMusic: "Turn music off",
     musicOn: "Music on",
     musicOff: "Music off",
+    help: "Help",
+    inventory: "Inventory",
+    noItems: "No items yet.",
+    dropItem: "Drop",
+    wrongItem: "the wrong item",
+    speechContinue: "I understand. Let's continue.",
+    thinking: "Thinking...",
+    translateText: "Translate text",
+    undoTranslation: "Undo translation",
+    chooseCorrect: "Choose the correct option.",
+    closeDialogue: "Close dialogue",
   },
   es: {
     talkHint: "Presiona ESPACIO o toca para hablar",
@@ -1461,7 +1690,316 @@ const UI_TEXT = {
     disableMusic: "Apagar música",
     musicOn: "Música activada",
     musicOff: "Música apagada",
+    help: "Ayuda",
+    inventory: "Inventario",
+    noItems: "No tienes objetos.",
+    dropItem: "Soltar",
+    wrongItem: "el objeto equivocado",
+    speechContinue: "Entiendo. Sigamos.",
+    thinking: "Pensando...",
+    translateText: "Traducir texto",
+    undoTranslation: "Deshacer traducción",
+    chooseCorrect: "Elige la opción correcta.",
+    closeDialogue: "Cerrar dialogo",
   },
+  it: {
+    talkHint: "Premi SPAZIO o tocca per parlare",
+    correct: "Corretto!",
+    incorrect: "Riprova!",
+    completed: "Congratulazioni! Hai risposto correttamente a tutte le domande!",
+    playAgain: "Gioca ancora",
+    back: "Indietro",
+    progress: "Progresso",
+    answeredOf: "di",
+    moveHint: "Frecce o WASD per muoversi",
+    touchMove: "Tocca per muoverti, tocca NPC per parlare",
+    chooseScenario: "Scegli uno scenario",
+    scenario: "Scenario",
+    newWorld: "Nuovo mondo",
+    quest: "Missione",
+    lockedNpc: "Dovresti iniziare con",
+    response: "Risposta",
+    micStart: "Avvia mic",
+    micStop: "Ferma mic",
+    heardYou: "Ho sentito",
+    speechUnavailable: "Voce non disponibile in questo browser",
+    noSpeechMatch: "Non ho capito. Riprova.",
+    continue: "Continua",
+    skip: "Salta",
+    loadingTutorialScene: "Caricamento scena tutorial...",
+    loadingGeneratingGame: "Generazione del tuo gioco...",
+    enableMusic: "Attiva musica",
+    disableMusic: "Disattiva musica",
+    musicOn: "Musica attivata",
+    musicOff: "Musica disattivata",
+    help: "Aiuto",
+    inventory: "Inventario",
+    noItems: "Nessun oggetto.",
+    dropItem: "Lascia",
+    wrongItem: "l'oggetto sbagliato",
+    speechContinue: "Capisco. Andiamo avanti.",
+    thinking: "Sto pensando...",
+    translateText: "Traduci testo",
+    undoTranslation: "Annulla traduzione",
+    chooseCorrect: "Scegli l'opzione corretta.",
+    closeDialogue: "Chiudi dialogo",
+  },
+  fr: {
+    talkHint: "Appuie sur ESPACE ou touche pour parler",
+    correct: "Correct !",
+    incorrect: "Reessaie !",
+    completed: "Felicitations ! Tu as repondu correctement a toutes les questions !",
+    playAgain: "Rejouer",
+    back: "Retour",
+    progress: "Progres",
+    answeredOf: "sur",
+    moveHint: "Fleches ou WASD pour bouger",
+    touchMove: "Touche pour bouger, touche un PNJ pour parler",
+    chooseScenario: "Choisis un scenario",
+    scenario: "Scenario",
+    newWorld: "Nouveau monde",
+    quest: "Quete",
+    lockedNpc: "Tu devrais commencer par",
+    response: "Reponse",
+    micStart: "Demarrer le micro",
+    micStop: "Arreter le micro",
+    heardYou: "J'ai entendu",
+    speechUnavailable: "Voix indisponible dans ce navigateur",
+    noSpeechMatch: "Je n'ai pas compris. Reessaie.",
+    continue: "Continuer",
+    skip: "Passer",
+    loadingTutorialScene: "Chargement de la scene tutoriel...",
+    loadingGeneratingGame: "Generation de ton jeu...",
+    enableMusic: "Activer la musique",
+    disableMusic: "Desactiver la musique",
+    musicOn: "Musique activee",
+    musicOff: "Musique desactivee",
+    help: "Aide",
+    inventory: "Inventaire",
+    noItems: "Aucun objet.",
+    dropItem: "Jeter",
+    wrongItem: "le mauvais objet",
+    speechContinue: "Je comprends. Continuons.",
+    thinking: "Reflexion...",
+    translateText: "Traduire le texte",
+    undoTranslation: "Annuler la traduction",
+    chooseCorrect: "Choisis la bonne option.",
+    closeDialogue: "Fermer le dialogue",
+  },
+  ja: {
+    talkHint: "スペースキーまたはタップで話す",
+    correct: "正解！",
+    incorrect: "もう一度！",
+    completed: "おめでとうございます！すべての問題に正解しました！",
+    playAgain: "もう一度プレイ",
+    back: "戻る",
+    progress: "進捗",
+    answeredOf: "／",
+    moveHint: "矢印キーまたはWASDで移動",
+    touchMove: "タップで移動、NPCをタップして会話",
+    chooseScenario: "シナリオを選ぶ",
+    scenario: "シナリオ",
+    newWorld: "新しい世界",
+    quest: "クエスト",
+    lockedNpc: "最初に話す相手:",
+    response: "返答",
+    micStart: "マイク開始",
+    micStop: "マイク停止",
+    heardYou: "聞こえた内容",
+    speechUnavailable: "このブラウザでは音声を利用できません",
+    noSpeechMatch: "聞き取れませんでした。もう一度試してください。",
+    continue: "続ける",
+    skip: "スキップ",
+    loadingTutorialScene: "チュートリアル場面を読み込み中...",
+    loadingGeneratingGame: "ゲームを生成中...",
+    enableMusic: "音楽をオン",
+    disableMusic: "音楽をオフ",
+    musicOn: "音楽オン",
+    musicOff: "音楽オフ",
+    help: "ヘルプ",
+    inventory: "持ち物",
+    noItems: "まだアイテムはありません。",
+    dropItem: "捨てる",
+    wrongItem: "違うアイテム",
+    speechContinue: "わかりました。続けましょう。",
+    thinking: "考え中...",
+    translateText: "テキストを翻訳",
+    undoTranslation: "翻訳を元に戻す",
+    chooseCorrect: "正しい選択肢を選んでください。",
+    closeDialogue: "会話を閉じる",
+  },
+  hi: {
+    talkHint: "बात करने के लिए SPACE दबाएँ या टैप करें",
+    correct: "सही!",
+    incorrect: "फिर से कोशिश करें!",
+    completed: "बधाई हो! आपने सभी प्रश्नों के सही उत्तर दिए!",
+    playAgain: "फिर से खेलें",
+    back: "वापस",
+    progress: "प्रगति",
+    answeredOf: "में से",
+    moveHint: "चलने के लिए एरो की या WASD का उपयोग करें",
+    touchMove: "चलने के लिए टैप करें, बात करने के लिए NPC पर टैप करें",
+    chooseScenario: "एक परिदृश्य चुनें",
+    scenario: "परिदृश्य",
+    newWorld: "नई दुनिया",
+    quest: "क्वेस्ट",
+    lockedNpc: "आपको शुरुआत यहाँ से करनी चाहिए:",
+    response: "उत्तर",
+    micStart: "माइक शुरू करें",
+    micStop: "माइक रोकें",
+    heardYou: "मैंने सुना",
+    speechUnavailable: "इस ब्राउज़र में आवाज़ उपलब्ध नहीं है",
+    noSpeechMatch: "मैं समझ नहीं पाया। फिर से कोशिश करें।",
+    continue: "जारी रखें",
+    skip: "छोड़ें",
+    loadingTutorialScene: "ट्यूटोरियल दृश्य लोड हो रहा है...",
+    loadingGeneratingGame: "आपका गेम तैयार किया जा रहा है...",
+    enableMusic: "संगीत चालू करें",
+    disableMusic: "संगीत बंद करें",
+    musicOn: "संगीत चालू",
+    musicOff: "संगीत बंद",
+    help: "सहायता",
+    inventory: "इन्वेंटरी",
+    noItems: "अभी कोई वस्तु नहीं है।",
+    dropItem: "छोड़ें",
+    wrongItem: "गलत वस्तु",
+    speechContinue: "समझ गया। आगे बढ़ते हैं।",
+    thinking: "सोच रहा है...",
+    translateText: "पाठ का अनुवाद करें",
+    undoTranslation: "अनुवाद हटाएँ",
+    chooseCorrect: "सही विकल्प चुनें।",
+    closeDialogue: "संवाद बंद करें",
+  },
+};
+
+UI_TEXT.pt = {
+  talkHint: "Pressione ESPAÇO ou toque para falar",
+  correct: "Correto!",
+  incorrect: "Tente novamente!",
+  completed: "Parabéns! Você acertou todas as perguntas!",
+  playAgain: "Jogar novamente",
+  back: "Voltar",
+  progress: "Progresso",
+  answeredOf: "de",
+  moveHint: "Setas ou WASD para mover",
+  touchMove: "Toque para mover, toque em um NPC para conversar",
+  chooseScenario: "Escolha um cenário",
+  scenario: "Cenário",
+  newWorld: "Novo mundo",
+  quest: "Missão",
+  lockedNpc: "Você deve começar falando com:",
+  response: "Resposta",
+  micStart: "Iniciar microfone",
+  micStop: "Parar microfone",
+  heardYou: "Ouvi",
+  speechUnavailable: "A voz não está disponível neste navegador",
+  noSpeechMatch: "Não consegui entender. Tente novamente.",
+  continue: "Continuar",
+  skip: "Pular",
+  loadingTutorialScene: "Carregando a cena do tutorial...",
+  loadingGeneratingGame: "Gerando seu jogo...",
+  enableMusic: "Ativar música",
+  disableMusic: "Desativar música",
+  musicOn: "Música ativada",
+  musicOff: "Música desativada",
+  help: "Ajuda",
+  inventory: "Inventário",
+  noItems: "Ainda não há itens.",
+  dropItem: "Largar",
+  wrongItem: "o item errado",
+  speechContinue: "Entendi. Vamos continuar.",
+  thinking: "Pensando...",
+  translateText: "Traduzir texto",
+  undoTranslation: "Desfazer tradução",
+  chooseCorrect: "Escolha a opção correta.",
+  closeDialogue: "Fechar diálogo",
+};
+
+UI_TEXT.ar = {
+  talkHint: "اضغط SPACE أو اضغط على الشاشة عشان تتكلم",
+  correct: "صح!",
+  incorrect: "حاول تاني!",
+  completed: "مبروك! جاوبت على كل الأسئلة صح!",
+  playAgain: "العب تاني",
+  back: "رجوع",
+  progress: "التقدم",
+  answeredOf: "من",
+  moveHint: "استخدم الأسهم أو WASD للحركة",
+  touchMove: "اضغط عشان تتحرك، واضغط على الشخصية عشان تتكلم",
+  chooseScenario: "اختَر سيناريو",
+  scenario: "سيناريو",
+  newWorld: "عالم جديد",
+  quest: "مهمة",
+  lockedNpc: "لازم تبدأ مع",
+  response: "الرد",
+  micStart: "شغّل المايك",
+  micStop: "وقّف المايك",
+  heardYou: "أنا سمعت",
+  speechUnavailable: "الصوت مش متاح في المتصفح ده",
+  noSpeechMatch: "ملحقتش أفهمك. حاول تاني.",
+  continue: "كمّل",
+  skip: "تخطي",
+  loadingTutorialScene: "جارٍ تحميل مشهد الشرح...",
+  loadingGeneratingGame: "بنجهّز لعبتك...",
+  enableMusic: "شغّل الموسيقى",
+  disableMusic: "اقفل الموسيقى",
+  musicOn: "الموسيقى شغالة",
+  musicOff: "الموسيقى مقفولة",
+  help: "مساعدة",
+  inventory: "الشنطة",
+  noItems: "لسه مفيش أغراض.",
+  dropItem: "ارمِ",
+  wrongItem: "الغرض الغلط",
+  speechContinue: "تمام، فهمت. نكمّل.",
+  thinking: "بفكر...",
+  translateText: "ترجمة النص",
+  undoTranslation: "إلغاء الترجمة",
+  chooseCorrect: "اختَر الإجابة الصح.",
+  closeDialogue: "اقفل الحوار",
+};
+
+UI_TEXT.zh = {
+  talkHint: "按 SPACE 或点击进行对话",
+  correct: "正确！",
+  incorrect: "再试一次！",
+  completed: "恭喜！你正确回答了所有问题！",
+  playAgain: "再玩一次",
+  back: "返回",
+  progress: "进度",
+  answeredOf: "/",
+  moveHint: "方向键或 WASD 移动",
+  touchMove: "点击移动，点击 NPC 对话",
+  chooseScenario: "选择场景",
+  scenario: "场景",
+  newWorld: "新世界",
+  quest: "任务",
+  lockedNpc: "你应该先从这里开始：",
+  response: "回答",
+  micStart: "开始麦克风",
+  micStop: "停止麦克风",
+  heardYou: "我听到",
+  speechUnavailable: "此浏览器不支持语音",
+  noSpeechMatch: "我没听清。再试一次。",
+  continue: "继续",
+  skip: "跳过",
+  loading: "正在加载",
+  loadingTutorialScene: "正在加载教程场景...",
+  loadingGeneratingGame: "正在生成你的游戏...",
+  enableMusic: "打开音乐",
+  disableMusic: "关闭音乐",
+  musicOn: "音乐已开启",
+  musicOff: "音乐已关闭",
+  help: "帮助",
+  inventory: "背包",
+  noItems: "还没有物品。",
+  dropItem: "丢下",
+  wrongItem: "错误的物品",
+  speechContinue: "我明白了。继续吧。",
+  thinking: "正在思考...",
+  translateText: "翻译文本",
+  undoTranslation: "撤销翻译",
+  chooseCorrect: "选择正确选项。",
+  closeDialogue: "关闭对话",
 };
 
 const SCENARIO_EMOJIS = {
@@ -1490,7 +2028,80 @@ const GAME_LOADING_MESSAGES = {
     "Ambientando la escena...",
     "Creando tu aventura...",
   ],
+  it: [
+    "Costruendo il tuo mondo...",
+    "Posizionando i PNG...",
+    "Scrivendo i dialoghi delle missioni...",
+    "Generando sfide di vocabolario...",
+    "Progettando la mappa...",
+    "Preparando i puzzle linguistici...",
+    "Ambientando la scena...",
+    "Creando la tua avventura...",
+  ],
+  fr: [
+    "Construction de ton monde...",
+    "Placement des PNJ...",
+    "Ecriture des dialogues de quete...",
+    "Generation des defis de vocabulaire...",
+    "Conception de la carte...",
+    "Preparation des enigmes linguistiques...",
+    "Mise en place de la scene...",
+    "Creation de ton aventure...",
+  ],
+  ja: [
+    "世界を組み立てています...",
+    "NPCを配置しています...",
+    "クエストの会話を書いています...",
+    "語彙チャレンジを生成しています...",
+    "マップのレイアウトを設計しています...",
+    "言語パズルを準備しています...",
+    "場面を整えています...",
+    "冒険を作っています...",
+  ],
+  hi: [
+    "आपकी दुनिया बनाई जा रही है...",
+    "NPC को रखा जा रहा है...",
+    "क्वेस्ट के संवाद लिखे जा रहे हैं...",
+    "शब्दावली चुनौतियाँ तैयार की जा रही हैं...",
+    "मानचित्र का लेआउट बनाया जा रहा है...",
+    "भाषा पहेलियाँ तैयार की जा रही हैं...",
+    "दृश्य सजाया जा रहा है...",
+    "आपका रोमांच तैयार किया जा रहा है...",
+  ],
 };
+
+GAME_LOADING_MESSAGES.pt = [
+  "Construindo o seu mundo...",
+  "Posicionando NPCs...",
+  "Escrevendo os diálogos da missão...",
+  "Gerando desafios de vocabulário...",
+  "Desenhando o mapa...",
+  "Preparando quebra-cabeças de idioma...",
+  "Montando a cena...",
+  "Criando a sua aventura...",
+];
+
+GAME_LOADING_MESSAGES.ar = [
+  "بنكوّن عالمك...",
+  "بنحط الشخصيات...",
+  "بنكتب حوارات المهمة...",
+  "بنجهّز تحديات المفردات...",
+  "بنصمم الخريطة...",
+  "بنحضّر ألغاز اللغة...",
+  "بنظبط المشهد...",
+  "بنصنع مغامرتك...",
+];
+
+GAME_LOADING_MESSAGES.zh = [
+  "正在构建你的世界...",
+  "正在放置角色...",
+  "正在编写任务对话...",
+  "正在生成词汇挑战...",
+  "正在绘制地图...",
+  "正在准备语言谜题...",
+  "正在布置场景...",
+  "正在创造你的冒险...",
+];
 
 const SCENARIO_OBJECT_VISUALS = {
   tree: { width: 1.3, height: 1.6, yOffset: 0.6, z: 2 },
@@ -1556,14 +2167,326 @@ function humanizeObjectType(type = "") {
     .toLowerCase();
 }
 
-function buildFallbackObjectExamineText(object) {
-  const label = humanizeObjectType(object?.type) || "object";
+const OBJECT_EXAMINE_FALLBACK_LABELS = {
+  en: {
+    tree: "tree",
+    house: "house",
+    building: "building",
+    pavilion: "pavilion",
+    greenhouse: "greenhouse",
+    doorway: "doorway",
+    bookshelf: "bookshelf",
+    shelf: "shelf",
+    tv: "television",
+    sofa: "sofa",
+    plant: "plant",
+    table: "table",
+    lamp: "lamp",
+    sign: "sign",
+    gate: "gate",
+    speaker: "speaker",
+    balloons: "balloons",
+    desk: "desk",
+    suitcaseStack: "stack of suitcases",
+    counter: "counter",
+    stove: "stove",
+    fridge: "fridge",
+    bench: "bench",
+    register: "cash register",
+    freezer: "freezer",
+    object: "object",
+  },
+  es: {
+    tree: "arbol",
+    house: "casa",
+    building: "edificio",
+    pavilion: "pabellon",
+    greenhouse: "invernadero",
+    doorway: "entrada",
+    bookshelf: "estanteria",
+    shelf: "repisa",
+    tv: "televisor",
+    sofa: "sofa",
+    plant: "planta",
+    table: "mesa",
+    lamp: "lampara",
+    sign: "letrero",
+    gate: "porton",
+    speaker: "altavoz",
+    balloons: "globos",
+    desk: "escritorio",
+    suitcaseStack: "monton de maletas",
+    counter: "mostrador",
+    stove: "estufa",
+    fridge: "refrigerador",
+    bench: "banco",
+    register: "caja registradora",
+    freezer: "congelador",
+    object: "objeto",
+  },
+  pt: {
+    tree: "arvore",
+    house: "casa",
+    building: "predio",
+    pavilion: "pavilhao",
+    greenhouse: "estufa",
+    doorway: "entrada",
+    bookshelf: "estante de livros",
+    shelf: "prateleira",
+    tv: "televisao",
+    sofa: "sofa",
+    plant: "planta",
+    table: "mesa",
+    lamp: "luminaria",
+    sign: "placa",
+    gate: "portao",
+    speaker: "caixa de som",
+    balloons: "baloes",
+    desk: "escrivaninha",
+    suitcaseStack: "pilha de malas",
+    counter: "balcao",
+    stove: "fogao",
+    fridge: "geladeira",
+    bench: "banco",
+    register: "caixa registradora",
+    freezer: "freezer",
+    object: "objeto",
+  },
+  it: {
+    tree: "albero",
+    house: "casa",
+    building: "edificio",
+    pavilion: "padiglione",
+    greenhouse: "serra",
+    doorway: "ingresso",
+    bookshelf: "libreria",
+    shelf: "scaffale",
+    tv: "televisore",
+    sofa: "divano",
+    plant: "pianta",
+    table: "tavolo",
+    lamp: "lampada",
+    sign: "cartello",
+    gate: "cancello",
+    speaker: "altoparlante",
+    balloons: "palloncini",
+    desk: "scrivania",
+    suitcaseStack: "pila di valigie",
+    counter: "bancone",
+    stove: "fornello",
+    fridge: "frigorifero",
+    bench: "panchina",
+    register: "cassa",
+    freezer: "congelatore",
+    object: "oggetto",
+  },
+  fr: {
+    tree: "arbre",
+    house: "maison",
+    building: "batiment",
+    pavilion: "pavillon",
+    greenhouse: "serre",
+    doorway: "entree",
+    bookshelf: "bibliotheque",
+    shelf: "etagere",
+    tv: "televiseur",
+    sofa: "canape",
+    plant: "plante",
+    table: "table",
+    lamp: "lampe",
+    sign: "panneau",
+    gate: "portail",
+    speaker: "haut-parleur",
+    balloons: "ballons",
+    desk: "bureau",
+    suitcaseStack: "pile de valises",
+    counter: "comptoir",
+    stove: "cuisiniere",
+    fridge: "refrigerateur",
+    bench: "banc",
+    register: "caisse",
+    freezer: "congelateur",
+    object: "objet",
+  },
+  ja: {
+    tree: "木",
+    house: "家",
+    building: "建物",
+    pavilion: "あずまや",
+    greenhouse: "温室",
+    doorway: "入口",
+    bookshelf: "本棚",
+    shelf: "棚",
+    tv: "テレビ",
+    sofa: "ソファ",
+    plant: "植物",
+    table: "テーブル",
+    lamp: "ランプ",
+    sign: "看板",
+    gate: "門",
+    speaker: "スピーカー",
+    balloons: "風船",
+    desk: "机",
+    suitcaseStack: "スーツケースの山",
+    counter: "カウンター",
+    stove: "コンロ",
+    fridge: "冷蔵庫",
+    bench: "ベンチ",
+    register: "レジ",
+    freezer: "冷凍庫",
+    object: "物",
+  },
+  hi: {
+    tree: "पेड़",
+    house: "घर",
+    building: "इमारत",
+    pavilion: "मंडप",
+    greenhouse: "काँचघर",
+    doorway: "द्वार",
+    bookshelf: "किताबों की शेल्फ़",
+    shelf: "शेल्फ़",
+    tv: "टेलीविजन",
+    sofa: "सोफ़ा",
+    plant: "पौधा",
+    table: "मेज़",
+    lamp: "दीपक",
+    sign: "संकेत-पट",
+    gate: "फाटक",
+    speaker: "स्पीकर",
+    balloons: "गुब्बारे",
+    desk: "डेस्क",
+    suitcaseStack: "सूटकेसों का ढेर",
+    counter: "काउंटर",
+    stove: "चूल्हा",
+    fridge: "फ्रिज",
+    bench: "बेंच",
+    register: "कैश रजिस्टर",
+    freezer: "फ़्रीज़र",
+    object: "वस्तु",
+  },
+};
+
+OBJECT_EXAMINE_FALLBACK_LABELS.ar = {
+  tree: "شجرة",
+  house: "بيت",
+  building: "مبنى",
+  pavilion: "مظلة",
+  greenhouse: "صوبة",
+  doorway: "مدخل",
+  bookshelf: "رف كتب",
+  shelf: "رف",
+  tv: "تلفزيون",
+  sofa: "كنبة",
+  plant: "زرع",
+  table: "ترابيزة",
+  lamp: "لمبة",
+  sign: "لافتة",
+  gate: "بوابة",
+  speaker: "سماعة",
+  balloons: "بلالين",
+  desk: "مكتب",
+  suitcaseStack: "كومة شنط",
+  counter: "كاونتر",
+  stove: "بوتاجاز",
+  fridge: "تلاجة",
+  bench: "دكة",
+  register: "كاشير",
+  freezer: "فريزر",
+  object: "غرض",
+};
+
+OBJECT_EXAMINE_FALLBACK_LABELS.zh = {
+  tree: "树",
+  house: "房子",
+  building: "建筑",
+  pavilion: "亭子",
+  greenhouse: "温室",
+  doorway: "门口",
+  bookshelf: "书架",
+  shelf: "架子",
+  tv: "电视",
+  sofa: "沙发",
+  plant: "植物",
+  table: "桌子",
+  lamp: "灯",
+  sign: "标牌",
+  gate: "大门",
+  speaker: "扬声器",
+  balloons: "气球",
+  desk: "书桌",
+  suitcaseStack: "一摞行李箱",
+  counter: "柜台",
+  stove: "炉灶",
+  fridge: "冰箱",
+  bench: "长椅",
+  register: "收银机",
+  freezer: "冷柜",
+  object: "物品",
+};
+
+const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
+  en: (label) => `You notice ${label}.`,
+  es: (label) => `Notas ${label}.`,
+  pt: (label) => `Voce percebe ${label}.`,
+  it: (label) => `Noti ${label}.`,
+  fr: (label) => `Tu remarques ${label}.`,
+  ja: (label) => `${label}に気づきます。`,
+  hi: (label) => `आपको ${label} दिखता है।`,
+};
+
+OBJECT_EXAMINE_FALLBACK_SENTENCES.ar = (label) => `إنت ملاحظ ${label}.`;
+OBJECT_EXAMINE_FALLBACK_SENTENCES.zh = (label) => `你注意到${label}。`;
+
+function getLocalizedObjectExamineLabel(type = "", lang = "en") {
+  const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const rawType = String(type || "").trim();
+  const fallbackLabel =
+    humanizeObjectType(rawType) ||
+    OBJECT_EXAMINE_FALLBACK_LABELS.en.object;
+  return (
+    OBJECT_EXAMINE_FALLBACK_LABELS[supportLang]?.[rawType] ||
+    OBJECT_EXAMINE_FALLBACK_LABELS.en?.[rawType] ||
+    fallbackLabel
+  );
+}
+
+function buildFallbackObjectExamineText(object, lang = "en") {
+  const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  const name = humanizeObjectType(object?.type) || "object";
+  const supportName = getLocalizedObjectExamineLabel(object?.type, supportLang);
+  const supportSentence =
+    OBJECT_EXAMINE_FALLBACK_SENTENCES[supportLang] ||
+    OBJECT_EXAMINE_FALLBACK_SENTENCES.en;
   return {
-    name: label,
-    supportName: label,
-    text: `It looks like a ${label}.`,
-    supportText: `It looks like a ${label}.`,
+    name,
+    supportName,
+    text: `You notice ${name}.`,
+    supportText: supportSentence(supportName),
   };
+}
+
+function getRpgItemPrimaryLabel(item) {
+  return String(item?.supportName || item?.name || "").trim();
+}
+
+function getRpgItemSecondaryLabels(item) {
+  const primary = getRpgItemPrimaryLabel(item);
+  const transcription = String(item?.transcription || "").trim();
+  const sourceName = String(item?.name || "").trim();
+  return [transcription, sourceName].filter(
+    (value, idx, arr) => value && value !== primary && arr.indexOf(value) === idx,
+  );
+}
+
+function getRpgItemCompactLabel(item) {
+  const primary = getRpgItemPrimaryLabel(item);
+  const secondary = getRpgItemSecondaryLabels(item)[0];
+  if (!primary) return secondary || "";
+  return secondary ? `${primary} (${secondary})` : primary;
+}
+
+function getRpgItemSupportHint(item) {
+  return String(item?.supportHint || item?.hint || "").trim();
 }
 
 function findScenarioObjectAtTile(objects = [], tileX, tileY, options = {}) {
@@ -1794,12 +2717,14 @@ export default function RPGGame({
     supportLangProp || localStorageSettings.supportLang,
     "en",
   );
+  const targetTextProps = getBidiTextProps(targetLang);
+  const supportTextProps = getBidiTextProps(supportLang);
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const objectSearchCopy =
-    OBJECT_SEARCH_TEST_COPY[targetLang === "es" ? "es" : "en"] ||
+    OBJECT_SEARCH_TEST_COPY[supportLang] ||
     OBJECT_SEARCH_TEST_COPY.en;
   const questLogCopy =
-    QUEST_LOG_COPY[supportLang === "es" ? "es" : "en"] || QUEST_LOG_COPY.en;
+    QUEST_LOG_COPY[supportLang] || QUEST_LOG_COPY.en;
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 
@@ -1897,6 +2822,7 @@ export default function RPGGame({
   const gatherPlacementCacheKeyRef = useRef(null);
   const objectExamineCacheRef = useRef(new Map());
   const objectExaminePendingMapsRef = useRef(new Set());
+  const objectExaminePendingRequestsRef = useRef(new Map());
   gatherUnlockedRef.current = gatherUnlocked;
 
   const playSound = useSoundSettings((state) => state.playSound);
@@ -2299,6 +3225,19 @@ export default function RPGGame({
     [scenario?.id],
   );
 
+  const syncObjectExamineFromCache = useCallback((requestedKeys = null) => {
+    setObjectExamine((current) => {
+      if (!current) return current;
+      if (requestedKeys && !requestedKeys.has(current.key)) return current;
+      const nextEntry = objectExamineCacheRef.current.get(current.key);
+      return {
+        ...current,
+        ...(nextEntry || {}),
+        pending: false,
+      };
+    });
+  }, []);
+
   const requestObjectExamineTexts = useCallback(
     async (map, rawObjects = []) => {
       const objects = Array.isArray(rawObjects)
@@ -2311,15 +3250,30 @@ export default function RPGGame({
         (object) =>
           !objectExamineCacheRef.current.has(getObjectExamineKey(map, object)),
       );
+      const requestedKeys = new Set(
+        objects.map((object) => getObjectExamineKey(map, object)),
+      );
       if (!uncachedObjects.length) return;
-      if (objectExaminePendingMapsRef.current.has(mapId)) return;
+      const existingPendingRequest =
+        objectExaminePendingRequestsRef.current.get(mapId);
+      if (existingPendingRequest) {
+        await existingPendingRequest;
+        return requestObjectExamineTexts(map, objects);
+      }
 
       objectExaminePendingMapsRef.current.add(mapId);
 
       const mapName =
         typeof map.name === "string"
           ? map.name
-          : map.name?.[targetLang] || map.name?.en || map.name?.es || "Area";
+          : map.name?.en ||
+            map.name?.es ||
+            map.name?.pt ||
+            map.name?.it ||
+            map.name?.fr ||
+            map.name?.ja ||
+            map.name?.hi ||
+            "Area";
       const prompt = [
         objectExamineCefrPromptRule,
         objectExaminePromptContext,
@@ -2358,85 +3312,80 @@ export default function RPGGame({
         .filter(Boolean)
         .join("\n");
 
-      try {
-        const response = await callResponses({ input: prompt });
-        const parsed = parseLooseJSON(response);
-        const entries = Array.isArray(parsed)
-          ? parsed
-          : Array.isArray(parsed?.items)
-            ? parsed.items
-            : [];
-        const resolvedTexts = new Map();
+      const loadPromise = (async () => {
+        try {
+          const response = await callResponses({ input: prompt });
+          const parsed = parseLooseJSON(response);
+          const entries = Array.isArray(parsed)
+            ? parsed
+            : Array.isArray(parsed?.items)
+              ? parsed.items
+              : [];
+          const resolvedTexts = new Map();
 
-        entries.forEach((entry) => {
-          const key = String(entry?.key || "").trim();
-          const name = String(entry?.name || entry?.label || "").trim();
-          const supportName = String(
-            entry?.supportName ||
-              entry?.translation ||
-              entry?.supportLabel ||
-              "",
-          ).trim();
-          const supportText = String(
-            entry?.supportText ||
-              entry?.translatedText ||
-              entry?.supportLine ||
-              "",
-          ).trim();
-          const text = String(entry?.text || entry?.line || "").trim();
-          if (!key || !text) return;
-          resolvedTexts.set(key, {
-            name: name.replace(/^["']|["']$/g, "").trim(),
-            supportName: supportName.replace(/^["']|["']$/g, "").trim(),
-            text: text.replace(/^["']|["']$/g, "").trim(),
-            supportText: supportText.replace(/^["']|["']$/g, "").trim(),
+          entries.forEach((entry) => {
+            const key = String(entry?.key || "").trim();
+            const name = String(entry?.name || entry?.label || "").trim();
+            const supportName = String(
+              entry?.supportName ||
+                entry?.translation ||
+                entry?.supportLabel ||
+                "",
+            ).trim();
+            const supportText = String(
+              entry?.supportText ||
+                entry?.translatedText ||
+                entry?.supportLine ||
+                "",
+            ).trim();
+            const text = String(entry?.text || entry?.line || "").trim();
+            if (!key || !text) return;
+            resolvedTexts.set(key, {
+              name: name.replace(/^["']|["']$/g, "").trim(),
+              supportName: supportName.replace(/^["']|["']$/g, "").trim(),
+              text: text.replace(/^["']|["']$/g, "").trim(),
+              supportText: supportText.replace(/^["']|["']$/g, "").trim(),
+            });
           });
-        });
 
-        uncachedObjects.forEach((object) => {
-          const key = getObjectExamineKey(map, object);
-          const text =
-            resolvedTexts.get(key) || buildFallbackObjectExamineText(object);
-          objectExamineCacheRef.current.set(key, text);
-        });
+          uncachedObjects.forEach((object) => {
+            const key = getObjectExamineKey(map, object);
+            const fallback = buildFallbackObjectExamineText(object, supportLang);
+            const resolved = resolvedTexts.get(key);
+            const text = resolved
+              ? {
+                  ...fallback,
+                  ...resolved,
+                  name: resolved.name || fallback.name,
+                  supportName: resolved.supportName || fallback.supportName,
+                  text: resolved.text || fallback.text,
+                  supportText: resolved.supportText || fallback.supportText,
+                }
+              : fallback;
+            objectExamineCacheRef.current.set(key, text);
+          });
+        } catch {
+          uncachedObjects.forEach((object) => {
+            const key = getObjectExamineKey(map, object);
+            objectExamineCacheRef.current.set(
+              key,
+              buildFallbackObjectExamineText(object, supportLang),
+            );
+          });
+        } finally {
+          syncObjectExamineFromCache(requestedKeys);
+          objectExaminePendingMapsRef.current.delete(mapId);
+          objectExaminePendingRequestsRef.current.delete(mapId);
+        }
+      })();
 
-        setObjectExamine((current) => {
-          if (!current) return current;
-          const nextEntry = objectExamineCacheRef.current.get(current.key);
-          return nextEntry
-            ? {
-                ...current,
-                ...nextEntry,
-                pending: false,
-              }
-            : current;
-        });
-      } catch {
-        uncachedObjects.forEach((object) => {
-          const key = getObjectExamineKey(map, object);
-          objectExamineCacheRef.current.set(
-            key,
-            buildFallbackObjectExamineText(object),
-          );
-        });
-        setObjectExamine((current) => {
-          if (!current) return current;
-          const nextEntry = objectExamineCacheRef.current.get(current.key);
-          return nextEntry
-            ? {
-                ...current,
-                ...nextEntry,
-                pending: false,
-              }
-            : current;
-        });
-      } finally {
-        objectExaminePendingMapsRef.current.delete(mapId);
-      }
+      objectExaminePendingRequestsRef.current.set(mapId, loadPromise);
+      return loadPromise;
     },
     [
       cefrLevel,
       getObjectExamineKey,
+      syncObjectExamineFromCache,
       scenario?.id,
       supportLang,
       supportLangName,
@@ -2577,6 +3526,7 @@ export default function RPGGame({
   useEffect(() => {
     objectExamineCacheRef.current = new Map();
     objectExaminePendingMapsRef.current = new Set();
+    objectExaminePendingRequestsRef.current = new Map();
     setObjectExamine(null);
     setPickupBanner(null);
     setStartedObjectSearchStepKey(null);
@@ -2652,15 +3602,11 @@ export default function RPGGame({
       const submitPrompt =
         dialogue.node.responseMode === "objectSearch"
           ? objectSearchCopy.chooseItem
-          : targetLang === "es"
-            ? "Elige un objeto para entregar:"
-            : "Choose an item to hand over:";
+          : objectSearchCopy.chooseItem;
       const continueLabel =
         dialogue.node.responseMode === "objectSearch"
           ? objectSearchCopy.continueSearching
-          : targetLang === "es"
-            ? "Seguir buscando"
-            : "Keep searching";
+          : objectSearchCopy.continueSearching;
 
       return [
         ...(inventory.length > 0
@@ -2818,7 +3764,6 @@ export default function RPGGame({
 
   // Three.js refs
   const gameStateRef = useRef(null);
-  const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const rendererRef = useRef(null);
   const playerSpriteRef = useRef(null);
@@ -3234,10 +4179,10 @@ export default function RPGGame({
             ? rotatedDecoys[decoyIdx % rotatedDecoys.length]
             : {
                 ...targetItem,
-                name:
-                  targetLang === "es"
-                    ? "el objeto equivocado"
-                    : "the wrong item",
+                name: ui.wrongItem,
+                supportName: ui.wrongItem,
+                supportHint: "",
+                transcription: "",
                 isCorrect: false,
               };
       const objectKey = getObjectExamineKey(entry.map, entry.object);
@@ -3256,12 +4201,12 @@ export default function RPGGame({
       npcIdx: currentQuestStep.npcIdx,
       targetItem,
       assignments,
-      npcLine: objectSearchCopy.intro(targetItem.name),
+      npcLine: objectSearchCopy.intro(getRpgItemCompactLabel(targetItem)),
       wrongItemTemplate: objectSearchCopy.wrongItem(
         "{{wrongItem}}",
         "{{correctItem}}",
       ),
-      successText: objectSearchCopy.success(targetItem.name),
+      successText: objectSearchCopy.success(getRpgItemCompactLabel(targetItem)),
     };
   }, [
     currentQuestNode,
@@ -3308,18 +4253,18 @@ export default function RPGGame({
         items: hasCorrectObjectSearchItem
           ? [
               questLogCopy.returnItem(
-                currentObjectSearchQuest.targetItem.name,
+                getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                 npcName,
               ),
             ]
           : [
               isObjectSearchQuestStarted
                 ? questLogCopy.searchObjects(
-                    currentObjectSearchQuest.targetItem.name,
+                    getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                   )
                 : questLogCopy.startObjectSearch(
                     npcName,
-                    currentObjectSearchQuest.targetItem.name,
+                    getRpgItemCompactLabel(currentObjectSearchQuest.targetItem),
                   ),
             ],
       };
@@ -3340,11 +4285,17 @@ export default function RPGGame({
       );
       const items = [
         hasCorrectGatherItem
-          ? questLogCopy.returnItem(gatherItemName, npcName)
-          : questLogCopy.gatherSearch(gatherItemName),
+          ? questLogCopy.returnItem(
+              getRpgItemCompactLabel(currentQuestNode.gatherItem),
+              npcName,
+            )
+          : questLogCopy.gatherSearch(
+              getRpgItemCompactLabel(currentQuestNode.gatherItem),
+            ),
       ];
-      if (currentQuestNode.gatherItem?.hint) {
-        items.push(questLogCopy.gatherHint(currentQuestNode.gatherItem.hint));
+      const supportHint = getRpgItemSupportHint(currentQuestNode.gatherItem);
+      if (supportHint) {
+        items.push(questLogCopy.gatherHint(supportHint));
       }
       return {
         title: questLogCopy.title,
@@ -3434,9 +4385,9 @@ export default function RPGGame({
   ]);
 
   // Show a quick toast when picking up an item
-  const showPickupToast = useCallback((itemName) => {
+  const showPickupToast = useCallback((item) => {
     setPickupBanner({
-      itemName,
+      itemLabel: getRpgItemCompactLabel(item),
       openedAt: Date.now(),
     });
   }, []);
@@ -3446,6 +4397,8 @@ export default function RPGGame({
       if (!activeMap || !object) return;
       const key = getObjectExamineKey(activeMap, object);
       const cachedEntry = objectExamineCacheRef.current.get(key);
+      const fallbackEntry =
+        cachedEntry || buildFallbackObjectExamineText(object, supportLang);
       let lootText = "";
 
       if (isObjectSearchQuestStarted) {
@@ -3478,6 +4431,9 @@ export default function RPGGame({
                 isCorrect: assignedItem.isCorrect,
                 sprite: assignedItem.sprite || "default",
                 visual: assignedItem.visual || null,
+                supportName: assignedItem.supportName || "",
+                supportHint: assignedItem.supportHint || "",
+                transcription: assignedItem.transcription || "",
                 objectSearchItem: true,
                 objectSearchStepKey: currentObjectSearchQuest.stepKey,
                 sourceObjectKey: key,
@@ -3485,7 +4441,7 @@ export default function RPGGame({
             ];
           });
           playGameSound("rpgDialogueSelect");
-          showPickupToast(assignedItem.name);
+          showPickupToast(assignedItem);
           lootText = "";
         } else if (assignedItem) {
           lootText = objectSearchCopy.alreadyChecked;
@@ -3496,10 +4452,10 @@ export default function RPGGame({
 
       setObjectExamine({
         key,
-        name: cachedEntry?.name || "",
-        supportName: cachedEntry?.supportName || "",
-        text: cachedEntry?.text || "",
-        supportText: cachedEntry?.supportText || "",
+        name: fallbackEntry?.name || "",
+        supportName: fallbackEntry?.supportName || "",
+        text: fallbackEntry?.text || "",
+        supportText: fallbackEntry?.supportText || "",
         lootText,
         pending: !cachedEntry,
         openedAt: Date.now(),
@@ -3517,6 +4473,7 @@ export default function RPGGame({
       playGameSound,
       requestObjectExamineTexts,
       showPickupToast,
+      supportLang,
     ],
   );
 
@@ -3986,7 +4943,6 @@ export default function RPGGame({
 
     // Scene
     const scene = new THREE.Scene();
-    sceneRef.current = scene;
 
     const fallbackPlayerTexture = createCharacterTexture(
       PLAYER_COLORS,
@@ -4661,10 +5617,13 @@ export default function RPGGame({
               isCorrect: item.isCorrect,
               sprite: item.sprite || "default",
               visual: item.visual || null,
+              supportName: item.supportName || "",
+              supportHint: item.supportHint || "",
+              transcription: item.transcription || "",
             },
           ]);
           playGameSound("rpgDialogueSelect");
-          showPickupToast(item.name);
+          showPickupToast(item);
         }
       });
 
@@ -5011,7 +5970,6 @@ export default function RPGGame({
         return;
       }
 
-      // Check NPC click
       const npcIdx =
         activeMapNpcIndices.find(
           (index) =>
@@ -5041,7 +5999,6 @@ export default function RPGGame({
           const stepArc = questSteps[questProgress.currentStepIdx];
           const nodeId = questProgress.currentNodeId || stepArc?.nodes?.[0]?.id;
           let node = stepArc?.nodes?.find((n) => n.id === nodeId);
-          // Inject contextual bridge and NPC greeting if available
           if (node?.playerLine && pendingBridgeRef.current) {
             node = { ...node, playerLine: pendingBridgeRef.current };
             pendingBridgeRef.current = null;
@@ -5050,7 +6007,6 @@ export default function RPGGame({
             node = { ...node, npcLine: pendingNpcGreetingRef.current };
             pendingNpcGreetingRef.current = null;
           }
-          // Clear heard speech from previous interactions
           setLastHeardSpeech("");
           setDialogue({
             npcIdx,
@@ -5073,7 +6029,6 @@ export default function RPGGame({
           });
           speakNPCText(greetLine, { npcIdx });
           playGameSound("rpgDialogueOpen");
-          // Generate dynamic choices if the first node is a choice node
           if (node?.responseMode === "choice") {
             generateDynamicChoices(node, npcIdx, questProgress.currentStepIdx);
           }
@@ -5081,7 +6036,6 @@ export default function RPGGame({
         return;
       }
 
-      // Move toward clicked tile
       if (!dialogue) {
         moveOneStepToward(tileX, tileY);
       }
@@ -5490,8 +6444,12 @@ export default function RPGGame({
         dialogue.node.gatherWrongItemTemplate ||
           "That is {{wrongItem}}. Not what I need. Look for {{correctItem}}.",
         {
-          wrongItem: submittedItem.name,
-          correctItem: requiredItem,
+          wrongItem: isObjectSearchTurnIn
+            ? getRpgItemCompactLabel(submittedItem)
+            : submittedItem.name,
+          correctItem: isObjectSearchTurnIn
+            ? getRpgItemCompactLabel(dialogue.node.gatherItem)
+            : requiredItem,
         },
       );
       setDialogue((prev) => ({ ...prev, npcReply: wrongText }));
@@ -5516,7 +6474,7 @@ export default function RPGGame({
     if (isObjectSearchTurnIn) {
       const successText =
         dialogue.node.objectSearchSuccessText ||
-        objectSearchCopy.success(submittedItem.name);
+        objectSearchCopy.success(getRpgItemCompactLabel(submittedItem));
       setDialogue((prev) => ({ ...prev, npcReply: successText }));
       setStartedObjectSearchStepKey(null);
       setTimeout(() => {
@@ -5615,10 +6573,7 @@ export default function RPGGame({
         ? getCharacterPersonality(characterId)
         : null;
       const fallbackReply =
-        dialogue.node.speechContinueReply ||
-        (targetLang === "es"
-          ? "Entiendo. Sigamos."
-          : "I understand. Let's continue.");
+        dialogue.node.speechContinueReply || ui.speechContinue;
       const replyToken = pendingSpeechReplyTokenRef.current + 1;
       pendingSpeechReplyTokenRef.current = replyToken;
 
@@ -5928,7 +6883,7 @@ export default function RPGGame({
                         flexDir="column"
                         minW="140px"
                         isLoading={loadingScenarioId === choice.id}
-                        loadingText="Loading"
+                        loadingText={ui.loading}
                       >
                         <Text fontSize="3xl" mb={1}>
                           {choice.emoji ||
@@ -6156,7 +7111,7 @@ export default function RPGGame({
       {!gameComplete && (
         <VStack position="absolute" top={14} right={3} zIndex={10} spacing={4}>
           <IconButton
-            aria-label={supportLang === "es" ? "Ayuda" : "Help"}
+            aria-label={ui.help}
             icon={<MdOutlineSupportAgent size={20} />}
             size="md"
             variant="solid"
@@ -6167,7 +7122,7 @@ export default function RPGGame({
             onClick={helpChat.onOpen}
           />
           <IconButton
-            aria-label="Inventory"
+            aria-label={ui.inventory}
             icon={
               <Box position="relative">
                 <BackpackIcon size={22} />
@@ -6277,7 +7232,7 @@ export default function RPGGame({
           boxShadow={rpgPanelShadow}
         >
           <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
-            {targetLang === "es" ? "Inventario" : "Inventory"}
+            {ui.inventory}
           </ModalHeader>
           <ModalCloseButton
             color={rpgTextMuted}
@@ -6286,7 +7241,7 @@ export default function RPGGame({
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
               <Text color={rpgTextMuted} fontSize="sm" textAlign="center" py={4}>
-                {targetLang === "es" ? "No tienes objetos." : "No items yet."}
+                {ui.noItems}
               </Text>
             ) : (
               <VStack spacing={3} align="stretch">
@@ -6326,12 +7281,20 @@ export default function RPGGame({
                     px={3}
                     py={2}
                     justify="space-between"
+                    align="flex-start"
                     border="1px solid"
                     borderColor={rpgPanelBorderSoft}
                   >
-                    <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
-                      {inventory[selectedInvItem].name}
-                    </Text>
+                    <VStack align="start" spacing={0} flex="1">
+                      <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
+                        {getRpgItemPrimaryLabel(inventory[selectedInvItem])}
+                      </Text>
+                      {getRpgItemSecondaryLabels(inventory[selectedInvItem]).length ? (
+                        <Text color={rpgTextMuted} fontSize="xs">
+                          {getRpgItemSecondaryLabels(inventory[selectedInvItem]).join(" · ")}
+                        </Text>
+                      ) : null}
+                    </VStack>
                     <Button
                       size="xs"
                       colorScheme="red"
@@ -6342,7 +7305,7 @@ export default function RPGGame({
                         dropInventoryItem(idx);
                       }}
                     >
-                      {targetLang === "es" ? "Soltar" : "Drop"}
+                      {ui.dropItem}
                     </Button>
                   </HStack>
                 )}
@@ -6366,7 +7329,13 @@ export default function RPGGame({
           borderRadius="xl"
           boxShadow={rpgPanelShadow}
         >
-          <ModalHeader color={rpgReplyText} fontSize="md" pb={1}>
+          <ModalHeader
+            color={rpgReplyText}
+            fontSize="md"
+            pb={1}
+            {...supportTextProps}
+            sx={mergeBidiSx(supportTextProps)}
+          >
             {currentQuestLog.title}
           </ModalHeader>
           <ModalCloseButton
@@ -6384,10 +7353,22 @@ export default function RPGGame({
                 border="1px solid"
                 borderColor={rpgPanelBorderSoft}
               >
-                <Text color={rpgTextSecondary} fontSize="xs" fontWeight="semibold">
+                <Text
+                  color={rpgTextSecondary}
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  {...supportTextProps}
+                  sx={mergeBidiSx(supportTextProps)}
+                >
                   {questLogCopy.currentTask}
                 </Text>
-                <Text color={rpgReplyText} fontSize="xs" fontWeight="bold">
+                <Text
+                  color={rpgReplyText}
+                  fontSize="xs"
+                  fontWeight="bold"
+                  {...supportTextProps}
+                  sx={mergeBidiSx(supportTextProps)}
+                >
                   {currentQuestLog.progressText}
                 </Text>
               </HStack>
@@ -6413,7 +7394,13 @@ export default function RPGGame({
                     >
                       {idx + 1}.
                     </Text>
-                    <Text color={rpgTextPrimary} fontSize="sm" lineHeight="1.45">
+                    <Text
+                      color={rpgTextPrimary}
+                      fontSize="sm"
+                      lineHeight="1.45"
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
+                    >
                       {item}
                     </Text>
                   </HStack>
@@ -6455,8 +7442,13 @@ export default function RPGGame({
                 <Text color={isLightTheme ? rpgReplyText : "yellow.300"} fontSize="sm" fontWeight="bold">
                   +
                 </Text>
-                <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm">
-                  {pickupBanner.itemName}
+                <Text
+                  color={isLightTheme ? rpgTextPrimary : "white"}
+                  fontSize="sm"
+                  {...targetTextProps}
+                  sx={mergeBidiSx(targetTextProps)}
+                >
+                  {pickupBanner.itemLabel}
                 </Text>
               </HStack>
             ) : null}
@@ -6472,19 +7464,85 @@ export default function RPGGame({
                 py={3}
                 boxShadow={rpgPanelShadow}
               >
-                {objectExamine.pending ? (
-                  <VStack align="stretch" spacing={1}>
-                    {objectExamine.lootText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgReplyText}
-                        fontWeight="semibold"
-                      >
-                        {objectExamine.lootText}
-                      </Text>
-                    ) : null}
-                    <HStack spacing={2}>
+                <VStack align="stretch" spacing={1}>
+                  {objectExamine.lootText ? (
+                    <Text
+                      fontSize="xs"
+                      lineHeight="1.35"
+                      color={rpgReplyText}
+                      fontWeight="semibold"
+                      pb={
+                        objectExamine.name ||
+                        objectExamine.supportName ||
+                        objectExamine.text ||
+                        objectExamine.supportText
+                          ? 1
+                        : 0
+                      }
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
+                    >
+                      {objectExamine.lootText}
+                    </Text>
+                  ) : null}
+                  {objectExamine.name || objectExamine.supportName ? (
+                    <Text
+                      fontSize="sm"
+                      lineHeight="1.35"
+                      color={rpgTextPrimary}
+                      fontWeight="semibold"
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
+                    >
+                      {objectExamine.name}
+                      {objectExamine.supportName ? (
+                        <Box
+                          as="span"
+                          dir={supportTextProps.dir}
+                          lang={supportTextProps.lang}
+                          sx={mergeBidiSx(supportTextProps)}
+                        >
+                          {" "}
+                          ({objectExamine.supportName})
+                        </Box>
+                      ) : null}
+                    </Text>
+                  ) : null}
+                  {objectExamine.text ? (
+                    <Text
+                      fontSize="sm"
+                      lineHeight="1.45"
+                      color={rpgTextPrimary}
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
+                    >
+                      {objectExamine.text}
+                    </Text>
+                  ) : null}
+                  {objectExamine.supportText ? (
+                    <Text
+                      fontSize="xs"
+                      lineHeight="1.35"
+                      color={rpgTextMuted}
+                      fontStyle="italic"
+                      {...supportTextProps}
+                      sx={mergeBidiSx(supportTextProps)}
+                    >
+                      ({objectExamine.supportText})
+                    </Text>
+                  ) : null}
+                  {objectExamine.pending ? (
+                    <HStack
+                      spacing={2}
+                      pt={
+                        objectExamine.name ||
+                        objectExamine.supportName ||
+                        objectExamine.text ||
+                        objectExamine.supportText
+                          ? 1
+                          : 0
+                      }
+                    >
                       <VoiceOrb
                         state={
                           ["idle", "listening", "speaking"][
@@ -6497,50 +7555,8 @@ export default function RPGGame({
                         ...
                       </Text>
                     </HStack>
-                  </VStack>
-                ) : (
-                  <VStack align="stretch" spacing={1}>
-                    {objectExamine.lootText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgReplyText}
-                        fontWeight="semibold"
-                        pb={1}
-                      >
-                        {objectExamine.lootText}
-                      </Text>
-                    ) : null}
-                    {objectExamine.name || objectExamine.supportName ? (
-                      <Text
-                        fontSize="sm"
-                        lineHeight="1.35"
-                        color={rpgTextPrimary}
-                        fontWeight="semibold"
-                      >
-                        {objectExamine.name}
-                        {objectExamine.supportName
-                          ? ` (${objectExamine.supportName})`
-                          : ""}
-                      </Text>
-                    ) : null}
-                    {objectExamine.text ? (
-                      <Text fontSize="sm" lineHeight="1.45" color={rpgTextPrimary}>
-                        {objectExamine.text}
-                      </Text>
-                    ) : null}
-                    {objectExamine.supportText ? (
-                      <Text
-                        fontSize="xs"
-                        lineHeight="1.35"
-                        color={rpgTextMuted}
-                        fontStyle="italic"
-                      >
-                        ({objectExamine.supportText})
-                      </Text>
-                    ) : null}
-                  </VStack>
-                )}
+                  ) : null}
+                </VStack>
               </Box>
             ) : null}
           </VStack>
@@ -6637,7 +7653,7 @@ export default function RPGGame({
               )}
 
               <IconButton
-                aria-label="Close dialogue"
+                aria-label={ui.closeDialogue}
                 icon={<CloseIcon boxSize={2.5} />}
                 size="xs"
                 position="absolute"
@@ -6663,7 +7679,13 @@ export default function RPGGame({
                     mt={8}
                     mb={2}
                   >
-                    <Text color={isLightTheme ? "#4b6888" : "blue.800"} fontSize="sm" fontStyle="italic">
+                    <Text
+                      color={isLightTheme ? "#4b6888" : "blue.800"}
+                      fontSize="sm"
+                      fontStyle="italic"
+                      {...targetTextProps}
+                      sx={mergeBidiSx(targetTextProps)}
+                    >
                       {dialogue.node.playerLine}
                     </Text>
                   </Box>
@@ -6705,12 +7727,8 @@ export default function RPGGame({
                     <IconButton
                       aria-label={
                         hasDialogueTranslations
-                          ? supportLang === "es"
-                            ? "Deshacer traducción"
-                            : "Undo translation"
-                          : supportLang === "es"
-                            ? "Traducir texto"
-                            : "Translate text"
+                          ? ui.undoTranslation
+                          : ui.translateText
                       }
                       icon={
                         hasDialogueTranslations ? (
@@ -6749,9 +7767,12 @@ export default function RPGGame({
                                 color={rpgReplyText}
                                 fontSize="sm"
                                 sx={{
+                                  ...mergeBidiSx(targetTextProps),
                                   "& p": { m: 0 },
                                   "& strong": { fontWeight: "bold" },
                                 }}
+                                dir={targetTextProps.dir}
+                                lang={targetTextProps.lang}
                               >
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                   {line}
@@ -6763,6 +7784,8 @@ export default function RPGGame({
                                 fontSize="md"
                                 fontWeight="bold"
                                 m={0}
+                                {...targetTextProps}
+                                sx={mergeBidiSx(targetTextProps)}
                               >
                                 {line}
                               </Text>
@@ -6773,6 +7796,8 @@ export default function RPGGame({
                                 fontSize="sm"
                                 fontStyle="italic"
                                 m={0}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
                               >
                                 {lineTranslations[i]}
                               </Text>
@@ -6794,6 +7819,8 @@ export default function RPGGame({
                           fontSize="md"
                           fontWeight="bold"
                           m={0}
+                          {...targetTextProps}
+                          sx={mergeBidiSx(targetTextProps)}
                         />
                       )}
                       {!!dialogue.npcReply && (
@@ -6801,9 +7828,12 @@ export default function RPGGame({
                           color={rpgReplyText}
                           fontSize="sm"
                           sx={{
+                            ...mergeBidiSx(targetTextProps),
                             "& p": { m: 0 },
                             "& strong": { fontWeight: "bold" },
                           }}
+                          dir={targetTextProps.dir}
+                          lang={targetTextProps.lang}
                         >
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {dialogue.npcReply}
@@ -6815,8 +7845,22 @@ export default function RPGGame({
 
                   {lastHeardSpeech &&
                     dialogue.node?.responseMode === "speech" && (
-                      <Text color={isLightTheme ? "#2f7e77" : "teal.700"} fontSize="xs" m={0}>
-                        {ui.heardYou}: {lastHeardSpeech}
+                      <Text
+                        color={isLightTheme ? "#2f7e77" : "teal.700"}
+                        fontSize="xs"
+                        m={0}
+                        {...supportTextProps}
+                        sx={mergeBidiSx(supportTextProps)}
+                      >
+                        {ui.heardYou}:{" "}
+                        <Box
+                          as="span"
+                          dir={targetTextProps.dir}
+                          lang={targetTextProps.lang}
+                          sx={mergeBidiSx(targetTextProps)}
+                        >
+                          {lastHeardSpeech}
+                        </Box>
                       </Text>
                     )}
 
@@ -6837,7 +7881,7 @@ export default function RPGGame({
                           color={isLightTheme ? rpgTextMuted : "gray.500"}
                           textAlign="center"
                         >
-                          {targetLang === "es" ? "Pensando..." : "Thinking..."}
+                          {ui.thinking}
                         </Text>
                       </VStack>
                     ) : (
@@ -6880,13 +7924,19 @@ export default function RPGGame({
                               onClick={() => handleAnswer(idx)}
                               isDisabled={isRecording || isConnecting}
                               justifyContent="flex-start"
-                              textAlign="left"
+                              textAlign={targetTextProps.textAlign}
                               whiteSpace="normal"
                               h="auto"
                               py={2}
                             >
                               <VStack align="stretch" spacing={0} w="100%">
-                                <Text color={isLightTheme ? rpgTextPrimary : "gray.900"} fontSize="sm" m={0}>
+                                <Text
+                                  color={isLightTheme ? rpgTextPrimary : "gray.900"}
+                                  fontSize="sm"
+                                  m={0}
+                                  {...targetTextProps}
+                                  sx={mergeBidiSx(targetTextProps)}
+                                >
                                   {String.fromCharCode(65 + idx)}. {opt}
                                 </Text>
                                 {translatedOpt ? (
@@ -6896,6 +7946,8 @@ export default function RPGGame({
                                     fontStyle="italic"
                                     m={0}
                                     whiteSpace="normal"
+                                    {...supportTextProps}
+                                    sx={mergeBidiSx(supportTextProps)}
                                   >
                                     {translatedOpt}
                                   </Text>
@@ -6976,7 +8028,13 @@ export default function RPGGame({
                       {inventory.length > 0 ? (
                         <>
                           <VStack align="stretch" spacing={0}>
-                            <Text color={rpgTextMuted} fontSize="xs" m={0}>
+                            <Text
+                              color={rpgTextMuted}
+                              fontSize="xs"
+                              m={0}
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
+                            >
                               {dialogueActionLabelMap.submitPrompt}
                             </Text>
                             {actionTranslations?.submitPrompt ? (
@@ -6985,6 +8043,8 @@ export default function RPGGame({
                                 fontSize="xs"
                                 fontStyle="italic"
                                 m={0}
+                                {...supportTextProps}
+                                sx={mergeBidiSx(supportTextProps)}
                               >
                                 {actionTranslations.submitPrompt}
                               </Text>
@@ -7041,7 +8101,13 @@ export default function RPGGame({
                         py={2}
                       >
                         <VStack align="stretch" spacing={0} w="100%">
-                          <Text m={0}>{dialogueActionLabelMap.continue}</Text>
+                          <Text
+                            m={0}
+                            {...supportTextProps}
+                            sx={mergeBidiSx(supportTextProps)}
+                          >
+                            {dialogueActionLabelMap.continue}
+                          </Text>
                         {actionTranslations?.continue ? (
                           <Text
                               color={rpgTranslationText}
@@ -7050,6 +8116,8 @@ export default function RPGGame({
                               fontWeight="normal"
                               whiteSpace="normal"
                               m={0}
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
                             >
                               {actionTranslations.continue}
                             </Text>
@@ -7068,7 +8136,11 @@ export default function RPGGame({
                       py={2}
                     >
                       <VStack align="stretch" spacing={0}>
-                        <Text m={0}>
+                        <Text
+                          m={0}
+                          {...supportTextProps}
+                          sx={mergeBidiSx(supportTextProps)}
+                        >
                           {dialogueActionLabelMap.continue || ui.continue}
                         </Text>
                         {actionTranslations?.continue ? (
@@ -7079,6 +8151,8 @@ export default function RPGGame({
                             fontWeight="normal"
                             whiteSpace="normal"
                             m={0}
+                            {...supportTextProps}
+                            sx={mergeBidiSx(supportTextProps)}
                           >
                             {actionTranslations.continue}
                           </Text>

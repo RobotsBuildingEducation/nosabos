@@ -1,23 +1,9 @@
 // src/utils/noteGeneration.js
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./llm";
+import { getLanguagePromptName } from "../constants/languages";
 
 // Language name mapping
-const LANG_NAME = (code) =>
-  ({
-    en: "English",
-    es: "Spanish",
-    pt: "Brazilian Portuguese",
-    fr: "French",
-    it: "Italian",
-    nl: "Dutch",
-    nah: "Eastern Huasteca Nahuatl",
-    ru: "Russian",
-    de: "German",
-    el: "Greek",
-    pl: "Polish",
-    ga: "Irish",
-    yua: "Yucatec Maya",
-  }[code] || code);
+const LANG_NAME = (code) => getLanguagePromptName(code) || code;
 
 /**
  * Generate a note with an example and summary using AI

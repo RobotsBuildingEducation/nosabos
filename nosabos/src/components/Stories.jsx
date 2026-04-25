@@ -71,6 +71,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import XpProgressHeader from "./XpProgressHeader";
+import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -115,9 +116,12 @@ const LLM_LANG_NAME = (code) =>
   ({
     en: "English",
     es: "Spanish",
+    ar: "Egyptian Arabic",
+    hi: "Hindi",
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -131,9 +135,11 @@ const LLM_LANG_NAME = (code) =>
 const BCP47 = {
   es: { stt: "es-MX", tts: "es-MX" },
   en: { stt: "en-US", tts: "en-US" },
+  hi: { stt: "hi-IN", tts: "hi-IN" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
+  ja: { stt: "ja-JP", tts: "ja-JP" },
   nl: { stt: "nl-NL", tts: "nl-NL" },
   nah: { stt: "es-MX", tts: "es-MX" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
@@ -144,6 +150,9 @@ const BCP47 = {
   yua: { stt: "es-MX", tts: "es-MX" },
 };
 
+const supportStoryText = (lang, values) =>
+  values?.[lang] || values?.en || "";
+
 const toLangKey = (value) => {
   const raw = String(value ?? "")
     .trim()
@@ -151,10 +160,16 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["ar", "arz", "arabic", "egyptian arabic", "عربي", "العربية"].includes(raw))
+    return "ar";
+  if (["zh", "zh-cn", "chinese", "mandarin", "mandarin chinese", "中文", "普通话"].includes(raw))
+    return "zh";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["hi", "hindi", "हिंदी", "hindustani"].includes(raw)) return "hi";
+  if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
   if (
@@ -194,11 +209,8 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  console.log("USER", user);
-  return user?.appLanguage === "es" ||
-    localStorage.getItem("appLanguage") === "es"
-    ? "es"
-    : "en";
+  const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
+  return ["es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -269,7 +281,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -319,66 +331,39 @@ async function saveStoryTurn(npub, payload) {
 function useUIText(uiLang, level) {
   return useMemo(() => {
     return {
-      header: uiLang === "es" ? "Juego de roles" : "Role Play",
-      rolePrompt:
-        uiLang === "es"
-          ? "¿Con qué personaje quieres jugar a los roles?"
-          : "Who do you want to role play as?",
-      rolePlaceholder:
-        uiLang === "es"
-          ? "Por ejemplo: una doctora ayudando a pacientes"
-          : "e.g. a teacher helping new students",
-      startRole: uiLang === "es" ? "Comenzar" : "Start role play",
-      updateRole: uiLang === "es" ? "Actualizar rol" : "Update",
-      editRole: uiLang === "es" ? "Editar" : "Edit",
-      cancelEdit: uiLang === "es" ? "Cancelar" : "Cancel",
-      playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
-      playTarget: (name) =>
-        uiLang === "es" ? `Reproducir ${name}` : `Play ${name}`,
-      listen: uiLang === "es" ? "Escuchar" : "Listen",
-      stop: uiLang === "es" ? "Detener" : "Stop",
-      startPractice:
-        uiLang === "es"
-          ? "Empezar práctica por oración"
-          : "Start Sentence Practice",
-      practiceThis:
-        uiLang === "es" ? "Practica esta oración:" : "Practice this sentence:",
-      skip: uiLang === "es" ? "Saltar oración" : "Skip Sentence",
-      finish: uiLang === "es" ? "Terminar juego" : "Finish Role Play",
-      record: uiLang === "es" ? "Grabar oración" : "Record Sentence",
-      stopRecording: uiLang === "es" ? "Detener grabación" : "Stop Recording",
-      progress: uiLang === "es" ? "Progreso" : "Progress",
-      noStory:
-        uiLang === "es"
-          ? "Define un rol para comenzar a jugar."
-          : "Set a role to kick off your role play.",
-      generatingTitle:
-        uiLang === "es" ? "Generando tu narrativo" : "Preparing your story…",
-      generatingSub:
-        uiLang === "es"
-          ? "Preparando una escena basada en tu rol."
-          : "Shaping a role play scene around your role.",
-      almost:
-        uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
-      wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
-      score: uiLang === "es" ? "Puntuación" : "Score",
+      header: t(uiLang, "story_header_roleplay"),
+      rolePrompt: t(uiLang, "story_role_prompt"),
+      rolePlaceholder: t(uiLang, "story_role_placeholder"),
+      startRole: t(uiLang, "story_start_role"),
+      updateRole: t(uiLang, "story_update_role"),
+      editRole: t(uiLang, "story_edit_role"),
+      cancelEdit: t(uiLang, "story_cancel_edit"),
+      playing: t(uiLang, "story_playing"),
+      playTarget: (name) => t(uiLang, "story_play_target").replace("{name}", name),
+      listen: t(uiLang, "story_listen"),
+      stop: t(uiLang, "story_stop"),
+      startPractice: t(uiLang, "story_start_practice"),
+      practiceThis: t(uiLang, "story_practice_this"),
+      skip: t(uiLang, "story_skip"),
+      finish: t(uiLang, "story_finish_role"),
+      record: t(uiLang, "story_record"),
+      stopRecording: t(uiLang, "story_stop_recording"),
+      progress: t(uiLang, "story_progress"),
+      noStory: t(uiLang, "story_no_role"),
+      generatingTitle: t(uiLang, "story_generating_role_title"),
+      generatingSub: t(uiLang, "story_generating_role_sub"),
+      almost: t(uiLang, "story_almost"),
+      wellDone: t(uiLang, "story_well_done"),
+      score: t(uiLang, "story_score"),
       xp: t(uiLang, "ra_label_xp") || "XP",
-      levelLabel: uiLang === "es" ? "Nivel" : "Level",
+      levelLabel: t(uiLang, "story_level"),
       levelValue:
-        uiLang === "es"
-          ? {
-              beginner: t("es", "onboarding_level_beginner"),
-              intermediate: t("es", "onboarding_level_intermediate"),
-              advanced: t("es", "onboarding_level_advanced"),
-            }[level] || level
-          : {
-              beginner: t("en", "onboarding_level_beginner"),
-              intermediate: t("en", "onboarding_level_intermediate"),
-              advanced: t("en", "onboarding_level_advanced"),
-            }[level] || level,
-      tts_synthesizing:
-        t(uiLang, "tts_synthesizing") ||
-        (uiLang === "es" ? "Sintetizando…" : "Synthesizing…"),
+        {
+          beginner: t(uiLang, "onboarding_level_beginner"),
+          intermediate: t(uiLang, "onboarding_level_intermediate"),
+          advanced: t(uiLang, "onboarding_level_advanced"),
+        }[level] || level,
+      tts_synthesizing: t(uiLang, "tts_synthesizing"),
     };
   }, [uiLang, level]);
 }
@@ -424,10 +409,10 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? uiLang === "es"
-        ? "es"
-        : "en"
+      ? (["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(uiLang) ? uiLang : "en")
       : progress.supportLang;
+  const targetTextProps = getBidiTextProps(targetLang);
+  const supportTextProps = getBidiTextProps(supportLang);
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
 
@@ -732,7 +717,7 @@ export default function StoryMode({
       setHighlightedWordIndex(-1);
       setLastSuccessInfo(null);
     } catch (error) {
-      // Bilingual fallback (ES/EN) that respects target/support languages
+      // Bilingual fallback that respects target/support languages
       setStoryType("paragraph"); // Fallback is always a paragraph story
       const fallback = isTutorial
         ? {
@@ -742,36 +727,92 @@ export default function StoryMode({
                 targetLang === "en"
                   ? "Hello. Hi. Goodbye."
                   : "Hola. Hola. Adiós.",
-              sup:
-                supportLang === "es"
-                  ? "Hola. Hola. Adiós."
-                  : "Hello. Hi. Goodbye.",
+              sup: supportStoryText(supportLang, {
+                en: "Hello. Hi. Goodbye.",
+                es: "Hola. Hola. Adiós.",
+                hi: "नमस्ते। हाय। अलविदा।",
+                it: "Ciao. Ciao. Arrivederci.",
+                fr: "Bonjour. Salut. Au revoir.",
+                ar: "أهلاً. هاي. مع السلامة.",
+                zh: "你好。嗨。再见。",
+              }),
             },
             sentences:
               targetLang === "en"
                 ? [
                     {
                       tgt: "Hello.",
-                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hello.",
+                        es: "Hola.",
+                        hi: "नमस्ते।",
+                        it: "Ciao.",
+                        fr: "Bonjour.",
+                        ar: "أهلاً.",
+                        zh: "你好。",
+                      }),
                     },
-                    { tgt: "Hi.", sup: supportLang === "es" ? "Hola." : "Hi." },
+                    {
+                      tgt: "Hi.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hi.",
+                        es: "Hola.",
+                        hi: "हाय।",
+                        it: "Ciao.",
+                        fr: "Salut.",
+                        ar: "هاي.",
+                        zh: "嗨。",
+                      }),
+                    },
                     {
                       tgt: "Goodbye.",
-                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Goodbye.",
+                        es: "Adiós.",
+                        hi: "अलविदा।",
+                        it: "Arrivederci.",
+                        fr: "Au revoir.",
+                        ar: "مع السلامة.",
+                        zh: "再见。",
+                      }),
                     },
                   ]
                 : [
                     {
                       tgt: "Hola.",
-                      sup: supportLang === "es" ? "Hola." : "Hello.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hello.",
+                        es: "Hola.",
+                        hi: "नमस्ते।",
+                        it: "Ciao.",
+                        fr: "Bonjour.",
+                        ar: "أهلاً.",
+                        zh: "你好。",
+                      }),
                     },
                     {
                       tgt: "Hola.",
-                      sup: supportLang === "es" ? "Hola." : "Hi.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Hi.",
+                        es: "Hola.",
+                        hi: "हाय।",
+                        it: "Ciao.",
+                        fr: "Salut.",
+                        ar: "هاي.",
+                        zh: "嗨。",
+                      }),
                     },
                     {
                       tgt: "Adiós.",
-                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Goodbye.",
+                        es: "Adiós.",
+                        hi: "अलविदा।",
+                        it: "Arrivederci.",
+                        fr: "Au revoir.",
+                        ar: "مع السلامة.",
+                        zh: "再见。",
+                      }),
                     },
                   ],
           }
@@ -782,85 +823,124 @@ export default function StoryMode({
                 targetLang === "en"
                   ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
                   : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-              sup:
-                supportLang === "es"
-                  ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                  : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+              sup: supportStoryText(supportLang, {
+                en: "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+                es: "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था। उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे। चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था। बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसी फव्वारे के आसपास बैठते थे।",
+                it: "C'era una volta un piccolo paese in Messico chiamato San Miguel. Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno. Nella piazza c'era una vecchia fontana con acqua sempre fresca. Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
+                fr: "Il etait une fois un petit village au Mexique appele San Miguel. Le village avait une tres belle place ou les enfants jouaient tous les jours. Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche. Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل. كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم. وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً. وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
+                zh: "从前，墨西哥有一个叫圣米格尔的小镇。小镇有一个很漂亮的广场，孩子们每天都在那里玩。广场上有一座古老的喷泉，里面总是有清水。大人们下班后会坐在喷泉周围聊天和休息。",
+              }),
             },
             sentences:
               targetLang === "en"
                 ? [
                     {
                       tgt: "Once upon a time, there was a small town called San Miguel.",
-                      sup:
-                        supportLang === "es"
-                          ? "Había una vez un pequeño pueblo llamado San Miguel."
-                          : "Once upon a time, there was a small town called San Miguel.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Once upon a time, there was a small town called San Miguel.",
+                        es: "Había una vez un pequeño pueblo llamado San Miguel.",
+                        hi: "एक समय सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
+                        it: "C'era una volta un piccolo paese chiamato San Miguel.",
+                        fr: "Il etait une fois un petit village appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة اسمها سان ميجيل.",
+                        zh: "从前，有一个叫圣米格尔的小镇。",
+                      }),
                     },
                     {
                       tgt: "The town had a lovely square where kids played every day.",
-                      sup:
-                        supportLang === "es"
-                          ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                          : "The town had a lovely square where kids played every day.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The town had a lovely square where kids played every day.",
+                        es: "El pueblo tenía una plaza bonita donde los niños jugaban a diario.",
+                        hi: "उस कस्बे में एक सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
+                        it: "Il paese aveva una bella piazza dove i bambini giocavano ogni giorno.",
+                        fr: "Le village avait une jolie place ou les enfants jouaient tous les jours.",
+                        ar: "كان في البلدة ميدان جميل يلعب فيه الأطفال كل يوم.",
+                        zh: "小镇有一个漂亮的广场，孩子们每天都在那里玩。",
+                      }),
                     },
                     {
                       tgt: "In the square, an old fountain always had fresh water.",
-                      sup:
-                        supportLang === "es"
-                          ? "En la plaza, una fuente antigua siempre tenía agua fresca."
-                          : "In the square, an old fountain always had fresh water.",
+                      sup: supportStoryText(supportLang, {
+                        en: "In the square, an old fountain always had fresh water.",
+                        es: "En la plaza, una fuente antigua siempre tenía agua fresca.",
+                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
+                        it: "Nella piazza, una vecchia fontana aveva sempre acqua fresca.",
+                        fr: "Sur la place, une vieille fontaine avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
+                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
+                      }),
                     },
                     {
                       tgt: "Adults sat around it to talk and rest after work.",
-                      sup:
-                        supportLang === "es"
-                          ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                          : "Adults sat around it to talk and rest after work.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Adults sat around it to talk and rest after work.",
+                        es: "Los adultos se sentaban alrededor para hablar y descansar después del trabajo.",
+                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए उसके आसपास बैठते थे।",
+                        it: "Gli adulti si sedevano intorno per parlare e riposare dopo il lavoro.",
+                        fr: "Les adultes s'asseyaient autour pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حولها ليتحدثوا ويستريحوا بعد العمل.",
+                        zh: "大人们下班后会坐在它周围聊天和休息。",
+                      }),
                     },
                   ]
                 : [
                     {
                       tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                      sup:
-                        supportLang === "es"
-                          ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                          : "Once upon a time, there was a small town in Mexico called San Miguel.",
+                      sup: supportStoryText(supportLang, {
+                        en: "Once upon a time, there was a small town in Mexico called San Miguel.",
+                        es: "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                        hi: "एक समय मेक्सिको में सैन मिगेल नाम का एक छोटा-सा कस्बा था।",
+                        it: "C'era una volta un piccolo paese in Messico chiamato San Miguel.",
+                        fr: "Il etait une fois un petit village au Mexique appele San Miguel.",
+                        ar: "كان يا ما كان، كانت هناك بلدة صغيرة في المكسيك اسمها سان ميجيل.",
+                        zh: "从前，墨西哥有一个叫圣米格尔的小镇。",
+                      }),
                     },
                     {
                       tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                      sup:
-                        supportLang === "es"
-                          ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                          : "The town had a very beautiful square where the children played every day.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The town had a very beautiful square where the children played every day.",
+                        es: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                        hi: "उस कस्बे में एक बहुत सुंदर चौक था जहाँ बच्चे हर दिन खेलते थे।",
+                        it: "Il paese aveva una piazza molto bella dove i bambini giocavano ogni giorno.",
+                        fr: "Le village avait une tres belle place ou les enfants jouaient tous les jours.",
+                        ar: "كان فيها ميدان جميل جداً يلعب فيه الأطفال كل يوم.",
+                        zh: "小镇有一个很漂亮的广场，孩子们每天都在那里玩。",
+                      }),
                     },
                     {
                       tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                      sup:
-                        supportLang === "es"
-                          ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                          : "In the square, there was an old fountain that always had fresh water.",
+                      sup: supportStoryText(supportLang, {
+                        en: "In the square, there was an old fountain that always had fresh water.",
+                        es: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                        hi: "उस चौक में एक पुराना फव्वारा था जिसमें हमेशा ताज़ा पानी रहता था।",
+                        it: "Nella piazza c'era una vecchia fontana che aveva sempre acqua fresca.",
+                        fr: "Sur la place, il y avait une vieille fontaine qui avait toujours de l'eau fraiche.",
+                        ar: "وفي الميدان كانت توجد نافورة قديمة فيها ماء عذب دائماً.",
+                        zh: "广场上有一座古老的喷泉，里面总是有清水。",
+                      }),
                     },
                     {
                       tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                      sup:
-                        supportLang === "es"
-                          ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                          : "The adults sat around the fountain to talk and rest after work.",
+                      sup: supportStoryText(supportLang, {
+                        en: "The adults sat around the fountain to talk and rest after work.",
+                        es: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                        hi: "बड़े लोग काम के बाद बातें करने और आराम करने के लिए फव्वारे के आसपास बैठते थे।",
+                        it: "Gli adulti si sedevano intorno alla fontana per parlare e riposare dopo il lavoro.",
+                        fr: "Les adultes s'asseyaient autour de la fontaine pour parler et se reposer apres le travail.",
+                        ar: "وكان الكبار يجلسون حول النافورة ليتحدثوا ويستريحوا بعد العمل.",
+                        zh: "大人们下班后会坐在喷泉周围聊天和休息。",
+                      }),
                     },
                   ],
           };
       setStoryData(fallback);
       storyCacheRef.current = fallback;
       toast({
-        title:
-          uiLang === "es"
-            ? "Usando juego de roles de demo"
-            : "Using Demo Role Play",
-        description:
-          uiLang === "es"
-            ? "API no disponible. Usando juego de roles de demo para pruebas."
-            : "API unavailable. Using demo role play for testing.",
+        title: t(uiLang, "story_demo_title"),
+        description: t(uiLang, "story_demo_desc"),
         status: "info",
         duration: 3000,
       });
@@ -1205,11 +1285,8 @@ export default function StoryMode({
 
     // Not in lesson mode - show a message
     toast({
-      title: uiLang === "es" ? "No disponible" : "Not available",
-      description:
-        uiLang === "es"
-          ? "Solo puedes saltar cuando estás en un modo de lección."
-          : "You can only skip when in lesson mode.",
+      title: t(uiLang, "story_skip_unavailable_title"),
+      description: t(uiLang, "story_skip_unavailable_desc"),
       status: "info",
       duration: 3000,
     });
@@ -1371,9 +1448,24 @@ export default function StoryMode({
 
   const nextSentenceLabel =
     t(uiLang, "stories_next_sentence") ||
-    (uiLang === "es" ? "Siguiente Oración" : "Next Sentence");
+    supportStoryText(uiLang, {
+      en: "Next Sentence",
+      es: "Siguiente Oración",
+      hi: "अगला वाक्य",
+      it: "Frase successiva",
+      fr: "Phrase suivante",
+      ar: "الجملة التالية",
+    });
   const finishLabel =
-    t(uiLang, "stories_finish") || (uiLang === "es" ? "Terminar" : "Finish");
+    t(uiLang, "stories_finish") ||
+    supportStoryText(uiLang, {
+      en: "Finish",
+      es: "Terminar",
+      hi: "समाप्त करें",
+      it: "Fine",
+      fr: "Terminer",
+      ar: "إنهاء",
+    });
 
   const handleEvaluationResult = useCallback(
     async ({
@@ -1390,11 +1482,8 @@ export default function StoryMode({
 
       if (error) {
         toast({
-          title: uiLang === "es" ? "No se pudo evaluar" : "Could not evaluate",
-          description:
-            uiLang === "es"
-              ? "Vuelve a intentarlo con una conexión estable."
-              : "Please try again with a stable connection.",
+          title: t(uiLang, "story_audio_eval_error_title"),
+          description: t(uiLang, "story_audio_eval_error_desc"),
           status: "error",
           duration: 2500,
         });
@@ -1511,38 +1600,22 @@ export default function StoryMode({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title:
-            uiLang === "es"
-              ? "Reconocimiento de voz no disponible"
-              : "Speech recognition unavailable",
-          description:
-            uiLang === "es"
-              ? "Para calificar, usa un navegador Chromium con acceso al micrófono."
-              : "For grading, please use a Chromium-based browser with microphone access.",
+          title: t(uiLang, "story_speech_unavailable_title"),
+          description: t(uiLang, "story_speech_unavailable_desc"),
           status: "warning",
           duration: 3500,
         });
       } else if (code === "mic-denied") {
         toast({
-          title:
-            uiLang === "es"
-              ? "Permiso de micrófono denegado"
-              : "Microphone denied",
-          description:
-            uiLang === "es"
-              ? "Activa el micrófono en la configuración del navegador."
-              : "Enable microphone access in your browser settings.",
+          title: t(uiLang, "flashcard_mic_denied_title"),
+          description: t(uiLang, "flashcard_mic_denied_desc"),
           status: "error",
           duration: 3200,
         });
       } else {
         toast({
-          title:
-            uiLang === "es"
-              ? "No se pudo iniciar la grabación"
-              : "Recording failed",
-          description:
-            uiLang === "es" ? "Inténtalo nuevamente." : "Please try again.",
+          title: t(uiLang, "vocab_recording_failed"),
+          description: t(uiLang, "vocab_recording_failed_desc"),
           status: "error",
           duration: 2500,
         });
@@ -1787,7 +1860,7 @@ export default function StoryMode({
                   // padding={6}
                   width="fit-content"
                 >
-                  {uiLang === "es" ? "Saltar" : "Skip"}
+                  {t(uiLang, "practice_skip_question")}
                 </Button>
               </Box>
             )}
@@ -1917,6 +1990,8 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color={APP_TEXT_PRIMARY}
                                     lineHeight="1.6"
+                                    {...targetTextProps}
+                                    sx={mergeBidiSx(targetTextProps)}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1926,6 +2001,8 @@ export default function StoryMode({
                                       color={APP_TEXT_SECONDARY}
                                       lineHeight="1.4"
                                       mt={1}
+                                      {...supportTextProps}
+                                      sx={mergeBidiSx(supportTextProps)}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1963,6 +2040,8 @@ export default function StoryMode({
                             color={APP_TEXT_PRIMARY}
                             mb={3}
                             lineHeight="1.8"
+                            {...targetTextProps}
+                            sx={mergeBidiSx(targetTextProps)}
                           >
                             {storyData.fullStory?.tgt || ""}
                           </Text>
@@ -1972,6 +2051,8 @@ export default function StoryMode({
                               fontSize="md"
                               color={APP_TEXT_SECONDARY}
                               lineHeight="1.6"
+                              {...supportTextProps}
+                              sx={mergeBidiSx(supportTextProps)}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -2011,6 +2092,9 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      dir={targetTextProps.dir}
+                      lang={targetTextProps.lang}
+                      sx={mergeBidiSx(targetTextProps)}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -2020,6 +2104,9 @@ export default function StoryMode({
                         color={APP_TEXT_SECONDARY}
                         lineHeight="1.5"
                         textAlign="center"
+                        dir={supportTextProps.dir}
+                        lang={supportTextProps.lang}
+                        sx={mergeBidiSx(supportTextProps)}
                       >
                         {currentSentence?.sup}
                       </Text>
@@ -2030,8 +2117,8 @@ export default function StoryMode({
                       textAlign="center"
                       mt={2}
                     >
-                      {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {t(uiLang, "story_sentence_label")}{" "}
+                      {currentSentenceIndex + 1} {t(uiLang, "story_of")}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>
@@ -2082,9 +2169,7 @@ export default function StoryMode({
                           transition="all 0.2s ease"
                         >
                           {isConnecting
-                            ? uiLang === "es"
-                              ? "Conectando..."
-                              : "Connecting..."
+                            ? t(uiLang, "vocab_connecting")
                             : isRecording
                               ? uiText.stopRecording
                               : uiText.record}
@@ -2163,9 +2248,14 @@ export default function StoryMode({
                                       ) ||
                                       `${uiText.score}: ${lastSuccessInfo.score}%`
                                     : t(uiLang, "practice_next_ready") ||
-                                      (uiLang === "es"
-                                        ? "¡Listo para continuar!"
-                                        : "Ready to continue!")}
+                                      supportStoryText(uiLang, {
+                                        en: "Ready to continue!",
+                                        es: "¡Listo para continuar!",
+                                        hi: "आगे बढ़ने के लिए तैयार!",
+                                        it: "Pronto per continuare!",
+                                        fr: "Pret pour continuer !",
+                                        ar: "جاهز تكمل!",
+                                      })}
                                 </Text>
                               </Box>
                             </HStack>
@@ -2217,14 +2307,10 @@ export default function StoryMode({
                     sessionXp > 0 &&
                     sessionSummary.total > 0 ? (
                       <SpeakSuccessCard
-                        title={
-                          uiLang === "es"
-                            ? "¡Juego de roles completado!"
-                            : "Role play completed!"
-                        }
+                        title={t(uiLang, "story_roleplay_completed")}
                         scoreLabel={`${sessionSummary.passed}/${
                           sessionSummary.total
-                        } ${uiLang === "es" ? "oraciones" : "sentences"}`}
+                        } ${t(uiLang, "story_sentences")}`}
                         xp={sessionXp}
                         t={t}
                         userLanguage={uiLang}

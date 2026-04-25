@@ -69,6 +69,11 @@ import {
   getSchedulerRatingOptions,
   mapXpToReviewOutcome,
 } from "../utils/flashcardReview";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -84,15 +89,18 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(
+      localStorage.getItem("appLanguage"),
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
   }
-  return "en";
+  return DEFAULT_SUPPORT_LANGUAGE;
 };
 
 // Translation helper for UI strings - uses appLanguage for UI text
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
@@ -105,13 +113,24 @@ const getTranslation = (key, params = {}) => {
 // Otherwise fall back to appLanguage (from account settings)
 const getEffectiveCardLanguage = (supportLang) => {
   const appLang = getAppLanguage();
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, appLang);
   // If supportLang is set to something other than default "en", use it
   // This means user explicitly chose a support language in conversation settings
-  if (supportLang && supportLang !== "en") {
-    return supportLang;
+  if (supportLang && normalizedSupportLang !== "en") {
+    return normalizedSupportLang;
   }
   // Otherwise use the app language preference
   return appLang;
+};
+
+const getLanguageTextProps = (lang, { align = "center" } = {}) => {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
 };
 
 // Language name helper
@@ -266,6 +285,19 @@ export default function FlashcardPractice({
   const updatedTotalXp = currentLanguageXp + xpAwarded;
   const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
   const nextLevelProgressPct = updatedTotalXp % 100;
+  const effectiveCardLanguage = getEffectiveCardLanguage(supportLang);
+  const cardPromptTextProps = useMemo(
+    () => getLanguageTextProps(effectiveCardLanguage),
+    [effectiveCardLanguage],
+  );
+  const targetTextProps = useMemo(
+    () => getLanguageTextProps(targetLang),
+    [targetLang],
+  );
+  const targetInlineTextProps = useMemo(
+    () => getLanguageTextProps(targetLang, { align: "start" }),
+    [targetLang],
+  );
   const ratingOptions = useMemo(
     () => getSchedulerRatingOptions(card.reviewProgress || {}),
     [card.reviewProgress],
@@ -464,10 +496,10 @@ export default function FlashcardPractice({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildFlashcardJudgePrompt({
-          concept: getConceptText(card, getEffectiveCardLanguage(supportLang)),
+          concept: getConceptText(card, effectiveCardLanguage),
           userAnswer: answer,
           targetLang,
-          supportLang,
+          supportLang: effectiveCardLanguage,
           cefrLevel: card.cefrLevel,
         }),
       });
@@ -605,10 +637,7 @@ export default function FlashcardPractice({
     setNotesLoading(true);
 
     try {
-      const concept = getConceptText(
-        card,
-        getEffectiveCardLanguage(supportLang),
-      );
+      const concept = getConceptText(card, effectiveCardLanguage);
       const userAnswer = textAnswer || recognizedText;
 
       const { example, summary } = await generateNoteContent({
@@ -616,7 +645,7 @@ export default function FlashcardPractice({
         userAnswer,
         wasCorrect: isCorrect,
         targetLang,
-        supportLang,
+        supportLang: effectiveCardLanguage,
         cefrLevel: card.cefrLevel,
         moduleType: "flashcard",
       });
@@ -627,7 +656,7 @@ export default function FlashcardPractice({
         example,
         summary,
         targetLang,
-        supportLang,
+        supportLang: effectiveCardLanguage,
         moduleType: "flashcard",
         wasCorrect: isCorrect,
       });
@@ -720,7 +749,7 @@ export default function FlashcardPractice({
 
     const sourceText = getConceptText(
       card,
-      getEffectiveCardLanguage(supportLang),
+      effectiveCardLanguage,
     );
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(
       targetLang,
@@ -778,20 +807,20 @@ export default function FlashcardPractice({
 
     playSound(selectSound);
 
-    const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
+    const concept = getConceptText(card, effectiveCardLanguage);
     const prompt = `You are a helpful language tutor for ${LANG_NAME(
       targetLang,
     )}. A student tried to translate a prompt from ${LANG_NAME(
-      supportLang,
+      effectiveCardLanguage,
     )} to ${LANG_NAME(targetLang)}.
 
-Prompt (${LANG_NAME(supportLang)}): ${concept}
+Prompt (${LANG_NAME(effectiveCardLanguage)}): ${concept}
 Student translation attempt (${LANG_NAME(targetLang)}): ${userAnswer}
 
-Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
+Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
 1) Correct translation: the best translation into ${LANG_NAME(targetLang)}
 2) Explanation: 2-3 concise sentences in ${LANG_NAME(
-      supportLang,
+      effectiveCardLanguage,
     )} explaining how the student's answer could be improved.`;
 
     setIsLoadingExplanation(true);
@@ -1023,12 +1052,12 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           fontSize="3xl"
                           fontWeight="black"
                           color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                          textAlign="center"
                           textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
+                          {...cardPromptTextProps}
                         >
                           {getConceptText(
                             card,
-                            getEffectiveCardLanguage(supportLang),
+                            effectiveCardLanguage,
                           )}
                         </Text>
                         <IconButton
@@ -1089,8 +1118,8 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             fontSize="3xl"
                             fontWeight="black"
                             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                            textAlign="center"
                             textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
+                            {...targetTextProps}
                           >
                             {streamedAnswer || "..."}
                           </Text>
@@ -1212,9 +1241,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                           _active={{ transform: "translateY(0)" }}
                         >
                           {isConnecting
-                            ? getAppLanguage() === "es"
-                              ? "Conectando..."
-                              : "Connecting..."
+                            ? getTranslation("vocab_connecting")
                             : isRecording
                               ? getTranslation("flashcard_stop_recording")
                               : getTranslation("flashcard_record_answer")}
@@ -1240,6 +1267,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             <Text
                               fontSize="lg"
                               color={isLightTheme ? "#447a70" : "teal.200"}
+                              {...targetInlineTextProps}
                             >
                               {recognizedText}
                             </Text>
@@ -1258,7 +1286,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                             )}
                             size="lg"
                             fontSize="16px"
-                            textAlign="center"
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
+                            textAlign={targetTextProps.textAlign}
                             bg={isLightTheme ? APP_SURFACE_ELEVATED : "#f4f5ffff"}
                             border="2px solid"
                             borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
@@ -1270,6 +1300,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               borderColor: cefrColor.primary,
                               boxShadow: `0 0 0 1px ${cefrColor.primary}`,
                             }}
+                            sx={targetTextProps.sx}
                           />
 
                           {/* Submit Button */}
@@ -1379,10 +1410,42 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 
                             <Button
                               size="lg"
-                              colorScheme={isLightTheme ? undefined : "pink"}
-                              bg={isLightTheme ? "#d8a4b6" : undefined}
+                              colorScheme={undefined}
+                              bg={isLightTheme ? "#d8a4b6" : "#d45b88"}
                               color={isLightTheme ? "#432b33" : "white"}
                               variant="solid"
+                              border="1px solid"
+                              borderColor={
+                                isLightTheme
+                                  ? "rgba(176, 94, 122, 0.28)"
+                                  : "rgba(255, 227, 237, 0.36)"
+                              }
+                              boxShadow={
+                                isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950"
+                              }
+                              _hover={{
+                                bg: isLightTheme ? "#d3a0b2" : "#dc7098",
+                                boxShadow: isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950",
+                                transform: "translateY(-1px)",
+                              }}
+                              _active={{
+                                bg: isLightTheme ? "#c992a6" : "#c54d79",
+                                boxShadow: isLightTheme
+                                  ? "0px 2px 0px #c08aa0"
+                                  : "0px 2px 0px #8f2950",
+                                transform: "translateY(2px)",
+                              }}
+                              _disabled={{
+                                opacity: 0.7,
+                                cursor: "not-allowed",
+                                boxShadow: isLightTheme
+                                  ? "0px 4px 0px #c08aa0"
+                                  : "0px 4px 0px #8f2950",
+                              }}
                               onClick={handleExplainAnswer}
                               isDisabled={
                                 isLoadingExplanation ||
@@ -1571,6 +1634,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         explanationText ? (
                           <Box
                             w="100%"
+                            mb={{ base: 5, md: 6 }}
                             p={4}
                             borderRadius="md"
                             bg={
@@ -1601,16 +1665,17 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                               fontSize="sm"
                               lineHeight="1.6"
+                              pb={{ base: 3, md: 4 }}
                               sx={{
-                                "& p": { mb: 2 },
-                                "& p:last-child": { mb: 0 },
+                                "& p": { mb: 2, unicodeBidi: "plaintext" },
+                                "& p:last-child": { mb: 2 },
                                 "& strong": {
                                   fontWeight: "bold",
                                   color: isLightTheme ? "#7a3f52" : "pink.100",
                                 },
                                 "& em": { fontStyle: "italic" },
                                 "& ul, & ol": { pl: 4, mb: 2 },
-                                "& li": { mb: 1 },
+                                "& li": { mb: 1, unicodeBidi: "plaintext" },
                                 "& code": {
                                   bg: isLightTheme
                                     ? "rgba(96,77,56,0.08)"
@@ -1634,7 +1699,11 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                               color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                               textAlign="center"
                             >
-                              {`Level ${xpLevelNumber} • Total XP ${updatedTotalXp}`}
+                              {`${getTranslation("flashcard_xp_level", {
+                                level: xpLevelNumber,
+                              })} • ${getTranslation("flashcard_total_xp", {
+                                xp: updatedTotalXp,
+                              })}`}
                             </Text>
 
                             <WaveBar value={nextLevelProgressPct} />

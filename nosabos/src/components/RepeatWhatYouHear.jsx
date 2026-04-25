@@ -20,6 +20,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import VoiceOrb from "./VoiceOrb";
+import { getLanguageDirection } from "../constants/languages";
 import {
   getQuestionAssistantPanelProps,
   getQuestionChipProps,
@@ -37,6 +38,16 @@ const APP_TEXT_MUTED = "var(--app-text-muted)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_SHADOW = "var(--app-shadow-soft)";
 
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+    sx: { unicodeBidi: "plaintext" },
+  };
+}
+
 /**
  * RepeatWhatYouHear - A Duolingo-style listening and reconstruction exercise
  *
@@ -49,6 +60,8 @@ export default function RepeatWhatYouHear({
   correctAnswer = [], // eslint-disable-line no-unused-vars
   hint = "",
   loading = false,
+  sourceLang = "en",
+  answerLang = "",
 
   userLanguage = "en",
   t = (key) => key,
@@ -82,6 +95,24 @@ export default function RepeatWhatYouHear({
   characterImage = null,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
+  const answerTextProps = getLanguageTextProps(answerLang || sourceLang);
+  const answerDir = answerTextProps.dir;
+  const assistantLabel =
+    t("vocab_assistant") !== "vocab_assistant"
+      ? t("vocab_assistant")
+      : userLanguage === "hi"
+        ? "सहायक"
+        : userLanguage === "ar"
+          ? "المساعد"
+        : userLanguage === "zh"
+          ? "助手"
+        : userLanguage === "ja"
+          ? "アシスタント"
+          : userLanguage === "pt" || userLanguage === "it"
+            ? "Assistente"
+            : userLanguage === "es"
+              ? "Asistente"
+              : "Assistant";
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
   const hasPlayedRef = useRef(false);
@@ -249,22 +280,71 @@ export default function RepeatWhatYouHear({
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
       return;
+    const isFrenchUI = userLanguage === "fr";
+    const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isJapaneseUI = userLanguage === "ja";
+    const isArabicUI = userLanguage === "ar";
+    const isChineseUI = userLanguage === "zh";
     const promptLines = [
-      isSpanishUI
+      isJapaneseUI
+        ? "「聞こえたものを繰り返す」練習です。単語バンクを使って、聞こえた文どおりに答えてください。"
+        : isArabicUI
+        ? "تمرين كرر اللي سمعته. جاوب بالجملة زي ما اتقالت مستخدمًا بنك الكلمات."
+        : isChineseUI
+        ? "这是“重复你听到的内容”练习。请使用给出的词库，按听到的句子作答。"
+        : isFrenchUI
+        ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
+        : isPortugueseUI
+        ? "Exercicio de repetir o que voce ouve. Responda com a frase exatamente como foi dita usando o banco de palavras."
+        : isSpanishUI
         ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
         : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
       sourceSentence
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `聞こえた文: ${sourceSentence}`
+          : isArabicUI
+          ? `الجملة المسموعة: ${sourceSentence}`
+          : isChineseUI
+          ? `听到的句子：${sourceSentence}`
+          : isFrenchUI
+          ? `Phrase prononcee : ${sourceSentence}`
+          : isPortugueseUI
+          ? `Frase falada: ${sourceSentence}`
+          : isSpanishUI
           ? `Frase pronunciada: ${sourceSentence}`
           : `Spoken sentence: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isSpanishUI
+        ? isJapaneseUI
+          ? `単語バンク: ${wordBank.join(" | ")}`
+          : isArabicUI
+          ? `بنك الكلمات: ${wordBank.join(" | ")}`
+          : isChineseUI
+          ? `词库：${wordBank.join(" | ")}`
+          : isFrenchUI
+          ? `Banque de mots : ${wordBank.join(" | ")}`
+          : isPortugueseUI
+          ? `Banco de palavras: ${wordBank.join(" | ")}`
+          : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
+      hint
+        ? isJapaneseUI
+          ? `ヒント: ${hint}`
+          : isArabicUI
+          ? `تلميح: ${hint}`
+          : isChineseUI
+          ? `提示：${hint}`
+          : isFrenchUI
+          ? `Indice : ${hint}`
+          : isPortugueseUI
+          ? `Dica: ${hint}`
+          : isSpanishUI
+          ? `Pista: ${hint}`
+          : `Hint: ${hint}`
+        : null,
     ].filter(Boolean);
     onAskAssistant(promptLines.join("\n"));
   }, [
@@ -277,16 +357,11 @@ export default function RepeatWhatYouHear({
     wordBank,
   ]);
 
-  const headingLabel =
-    userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
-  const instructionLabel =
-    userLanguage === "es"
-      ? "Escucha y toca las palabras en orden"
-      : "Listen and tap the words in order";
-  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
-  const nextLabel =
-    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
+  const headingLabel = t("repeat_hear_heading");
+  const instructionLabel = t("repeat_hear_instruction");
+  const skipLabel = t("practice_skip_question");
+  const submitLabel = t("quiz_submit");
+  const nextLabel = t("practice_next_question");
 
   const handleManualPlay = useCallback(async () => {
     // Claim playback immediately so the mount auto-play effect can't fire a
@@ -335,6 +410,8 @@ export default function RepeatWhatYouHear({
                     gap={2}
                     minH="48px"
                     align="center"
+                    justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+                    dir={answerDir}
                     bg={
                       snapshot.isDraggingOver
                         ? "rgba(128, 90, 213, 0.08)"
@@ -348,7 +425,15 @@ export default function RepeatWhatYouHear({
                       {onAskAssistant && (
                         <IconButton
                           aria-label={
-                            userLanguage === "es"
+                            userLanguage === "ja"
+                              ? "アシスタントに聞く"
+                              : userLanguage === "zh"
+                                ? "询问助手"
+                              : userLanguage === "ar"
+                                ? "اسأل المساعد"
+                              : userLanguage === "pt"
+                              ? "Pedir ajuda"
+                              : userLanguage === "es"
                               ? "Pedir ayuda"
                               : "Ask the assistant"
                           }
@@ -371,7 +456,17 @@ export default function RepeatWhatYouHear({
                       )}
                       <IconButton
                         aria-label={
-                          userLanguage === "es" ? "Escuchar" : "Listen"
+                          userLanguage === "ja"
+                            ? "聞く"
+                            : userLanguage === "zh"
+                              ? "聆听"
+                            : userLanguage === "ar"
+                              ? "استمع"
+                            : userLanguage === "pt"
+                              ? "Ouvir"
+                            : userLanguage === "es"
+                              ? "Escuchar"
+                              : "Listen"
                         }
                         icon={renderSpeakerIcon(isSynthesizing)}
                         size="md"
@@ -417,6 +512,9 @@ export default function RepeatWhatYouHear({
                               dragging: dragSnapshot.isDragging,
                             })}
                             cursor={lastOk === true ? "default" : "grab"}
+                            dir={answerTextProps.dir}
+                            lang={answerTextProps.lang}
+                            sx={{ unicodeBidi: "plaintext" }}
                             onClick={() => {
                               if (lastOk !== true) {
                                 playSound(selectSound);
@@ -453,6 +551,7 @@ export default function RepeatWhatYouHear({
               justify="center"
               p={2}
               minH="60px"
+              dir={answerDir}
               bg={
                 snapshot.isDraggingOver
                   ? "rgba(128, 90, 213, 0.05)"
@@ -480,6 +579,9 @@ export default function RepeatWhatYouHear({
                         dragging: dragSnapshot.isDragging,
                       })}
                       fontSize="sm"
+                      dir={answerTextProps.dir}
+                      lang={answerTextProps.lang}
+                      sx={{ unicodeBidi: "plaintext" }}
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
@@ -512,7 +614,7 @@ export default function RepeatWhatYouHear({
             <HStack spacing={2} mb={2}>
               <MdOutlineSupportAgent color={questionAssistantText.accent} />
               <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
-                {userLanguage === "es" ? "Asistente" : "Assistant"}
+                {assistantLabel}
               </Text>
               {isLoadingAssistantSupport && (
                 <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />

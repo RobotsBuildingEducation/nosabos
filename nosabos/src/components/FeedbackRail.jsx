@@ -71,10 +71,8 @@ const FeedbackRail = React.memo(
     if (ok === null) return null;
 
     // Note button labels
-    const createNoteLabel =
-      userLanguage === "es" ? "Crear nota" : "Create note";
-    const noteSavedLabel =
-      userLanguage === "es" ? "¡Nota guardada!" : "Note saved!";
+    const createNoteLabel = t?.("vocab_create_note") || "Create note";
+    const noteSavedLabel = t?.("vocab_note_saved") || "Note saved!";
 
     const label = ok
       ? t?.("correct") || "Correct!"
@@ -117,8 +115,12 @@ const FeedbackRail = React.memo(
                     ? t?.("practice_next_ready") ||
                       "Great work! Keep the streak going."
                     : t?.("practice_try_again_hint") ||
-                      (userLanguage === "es"
+                      (userLanguage === "pt"
+                        ? "Revise e tente novamente."
+                        : userLanguage === "es"
                         ? "Repasa y vuelve a intentarlo."
+                        : userLanguage === "ja"
+                        ? "復習してもう一度試しましょう。"
                         : "Review and try again.")}
                 </Text>
               </Box>
@@ -189,16 +191,34 @@ const FeedbackRail = React.memo(
                     <FiHelpCircle />
                   )
                 }
-                colorScheme="pink"
+                colorScheme={undefined}
+                bg="#d8a4b6"
+                color="#432b33"
+                border="1px solid"
+                borderColor="rgba(176, 94, 122, 0.28)"
+                boxShadow="0px 4px 0px #c08aa0"
+                _hover={{
+                  bg: "#d3a0b2",
+                  boxShadow: "0px 4px 0px #c08aa0",
+                  transform: "translateY(-1px)",
+                }}
+                _active={{
+                  bg: "#c992a6",
+                  boxShadow: "0px 2px 0px #c08aa0",
+                  transform: "translateY(2px)",
+                }}
+                _disabled={{
+                  opacity: 0.7,
+                  cursor: "not-allowed",
+                  boxShadow: "0px 4px 0px #c08aa0",
+                }}
                 onClick={onExplainAnswer}
                 isDisabled={isLoadingExplanation || !!explanationText}
                 width="full"
                 py={6}
                 size="lg"
               >
-                {userLanguage === "es"
-                  ? "Explicar mi respuesta"
-                  : "Explain the answer"}
+                {t?.("flashcard_explain_answer") || "Explain the answer"}
               </Button>
             )}
 
@@ -221,6 +241,7 @@ const FeedbackRail = React.memo(
           {!ok && explanationText && (
             <Box
               p={4}
+              mb={6}
               borderRadius="lg"
               bg={APP_SURFACE_ELEVATED}
               borderWidth="1px"
@@ -230,23 +251,24 @@ const FeedbackRail = React.memo(
               <HStack spacing={2} mb={2}>
                 <FiHelpCircle color="var(--question-tool-accent)" />
                 <Text fontWeight="semibold" color={questionToneText.primary}>
-                  {userLanguage === "es" ? "Explicación" : "Explanation"}
+                  {t?.("flashcard_explanation_heading") || "Explanation"}
                 </Text>
               </HStack>
               <Box
                 fontSize="md"
                 color={questionToneText.primary}
                 lineHeight="1.6"
+                pb={4}
                 sx={{
-                  "& p": { mb: 2 },
-                  "& p:last-child": { mb: 0 },
+                  "& p": { mb: 2, unicodeBidi: "plaintext" },
+                  "& p:last-child": { mb: 2 },
                   "& strong": {
                     fontWeight: "bold",
                     color: "var(--question-tool-accent)",
                   },
                   "& em": { fontStyle: "italic" },
                   "& ul, & ol": { pl: 4, mb: 2 },
-                  "& li": { mb: 1 },
+                  "& li": { mb: 1, unicodeBidi: "plaintext" },
                   "& code": {
                     bg: "var(--app-surface-muted)",
                     px: 1,

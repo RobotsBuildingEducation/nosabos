@@ -30,6 +30,11 @@ import {
   getFlashcardReviewSnapshot,
   getLocalDayKey,
 } from "../utils/flashcardReview";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageLocale,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const MotionBox = motion(Box);
 const EMPTY_PROGRESS = {};
@@ -45,14 +50,17 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 
 const getAppLanguage = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("appLanguage") || "en";
+    return normalizeSupportLanguage(
+      localStorage.getItem("appLanguage"),
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
   }
-  return "en";
+  return DEFAULT_SUPPORT_LANGUAGE;
 };
 
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
-  const dict = translations[lang] || translations.en;
+  const dict = translations[lang] ?? translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, token) =>
@@ -62,8 +70,9 @@ const getTranslation = (key, params = {}) => {
 
 const getEffectiveCardLanguage = (supportLang) => {
   const appLang = getAppLanguage();
-  if (supportLang && supportLang !== "en") {
-    return supportLang;
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, appLang);
+  if (supportLang && normalizedSupportLang !== "en") {
+    return normalizedSupportLang;
   }
   return appLang;
 };
@@ -136,10 +145,10 @@ function buildHeatmapWeeks(activityMap, language, now = new Date()) {
     1;
   const totalWeeks = Math.ceil((firstWeekPadding + totalDaysInYear) / 7);
 
-  const monthFormatter = new Intl.DateTimeFormat(
-    language === "es" ? "es-MX" : "en-US",
-    { month: "short" },
+  const locale = getLanguageLocale(
+    normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE),
   );
+  const monthFormatter = new Intl.DateTimeFormat(locale, { month: "short" });
 
   return Array.from({ length: totalWeeks }, (_, weekIndex) => {
     let monthLabel = "";
@@ -194,7 +203,10 @@ function buildHeatmapWeeks(activityMap, language, now = new Date()) {
 }
 
 function formatActivityDate(date, language) {
-  return new Intl.DateTimeFormat(language === "es" ? "es-MX" : "en-US", {
+  const locale = getLanguageLocale(
+    normalizeSupportLanguage(language, DEFAULT_SUPPORT_LANGUAGE),
+  );
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     day: "numeric",
   }).format(date);

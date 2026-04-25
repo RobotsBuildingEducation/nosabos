@@ -45,6 +45,13 @@ import {
 } from "../utils/softStopButton";
 import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
 import XpProgressHeader from "./XpProgressHeader";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -83,11 +90,34 @@ const LLM_LANG_NAME = (codeOrName) => {
     .toLowerCase();
   if (m === "en" || m === "english") return "English";
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
+  if (
+    m === "ar" ||
+    m === "arabic" ||
+    m === "egyptian arabic" ||
+    m === "العربية" ||
+    m === "العربية المصرية" ||
+    m === "مصري" ||
+    m === "مصرى"
+  )
+    return "Egyptian Arabic";
+  if (
+    m === "zh" ||
+    m === "zh-cn" ||
+    m === "chinese" ||
+    m === "mandarin" ||
+    m === "mandarin chinese" ||
+    m === "中文" ||
+    m === "普通话"
+  )
+    return "Mandarin Chinese";
   if (m === "pt" || m === "portuguese" || m === "português")
     return "Brazilian Portuguese";
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
     return "French";
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
+  if (m === "hi" || m === "hindi" || m === "हिंदी" || m === "हिन्दी")
+    return "Hindi";
+  if (m === "ja" || m === "japanese" || m === "日本語") return "Japanese";
   if (m === "nl" || m === "dutch" || m === "nederlands" || m === "holandés")
     return "Dutch";
   if (m === "nah" || m === "nahuatl" || m === "eastern huasteca nahuatl")
@@ -120,9 +150,13 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (!m) return fallback;
   if (m === "en") return "en-US";
   if (m === "es") return "es-MX";
+  if (m === "ar") return "ar-EG";
+  if (m === "zh") return "zh-CN";
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
+  if (m === "hi") return "hi-IN";
+  if (m === "ja") return "ja-JP";
   if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-MX"; // fallback
   if (m === "ru") return "ru-RU";
@@ -143,10 +177,26 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (
+    [
+      "ar",
+      "arabic",
+      "egyptian arabic",
+      "العربية",
+      "العربية المصرية",
+      "مصري",
+      "مصرى",
+    ].includes(raw)
+  )
+    return "ar";
+  if (["zh", "zh-cn", "chinese", "mandarin", "mandarin chinese", "中文", "普通话"].includes(raw))
+    return "zh";
   if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["hi", "hindi", "हिंदी", "हिन्दी"].includes(raw)) return "hi";
+  if (["ja", "japanese", "japonés", "japones", "giapponese", "japonais", "日本語"].includes(raw)) return "ja";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
   if (
@@ -187,9 +237,10 @@ const displayLanguageName = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  return (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
-    ? "es"
-    : "en";
+  return normalizeSupportLanguage(
+    user?.appLanguage || localStorage.getItem("appLanguage"),
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
 };
 
 /* ================================
@@ -212,31 +263,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: p.supportLang || "en",
+        supportLang: normalizeSupportLanguage(
+          p.supportLang,
+          DEFAULT_SUPPORT_LANGUAGE,
+        ),
         voice: p.voice || "alloy",
       });
     });
@@ -265,65 +304,199 @@ async function saveStoryTurn(npub, payload) {
 /* ================================
    UI text (driven by APP UI language only)
 =================================== */
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
 function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {
     const t = translationsObj[uiLang] || translationsObj.en;
+    const frCopy = {
+      "Script Coach": "Coach de scripts",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "Televerse ou colle ton script ; nous le convertissons vers la langue cible et affichons l'aide dans ta langue.",
+      "Create script": "Creer le script",
+      Listen: "Ecouter",
+      "Start Sentence Practice": "Commencer la pratique par phrase",
+      "Practice this sentence:": "Pratique cette phrase :",
+      "Skip Sentence": "Passer la phrase",
+      "Finish Practice": "Terminer la pratique",
+      "Record Sentence": "Enregistrer la phrase",
+      "Stop Recording": "Arreter l'enregistrement",
+      Progress: "Progres",
+      "Well done!": "Bien joue !",
+      "Almost — try again": "Presque - reessaie",
+      Score: "Score",
+      Level: "Niveau",
+      "I speak (support)": "Je parle (support)",
+      "I’m learning (target)": "J'apprends (cible)",
+      "e.g., es, Spanish, fr-CA": "ex. : es, Spanish, fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "Colle ton script ici... (pris en charge : .txt, .srt, .vtt, .md, .docx, .pdf)",
+      "Upload file": "Televerser un fichier",
+      "Script ready! Start practicing.": "Script pret ! Commence la pratique.",
+      "You need at least one sentence.": "Il faut au moins une phrase.",
+      Save: "Enregistrer",
+      "Title (optional)": "Titre (facultatif)",
+      "Your saved scripts": "Tes scripts enregistres",
+      Open: "Ouvrir",
+      "Script saved": "Script enregistre",
+      "Script loaded": "Script charge",
+      "You don't have any saved scripts yet.": "Tu n'as pas encore de scripts enregistres.",
+    };
+    const jaCopy = {
+      "Script Coach": "スクリプトコーチ",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "スクリプトをアップロードまたは貼り付けると、目標言語に変換し、あなたの言語でサポートを表示します。",
+      "Create script": "スクリプトを作成",
+      Listen: "聞く",
+      "Start Sentence Practice": "文ごとの練習を開始",
+      "Practice this sentence:": "この文を練習:",
+      "Skip Sentence": "文をスキップ",
+      "Finish Practice": "練習を終了",
+      "Record Sentence": "文を録音",
+      "Stop Recording": "録音を停止",
+      Progress: "進捗",
+      "Well done!": "よくできました！",
+      "Almost — try again": "もう少しです。もう一度",
+      Score: "スコア",
+      Level: "レベル",
+      "I speak (support)": "話せる言語（サポート）",
+      "I’m learning (target)": "学習中（目標）",
+      "e.g., es, Spanish, fr-CA": "例: es, Spanish, fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "ここにスクリプトを貼り付けてください…（対応: .txt, .srt, .vtt, .md, .docx, .pdf）",
+      "Upload file": "ファイルをアップロード",
+      "Script ready! Start practicing.": "スクリプトの準備ができました。練習を始めましょう。",
+      "You need at least one sentence.": "少なくとも1文が必要です。",
+      Save: "保存",
+      "Title (optional)": "タイトル（任意）",
+      "Your saved scripts": "保存済みスクリプト",
+      Open: "開く",
+      "Script saved": "スクリプトを保存しました",
+      "Script loaded": "スクリプトを読み込みました",
+      "You don't have any saved scripts yet.": "保存済みスクリプトはまだありません。",
+    };
+    const arCopy = {
+      "Script Coach": "مدرب السكربت",
+      "Upload or paste your script; we convert it to the target language and show support in your language.":
+        "ارفع السكربت أو الصقه؛ هنحوّله للغة الهدف ونعرض الشرح بلغتك.",
+      "Create script": "اعمل سكربت",
+      Listen: "اسمع",
+      "Start Sentence Practice": "ابدأ تدريب الجمل",
+      "Practice this sentence:": "اتدرّب على الجملة دي:",
+      "Skip Sentence": "تخطى الجملة",
+      "Finish Practice": "أنهِ التدريب",
+      "Record Sentence": "سجّل الجملة",
+      "Stop Recording": "أوقف التسجيل",
+      Progress: "التقدم",
+      "Well done!": "أحسنت!",
+      "Almost — try again": "قربت، جرّب مرة تانية",
+      Score: "النتيجة",
+      Level: "المستوى",
+      "I speak (support)": "أنا بتكلم (الدعم)",
+      "I’m learning (target)": "أنا بتعلم (الهدف)",
+      "e.g., es, Spanish, fr-CA": "مثال: es أو Spanish أو fr-CA",
+      "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)":
+        "الصق السكربت هنا... (المدعوم: .txt و .srt و .vtt و .md و .docx و .pdf)",
+      "Upload file": "ارفع ملف",
+      "Script ready! Start practicing.": "السكربت جاهز! ابدأ التدريب.",
+      "You need at least one sentence.": "لازم يكون فيه جملة واحدة على الأقل.",
+      Save: "احفظ",
+      "Title (optional)": "العنوان (اختياري)",
+      "Your saved scripts": "السكربتات المحفوظة",
+      Open: "افتح",
+      "Script saved": "تم حفظ السكربت",
+      "Script loaded": "تم تحميل السكربت",
+      "You don't have any saved scripts yet.": "لسه ما عندكش سكربتات محفوظة.",
+    };
+    const copy = (en, es, it, fr, ja, ar) =>
+      uiCopy(uiLang, {
+        en,
+        es,
+        it,
+        fr: fr || frCopy[en] || en,
+        ja: ja || jaCopy[en] || en,
+        ar: ar || arCopy[en] || en,
+      });
     return {
-      header: uiLang === "es" ? "Entrenador de guiones" : "Script Coach",
-      sub:
-        uiLang === "es"
-          ? "Sube o pega tu guion; lo convertimos al idioma meta y te damos apoyo en tu idioma."
-          : "Upload or paste your script; we convert it to the target language and show support in your language.",
-      build: uiLang === "es" ? "Crear guion" : "Create script",
-      listen: uiLang === "es" ? "Escuchar" : "Listen",
-      startPractice:
-        uiLang === "es"
-          ? "Empezar práctica por oración"
-          : "Start Sentence Practice",
-      practiceThis:
-        uiLang === "es" ? "Practica esta oración:" : "Practice this sentence:",
-      skip: uiLang === "es" ? "Saltar oración" : "Skip Sentence",
-      finish: uiLang === "es" ? "Terminar práctica" : "Finish Practice",
-      record: uiLang === "es" ? "Grabar oración" : "Record Sentence",
-      stopRecording: uiLang === "es" ? "Detener grabación" : "Stop Recording",
-      progress: uiLang === "es" ? "Progreso" : "Progress",
-      wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
-      almost:
-        uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
-      score: uiLang === "es" ? "Puntuación" : "Score",
+      header: copy("Script Coach", "Entrenador de guiones", "Coach di copioni"),
+      sub: copy(
+        "Upload or paste your script; we convert it to the target language and show support in your language.",
+        "Sube o pega tu guion; lo convertimos al idioma meta y te damos apoyo en tu idioma.",
+        "Carica o incolla il tuo copione; lo convertiamo nella lingua obiettivo e mostriamo supporto nella tua lingua.",
+      ),
+      build: copy("Create script", "Crear guion", "Crea copione"),
+      listen: copy("Listen", "Escuchar", "Ascolta"),
+      startPractice: copy(
+        "Start Sentence Practice",
+        "Empezar práctica por oración",
+        "Inizia pratica per frasi",
+      ),
+      practiceThis: copy(
+        "Practice this sentence:",
+        "Practica esta oración:",
+        "Pratica questa frase:",
+      ),
+      skip: copy("Skip Sentence", "Saltar oración", "Salta frase"),
+      finish: copy("Finish Practice", "Terminar práctica", "Termina pratica"),
+      record: copy("Record Sentence", "Grabar oración", "Registra frase"),
+      stopRecording: copy(
+        "Stop Recording",
+        "Detener grabación",
+        "Ferma registrazione",
+      ),
+      progress: copy("Progress", "Progreso", "Progressi"),
+      wellDone: copy("Well done!", "¡Bien hecho!", "Ben fatto!"),
+      almost: copy(
+        "Almost — try again",
+        "Casi — inténtalo otra vez",
+        "Ci sei quasi — riprova",
+      ),
+      score: copy("Score", "Puntuación", "Punteggio"),
       xp: t?.ra_label_xp || "XP",
-      levelLabel: uiLang === "es" ? "Nivel" : "Level",
-      iSpeak: uiLang === "es" ? "Yo hablo (apoyo)" : "I speak (support)",
-      iLearn:
-        uiLang === "es" ? "Estoy aprendiendo (meta)" : "I’m learning (target)",
-      langPH:
-        uiLang === "es"
-          ? "ej.: en, English, fr-CA"
-          : "e.g., es, Spanish, fr-CA",
-      pastePH:
-        uiLang === "es"
-          ? "Pega tu guion aquí… (soportado: .txt, .srt, .vtt, .md, .docx, .pdf)"
-          : "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)",
-      upload: uiLang === "es" ? "Subir archivo" : "Upload file",
-      builtOk:
-        uiLang === "es"
-          ? "¡Guion listo! Empieza la práctica."
-          : "Script ready! Start practicing.",
-      needText:
-        uiLang === "es"
-          ? "Necesitas al menos 1 oración."
-          : "You need at least one sentence.",
-      save: uiLang === "es" ? "Guardar" : "Save",
-      titlePH: uiLang === "es" ? "Título (opcional)" : "Title (optional)",
-      savedHeader:
-        uiLang === "es" ? "Tus guiones guardados" : "Your saved scripts",
-      open: uiLang === "es" ? "Abrir" : "Open",
-      scriptSaved: uiLang === "es" ? "Guion guardado" : "Script saved",
-      scriptLoaded: uiLang === "es" ? "Guion cargado" : "Script loaded",
-      noneSaved:
-        uiLang === "es"
-          ? "Aún no tienes guiones guardados."
-          : "You don't have any saved scripts yet.",
+      levelLabel: copy("Level", "Nivel", "Livello"),
+      iSpeak: copy("I speak (support)", "Yo hablo (apoyo)", "Parlo (supporto)"),
+      iLearn: copy(
+        "I’m learning (target)",
+        "Estoy aprendiendo (meta)",
+        "Sto imparando (obiettivo)",
+      ),
+      langPH: copy(
+        "e.g., es, Spanish, fr-CA",
+        "ej.: en, English, fr-CA",
+        "es.: es, Spanish, fr-CA",
+      ),
+      pastePH: copy(
+        "Paste your script here… (supported: .txt, .srt, .vtt, .md, .docx, .pdf)",
+        "Pega tu guion aquí… (soportado: .txt, .srt, .vtt, .md, .docx, .pdf)",
+        "Incolla qui il copione... (supportati: .txt, .srt, .vtt, .md, .docx, .pdf)",
+      ),
+      upload: copy("Upload file", "Subir archivo", "Carica file"),
+      builtOk: copy(
+        "Script ready! Start practicing.",
+        "¡Guion listo! Empieza la práctica.",
+        "Copione pronto! Inizia a praticare.",
+      ),
+      needText: copy(
+        "You need at least one sentence.",
+        "Necesitas al menos 1 oración.",
+        "Serve almeno una frase.",
+      ),
+      save: copy("Save", "Guardar", "Salva"),
+      titlePH: copy("Title (optional)", "Título (opcional)", "Titolo (opzionale)"),
+      savedHeader: copy(
+        "Your saved scripts",
+        "Tus guiones guardados",
+        "I tuoi copioni salvati",
+      ),
+      open: copy("Open", "Abrir", "Apri"),
+      scriptSaved: copy("Script saved", "Guion guardado", "Copione salvato"),
+      scriptLoaded: copy("Script loaded", "Guion cargado", "Copione caricato"),
+      noneSaved: copy(
+        "You don't have any saved scripts yet.",
+        "Aún no tienes guiones guardados.",
+        "Non hai ancora copioni salvati.",
+      ),
     };
   }, [uiLang, level, translationsObj]);
 }
@@ -963,38 +1136,62 @@ const isInsecureContext = () => {
 };
 
 function micErrorToMessage(err, uiLang) {
-  const es = uiLang === "es";
-  const t = (en, esx) => (es ? esx : en);
+  const t = (en, es, fr, it = en, ja = en, ar = en) =>
+    uiCopy(uiLang, { en, es, it, fr, ja, ar });
   switch (err?.name) {
     case "NotAllowedError":
       return t(
         "Browser is blocking the mic for this site. Click the lock icon → Site settings → Microphone → Allow, then reload.",
-        "El navegador está bloqueando el micrófono para este sitio. Haz clic en el candado → Configuración del sitio → Micrófono → Permitir y recarga."
+        "El navegador está bloqueando el micrófono para este sitio. Haz clic en el candado → Configuración del sitio → Micrófono → Permitir y recarga.",
+        "Le navigateur bloque le micro pour ce site. Clique sur le cadenas → Parametres du site → Microphone → Autoriser, puis recharge.",
+        undefined,
+        "ブラウザがこのサイトのマイクをブロックしています。鍵アイコン → サイト設定 → マイク → 許可を選び、再読み込みしてください。",
+        "المتصفح مانع الميكروفون للموقع ده. اضغط على رمز القفل → إعدادات الموقع → الميكروفون → سماح، وبعدها أعد التحميل.",
       );
     case "SecurityError":
       return t(
         "Microphone requires HTTPS (or localhost). Open the app over https:// and try again.",
-        "El micrófono requiere HTTPS (o localhost). Abre la app en https:// e inténtalo de nuevo."
+        "El micrófono requiere HTTPS (o localhost). Abre la app en https:// e inténtalo de nuevo.",
+        "Le micro necessite HTTPS (ou localhost). Ouvre l'app en https:// et reessaie.",
+        undefined,
+        "マイクにはHTTPS（またはlocalhost）が必要です。https:// でアプリを開いてもう一度試してください。",
+        "الميكروفون يحتاج HTTPS (أو localhost). افتح التطبيق عبر https:// ثم جرّب مرة أخرى.",
       );
     case "NotReadableError":
       return t(
         "The microphone is busy (Zoom/Teams/Discord). Close other apps using the mic and try again.",
-        "El micrófono está en uso (Zoom/Teams/Discord). Cierra otras apps que lo usen e inténtalo de nuevo."
+        "El micrófono está en uso (Zoom/Teams/Discord). Cierra otras apps que lo usen e inténtalo de nuevo.",
+        "Le micro est occupe (Zoom/Teams/Discord). Ferme les autres apps qui l'utilisent et reessaie.",
+        undefined,
+        "マイクが使用中です（Zoom/Teams/Discordなど）。マイクを使っている他のアプリを閉じて、もう一度試してください。",
+        "الميكروفون مستخدم في تطبيق آخر (Zoom/Teams/Discord). اقفل التطبيقات الثانية ثم جرّب مرة أخرى.",
       );
     case "NotFoundError":
       return t(
         "No microphone was found or it’s disabled at the OS level.",
-        "No se encontró micrófono o está deshabilitado en el sistema."
+        "No se encontró micrófono o está deshabilitado en el sistema.",
+        "Aucun micro trouve ou il est desactive dans le systeme.",
+        undefined,
+        "マイクが見つからないか、OS側で無効になっています。",
+        "لم يتم العثور على ميكروفون أو أنه معطّل من النظام.",
       );
     case "OverconstrainedError":
       return t(
         "Requested audio constraints are not supported by your mic.",
-        "Las restricciones de audio solicitadas no son compatibles con tu micrófono."
+        "Las restricciones de audio solicitadas no son compatibles con tu micrófono.",
+        "Les contraintes audio demandees ne sont pas prises en charge par ton micro.",
+        undefined,
+        "要求された音声設定はこのマイクではサポートされていません。",
+        "إعدادات الصوت المطلوبة غير مدعومة على هذا الميكروفون.",
       );
     default:
       return t(
         "Microphone error. If permissions look allowed, reload the page and try again.",
-        "Error de micrófono. Si los permisos están en 'Permitir', recarga la página e inténtalo de nuevo."
+        "Error de micrófono. Si los permisos están en 'Permitir', recarga la página e inténtalo de nuevo.",
+        "Erreur de micro. Si les autorisations semblent correctes, recharge la page et reessaie.",
+        undefined,
+        "マイクエラーです。権限が許可されている場合は、ページを再読み込みしてもう一度試してください。",
+        "حصلت مشكلة في الميكروفون. إذا كانت الصلاحيات مفعلة، أعد تحميل الصفحة ثم جرّب مرة أخرى.",
       );
   }
 }
@@ -1018,10 +1215,10 @@ export default function JobScript({
 
   // Free-form languages (inputs)
   const [practiceSupport, setPracticeSupport] = useState(
-    progress.supportLang === "en" ? "English" : "English"
+    displayLanguageName(progress.supportLang || DEFAULT_SUPPORT_LANGUAGE, uiLang),
   );
   const [practiceTarget, setPracticeTarget] = useState(
-    progress.targetLang === "es" ? "Spanish" : "Spanish"
+    displayLanguageName(progress.targetLang || DEFAULT_TARGET_LANGUAGE, uiLang),
   );
 
   // Script state
@@ -1066,8 +1263,12 @@ export default function JobScript({
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
-  const targetLang = normalizeLangCode(practiceTarget);
-  const supportLang = normalizeLangCode(practiceSupport);
+  const targetLang =
+    toLangKey(practiceTarget) ||
+    normalizePracticeLanguage(practiceTarget, DEFAULT_TARGET_LANGUAGE);
+  const supportLang =
+    toLangKey(practiceSupport) ||
+    normalizeSupportLanguage(practiceSupport, DEFAULT_SUPPORT_LANGUAGE);
 
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -1107,8 +1308,22 @@ export default function JobScript({
           text = await parsePdfToText(file);
         } else {
           toast({
-            title: "Unsupported file",
-            description: "Use .txt, .srt, .vtt, .md, .docx, or .pdf",
+            title: uiCopy(uiLang, {
+              en: "Unsupported file",
+              es: "Archivo no compatible",
+              it: "File non supportato",
+              fr: "Fichier non pris en charge",
+              ja: "未対応のファイルです",
+              ar: "ملف غير مدعوم",
+            }),
+            description: uiCopy(uiLang, {
+              en: "Use .txt, .srt, .vtt, .md, .docx, or .pdf",
+              es: "Usa .txt, .srt, .vtt, .md, .docx o .pdf",
+              it: "Usa .txt, .srt, .vtt, .md, .docx o .pdf",
+              fr: "Utilise .txt, .srt, .vtt, .md, .docx ou .pdf",
+              ja: ".txt、.srt、.vtt、.md、.docx、.pdf を使ってください",
+              ar: "استخدم .txt أو .srt أو .vtt أو .md أو .docx أو .pdf",
+            }),
             status: "warning",
           });
           break theExt;
@@ -1116,14 +1331,28 @@ export default function JobScript({
         setScriptText(text || "");
         setLastFileName(name);
         toast({
-          title: uiLang === "es" ? "Archivo cargado" : "File loaded",
+          title: uiCopy(uiLang, {
+            en: "File loaded",
+            es: "Archivo cargado",
+            it: "File caricato",
+            fr: "Fichier charge",
+            ja: "ファイルを読み込みました",
+            ar: "تم تحميل الملف",
+          }),
           status: "success",
           duration: 1200,
         });
       } catch (e) {
         console.error(e);
         toast({
-          title: uiLang === "es" ? "Error al leer archivo" : "File read error",
+          title: uiCopy(uiLang, {
+            en: "File read error",
+            es: "Error al leer archivo",
+            it: "Errore di lettura del file",
+            fr: "Erreur de lecture du fichier",
+            ja: "ファイルの読み取りエラー",
+            ar: "خطأ في قراءة الملف",
+          }),
           description: String(e?.message || e),
           status: "error",
         });
@@ -1241,10 +1470,14 @@ export default function JobScript({
     } catch (e) {
       console.error(e);
       toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo crear el guion"
-            : "Couldn’t create script",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t create script",
+          es: "No se pudo crear el guion",
+          it: "Impossibile creare il copione",
+          fr: "Impossible de creer le script",
+          ja: "スクリプトを作成できませんでした",
+          ar: "تعذر إنشاء السكربت",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1257,7 +1490,14 @@ export default function JobScript({
   const saveCurrentScript = async () => {
     if (!npub || !storyData) {
       toast({
-        title: uiLang === "es" ? "Nada que guardar" : "Nothing to save",
+        title: uiCopy(uiLang, {
+          en: "Nothing to save",
+          es: "Nada que guardar",
+          it: "Niente da salvare",
+          fr: "Rien a enregistrer",
+          ja: "保存するものがありません",
+          ar: "لا يوجد شيء للحفظ",
+        }),
         status: "warning",
       });
       return;
@@ -1288,7 +1528,14 @@ export default function JobScript({
       toast({ title: uiText.scriptSaved, status: "success", duration: 1400 });
     } catch (e) {
       toast({
-        title: uiLang === "es" ? "No se pudo guardar" : "Couldn’t save",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t save",
+          es: "No se pudo guardar",
+          it: "Impossibile salvare",
+          fr: "Impossible d'enregistrer",
+          ja: "保存できませんでした",
+          ar: "تعذر الحفظ",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1312,7 +1559,14 @@ export default function JobScript({
       toast({ title: uiText.scriptLoaded, status: "success", duration: 1200 });
     } catch (e) {
       toast({
-        title: uiLang === "es" ? "No se pudo abrir" : "Couldn’t open",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t open",
+          es: "No se pudo abrir",
+          it: "Impossibile aprire",
+          fr: "Impossible d'ouvrir",
+          ja: "開けませんでした",
+          ar: "تعذر الفتح",
+        }),
         description: String(e?.message || e),
         status: "error",
       });
@@ -1598,11 +1852,22 @@ export default function JobScript({
     } catch {}
 
     toast({
-      title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-      description:
-        uiLang === "es"
-          ? `¡Completaste la práctica! Ganaste ${awardedXp} ${uiText.xp}.`
-          : `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
+      title: uiCopy(uiLang, {
+        en: "Congrats!",
+        es: "¡Felicidades!",
+        it: "Congratulazioni!",
+        fr: "Felicitations !",
+        ja: "おめでとうございます！",
+        ar: "مبروك!",
+      }),
+      description: uiCopy(uiLang, {
+        en: `Practice completed! You earned ${awardedXp} ${uiText.xp}.`,
+        es: `¡Completaste la práctica! Ganaste ${awardedXp} ${uiText.xp}.`,
+        it: `Pratica completata! Hai guadagnato ${awardedXp} ${uiText.xp}.`,
+        fr: `Pratique terminee ! Tu as gagne ${awardedXp} ${uiText.xp}.`,
+        ja: `練習完了！${awardedXp} ${uiText.xp}を獲得しました。`,
+        ar: `خلصت التدريب! كسبت ${awardedXp} ${uiText.xp}.`,
+      }),
       status: "success",
       duration: 3000,
     });
@@ -1625,7 +1890,14 @@ export default function JobScript({
     // Insecure context guard
     if (isInsecureContext()) {
       toast({
-        title: uiLang === "es" ? "Micrófono bloqueado" : "Microphone blocked",
+        title: uiCopy(uiLang, {
+          en: "Microphone blocked",
+          es: "Micrófono bloqueado",
+          it: "Microfono bloccato",
+          fr: "Micro bloque",
+          ja: "マイクがブロックされています",
+          ar: "الميكروفون محظور",
+        }),
         description: micErrorToMessage({ name: "SecurityError" }, uiLang),
         status: "warning",
         duration: 4500,
@@ -1638,7 +1910,14 @@ export default function JobScript({
       const perm = await navigator.permissions?.query?.({ name: "microphone" });
       if (perm?.state === "denied") {
         toast({
-          title: uiLang === "es" ? "Micrófono bloqueado" : "Microphone blocked",
+          title: uiCopy(uiLang, {
+            en: "Microphone blocked",
+            es: "Micrófono bloqueado",
+            it: "Microfono bloccato",
+            fr: "Micro bloque",
+            ja: "マイクがブロックされています",
+            ar: "الميكروفون محظور",
+          }),
           description: micErrorToMessage({ name: "NotAllowedError" }, uiLang),
           status: "error",
           duration: 5000,
@@ -1710,8 +1989,14 @@ export default function JobScript({
       // If we can still start SR-only, do it
       const msg = micErrorToMessage(err, uiLang);
       toast({
-        title:
-          uiLang === "es" ? "Problema con el micrófono" : "Microphone issue",
+        title: uiCopy(uiLang, {
+          en: "Microphone issue",
+          es: "Problema con el micrófono",
+          it: "Problema con il microfono",
+          fr: "Probleme de micro",
+          ja: "マイクの問題",
+          ar: "مشكلة في الميكروفون",
+        }),
         description: msg,
         status: "warning",
         duration: 6000,
@@ -1758,14 +2043,22 @@ export default function JobScript({
       }
 
       toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo usar el micrófono"
-            : "Couldn’t use microphone",
-        description:
-          uiLang === "es"
-            ? "Prueba en Chrome/Edge con https://, revisa el candado (Micrófono: Permitir) y que ninguna app esté usando el micrófono."
-            : "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
+        title: uiCopy(uiLang, {
+          en: "Couldn’t use microphone",
+          es: "No se pudo usar el micrófono",
+          it: "Impossibile usare il microfono",
+          fr: "Impossible d'utiliser le micro",
+          ja: "マイクを使用できませんでした",
+          ar: "تعذر استخدام الميكروفون",
+        }),
+        description: uiCopy(uiLang, {
+          en: "Try Chrome/Edge over https://, check the lock icon (Microphone: Allow), and make sure no app is using the mic.",
+          es: "Prueba en Chrome/Edge con https://, revisa el candado (Micrófono: Permitir) y que ninguna app esté usando el micrófono.",
+          it: "Prova Chrome/Edge su https://, controlla il lucchetto (Microfono: Consenti) e assicurati che nessun'altra app usi il microfono.",
+          fr: "Essaie Chrome/Edge en https://, verifie le cadenas (Microphone : Autoriser) et assure-toi qu'aucune autre app n'utilise le micro.",
+          ja: "https:// のChrome/Edgeで試し、鍵アイコン（マイク: 許可）を確認し、他のアプリがマイクを使用していないことを確認してください。",
+          ar: "جرّب Chrome/Edge عبر https://، وتأكد من رمز القفل (الميكروفون: سماح)، وأنه لا يوجد تطبيق آخر يستخدم الميكروفون.",
+        }),
         status: "error",
         duration: 7000,
       });
@@ -1912,7 +2205,14 @@ export default function JobScript({
     } catch (e) {
       console.error("Recording setup failed:", e);
       toast({
-        title: uiLang === "es" ? "Error de micrófono" : "Microphone error",
+        title: uiCopy(uiLang, {
+          en: "Microphone error",
+          es: "Error de micrófono",
+          it: "Errore del microfono",
+          fr: "Erreur de micro",
+          ja: "マイクエラー",
+          ar: "خطأ في الميكروفون",
+        }),
         description: micErrorToMessage(e, uiLang),
         status: "error",
         duration: 6000,
@@ -2244,8 +2544,23 @@ export default function JobScript({
                       textAlign="center"
                       mt={2}
                     >
-                      {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {uiCopy(uiLang, {
+                        en: "Sentence",
+                        es: "Oración",
+                        it: "Frase",
+                        fr: "Phrase",
+                        ja: "文",
+                        ar: "الجملة",
+                      })}{" "}
+                      {currentSentenceIndex + 1}{" "}
+                      {uiCopy(uiLang, {
+                        en: "of",
+                        es: "de",
+                        it: "di",
+                        fr: "sur",
+                        ja: "／",
+                        ar: "من",
+                      })}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>

@@ -3,7 +3,28 @@
  * Total: 200 flashcards
  */
 
-export const FLASHCARDS_B1 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARDS_B1 = withLocalizedFlashcardText([
   {
     id: "b1-travel-1",
     concept: { en: "Trip", es: "Viaje" },
@@ -1449,4 +1470,4 @@ export const FLASHCARDS_B1 = [
     category: "health",
     type: "phrase",
   }
-];
+]);

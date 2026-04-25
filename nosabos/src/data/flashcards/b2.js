@@ -3,7 +3,28 @@
  * Total: 150 flashcards
  */
 
-export const FLASHCARDS_B2 = [
+import { withItalianFlashcardText } from "./italianLocalizer.js";
+import { withFrenchFlashcardText } from "./frenchLocalizer.js";
+import { withHindiFlashcardText } from "./hindiLocalizer.js";
+import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
+import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
+import { withArabicFlashcardText } from "./arabicLocalizer.js";
+import { withChineseFlashcardText } from "./chineseLocalizer.js";
+
+const withLocalizedFlashcardText = (cards) =>
+  withArabicFlashcardText(
+    withChineseFlashcardText(
+      withHindiFlashcardText(
+        withJapaneseFlashcardText(
+          withFrenchFlashcardText(
+            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+          ),
+        ),
+      ),
+    ),
+  );
+
+export const FLASHCARDS_B2 = withLocalizedFlashcardText([
   {
     id: "b2-idiom-1",
     concept: {
@@ -1120,4 +1141,4 @@ export const FLASHCARDS_B2 = [
     category: "uncertainty",
     type: "phrase",
   }
-];
+]);

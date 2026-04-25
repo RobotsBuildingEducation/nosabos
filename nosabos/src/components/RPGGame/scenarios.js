@@ -29,17 +29,27 @@ export { REVIEW_WORLD_ID };
 export const MAP_CHOICES = [
   {
     id: REVIEW_WORLD_ID,
-    name: { en: "Generated World", es: "Mundo generado" },
+    name: {
+      en: "Generated World",
+      es: "Mundo generado",
+      pt: "Mundo gerado",
+      it: "Mondo generato",
+      fr: "Monde genere",
+      ja: "生成された世界",
+      hi: "बनाई गई दुनिया",
+      ar: "العالم المتولّد",
+      zh: "生成的世界",
+    },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado" },
-  livingRoom: { en: "Living Room", es: "Sala" },
-  park: { en: "Park", es: "Parque" },
-  airport: { en: "Airport", es: "Aeropuerto" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد", zh: "生成的世界" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة", zh: "客厅" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान", ar: "الحديقة", zh: "公园" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा", ar: "المطار", zh: "机场" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية", zh: "问候广场" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -393,9 +403,16 @@ function normalizeNPCs(npcs, mapWidth, mapHeight, targetCount) {
 
 function normalizeQuestions(questions, supportLang) {
   const basePrompt =
-    supportLang === "es"
-      ? "Elige la opción correcta."
-      : "Choose the correct option.";
+    {
+      en: "Choose the correct option.",
+      es: "Elige la opción correcta.",
+      pt: "Escolha a opcao correta.",
+      it: "Scegli l'opzione corretta.",
+      fr: "Choisis la bonne option.",
+      ja: "正しい選択肢を選んでください。",
+      hi: "सही विकल्प चुनें।",
+      ar: "اختر الإجابة الصحيحة.",
+    }[supportLang] || "Choose the correct option.";
   const list = Array.isArray(questions) ? questions : [];
   const normalized = list
     .slice(0, 20)
@@ -824,6 +841,45 @@ function applyGatherVisualsToQuest(quest, rawVisuals) {
   };
 }
 
+function sanitizeGatherSupportField(value) {
+  return String(value || "")
+    .replace(/^["']|["']$/g, "")
+    .trim();
+}
+
+function applyGatherSupportCopyToQuest(quest, supportByKey) {
+  if (!supportByKey?.size) return quest;
+
+  const applySupport = (item) => {
+    if (!item) return item;
+    const support = supportByKey.get(getGatherItemKey(item));
+    if (!support) return item;
+    return {
+      ...item,
+      supportName: support.supportName || item.supportName || "",
+      supportHint: support.supportHint || item.supportHint || "",
+      transcription: support.transcription || item.transcription || "",
+    };
+  };
+
+  return {
+    ...quest,
+    gatherData: {
+      ...quest.gatherData,
+      correct: (quest.gatherData.correct || []).map(applySupport),
+      decoys: (quest.gatherData.decoys || []).map(applySupport),
+      all: (quest.gatherData.all || []).map(applySupport),
+    },
+    steps: (quest.steps || []).map((step) => ({
+      ...step,
+      nodes: (step.nodes || []).map((node) => ({
+        ...node,
+        gatherItem: node.gatherItem ? applySupport(node.gatherItem) : node.gatherItem,
+      })),
+    })),
+  };
+}
+
 async function enrichQuestGatherVisuals(
   quest,
   targetLang,
@@ -876,6 +932,72 @@ async function enrichQuestGatherVisuals(
   const parsed = parseJSON(raw);
   if (!Array.isArray(parsed)) return quest;
   return applyGatherVisualsToQuest(quest, parsed);
+}
+
+async function enrichQuestGatherSupportCopy(
+  quest,
+  targetLang,
+  supportLang,
+) {
+  const items = Array.isArray(quest?.gatherData?.all) ? quest.gatherData.all : [];
+  if (!items.length) return quest;
+
+  const normalizedTargetLang = normalizePracticeLanguage(targetLang, "es");
+  const normalizedSupportLang = normalizeSupportLanguage(supportLang, "en");
+  const targetLangName = resolveTargetLanguageName(normalizedTargetLang);
+  const supportLangName = resolveTargetLanguageName(normalizedSupportLang);
+  const prompt = [
+    "You localize inventory item labels for a language-learning RPG.",
+    "Return ONLY valid JSON.",
+    "Output a JSON array with the SAME length and SAME order as the input array.",
+    `Interpret every item name and hint as ${targetLangName} (code: ${normalizedTargetLang}).`,
+    `Translate learner-facing support copy into ${supportLangName} (code: ${normalizedSupportLang}).`,
+    'For each entry, keep "name" and "hint" exactly the same as the input.',
+    `Write "supportName" as a concise learner-facing translation of the item name in ${supportLangName}.`,
+    `Write "supportHint" as a direct translation of the hint in ${supportLangName}. If the hint is blank, return an empty string.`,
+    'Write "transcription" as a short Latin-script pronunciation guide for the original item name only when that helps a learner read it. If it is unnecessary, return an empty string.',
+    "Do not add extra commentary or keys.",
+    'Each output item must have this shape: {"name":"exact original item name","hint":"exact original hint or empty string","supportName":"...","supportHint":"...","transcription":"..."}',
+    "",
+    JSON.stringify(
+      items.map((item) => ({
+        name: item.name,
+        hint: item.hint || "",
+      })),
+    ),
+  ].join("\n");
+
+  try {
+    const raw = await callResponses({
+      model: SCENARIO_MODEL,
+      input: prompt,
+    });
+    const parsed = parseJSON(raw);
+    if (!Array.isArray(parsed)) return quest;
+
+    const supportByKey = new Map();
+    parsed.forEach((entry, idx) => {
+      const sourceItem = items[idx];
+      if (!sourceItem) return;
+      supportByKey.set(getGatherItemKey(sourceItem), {
+        supportName: sanitizeGatherSupportField(
+          entry?.supportName || entry?.translation,
+        ),
+        supportHint: sanitizeGatherSupportField(
+          entry?.supportHint || entry?.translatedHint,
+        ),
+        transcription: sanitizeGatherSupportField(
+          entry?.transcription ||
+            entry?.romanization ||
+            entry?.transliteration,
+        ),
+      });
+    });
+
+    return applyGatherSupportCopyToQuest(quest, supportByKey);
+  } catch {
+    return quest;
+  }
 }
 
 function pickRandom(arr) {
@@ -1325,7 +1447,24 @@ function normalizeQuest(
     },
   };
 
-  const t = L[tl] || L.en;
+  const t = L[tl] || {
+    ...L.en,
+    // For target languages with no template, use LLM-generated content directly
+    // to avoid prepending/appending English text to target-language dialogue
+    firstGreetings: [(seed) => seed],
+    midGreetings: [(fromNpc) => `${fromNpc}!`],
+    finalGreetings: [(fromNpc) => `${fromNpc}!`],
+    // Terminal nodes: NPC name only, no English narrative
+    npcHandoff: (nextNpc) => `${nextNpc}!`,
+    questComplete: "✓",
+    // Player connector lines: NPC name reference only
+    playerBridge: (fromNpc) => `${fromNpc}.`,
+    // Speech fallbacks: null so index.jsx falls through to ui.* (support language)
+    fallbackSpeech: null,
+    speechContinue: null,
+    // Follow-up NPC prompts in speech mode
+    speechPrompts: [() => "…"],
+  };
 
   const storySeed = rawStorySeed || t.defaultSeed;
   const intro =
@@ -1662,21 +1801,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   home: [
     {
       slug: "kitchen",
-      name: { en: "Kitchen", es: "Cocina" },
+      name: { en: "Kitchen", es: "Cocina", it: "Cucina", fr: "Cuisine", ja: "キッチン" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "shelf"],
     },
     {
       slug: "study",
-      name: { en: "Study", es: "Estudio" },
+      name: { en: "Study", es: "Estudio", it: "Studio", fr: "Bureau", ja: "書斎" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["bookshelf", "desk", "lamp"],
     },
     {
       slug: "garden-patio",
-      name: { en: "Garden Patio", es: "Patio del Jardin" },
+      name: { en: "Garden Patio", es: "Patio del Jardin", it: "Patio del Giardino", fr: "Patio du jardin", ja: "庭のパティオ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "table"],
@@ -1685,21 +1824,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   market: [
     {
       slug: "prep-room",
-      name: { en: "Prep Room", es: "Sala de Preparacion" },
+      name: { en: "Prep Room", es: "Sala de Preparacion", it: "Sala Preparazione", fr: "Salle de preparation", ja: "準備室" },
       markerType: "doorway",
       shape: "annex",
       objects: ["counter", "stove", "fridge"],
     },
     {
       slug: "pantry",
-      name: { en: "Pantry", es: "Despensa" },
+      name: { en: "Pantry", es: "Despensa", it: "Dispensa", fr: "Garde-manger", ja: "食品庫" },
       markerType: "building",
       shape: "offset",
       objects: ["shelf", "shelf", "counter"],
     },
     {
       slug: "cafe-patio",
-      name: { en: "Cafe Patio", es: "Patio del Cafe" },
+      name: { en: "Cafe Patio", es: "Patio del Cafe", it: "Patio del Caffè", fr: "Patio du cafe", ja: "カフェのパティオ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["table", "bench", "plant"],
@@ -1708,21 +1847,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   library: [
     {
       slug: "archive-wing",
-      name: { en: "Archive Wing", es: "Ala de Archivo" },
+      name: { en: "Archive Wing", es: "Ala de Archivo", it: "Ala Archivio", fr: "Aile des archives", ja: "資料棟" },
       markerType: "doorway",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "lamp"],
     },
     {
       slug: "reading-nook",
-      name: { en: "Reading Nook", es: "Rincon de Lectura" },
+      name: { en: "Reading Nook", es: "Rincon de Lectura", it: "Angolo Lettura", fr: "Coin lecture", ja: "読書コーナー" },
       markerType: "doorway",
       shape: "alcove",
       objects: ["table", "bench", "lamp"],
     },
     {
       slug: "front-office",
-      name: { en: "Front Office", es: "Oficina Principal" },
+      name: { en: "Front Office", es: "Oficina Principal", it: "Ufficio Principale", fr: "Accueil", ja: "受付オフィス" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "bookshelf", "plant"],
@@ -1731,21 +1870,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   transit: [
     {
       slug: "ticket-office",
-      name: { en: "Ticket Office", es: "Oficina de Boletos" },
+      name: { en: "Ticket Office", es: "Oficina de Boletos", it: "Biglietteria", fr: "Billetterie", ja: "チケット売り場" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "register", "sign"],
     },
     {
       slug: "gate-lounge",
-      name: { en: "Gate Lounge", es: "Sala de Embarque" },
+      name: { en: "Gate Lounge", es: "Sala de Embarque", it: "Sala d'Imbarco", fr: "Salon d'embarquement", ja: "搭乗ラウンジ" },
       markerType: "gate",
       shape: "courtyard",
       objects: ["bench", "sign", "suitcaseStack"],
     },
     {
       slug: "travel-desk",
-      name: { en: "Travel Desk", es: "Mesa de Viaje" },
+      name: { en: "Travel Desk", es: "Mesa de Viaje", it: "Banco Viaggi", fr: "Comptoir voyage", ja: "旅行デスク" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "plant", "sign"],
@@ -1754,21 +1893,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   nature: [
     {
       slug: "garden-pavilion",
-      name: { en: "Garden Pavilion", es: "Pabellon del Jardin" },
+      name: { en: "Garden Pavilion", es: "Pabellon del Jardin", it: "Padiglione del Giardino", fr: "Pavillon du jardin", ja: "庭の東屋" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
     },
     {
       slug: "glasshouse",
-      name: { en: "Glasshouse", es: "Invernadero" },
+      name: { en: "Glasshouse", es: "Invernadero", it: "Serra", fr: "Serre", ja: "温室" },
       markerType: "greenhouse",
       shape: "offset",
       objects: ["plant", "plant", "table"],
     },
     {
       slug: "ranger-station",
-      name: { en: "Ranger Station", es: "Estacion del Guardabosques" },
+      name: { en: "Ranger Station", es: "Estacion del Guardabosques", it: "Stazione del Guardaboschi", fr: "Poste du garde", ja: "レンジャー詰所" },
       markerType: "building",
       shape: "annex",
       objects: ["desk", "shelf", "bench"],
@@ -1777,21 +1916,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   civic: [
     {
       slug: "council-room",
-      name: { en: "Council Room", es: "Sala del Consejo" },
+      name: { en: "Council Room", es: "Sala del Consejo", it: "Sala del Consiglio", fr: "Salle du conseil", ja: "評議室" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "table", "lamp"],
     },
     {
       slug: "records-room",
-      name: { en: "Records Room", es: "Sala de Registros" },
+      name: { en: "Records Room", es: "Sala de Registros", it: "Sala Archivi", fr: "Salle des dossiers", ja: "記録室" },
       markerType: "building",
       shape: "annex",
       objects: ["bookshelf", "bookshelf", "desk"],
     },
     {
       slug: "courtyard-pavilion",
-      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio" },
+      name: { en: "Courtyard Pavilion", es: "Pabellon del Patio", it: "Padiglione del Cortile", fr: "Pavillon de la cour", ja: "中庭の東屋" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["bench", "plant", "sign"],
@@ -1800,21 +1939,21 @@ const REVIEW_ROOM_BLUEPRINTS = {
   lab: [
     {
       slug: "prep-lab",
-      name: { en: "Prep Lab", es: "Laboratorio de Preparacion" },
+      name: { en: "Prep Lab", es: "Laboratorio de Preparacion", it: "Laboratorio Preparazione", fr: "Labo de preparation", ja: "準備ラボ" },
       markerType: "doorway",
       shape: "annex",
       objects: ["freezer", "table", "lamp"],
     },
     {
       slug: "analysis-booth",
-      name: { en: "Analysis Booth", es: "Cabina de Analisis" },
+      name: { en: "Analysis Booth", es: "Cabina de Analisis", it: "Cabina Analisi", fr: "Cabine d'analyse", ja: "分析ブース" },
       markerType: "building",
       shape: "offset",
       objects: ["desk", "shelf", "lamp"],
     },
     {
       slug: "equipment-store",
-      name: { en: "Equipment Store", es: "Deposito de Equipo" },
+      name: { en: "Equipment Store", es: "Deposito de Equipo", it: "Magazzino Attrezzature", fr: "Reserve d'equipement", ja: "備品倉庫" },
       markerType: "building",
       shape: "alcove",
       objects: ["shelf", "freezer", "desk"],
@@ -1823,27 +1962,175 @@ const REVIEW_ROOM_BLUEPRINTS = {
   festival: [
     {
       slug: "performance-stage",
-      name: { en: "Performance Stage", es: "Escenario" },
+      name: { en: "Performance Stage", es: "Escenario", it: "Palco delle Esibizioni", fr: "Scene", ja: "ステージ" },
       markerType: "pavilion",
       shape: "courtyard",
       objects: ["speaker", "speaker", "balloons"],
     },
     {
       slug: "food-stall",
-      name: { en: "Food Stall", es: "Puesto de Comida" },
+      name: { en: "Food Stall", es: "Puesto de Comida", it: "Banco del Cibo", fr: "Stand de nourriture", ja: "屋台" },
       markerType: "building",
       shape: "offset",
       objects: ["counter", "table", "sign"],
     },
     {
       slug: "craft-tent",
-      name: { en: "Craft Tent", es: "Taller Creativo" },
+      name: { en: "Craft Tent", es: "Taller Creativo", it: "Tenda Creativa", fr: "Tente d'artisanat", ja: "クラフトテント" },
       markerType: "pavilion",
       shape: "annex",
       objects: ["table", "bench", "balloons"],
     },
   ],
 };
+
+const SCENARIO_NAME_AR_BY_EN = {
+  Kitchen: "المطبخ",
+  Study: "المكتب",
+  "Garden Patio": "فناء الحديقة",
+  "Prep Room": "غرفة التحضير",
+  Pantry: "المخزن",
+  "Cafe Patio": "فناء المقهى",
+  "Archive Wing": "جناح الأرشيف",
+  "Reading Nook": "ركن القراءة",
+  "Front Office": "المكتب الأمامي",
+  "Ticket Office": "شباك التذاكر",
+  "Gate Lounge": "صالة البوابة",
+  "Travel Desk": "مكتب السفر",
+  "Garden Pavilion": "جناح الحديقة",
+  Glasshouse: "البيت الزجاجي",
+  "Ranger Station": "مركز الحارس",
+  "Council Room": "قاعة المجلس",
+  "Records Room": "غرفة السجلات",
+  "Courtyard Pavilion": "جناح الفناء",
+  "Prep Lab": "مختبر التحضير",
+  "Analysis Booth": "كشك التحليل",
+  "Equipment Store": "مخزن المعدات",
+  "Performance Stage": "مسرح العروض",
+  "Food Stall": "كشك الطعام",
+  "Craft Tent": "خيمة الحِرف",
+};
+
+Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((rooms) => {
+  rooms.forEach((room) => {
+    if (!room?.name?.ar) {
+      room.name.ar = SCENARIO_NAME_AR_BY_EN[room.name.en] || room.name.en;
+    }
+  });
+});
+
+const SCENARIO_NAME_PT_BY_ES = {
+  Cocina: "Cozinha",
+  Estudio: "Estúdio",
+  "Patio del Jardin": "Pátio do Jardim",
+  "Sala de Preparacion": "Sala de Preparação",
+  Despensa: "Despensa",
+  "Patio del Cafe": "Pátio do Café",
+  "Ala de Archivo": "Ala do Arquivo",
+  "Rincon de Lectura": "Cantinho de Leitura",
+  "Oficina Principal": "Escritório Principal",
+  "Oficina de Boletos": "Bilheteria",
+  "Sala de Embarque": "Sala de Embarque",
+  "Mesa de Viaje": "Mesa de Viagem",
+  "Pabellon del Jardin": "Pavilhão do Jardim",
+  Invernadero: "Estufa",
+  "Estacion del Guardabosques": "Estação do Guarda-Florestal",
+  "Sala del Consejo": "Sala do Conselho",
+  "Sala de Registros": "Sala de Registros",
+  "Pabellon del Patio": "Pavilhão do Pátio",
+  "Laboratorio de Preparacion": "Laboratório de Preparação",
+  "Cabina de Analisis": "Cabine de Análise",
+  "Deposito de Equipo": "Depósito de Equipamentos",
+  Escenario: "Palco",
+  "Puesto de Comida": "Barraca de Comida",
+  "Taller Creativo": "Tenda Criativa",
+};
+
+const SCENARIO_NAME_HI_BY_EN = {
+  Kitchen: "रसोई",
+  Study: "अध्ययन कक्ष",
+  "Garden Patio": "बगीचे का आँगन",
+  "Prep Room": "तैयारी कक्ष",
+  Pantry: "भंडार कक्ष",
+  "Cafe Patio": "कैफ़े आँगन",
+  "Archive Wing": "अभिलेख कक्ष",
+  "Reading Nook": "पठन कोना",
+  "Front Office": "मुख्य कार्यालय",
+  "Ticket Office": "टिकट कार्यालय",
+  "Gate Lounge": "गेट लाउंज",
+  "Travel Desk": "यात्रा डेस्क",
+  "Garden Pavilion": "उद्यान मंडप",
+  Glasshouse: "काँचघर",
+  "Ranger Station": "रेंजर चौकी",
+  "Council Room": "परिषद कक्ष",
+  "Records Room": "अभिलेख कक्ष",
+  "Courtyard Pavilion": "आँगन मंडप",
+  "Prep Lab": "तैयारी प्रयोगशाला",
+  "Analysis Booth": "विश्लेषण कक्ष",
+  "Equipment Store": "उपकरण भंडार",
+  "Performance Stage": "प्रदर्शन मंच",
+  "Food Stall": "भोजन स्टॉल",
+  "Craft Tent": "शिल्प तंबू",
+};
+
+const SCENARIO_NAME_ZH_BY_EN = {
+  Kitchen: "厨房",
+  Study: "书房",
+  "Garden Patio": "花园露台",
+  "Prep Room": "准备室",
+  Pantry: "储藏室",
+  "Cafe Patio": "咖啡露台",
+  "Archive Wing": "档案侧厅",
+  "Reading Nook": "阅读角",
+  "Front Office": "前台办公室",
+  "Ticket Office": "售票处",
+  "Gate Lounge": "登机口休息区",
+  "Travel Desk": "旅行服务台",
+  "Garden Pavilion": "花园亭",
+  Glasshouse: "温室",
+  "Ranger Station": "护林员站",
+  "Council Room": "会议室",
+  "Records Room": "档案室",
+  "Courtyard Pavilion": "庭院亭",
+  "Prep Lab": "准备实验室",
+  "Analysis Booth": "分析间",
+  "Equipment Store": "设备储藏室",
+  "Performance Stage": "表演舞台",
+  "Food Stall": "食物摊位",
+  "Craft Tent": "手工帐篷",
+};
+
+MAP_CHOICES.forEach((choice) => {
+  if (choice?.name?.es && !choice.name.pt) {
+    choice.name.pt = SCENARIO_NAME_PT_BY_ES[choice.name.es] || choice.name.en;
+  }
+  if (choice?.name?.en && !choice.name.zh) {
+    choice.name.zh = SCENARIO_NAME_ZH_BY_EN[choice.name.en] || choice.name.en;
+  }
+});
+
+Object.values(MAP_NAME_BY_ID).forEach((name) => {
+  if (name?.es && !name.pt) {
+    name.pt = SCENARIO_NAME_PT_BY_ES[name.es] || name.en;
+  }
+  if (name?.en && !name.zh) {
+    name.zh = SCENARIO_NAME_ZH_BY_EN[name.en] || name.en;
+  }
+});
+
+Object.values(REVIEW_ROOM_BLUEPRINTS).forEach((specs) => {
+  specs.forEach((spec) => {
+    if (spec?.name?.es && !spec.name.pt) {
+      spec.name.pt = SCENARIO_NAME_PT_BY_ES[spec.name.es] || spec.name.en;
+    }
+    if (spec?.name?.en && !spec.name.hi) {
+      spec.name.hi = SCENARIO_NAME_HI_BY_EN[spec.name.en] || spec.name.en;
+    }
+    if (spec?.name?.en && !spec.name.zh) {
+      spec.name.zh = SCENARIO_NAME_ZH_BY_EN[spec.name.en] || spec.name.en;
+    }
+  });
+});
 
 function createSolidMapData(mapWidth, mapHeight, fillValue = 2) {
   return new Array(mapWidth * mapHeight).fill(fillValue);
@@ -2449,7 +2736,9 @@ function buildReviewWorldMaps({
             hubWidth,
             hubHeight,
           ),
-          label: environment?.names?.en || "Main Area",
+          label: Array.isArray(environment?.names?.en)
+            ? environment.names.en[0]
+            : environment?.names?.en || "Main Area",
         },
       ],
       generate() {
@@ -2488,9 +2777,34 @@ function buildReviewWorldMaps({
 
   const hubMap = {
     id: REVIEW_HUB_MAP_ID,
-    name: environment?.names || {
-      en: "Lesson World",
-      es: "Mundo de Leccion",
+    name: {
+      en: Array.isArray(environment?.names?.en)
+        ? environment.names.en[0]
+        : environment?.names?.en || "Lesson World",
+      es: Array.isArray(environment?.names?.es)
+        ? environment.names.es[0]
+        : environment?.names?.es || "Mundo de Leccion",
+      pt: Array.isArray(environment?.names?.pt)
+        ? environment.names.pt[0]
+        : environment?.names?.pt || "Mundo da Licao",
+      it: Array.isArray(environment?.names?.it)
+        ? environment.names.it[0]
+        : environment?.names?.it || "Mondo della Lezione",
+      fr: Array.isArray(environment?.names?.fr)
+        ? environment.names.fr[0]
+        : environment?.names?.fr || "Monde de la lecon",
+      ja: Array.isArray(environment?.names?.ja)
+        ? environment.names.ja[0]
+        : environment?.names?.ja || "レッスンの世界",
+      hi: Array.isArray(environment?.names?.hi)
+        ? environment.names.hi[0]
+        : environment?.names?.hi || "पाठ की दुनिया",
+      ar: Array.isArray(environment?.names?.ar)
+        ? environment.names.ar[0]
+        : environment?.names?.ar || "عالم الدرس",
+      zh: Array.isArray(environment?.names?.zh)
+        ? environment.names.zh[0]
+        : environment?.names?.zh || "课程世界",
     },
     tileSize: 32,
     mapWidth: hubWidth,
@@ -2831,7 +3145,16 @@ async function fallbackScenario(
   reviewContext = null,
 ) {
   if (mapId !== REVIEW_WORLD_ID) {
-    const name = { en: getMapName(mapId, "en"), es: getMapName(mapId, "es") };
+    const name = {
+      en: getMapName(mapId, "en"),
+      es: getMapName(mapId, "es"),
+      pt: getMapName(mapId, "pt"),
+      it: getMapName(mapId, "it"),
+      fr: getMapName(mapId, "fr"),
+      ja: getMapName(mapId, "ja"),
+      hi: getMapName(mapId, "hi"),
+      ar: getMapName(mapId, "ar"),
+    };
     const mapWidth = 18;
     const mapHeight = 14;
 
@@ -2839,6 +3162,7 @@ async function fallbackScenario(
       [targetLang]: normalizeQuestions([], supportLang),
       en: normalizeQuestions([], supportLang),
       es: normalizeQuestions([], supportLang),
+      ja: normalizeQuestions([], supportLang),
     };
 
     const allFallbackNpcs = [
@@ -2872,6 +3196,11 @@ async function fallbackScenario(
       reviewContext,
       null,
     );
+    const localizedQuest = await enrichQuestGatherSupportCopy(
+      visualizedQuest,
+      targetLang,
+      supportLang,
+    );
 
     return {
       id: mapId,
@@ -2899,7 +3228,7 @@ async function fallbackScenario(
       },
       npcs,
       questions: questionsByLang,
-      quest: visualizedQuest,
+      quest: localizedQuest,
       greetings: {
         en: ["Generating scenario unavailable; using safe fallback."],
         es: ["Generacion no disponible; usando respaldo."],
@@ -2915,6 +3244,7 @@ async function fallbackScenario(
     [targetLang]: normalizeQuestions([], supportLang),
     en: normalizeQuestions([], supportLang),
     es: normalizeQuestions([], supportLang),
+    ja: normalizeQuestions([], supportLang),
   };
 
   const allFallbackNpcs = [
@@ -2955,11 +3285,23 @@ async function fallbackScenario(
     reviewContext,
     environment,
   );
+  const localizedQuest = await enrichQuestGatherSupportCopy(
+    visualizedQuest,
+    targetLang,
+    supportLang,
+  );
   const baseScenario = {
     id: mapId,
     name: environment?.names || {
       en: getMapName(mapId, "en"),
       es: getMapName(mapId, "es"),
+      pt: getMapName(mapId, "pt"),
+      it: getMapName(mapId, "it"),
+      fr: getMapName(mapId, "fr"),
+      ja: getMapName(mapId, "ja"),
+      hi: getMapName(mapId, "hi"),
+      ar: getMapName(mapId, "ar"),
+      zh: getMapName(mapId, "zh"),
     },
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
@@ -2977,7 +3319,7 @@ async function fallbackScenario(
     },
     npcs: reviewMaps.npcs,
     questions: questionsByLang,
-    quest: visualizedQuest,
+    quest: localizedQuest,
     greetings: {
       en: [
         "Scenario generation was incomplete, so we built a lesson-themed world locally.",
@@ -2989,15 +3331,15 @@ async function fallbackScenario(
   };
   const populatedFallbackScenario = distributeReviewWorldNPCs(
     baseScenario,
-    visualizedQuest,
+    localizedQuest,
   );
 
   return {
     ...populatedFallbackScenario,
-    quest: visualizedQuest,
+    quest: localizedQuest,
     gatherPlacements: buildGatherPlacementsForScenario(
       populatedFallbackScenario,
-      visualizedQuest,
+      localizedQuest,
     ),
   };
 }
@@ -3078,7 +3420,7 @@ Supported object types: ${supportedObjects}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3158,7 +3500,7 @@ ${reviewContextBlock.lessonTerms.join(", ")}
 
 Required JSON shape:
 {
-  "name": {"en": "...", "es": "..."},
+  "name": {"en": "...", "es": "..."${!["en","es"].includes(normalizedSupportLang) ? `, "${normalizedSupportLang}": "..."` : ""}},
   "ambientColor": "hex like #87ceeb",
   "mapWidth": 18-26,
   "mapHeight": 12-18,
@@ -3258,6 +3600,13 @@ function normalizeScenario({
       name: {
         en: String(raw?.name?.en || getMapName(mapId, "en")),
         es: String(raw?.name?.es || getMapName(mapId, "es")),
+        pt: String(raw?.name?.pt || getMapName(mapId, "pt")),
+        it: String(raw?.name?.it || getMapName(mapId, "it")),
+        fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
+        ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
+        hi: String(raw?.name?.hi || getMapName(mapId, "hi")),
+        ar: String(raw?.name?.ar || getMapName(mapId, "ar")),
+        zh: String(raw?.name?.zh || getMapName(mapId, "zh")),
       },
       tileSize: 32,
       mapWidth,
@@ -3276,6 +3625,7 @@ function normalizeScenario({
         [targetLang]: normalizeQuestions(raw?.questions, supportLang),
         en: normalizeQuestions(raw?.questions, supportLang),
         es: normalizeQuestions(raw?.questions, supportLang),
+        ja: normalizeQuestions(raw?.questions, supportLang),
       },
       quest: null,
       greetings: {
@@ -3285,6 +3635,9 @@ function normalizeScenario({
         es: Array.isArray(raw?.greetings?.es)
           ? raw.greetings.es.slice(0, 6).map(String)
           : ["¡Vamos a practicar!"],
+        ja: Array.isArray(raw?.greetings?.ja)
+          ? raw.greetings.ja.slice(0, 6).map(String)
+          : ["練習しましょう！"],
       },
     };
   }
@@ -3312,12 +3665,22 @@ function normalizeScenario({
   });
   const hubMap = reviewMaps.maps[0];
 
+  const processedName = {
+    en: String(raw?.name?.en || (Array.isArray(environment?.names?.en) ? environment.names.en[0] : environment?.names?.en) || getMapName(mapId, "en")),
+    es: String(raw?.name?.es || (Array.isArray(environment?.names?.es) ? environment.names.es[0] : environment?.names?.es) || getMapName(mapId, "es")),
+    pt: String(raw?.name?.pt || (Array.isArray(environment?.names?.pt) ? environment.names.pt[0] : environment?.names?.pt) || getMapName(mapId, "pt")),
+    it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
+    fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
+    ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
+    hi: String(raw?.name?.hi || (Array.isArray(environment?.names?.hi) ? environment.names.hi[0] : environment?.names?.hi) || getMapName(mapId, "hi")),
+    ar: String(raw?.name?.ar || (Array.isArray(environment?.names?.ar) ? environment.names.ar[0] : environment?.names?.ar) || getMapName(mapId, "ar")),
+    zh: String(raw?.name?.zh || (Array.isArray(environment?.names?.zh) ? environment.names.zh[0] : environment?.names?.zh) || getMapName(mapId, "zh")),
+  };
+  hubMap.name = processedName;
+
   return {
     id: mapId,
-    name: {
-      en: String(raw?.name?.en || environment?.names?.en || getMapName(mapId, "en")),
-      es: String(raw?.name?.es || environment?.names?.es || getMapName(mapId, "es")),
-    },
+    name: processedName,
     tileSize: 32,
     mapWidth: hubMap.mapWidth,
     mapHeight: hubMap.mapHeight,
@@ -3337,6 +3700,7 @@ function normalizeScenario({
       [targetLang]: normalizeQuestions(raw?.questions, supportLang),
       en: normalizeQuestions(raw?.questions, supportLang),
       es: normalizeQuestions(raw?.questions, supportLang),
+      ja: normalizeQuestions(raw?.questions, supportLang),
     },
     quest: null,
     greetings: {
@@ -3346,6 +3710,9 @@ function normalizeScenario({
       es: Array.isArray(raw?.greetings?.es)
         ? raw.greetings.es.slice(0, 6).map(String)
         : ["¡Vamos a practicar!"],
+      ja: Array.isArray(raw?.greetings?.ja)
+        ? raw.greetings.ja.slice(0, 6).map(String)
+        : ["練習しましょう！"],
     },
   };
 }
@@ -3382,14 +3749,22 @@ async function withQuest(
     reviewContext,
     scenario.environment || null,
   );
-  const populatedScenario = distributeReviewWorldNPCs(scenario, visualizedQuest);
+  const supportLocalizedQuest = await enrichQuestGatherSupportCopy(
+    visualizedQuest,
+    targetLang,
+    supportLang,
+  );
+  const populatedScenario = distributeReviewWorldNPCs(
+    scenario,
+    supportLocalizedQuest,
+  );
 
   return {
     ...populatedScenario,
-    quest: visualizedQuest,
+    quest: supportLocalizedQuest,
     gatherPlacements: buildGatherPlacementsForScenario(
       populatedScenario,
-      visualizedQuest,
+      supportLocalizedQuest,
     ),
   };
 }

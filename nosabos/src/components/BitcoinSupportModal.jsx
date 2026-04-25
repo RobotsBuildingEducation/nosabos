@@ -31,6 +31,59 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { translations } from "../utils/translation";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
+
+const ARABIC_SUPPORT_COPY = {
+  "Create Scholarships": "اعمل منح تعليمية",
+  "Send Bitcoin to educators any time you gain XP":
+    "ابعت بيتكوين للمعلّمين كل ما تكسب XP",
+  "This can be done later in your settings.":
+    "تقدر تعمل ده بعدين من الإعدادات.",
+  "Maybe later": "يمكن بعدين",
+  Done: "تم",
+  "View site": "افتح الموقع",
+  "Select an option to enable deposits.":
+    "اختار خيار عشان تفعّل الإيداعات.",
+  Close: "إغلاق",
+  "Choose a recipient": "اختار مستلِم",
+  "Bitcoin wallet": "محفظة بيتكوين",
+  "Loading wallet…": "جارٍ تحميل المحفظة…",
+};
+
+const CHINESE_SUPPORT_COPY = {
+  "Create Scholarships": "创造奖学金",
+  "Send Bitcoin to educators any time you gain XP":
+    "每次获得 XP 时向教育者发送 Bitcoin",
+  "This can be done later in your settings.":
+    "你也可以稍后在设置中完成。",
+  "Maybe later": "稍后再说",
+  Done: "完成",
+  "View site": "查看网站",
+  "Select an option to enable deposits.": "选择一个选项以启用充值。",
+  Close: "关闭",
+  "Choose a recipient": "选择接收者",
+  "Bitcoin wallet": "Bitcoin 钱包",
+  "Loading wallet…": "正在加载钱包…",
+};
+
+function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
+  if (lang === "ja") return ja || en;
+  if (lang === "fr") return fr || en;
+  if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
+  if (lang === "es") return es || en;
+  return en;
+}
 
 export default function BitcoinSupportModal({
   isOpen,
@@ -40,8 +93,9 @@ export default function BitcoinSupportModal({
   onSelectIdentity,
   isIdentitySaving = false,
 }) {
-  const lang = userLanguage === "es" ? "es" : "en";
-  const ui = useMemo(() => translations[lang] || translations.en, [lang]);
+  const lang = normalizeSupportLanguage(userLanguage, DEFAULT_SUPPORT_LANGUAGE);
+  const isRtl = getLanguageDirection(lang) === "rtl";
+  const ui = useMemo(() => translations[lang] ?? translations.en, [lang]);
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   const shellRef = useRef(null);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
@@ -145,6 +199,7 @@ export default function BitcoinSupportModal({
       primaryButtonBg: "#319795",
       primaryButtonHoverBg: "#2c7a7b",
       primaryButtonActiveBg: "#285e61",
+      primaryButtonShadow: "#1f6f68",
       ghostHoverBg: "#ead7b8",
       ghostActiveBg: "#dfc499",
     }),
@@ -153,22 +208,69 @@ export default function BitcoinSupportModal({
 
   const title =
     ui.tutorial_bitcoin_modal_title ||
-    (lang === "es" ? "Crea becas con aprendizaje" : "Create Scholarships");
+    supportCopy(
+      lang,
+      "Create Scholarships",
+      "Crea becas con aprendizaje",
+      "Criar bolsas de estudo com aprendizagem",
+      "Crea borse di studio con l'apprendimento",
+      "Creer des bourses",
+      "奨学金を作る",
+      "शिक्षा-वृत्तियां बनाएं",
+      "اعمل منح تعليمية",
+    );
   const subtitle =
     ui.tutorial_bitcoin_modal_subtitle ||
-    (lang === "es"
-      ? "Envía Bitcoin a educadores cada vez que ganes XP"
-      : "Send Bitcoin to educators any time you gain XP");
+    supportCopy(
+      lang,
+      "Send Bitcoin to educators any time you gain XP",
+      "Envía Bitcoin a educadores cada vez que ganes XP",
+      "Envie Bitcoin para educadores sempre que você ganhar XP",
+      "Invia Bitcoin agli educatori ogni volta che guadagni XP",
+      "Envoie du Bitcoin aux educateurs chaque fois que tu gagnes de l'XP",
+      "XPを獲得するたびに教育者へBitcoinを送れます",
+      "जब भी आप XP कमाएं, शिक्षकों को Bitcoin भेजें",
+      "ابعت بيتكوين للمعلّمين كل ما تكسب XP",
+    );
   const footerNote =
     ui.tutorial_bitcoin_modal_body ||
-    (lang === "es"
-      ? "Esto se puede hacer después en tus ajustes."
-      : "This can be done later in your settings.");
+    supportCopy(
+      lang,
+      "This can be done later in your settings.",
+      "Esto se puede hacer después en tus ajustes.",
+      "Isso pode ser feito depois nas suas configurações.",
+      "Puoi farlo più tardi dalle impostazioni.",
+      "Tu pourras le faire plus tard dans les parametres.",
+      "これは後で設定から行えます。",
+      "यह बाद में आपकी सेटिंग्स में भी किया जा सकता है।",
+      "تقدر تعمل ده بعدين من الإعدادات.",
+    );
   const skipLabel =
     ui.tutorial_bitcoin_modal_skip ||
-    (lang === "es" ? "Tal vez después" : "Maybe later");
+    supportCopy(
+      lang,
+      "Maybe later",
+      "Tal vez después",
+      "Talvez depois",
+      "Forse più tardi",
+      "Peut-etre plus tard",
+      "後で",
+      "शायद बाद में",
+      "يمكن بعدين",
+    );
   const closeLabel =
-    ui.tutorial_bitcoin_modal_done || (lang === "es" ? "Listo" : "Done");
+    ui.tutorial_bitcoin_modal_done ||
+    supportCopy(
+      lang,
+      "Done",
+      "Listo",
+      "Concluído",
+      "Fatto",
+      "Termine",
+      "完了",
+      "पूरा",
+      "تم",
+    );
 
   const handleRecipientSelect = useCallback(
     (nextIdentity) => {
@@ -293,7 +395,17 @@ export default function BitcoinSupportModal({
                       onClick={(event) => event.stopPropagation()}
                       onPointerDown={(event) => event.stopPropagation()}
                     >
-                      {lang === "es" ? "Ver sitio" : "View site"}
+                      {supportCopy(
+                        lang,
+                        "View site",
+                        "Ver sitio",
+                        "Ver site",
+                        "Vedi sito",
+                        "Voir le site",
+                        "サイトを見る",
+                        "साइट देखें",
+                        "افتح الموقع",
+                      )}
                     </Link>
                   ) : null}
                 </HStack>
@@ -304,9 +416,17 @@ export default function BitcoinSupportModal({
       </RadioGroup>
       {!selectedIdentity ? (
         <Text fontSize="xs" mt={2} color={paperTheme.warning} textAlign="left">
-          {lang === "es"
-            ? "Selecciona una opción para habilitar los depósitos."
-            : "Select an option to enable deposits."}
+          {supportCopy(
+            lang,
+            "Select an option to enable deposits.",
+            "Selecciona una opción para habilitar los depósitos.",
+            "Selecione uma opção para habilitar os depósitos.",
+            "Seleziona un'opzione per abilitare i depositi.",
+            "Selectionne une option pour activer les depots.",
+            "入金を有効にするにはオプションを選択してください。",
+            "जमा सक्षम करने के लिए एक विकल्प चुनें।",
+            "اختار خيار عشان تفعّل الإيداعات.",
+          )}
         </Text>
       ) : null}
     </>
@@ -375,14 +495,25 @@ export default function BitcoinSupportModal({
         }}
       >
         <IconButton
-          aria-label={lang === "es" ? "Cerrar" : "Close"}
+          aria-label={supportCopy(
+            lang,
+            "Close",
+            "Cerrar",
+            "Fechar",
+            "Chiudi",
+            "Fermer",
+            "閉じる",
+            "बंद करें",
+            "إغلاق",
+          )}
           icon={<CloseIcon boxSize={3} />}
           variant="ghost"
           color="white"
           _hover={{ color: "white", bg: "blackAlpha.200" }}
           position="absolute"
           top={4}
-          right={4}
+          left={isRtl ? 4 : undefined}
+          right={isRtl ? "auto" : 4}
           zIndex={1}
           onClick={handleDismiss}
         />
@@ -489,9 +620,17 @@ export default function BitcoinSupportModal({
                     >
                       <Box flex="1" textAlign="left">
                         <Text fontSize="sm" color={paperTheme.text}>
-                          {lang === "es"
-                            ? "Elige un destinatario"
-                            : "Choose a recipient"}
+                          {supportCopy(
+                            lang,
+                            "Choose a recipient",
+                            "Elige un destinatario",
+                            "Escolha um destinatário",
+                            "Scegli un destinatario",
+                            "Choisis un destinataire",
+                            "受取先を選ぶ",
+                            "प्राप्तकर्ता चुनें",
+                            "اختار مستلِم",
+                          )}
                         </Text>
                         {selectedRecipient ? (
                           <Text
@@ -518,9 +657,17 @@ export default function BitcoinSupportModal({
                     textAlign="left"
                     color={paperTheme.text}
                   >
-                    {lang === "es"
-                      ? "Elige un destinatario"
-                      : "Choose a recipient"}
+                    {supportCopy(
+                      lang,
+                      "Choose a recipient",
+                      "Elige un destinatario",
+                      "Escolha um destinatário",
+                      "Scegli un destinatario",
+                      "Choisis un destinataire",
+                      "受取先を選ぶ",
+                      "प्राप्तकर्ता चुनें",
+                      "اختار مستلِم",
+                    )}
                   </Text>
                   {recipientSelectorContent}
                 </>
@@ -550,8 +697,16 @@ export default function BitcoinSupportModal({
               <Button
                 bg={paperTheme.primaryButtonBg}
                 color="white"
-                _hover={{ bg: paperTheme.primaryButtonHoverBg }}
-                _active={{ bg: paperTheme.primaryButtonActiveBg }}
+                boxShadow={`0 4px 0 ${paperTheme.primaryButtonShadow}`}
+                _hover={{
+                  bg: paperTheme.primaryButtonHoverBg,
+                  boxShadow: `0 4px 0 ${paperTheme.primaryButtonShadow}`,
+                }}
+                _active={{
+                  bg: paperTheme.primaryButtonActiveBg,
+                  boxShadow: "none",
+                  transform: "translateY(4px)",
+                }}
                 onClick={handleConfirm}
               >
                 {closeLabel}

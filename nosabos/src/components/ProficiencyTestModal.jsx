@@ -15,6 +15,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
+import { t as tFn } from "../utils/translation";
 
 export default function ProficiencyTestModal({
   isOpen,
@@ -25,7 +26,7 @@ export default function ProficiencyTestModal({
   useSharedBackdrop = false,
 }) {
   const playSound = useSoundSettings((s) => s.playSound);
-  const isEs = lang === "es";
+  const ui = (key, vars) => tFn(lang, key, vars);
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
 
@@ -92,9 +93,25 @@ export default function ProficiencyTestModal({
               textAlign="center"
               color="white"
             >
-              {isEs
-                ? `¿Ya conoces algo de ${targetLangLabel || "el idioma"}?`
-                : `Already know some ${targetLangLabel || "of the language"}?`}
+              {tFn(lang, "proficiency_modal_already_know", {
+                lang:
+                  targetLangLabel ||
+                  (lang === "ja"
+                    ? "この言語"
+                    : lang === "zh"
+                    ? "这门语言"
+                    : lang === "ar"
+                    ? "اللغة دي"
+                    : lang === "fr"
+                    ? "cette langue"
+                    : lang === "pt"
+                    ? "este idioma"
+                    : lang === "it"
+                    ? "questa lingua"
+                    : lang === "es"
+                    ? "el idioma"
+                    : "the language"),
+              })}
             </Text>
           </VStack>
         </Box>
@@ -107,15 +124,11 @@ export default function ProficiencyTestModal({
               textAlign="center"
               lineHeight="1.6"
             >
-              {isEs
-                ? "Podemos tener una conversación rápida para determinar tu nivel y colocarte en el lugar correcto."
-                : "We can have a quick conversation to figure out your level and place you in the right spot."}
+              {ui("proficiency_modal_description")}
             </Text>
 
             <Text fontSize="sm" opacity={0.7} textAlign="center">
-              {isEs
-                ? "Una charla breve de 10 intercambios — evaluaremos tu pronunciación, gramática y confianza."
-                : "A short 10-exchange chat — we'll assess your pronunciation, grammar, and confidence."}
+              {ui("proficiency_modal_exchange_info")}
             </Text>
 
             <VStack spacing={4} pt={2}>
@@ -128,7 +141,7 @@ export default function ProficiencyTestModal({
                 rounded="xl"
                 py={6}
               >
-                {isEs ? "¡Hagámoslo!" : "Let's do it"}
+                {ui("proficiency_modal_take_test")}
               </Button>
 
               <Button
@@ -142,14 +155,12 @@ export default function ProficiencyTestModal({
                 py={6}
                 borde
               >
-                {isEs ? "No gracias" : "No thanks"}
+                {ui("proficiency_modal_skip")}
               </Button>
             </VStack>
 
             <Text fontSize="xs" opacity={0.5} textAlign="center">
-              {isEs
-                ? '"No gracias" te iniciará desde el nivel principiante.'
-                : '"No thanks" will start you from the beginner level.'}
+              {ui("proficiency_modal_skip_note")}
             </Text>
           </VStack>
         </ModalBody>

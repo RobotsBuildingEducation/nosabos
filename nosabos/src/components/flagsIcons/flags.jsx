@@ -1,4 +1,7 @@
 let mexicanFlagCounter = 0;
+let egyptianFlagCounter = 0;
+let chineseFlagCounter = 0;
+
 export let mexicanFlag = () => {
   const id = `MX_svg__${++mexicanFlagCounter}`;
   return (
@@ -117,7 +120,7 @@ export const frenchFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#FR_svg__a)">
+      <g clipPath="url(#FR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -149,7 +152,7 @@ export const germanFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#DE_svg__a)">
+      <g clipPath="url(#DE_svg__a)">
         <path
           d="M.746 16.175C2.442 20.745 6.84 24 12 24c5.16 0 9.558-3.257 11.253-7.826L12 15.132.746 16.175Z"
           fill="#FFDA44"
@@ -181,7 +184,7 @@ export const italianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#IT_svg__a)">
+      <g clipPath="url(#IT_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -204,6 +207,92 @@ export const italianFlag = () => {
   );
 };
 
+export const indianFlag = () => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath="url(#IN_svg__a)">
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#F0F0F0"
+        />
+        <path
+          d="M12 0C6.84 0 2.442 3.257.746 7.826h22.508C21.557 3.257 17.159 0 12 0Z"
+          fill="#FF9811"
+        />
+        <path
+          d="M12 24c5.16 0 9.558-3.257 11.254-7.826H.746C2.443 20.743 6.841 24 12 24Z"
+          fill="#6DA544"
+        />
+        <path
+          d="M12 14.609a2.609 2.609 0 1 0 0-5.218 2.609 2.609 0 0 0 0 5.218Z"
+          fill="#0052B4"
+        />
+        <path
+          d="M12 13.565a1.565 1.565 0 1 0 0-3.13 1.565 1.565 0 0 0 0 3.13Z"
+          fill="#F0F0F0"
+        />
+        <path
+          d="M12 8.87v1.043M12 14.087v1.044M15.13 12h-1.043M9.913 12H8.87M14.213 9.787l-.739.739M10.526 13.474l-.739.739M14.213 14.213l-.739-.739M10.526 10.526l-.739-.739"
+          stroke="#0052B4"
+          strokeLinecap="round"
+          strokeWidth="0.7"
+        />
+      </g>
+      <defs>
+        <clipPath id="IN_svg__a">
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
+export const egyptianFlag = () => {
+  const id = `EG_svg__${++egyptianFlagCounter}`;
+
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath={`url(#${id})`}>
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#F0F0F0"
+        />
+        <path
+          d="M12 0C6.84 0 2.442 3.257.746 7.826h22.508C21.557 3.257 17.159 0 12 0Z"
+          fill="#CE1126"
+        />
+        <path
+          d="M12 24c5.16 0 9.558-3.257 11.254-7.826H.746C2.443 20.743 6.841 24 12 24Z"
+          fill="#000"
+        />
+        <g fill="#C09300" stroke="#8C6F00" strokeWidth="0.12">
+          <path d="M11.52 8.32c.28-.3.68-.47 1.1-.47.48 0 .93.22 1.21.59l.35.45.8-.32c.23-.09.47.12.4.36l-.24.85 2.31-1.1c.28-.13.57.16.43.43-.7 1.39-1.84 2.38-3.34 2.86l-.55.18v2.26h-3.98v-2.26l-.55-.18c-1.5-.48-2.64-1.47-3.34-2.86-.14-.27.15-.56.43-.43l2.31 1.1-.24-.85c-.07-.24.17-.45.4-.36l.8.32.34-.45c.28-.37.72-.59 1.36-.12Z" />
+          <path d="M10.52 10.2h2.96l-.49 1.16h-1.98l-.49-1.16Z" />
+          <path d="M10.9 12.15h2.2v2.25h-2.2v-2.25Z" />
+          <path d="M9.62 14.56h4.76v.74H9.62z" />
+        </g>
+      </g>
+      <defs>
+        <clipPath id={id}>
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
 export const brazilianFlag = () => {
   return (
     <svg
@@ -213,7 +302,7 @@ export const brazilianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#BR_svg__a)">
+      <g clipPath="url(#BR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#6DA544"
@@ -249,7 +338,7 @@ export const greekFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#GR_svg__a)">
+      <g clipPath="url(#GR_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -281,7 +370,7 @@ export const japaneseFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#JP_svg__a)">
+      <g clipPath="url(#JP_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
@@ -300,6 +389,57 @@ export const japaneseFlag = () => {
   );
 };
 
+export const chineseFlag = () => {
+  const id = `CN_svg__${++chineseFlagCounter}`;
+
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath={`url(#${id})`}>
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#DE2910"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(6.15 6.15) scale(2.45)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(10.45 3.85) rotate(24) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(12.65 5.9) rotate(47) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(12.6 8.85) rotate(24) scale(.78)"
+        />
+        <path
+          d="M0-1 .235-.324H.951L.38.118.588.809 0 .39l-.588.419.208-.691-.571-.442h.716L0-1Z"
+          fill="#FFDE00"
+          transform="translate(10.35 10.9) rotate(47) scale(.78)"
+        />
+      </g>
+      <defs>
+        <clipPath id={id}>
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};
+
 export const russianFlag = () => {
   return (
     <svg
@@ -309,7 +449,7 @@ export const russianFlag = () => {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
     >
-      <g clip-path="url(#RU_svg__a)">
+      <g clipPath="url(#RU_svg__a)">
         <path
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"

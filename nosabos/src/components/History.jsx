@@ -69,6 +69,14 @@ import {
   SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  DEFAULT_TARGET_LANGUAGE,
+  getLanguageDirection,
+  isSupportedPracticeLanguage,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -81,15 +89,49 @@ const renderSpeakerIcon = (loading) =>
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
-    const raw = (dict[key] ?? enDict[key] ?? key) + "";
+    const raw = (dict[key] ?? enDict[key] ?? "") + "";
+    if (!raw) return "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
       k in params ? String(params[k]) : `{${k}}`,
     );
+  };
+}
+
+const uiCopy = (lang, copy) =>
+  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+
+function getStoredAppLanguage(fallback = DEFAULT_SUPPORT_LANGUAGE) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    return normalizeSupportLanguage(
+      localStorage.getItem("appLanguage"),
+      fallback,
+    );
+  } catch {
+    return fallback;
+  }
+}
+
+function resolveHistoryUiLanguage(userLanguage) {
+  const storedLang = getStoredAppLanguage("");
+  const propLang = normalizeSupportLanguage(userLanguage, "");
+  if (propLang && (propLang !== DEFAULT_SUPPORT_LANGUAGE || !storedLang)) {
+    return propLang;
+  }
+  return storedLang || propLang || DEFAULT_SUPPORT_LANGUAGE;
+}
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
   };
 }
 
@@ -204,6 +246,9 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    ar: "Egyptian Arabic",
+    zh: "Mandarin Chinese",
+    ja: "Japanese",
     nl: "Dutch",
     nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
@@ -217,13 +262,15 @@ const LANG_NAME = (code) =>
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
   es: ["Spanish", "Español"],
+  ar: ["Egyptian Arabic", "Arabic", "Árabe egipcio", "العربية المصرية"],
+  zh: ["Mandarin Chinese", "Chinese", "Chino mandarín", "普通话中文", "中文"],
   pt: [
     "Portuguese",
     "Portugués",
     "Brazilian Portuguese",
     "Portugués brasileño",
   ],
-  fr: ["French", "Francés"],
+  fr: ["French", "Francés", "Français", "Francais"],
   it: ["Italian", "Italiano"],
   nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Eastern Huasteca Nahuatl", "Náhuatl huasteco oriental"],
@@ -339,11 +386,17 @@ const strongNpub = (user) =>
 function useSharedProgress() {
   const user = useUserStore((s) => s.user);
   const npub = strongNpub(user);
+  const initialSupportLang = normalizeSupportLanguage(
+    user?.progress?.supportLang === "bilingual"
+      ? user?.appLanguage
+      : user?.progress?.supportLang || user?.appLanguage,
+    getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
+  );
   const [xp, setXp] = useState(0);
   const [progress, setProgress] = useState({
     level: "beginner",
     targetLang: "es",
-    supportLang: "en",
+    supportLang: initialSupportLang,
     showTranslations: true,
     voice: "alloy",
   });
@@ -360,33 +413,23 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = [
-        "nah",
-        "es",
-        "pt",
-        "en",
-        "fr",
-        "it",
-        "nl",
-        "ja",
-        "ru",
-        "de",
-        "el",
-        "pl",
-        "ga",
-        "yua",
-      ].includes(p.targetLang)
-        ? p.targetLang
-        : "es";
+      const supportFallback = normalizeSupportLanguage(
+        data?.appLanguage,
+        getStoredAppLanguage(DEFAULT_SUPPORT_LANGUAGE),
+      );
+      const targetLang = isSupportedPracticeLanguage(p.targetLang)
+        ? normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE)
+        : DEFAULT_TARGET_LANGUAGE;
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeSupportLanguage(p.supportLang, supportFallback),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
         voice: p.voice || "alloy",
@@ -681,9 +724,12 @@ function splitIntoSentences(text) {
 const BCP47 = {
   es: { tts: "es-MX" },
   en: { tts: "en-US" },
+  ar: { tts: "ar-EG" },
+  zh: { tts: "zh-CN" },
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
+  ja: { tts: "ja-JP" },
   nl: { tts: "nl-NL" },
   nah: { tts: "es-MX" },
   ru: { tts: "ru-RU" },
@@ -770,12 +816,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión" },
-  { key: "completeness", en: "Completeness", es: "Completitud" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
-  { key: "fluency", en: "Fluency", es: "Fluidez" },
-  { key: "confidence", en: "Confidence", es: "Confianza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ", hi: "शुद्धता", ar: "الدقة", zh: "准确性" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性", hi: "पूर्णता", ar: "الاكتمال", zh: "完整性" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", hi: "उच्चारण", ar: "النطق", zh: "发音" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", hi: "प्रवाह", ar: "الطلاقة", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", hi: "आत्मविश्वास", ar: "الثقة", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", hi: "समझ", ar: "الفهم", zh: "理解力" },
 ];
 
 function speechScoreColor(score) {
@@ -795,7 +841,11 @@ export default function History({
   onSkip = null,
   lessonStartXp = null,
 }) {
-  const t = useT(userLanguage);
+  const uiLang = useMemo(
+    () => resolveHistoryUiLanguage(userLanguage),
+    [userLanguage],
+  );
+  const t = useT(uiLang);
   const user = useUserStore((s) => s.user);
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -851,31 +901,14 @@ export default function History({
           pct: lessonProgressPct,
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
-          label:
-            userLanguage === "es"
-              ? "Progreso de la lección"
-              : "Lesson progress",
+          label: t("vocab_lesson_progress"),
         }
       : null;
 
-  const targetLang = [
-    "en",
-    "es",
-    "pt",
-    "nah",
-    "fr",
-    "it",
-    "nl",
-    "ja",
-    "ru",
-    "de",
-    "el",
-    "pl",
-    "ga",
-    "yua",
-  ].includes(progress.targetLang)
-    ? progress.targetLang
-    : "es";
+  const targetLang = normalizePracticeLanguage(
+    progress.targetLang,
+    DEFAULT_TARGET_LANGUAGE,
+  );
 
   // Use CEFR level from the current lesson, or user's proficiency level as fallback
   const cefrLevel = lesson?.id
@@ -894,16 +927,17 @@ export default function History({
 
   const supportLang =
     progress.supportLang === "bilingual"
-      ? userLanguage === "es"
-        ? "es"
-        : "en"
-      : progress.supportLang || "en";
+      ? normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE)
+      : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
   const showTranslations = progress.showTranslations !== false;
+  const targetTextProps = getLanguageTextProps(targetLang);
+  const supportTextProps = getLanguageTextProps(supportLang);
 
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
       es: t("language_es"),
+      ar: t("language_ar"),
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
@@ -1251,19 +1285,35 @@ export default function History({
             ? "An important phase unfolded as communities consolidated agriculture, ritual life, and trade networks..."
             : "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura, la vida ritual y las redes de intercambio...",
         support:
-          supportLang === "es"
-            ? "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura..."
-            : "An important phase unfolded as communities consolidated agriculture...",
+          uiCopy(supportLang, {
+            en: "An important phase unfolded as communities consolidated agriculture...",
+            es: "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura...",
+            it: "Una fase importante si sviluppo quando le comunita consolidarono l'agricoltura...",
+            fr: "Une phase importante s'est developpee lorsque les communautes ont consolide l'agriculture...",
+            ja: "人々が農業を安定させていく中で、重要な段階が始まりました...",
+          }),
         takeaways: [
-          supportLang === "es"
-            ? "Intercambios y aldeas más fuertes."
-            : "Stronger villages and exchanges.",
-          supportLang === "es"
-            ? "Nuevas identidades y creencias."
-            : "New identities and beliefs.",
-          supportLang === "es"
-            ? "La tecnología se difundió en la región."
-            : "Technology spread regionally.",
+          uiCopy(supportLang, {
+            en: "Stronger villages and exchanges.",
+            es: "Intercambios y aldeas más fuertes.",
+            it: "Villaggi e scambi piu forti.",
+            fr: "Villages et echanges plus solides.",
+            ja: "村と交流がより強くなった。",
+          }),
+          uiCopy(supportLang, {
+            en: "New identities and beliefs.",
+            es: "Nuevas identidades y creencias.",
+            it: "Nuove identita e credenze.",
+            fr: "Nouvelles identites et croyances.",
+            ja: "新しいアイデンティティと信念。",
+          }),
+          uiCopy(supportLang, {
+            en: "Technology spread regionally.",
+            es: "La tecnología se difundió en la región.",
+            it: "La tecnologia si diffuse nella regione.",
+            fr: "La technologie s'est diffusee dans la region.",
+            ja: "技術が地域に広がった。",
+          }),
         ],
       };
     }
@@ -1791,10 +1841,10 @@ SCORING GUIDELINES:
 
 BE ENCOURAGING but HONEST. This is practice, not a test. Highlight what they did well and what to work on.
 
-Provide a brief 2-3 sentence summary of feedback in ${supportName}.
+LANGUAGE REQUIREMENT: Write ALL text in ${supportName}. The summary AND every criterion note must be in ${supportName}, not English.
 
 Return ONLY valid JSON:
-{"summary":"brief feedback","scores":{"accuracy":{"score":5,"note":"reason"},"completeness":{"score":5,"note":"reason"},"pronunciation":{"score":5,"note":"reason"},"fluency":{"score":5,"note":"reason"},"confidence":{"score":5,"note":"reason"},"comprehension":{"score":5,"note":"reason"}}}`;
+{"summary":"[2-3 sentence summary in ${supportName}]","scores":{"accuracy":{"score":5,"note":"[reason in ${supportName}]"},"completeness":{"score":5,"note":"[reason in ${supportName}]"},"pronunciation":{"score":5,"note":"[reason in ${supportName}]"},"fluency":{"score":5,"note":"[reason in ${supportName}]"},"confidence":{"score":5,"note":"[reason in ${supportName}]"},"comprehension":{"score":5,"note":"[reason in ${supportName}]"}}}`;
 
     try {
       const resp = await gradingModel.generateContent({
@@ -1816,10 +1866,15 @@ Return ONLY valid JSON:
     } catch (e) {
       console.error("Speech grading failed", e);
       setSpeechFeedback({
-        summary:
-          userLanguage === "es"
-            ? "No se pudo generar retroalimentación. ¡Sigue practicando!"
-            : "Could not generate feedback. Keep practicing!",
+        summary: uiCopy(supportLang, {
+          en: "Could not generate feedback. Keep practicing!",
+          es: "No se pudo generar retroalimentación. ¡Sigue practicando!",
+          it: "Impossibile generare il feedback. Continua a praticare!",
+          fr: "Impossible de generer un retour. Continue a pratiquer !",
+          ja: "フィードバックを生成できませんでした。練習を続けましょう！",
+          ar: "مقدرناش نولّد تقييم. كمّل تدريب!",
+          zh: "无法生成反馈。继续练习！",
+        }),
         scores: {},
       });
     } finally {
@@ -1990,7 +2045,12 @@ Return ONLY valid JSON:
               </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
-                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
+                <Text
+                  fontSize={{ base: "lg", md: "xl" }}
+                  fontWeight="700"
+                  {...targetTextProps}
+                  sx={{ unicodeBidi: "plaintext" }}
+                >
                   {viewLecture.title}
                   {draftLecture ? (
                     <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
@@ -2102,6 +2162,8 @@ Return ONLY valid JSON:
                               as="span"
                               role="button"
                               tabIndex={0}
+                              dir={targetTextProps.dir}
+                              lang={targetTextProps.lang}
                               position="relative"
                               bg={
                                 activeSentenceIndex === i
@@ -2125,6 +2187,7 @@ Return ONLY valid JSON:
                               transition="all 0.15s"
                               cursor="pointer"
                               sx={{
+                                unicodeBidi: "isolate",
                                 "&:active": {
                                   top: "2px",
                                   boxShadow: "none",
@@ -2147,6 +2210,8 @@ Return ONLY valid JSON:
                                 fontStyle="italic"
                                 lineHeight="1.5"
                                 mb={3}
+                                {...supportTextProps}
+                                sx={{ unicodeBidi: "plaintext" }}
                               >
                                 {lineTranslations[i]}
                               </Text>
@@ -2156,7 +2221,12 @@ Return ONLY valid JSON:
                       })}
                     </VStack>
                   ) : (
-                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="2.2">
+                    <Text
+                      fontSize={{ base: "md", md: "md" }}
+                      lineHeight="2.2"
+                      {...targetTextProps}
+                      sx={{ unicodeBidi: "plaintext" }}
+                    >
                       {targetSentences.map((sentence, i) => {
                         const colors = [
                           "rgba(56, 178, 172, 0.12)",
@@ -2180,6 +2250,8 @@ Return ONLY valid JSON:
                             role="button"
                             tabIndex={0}
                             key={i}
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
                             position="relative"
                             bg={
                               activeSentenceIndex === i
@@ -2203,6 +2275,7 @@ Return ONLY valid JSON:
                             transition="all 0.15s"
                             cursor="pointer"
                             sx={{
+                              unicodeBidi: "isolate",
                               "&:active": {
                                 top: "2px",
                                 boxShadow: "none",
@@ -2340,7 +2413,7 @@ Return ONLY valid JSON:
                               ) : (
                                 <>
                                   <Button
-                                    size="md"
+                                    size="sm"
                                     bg={SOFT_STOP_BUTTON_BG}
                                     color="white"
                                     boxShadow={`0px 4px 0px ${SOFT_STOP_BUTTON_EDGE}`}
@@ -2354,12 +2427,11 @@ Return ONLY valid JSON:
                                       transform: "translateY(2px)",
                                       boxShadow: "none",
                                     }}
-                                    minW="168px"
                                   >
                                     {t("history_speech_stop_mic")}
                                   </Button>
                                   <Button
-                                    size="md"
+                                    size="sm"
                                     variant={isLightTheme ? "solid" : "outline"}
                                     bg={
                                       isLightTheme
@@ -2394,7 +2466,6 @@ Return ONLY valid JSON:
                                           }
                                         : undefined
                                     }
-                                    minW="168px"
                                   >
                                     {t("history_speech_start_over")}
                                   </Button>
@@ -2411,7 +2482,7 @@ Return ONLY valid JSON:
                                   letterSpacing="0.04em"
                                   opacity={0.8}
                                 >
-                                  Listening...
+                                  {t("history_speech_listening")}
                                 </Text>
                               </VStack>
                             )}
@@ -2422,6 +2493,8 @@ Return ONLY valid JSON:
                                 lineHeight="1.8"
                                 opacity={0.9}
                                 fontStyle="italic"
+                                {...targetTextProps}
+                                sx={{ unicodeBidi: "plaintext" }}
                               >
                                 {speechTranscript}
                               </Text>
@@ -2717,11 +2790,7 @@ Return ONLY valid JSON:
                                                     opacity={isLightTheme ? 1 : 0.85}
                                                   >
                                                     {
-                                                      criterion[
-                                                        userLanguage === "es"
-                                                          ? "es"
-                                                          : "en"
-                                                      ]
+                                                      criterion[supportLang] || criterion.en
                                                     }
                                                   </Text>
                                                   <Text
@@ -2849,7 +2918,12 @@ Return ONLY valid JSON:
                           {t("history_review_heading")}
                         </Text> */}
 
-                        <Text fontSize="sm" lineHeight="1.6">
+                        <Text
+                          fontSize="sm"
+                          lineHeight="1.6"
+                          {...supportTextProps}
+                          sx={{ unicodeBidi: "plaintext" }}
+                        >
                           {reviewQuestion.question}
                         </Text>
 
@@ -2887,7 +2961,7 @@ Return ONLY valid JSON:
                                 lang={targetLang}
                                 onKeyPress={handleReviewKeyboardInput}
                                 onClose={() => setShowReviewKeyboard(false)}
-                                userLanguage={userLanguage}
+                                userLanguage={uiLang}
                               />
                             )}
                             {showReviewKeyboardButton && (
@@ -2969,7 +3043,13 @@ Return ONLY valid JSON:
                                     >
                                       {String.fromCharCode(65 + i)}
                                     </Flex>
-                                    <Text fontSize="sm">{opt}</Text>
+                                    <Text
+                                      fontSize="sm"
+                                      {...supportTextProps}
+                                      sx={{ unicodeBidi: "plaintext" }}
+                                    >
+                                      {opt}
+                                    </Text>
                                   </HStack>
                                 </Box>
                               ))}
@@ -3016,7 +3096,7 @@ Return ONLY valid JSON:
                                 lang={targetLang}
                                 onKeyPress={handleReviewKeyboardInput}
                                 onClose={() => setShowReviewKeyboard(false)}
-                                userLanguage={userLanguage}
+                                userLanguage={uiLang}
                               />
                             )}
                             {showReviewKeyboardButton && (
@@ -3211,6 +3291,8 @@ Return ONLY valid JSON:
                                     fontSize="sm"
                                     color="whiteAlpha.900"
                                     lineHeight="1.6"
+                                    {...supportTextProps}
+                                    sx={{ unicodeBidi: "plaintext" }}
                                   >
                                     {explanationText}
                                   </Text>
@@ -3243,7 +3325,12 @@ Return ONLY valid JSON:
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
                       {viewLecture.takeaways.map((tkw, i) => (
-                        <Text key={i} fontSize="sm">
+                        <Text
+                          key={i}
+                          fontSize="sm"
+                          {...supportTextProps}
+                          sx={{ unicodeBidi: "plaintext" }}
+                        >
                           • {tkw}
                         </Text>
                       ))}

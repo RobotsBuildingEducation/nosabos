@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -62,6 +63,8 @@ const LANG_COLORS = {
   pt: { bg: "green.600", label: "PT" },
   fr: { bg: "purple.600", label: "FR" },
   it: { bg: "orange.600", label: "IT" },
+  hi: { bg: "orange.500", label: "HI" },
+  zh: { bg: "red.600", label: "ZH" },
   nl: { bg: "orange.400", label: "NL" },
   nah: { bg: "teal.600", label: "NAH" },
   ru: { bg: "cyan.600", label: "RU" },
@@ -87,6 +90,11 @@ import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  normalizePracticeLanguage,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -102,6 +110,79 @@ const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_BORDER = "var(--app-border)";
 const APP_TEXT_PRIMARY = "var(--app-text-primary)";
 const APP_TEXT_MUTED = "var(--app-text-muted)";
+
+const ARABIC_SUPPORT_COPY = {
+  "No messages": "ما فيش رسائل",
+  "No messages to save.": "ما فيش رسائل تتسجّل.",
+  "Saved chat": "محادثة محفوظة",
+  "Chat saved": "اتحفظت المحادثة",
+  "Chat deleted": "اتحذفت المحادثة",
+  "Sorry, I couldn’t complete that request. Please try again.":
+    "آسف، ما قدرتش أكمّل الطلب ده. جرّب مرة تانية.",
+  "Chat error": "خطأ في المحادثة",
+  "Connection error": "خطأ في الاتصال",
+  "Your chats": "محادثاتك",
+  "No saved chats": "ما فيش محادثات محفوظة",
+  Delete: "حذف",
+  "Morpheme mode": "وضع المورفيمات",
+  "Break down words": "قسّم الكلمات",
+  "New chat": "محادثة جديدة",
+  Help: "مساعدة",
+  Menu: "القائمة",
+  Morphemes: "مورفيمات",
+  "Save chat": "احفظ المحادثة",
+  "What do you want to learn today?": "حابب تتعلم إيه النهارده؟",
+  "Stop voice chat": "أوقف المحادثة الصوتية",
+  "Start voice chat": "ابدأ المحادثة الصوتية",
+  Play: "تشغيل",
+  "Ask about this lesson...": "اسأل عن الدرس ده...",
+  Send: "إرسال",
+  Stop: "إيقاف",
+};
+
+const CHINESE_SUPPORT_COPY = {
+  "No messages": "没有消息",
+  "No messages to save.": "没有可保存的消息。",
+  "Saved chat": "已保存的聊天",
+  "Chat saved": "聊天已保存",
+  "Chat deleted": "聊天已删除",
+  "Sorry, I couldn’t complete that request. Please try again.":
+    "抱歉，我无法完成这个请求。请再试一次。",
+  "Chat error": "聊天错误",
+  "Connection error": "连接错误",
+  "Your chats": "你的聊天",
+  "No saved chats": "没有保存的聊天",
+  Delete: "删除",
+  "Morpheme mode": "语素模式",
+  "Break down words": "拆解词语",
+  "New chat": "新聊天",
+  Help: "帮助",
+  Menu: "菜单",
+  Morphemes: "语素",
+  "Save chat": "保存聊天",
+  "What do you want to learn today?": "今天你想学什么？",
+  "Stop voice chat": "停止语音聊天",
+  "Start voice chat": "开始语音聊天",
+  Play: "播放",
+  "Ask about this lesson...": "询问这个课程...",
+  Send: "发送",
+  Stop: "停止",
+};
+
+function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
+  if (lang === "ar") {
+    if (ar) return ar;
+    return ARABIC_SUPPORT_COPY[en] || en;
+  }
+  if (lang === "ja") return ja || en;
+  if (lang === "fr") return fr || en;
+  if (lang === "it") return it || en;
+  if (lang === "pt") return pt || en;
+  if (lang === "hi") return hi || en;
+  if (lang === "es") return es || en;
+  return en;
+}
 
 /**
  * Small Markdown renderer mapped to Chakra components
@@ -240,8 +321,267 @@ const HelpChatFab = forwardRef(
     const playSound = useSoundSettings((s) => s.playSound);
     const themeMode = useThemeStore((s) => s.themeMode);
     const isLightTheme = themeMode === "light";
+    const uiLang = normalizeSupportLanguage(
+      appLanguage,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
 
-    const ui = translations[appLanguage] || translations.en;
+    const ui = translations[uiLang] || translations.en;
+    const helpUi = useMemo(
+      () => ({
+        noMessagesTitle: supportCopy(
+          uiLang,
+          "No messages",
+          "Sin mensajes",
+          "Nessun messaggio",
+          "Aucun message",
+          "メッセージなし",
+          "Sem mensagens",
+          "कोई संदेश नहीं",
+        ),
+        noMessagesDesc: supportCopy(
+          uiLang,
+          "No messages to save.",
+          "No hay mensajes para guardar.",
+          "Non ci sono messaggi da salvare.",
+          "Aucun message a enregistrer.",
+          "保存するメッセージがありません。",
+          "Nenhuma mensagem para salvar.",
+          "सहेजने के लिए कोई संदेश नहीं है।",
+        ),
+        savedChatTitle: supportCopy(
+          uiLang,
+          "Saved chat",
+          "Chat guardado",
+          "Chat salvata",
+          "Chat enregistre",
+          "チャットを保存しました",
+          "Chat salvo",
+          "सहेजी गई चैट",
+        ),
+        chatSavedTitle: supportCopy(
+          uiLang,
+          "Chat saved",
+          "Chat guardado",
+          "Chat salvata",
+          "Chat enregistre",
+          "チャットを保存しました",
+          "Chat salvo",
+          "चैट सहेज ली गई",
+        ),
+        chatDeletedTitle: supportCopy(
+          uiLang,
+          "Chat deleted",
+          "Chat eliminado",
+          "Chat eliminata",
+          "Chat supprime",
+          "チャットを削除しました",
+          "Chat excluído",
+          "चैट हटा दी गई",
+        ),
+        requestFailed: supportCopy(
+          uiLang,
+          "Sorry, I couldn’t complete that request. Please try again.",
+          "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente.",
+          "Mi dispiace, non sono riuscito a completare la richiesta. Riprova.",
+          "Desole, je n'ai pas pu terminer cette demande. Reessaie.",
+          "すみません、そのリクエストを完了できませんでした。もう一度お試しください。",
+          "Desculpe, não consegui concluir essa solicitação. Tente novamente.",
+          "माफ़ कीजिए, मैं यह अनुरोध पूरा नहीं कर सका। कृपया फिर से कोशिश करें।",
+        ),
+        chatErrorTitle: supportCopy(
+          uiLang,
+          "Chat error",
+          "Error de chat",
+          "Errore chat",
+          "Erreur de chat",
+          "チャットエラー",
+          "Erro no chat",
+          "चैट त्रुटि",
+        ),
+        connectionErrorTitle: supportCopy(
+          uiLang,
+          "Connection error",
+          "Error de conexión",
+          "Errore di connessione",
+          "Erreur de connexion",
+          "接続エラー",
+          "Erro de conexão",
+          "कनेक्शन त्रुटि",
+        ),
+        yourChats: supportCopy(
+          uiLang,
+          "Your chats",
+          "Tus chats",
+          "Le tue chat",
+          "Tes chats",
+          "あなたのチャット",
+          "Seus chats",
+          "आपकी चैट्स",
+        ),
+        noSavedChats: supportCopy(
+          uiLang,
+          "No saved chats",
+          "No hay chats guardados",
+          "Nessuna chat salvata",
+          "Aucun chat enregistre",
+          "保存済みチャットはありません",
+          "Nenhum chat salvo",
+          "कोई सहेजी गई चैट नहीं",
+        ),
+        delete: supportCopy(
+          uiLang,
+          "Delete",
+          "Eliminar",
+          "Elimina",
+          "Supprimer",
+          "削除",
+          "Excluir",
+          "हटाएं",
+        ),
+        morphemeMode: supportCopy(
+          uiLang,
+          "Morpheme mode",
+          "Modo morfemas",
+          "Modalità morfemi",
+          "Mode morphemes",
+          "形態素モード",
+          "Modo morfemas",
+          "मॉर्फीम मोड",
+        ),
+        breakDownWords: supportCopy(
+          uiLang,
+          "Break down words",
+          "Desglosa palabras",
+          "Scomponi le parole",
+          "Decomposer les mots",
+          "単語を分解",
+          "Quebrar palavras",
+          "शब्दों को तोड़कर समझाएं",
+        ),
+        newChat: supportCopy(
+          uiLang,
+          "New chat",
+          "Nuevo chat",
+          "Nuova chat",
+          "Nouveau chat",
+          "新しいチャット",
+          "Novo chat",
+          "नई चैट",
+        ),
+        help: supportCopy(
+          uiLang,
+          "Help",
+          "Ayuda",
+          "Aiuto",
+          "Aide",
+          "ヘルプ",
+          "Ajuda",
+          "मदद",
+        ),
+        menu: supportCopy(
+          uiLang,
+          "Menu",
+          "Menú",
+          "Menu",
+          "Menu",
+          "メニュー",
+          "Menu",
+          "मेनू",
+        ),
+        morphemes: supportCopy(
+          uiLang,
+          "Morphemes",
+          "Morfemas",
+          "Morfemi",
+          "Morphemes",
+          "形態素",
+          "Morfemas",
+          "मॉर्फीम",
+        ),
+        saveChat: supportCopy(
+          uiLang,
+          "Save chat",
+          "Guardar",
+          "Salva chat",
+          "Enregistrer le chat",
+          "チャットを保存",
+          "Salvar chat",
+          "चैट सहेजें",
+        ),
+        emptyPrompt: supportCopy(
+          uiLang,
+          "What do you want to learn today?",
+          "¿Qué quieres aprender hoy?",
+          "Che cosa vuoi imparare oggi?",
+          "Qu'est-ce que tu veux apprendre aujourd'hui ?",
+          "今日は何を学びたいですか？",
+          "O que você quer aprender hoje?",
+          "आज आप क्या सीखना चाहते हैं?",
+        ),
+        stopVoiceChat: supportCopy(
+          uiLang,
+          "Stop voice chat",
+          "Detener chat de voz",
+          "Interrompi chat vocale",
+          "Arreter le chat vocal",
+          "音声チャットを停止",
+          "Encerrar chat por voz",
+          "वॉइस चैट रोकें",
+        ),
+        startVoiceChat: supportCopy(
+          uiLang,
+          "Start voice chat",
+          "Iniciar chat de voz",
+          "Avvia chat vocale",
+          "Demarrer le chat vocal",
+          "音声チャットを開始",
+          "Iniciar chat por voz",
+          "वॉइस चैट शुरू करें",
+        ),
+        play: supportCopy(
+          uiLang,
+          "Play",
+          "Reproducir",
+          "Riproduci",
+          "Lire",
+          "再生",
+          "Reproduzir",
+          "चलाएं",
+        ),
+        askPlaceholder: supportCopy(
+          uiLang,
+          "Ask about this lesson...",
+          "Pregunta sobre esta lección...",
+          "Chiedi qualcosa su questa lezione...",
+          "Pose une question sur cette lecon...",
+          "このレッスンについて質問...",
+          "Pergunte sobre esta lição...",
+          "इस पाठ के बारे में पूछें...",
+        ),
+        send: supportCopy(
+          uiLang,
+          "Send",
+          "Enviar",
+          "Invia",
+          "Envoyer",
+          "送信",
+          "Enviar",
+          "भेजें",
+        ),
+        stop: supportCopy(
+          uiLang,
+          "Stop",
+          "Detener",
+          "Ferma",
+          "Arreter",
+          "停止",
+          "Parar",
+          "रोकें",
+        ),
+      }),
+      [uiLang],
+    );
 
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
@@ -445,6 +785,9 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese (português brasileiro)",
           fr: "French (français)",
           it: "Italian (italiano)",
+          ja: "Japanese (日本語)",
+          ar: "Egyptian Arabic (العربية المصرية)",
+          zh: "Mandarin Chinese (普通话中文)",
           nl: "Dutch (Nederlands)",
           nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
           ru: "Russian (русский)",
@@ -486,11 +829,8 @@ const HelpChatFab = forwardRef(
       if (messages.length === 0) {
         toast({
           status: "warning",
-          title: appLanguage === "es" ? "Sin mensajes" : "No messages",
-          description:
-            appLanguage === "es"
-              ? "No hay mensajes para guardar."
-              : "No messages to save.",
+          title: helpUi.noMessagesTitle,
+          description: helpUi.noMessagesDesc,
         });
         return;
       }
@@ -500,7 +840,7 @@ const HelpChatFab = forwardRef(
         id: crypto.randomUUID?.() || String(Date.now()),
         title:
           ordered.find((m) => m.role === "user")?.text?.slice(0, 50) ||
-          (appLanguage === "es" ? "Chat guardado" : "Saved chat"),
+          helpUi.savedChatTitle,
         messages: ordered,
         savedAt: Date.now(),
         targetLang: progress?.targetLang || "es",
@@ -516,10 +856,10 @@ const HelpChatFab = forwardRef(
 
       toast({
         status: "success",
-        title: appLanguage === "es" ? "Chat guardado" : "Chat saved",
+        title: helpUi.chatSavedTitle,
         duration: 2000,
       });
-    }, [messages, savedChats, appLanguage, progress?.targetLang, toast]);
+    }, [messages, savedChats, helpUi, progress?.targetLang, toast]);
 
     const loadSavedChat = useCallback(
       (chat) => {
@@ -554,11 +894,11 @@ const HelpChatFab = forwardRef(
         }
         toast({
           status: "info",
-          title: appLanguage === "es" ? "Chat eliminado" : "Chat deleted",
+          title: helpUi.chatDeletedTitle,
           duration: 1000,
         });
       },
-      [savedChats, appLanguage, toast],
+      [savedChats, helpUi, toast],
     );
 
     const startNewChat = useCallback(() => {
@@ -587,18 +927,18 @@ const HelpChatFab = forwardRef(
 
       // Resolve support language (what the learner already speaks)
       const supportRaw =
-        ["en", "es", "bilingual"].includes(progress?.supportLang) &&
-        progress?.supportLang
-          ? progress.supportLang
-          : "en";
+        progress?.supportLang === "bilingual"
+          ? "bilingual"
+          : normalizeSupportLanguage(
+              progress?.supportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            );
       const supportLang =
         supportRaw === "bilingual"
-          ? appLanguage === "es"
-            ? "es"
-            : "en"
+          ? normalizeSupportLanguage(appLanguage, DEFAULT_SUPPORT_LANGUAGE)
           : supportRaw;
 
-      const targetLang = progress?.targetLang || "es"; // practice language
+      const targetLang = normalizePracticeLanguage(progress?.targetLang, "es"); // practice language
       const primaryLang = supportLang; // replies must follow the learner's support language
       const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
@@ -610,6 +950,10 @@ const HelpChatFab = forwardRef(
       const strict =
         primaryLang === "es"
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
+          : primaryLang === "zh"
+            ? "请完全使用普通话中文作为支持语言回答，即使用户用其他语言书写。"
+          : primaryLang === "ar"
+            ? "رد بالكامل بالمصري/العربية المصرية كلغة الدعم، حتى لو المستخدم كتب بلغة تانية."
           : primaryLang === "en"
             ? "Respond entirely in English (the support language), even if the user writes in another language."
             : `Respond entirely in ${nameForLanguage(
@@ -623,6 +967,34 @@ const HelpChatFab = forwardRef(
             : lvl === "intermediate"
               ? "Sé conciso y natural."
               : "Sé muy breve y con tono nativo.";
+        }
+        if (primaryLang === "pt") {
+          return lvl === "beginner"
+            ? "Use frases curtas e simples."
+            : lvl === "intermediate"
+              ? "Seja conciso e natural."
+              : "Seja bem breve e com tom nativo.";
+        }
+        if (primaryLang === "ar") {
+          return lvl === "beginner"
+            ? "استخدم جمل قصيرة وبسيطة."
+            : lvl === "intermediate"
+              ? "خليك مختصر وطبيعي."
+              : "خليك مختصر جدًا وطبيعي.";
+        }
+        if (primaryLang === "hi") {
+          return lvl === "beginner"
+            ? "छोटे और सरल वाक्य प्रयोग करें।"
+            : lvl === "intermediate"
+              ? "संक्षिप्त और स्वाभाविक रहें।"
+              : "बहुत संक्षिप्त और स्वाभाविक रहें।";
+        }
+        if (primaryLang === "zh") {
+          return lvl === "beginner"
+            ? "使用简短、简单的句子。"
+            : lvl === "intermediate"
+              ? "保持简洁自然。"
+              : "非常简洁，并使用自然语气。";
         }
         if (primaryLang === "en") {
           return lvl === "beginner"
@@ -643,13 +1015,46 @@ const HelpChatFab = forwardRef(
         showTranslations && targetLang !== primaryLang ? targetLang : null;
 
       const glossHuman = glossLang ? nameForLanguage(glossLang) : "";
-      const supportNote = `Explica y guía en ${nameForLanguage(
-        primaryLang,
-      )}. Incluye ejemplos o frases en ${nameForLanguage(
-        targetLang,
-      )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
-        primaryLang,
-      )}.`;
+      const supportNote =
+        primaryLang === "pt"
+          ? `Explique e oriente em ${nameForLanguage(
+              primaryLang,
+            )}. Inclua exemplos ou frases em ${nameForLanguage(
+              targetLang,
+            )} apenas quando ajudarem, mas mantenha a explicação em ${nameForLanguage(
+              primaryLang,
+            )}.`
+          : primaryLang === "ar"
+            ? `اشرح ووجّه بـ ${nameForLanguage(
+                primaryLang,
+              )}. ضيف أمثلة أو جمل بـ ${nameForLanguage(
+                targetLang,
+              )} بس لما تكون مفيدة، وخلي الشرح الأساسي بـ ${nameForLanguage(
+                primaryLang,
+              )}.`
+          : primaryLang === "hi"
+            ? `${nameForLanguage(
+                primaryLang,
+              )} में समझाएँ और मार्गदर्शन दें। ${nameForLanguage(
+                targetLang,
+              )} के उदाहरण या वाक्य केवल तभी शामिल करें जब वे मदद करें, लेकिन मुख्य व्याख्या ${nameForLanguage(
+                primaryLang,
+              )} में रखें।`
+          : primaryLang === "zh"
+            ? `用${nameForLanguage(
+                primaryLang,
+              )}解释和指导。只有在有帮助时才加入${nameForLanguage(
+                targetLang,
+              )}的例句或短语，但主要解释必须保持${nameForLanguage(
+                primaryLang,
+              )}。`
+          : `Explica y guía en ${nameForLanguage(
+              primaryLang,
+            )}. Incluye ejemplos o frases en ${nameForLanguage(
+              targetLang,
+            )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
+              primaryLang,
+            )}.`;
 
       // Morpheme mode instructions - placed at START for priority
       const morphemePrefix = morphemeMode
@@ -675,8 +1080,20 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         : "";
 
       const glossLine = glossLang
-        ? `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
-        : "No añadas traducciones adicionales.";
+        ? primaryLang === "pt"
+          ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
+          : primaryLang === "ar"
+            ? `بعد الشرح، ضيف سطر واحد بس كمثال أو ترجمة بـ ${glossHuman}. ابدأ السطر الجديد بـ "// ".`
+          : primaryLang === "hi"
+            ? `व्याख्या के बाद ${glossHuman} में उदाहरण या अनुवाद की केवल एक पंक्ति जोड़ें। उसे नई पंक्ति में "// " से शुरू करें।`
+          : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
+        : primaryLang === "pt"
+          ? "Não adicione traduções extras."
+          : primaryLang === "ar"
+            ? "ما تضيفش ترجمات زيادة."
+          : primaryLang === "hi"
+            ? "अतिरिक्त अनुवाद न जोड़ें।"
+          : "No añadas traducciones adicionales.";
 
       return [
         morphemePrefix,
@@ -857,16 +1274,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           console.error("HelpChat streaming error:", e);
           patchLastAssistant((m) => ({
             ...m,
-            text:
-              m.text ||
-              (appLanguage === "es"
-                ? "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente."
-                : "Sorry, I couldn’t complete that request. Please try again."),
+            text: m.text || helpUi.requestFailed,
             done: true,
           }));
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error de chat" : "Chat error",
+            title: helpUi.chatErrorTitle,
             description: String(e?.message || e),
           });
         } finally {
@@ -882,6 +1295,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         patchLastAssistant,
         pushMessage,
         morphemeMode,
+        helpUi,
         progress?.targetLang,
         sending,
         input,
@@ -981,8 +1395,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
     const buildRealtimeInstructions = useCallback(() => {
       const lvl = progress?.level || "beginner";
-      const targetLang = progress?.targetLang || "es";
-      const supportLang = progress?.supportLang || "en";
+      const targetLang = normalizePracticeLanguage(progress?.targetLang, "es");
+      const supportLang = normalizeSupportLanguage(
+        progress?.supportLang,
+        DEFAULT_SUPPORT_LANGUAGE,
+      );
       const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
 
@@ -993,6 +1410,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           pt: "Portuguese",
           fr: "French",
           it: "Italian",
+          ja: "Japanese",
+          ar: "Egyptian Arabic",
+          zh: "Mandarin Chinese",
           nl: "Dutch",
           nah: "Eastern Huasteca Nahuatl",
           ru: "Russian",
@@ -1353,8 +1773,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         setRealtimeStatus("disconnected");
         toast({
           status: "error",
-          title:
-            appLanguage === "es" ? "Error de conexión" : "Connection error",
+          title: helpUi.connectionErrorTitle,
           description: e?.message || String(e),
         });
       }
@@ -1365,6 +1784,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       clearRealtimeAutoStopTimer,
       handleRealtimeEvent,
       scheduleRealtimeAutoStop,
+      helpUi,
       toast,
     ]);
 
@@ -1554,14 +1974,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         {/* Saved Chats */}
         <Box flex="1" overflowY="auto">
           <Text fontWeight="bold" mb={2} fontSize="xs" color="gray.500">
-            {appLanguage === "es" ? "Tus chats" : "Your chats"}
+            {helpUi.yourChats}
           </Text>
           <VStack spacing={1} align="stretch">
             {savedChats.length === 0 ? (
               <Text fontSize="xs" color="gray.600" textAlign="center" py={4}>
-                {appLanguage === "es"
-                  ? "No hay chats guardados"
-                  : "No saved chats"}
+                {helpUi.noSavedChats}
               </Text>
             ) : (
               savedChats.map((chat) => {
@@ -1599,9 +2017,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         </Text>
                       </HStack>
                       <IconButton
-                        aria-label={
-                          appLanguage === "es" ? "Eliminar" : "Delete"
-                        }
+                        aria-label={helpUi.delete}
                         icon={<FaTrash size={10} />}
                         size="xs"
                         variant="ghost"
@@ -1635,12 +2051,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             <FormLabel htmlFor="morpheme-mode-sidebar" mb={0} flex="1">
               <VStack align="start" spacing={0}>
                 <Text fontWeight="medium" fontSize="sm">
-                  {appLanguage === "es" ? "Modo morfemas" : "Morpheme mode"}
+                  {helpUi.morphemeMode}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
-                  {appLanguage === "es"
-                    ? "Desglosa palabras"
-                    : "Break down words"}
+                  {helpUi.breakDownWords}
                 </Text>
               </VStack>
             </FormLabel>
@@ -1673,7 +2087,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           marginBottom={6}
           padding={8}
         >
-          {appLanguage === "es" ? "Nuevo chat" : "New chat"}
+          {helpUi.newChat}
         </Button>
       </VStack>
     );
@@ -1682,14 +2096,25 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       <>
         {/* Floating button */}
         {showFloatingTrigger && (
-          <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
+          <Tooltip label={helpUi.help}>
             <IconButton
-              aria-label="Open help chat"
+              aria-label={helpUi.help}
               icon={<MdOutlineSupportAgent size={20} />}
               rounded="xl"
               bg="white"
               color="blue"
               boxShadow="0 4px 0 blue"
+              _hover={{
+                bg: "rgba(255, 255, 255, 0.92)",
+                color: "blue.500",
+                boxShadow: "0 4px 0 rgba(255, 255, 255, 0.36)",
+              }}
+              _active={{
+                bg: "rgba(255, 255, 255, 0.78)",
+                color: "blue.600",
+                boxShadow: "none",
+                transform: "translateY(4px)",
+              }}
               size="lg"
               position="fixed"
               bottom={{ base: "4", md: "4" }}
@@ -1762,7 +2187,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     {/* Mobile menu button */}
                     {!isDesktop && (
                       <IconButton
-                        aria-label={appLanguage === "es" ? "Menú" : "Menu"}
+                        aria-label={helpUi.menu}
                         icon={<FaBars />}
                         variant="ghost"
                         colorScheme="gray"
@@ -1775,7 +2200,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     )}
                     {morphemeMode && (
                       <Badge colorScheme="purple" fontSize="xs">
-                        {appLanguage === "es" ? "Morfemas" : "Morphemes"}
+                        {helpUi.morphemes}
                       </Badge>
                     )}
                   </HStack>
@@ -1791,7 +2216,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       size="sm"
                       isDisabled={messages.length === 0}
                     >
-                      {appLanguage === "es" ? "Guardar" : "Save chat"}
+                      {helpUi.saveChat}
                     </Button>
                     <DrawerCloseButton
                       position="static"
@@ -1819,9 +2244,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         fontWeight="medium"
                         textAlign="center"
                       >
-                        {appLanguage === "es"
-                          ? "¿Qué quieres aprender hoy?"
-                          : "What do you want to learn today?"}
+                        {helpUi.emptyPrompt}
                       </Text>
                       {/* Centered input bar */}
                       <Box w="100%" maxW="600px" mx="auto" px={4}>
@@ -1836,12 +2259,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             <IconButton
                               aria-label={
                                 realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Detener chat de voz"
-                                    : "Stop voice chat"
-                                  : appLanguage === "es"
-                                    ? "Iniciar chat de voz"
-                                    : "Start voice chat"
+                                  ? helpUi.stopVoiceChat
+                                  : helpUi.startVoiceChat
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -1898,6 +2317,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
+                              placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -1922,6 +2342,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
+                                aria-label={helpUi.stop}
                                 onClick={() => {
                                   playSound(clickSound);
                                   handleStop();
@@ -1933,6 +2354,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
+                                aria-label={helpUi.send}
                                 onClick={() => {
                                   playSound(submitActionSound);
                                   handleSend();
@@ -2008,11 +2430,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               <Box maxW="100%" w="100%">
                                 <HStack align="flex-start" spacing={3}>
                                   <IconButton
-                                    aria-label={
-                                      appLanguage === "es"
-                                        ? "Reproducir"
-                                        : "Play"
-                                    }
+                                    aria-label={helpUi.play}
                                     icon={
                                       replayLoadingId === m.id ? (
                                         <VoiceOrb
@@ -2089,12 +2507,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             <IconButton
                               aria-label={
                                 realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Detener chat de voz"
-                                    : "Stop voice chat"
-                                  : appLanguage === "es"
-                                    ? "Iniciar chat de voz"
-                                    : "Start voice chat"
+                                  ? helpUi.stopVoiceChat
+                                  : helpUi.startVoiceChat
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -2158,6 +2572,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
+                              placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -2182,6 +2597,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
+                                aria-label={helpUi.stop}
                                 onClick={() => {
                                   playSound(clickSound);
                                   handleStop();
@@ -2193,6 +2609,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
+                                aria-label={helpUi.send}
                                 onClick={() => {
                                   playSound(submitActionSound);
                                   handleSend();
@@ -2245,7 +2662,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 py={3}
               >
                 <Text fontSize="sm">
-                  {appLanguage === "es" ? "Menú" : "Menu"}
+                  {helpUi.menu}
                 </Text>
               </DrawerHeader>
               <DrawerBody p={3}>{SidebarContent}</DrawerBody>

@@ -58,6 +58,11 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
 import { useThemeStore } from "../useThemeStore";
+import {
+  DEFAULT_SUPPORT_LANGUAGE,
+  getLanguageDirection,
+  normalizeSupportLanguage,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -132,7 +137,7 @@ const PAPER_PAGE_SX = {
     opacity: 0.4,
     pointerEvents: "none",
   },
-  "& > *": {
+  "& > :not([data-proficiency-bottom-dock='true'])": {
     position: "relative",
     zIndex: 1,
   },
@@ -151,19 +156,48 @@ const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 const CEFR_LEVEL_INFO = {
   "Pre-A1": {
-    name: { en: "Ultimate Beginner", es: "Principiante Total" },
+    name: {
+      en: "Ultimate Beginner",
+      es: "Principiante Total",
+      pt: "Iniciante absoluto",
+      it: "Principiante assoluto",
+      fr: "Grand debutant",
+      ja: "完全初心者",
+    },
     color: "#8B5CF6",
   },
-  A1: { name: { en: "Beginner", es: "Principiante" }, color: "#3B82F6" },
-  A2: { name: { en: "Elementary", es: "Elemental" }, color: "#8B5CF6" },
-  B1: { name: { en: "Intermediate", es: "Intermedio" }, color: "#A855F7" },
+  A1: { name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者" }, color: "#3B82F6" },
+  A2: { name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級" }, color: "#8B5CF6" },
+  B1: { name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級" }, color: "#A855F7" },
   B2: {
-    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    name: {
+      en: "Upper Intermediate",
+      es: "Intermedio Alto",
+      pt: "Intermediário avançado",
+      it: "Intermedio alto",
+      fr: "Intermediaire avance",
+      ja: "中上級",
+    },
     color: "#F97316",
   },
-  C1: { name: { en: "Advanced", es: "Avanzado" }, color: "#EF4444" },
-  C2: { name: { en: "Mastery", es: "Maestría" }, color: "#EC4899" },
+  C1: { name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級" }, color: "#EF4444" },
+  C2: { name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
 };
+
+CEFR_LEVEL_INFO["Pre-A1"].name.ar = "مبتدئ تمامًا";
+CEFR_LEVEL_INFO.A1.name.ar = "مبتدئ";
+CEFR_LEVEL_INFO.A2.name.ar = "أساسي";
+CEFR_LEVEL_INFO.B1.name.ar = "متوسط";
+CEFR_LEVEL_INFO.B2.name.ar = "متوسط أعلى";
+CEFR_LEVEL_INFO.C1.name.ar = "متقدم";
+CEFR_LEVEL_INFO.C2.name.ar = "إتقان";
+CEFR_LEVEL_INFO["Pre-A1"].name.zh = "零基础入门";
+CEFR_LEVEL_INFO.A1.name.zh = "初学者";
+CEFR_LEVEL_INFO.A2.name.zh = "初级";
+CEFR_LEVEL_INFO.B1.name.zh = "中级";
+CEFR_LEVEL_INFO.B2.name.zh = "中高级";
+CEFR_LEVEL_INFO.C1.name.zh = "高级";
+CEFR_LEVEL_INFO.C2.name.zh = "精通";
 
 const CEFR_LEVEL_OFFERINGS = {
   "Pre-A1": {
@@ -177,6 +211,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Ejercicios muy cortos con mucha repetición.",
       "Enfoque en confianza y comprensión inicial.",
     ],
+    pt: [
+      "Lições bem guiadas com palavras e frases básicas.",
+      "Exercícios muito curtos com bastante repetição.",
+      "Foco na confiança e na compreensão inicial.",
+    ],
+    ja: [
+      "基本単語とフレーズを使う手厚いガイド付きレッスン。",
+      "反復の多い、とても短い問題。",
+      "自信と理解の土台に集中。",
+    ],
   },
   A1: {
     en: [
@@ -188,6 +232,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Módulos iniciales de saludos, información personal y rutina.",
       "Prácticas simples de conversación con apoyo frecuente.",
       "Vocabulario esencial y estructuras básicas.",
+    ],
+    pt: [
+      "Módulos iniciais de cumprimentos, informações pessoais e rotina.",
+      "Práticas simples de conversa com apoio frequente.",
+      "Vocabulário essencial e estruturas básicas.",
+    ],
+    ja: [
+      "あいさつ、個人情報、日常の基礎を扱う初心者モジュール。",
+      "頻繁なサポート付きの簡単な会話練習。",
+      "中心語彙と文型。",
     ],
   },
   A2: {
@@ -201,6 +255,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Respuestas más largas y mejor manejo de tiempos verbales.",
       "Vocabulario práctico ampliado para interacciones reales.",
     ],
+    pt: [
+      "Lições de situações cotidianas (compras, planos, rotina).",
+      "Respostas mais longas e melhor controle dos tempos verbais.",
+      "Vocabulário prático ampliado para interações reais.",
+    ],
+    ja: [
+      "買い物、予定、日課などの日常場面レッスン。",
+      "より長い回答と時制のコントロール。",
+      "実際のやり取りに役立つ実用語彙の拡張。",
+    ],
   },
   B1: {
     en: [
@@ -212,6 +276,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Conversaciones intermedias con opiniones y explicaciones.",
       "Práctica narrando eventos pasados/futuros con detalle.",
       "Gramática más matizada y mejor uso de conectores.",
+    ],
+    pt: [
+      "Conversas intermediárias com opiniões e explicações.",
+      "Prática ao narrar eventos passados e futuros com detalhes.",
+      "Gramática mais refinada e melhor uso de conectores.",
+    ],
+    ja: [
+      "意見や説明を含む中級の話し合い。",
+      "過去や未来の出来事を詳しく語る練習。",
+      "より細かな文法と接続表現の使用。",
     ],
   },
   B2: {
@@ -225,6 +299,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Contextos complejos de escucha/lectura y temas abstractos.",
       "Mayor enfoque en fluidez natural y control de estilo.",
     ],
+    pt: [
+      "Produção oral de nível intermediário avançado com argumentação.",
+      "Contextos complexos de escuta/leitura e temas abstratos.",
+      "Maior foco em fluência natural e controle de estilo.",
+    ],
+    ja: [
+      "論証と正確さを伴う中上級のスピーキング。",
+      "複雑な聞き取り/読解の文脈と抽象的なテーマ。",
+      "自然な流暢さと文体コントロールに重点。",
+    ],
   },
   C1: {
     en: [
@@ -236,6 +320,16 @@ const CEFR_LEVEL_OFFERINGS = {
       "Escenarios avanzados que requieren precisión y flexibilidad.",
       "Uso idiomático y profesional del idioma.",
       "Tareas de alto nivel sobre tono, matiz y persuasión.",
+    ],
+    pt: [
+      "Cenários avançados que exigem precisão e flexibilidade.",
+      "Uso idiomático e profissional do idioma.",
+      "Tarefas de alto nível sobre tom, nuance e persuasão.",
+    ],
+    ja: [
+      "正確さと柔軟さが必要な上級シナリオ。",
+      "慣用的・専門的な言語使用。",
+      "トーン、ニュアンス、説得に関する高度なタスク。",
     ],
   },
   C2: {
@@ -249,17 +343,111 @@ const CEFR_LEVEL_OFFERINGS = {
       "Velocidad, complejidad y adaptabilidad casi nativas.",
       "Enfoque en refinamiento, registro y amplitud expresiva.",
     ],
+    pt: [
+      "Tarefas de domínio com controle de nuances complexas.",
+      "Velocidade, complexidade e adaptabilidade quase nativas.",
+      "Foco em refinamento, registro e amplitude expressiva.",
+    ],
+    ja: [
+      "微妙な意味を制御する熟達レベルのタスク。",
+      "ネイティブに近い速度、複雑さ、適応力。",
+      "洗練、レジスター、表現の幅に集中。",
+    ],
   },
 };
 
-const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
-  { key: "grammar", en: "Grammar", es: "Gramática" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario" },
-  { key: "fluency", en: "Fluency", es: "Fluidez" },
-  { key: "confidence", en: "Confidence", es: "Confianza" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+CEFR_LEVEL_OFFERINGS["Pre-A1"].ar = [
+  "دروس موجهة جدًا بكلمات وعبارات أساسية.",
+  "تدريبات قصيرة جدًا مع تكرار كثير.",
+  "التركيز على الثقة وبداية الفهم.",
 ];
+CEFR_LEVEL_OFFERINGS.A1.ar = [
+  "وحدات للمبتدئين عن التحية والبيانات الشخصية والأساسيات اليومية.",
+  "تدريبات محادثة بسيطة مع دعم مستمر.",
+  "مفردات أساسية وقوالب جمل مهمة.",
+];
+CEFR_LEVEL_OFFERINGS.A2.ar = [
+  "مواقف يومية قصيرة عن التسوق والوقت والعيلة والأماكن.",
+  "حوارات أبسط لكن بأفكار أكتر من A1.",
+  "بداية استخدام اللغة بشكل عملي أكتر.",
+];
+CEFR_LEVEL_OFFERINGS.B1.ar = [
+  "محادثات متوسطة عن الرأي والتجارب والروتين.",
+  "أسئلة مفتوحة وردود أطول شوية.",
+  "التركيز على الوضوح وربط الأفكار.",
+];
+CEFR_LEVEL_OFFERINGS.B2.ar = [
+  "نقاشات أعمق عن مواقف واقعية وأفكار مركبة.",
+  "تدريب على الشرح والدفاع عن الرأي.",
+  "مرونة أكبر في الكلام وسرعة الاستجابة.",
+];
+CEFR_LEVEL_OFFERINGS.C1.ar = [
+  "استخدام متقدم للغة في ردود أطول وأكثر دقة.",
+  "التعامل مع أفكار مجردة وتفاصيل دقيقة.",
+  "التركيز على النبرة والمعنى والاختيار المناسب للكلمات.",
+];
+CEFR_LEVEL_OFFERINGS.C2.ar = [
+  "أعلى مستوى من الدقة والطلاقة والمرونة.",
+  "القدرة على التعامل مع موضوعات معقدة جدًا بسهولة.",
+  "لغة قريبة جدًا من مستوى المتحدث الأصلي.",
+];
+CEFR_LEVEL_OFFERINGS["Pre-A1"].zh = [
+  "用基础单词和短语进行高度引导式课程。",
+  "非常短的提示，并配有大量重复。",
+  "专注建立信心和理解基础。",
+];
+CEFR_LEVEL_OFFERINGS.A1.zh = [
+  "适合问候、个人信息和日常基础的初学者模块。",
+  "简单句型和常见生存表达。",
+  "建立早期口语信心。",
+];
+CEFR_LEVEL_OFFERINGS.A2.zh = [
+  "购物、时间、家庭和地点等简短日常情境。",
+  "比 A1 更丰富但仍然简单的对话。",
+  "开始更实用地使用语言。",
+];
+CEFR_LEVEL_OFFERINGS.B1.zh = [
+  "关于观点、经历和日常安排的中级会话。",
+  "开放式问题和稍长回答。",
+  "重点是清晰表达和连接想法。",
+];
+CEFR_LEVEL_OFFERINGS.B2.zh = [
+  "围绕真实场景和复杂观点展开更深入讨论。",
+  "练习解释并为观点辩护。",
+  "提升语言灵活度和反应速度。",
+];
+CEFR_LEVEL_OFFERINGS.C1.zh = [
+  "在较长回答中进行更高级、更精确的表达。",
+  "处理抽象观点和细微细节。",
+  "关注语气、含义和恰当用词。",
+];
+CEFR_LEVEL_OFFERINGS.C2.zh = [
+  "最高水平的准确度、流利度和灵活性。",
+  "轻松处理非常复杂的话题。",
+  "语言接近母语者水平。",
+];
+
+const ASSESSMENT_CRITERIA = [
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", zh: "发音" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法", zh: "语法" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", ja: "語彙", zh: "词汇" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", zh: "理解力" },
+];
+
+const ASSESSMENT_CRITERIA_AR = {
+  pronunciation: "النطق",
+  grammar: "القواعد",
+  vocabulary: "المفردات",
+  fluency: "الطلاقة",
+  confidence: "الثقة",
+  comprehension: "الفهم",
+};
+
+ASSESSMENT_CRITERIA.forEach((criterion) => {
+  criterion.ar = ASSESSMENT_CRITERIA_AR[criterion.key] || criterion.en;
+});
 
 function scoreColor(score) {
   if (score >= 8) return "green";
@@ -268,15 +456,24 @@ function scoreColor(score) {
   return "red";
 }
 
-function uiStateLabel(uiState, isEs) {
-  if (uiState === "speaking") return isEs ? "Hablando" : "Speaking";
-  if (uiState === "listening") return isEs ? "Escuchando" : "Listening";
-  if (uiState === "thinking") return isEs ? "Pensando" : "Thinking";
+function uiStateLabel(uiState, ui) {
+  if (uiState === "speaking") return ui.proficiency_speaking;
+  if (uiState === "listening") return ui.proficiency_listening;
+  if (uiState === "thinking") return ui.proficiency_thinking;
   return "";
 }
 
 /* ---- helpers ---- */
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
+
+function getLanguageTextProps(lang, { align = "start" } = {}) {
+  const dir = getLanguageDirection(lang, "ltr");
+  return {
+    dir,
+    lang,
+    textAlign: align === "center" ? "center" : dir === "rtl" ? "right" : "left",
+  };
+}
 
 function strongNpub(user) {
   return (
@@ -525,10 +722,11 @@ function summarizeSpeechEvidence(turns = []) {
 }
 
 /* ---- Bubble components ---- */
-function UserBubble({ label, text }) {
+function UserBubble({ label, text, textLang = "en" }) {
   if (!text) return null;
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getLanguageTextProps(textLang);
   return (
     <Box
       bg={isLightTheme ? "rgba(108, 182, 191, 0.16)" : "cyan.800"}
@@ -553,7 +751,12 @@ function UserBubble({ label, text }) {
       <Text
         fontSize="sm"
         color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-        sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+        {...textProps}
+        sx={{
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          unicodeBidi: "plaintext",
+        }}
       >
         {text}
       </Text>
@@ -564,6 +767,7 @@ function UserBubble({ label, text }) {
 function AssistantBubble({
   label,
   text,
+  textLang = "en",
   containerRef,
   primaryTextRef,
   contentOpacity = 1,
@@ -572,6 +776,7 @@ function AssistantBubble({
   if (!text) return null;
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const textProps = getLanguageTextProps(textLang);
   return (
     <Box
       ref={containerRef}
@@ -605,7 +810,12 @@ function AssistantBubble({
           ref={primaryTextRef}
           fontSize="sm"
           color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-          sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}
+          {...textProps}
+          sx={{
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            unicodeBidi: "plaintext",
+          }}
         >
           {text}
         </Text>
@@ -697,12 +907,18 @@ export default function ProficiencyTest() {
     "es";
   const targetLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const targetLanguageCode = (targetLangTag || "es-MX").split("-")[0];
-  const supportLang = user?.progress?.supportLang || "en";
+  const storedSupportLang =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("appLanguage")
+      : "";
+  const supportLang = normalizeSupportLanguage(
+    user?.progress?.supportLang || storedSupportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
   const voicePersona = user?.progress?.voicePersona || "";
   const pauseMs = user?.progress?.pauseMs || 800;
 
-  const isEs = supportLang === "es";
-  const ui = translations[isEs ? "es" : "en"];
+  const ui = translations[supportLang] || translations.en;
 
   // Realtime refs
   const audioRef = useRef(null);
@@ -913,6 +1129,7 @@ export default function ProficiencyTest() {
     const langName =
       {
         es: "Spanish",
+        ar: "Egyptian Arabic",
         pt: "Portuguese",
         fr: "French",
         it: "Italian",
@@ -931,6 +1148,7 @@ export default function ProficiencyTest() {
     const strict =
       {
         es: "Responde ÚNICAMENTE en español.",
+        ar: "أجب فقط بالعربية المصرية.",
         pt: "Responda APENAS em português brasileiro.",
         fr: "Réponds UNIQUEMENT en français.",
         it: "Rispondi SOLO in italiano.",
@@ -1329,23 +1547,30 @@ export default function ProficiencyTest() {
       speechTurnsRef.current || [],
     );
 
-    const langName =
-      {
-        es: "Spanish",
-        pt: "Portuguese",
-        fr: "French",
-        it: "Italian",
-        nl: "Dutch",
-        ja: "Japanese",
-        ru: "Russian",
-        de: "German",
-        el: "Greek",
-        pl: "Polish",
-        ga: "Irish",
-        nah: "Nahuatl",
-        yua: "Yucatec Maya",
-        en: "English",
-      }[targetLang] || "the target language";
+    const LANG_MAP = {
+      es: "Spanish", ar: "Egyptian Arabic", zh: "Mandarin Chinese", pt: "Portuguese", fr: "French", it: "Italian",
+      nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
+      el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
+      yua: "Yucatec Maya", en: "English",
+    };
+    const langName = LANG_MAP[targetLang] || "the target language";
+    const supportName = LANG_MAP[supportLang] || "English";
+
+    const insufficientAudioMsg = {
+      es: "Evidencia de audio insuficiente.",
+      ar: "أدلة الصوت غير كفاية.",
+      zh: "音频证据不足。",
+      it: "Prove audio insufficienti.",
+      pt: "Evidência de áudio insuficiente.",
+      fr: "Preuves audio insuffisantes.",
+      de: "Unzureichende Audiobeweise.",
+      nl: "Onvoldoende audiobewijs.",
+      ja: "音声証拠が不十分です。",
+      ru: "Недостаточно аудиодоказательств.",
+      el: "Ανεπαρκή ηχητικά στοιχεία.",
+      pl: "Niewystarczające dowody audio.",
+      ga: "Fianaise fuaime neamhleor.",
+    }[supportLang] || "Insufficient audio evidence.";
 
     const prompt = `You are an EXTREMELY STRICT CEFR language proficiency assessor for ${langName}. Your job is to accurately place learners — most test-takers are beginners and should score low.
 
@@ -1373,7 +1598,7 @@ CRITICAL ANTI-INFLATION RULES:
 - Do NOT inflate scores to be nice. Accurate placement helps the learner.
 - Grammar/vocabulary/comprehension should be scored mainly from transcript content.
 - Pronunciation/fluency/confidence MUST use AUDIO EVIDENCE whenever available.
-- If hasAudioEvidence is false, set pronunciation note exactly to "Insufficient audio evidence." and keep pronunciation score conservative (1-2).
+- If hasAudioEvidence is false, set pronunciation note exactly to "${insufficientAudioMsg}" and keep pronunciation score conservative (1-2).
 
 LEVEL PLACEMENT GUIDE:
 - Pre-A1: Cannot communicate in ${langName}. Wrong language, gibberish, or only isolated words.
@@ -1383,8 +1608,10 @@ LEVEL PLACEMENT GUIDE:
 - B2: Can argue, discuss abstract topics, self-correct. Varied grammar and vocabulary.
 - C1/C2: Near-native precision, idioms, register control, complex argumentation.
 
+LANGUAGE REQUIREMENT: Write the "summary" and every criterion "note" in ${supportName}, not English.
+
 Return ONLY valid JSON:
-{"level":"Pre-A1","summary":"2-3 sentence assessment.","scores":{"pronunciation":{"score":1,"note":"reason"},"grammar":{"score":1,"note":"reason"},"vocabulary":{"score":1,"note":"reason"},"fluency":{"score":1,"note":"reason"},"confidence":{"score":1,"note":"reason"},"comprehension":{"score":1,"note":"reason"}}}`;
+{"level":"Pre-A1","summary":"[2-3 sentence assessment in ${supportName}]","scores":{"pronunciation":{"score":1,"note":"[reason in ${supportName}]"},"grammar":{"score":1,"note":"[reason in ${supportName}]"},"vocabulary":{"score":1,"note":"[reason in ${supportName}]"},"fluency":{"score":1,"note":"[reason in ${supportName}]"},"confidence":{"score":1,"note":"[reason in ${supportName}]"},"comprehension":{"score":1,"note":"[reason in ${supportName}]"}}}`;
 
     try {
       const resp = await gradingModel.generateContent({
@@ -1456,21 +1683,14 @@ Return ONLY valid JSON:
           CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1",
         );
         setAssessmentSummary(
-          parsed?.summary ||
-            (isEs
-              ? "Evaluación completada. Revisa tus resultados abajo."
-              : "Assessment complete. Review your results below."),
+          parsed?.summary || ui.proficiency_test_assess_fallback,
         );
       }
     } catch (e) {
       console.error("Assessment failed:", e);
       setAssessmentError(true);
       setAssessedLevel("Pre-A1");
-      setAssessmentSummary(
-        isEs
-          ? "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad."
-          : "Assessment error. Conservatively placing you at Pre-A1/A0.",
-      );
+      setAssessmentSummary(ui.proficiency_test_assess_error);
     }
 
     setIsEvaluating(false);
@@ -1909,6 +2129,12 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Single words, fillers, or very short responses. Frequent comprehension breakdowns.",
       es: "Palabras sueltas, muletillas o respuestas muy cortas. Fallos frecuentes de comprensión.",
+      pt: "Palavras soltas, muletas ou respostas muito curtas. Falhas frequentes de compreensão.",
+      it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
+      fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
+      ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
+      hi: "अलग-अलग शब्द, भराव शब्द या बहुत छोटे उत्तर। समझ बार-बार टूटती है।",
+      zh: "只有单词、填充词或很短的回答。理解经常中断。",
     },
     {
       level: "A1",
@@ -1916,6 +2142,12 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can handle greetings and personal basics with simple memorized patterns.",
       es: "Puede manejar saludos y datos personales con patrones simples memorizados.",
+      pt: "Consegue lidar com cumprimentos e informações pessoais básicas com padrões simples memorizados.",
+      it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
+      fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
+      ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
+      hi: "सरल, याद किए हुए ढाँचों से अभिवादन और बुनियादी निजी जानकारी संभालने में सक्षम है।",
+      zh: "能用简单记忆句型处理问候和基本个人信息。",
     },
     {
       level: "A2",
@@ -1923,6 +2155,12 @@ Return ONLY valid JSON:
       badgeColor: "purple",
       en: "Can discuss routine topics and answer straightforward questions with limited detail.",
       es: "Puede hablar de temas rutinarios y responder preguntas directas con poco detalle.",
+      pt: "Consegue falar sobre temas rotineiros e responder perguntas diretas com poucos detalhes.",
+      it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
+      fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
+      ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
+      hi: "रोज़मर्रा के विषयों पर बात करने और सीधे सवालों का सीमित विवरण के साथ जवाब देने में सक्षम है।",
+      zh: "能讨论日常话题，并用有限细节回答直接问题。",
     },
     {
       level: "B1",
@@ -1930,6 +2168,12 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can explain opinions, narrate events, and maintain short conversations with some errors.",
       es: "Puede explicar opiniones, narrar eventos y mantener conversaciones cortas con algunos errores.",
+      pt: "Consegue explicar opiniões, narrar acontecimentos e manter conversas curtas com alguns erros.",
+      it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
+      fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
+      ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
+      hi: "राय समझाने, घटनाएँ बताने और कुछ त्रुटियों के साथ छोटी बातचीत बनाए रखने में सक्षम है।",
+      zh: "能表达观点、叙述事件，并在有些错误的情况下维持短对话。",
     },
     {
       level: "B2",
@@ -1937,6 +2181,12 @@ Return ONLY valid JSON:
       badgeColor: "blue",
       en: "Can communicate clearly on familiar and abstract topics with good control and fluency.",
       es: "Puede comunicarse claramente sobre temas familiares y abstractos con buen control y fluidez.",
+      pt: "Consegue se comunicar com clareza sobre temas familiares e abstratos, com bom controle e fluência.",
+      it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
+      fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
+      ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
+      hi: "परिचित और अमूर्त विषयों पर अच्छे नियंत्रण और प्रवाह के साथ स्पष्ट संवाद करने में सक्षम है।",
+      zh: "能就熟悉和抽象话题清晰交流，控制力和流利度较好。",
     },
     {
       level: "C1",
@@ -1944,6 +2194,12 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Can produce flexible, nuanced language in longer responses with strong comprehension.",
       es: "Puede producir lenguaje flexible y matizado en respuestas largas con gran comprensión.",
+      pt: "Consegue produzir linguagem flexível e cheia de nuances em respostas mais longas, com forte compreensão.",
+      it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
+      fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
+      ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
+      hi: "लंबे उत्तरों में मजबूत समझ के साथ लचीली और बारीक भाषा का प्रयोग करने में सक्षम है।",
+      zh: "能在较长回答中灵活、细致地使用语言，并表现出较强理解力。",
     },
     {
       level: "C2",
@@ -1951,8 +2207,35 @@ Return ONLY valid JSON:
       badgeColor: "pink",
       en: "Near-native precision, speed, and adaptability across complex topics.",
       es: "Precisión, velocidad y adaptabilidad casi nativas en temas complejos.",
+      pt: "Precisão, rapidez e adaptabilidade quase nativas em temas complexos.",
+      it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
+      fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
+      ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",
+      hi: "जटिल विषयों पर लगभग मातृभाषी जैसी सटीकता, गति और अनुकूलनशीलता।",
+      zh: "在复杂话题中接近母语者的准确度、速度和适应能力。",
     },
   ];
+
+  const RUBRIC_ROWS_AR = {
+    "Pre-A1":
+      "كلمات منفصلة أو ردود قصيرة جدًا مع انقطاع متكرر في الفهم.",
+    A1:
+      "يقدر يتعامل مع التحيات والبيانات الشخصية الأساسية بقوالب بسيطة محفوظة.",
+    A2:
+      "يقدر يتكلم عن موضوعات روتينية ويجاوب على أسئلة مباشرة بتفاصيل محدودة.",
+    B1:
+      "يقدر يشرح آراءه ويحكي أحداث ويحافظ على محادثة قصيرة مع بعض الأخطاء.",
+    B2:
+      "يقدر يتواصل بوضوح عن موضوعات مألوفة ومجردة مع تحكم وطلاقة كويسين.",
+    C1:
+      "يقدر ينتج لغة مرنة وبتفاصيل دقيقة في ردود أطول مع فهم قوي.",
+    C2:
+      "دقة وسرعة ومرونة قريبة جدًا من المتحدث الأصلي في الموضوعات المعقدة.",
+  };
+
+  rubricRows.forEach((row) => {
+    row.ar = RUBRIC_ROWS_AR[row.level] || row.en;
+  });
 
   return (
     <>
@@ -1978,7 +2261,7 @@ Return ONLY valid JSON:
             mixBlendMode: "screen",
             pointerEvents: "none",
           },
-          "& > *": {
+          "& > :not([data-proficiency-bottom-dock='true'])": {
             position: "relative",
             zIndex: 1,
           },
@@ -2032,7 +2315,7 @@ Return ONLY valid JSON:
               h="36px"
               zIndex={4}
               pointerEvents="auto"
-              aria-label={isEs ? "Historial" : "Chat log"}
+              aria-label={ui.ra_chat_log}
             />
 
             <VStack align="center" spacing={2} width="100%">
@@ -2042,7 +2325,7 @@ Return ONLY valid JSON:
                 color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
                 textAlign="center"
               >
-                {isEs ? "Prueba de Nivel" : "Proficiency Test"}
+                {ui.proficiency_test_title}
               </Text>
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
@@ -2053,9 +2336,7 @@ Return ONLY valid JSON:
                       color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                       flex="1"
                     >
-                      {isEs
-                        ? "Habla naturalmente — estamos evaluando tu nivel"
-                        : "Speak naturally — we're assessing your level"}
+                      {ui.proficiency_test_instruction}
                     </Text>
                   </HStack>
                 </HStack>
@@ -2063,7 +2344,7 @@ Return ONLY valid JSON:
                 <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
                     <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {isEs ? "Progreso" : "Progress"}
+                      {ui.ra_progress_header}
                     </Badge>
                     <Badge colorScheme="teal" variant="subtle" fontSize="10px">
                       {Math.min(userMessageCount, MAX_EXCHANGES)}/
@@ -2088,7 +2369,7 @@ Return ONLY valid JSON:
                       : undefined
                   }
                 >
-                  {isEs ? "Empezar de nuevo" : "Start over"}
+                  {ui.history_speech_start_over}
                 </Button>
                 <Button
                   size="sm"
@@ -2104,7 +2385,7 @@ Return ONLY valid JSON:
                       : undefined
                   }
                 >
-                  {isEs ? "Rúbrica" : "Grading rubric"}
+                  {ui.proficiency_test_rubric}
                 </Button>
               </HStack>
             </VStack>
@@ -2115,12 +2396,12 @@ Return ONLY valid JSON:
           <Box width="132px" opacity={0.95}>
             <VoiceOrb state={orbUiState} />
           </Box>
-          {uiStateLabel(liveUiState, isEs) && (
+          {uiStateLabel(liveUiState, ui) && (
             <Text
               fontSize="xs"
               color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
             >
-              {uiStateLabel(liveUiState, isEs)}
+              {uiStateLabel(liveUiState, ui)}
             </Text>
           )}
         </VStack>
@@ -2158,7 +2439,7 @@ Return ONLY valid JSON:
                       fontSize="lg"
                       color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     >
-                      {isEs ? "Evaluando" : "Evaluating"}
+                      {ui.proficiency_test_evaluating}
                     </Text>
                   </HStack>
                   <Text
@@ -2166,9 +2447,7 @@ Return ONLY valid JSON:
                     opacity={0.7}
                     color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
                   >
-                    {isEs
-                      ? "Analizando tu conversación para determinar tu nivel..."
-                      : "Analyzing your conversation to determine your level..."}
+                    {ui.proficiency_test_analyzing}
                   </Text>
                 </VStack>
               </Box>
@@ -2182,7 +2461,8 @@ Return ONLY valid JSON:
                   primaryTextRef={liveBubbleTextRef}
                   contentOpacity={liveBubbleContentOpacity}
                   contentTransform={liveBubbleContentTransform}
-                  label={isEs ? "Evaluador" : "Assessor"}
+                  label={ui.proficiency_test_assessor}
+                  textLang={targetLang}
                   text={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
@@ -2194,6 +2474,7 @@ Return ONLY valid JSON:
 
         {/* Bottom dock */}
         <Center
+          data-proficiency-bottom-dock="true"
           position="fixed"
           bottom="22px"
           left="0"
@@ -2250,18 +2531,14 @@ Return ONLY valid JSON:
             >
               {status === "connected" ? (
                 <>
-                  <FaStop /> &nbsp; {isEs ? "Detener" : "Stop"}
+                  <FaStop /> &nbsp; {ui.story_stop}
                 </>
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
                   {status === "connecting"
-                    ? isEs
-                      ? "Conectando..."
-                      : "Connecting..."
-                    : isEs
-                      ? "Comenzar"
-                      : "Start"}
+                    ? ui.vocab_connecting
+                    : ui.proficiency_test_start}
                 </>
               )}
             </Button>
@@ -2305,7 +2582,7 @@ Return ONLY valid JSON:
           borderWidth="1px"
           borderColor={isLightTheme ? APP_BORDER : undefined}
         >
-          <ModalHeader>{isEs ? "Historial" : "Chat log"}</ModalHeader>
+          <ModalHeader>{ui.ra_chat_log}</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <VStack align="stretch" spacing={3}>
@@ -2314,7 +2591,11 @@ Return ONLY valid JSON:
                   const userText = m.pendingTranscript ? "…" : m.textFinal;
                   return (
                     <RowRight key={m.id}>
-                      <UserBubble label={isEs ? "Tú" : "You"} text={userText} />
+                      <UserBubble
+                        label={ui.proficiency_test_you}
+                        text={userText}
+                        textLang={targetLang}
+                      />
                     </RowRight>
                   );
                 }
@@ -2324,8 +2605,9 @@ Return ONLY valid JSON:
                 return (
                   <RowLeft key={m.id}>
                     <AssistantBubble
-                      label={isEs ? "Evaluador" : "Assessor"}
+                      label={ui.proficiency_test_assessor}
                       text={text}
+                      textLang={targetLang}
                     />
                   </RowLeft>
                 );
@@ -2411,7 +2693,7 @@ Return ONLY valid JSON:
                     textTransform="uppercase"
                     color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.800"}
                   >
-                    {isEs ? "Resultado final" : "Final result"}
+                    {ui.proficiency_test_final_result}
                   </Text>
                   <Text
                     fontSize={{ base: "2xl", md: "3xl" }}
@@ -2419,7 +2701,7 @@ Return ONLY valid JSON:
                     color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
                     textAlign="center"
                   >
-                    {isEs ? "Evaluación Completa" : "Assessment Complete"}
+                    {ui.proficiency_test_complete}
                   </Text>
                   {assessedLevel && (
                     <Badge
@@ -2436,7 +2718,7 @@ Return ONLY valid JSON:
                       boxShadow={isLightTheme ? "0 6px 14px rgba(111, 86, 54, 0.06)" : undefined}
                     >
                       {assessedLevel} —{" "}
-                      {levelInfo?.name?.[isEs ? "es" : "en"] || assessedLevel}
+                      {levelInfo?.name?.[supportLang] || levelInfo?.name?.en || assessedLevel}
                     </Badge>
                   )}
                 </VStack>
@@ -2461,7 +2743,7 @@ Return ONLY valid JSON:
                     textAlign="center"
                     color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.700"}
                   >
-                    {isEs ? "Resumen de la evaluación" : "Assessment summary"}
+                    {ui.proficiency_test_summary}
                   </Text>
                   <Text
                     fontSize={{ base: "md", md: "lg" }}
@@ -2487,7 +2769,7 @@ Return ONLY valid JSON:
                       textTransform="uppercase"
                       color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                     >
-                      {isEs ? "Desglose" : "Breakdown"}
+                      {ui.proficiency_test_breakdown}
                     </Text>
                     <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
                       {ASSESSMENT_CRITERIA.map((criterion) => {
@@ -2564,7 +2846,7 @@ Return ONLY valid JSON:
                                   fontWeight="semibold"
                                   color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
                                 >
-                                  {criterion[isEs ? "es" : "en"]}
+                                  {criterion[supportLang] || criterion.en}
                                 </Text>
                                 {score !== null && (
                                   <Box
@@ -2623,7 +2905,7 @@ Return ONLY valid JSON:
                     fontSize="xs"
                     color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                   >
-                    {isEs ? "Puntaje compuesto" : "Composite score"}
+                    {ui.proficiency_test_composite}
                   </Text>
                   <Text
                     fontSize="md"
@@ -2659,13 +2941,13 @@ Return ONLY valid JSON:
                     letterSpacing="0.05em"
                     color={isLightTheme ? APP_TEXT_MUTED : undefined}
                   >
-                    {isEs ? `Nivel ${assessedLevel}` : `Level ${assessedLevel}`}
+                    {ui.proficiency_test_level_label?.replace("{level}", assessedLevel) || `Level ${assessedLevel}`}
                   </Text>
                   <VStack align="start" spacing={1}>
                     {(
-                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.[
-                        isEs ? "es" : "en"
-                      ] || []
+                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.[supportLang] ||
+                      CEFR_LEVEL_OFFERINGS[assessedLevel]?.en ||
+                      []
                     ).map((item) => (
                       <Text
                         key={item}
@@ -2705,9 +2987,7 @@ Return ONLY valid JSON:
                   color={isLightTheme ? "#9a7d3c" : "yellow.300"}
                   textAlign="center"
                 >
-                  {isEs
-                    ? "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo."
-                    : "There was a problem with automatic evaluation. You can try again."}
+                  {ui.proficiency_test_eval_error}
                 </Text>
               )}
             </VStack>
@@ -2740,7 +3020,7 @@ Return ONLY valid JSON:
                     : undefined
                 }
               >
-                {isEs ? "Intentar de nuevo" : "Try again"}
+                {ui.try_again}
               </Button>
               <Button
                 flex={1}
@@ -2753,7 +3033,7 @@ Return ONLY valid JSON:
                 color={isLightTheme ? "#083344" : undefined}
                 boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
-                {isEs ? "Volver a la aplicación" : "Return to app"}
+                {ui.proficiency_test_return_app}
               </Button>
             </HStack>
           </DrawerFooter>
@@ -2813,7 +3093,7 @@ Return ONLY valid JSON:
               >
                 <HStack justify="space-between" align="start" mb={2}>
                   <Text fontSize="xl" fontWeight="bold" mb={2}>
-                    {isEs ? "Rúbrica de evaluación" : "Grading rubric"}
+                    {ui.proficiency_test_rubric}
                   </Text>
                 </HStack>
 
@@ -2822,9 +3102,7 @@ Return ONLY valid JSON:
                   opacity={0.75}
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                 >
-                  {isEs
-                    ? "Así se calcula tu nivel. Esta prueba es estricta para evitar sobreestimar tu dominio."
-                    : "This is exactly how your level is calculated. The assessment is intentionally strict to avoid overestimating ability."}
+                  {ui.proficiency_test_rubric_desc}
                 </Text>
               </Box>
 
@@ -2838,16 +3116,14 @@ Return ONLY valid JSON:
                 width="100%"
               >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {isEs ? "Qué puntúa el sistema" : "What gets scored"}
+                  {ui.proficiency_test_what_scored}
                 </Text>
                 <Text
                   fontSize="sm"
                   opacity={0.8}
                   color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                 >
-                  {isEs
-                    ? "Se evalúan 6 áreas (1-10): pronunciación, gramática, vocabulario, fluidez, confianza y comprensión."
-                    : "Six categories are scored (1-10): pronunciation, grammar, vocabulary, fluency, confidence, and comprehension."}
+                  {ui.proficiency_test_what_scored_desc}
                 </Text>
               </Box>
 
@@ -2861,33 +3137,24 @@ Return ONLY valid JSON:
                 width="100%"
               >
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>
-                  {isEs ? "Mecanismo de calificación" : "Scoring mechanism"}
+                  {ui.proficiency_test_scoring_heading}
                 </Text>
                 <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Comprensión y fluidez pesan más que confianza."
-                      : "Comprehension and fluency are weighted more heavily than confidence."}
+                    {ui.proficiency_test_scoring_1}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Respuestas muy cortas o sin contenido limitan el resultado a Pre-A1/A1."
-                      : "Very short or low-substance responses cap the result at Pre-A1/A1."}
+                    {ui.proficiency_test_scoring_2}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "Si hay muchos " +
-                        '"no sé"/relleno, el nivel baja automáticamente.'
-                      : 'Frequent filler or "I don\'t know" responses automatically lower the placement.'}
+                    {ui.proficiency_test_scoring_3}
                   </Text>
                   <Text>
                     •{" "}
-                    {isEs
-                      ? "El nivel final nunca supera la evidencia real de tu conversación."
-                      : "Final placement never exceeds what your conversation evidence supports."}
+                    {ui.proficiency_test_scoring_4}
                   </Text>
                 </VStack>
               </Box>
@@ -2921,6 +3188,9 @@ Return ONLY valid JSON:
                           fontSize="xs"
                           opacity={0.6}
                           color={isLightTheme ? APP_TEXT_MUTED : undefined}
+                          dir="ltr"
+                          textAlign="left"
+                          sx={{ unicodeBidi: "plaintext" }}
                         >
                           {row.range}
                         </Text>
@@ -2931,7 +3201,7 @@ Return ONLY valid JSON:
                         lineHeight="1.5"
                         color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
                       >
-                        {row[isEs ? "es" : "en"]}
+                        {row[supportLang] || row.en}
                       </Text>
                     </Box>
                   ))}
@@ -2948,7 +3218,7 @@ Return ONLY valid JSON:
                 onClick={closeRubric}
                 boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
               >
-                {isEs ? "Entendido" : "Got it"}
+                {ui.proficiency_test_got_it}
               </Button>
             </VStack>
           </DrawerBody>
@@ -2978,18 +3248,14 @@ Return ONLY valid JSON:
           <ModalBody py={8} px={6}>
             <VStack spacing={4}>
               <Text fontSize="lg" fontWeight="bold" textAlign="center">
-                {isEs
-                  ? "¿Salir de la prueba de nivel?"
-                  : "Exit proficiency test?"}
+                {ui.proficiency_test_exit_title}
               </Text>
               <Text
                 fontSize="sm"
                 color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
                 textAlign="center"
               >
-                {isEs
-                  ? "Tu progreso no se guardará. Puedes volver a tomar la prueba más tarde desde la configuración."
-                  : "Your progress won't be saved. You can retake the test later from settings."}
+                {ui.proficiency_test_exit_desc}
               </Text>
               <VStack spacing={3} w="100%" pt={2}>
                 <Button
@@ -2998,7 +3264,7 @@ Return ONLY valid JSON:
                   variant="solid"
                   onClick={handleConfirmExit}
                 >
-                  {isEs ? "Sí, salir" : "Yes, exit"}
+                  {ui.proficiency_test_yes_exit}
                 </Button>
                 <Button
                   w="100%"
@@ -3009,7 +3275,7 @@ Return ONLY valid JSON:
                   }}
                   onClick={() => setShowExitConfirm(false)}
                 >
-                  {isEs ? "Continuar la prueba" : "Continue test"}
+                  {ui.proficiency_test_continue}
                 </Button>
               </VStack>
             </VStack>

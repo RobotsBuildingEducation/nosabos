@@ -416,7 +416,7 @@ export default function VirtualKeyboard({
                 variant={japaneseMode === "hiragana" ? "solid" : "outline"}
                 onClick={() => setJapaneseMode("hiragana")}
               >
-                {userLanguage === "es" ? "Hiragana" : "Hiragana"}
+                Hiragana
               </Button>
               <Button
                 size="xs"
@@ -424,7 +424,7 @@ export default function VirtualKeyboard({
                 variant={japaneseMode === "katakana" ? "solid" : "outline"}
                 onClick={() => setJapaneseMode("katakana")}
               >
-                {userLanguage === "es" ? "Katakana" : "Katakana"}
+                Katakana
               </Button>
             </>
           )}
@@ -436,9 +436,21 @@ export default function VirtualKeyboard({
               onClick={() => setIsUpperCase(!isUpperCase)}
             >
               {isUpperCase
-                ? userLanguage === "es"
+                ? userLanguage === "ja"
+                  ? "大文字"
+                  : userLanguage === "ar"
+                    ? "حروف كبيرة"
+                  : userLanguage === "pt"
+                  ? "Maiusculas"
+                  : userLanguage === "es"
                   ? "Mayúsculas"
                   : "Uppercase"
+                : userLanguage === "ja"
+                ? "小文字"
+                : userLanguage === "ar"
+                ? "حروف صغيرة"
+                : userLanguage === "pt"
+                ? "Minusculas"
                 : userLanguage === "es"
                 ? "Minúsculas"
                 : "Lowercase"}
@@ -447,7 +459,15 @@ export default function VirtualKeyboard({
         </HStack>
         <IconButton
           aria-label={
-            userLanguage === "es" ? "Cerrar teclado" : "Close keyboard"
+            userLanguage === "ja"
+              ? "キーボードを閉じる"
+              : userLanguage === "ar"
+              ? "إغلاق لوحة المفاتيح"
+              : userLanguage === "pt"
+              ? "Fechar teclado"
+              : userLanguage === "es"
+              ? "Cerrar teclado"
+              : "Close keyboard"
           }
           icon={<MdClose />}
           size="sm"
@@ -506,10 +526,28 @@ export default function VirtualKeyboard({
             }}
             onClick={handleSpace}
           >
-            {userLanguage === "es" ? "Espacio" : "Space"}
+            {userLanguage === "ja"
+              ? "スペース"
+              : userLanguage === "ar"
+              ? "مسافة"
+              : userLanguage === "pt"
+              ? "Espaco"
+              : userLanguage === "es"
+              ? "Espacio"
+              : "Space"}
           </Button>
           <IconButton
-            aria-label={userLanguage === "es" ? "Borrar" : "Backspace"}
+            aria-label={
+              userLanguage === "ja"
+                ? "削除"
+                : userLanguage === "ar"
+                ? "حذف"
+                : userLanguage === "pt"
+                ? "Apagar"
+                : userLanguage === "es"
+                ? "Borrar"
+                : "Backspace"
+            }
             icon={<MdBackspace />}
             size="sm"
             minW="60px"
