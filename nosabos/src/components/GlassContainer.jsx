@@ -45,6 +45,7 @@ export default function GlassContainer({
   elasticity,
   fallbackBlur = "0px",
   fallbackBg = "var(--app-glass-bg)",
+  forceFallback = false,
   ...rest
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -59,7 +60,7 @@ export default function GlassContainer({
     [fallbackBlur, fallbackBg, isLightTheme],
   );
 
-  if (supportsLiquidGlass && !isLightTheme) {
+  if (!forceFallback && supportsLiquidGlass && !isLightTheme) {
     return (
       <LiquidGlass
         borderRadius={borderRadius}
