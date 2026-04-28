@@ -45,6 +45,7 @@ import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 import VoiceOrb from "./VoiceOrb";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
+import CitizenshipIcon from "./CitizenshipIcon/CitizenshipIcon";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
@@ -1072,6 +1073,10 @@ export default function LinksPage() {
     }
   };
 
+  const citizenshipUrl = isLocalhost()
+    ? "http://localhost:5173/citizenship"
+    : "https://nosabos.app/citizenship";
+
   const links = [
     {
       title: translations.noSabosTitle,
@@ -1130,6 +1135,24 @@ export default function LinksPage() {
     //   ),
     //   launchAppText: translations.launchApp,
     // },
+    {
+      title: translations.citizenshipTitle,
+      description: translations.citizenshipDescription,
+      href: citizenshipUrl,
+      analyticsName: "citizenship",
+      visual: (
+        <Box
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <CitizenshipIcon size={114} />
+        </Box>
+      ),
+      launchAppText: translations.launchApp,
+    },
     {
       title: translations.patreonTitle,
       description: translations.patreonDescription,

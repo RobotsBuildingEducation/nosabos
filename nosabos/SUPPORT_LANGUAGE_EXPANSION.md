@@ -2,9 +2,9 @@
 
 This document is the authoritative catalog of every file, function, component, and data structure that must be touched to add a new **support / app UI language** (the language the app chrome, instructions, feedback, and LLM meta-prompts are rendered in) to Nosabos.
 
-It is intentionally exhaustive so the same playbook can be reused for every future language. Italian (`it`) is the reference completed rollout, French (`fr`) is the first regression-hardening pass, and the patterns apply to any additional BCP-47 code (`de`, `el`, `pl`, `ga`, `yua`, …).
+It is intentionally exhaustive so the same playbook can be reused for every future language. Italian (`it`) is the reference completed rollout, French (`fr`) is the first regression-hardening pass, and the current stable support/app-language set is `en`, `es`, `pt`, `it`, `fr`, `ja`, `hi`, `ar`, and `zh`. The patterns apply to any additional BCP-47 code (`de`, `el`, `pl`, `ga`, `yua`, …).
 
-> Support language ≠ practice (target) language. Practice language breadth is already wide; support language is historically only `en` and `es`. Adding a new support language means the UI can be rendered and the AI can explain in that language — not just be selectable for practice.
+> Support language ≠ practice (target) language. Practice language breadth is already wide; support language began as only `en` and `es`. Adding a new support language means the UI can be rendered and the AI can explain in that language — not just be selectable for practice.
 
 ---
 
@@ -46,6 +46,7 @@ These files are the primary surface area. Any new support language MUST update e
 - `LANGUAGE_FALLBACK_LABELS` (lines 19–34) — English fallback label.
 - `LANGUAGE_PROMPT_LABELS` (lines 36–51) — Native-tagged prompt label (e.g. `"Italian (italiano)"`).
 - `LANGUAGE_META` array (lines 53–152) — Entry with `value`, `languageKey`, `practiceKey`, `tier`, `flag`.
+- `SUPPORT_LANGUAGE_CODES_BASE` — The canonical support/app-language allowlist used by support-language menus and `normalizeSupportLanguage`.
 - Flag import at top of file (lines 1–14).
 - `DEFAULT_SUPPORT_LANGUAGE` / `DEFAULT_TARGET_LANGUAGE` (lines 16–17) — Only change if the new language is the new default.
 - `buildLanguageOptions` collator (line 249) — Extend `sortLocale` mapping so the new language sorts in-locale instead of falling back to English.
@@ -310,6 +311,214 @@ Do not treat account settings as localized just because `translations.<code>` ex
 **Flag-swatches note:** `LanguageMenuFixed` also maintains a separate `SUPPORT_LANGUAGE_FLAG_SWATCHES` map for the collapsed top-left flag button. Adding a new support language is not complete until this swatch map includes the new code; otherwise the menu can show the correct label list while still rendering the wrong flag.
 
 **Language icon rendering note (mobile):** Do not wrap the flag SVG in a Chakra `<Text>` inside the `IconButton`'s `icon` prop. `Text` renders as `<p>`, which is invalid inside `<button>` and causes the icon to intermittently fail to paint on mobile WebKit. Wrap in `<Box as="span" display="inline-flex" …>` with an explicit 24×24 size and `"& svg": { width, height, display: "block" }` so the SVG always lays out.
+
+**Citizenship link-card note:** `/links` now includes a Mexico Citizenship card immediately above Patreon. It imports `src/components/CitizenshipIcon/CitizenshipIcon.jsx` and must keep `citizenshipTitle` / `citizenshipDescription` localized in every `linksPageTranslations` locale, including the split static locale files (`linksPagePtStatic.js`, `linksPageHiStatic.js`, `linksPageZhStatic.js`). The card URL is environment-aware: local/dev routes to `http://localhost:5173/citizenship`, production routes to `https://nosabos.app/citizenship`. If the dev port changes, update this card or make the local URL origin-relative before testing.
+
+### 3.21k `src/components/CitizenshipGuide.jsx` + `/citizenship`
+
+The citizenship miniapp is a standalone localized product surface. It does **not** use `src/utils/translation.jsx`; it owns a component-local translation system in `CitizenshipGuide.jsx`.
+
+**Route registration**
+- `src/main.jsx` registers `<Route path="/citizenship" element={<CitizenshipGuide />} />`.
+- `CitizenshipGuide.jsx` imports `useLanguage`, `getSupportLanguageOptions`, `normalizeSupportLanguage`, `LANGUAGE_PROMPT_LABELS`, and `getLanguageDirection`.
+- The language menu should use the same flag-menu pattern as `/links`: pass the active UI dictionary into `getSupportLanguageOptions({ ui, uiLang })`; do not render a binary toggle.
+- Keep `SUPPORT_LANGUAGE_FLAG_SWATCHES` in `CitizenshipGuide.jsx` in sync with `SUPPORT_LANGUAGE_CODES` whenever a new support language is added.
+
+**Local translation dictionaries**
+- `ES_TEXT`, `PT_TEXT`, `IT_TEXT`, `FR_TEXT`, `JA_TEXT`, `HI_TEXT`, `AR_TEXT`, and `ZH_TEXT` live in this component and are collected into `TEXT_TRANSLATIONS`.
+- `translateText(text, language)` is exact-key based. Any newly generated English string must be added as an exact key for every non-English support language or it will fall back to English.
+- This route currently has complete static UI coverage for `en`, `es`, `pt`, `it`, `fr`, `ja`, `hi`, `ar`, and `zh`.
+
+**Static surfaces that must be localized**
+- Intro/onboarding: key creation, `Copy key`, `Next`, `Already have a key?`, existing-key sign-in, sign-in errors/success toasts, secret-key copy toasts, and `onboardedCitizenship` intro copy.
+- Header controls: icon-only `/links` back button, `/links`-style language menu, theme toggle, and reset control. The hidden test-prefill button/function are development-only and should remain commented out unless explicitly re-enabled for QA.
+- DNExpress educational primer: `DNEXPRESS_POSTS` has one block per support language and must include CTA text, green/yellow/red accordion cards, cost/recommendation copy, closing copy, and official-checklist copy. Do not localize only the header.
+- Questionnaire: every `QUESTION_DEFINITIONS` label, helper, placeholder, section label, and answer option.
+- Edit mode: `Edit answers`, `Jump to question`, and `Finish edits` must be localized. In edit mode the question progress display is intentionally fixed at `100%`, the question label becomes a dropdown menu with a caret, and `Finish edits` lives below the wizard card, centered and half-width on non-mobile screens.
+- Result panel: route titles/subtitles, `Why`, `Naturalization modality`, `Resolve first`, warnings, official references, and download-report text.
+- Checklist: stage names/descriptions, checklist item rows, completion labels, saved-chat labels, and the expandable item-detail headings/body copy.
+- Assistant drawer: header, save/analyze buttons, chat status, placeholder, markdown fallback text, and all toast titles/descriptions.
+- Download report: `buildCitizenshipReportText(...)` reuses `translateText`; route names, reasons, blockers, checklist rows, warnings, and official reference labels must all have dictionary coverage.
+
+**Intro/account UX**
+- Most users enter `/citizenship` from `/links` and should already have `local_npub` / `local_nsec`. If either key is missing, `/citizenship` creates a Nostr keypair with the same `useDecentralizedIdentity().generateNostrKeys()` flow used by `/links`.
+- Users can switch accounts from the intro via an `nsec` sign-in form. The sign-in copy and validation toasts must be localized in every support language.
+- Switching accounts stores the new `local_npub` / `local_nsec`, clears stale local citizenship progress, reloads the signed-in user's remote `citizenshipProgress`, and keeps the intro visible if that account has no saved progress.
+- The intro is intentionally minimal: no `/citizenship` route header, no `Citizenship route finder` title, document-check icon (`HiOutlineDocumentCheck`), concise product copy, `Copy key`, `Next`, and existing-key sign-in.
+
+**Questionnaire / edit-mode UX**
+- Normal intake should remain one-question-at-a-time with no jump menu.
+- Only after results exist and the user clicks `Edit answers` should the question label become a dropdown menu. The menu lists all currently visible questions, shows answered status, and jumps by setting `questionIndex`.
+- Wizard navigation uses outline buttons with consistent sizing (`Back`, optional `Skip`, `Next` / `Done`). The `Next` / `Done` button uses a teal border, not the raised teal button shadow.
+- `Finish edits` returns to the finished questionnaire/results view without rerunning onboarding. Keep it outside the wizard container so it reads as an exit action, not another answer option.
+
+**Checklist/results UX**
+- The checklist panel is its own section, not merged into the result panel. Its container uses a subtle theme-aware accent: paper-gray in light mode and a low-contrast elevated surface in dark mode. Avoid strong green/blue washes that overpower the page.
+- Checklist rows and `Resolve first` blocker rows remain accordions. Checked checklist text should not be struck through.
+- Critical warnings and official references stay under accordions. Official-reference links open in a new tab, are underlined, use blue in light mode, and use white in dark mode.
+
+**Generated route/checklist strings**
+The route evaluator is the easiest place to accidentally leak English. `evaluateCitizenshipRoute(...)`, `evaluateNaturalization(...)`, and `buildWarnings(...)` generate learner-visible strings for:
+- `reasons`
+- `blockers`
+- `checklist`
+- `notices`
+- `confidence`
+- `modality`
+
+All generated strings must be exact keys in every `*_TEXT` dictionary. This includes edge-case strings such as:
+- `Add apostille/legalization and authorized translation steps for non-U.S. or non-English/non-Spanish records.`
+- `Parent appearance, marriage timing, or special power of attorney issue needs consulate review.`
+- `A parent is deceased, absent, unavailable, or unwilling to participate.`
+- `Use the SRE study guide and practice before scheduling exams.`
+- `Foreign passport does not yet meet the filing-validity requirement.`
+
+**Expandable checklist/detail copy**
+Checklist rows and `Resolve first` blockers are accordions. The row itself is the accordion trigger; the checkbox remains a separate control on the left. The expandable body currently renders:
+- `Why it matters`
+- `What to check`
+- `How to resolve`
+- `Common mistake`
+
+The item-detail body comes from `CITIZENSHIP_DETAIL_PRESETS` and `getCitizenshipItemDetail(...)`. Because these are generic English source strings, every preset string must also be present in every non-English dictionary. Avoid mixed-language translated sentences, especially in Hindi/Japanese/Arabic/Chinese. Official acronyms such as `SRE`, `CURP`, and `INM` may remain as official names, but surrounding prose should be natural in the UI language.
+
+**Durability / Firestore**
+- User state persists locally under `citizenshipProgress` and remotely under `users/{npub}.citizenshipProgress`.
+- `/citizenship` onboarding writes `users/{npub}.onboardedCitizenship`.
+- `/citizenship` relies on the same shared Nostr identity keys as `/links`: `local_npub` and `local_nsec`. Any future account-switching changes must keep both pages compatible.
+- Checklist progress is saved by checklist-item hash, so changing the English source text for an existing checklist item changes its persistence key. Prefer adding translations rather than rewriting the English source unless a behavior change is intended.
+- Assistant chats persist only after explicit `Save chat`; unsaved sessions should reset to the last saved/empty chat on close.
+
+**Assistant localization**
+- `buildCitizenshipAssistantContext(...)` sends full questionnaire answers, route result, blockers, checklist items, and checked/pending status.
+- `buildCitizenshipAssistantStarterPrompt(...)`, follow-up prompts, and checklist analysis prompts use `LANGUAGE_PROMPT_LABELS` through `getCitizenshipAssistantLanguageName(language)`.
+- The Gemini assistant should respond in the active support language and should not invent official fees/deadlines/availability.
+
+**Required audit before calling `/citizenship` localized**
+Run an exact-key audit over the generated evaluator strings for every supported route language. The current citizenship pass reports `0` missing generated strings for `ES`, `PT`, `IT`, `FR`, `JA`, `HI`, `AR`, and `ZH`.
+
+Suggested local audit pattern:
+
+```js
+// Run from repo root with node. Adjust the skip set only for internal enum values.
+const fs = require("fs");
+const src = fs.readFileSync("src/components/CitizenshipGuide.jsx", "utf8");
+
+function extractObject(startIdx) {
+  const start = src.indexOf("{", startIdx);
+  let depth = 0;
+  let inStr = null;
+  let esc = false;
+  for (let i = start; i < src.length; i += 1) {
+    const char = src[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (char === "\\") esc = true;
+      else if (char === inStr) inStr = null;
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") inStr = char;
+    else if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return src.slice(start, i + 1);
+    }
+  }
+  return "";
+}
+
+function keysFor(lang) {
+  const keys = [];
+  const re = new RegExp(`(const ${lang}_TEXT\\s*=|Object\\.assign\\(${lang}_TEXT,)`, "g");
+  let match;
+  while ((match = re.exec(src))) {
+    const obj = extractObject(match.index);
+    for (const keyMatch of obj.matchAll(/"((?:\\.|[^"\\])*)"\\s*:/g)) {
+      keys.push(JSON.parse(`"${keyMatch[1]}"`));
+    }
+  }
+  return new Set(keys);
+}
+
+const evaluator = src.slice(
+  src.indexOf("const evaluateCitizenshipRoute"),
+  src.indexOf("const DNEXPRESS_POSTS"),
+);
+const rawStrings = [...evaluator.matchAll(/"(?:\\.|[^"\\])*"/g)].map((match) =>
+  JSON.parse(match[0]),
+);
+const skip = new Set([
+  "R1",
+  "R2",
+  "R3",
+  "R4",
+  "R5",
+  "R6",
+  "R7",
+  "yes",
+  "no",
+  "",
+  "birth_acta",
+  "passport",
+  "declaratoria",
+  "certificate",
+  "naturalization_letter",
+  "parent_birth_acta",
+  "parent_passport",
+  "parent_naturalization_letter",
+  "parent_declaratoria",
+  "parent_matricula",
+  "parent_ine",
+  "us",
+  "other_country",
+  "unknown",
+  "mother",
+  "father",
+  "both",
+  "parent_after_birth",
+  "not_sure",
+  "none",
+  "born_abroad",
+  "short_abstract",
+  "hospital_only",
+  "late_or_after_birth",
+  "yes_father",
+  "yes_mother",
+  "permanent",
+  "temporary",
+  "2_5",
+  "5_plus",
+  "1_2",
+  "over_6_months",
+  "pending",
+  "conviction",
+  "sentence",
+  "recently_renewed",
+  "grandparent",
+  "great_grandparent",
+  "former",
+  "parent",
+  "mexico",
+  "mexican_ship_aircraft",
+  "non_us",
+  "non_english",
+  "maybe",
+]);
+
+const generated = [...new Set(rawStrings)]
+  .filter((text) => !skip.has(text))
+  .filter((text) => /[A-Za-z]/.test(text) && /[ .,'/-]/.test(text))
+  .sort();
+
+for (const lang of ["ES", "PT", "IT", "FR", "JA", "HI", "AR", "ZH"]) {
+  const keys = keysFor(lang);
+  const missing = generated.filter((text) => !keys.has(text));
+  console.log(lang, missing.length);
+  if (missing.length) console.log(missing.join("\n"));
+}
+```
+
+Do not rely on screenshots alone. A common failure mode is that the page shell, headings, and stage labels are localized while generated checklist rows still fall back to English.
 
 ### 3.21i `src/components/RPGGame/index.jsx` + `scenarios.js`
 
@@ -754,7 +963,8 @@ Current state (to keep this doc honest):
 | `TutorialStepper.jsx` module labels/descriptions | Done — `it` added to all 6 entries in `MODULE_CONFIG` |
 | `TutorialActionBarPopovers.jsx` (onboarding stepper cards) | Done — `it` added to all 6 `BUTTON_EXPLANATIONS` entries; JSX fallback guards added; blank-card bug fixed |
 | `LandingPage.jsx` (full Italian landing + language menu) | Done — full `it` translation block authored; language toggle replaced with EN/ES/IT select menu; `translations[lang] \|\| translations.en` fallback added; `LanguageMenu` now passes `ui: translations[lang] \|\| translations.en` to `getSupportLanguageOptions` so dropdown labels localize with the selected UI language |
-| `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook; `language_en` / `language_es` / `language_it` keys added to every locale block in `linksPage.jsx`; `LanguageMenuFixed` receives `translations` as a prop and forwards it as `ui` to `getSupportLanguageOptions` so dropdown labels localize; flag-icon wrapper swapped from `<Text>` (renders as `<p>`, invalid inside `<button>`) to a span-based flex `Box` with explicit 24×24 sizing so the icon renders reliably on mobile WebKit |
+| `LinksPage.jsx` + `linksPage.jsx` translations (Italian + language menu) | Done — full `it` translation block (all 50+ keys including JSX `aboutContent`); Switch/toggle removed; top-left fixed Chakra `Menu` added (flag-icon-only collapsed, expands to flag+label list via `getSupportLanguageOptions`); `setLanguage` wired from `useLanguage` hook; `language_en` / `language_es` / `language_it` keys added to every locale block in `linksPage.jsx`; `LanguageMenuFixed` receives `translations` as a prop and forwards it as `ui` to `getSupportLanguageOptions` so dropdown labels localize; flag-icon wrapper swapped from `<Text>` (renders as `<p>`, invalid inside `<button>`) to a span-based flex `Box` with explicit 24×24 sizing so the icon renders reliably on mobile WebKit; citizenship link card added above Patreon using `CitizenshipIcon` with localized `citizenshipTitle` / `citizenshipDescription` |
+| `/citizenship` miniapp localized product surface | Done — standalone `CitizenshipGuide.jsx` translation system covers `en/es/pt/it/fr/ja/hi/ar/zh`; `/links`-style language menu; shared `local_npub` / `local_nsec` account creation and existing-key sign-in; durable Firestore progress/checklist state; one-question intake; edit-mode question jump menu with `Finish edits`; localized DNExpress primer, route results, blockers, checklist accordions, assistant drawer, report download, and official-reference accordions |
 | `SubscriptionGate.jsx` + `/subscribe` route fully localized | Done — `"passcode.instructions"` JSX added to `translations.it` (intro text, benefit list, Abbonati/Paga una volta buttons); `invalid`, `bannedTitle`, `bannedBody`, `goToPatreon`, `passcodeLink` added to `it` block; three binary `appLanguage === "es"` ternaries in `App.jsx` passcode handler extended to include Italian (`"it"` branch: not-configured msg, accepted toast, save-failed msg) |
 | `RPGGame/index.jsx` + `scenarios.js` UI fully localized | Done — `it` block added to `UI_TEXT`, `QUEST_LOG_COPY`, `OBJECT_SEARCH_TEST_COPY`, `GAME_LOADING_MESSAGES`; all 10 hardcoded `=== "es"` ternaries replaced with `ui.*` lookups; `normalizeQuestions` `chooseCorrect` string extended to three-way |
 | RPGGame room/area names in Italian (`scenarios.js`, `worldGen.js`, `LoadingMiniGame.jsx`) | Done — `it` added to `MAP_NAME_BY_ID` + 4 call sites in `scenarios.js`; `it` arrays added to all 8 `WORLD_BLUEPRINTS` in `worldGen.js`; `LoadingMiniGame.jsx` world-gen now picks `it` from existing pools; object-examine `mapName` fixed to use `en` for LLM context |
