@@ -81,6 +81,9 @@ import {
   citizenshipAssistantModel,
   database,
 } from "../firebaseResources/firebaseResources";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
 
 const APP_SURFACE = "var(--app-surface)";
@@ -6294,7 +6297,7 @@ const OptionButton = ({ option, selected, onClick }) => (
   </Button>
 );
 
-const SingleChoice = ({ label, value, options, onChange, helper }) => (
+const SingleChoice = ({ label, value, options, onChange, helper, onSelectSound }) => (
   <Box>
     <Text fontWeight="700" color="var(--app-text-primary)" mb={2} textAlign="start">
       {label}
@@ -6310,14 +6313,17 @@ const SingleChoice = ({ label, value, options, onChange, helper }) => (
           key={option.value}
           option={option}
           selected={value === option.value}
-          onClick={() => onChange(option.value)}
+          onClick={() => {
+            onSelectSound?.();
+            onChange(option.value);
+          }}
         />
       ))}
     </SimpleGrid>
   </Box>
 );
 
-const MultiChoice = ({ label, values, options, onChange, helper }) => {
+const MultiChoice = ({ label, values, options, onChange, helper, onSelectSound }) => {
   const selectedValues = values || [];
   return (
     <Box>
@@ -6338,6 +6344,7 @@ const MultiChoice = ({ label, values, options, onChange, helper }) => {
               option={option}
               selected={selected}
               onClick={() => {
+                onSelectSound?.();
                 if (option.value === "none") {
                   onChange(selected ? [] : ["none"]);
                   return;
@@ -6665,6 +6672,8 @@ const CitizenshipIntro = ({
   onCopySecretKey,
   onStartQuestions,
   onSignInWithKey,
+  onSelectSound,
+  onSubmitSound,
   isStarting,
   isPreparingAccount,
   isSigningIn,
@@ -6674,6 +6683,7 @@ const CitizenshipIntro = ({
   const [secretInput, setSecretInput] = useState("");
 
   const submitSignIn = async () => {
+    onSubmitSound?.();
     const didSignIn = await onSignInWithKey(secretInput);
     if (didSignIn) {
       setSecretInput("");
@@ -6762,7 +6772,10 @@ const CitizenshipIntro = ({
             minW={{ base: "100%", sm: "176px" }}
             h="52px"
             leftIcon={<Icon as={Copy} boxSize="16px" />}
-            onClick={onCopySecretKey}
+            onClick={() => {
+              onSubmitSound?.();
+              onCopySecretKey();
+            }}
             isDisabled={isPreparingAccount}
             _hover={{ bg: "var(--app-surface-muted)" }}
             _active={{ boxShadow: "none", transform: "none" }}
@@ -6778,7 +6791,10 @@ const CitizenshipIntro = ({
             color="#0f766e"
             boxShadow="none"
             transform="none"
-            onClick={onStartQuestions}
+            onClick={() => {
+              onSubmitSound?.();
+              onStartQuestions();
+            }}
             isLoading={isStarting}
             isDisabled={isPreparingAccount}
             minW={{ base: "100%", sm: "176px" }}
@@ -6811,7 +6827,10 @@ const CitizenshipIntro = ({
             color="var(--app-text-primary)"
             boxShadow="none"
             transform="none"
-            onClick={() => setShowSignIn((current) => !current)}
+            onClick={() => {
+              onSelectSound?.();
+              setShowSignIn((current) => !current);
+            }}
             _hover={{ bg: "var(--app-surface-muted)" }}
             _active={{ boxShadow: "none", transform: "none" }}
           >
@@ -6859,6 +6878,7 @@ const CitizenshipIntro = ({
                 boxShadow="none"
                 transform="none"
                 onClick={() => {
+                  onSelectSound?.();
                   setSecretInput("");
                   setShowSignIn(false);
                 }}
@@ -6914,8 +6934,15 @@ const WORTH_IT_CASE_COSTS = {
   },
 };
 
-const DNExpressWorthItPrimer = ({ language, onStartQuestions, isStarting }) => {
+const DNExpressWorthItPrimer = ({
+  language,
+  onStartQuestions,
+  isStarting,
+  onSelectSound,
+  onSubmitSound,
+}) => {
   const post = getDNExpressPost(language);
+  const [openCaseIndexes, setOpenCaseIndexes] = useState([]);
 
   return (
     <Stack spacing={5} textAlign="start">
@@ -6936,13 +6963,24 @@ const DNExpressWorthItPrimer = ({ language, onStartQuestions, isStarting }) => {
         type="button"
         alignSelf="flex-start"
         {...CITIZENSHIP_TEAL_BUTTON_PROPS}
-        onClick={onStartQuestions}
+        onClick={() => {
+          onSubmitSound?.();
+          onStartQuestions();
+        }}
         isLoading={isStarting}
       >
         {post.primaryCta}
       </Button>
 
-      <Accordion allowToggle>
+      <Accordion
+        allowMultiple
+        reduceMotion
+        index={openCaseIndexes}
+        onChange={(nextIndexes) => {
+          setOpenCaseIndexes(Array.isArray(nextIndexes) ? nextIndexes : [nextIndexes]);
+        }}
+        sx={{ overflowAnchor: "none" }}
+      >
         {post.cards.map((card) => {
           const tone = WORTH_IT_TONE_STYLES[card.tone] || WORTH_IT_TONE_STYLES.green;
           const cost = WORTH_IT_CASE_COSTS[card.tone];
@@ -6959,6 +6997,7 @@ const DNExpressWorthItPrimer = ({ language, onStartQuestions, isStarting }) => {
               <AccordionButton
                 px={{ base: 4, md: 5 }}
                 py={4}
+                onClick={onSelectSound}
                 _hover={{ bg: "rgba(255, 255, 255, 0.04)" }}
               >
                 <HStack flex="1" spacing={3} textAlign="start" align="center">
@@ -7064,18 +7103,6 @@ const DNExpressWorthItPrimer = ({ language, onStartQuestions, isStarting }) => {
         })}
       </Accordion>
 
-      <Box
-        border="1px solid"
-        borderColor="var(--app-border)"
-        borderRadius="8px"
-        bg="var(--app-surface)"
-        p={{ base: 4, md: 5 }}
-      >
-        <Text fontWeight="800" color="var(--app-text-primary)" mb={2}>
-          {post.closingTitle}
-        </Text>
-        <Text color="var(--app-text-secondary)">{post.closing}</Text>
-      </Box>
     </Stack>
   );
 };
@@ -8112,7 +8139,7 @@ const getCitizenshipAssistantFallbackMessage = (language) =>
     ),
   ].join("\n\n");
 
-const QuestionStep = ({ question, value, onChange, language }) => {
+const QuestionStep = ({ question, value, onChange, language, onSelectSound }) => {
   if (!question) return null;
   const localizedQuestion = getLocalizedQuestion(question, language);
   if (localizedQuestion.type === "multi") {
@@ -8123,6 +8150,7 @@ const QuestionStep = ({ question, value, onChange, language }) => {
         values={value}
         options={localizedQuestion.options}
         onChange={onChange}
+        onSelectSound={onSelectSound}
       />
     );
   }
@@ -8144,6 +8172,7 @@ const QuestionStep = ({ question, value, onChange, language }) => {
       value={value}
       options={localizedQuestion.options}
       onChange={onChange}
+      onSelectSound={onSelectSound}
     />
   );
 };
@@ -8180,6 +8209,7 @@ const ResultPanel = ({
   completionPercent,
   language,
   isLightTheme,
+  onSelectSound,
 }) => {
   const route = evaluation.route;
   const RouteIcon = route?.icon || Route;
@@ -8293,12 +8323,13 @@ const ResultPanel = ({
                     bg="rgba(220, 38, 38, 0.04)"
                     overflow="hidden"
                   >
-                    <Accordion allowToggle>
+                    <Accordion allowMultiple>
                       <AccordionItem border="0">
                         <AccordionButton
                           px={3}
                           py={3}
                           color="var(--app-text-primary)"
+                          onClick={onSelectSound}
                           _hover={{ bg: "rgba(220, 38, 38, 0.06)" }}
                         >
                           <HStack spacing={2} align="flex-start" flex="1" textAlign="start">
@@ -8338,13 +8369,14 @@ const ResultPanel = ({
         ) : null}
 
         <Box p={2} textAlign="start">
-          <Accordion allowToggle>
+          <Accordion allowMultiple>
             <AccordionItem border="0">
               <AccordionButton
                 px={3}
                 py={3}
                 borderRadius="8px"
                 color="var(--app-text-primary)"
+                onClick={onSelectSound}
                 _hover={{ bg: "var(--app-surface-muted)" }}
               >
                 <HStack flex="1" spacing={2} textAlign="start">
@@ -8381,6 +8413,7 @@ const ResultPanel = ({
                 py={3}
                 borderRadius="8px"
                 color="var(--app-text-primary)"
+                onClick={onSelectSound}
                 _hover={{ bg: "var(--app-surface-muted)" }}
               >
                 <HStack flex="1" spacing={2} textAlign="start">
@@ -8399,6 +8432,7 @@ const ResultPanel = ({
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={onSelectSound}
                       color={referenceLinkColor}
                       display="inline-flex"
                       alignItems="center"
@@ -8435,6 +8469,7 @@ const ChecklistPanel = ({
   onOpenAssistant,
   assistantChatSaved,
   isLightTheme,
+  onSelectSound,
 }) => {
   const checklistItems = getCitizenshipChecklistItems(evaluation);
   const checklistStageGroups = getChecklistStageGroups(evaluation);
@@ -8468,7 +8503,10 @@ const ChecklistPanel = ({
         type="button"
         variant="outline"
         leftIcon={<Icon as={MessageCircle} boxSize="17px" />}
-        onClick={onOpenAssistant}
+        onClick={() => {
+          onSelectSound?.();
+          onOpenAssistant();
+        }}
         alignSelf="flex-start"
         borderRadius="8px"
         borderColor="var(--app-border)"
@@ -8561,7 +8599,7 @@ const ChecklistPanel = ({
                       bg={isDone ? "rgba(29, 78, 216, 0.06)" : "var(--app-surface)"}
                       overflow="hidden"
                     >
-                      <Accordion allowToggle>
+                      <Accordion allowMultiple>
                         <AccordionItem border="0">
                           <HStack spacing={0} align="stretch">
                             <Box
@@ -8573,9 +8611,10 @@ const ChecklistPanel = ({
                             >
                               <Checkbox
                                 isChecked={isDone}
-                                onChange={(event) =>
-                                  onChecklistItemChange(item, event.target.checked)
-                                }
+                                onChange={(event) => {
+                                  onSelectSound?.();
+                                  onChecklistItemChange(item, event.target.checked);
+                                }}
                                 colorScheme="blue"
                                 aria-label={translateText(item, language)}
                                 sx={{
@@ -8595,6 +8634,7 @@ const ChecklistPanel = ({
                               py={3}
                               flex="1"
                               color="var(--app-text-primary)"
+                              onClick={onSelectSound}
                               _hover={{ bg: "var(--app-surface-muted)" }}
                             >
                               <Text
@@ -8728,6 +8768,8 @@ const CitizenshipAssistantDrawer = ({
   language,
   assistantChat,
   onAssistantChatChange,
+  onSelectSound,
+  onSubmitSound,
 }) => {
   const toast = useToast();
   const [input, setInput] = useState("");
@@ -8905,12 +8947,14 @@ const CitizenshipAssistantDrawer = ({
   const sendMessage = () => {
     const text = input.trim();
     if (!text || isGenerating) return;
+    onSubmitSound?.();
     setInput("");
     generateAssistantReply({ userText: text });
   };
 
   const analyzeChecklist = () => {
     if (isGenerating) return;
+    onSubmitSound?.();
     generateAssistantReply({
       userText: translateText("Analyze my checklist", language),
       mode: "checklistAnalysis",
@@ -8919,6 +8963,7 @@ const CitizenshipAssistantDrawer = ({
 
   const saveChat = () => {
     if (!messages.length || isGenerating) return;
+    onSubmitSound?.();
 
     updateAssistantChat((current) => ({
       messages: current.messages.map((message) => ({ ...message, done: true })),
@@ -8958,6 +9003,7 @@ const CitizenshipAssistantDrawer = ({
             </Text>
             <DrawerCloseButton
               position="static"
+              onClick={onSelectSound}
               color="var(--app-text-primary)"
               border="1px solid"
               borderColor="var(--app-border)"
@@ -9117,6 +9163,7 @@ export default function CitizenshipGuide() {
   const toast = useToast();
   const themeMode = useThemeStore((state) => state.themeMode);
   const syncThemeMode = useThemeStore((state) => state.syncThemeMode);
+  const playSound = useSoundSettings((state) => state.playSound);
   const pageLanguage = normalizeSupportLanguage(language);
   const pageDirection = getLanguageDirection(pageLanguage);
   const isLightTheme = themeMode === "light";
@@ -9156,6 +9203,12 @@ export default function CitizenshipGuide() {
   const lastSavedAssistantChatRef = useRef(
     normalizeSavedAssistantChat(initialCitizenshipState.assistantChat),
   );
+  const playSelectSound = useCallback(() => {
+    playSound(selectSound);
+  }, [playSound]);
+  const playSubmitSound = useCallback(() => {
+    playSound(submitActionSound);
+  }, [playSound]);
   const setAnswer = (key, value) => {
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
     setAnswers((current) => ({ ...current, [key]: value }));
@@ -9367,6 +9420,7 @@ export default function CitizenshipGuide() {
 
   const goNext = () => {
     if (!canContinue) return;
+    playSubmitSound();
     if (isLastQuestion) {
       setIsEditingAnswers(false);
       setShowResults(true);
@@ -9376,20 +9430,24 @@ export default function CitizenshipGuide() {
   };
 
   const goBack = () => {
+    playSelectSound();
     setShowResults(false);
     setQuestionIndex((index) => Math.max(index - 1, 0));
   };
 
   const finishEdits = () => {
+    playSubmitSound();
     setIsEditingAnswers(false);
     setShowResults(true);
   };
 
   const toggleTheme = () => {
+    playSelectSound();
     syncThemeMode(isLightTheme ? "dark" : "light");
   };
 
   const resetQuestions = () => {
+    playSubmitSound();
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
     setAnswers(DEFAULT_ANSWERS);
     setChecklistProgress({});
@@ -9655,6 +9713,7 @@ export default function CitizenshipGuide() {
 
   const downloadReport = () => {
     if (typeof window === "undefined") return;
+    playSubmitSound();
 
     const reportText = buildCitizenshipReportText({
       answers,
@@ -9694,6 +9753,7 @@ export default function CitizenshipGuide() {
             <IconButton
               as="a"
               href="/links"
+              onClick={playSelectSound}
               aria-label={translateText("Back", pageLanguage)}
               title={translateText("Back", pageLanguage)}
               size="sm"
@@ -9709,6 +9769,7 @@ export default function CitizenshipGuide() {
               <LanguageMenuFixed
                 language={pageLanguage}
                 onSelect={setLanguage}
+                playSound={playSelectSound}
                 translations={pageMenuTranslations}
                 isLightTheme={isLightTheme}
               />
@@ -9757,6 +9818,8 @@ export default function CitizenshipGuide() {
               onCopySecretKey={copySecretKey}
               onStartQuestions={goToPrimer}
               onSignInWithKey={signInWithSecretKey}
+              onSelectSound={playSelectSound}
+              onSubmitSound={playSubmitSound}
               isStarting={isSavingIntro}
               isPreparingAccount={isPreparingAccount}
               isSigningIn={isSigningInWithKey}
@@ -9773,6 +9836,8 @@ export default function CitizenshipGuide() {
               language={pageLanguage}
               onStartQuestions={startQuestions}
               isStarting={isSavingIntro}
+              onSelectSound={playSelectSound}
+              onSubmitSound={playSubmitSound}
             />
           ) : null}
 
@@ -9816,7 +9881,10 @@ export default function CitizenshipGuide() {
                       return (
                         <MenuItem
                           key={question.id}
-                          onClick={() => setQuestionIndex(index)}
+                          onClick={() => {
+                            playSelectSound();
+                            setQuestionIndex(index);
+                          }}
                           bg={isCurrentQuestion ? "var(--app-surface-muted)" : "transparent"}
                           _hover={{ bg: "var(--app-surface-muted)" }}
                           whiteSpace="normal"
@@ -9907,6 +9975,7 @@ export default function CitizenshipGuide() {
                 value={answers[currentQuestion?.id]}
                 onChange={(value) => setAnswer(currentQuestion.id, value)}
                 language={pageLanguage}
+                onSelectSound={playSelectSound}
               />
 
               <Flex
@@ -10016,6 +10085,7 @@ export default function CitizenshipGuide() {
                 boxShadow="none"
                 transform="none"
                 onClick={() => {
+                  playSelectSound();
                   setIsEditingAnswers(true);
                   setShowResults(false);
                 }}
@@ -10045,6 +10115,7 @@ export default function CitizenshipGuide() {
                 completionPercent={completionPercent}
                 language={pageLanguage}
                 isLightTheme={isLightTheme}
+                onSelectSound={playSelectSound}
               />
               <ChecklistPanel
                 evaluation={evaluation}
@@ -10054,6 +10125,7 @@ export default function CitizenshipGuide() {
                 onOpenAssistant={() => setIsAssistantOpen(true)}
                 assistantChatSaved={assistantChat.saved}
                 isLightTheme={isLightTheme}
+                onSelectSound={playSelectSound}
               />
               <CitizenshipAssistantDrawer
                 isOpen={isAssistantOpen}
@@ -10064,6 +10136,8 @@ export default function CitizenshipGuide() {
                 language={pageLanguage}
                 assistantChat={assistantChat}
                 onAssistantChatChange={setAssistantChat}
+                onSelectSound={playSelectSound}
+                onSubmitSound={playSubmitSound}
               />
             </Stack>
           ) : null}
