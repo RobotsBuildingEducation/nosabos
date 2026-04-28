@@ -12,6 +12,7 @@ import LinksPage from "./components/LinksPage.jsx";
 import SoundExperiment from "./components/SoundExperiment.jsx";
 import ProficiencyTest from "./components/ProficiencyTest.jsx";
 import RPGGame from "./components/RPGGame/index.jsx";
+import CitizenshipGuide from "./components/CitizenshipGuide.jsx";
 
 import "@coinbase/onchainkit/styles.css";
 import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
@@ -81,6 +82,7 @@ createRoot(document.getElementById("root")).render(
             <Route path="/subscribe" element={<AppContainer />} />
             <Route path="/proficiency" element={<ProficiencyContainer />} />
             <Route path="/links" element={<LinksPage />} />
+            <Route path="/citizenship" element={<CitizenshipGuide />} />
             <Route path="/experiments" element={<SoundExperiment />} />
             <Route path="/game" element={<RPGGame />} />
           </Routes>
