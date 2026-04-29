@@ -623,8 +623,8 @@ const ES_TEXT = {
     "¿Tu tarjeta de residente tendrá al menos seis meses de vigencia al presentar y muestra CURP?",
   "Is your INM-registered address the same as your application address?":
     "¿Tu domicilio registrado ante INM coincide con el domicilio de la solicitud?",
-  "During the last two years, how much time were you outside Mexico?":
-    "Durante los últimos dos años, ¿cuánto tiempo estuviste fuera de México?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "Durante los últimos dos años de residencia que califica, ¿cuánto tiempo estuviste fuera de México?",
   "Are you married to a Mexican citizen?":
     "¿Estás casado/a con una persona mexicana?",
   "Do you have a Mexican child by birth?":
@@ -667,6 +667,7 @@ const ES_TEXT = {
   "Attorney/authorized person": "Abogado/a o persona autorizada",
   Yes: "Sí",
   No: "No",
+  "Not applicable": "No aplica",
   "Yes, before March 20, 1998": "Sí, antes del 20 de marzo de 1998",
   "Acquired after that date": "La adquirí después de esa fecha",
   Mother: "Madre",
@@ -698,6 +699,9 @@ const ES_TEXT = {
   "2-5 years": "2 a 5 años",
   "1-2 years": "1 a 2 años",
   "Less than 1 year": "Menos de 1 año",
+  "None / no qualifying residence": "Ninguna / sin residencia que califique",
+  "Not applicable / no qualifying residence yet":
+    "No aplica / aún no hay residencia que califique",
   "Under 6 months total": "Menos de 6 meses en total",
   "Over 6 months total": "Más de 6 meses en total",
   Parent: "Padre/madre",
@@ -989,8 +993,8 @@ const PT_TEXT = {
     "Seu cartão de residente terá validade de pelo menos seis meses após o pedido e mostra CURP?",
   "Is your INM-registered address the same as your application address?":
     "Seu endereço registrado no INM é o mesmo do pedido?",
-  "During the last two years, how much time were you outside Mexico?":
-    "Nos últimos dois anos, quanto tempo você ficou fora do México?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "Durante os últimos dois anos de residência qualificável, quanto tempo você ficou fora do México?",
   "Are you married to a Mexican citizen?":
     "Você é casado/a com cidadão/ã mexicano/a?",
   "Do you have a Mexican child by birth?":
@@ -1029,6 +1033,7 @@ const PT_TEXT = {
   "Attorney/authorized person": "Advogado/a ou pessoa autorizada",
   Yes: "Sim",
   No: "Não",
+  "Not applicable": "Não se aplica",
   "Yes, before March 20, 1998": "Sim, antes de 20 de março de 1998",
   "Acquired after that date": "Adquirida depois dessa data",
   Mother: "Mãe",
@@ -1060,6 +1065,9 @@ const PT_TEXT = {
   "2-5 years": "2 a 5 anos",
   "1-2 years": "1 a 2 anos",
   "Less than 1 year": "Menos de 1 ano",
+  "None / no qualifying residence": "Nenhuma / sem residência qualificável",
+  "Not applicable / no qualifying residence yet":
+    "Não se aplica / ainda sem residência qualificável",
   "Under 6 months total": "Menos de 6 meses no total",
   "Over 6 months total": "Mais de 6 meses no total",
   Parent: "Pai/mãe",
@@ -1202,8 +1210,8 @@ const IT_TEXT = {
     "La carta di residente è valida almeno sei mesi oltre la domanda e mostra il CURP?",
   "Is your INM-registered address the same as your application address?":
     "L'indirizzo registrato presso INM coincide con quello della domanda?",
-  "During the last two years, how much time were you outside Mexico?":
-    "Negli ultimi due anni, quanto tempo sei stato/a fuori dal Messico?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "Durante gli ultimi due anni di residenza qualificante, quanto tempo sei stato/a fuori dal Messico?",
   "Are you married to a Mexican citizen?":
     "Sei sposato/a con un/a cittadino/a messicano/a?",
   "Do you have a Mexican child by birth?":
@@ -1242,6 +1250,7 @@ const IT_TEXT = {
   "Attorney/authorized person": "Avvocato/persona autorizzata",
   Yes: "Sì",
   No: "No",
+  "Not applicable": "Non applicabile",
   "Yes, before March 20, 1998": "Sì, prima del 20 marzo 1998",
   "Acquired after that date": "Acquisita dopo quella data",
   Mother: "Madre",
@@ -1273,6 +1282,9 @@ const IT_TEXT = {
   "2-5 years": "2-5 anni",
   "1-2 years": "1-2 anni",
   "Less than 1 year": "Meno di 1 anno",
+  "None / no qualifying residence": "Nessuna / nessuna residenza qualificante",
+  "Not applicable / no qualifying residence yet":
+    "Non applicabile / nessuna residenza qualificante ancora",
   "Under 6 months total": "Meno di 6 mesi totali",
   "Over 6 months total": "Più di 6 mesi totali",
   Parent: "Genitore",
@@ -1415,8 +1427,8 @@ const FR_TEXT = {
     "Votre carte de résident est-elle valide au moins six mois après le dépôt et affiche-t-elle le CURP ?",
   "Is your INM-registered address the same as your application address?":
     "Votre adresse enregistrée auprès de l'INM est-elle la même que celle de la demande ?",
-  "During the last two years, how much time were you outside Mexico?":
-    "Au cours des deux dernières années, combien de temps avez-vous passé hors du Mexique ?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "Pendant les deux dernières années de résidence admissible, combien de temps avez-vous passé hors du Mexique ?",
   "Are you married to a Mexican citizen?":
     "Êtes-vous marié/e à un/e citoyen/ne mexicain/e ?",
   "Do you have a Mexican child by birth?":
@@ -1455,6 +1467,7 @@ const FR_TEXT = {
   "Attorney/authorized person": "Avocat/personne autorisée",
   Yes: "Oui",
   No: "Non",
+  "Not applicable": "Sans objet",
   "Yes, before March 20, 1998": "Oui, avant le 20 mars 1998",
   "Acquired after that date": "Acquise après cette date",
   Mother: "Mère",
@@ -1487,6 +1500,9 @@ const FR_TEXT = {
   "2-5 years": "2 à 5 ans",
   "1-2 years": "1 à 2 ans",
   "Less than 1 year": "Moins d'un an",
+  "None / no qualifying residence": "Aucune / pas de résidence admissible",
+  "Not applicable / no qualifying residence yet":
+    "Sans objet / pas encore de résidence admissible",
   "Under 6 months total": "Moins de 6 mois au total",
   "Over 6 months total": "Plus de 6 mois au total",
   Parent: "Parent",
@@ -1628,8 +1644,8 @@ const JA_TEXT = {
     "居住カードは申請日から少なくとも6か月有効で、CURPが表示されていますか？",
   "Is your INM-registered address the same as your application address?":
     "INM登録住所は申請住所と同じですか？",
-  "During the last two years, how much time were you outside Mexico?":
-    "過去2年間にメキシコ国外にいた期間はどのくらいですか？",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "対象となる居住の直近2年間で、メキシコ国外にいた期間はどのくらいですか？",
   "Are you married to a Mexican citizen?": "メキシコ国民と結婚していますか？",
   "Do you have a Mexican child by birth?":
     "出生によりメキシコ国籍の子どもがいますか？",
@@ -1666,6 +1682,7 @@ const JA_TEXT = {
   "Attorney/authorized person": "弁護士/権限のある人",
   Yes: "はい",
   No: "いいえ",
+  "Not applicable": "該当なし",
   "Yes, before March 20, 1998": "はい、1998年3月20日以前",
   "Acquired after that date": "その日以降に取得",
   Mother: "母",
@@ -1695,6 +1712,9 @@ const JA_TEXT = {
   "2-5 years": "2〜5年",
   "1-2 years": "1〜2年",
   "Less than 1 year": "1年未満",
+  "None / no qualifying residence": "なし / 対象となる居住なし",
+  "Not applicable / no qualifying residence yet":
+    "該当なし / まだ対象となる居住なし",
   "Under 6 months total": "合計6か月未満",
   "Over 6 months total": "合計6か月超",
   Parent: "親",
@@ -1834,8 +1854,8 @@ const HI_TEXT = {
     "क्या आपका निवासी कार्ड आवेदन के बाद कम से कम छह महीने वैध है और CURP दिखाता है?",
   "Is your INM-registered address the same as your application address?":
     "क्या INM में दर्ज पता आवेदन के पते जैसा है?",
-  "During the last two years, how much time were you outside Mexico?":
-    "पिछले दो वर्षों में आप मेक्सिको से बाहर कितने समय रहे?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "योग्य निवास के पिछले दो वर्षों में, आप मेक्सिको से बाहर कितने समय रहे?",
   "Are you married to a Mexican citizen?":
     "क्या आपकी शादी मैक्सिकन नागरिक से हुई है?",
   "Do you have a Mexican child by birth?":
@@ -1873,6 +1893,7 @@ const HI_TEXT = {
   "Attorney/authorized person": "वकील/अधिकृत व्यक्ति",
   Yes: "हां",
   No: "नहीं",
+  "Not applicable": "लागू नहीं",
   "Yes, before March 20, 1998": "हां, 20 मार्च 1998 से पहले",
   "Acquired after that date": "उस तारीख के बाद प्राप्त",
   Mother: "माता",
@@ -1903,6 +1924,9 @@ const HI_TEXT = {
   "2-5 years": "2-5 वर्ष",
   "1-2 years": "1-2 वर्ष",
   "Less than 1 year": "1 वर्ष से कम",
+  "None / no qualifying residence": "कोई नहीं / योग्य निवास नहीं",
+  "Not applicable / no qualifying residence yet":
+    "लागू नहीं / अभी योग्य निवास नहीं",
   "Under 6 months total": "कुल 6 महीने से कम",
   "Over 6 months total": "कुल 6 महीने से अधिक",
   Parent: "माता-पिता",
@@ -2042,8 +2066,8 @@ const AR_TEXT = {
     "هل بطاقة إقامتك صالحة لستة أشهر على الأقل بعد التقديم وتظهر CURP؟",
   "Is your INM-registered address the same as your application address?":
     "هل عنوانك المسجل لدى INM هو نفسه عنوان الطلب؟",
-  "During the last two years, how much time were you outside Mexico?":
-    "خلال العامين الماضيين، كم من الوقت كنت خارج المكسيك؟",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "خلال آخر سنتين من الإقامة المؤهلة، كم قضيت من الوقت خارج المكسيك؟",
   "Are you married to a Mexican citizen?":
     "هل أنت متزوج/ة من مواطن/ة مكسيكي/ة؟",
   "Do you have a Mexican child by birth?": "هل لديك طفل مكسيكي بالميلاد؟",
@@ -2079,6 +2103,7 @@ const AR_TEXT = {
   "Attorney/authorized person": "محام/شخص مخول",
   Yes: "نعم",
   No: "لا",
+  "Not applicable": "لا ينطبق",
   "Yes, before March 20, 1998": "نعم، قبل 20 مارس 1998",
   "Acquired after that date": "تم الحصول عليها بعد ذلك التاريخ",
   Mother: "الأم",
@@ -2108,6 +2133,9 @@ const AR_TEXT = {
   "2-5 years": "2-5 سنوات",
   "1-2 years": "1-2 سنة",
   "Less than 1 year": "أقل من سنة",
+  "None / no qualifying residence": "لا يوجد / لا إقامة مؤهلة",
+  "Not applicable / no qualifying residence yet":
+    "لا ينطبق / لا توجد إقامة مؤهلة بعد",
   "Under 6 months total": "أقل من 6 أشهر إجمالا",
   "Over 6 months total": "أكثر من 6 أشهر إجمالا",
   Parent: "والد/والدة",
@@ -2241,8 +2269,8 @@ const ZH_TEXT = {
     "你的居留卡在提交后是否至少仍有效六个月，并显示 CURP？",
   "Is your INM-registered address the same as your application address?":
     "你在 INM 登记的地址是否与申请地址相同？",
-  "During the last two years, how much time were you outside Mexico?":
-    "过去两年中，你在墨西哥境外总共多久？",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "在符合条件居留的最近两年中，你在墨西哥境外待了多久？",
   "Are you married to a Mexican citizen?": "你是否与墨西哥公民结婚？",
   "Do you have a Mexican child by birth?": "你是否有出生即为墨西哥国籍的子女？",
   "Are you a direct descendant of a Mexican by birth?":
@@ -2277,6 +2305,7 @@ const ZH_TEXT = {
   "Attorney/authorized person": "律师/授权人",
   Yes: "是",
   No: "否",
+  "Not applicable": "不适用",
   "Yes, before March 20, 1998": "是，1998年3月20日前",
   "Acquired after that date": "该日期后取得",
   Mother: "母亲",
@@ -2305,6 +2334,9 @@ const ZH_TEXT = {
   "2-5 years": "2-5年",
   "1-2 years": "1-2年",
   "Less than 1 year": "少于1年",
+  "None / no qualifying residence": "无 / 没有符合条件的居留",
+  "Not applicable / no qualifying residence yet":
+    "不适用 / 尚无符合条件的居留",
   "Under 6 months total": "总计少于6个月",
   "Over 6 months total": "总计超过6个月",
   Parent: "父/母",
@@ -5368,6 +5400,7 @@ const evaluateNaturalization = (answers) => {
   const hasTwoYears = ["2_5", "5_plus"].includes(residenceYears);
   const hasFiveYears = residenceYears === "5_plus";
   const hasOneYear = ["1_2", "2_5", "5_plus"].includes(residenceYears);
+  const hasNoQualifyingResidenceYears = residenceYears === "none";
 
   const specialTwoYearRoutes = [];
   if (answers.marriedMexican === "yes")
@@ -5398,13 +5431,24 @@ const evaluateNaturalization = (answers) => {
       "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.",
       "Ask SRE or counsel whether residence can be shortened or waived.",
     );
-  } else if (!hasQualifyingResidence) {
+  } else if (!hasQualifyingResidence || hasNoQualifyingResidenceYears) {
     routeCode = "R6";
-    reasons.push(
-      "Naturalization generally requires temporary or permanent resident status.",
-    );
+    if (!hasQualifyingResidence) {
+      reasons.push(
+        "Naturalization generally requires temporary or permanent resident status.",
+      );
+      checklist.push(
+        "Move from tourist/FMM, no status, or temporary student status into qualifying temporary or permanent residence.",
+      );
+    } else {
+      reasons.push(
+        "A shorter route may exist, but the residence clock is not long enough yet.",
+      );
+      checklist.push(
+        "Keep qualifying residence active until the route minimum is met.",
+      );
+    }
     checklist.push(
-      "Move from tourist/FMM, no status, or temporary student status into qualifying temporary or permanent residence.",
       "Start tracking residence time and absences once qualifying status begins.",
     );
   } else if (hasFiveYears) {
@@ -5456,10 +5500,16 @@ const evaluateNaturalization = (answers) => {
     );
   }
 
-  if (answers.cardReady === "no" || answers.cardReady === "unknown") {
+  if (
+    ["no", "unknown"].includes(answers.cardReady) ||
+    (routeCode === "R5" && answers.cardReady === "not_applicable")
+  ) {
     addUnique(blockers, "Resident card validity or CURP is not ready.");
   }
-  if (answers.addressMatch === "no" || answers.addressMatch === "unknown") {
+  if (
+    ["no", "unknown"].includes(answers.addressMatch) ||
+    (routeCode === "R5" && answers.addressMatch === "not_applicable")
+  ) {
     addUnique(blockers, "Application address must match INM records.");
   }
   if (answers.absences === "over_6_months") {
@@ -8034,6 +8084,7 @@ const QUESTION_DEFINITIONS = [
       { value: "2_5", label: "2-5 years" },
       { value: "1_2", label: "1-2 years" },
       { value: "under_1", label: "Less than 1 year" },
+      { value: "none", label: "None / no qualifying residence" },
     ],
   },
   {
@@ -8046,6 +8097,7 @@ const QUESTION_DEFINITIONS = [
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
+      { value: "not_applicable", label: "Not applicable" },
       { value: "unknown", label: "Unknown" },
     ],
   },
@@ -8059,6 +8111,7 @@ const QUESTION_DEFINITIONS = [
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
+      { value: "not_applicable", label: "Not applicable" },
       { value: "unknown", label: "Unknown" },
     ],
   },
@@ -8067,11 +8120,16 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: Gavel,
     type: "single",
-    label: "During the last two years, how much time were you outside Mexico?",
+    label:
+      "During the last two years of qualifying residence, how much time were you outside Mexico?",
     options: [
       { value: "none", label: "None" },
       { value: "under_6_months", label: "Under 6 months total" },
       { value: "over_6_months", label: "Over 6 months total" },
+      {
+        value: "not_applicable",
+        label: "Not applicable / no qualifying residence yet",
+      },
       { value: "unknown", label: "Unknown" },
     ],
   },
