@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
+import { GoPasskeyFill } from "react-icons/go";
 import {
   Accordion,
   AccordionButton,
@@ -6859,13 +6860,13 @@ const CitizenshipIntro = ({
               <Stack spacing={3} fontSize="sm" color="var(--app-text-secondary)">
                 <Text>
                   {translateText(
-                    "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold.",
+                    "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
                     language,
                   )}
                 </Text>
                 <Text>
                   {translateText(
-                    "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key.",
+                    "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
                     language,
                   )}
                 </Text>
@@ -9903,21 +9904,22 @@ export default function CitizenshipGuide() {
                 onToggle={toggleTheme}
                 language={pageLanguage}
               />
-              <Button
+              <IconButton
                 type="button"
+                aria-label={translateText("Copy key", pageLanguage)}
+                title={translateText("Copy key", pageLanguage)}
+                icon={<Icon as={GoPasskeyFill} boxSize="17px" />}
                 size="sm"
-                minH="40px"
+                minW="40px"
+                h="40px"
                 borderRadius="full"
                 border="1px solid"
-                leftIcon={<Icon as={Copy} boxSize="14px" />}
                 onClick={() => {
                   playSubmitSound();
                   copySecretKey();
                 }}
                 {...topControlProps}
-              >
-                {translateText("Key", pageLanguage)}
-              </Button>
+              />
               <IconButton
                 type="button"
                 aria-label={translateText("Privacy policy", pageLanguage)}
@@ -10307,7 +10309,12 @@ export default function CitizenshipGuide() {
       </Container>
       <Modal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} isCentered>
         <ModalOverlay />
-        <ModalContent bg="var(--app-surface)" color="var(--app-text-primary)">
+        <ModalContent
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
+          border="1px solid"
+          borderColor="var(--app-border)"
+        >
           <ModalHeader>
             <HStack spacing={2}>
               <Icon as={ShieldCheck} color="#0f766e" />
@@ -10316,16 +10323,16 @@ export default function CitizenshipGuide() {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={5}>
-            <Stack spacing={3} fontSize="sm" color="var(--app-text-secondary)">
+            <Stack spacing={4} fontSize="sm" color="var(--app-text-secondary)">
               <Text>
                 {translateText(
-                  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold.",
+                  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
                   pageLanguage,
                 )}
               </Text>
               <Text>
                 {translateText(
-                  "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key.",
+                  "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
                   pageLanguage,
                 )}
               </Text>
