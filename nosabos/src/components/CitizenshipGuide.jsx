@@ -450,6 +450,7 @@ const getInitialCitizenshipState = () => {
     checklistProgress: progress?.checklistProgress || {},
     assistantChat: progress?.assistantChat || createEmptyAssistantChat(),
     showIntro: !onboarded && !progress,
+    showBenefits: false,
     showPrimer: false,
   };
 };
@@ -5602,6 +5603,769 @@ const buildWarnings = (routeCode, baseRoute) => {
   return warnings;
 };
 
+const DUAL_CITIZENSHIP_BENEFITS = {
+  en: {
+    title: "Benefits of Mexican dual citizenship",
+    subtitle:
+      "Start with the rights that matter at any age, then see how they can matter at different life stages.",
+    overallTitle: "Biggest overall benefits",
+    overallBenefits: [
+      "Live in Mexico without needing a visa",
+      "Work in Mexico without a work permit",
+      "Vote in Mexican elections",
+      "Get Mexican ID and passport",
+      "Own property more easily",
+      "Pass nationality to children",
+      "Retire in Mexico more securely",
+      "Keep U.S. citizenship while gaining Mexican rights",
+    ],
+    ageTitle: "Benefits by age group",
+    ageGroups: [
+      {
+        range: "Ages 0-17",
+        items: [
+          "Mexican birth registration",
+          "Mexican passport",
+          "CURP / official Mexican identity record",
+          "Easier future access to Mexico",
+          "Easier to live with family in Mexico",
+          "Keeps options open for school, work, property, and inheritance later",
+        ],
+      },
+      {
+        range: "Ages 18-24",
+        items: [
+          "INE voter ID eligibility",
+          "Right to vote in Mexican elections",
+          "Can work in Mexico without a work visa",
+          "Easier to rent, bank, study, and get local services",
+          "Easier to build a life in either the U.S. or Mexico",
+        ],
+      },
+      {
+        range: "Ages 25-39",
+        items: [
+          "Work in Mexico without immigration sponsorship",
+          "Start a business more easily",
+          "Buy property more easily",
+          "Own land directly instead of using foreigner structures in restricted zones",
+          "Pass Mexican nationality to children if eligible",
+          "Easier family relocation",
+        ],
+      },
+      {
+        range: "Ages 40-54",
+        items: [
+          "More flexibility to relocate or live part-time in Mexico",
+          "Easier property and wealth planning",
+          "Easier banking, tax, and legal setup",
+          "Easier to care for family in Mexico",
+          "Can build healthcare and retirement plans earlier",
+        ],
+      },
+      {
+        range: "Ages 55-64",
+        items: [
+          "Easier pre-retirement planning",
+          "Can spend long periods in Mexico without tourist/residency limits",
+          "Easier to buy, renovate, or settle into property",
+          "Easier to test living in Mexico before retirement",
+          "Possible access to senior-related programs starting around 60, depending on requirements",
+        ],
+      },
+      {
+        range: "Ages 65+",
+        items: [
+          "Can retire in Mexico as a Mexican citizen",
+          "Long-term residence without visa concerns",
+          "Easier access to Mexican senior programs if eligible",
+          "Possible federal senior pension if living in Mexico and meeting requirements",
+          "Can combine Mexico residence with U.S. Social Security, if eligible",
+          "More secure cross-border retirement planning",
+        ],
+      },
+    ],
+    primaryCta: "Compare DNExpress costs",
+    backCta: "Back to benefits",
+  },
+  es: {
+    title: "Beneficios de la doble ciudadanía mexicana",
+    subtitle:
+      "Empieza con los derechos que importan a cualquier edad y luego mira cómo pueden servir en distintas etapas de vida.",
+    overallTitle: "Mayores beneficios generales",
+    overallBenefits: [
+      "Vivir en México sin necesitar visa",
+      "Trabajar en México sin permiso de trabajo",
+      "Votar en elecciones mexicanas",
+      "Obtener identificación y pasaporte mexicanos",
+      "Tener propiedad con más facilidad",
+      "Transmitir nacionalidad a hijos",
+      "Jubilarte en México con más seguridad",
+      "Conservar ciudadanía estadounidense mientras obtienes derechos mexicanos",
+    ],
+    ageTitle: "Beneficios por grupo de edad",
+    ageGroups: [
+      {
+        range: "0-17 años",
+        items: [
+          "Registro mexicano de nacimiento",
+          "Pasaporte mexicano",
+          "CURP / registro oficial de identidad mexicana",
+          "Acceso futuro a México más fácil",
+          "Más facilidad para vivir con familia en México",
+          "Mantiene abiertas opciones futuras de escuela, trabajo, propiedad e herencia",
+        ],
+      },
+      {
+        range: "18-24 años",
+        items: [
+          "Elegibilidad para credencial INE",
+          "Derecho a votar en elecciones mexicanas",
+          "Puedes trabajar en México sin visa de trabajo",
+          "Más facilidad para rentar, abrir cuentas, estudiar y recibir servicios locales",
+          "Más facilidad para construir una vida en EE. UU. o México",
+        ],
+      },
+      {
+        range: "25-39 años",
+        items: [
+          "Trabajar en México sin patrocinio migratorio",
+          "Emprender un negocio con más facilidad",
+          "Comprar propiedad con más facilidad",
+          "Tener tierra directamente en vez de usar estructuras para extranjeros en zonas restringidas",
+          "Transmitir nacionalidad mexicana a hijos si califican",
+          "Reubicación familiar más sencilla",
+        ],
+      },
+      {
+        range: "40-54 años",
+        items: [
+          "Más flexibilidad para mudarte o vivir parte del tiempo en México",
+          "Planificación patrimonial y de propiedad más sencilla",
+          "Configuración bancaria, fiscal y legal más sencilla",
+          "Más facilidad para cuidar familia en México",
+          "Puedes preparar antes planes de salud y retiro",
+        ],
+      },
+      {
+        range: "55-64 años",
+        items: [
+          "Planificación previa al retiro más sencilla",
+          "Puedes pasar periodos largos en México sin límites de turista o residencia",
+          "Más facilidad para comprar, renovar o establecerte en una propiedad",
+          "Más facilidad para probar vivir en México antes del retiro",
+          "Posible acceso a programas para adultos mayores desde alrededor de los 60, según requisitos",
+        ],
+      },
+      {
+        range: "65+ años",
+        items: [
+          "Puedes retirarte en México como ciudadano/a mexicano/a",
+          "Residencia de largo plazo sin preocupaciones de visa",
+          "Acceso más fácil a programas mexicanos para adultos mayores si calificas",
+          "Posible pensión federal para adultos mayores si vives en México y cumples requisitos",
+          "Puedes combinar residencia en México con Seguro Social de EE. UU., si calificas",
+          "Planificación de retiro transfronterizo más segura",
+        ],
+      },
+    ],
+    primaryCta: "Comparar costos de DNExpress",
+    backCta: "Volver a beneficios",
+  },
+  pt: {
+    title: "Benefícios da dupla cidadania mexicana",
+    subtitle:
+      "Comece pelos direitos que importam em qualquer idade e depois veja como eles podem ajudar em cada fase da vida.",
+    overallTitle: "Maiores benefícios gerais",
+    overallBenefits: [
+      "Viver no México sem precisar de visto",
+      "Trabalhar no México sem permissão de trabalho",
+      "Votar em eleições mexicanas",
+      "Obter identidade e passaporte mexicanos",
+      "Ter propriedade com mais facilidade",
+      "Transmitir nacionalidade aos filhos",
+      "Aposentar-se no México com mais segurança",
+      "Manter a cidadania dos EUA enquanto ganha direitos mexicanos",
+    ],
+    ageTitle: "Benefícios por faixa etária",
+    ageGroups: [
+      {
+        range: "0-17 anos",
+        items: [
+          "Registro mexicano de nascimento",
+          "Passaporte mexicano",
+          "CURP / registro oficial de identidade mexicana",
+          "Acesso futuro ao México mais fácil",
+          "Mais facilidade para viver com família no México",
+          "Mantém opções abertas para escola, trabalho, propriedade e herança no futuro",
+        ],
+      },
+      {
+        range: "18-24 anos",
+        items: [
+          "Elegibilidade para identidade eleitoral INE",
+          "Direito de votar em eleições mexicanas",
+          "Pode trabalhar no México sem visto de trabalho",
+          "Mais facilidade para alugar, abrir conta, estudar e acessar serviços locais",
+          "Mais facilidade para construir uma vida nos EUA ou no México",
+        ],
+      },
+      {
+        range: "25-39 anos",
+        items: [
+          "Trabalhar no México sem patrocínio migratório",
+          "Abrir um negócio com mais facilidade",
+          "Comprar propriedade com mais facilidade",
+          "Possuir terra diretamente em vez de usar estruturas para estrangeiros em zonas restritas",
+          "Transmitir nacionalidade mexicana aos filhos se forem elegíveis",
+          "Relocação familiar mais fácil",
+        ],
+      },
+      {
+        range: "40-54 anos",
+        items: [
+          "Mais flexibilidade para mudar-se ou viver meio período no México",
+          "Planejamento patrimonial e de propriedade mais fácil",
+          "Configuração bancária, fiscal e legal mais fácil",
+          "Mais facilidade para cuidar de família no México",
+          "Pode construir planos de saúde e aposentadoria mais cedo",
+        ],
+      },
+      {
+        range: "55-64 anos",
+        items: [
+          "Planejamento pré-aposentadoria mais fácil",
+          "Pode passar longos períodos no México sem limites de turista ou residência",
+          "Mais facilidade para comprar, reformar ou estabelecer-se em uma propriedade",
+          "Mais facilidade para testar a vida no México antes da aposentadoria",
+          "Possível acesso a programas para idosos a partir de cerca de 60 anos, conforme requisitos",
+        ],
+      },
+      {
+        range: "65+ anos",
+        items: [
+          "Pode aposentar-se no México como cidadão mexicano",
+          "Residência de longo prazo sem preocupação com visto",
+          "Acesso mais fácil a programas mexicanos para idosos se elegível",
+          "Possível pensão federal para idosos se morar no México e cumprir requisitos",
+          "Pode combinar residência no México com Social Security dos EUA, se elegível",
+          "Planejamento de aposentadoria transfronteiriça mais seguro",
+        ],
+      },
+    ],
+    primaryCta: "Comparar custos do DNExpress",
+    backCta: "Voltar aos benefícios",
+  },
+  it: {
+    title: "Benefici della doppia cittadinanza messicana",
+    subtitle:
+      "Parti dai diritti utili a qualsiasi eta, poi vedi come possono contare nelle diverse fasi della vita.",
+    overallTitle: "Benefici generali principali",
+    overallBenefits: [
+      "Vivere in Messico senza bisogno di visto",
+      "Lavorare in Messico senza permesso di lavoro",
+      "Votare nelle elezioni messicane",
+      "Ottenere ID e passaporto messicani",
+      "Possedere beni immobili con piu facilita",
+      "Trasmettere la nazionalita ai figli",
+      "Andare in pensione in Messico con piu sicurezza",
+      "Mantenere la cittadinanza statunitense ottenendo diritti messicani",
+    ],
+    ageTitle: "Benefici per fascia d'eta",
+    ageGroups: [
+      {
+        range: "0-17 anni",
+        items: [
+          "Registrazione messicana della nascita",
+          "Passaporto messicano",
+          "CURP / registro ufficiale di identita messicana",
+          "Accesso futuro al Messico piu semplice",
+          "Piu facile vivere con la famiglia in Messico",
+          "Mantiene aperte opzioni future per scuola, lavoro, proprieta ed eredita",
+        ],
+      },
+      {
+        range: "18-24 anni",
+        items: [
+          "Idoneita alla tessera elettorale INE",
+          "Diritto di voto nelle elezioni messicane",
+          "Possibilita di lavorare in Messico senza visto di lavoro",
+          "Piu facile affittare, aprire conti, studiare e accedere a servizi locali",
+          "Piu facile costruire una vita negli Stati Uniti o in Messico",
+        ],
+      },
+      {
+        range: "25-39 anni",
+        items: [
+          "Lavorare in Messico senza sponsorizzazione migratoria",
+          "Avviare un'attivita con piu facilita",
+          "Comprare immobili con piu facilita",
+          "Possedere terra direttamente invece di usare strutture per stranieri nelle zone riservate",
+          "Trasmettere la nazionalita messicana ai figli se idonei",
+          "Ricollocazione familiare piu semplice",
+        ],
+      },
+      {
+        range: "40-54 anni",
+        items: [
+          "Maggiore flessibilita per trasferirsi o vivere part-time in Messico",
+          "Pianificazione patrimoniale e immobiliare piu semplice",
+          "Impostazione bancaria, fiscale e legale piu semplice",
+          "Piu facile prendersi cura della famiglia in Messico",
+          "Possibilita di preparare prima piani sanitari e pensionistici",
+        ],
+      },
+      {
+        range: "55-64 anni",
+        items: [
+          "Pianificazione pre-pensionamento piu semplice",
+          "Possibilita di restare a lungo in Messico senza limiti turistici o di residenza",
+          "Piu facile comprare, ristrutturare o stabilirsi in una proprieta",
+          "Piu facile provare la vita in Messico prima della pensione",
+          "Possibile accesso a programmi per anziani da circa 60 anni, secondo i requisiti",
+        ],
+      },
+      {
+        range: "65+ anni",
+        items: [
+          "Possibilita di andare in pensione in Messico come cittadino messicano",
+          "Residenza a lungo termine senza problemi di visto",
+          "Accesso piu facile a programmi messicani per anziani se idonei",
+          "Possibile pensione federale per anziani se vivi in Messico e soddisfi i requisiti",
+          "Possibilita di combinare residenza in Messico e Social Security USA, se idoneo",
+          "Pianificazione pensionistica transfrontaliera piu sicura",
+        ],
+      },
+    ],
+    primaryCta: "Confronta i costi DNExpress",
+    backCta: "Torna ai benefici",
+  },
+  fr: {
+    title: "Avantages de la double citoyennete mexicaine",
+    subtitle:
+      "Commence par les droits utiles a tout age, puis vois comment ils peuvent compter a chaque etape de la vie.",
+    overallTitle: "Plus grands avantages generaux",
+    overallBenefits: [
+      "Vivre au Mexique sans avoir besoin de visa",
+      "Travailler au Mexique sans permis de travail",
+      "Voter aux elections mexicaines",
+      "Obtenir une piece d'identite et un passeport mexicains",
+      "Posseder des biens plus facilement",
+      "Transmettre la nationalite aux enfants",
+      "Prendre sa retraite au Mexique avec plus de securite",
+      "Conserver la citoyennete americaine tout en obtenant des droits mexicains",
+    ],
+    ageTitle: "Avantages par groupe d'age",
+    ageGroups: [
+      {
+        range: "0-17 ans",
+        items: [
+          "Enregistrement de naissance mexicain",
+          "Passeport mexicain",
+          "CURP / dossier officiel d'identite mexicaine",
+          "Acces futur au Mexique plus facile",
+          "Plus facile de vivre avec la famille au Mexique",
+          "Garde des options ouvertes pour l'ecole, le travail, la propriete et l'heritage",
+        ],
+      },
+      {
+        range: "18-24 ans",
+        items: [
+          "Eligibilite a la carte electorale INE",
+          "Droit de vote aux elections mexicaines",
+          "Possibilite de travailler au Mexique sans visa de travail",
+          "Plus facile de louer, ouvrir un compte, etudier et obtenir des services locaux",
+          "Plus facile de construire une vie aux Etats-Unis ou au Mexique",
+        ],
+      },
+      {
+        range: "25-39 ans",
+        items: [
+          "Travailler au Mexique sans parrainage migratoire",
+          "Creer une entreprise plus facilement",
+          "Acheter un bien plus facilement",
+          "Posseder directement un terrain au lieu d'utiliser des structures pour etrangers en zones restreintes",
+          "Transmettre la nationalite mexicaine aux enfants s'ils sont admissibles",
+          "Relocalisation familiale plus facile",
+        ],
+      },
+      {
+        range: "40-54 ans",
+        items: [
+          "Plus de flexibilite pour demenager ou vivre a temps partiel au Mexique",
+          "Planification patrimoniale et immobiliere plus facile",
+          "Mise en place bancaire, fiscale et juridique plus facile",
+          "Plus facile de s'occuper de la famille au Mexique",
+          "Possibilite de preparer plus tot les plans de sante et de retraite",
+        ],
+      },
+      {
+        range: "55-64 ans",
+        items: [
+          "Planification pre-retraite plus facile",
+          "Possibilite de passer de longues periodes au Mexique sans limites touristiques ou de residence",
+          "Plus facile d'acheter, renover ou s'installer dans un bien",
+          "Plus facile de tester la vie au Mexique avant la retraite",
+          "Acces possible a des programmes pour personnes agees vers 60 ans, selon les conditions",
+        ],
+      },
+      {
+        range: "65+ ans",
+        items: [
+          "Possibilite de prendre sa retraite au Mexique comme citoyen mexicain",
+          "Residence longue duree sans souci de visa",
+          "Acces plus facile aux programmes mexicains pour personnes agees si admissible",
+          "Pension federale possible pour personnes agees si tu vis au Mexique et remplis les conditions",
+          "Possibilite de combiner residence au Mexique et Social Security americaine, si admissible",
+          "Planification de retraite transfrontaliere plus solide",
+        ],
+      },
+    ],
+    primaryCta: "Comparer les couts DNExpress",
+    backCta: "Retour aux avantages",
+  },
+  ja: {
+    title: "メキシコ二重国籍のメリット",
+    subtitle:
+      "まず年齢を問わず重要な権利を確認し、その後ライフステージごとの意味を見ていきます。",
+    overallTitle: "主な全体メリット",
+    overallBenefits: [
+      "ビザなしでメキシコに住める",
+      "就労許可なしでメキシコで働ける",
+      "メキシコの選挙で投票できる",
+      "メキシコの身分証とパスポートを取得できる",
+      "不動産をより取得しやすい",
+      "子どもに国籍を引き継げる",
+      "メキシコでより安心して退職生活を計画できる",
+      "米国市民権を保ちながらメキシコの権利を得られる",
+    ],
+    ageTitle: "年齢別メリット",
+    ageGroups: [
+      {
+        range: "0-17歳",
+        items: [
+          "メキシコ出生登録",
+          "メキシコ旅券",
+          "CURP / 公式のメキシコ身分記録",
+          "将来メキシコへアクセスしやすい",
+          "メキシコの家族と暮らしやすい",
+          "将来の学校、仕事、不動産、相続の選択肢を残せる",
+        ],
+      },
+      {
+        range: "18-24歳",
+        items: [
+          "INE有権者IDの対象になり得る",
+          "メキシコ選挙で投票する権利",
+          "就労ビザなしでメキシコで働ける",
+          "賃貸、銀行、就学、地域サービスの利用がしやすい",
+          "米国またはメキシコのどちらでも生活を築きやすい",
+        ],
+      },
+      {
+        range: "25-39歳",
+        items: [
+          "移民スポンサーなしでメキシコで働ける",
+          "事業を始めやすい",
+          "不動産を買いやすい",
+          "制限区域で外国人向けの仕組みを使わず土地を直接所有しやすい",
+          "条件を満たせば子どもにメキシコ国籍を引き継げる",
+          "家族での移住がしやすい",
+        ],
+      },
+      {
+        range: "40-54歳",
+        items: [
+          "移住またはメキシコでの二拠点生活の柔軟性が増す",
+          "不動産と資産計画がしやすい",
+          "銀行、税務、法的手続きの準備がしやすい",
+          "メキシコにいる家族を支えやすい",
+          "医療と退職計画を早めに作りやすい",
+        ],
+      },
+      {
+        range: "55-64歳",
+        items: [
+          "退職前の計画がしやすい",
+          "観光・居住制限を気にせず長くメキシコに滞在しやすい",
+          "不動産の購入、改修、定住準備がしやすい",
+          "退職前にメキシコ生活を試しやすい",
+          "要件次第で60歳前後から高齢者向け制度にアクセスできる可能性",
+        ],
+      },
+      {
+        range: "65歳以上",
+        items: [
+          "メキシコ市民としてメキシコで退職生活を送れる",
+          "ビザの心配なく長期居住しやすい",
+          "条件を満たせばメキシコの高齢者制度を利用しやすい",
+          "メキシコ在住で要件を満たす場合、連邦高齢者年金の可能性",
+          "条件を満たせば米国Social Securityとメキシコ居住を組み合わせられる",
+          "国境をまたぐ退職計画がより安定する",
+        ],
+      },
+    ],
+    primaryCta: "DNExpress費用を比較",
+    backCta: "メリットに戻る",
+  },
+  hi: {
+    title: "मैक्सिकन दोहरी नागरिकता के लाभ",
+    subtitle:
+      "पहले वे अधिकार देखें जो हर उम्र में काम आते हैं, फिर उम्र के हिसाब से उनके फायदे देखें।",
+    overallTitle: "सबसे बड़े सामान्य लाभ",
+    overallBenefits: [
+      "वीजा के बिना मेक्सिको में रहना",
+      "वर्क परमिट के बिना मेक्सिको में काम करना",
+      "मैक्सिकन चुनावों में वोट देना",
+      "मैक्सिकन ID और पासपोर्ट पाना",
+      "संपत्ति रखना अधिक आसान",
+      "बच्चों को राष्ट्रीयता देना",
+      "मेक्सिको में अधिक सुरक्षित तरीके से रिटायर होना",
+      "अमेरिकी नागरिकता रखते हुए मैक्सिकन अधिकार पाना",
+    ],
+    ageTitle: "उम्र के हिसाब से लाभ",
+    ageGroups: [
+      {
+        range: "0-17 वर्ष",
+        items: [
+          "मैक्सिकन जन्म पंजीकरण",
+          "मैक्सिकन पासपोर्ट",
+          "CURP / आधिकारिक मैक्सिकन पहचान रिकॉर्ड",
+          "भविष्य में मेक्सिको तक आसान पहुंच",
+          "मेक्सिको में परिवार के साथ रहना आसान",
+          "आगे स्कूल, काम, संपत्ति और विरासत के विकल्प खुले रहते हैं",
+        ],
+      },
+      {
+        range: "18-24 वर्ष",
+        items: [
+          "INE मतदाता ID की पात्रता",
+          "मैक्सिकन चुनावों में वोट देने का अधिकार",
+          "वर्क वीजा के बिना मेक्सिको में काम कर सकते हैं",
+          "किराया, बैंकिंग, पढ़ाई और स्थानीय सेवाएं लेना आसान",
+          "अमेरिका या मेक्सिको में जीवन बनाना आसान",
+        ],
+      },
+      {
+        range: "25-39 वर्ष",
+        items: [
+          "इमिग्रेशन स्पॉन्सरशिप के बिना मेक्सिको में काम",
+          "व्यवसाय शुरू करना आसान",
+          "संपत्ति खरीदना आसान",
+          "प्रतिबंधित क्षेत्रों में विदेशी संरचनाओं के बजाय जमीन सीधे रखना",
+          "पात्र होने पर बच्चों को मैक्सिकन राष्ट्रीयता देना",
+          "परिवार के साथ स्थानांतरण आसान",
+        ],
+      },
+      {
+        range: "40-54 वर्ष",
+        items: [
+          "मेक्सिको में स्थानांतरित होने या पार्ट-टाइम रहने की अधिक लचीलापन",
+          "संपत्ति और धन योजना आसान",
+          "बैंकिंग, टैक्स और कानूनी व्यवस्था आसान",
+          "मेक्सिको में परिवार की देखभाल आसान",
+          "स्वास्थ्य और रिटायरमेंट योजना पहले से बनाना आसान",
+        ],
+      },
+      {
+        range: "55-64 वर्ष",
+        items: [
+          "प्री-रिटायरमेंट योजना आसान",
+          "टूरिस्ट या रेजिडेंसी सीमाओं के बिना लंबे समय तक मेक्सिको में रहना",
+          "संपत्ति खरीदना, सुधारना या बसना आसान",
+          "रिटायरमेंट से पहले मेक्सिको में रहने को आज़माना आसान",
+          "लगभग 60 वर्ष से वरिष्ठ कार्यक्रमों की संभावित पहुंच, आवश्यकताओं पर निर्भर",
+        ],
+      },
+      {
+        range: "65+ वर्ष",
+        items: [
+          "मैक्सिकन नागरिक के रूप में मेक्सिको में रिटायर हो सकते हैं",
+          "वीजा चिंता के बिना दीर्घकालिक निवास",
+          "पात्र होने पर मैक्सिकन वरिष्ठ कार्यक्रमों तक आसान पहुंच",
+          "मेक्सिको में रहने और शर्तें पूरी करने पर संघीय वरिष्ठ पेंशन की संभावना",
+          "पात्र होने पर मेक्सिको निवास को अमेरिकी Social Security के साथ जोड़ सकते हैं",
+          "अधिक सुरक्षित सीमा-पार रिटायरमेंट योजना",
+        ],
+      },
+    ],
+    primaryCta: "DNExpress लागतों की तुलना करें",
+    backCta: "लाभों पर वापस जाएं",
+  },
+  ar: {
+    title: "فوائد الجنسية المكسيكية المزدوجة",
+    subtitle:
+      "ابدأ بالحقوق المهمة في أي عمر، ثم انظر كيف تفيد في مراحل الحياة المختلفة.",
+    overallTitle: "أكبر الفوائد العامة",
+    overallBenefits: [
+      "العيش في المكسيك دون الحاجة إلى تأشيرة",
+      "العمل في المكسيك دون تصريح عمل",
+      "التصويت في الانتخابات المكسيكية",
+      "الحصول على هوية وجواز سفر مكسيكيين",
+      "امتلاك العقارات بسهولة أكبر",
+      "نقل الجنسية إلى الأطفال",
+      "التقاعد في المكسيك بأمان أكبر",
+      "الاحتفاظ بالجنسية الأمريكية مع الحصول على حقوق مكسيكية",
+    ],
+    ageTitle: "الفوائد حسب الفئة العمرية",
+    ageGroups: [
+      {
+        range: "0-17 سنة",
+        items: [
+          "تسجيل ميلاد مكسيكي",
+          "جواز سفر مكسيكي",
+          "CURP / سجل هوية مكسيكي رسمي",
+          "سهولة الوصول إلى المكسيك مستقبلا",
+          "سهولة العيش مع العائلة في المكسيك",
+          "إبقاء خيارات الدراسة والعمل والملكية والميراث مفتوحة لاحقا",
+        ],
+      },
+      {
+        range: "18-24 سنة",
+        items: [
+          "الأهلية لهوية الناخب INE",
+          "حق التصويت في الانتخابات المكسيكية",
+          "إمكانية العمل في المكسيك دون تأشيرة عمل",
+          "سهولة الاستئجار والبنوك والدراسة والخدمات المحلية",
+          "سهولة بناء حياة في الولايات المتحدة أو المكسيك",
+        ],
+      },
+      {
+        range: "25-39 سنة",
+        items: [
+          "العمل في المكسيك دون كفالة هجرة",
+          "بدء عمل تجاري بسهولة أكبر",
+          "شراء العقار بسهولة أكبر",
+          "امتلاك الأرض مباشرة بدلا من هياكل الأجانب في المناطق المقيدة",
+          "نقل الجنسية المكسيكية إلى الأطفال إذا كانوا مؤهلين",
+          "انتقال العائلة بسهولة أكبر",
+        ],
+      },
+      {
+        range: "40-54 سنة",
+        items: [
+          "مرونة أكبر للانتقال أو العيش جزئيا في المكسيك",
+          "تخطيط أسهل للملكية والثروة",
+          "إعداد مصرفي وضريبي وقانوني أسهل",
+          "سهولة رعاية العائلة في المكسيك",
+          "إمكانية بناء خطط الصحة والتقاعد مبكرا",
+        ],
+      },
+      {
+        range: "55-64 سنة",
+        items: [
+          "تخطيط أسهل لما قبل التقاعد",
+          "إمكانية قضاء فترات طويلة في المكسيك دون حدود السائح أو الإقامة",
+          "سهولة شراء أو ترميم أو الاستقرار في عقار",
+          "سهولة تجربة العيش في المكسيك قبل التقاعد",
+          "إمكانية الوصول إلى برامج كبار السن بدءا من حوالي 60 عاما، حسب المتطلبات",
+        ],
+      },
+      {
+        range: "65+ سنة",
+        items: [
+          "إمكانية التقاعد في المكسيك كمواطن مكسيكي",
+          "إقامة طويلة الأجل دون قلق التأشيرة",
+          "وصول أسهل إلى برامج كبار السن المكسيكية إذا كنت مؤهلا",
+          "احتمال معاش اتحادي لكبار السن إذا كنت تعيش في المكسيك وتلبي المتطلبات",
+          "إمكانية الجمع بين الإقامة في المكسيك وSocial Security الأمريكي إذا كنت مؤهلا",
+          "تخطيط تقاعد عبر الحدود أكثر أمانا",
+        ],
+      },
+    ],
+    primaryCta: "قارن تكاليف DNExpress",
+    backCta: "العودة إلى الفوائد",
+  },
+  zh: {
+    title: "墨西哥双重国籍的好处",
+    subtitle:
+      "先看任何年龄都重要的权利，再按人生阶段了解这些权利的实际作用。",
+    overallTitle: "最大的整体好处",
+    overallBenefits: [
+      "无需签证即可在墨西哥居住",
+      "无需工作许可即可在墨西哥工作",
+      "在墨西哥选举中投票",
+      "获得墨西哥身份证件和护照",
+      "更容易拥有房产",
+      "把国籍传给子女",
+      "在墨西哥更安心地退休",
+      "保留美国公民身份，同时获得墨西哥权利",
+    ],
+    ageTitle: "按年龄段的好处",
+    ageGroups: [
+      {
+        range: "0-17岁",
+        items: [
+          "墨西哥出生登记",
+          "墨西哥护照",
+          "CURP / 官方墨西哥身份记录",
+          "未来更容易进入墨西哥",
+          "更容易与家人在墨西哥生活",
+          "为以后的学校、工作、房产和继承保留选择",
+        ],
+      },
+      {
+        range: "18-24岁",
+        items: [
+          "有资格取得INE选民身份证",
+          "在墨西哥选举中投票的权利",
+          "无需工作签证即可在墨西哥工作",
+          "更容易租房、开户、学习和使用本地服务",
+          "更容易在美国或墨西哥建立生活",
+        ],
+      },
+      {
+        range: "25-39岁",
+        items: [
+          "无需移民担保即可在墨西哥工作",
+          "更容易创业",
+          "更容易购买房产",
+          "在限制区可更直接地拥有土地，而不是使用外国人结构",
+          "符合条件时可把墨西哥国籍传给子女",
+          "家庭搬迁更容易",
+        ],
+      },
+      {
+        range: "40-54岁",
+        items: [
+          "搬到墨西哥或在墨西哥兼职居住更灵活",
+          "房产和财富规划更容易",
+          "银行、税务和法律安排更容易",
+          "更容易照顾在墨西哥的家人",
+          "可以更早建立医疗和退休计划",
+        ],
+      },
+      {
+        range: "55-64岁",
+        items: [
+          "退休前规划更容易",
+          "可以在墨西哥长期停留，不受游客或居留限制影响",
+          "更容易购买、翻修或安顿房产",
+          "退休前更容易试住墨西哥",
+          "约60岁起可能可使用老年相关项目，取决于要求",
+        ],
+      },
+      {
+        range: "65岁以上",
+        items: [
+          "可以作为墨西哥公民在墨西哥退休",
+          "长期居住无需担心签证",
+          "符合条件时更容易使用墨西哥老年项目",
+          "若居住在墨西哥并符合要求，可能获得联邦老年金",
+          "符合条件时可把墨西哥居住与美国Social Security结合",
+          "跨境退休规划更稳妥",
+        ],
+      },
+    ],
+    primaryCta: "比较DNExpress费用",
+    backCta: "返回好处",
+  },
+};
+
+const getDualCitizenshipBenefits = (language) =>
+  DUAL_CITIZENSHIP_BENEFITS[normalizeSupportLanguage(language)] ||
+  DUAL_CITIZENSHIP_BENEFITS.en;
+
 const DNEXPRESS_POSTS = {
   en: {
     title: "Is DNExpress worth it?",
@@ -7531,18 +8295,180 @@ const getWorthItCaseCost = (language, tone) => {
   );
 };
 
+const DualCitizenshipBenefitsScene = ({
+  language,
+  onContinue,
+  onSubmitSound,
+}) => {
+  const content = getDualCitizenshipBenefits(language);
+
+  return (
+    <Stack spacing={5} textAlign="start">
+      <Box>
+        <HStack spacing={3} mb={3}>
+          <Box
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            w="42px"
+            h="42px"
+            borderRadius="8px"
+            bg="rgba(15, 118, 110, 0.14)"
+            color="#0f766e"
+            flexShrink={0}
+          >
+            <Icon as={BadgeCheck} boxSize="22px" />
+          </Box>
+          <Heading
+            as="h1"
+            size="lg"
+            letterSpacing="0"
+            color="var(--app-text-primary)"
+          >
+            {content.title}
+          </Heading>
+        </HStack>
+        <Text
+          color="var(--app-text-secondary)"
+          fontSize={{ base: "md", md: "lg" }}
+        >
+          {content.subtitle}
+        </Text>
+      </Box>
+
+      <Box
+        border="1px solid"
+        borderColor="rgba(15, 118, 110, 0.24)"
+        borderRadius="8px"
+        bg="rgba(15, 118, 110, 0.07)"
+        p={{ base: 4, md: 5 }}
+      >
+        <HStack spacing={2} mb={4} align="center">
+          <Icon as={Sparkles} boxSize="18px" color="#0f766e" />
+          <Text color="var(--app-text-primary)" fontWeight="800">
+            {content.overallTitle}
+          </Text>
+        </HStack>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+          {content.overallBenefits.map((benefit) => (
+            <HStack key={benefit} spacing={2} align="flex-start">
+              <Icon
+                as={Check}
+                color="#0f766e"
+                boxSize="15px"
+                mt="3px"
+                flexShrink={0}
+              />
+              <Text color="var(--app-text-secondary)" fontSize="sm">
+                {benefit}
+              </Text>
+            </HStack>
+          ))}
+        </SimpleGrid>
+      </Box>
+
+      <Box>
+        <Text color="var(--app-text-primary)" fontWeight="800" mb={3}>
+          {content.ageTitle}
+        </Text>
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+          {content.ageGroups.map((group) => (
+            <Box
+              key={group.range}
+              border="1px solid"
+              borderColor="var(--app-border)"
+              borderRadius="8px"
+              bg="var(--app-surface)"
+              p={4}
+            >
+              <Badge
+                bg="rgba(15, 118, 110, 0.14)"
+                color="#0f766e"
+                borderRadius="6px"
+                px={2}
+                py={1}
+                mb={3}
+              >
+                {group.range}
+              </Badge>
+              <Stack spacing={2}>
+                {group.items.map((item) => (
+                  <HStack
+                    key={`${group.range}-${item}`}
+                    spacing={2}
+                    align="flex-start"
+                  >
+                    <Icon
+                      as={Check}
+                      color="#0f766e"
+                      boxSize="14px"
+                      mt="3px"
+                      flexShrink={0}
+                    />
+                    <Text color="var(--app-text-secondary)" fontSize="sm">
+                      {item}
+                    </Text>
+                  </HStack>
+                ))}
+              </Stack>
+            </Box>
+          ))}
+        </SimpleGrid>
+      </Box>
+
+      <Button
+        type="button"
+        alignSelf="center"
+        {...CITIZENSHIP_TEAL_BUTTON_PROPS}
+        minW={{ base: "100%", sm: "240px" }}
+        h="58px"
+        fontSize="lg"
+        mb={3}
+        onClick={() => {
+          onSubmitSound?.();
+          onContinue();
+        }}
+      >
+        {translateText("Next", language)}
+      </Button>
+    </Stack>
+  );
+};
+
 const DNExpressWorthItPrimer = ({
   language,
+  onBackToBenefits,
   onStartQuestions,
   isStarting,
   onSelectSound,
   onSubmitSound,
 }) => {
   const post = getDNExpressPost(language);
+  const benefitsContent = getDualCitizenshipBenefits(language);
   const [openCaseIndexes, setOpenCaseIndexes] = useState([]);
 
   return (
     <Stack spacing={5} textAlign="start">
+      <Button
+        type="button"
+        variant="outline"
+        alignSelf="flex-start"
+        borderRadius="8px"
+        bg="var(--app-surface-elevated)"
+        borderColor="var(--app-border)"
+        color="var(--app-text-primary)"
+        boxShadow="none"
+        transform="none"
+        leftIcon={<Icon as={ArrowLeft} boxSize="16px" />}
+        onClick={() => {
+          onSelectSound?.();
+          onBackToBenefits();
+        }}
+        _hover={{ bg: "var(--app-surface-muted)" }}
+        _active={{ boxShadow: "none", transform: "none" }}
+      >
+        {benefitsContent.backCta}
+      </Button>
       <Box>
         <Heading
           as="h1"
@@ -7567,7 +8493,7 @@ const DNExpressWorthItPrimer = ({
 
       <Button
         type="button"
-        alignSelf="flex-start"
+        alignSelf="center"
         {...CITIZENSHIP_TEAL_BUTTON_PROPS}
         onClick={() => {
           onSubmitSound?.();
@@ -10137,6 +11063,9 @@ export default function CitizenshipGuide() {
     initialCitizenshipState.showResults,
   );
   const [showIntro, setShowIntro] = useState(initialCitizenshipState.showIntro);
+  const [showBenefits, setShowBenefits] = useState(
+    initialCitizenshipState.showBenefits,
+  );
   const [showPrimer, setShowPrimer] = useState(
     initialCitizenshipState.showPrimer,
   );
@@ -10302,6 +11231,7 @@ export default function CitizenshipGuide() {
             "true",
           );
           setShowIntro(false);
+          setShowBenefits(false);
           setShowPrimer(false);
         }
       } catch (error) {
@@ -10357,7 +11287,7 @@ export default function CitizenshipGuide() {
   }, [assistantChat]);
 
   useEffect(() => {
-    if (showIntro || showPrimer || !hasLoadedProgressRef.current)
+    if (showIntro || showBenefits || showPrimer || !hasLoadedProgressRef.current)
       return undefined;
 
     const currentSavedChat = normalizeSavedAssistantChat(assistantChat);
@@ -10386,6 +11316,7 @@ export default function CitizenshipGuide() {
     questionIndex,
     showResults,
     showIntro,
+    showBenefits,
     showPrimer,
   ]);
 
@@ -10403,6 +11334,11 @@ export default function CitizenshipGuide() {
   const goBack = () => {
     playSelectSound();
     setShowResults(false);
+    if (currentIndex === 0 && !isEditingAnswers) {
+      setShowBenefits(false);
+      setShowPrimer(true);
+      return;
+    }
     setQuestionIndex((index) => Math.max(index - 1, 0));
   };
 
@@ -10568,6 +11504,7 @@ export default function CitizenshipGuide() {
       setIsEditingAnswers(false);
       setQuestionIndex(0);
       setShowResults(false);
+      setShowBenefits(false);
       setShowPrimer(false);
       setShowIntro(true);
       hasLoadedProgressRef.current = false;
@@ -10603,14 +11540,15 @@ export default function CitizenshipGuide() {
     }
   };
 
-  const goToPrimer = async () => {
+  const goToBenefits = async () => {
     setIsSavingIntro(true);
     try {
       await ensureCitizenshipAccount();
       setShowIntro(false);
-      setShowPrimer(true);
+      setShowBenefits(true);
+      setShowPrimer(false);
     } catch (error) {
-      console.warn("Failed to prepare account before primer:", error);
+      console.warn("Failed to prepare account before benefits:", error);
       toast({
         title: translateText(
           "Creating your key failed. You can still paste an existing key.",
@@ -10623,6 +11561,18 @@ export default function CitizenshipGuide() {
     } finally {
       setIsSavingIntro(false);
     }
+  };
+
+  const goToPrimer = () => {
+    setShowIntro(false);
+    setShowBenefits(false);
+    setShowPrimer(true);
+  };
+
+  const goBackToBenefits = () => {
+    setShowIntro(false);
+    setShowPrimer(false);
+    setShowBenefits(true);
   };
 
   const startQuestions = async () => {
@@ -10656,6 +11606,7 @@ export default function CitizenshipGuide() {
     } finally {
       setIsSavingIntro(false);
       setShowIntro(false);
+      setShowBenefits(false);
       setShowPrimer(false);
     }
   };
@@ -10826,7 +11777,7 @@ export default function CitizenshipGuide() {
             <CitizenshipIntro
               language={pageLanguage}
               onCopySecretKey={copySecretKey}
-              onStartQuestions={goToPrimer}
+              onStartQuestions={goToBenefits}
               onSignInWithKey={signInWithSecretKey}
               onSelectSound={playSelectSound}
               onSubmitSound={playSubmitSound}
@@ -10841,9 +11792,18 @@ export default function CitizenshipGuide() {
             />
           ) : null}
 
+          {showBenefits ? (
+            <DualCitizenshipBenefitsScene
+              language={pageLanguage}
+              onContinue={goToPrimer}
+              onSubmitSound={playSubmitSound}
+            />
+          ) : null}
+
           {showPrimer ? (
             <DNExpressWorthItPrimer
               language={pageLanguage}
+              onBackToBenefits={goBackToBenefits}
               onStartQuestions={startQuestions}
               isStarting={isSavingIntro}
               onSelectSound={playSelectSound}
@@ -10851,7 +11811,7 @@ export default function CitizenshipGuide() {
             />
           ) : null}
 
-          {!showIntro && !showPrimer && !showResults ? (
+          {!showIntro && !showBenefits && !showPrimer && !showResults ? (
             <Box>
               <HStack justify="space-between" mb={2}>
                 {isEditingAnswers ? (
@@ -10970,7 +11930,7 @@ export default function CitizenshipGuide() {
             </Box>
           ) : null}
 
-          {!showIntro && !showPrimer && !showResults ? (
+          {!showIntro && !showBenefits && !showPrimer && !showResults ? (
             <>
               <Box
                 border="1px solid"
@@ -11032,7 +11992,7 @@ export default function CitizenshipGuide() {
                     transform="none"
                     minW="112px"
                     h="48px"
-                    isDisabled={currentIndex === 0}
+                    isDisabled={currentIndex === 0 && isEditingAnswers}
                     onClick={goBack}
                     _hover={{ bg: "var(--app-surface-muted)" }}
                     _active={{ boxShadow: "none", transform: "none" }}
@@ -11128,7 +12088,7 @@ export default function CitizenshipGuide() {
                 </Flex>
               ) : null}
             </>
-          ) : !showIntro && !showPrimer ? (
+          ) : !showIntro && !showBenefits && !showPrimer ? (
             <Flex
               alignSelf="stretch"
               justify="space-between"
@@ -11167,7 +12127,7 @@ export default function CitizenshipGuide() {
             </Flex>
           ) : null}
 
-          {!showIntro && !showPrimer && showResults ? (
+          {!showIntro && !showBenefits && !showPrimer && showResults ? (
             <Stack spacing={5}>
               <ResultPanel
                 evaluation={evaluation}

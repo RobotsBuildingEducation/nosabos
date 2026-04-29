@@ -332,6 +332,7 @@ The citizenship miniapp is a standalone localized product surface. It does **not
 **Static surfaces that must be localized**
 - Intro/onboarding: key creation, `Copy key`, `Next`, `Already have a key?`, existing-key sign-in, sign-in errors/success toasts, secret-key copy toasts, and `onboardedCitizenship` intro copy.
 - Header controls: icon-only `/links` back button, `/links`-style language menu, theme toggle, and reset control. The hidden test-prefill button/function are development-only and should remain commented out unless explicitly re-enabled for QA.
+- Dual-citizenship benefits scene: `DUAL_CITIZENSHIP_BENEFITS` has one block per support language and must localize the biggest overall benefits, every age-group label/item, the DNExpress-comparison CTA, and the DNExpress back-to-benefits CTA.
 - DNExpress educational primer: `DNEXPRESS_POSTS` has one block per support language and must include CTA text, green/yellow/red accordion cards, cost/recommendation copy, closing copy, and official-checklist copy. The green/yellow/red cost strip also reads from `WORTH_IT_CASE_COSTS`, so localize its `summary`, `diy`, and `paid` strings with the post copy. Do not localize only the header.
 - Questionnaire: every `QUESTION_DEFINITIONS` label, helper, placeholder, section label, and answer option. Naturalization residence duration must include the explicit `None / no qualifying residence` zero-time option in every support language. Resident-card, INM-address, and qualifying-residence absence questions must also include localized not-applicable options for users who have not started a qualifying residence clock.
 - Edit mode: `Edit answers`, `Jump to question`, and `Finish edits` must be localized. In edit mode the question progress display is intentionally fixed at `100%`, the question label becomes a dropdown menu with a caret, and `Finish edits` lives below the wizard card, centered and half-width on non-mobile screens.
@@ -350,6 +351,7 @@ The citizenship miniapp is a standalone localized product surface. It does **not
 
 **Questionnaire / edit-mode UX**
 - Normal intake should remain one-question-at-a-time with no jump menu.
+- On first-run onboarding, the flow is intro/key screen -> dual-citizenship benefits -> DNExpress price comparison -> questionnaire. DNExpress must be able to go back to the benefits scene, and the first questionnaire question must be able to go back to DNExpress.
 - Only after results exist and the user clicks `Edit answers` should the question label become a dropdown menu. The menu lists all currently visible questions, shows answered status, and jumps by setting `questionIndex`.
 - Wizard navigation uses outline buttons with consistent sizing (`Back`, optional `Skip`, `Next` / `Done`). The `Next` / `Done` button uses a teal border, not the raised teal button shadow.
 - `Finish edits` returns to the finished questionnaire/results view without rerunning onboarding. Keep it outside the wizard container so it reads as an exit action, not another answer option.
