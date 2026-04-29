@@ -8673,12 +8673,28 @@ const ChecklistPanel = ({
   );
 };
 
-const ConsulateFinderPanel = ({ language, locationAnswer, onSelectSound }) => {
+const ConsulateFinderPanel = ({
+  language,
+  locationAnswer,
+  onLocationChange,
+  onSelectSound,
+}) => {
   const [locationInput, setLocationInput] = useState(locationAnswer || "");
 
   useEffect(() => {
     setLocationInput(locationAnswer || "");
   }, [locationAnswer]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextValue = (locationInput || "").trim();
+      if (nextValue !== (locationAnswer || "")) {
+        onLocationChange(nextValue);
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [locationAnswer, locationInput, onLocationChange]);
 
   const normalizedLocation = (locationInput || "").trim();
   const query = normalizedLocation
@@ -9272,6 +9288,9 @@ export default function CitizenshipGuide() {
   const playSubmitSound = useCallback(() => {
     playSound(submitActionSound);
   }, [playSound]);
+  const setHandlingLocation = useCallback((value) => {
+    setAnswers((current) => ({ ...current, handlingLocation: value }));
+  }, []);
   const setAnswer = (key, value) => {
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
     setAnswers((current) => ({ ...current, [key]: value }));
@@ -10193,6 +10212,7 @@ export default function CitizenshipGuide() {
               <ConsulateFinderPanel
                 language={pageLanguage}
                 locationAnswer={answers.handlingLocation}
+                onLocationChange={setHandlingLocation}
                 onSelectSound={playSelectSound}
               />
               <CitizenshipAssistantDrawer
