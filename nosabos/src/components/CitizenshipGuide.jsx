@@ -8673,6 +8673,69 @@ const ChecklistPanel = ({
   );
 };
 
+const ConsulateFinderPanel = ({ language, locationAnswer, onSelectSound }) => {
+  const [locationInput, setLocationInput] = useState(locationAnswer || "");
+
+  useEffect(() => {
+    setLocationInput(locationAnswer || "");
+  }, [locationAnswer]);
+
+  const normalizedLocation = (locationInput || "").trim();
+  const query = normalizedLocation
+    ? `nearest Mexican consulate ${normalizedLocation}`
+    : "nearest Mexican consulate";
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+
+  return (
+    <Box
+      border="1px solid var(--app-border)"
+      borderRadius="8px"
+      bg="var(--app-surface)"
+      boxShadow="var(--app-shadow-soft)"
+      p={{ base: 4, md: 5 }}
+      textAlign="start"
+    >
+      <Stack spacing={3}>
+        <Text color="var(--app-text-primary)" fontWeight="800">
+          {translateText("Find nearest Mexican consulate", language)}
+        </Text>
+        <Text color="var(--app-text-muted)" fontSize="sm">
+          {translateText(
+            "Use your ZIP code, city, or state to quickly find nearby Mexican consulates.",
+            language,
+          )}
+        </Text>
+        <Input
+          value={locationInput}
+          onChange={(event) => setLocationInput(event.target.value)}
+          placeholder={translateText("ZIP code, city, or state", language)}
+          bg="var(--app-surface-elevated)"
+          borderColor="var(--app-border)"
+          _hover={{ borderColor: "var(--app-border-strong)" }}
+          _focusVisible={{ borderColor: "#1d4ed8", boxShadow: "0 0 0 1px #1d4ed8" }}
+        />
+        <HStack>
+          <Button
+            as="a"
+            href={searchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onSelectSound}
+            leftIcon={<Icon as={MapPin} boxSize="16px" />}
+            bg="#1d4ed8"
+            color="white"
+            borderRadius="8px"
+            _hover={{ bg: "#1e40af" }}
+            _active={{ bg: "#1e3a8a" }}
+          >
+            {translateText("Search consulates", language)}
+          </Button>
+        </HStack>
+      </Stack>
+    </Box>
+  );
+};
+
 const CitizenshipMarkdown = ({ children }) => (
   <Box
     color="inherit"
@@ -10125,6 +10188,11 @@ export default function CitizenshipGuide() {
                 onOpenAssistant={() => setIsAssistantOpen(true)}
                 assistantChatSaved={assistantChat.saved}
                 isLightTheme={isLightTheme}
+                onSelectSound={playSelectSound}
+              />
+              <ConsulateFinderPanel
+                language={pageLanguage}
+                locationAnswer={answers.handlingLocation}
                 onSelectSound={playSelectSound}
               />
               <CitizenshipAssistantDrawer
