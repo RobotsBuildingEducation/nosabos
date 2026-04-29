@@ -34,6 +34,12 @@ import {
   MenuList,
   MenuOptionGroup,
   Progress,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
   SimpleGrid,
   Stack,
   Textarea,
@@ -6838,6 +6844,42 @@ const CitizenshipIntro = ({
           </Button>
         </Flex>
 
+        <Accordion allowToggle>
+          <AccordionItem border="1px solid" borderColor="var(--app-border)" borderRadius="8px">
+            <AccordionButton onClick={onSelectSound} _hover={{ bg: "var(--app-surface-muted)" }}>
+              <HStack flex="1" textAlign="start" spacing={2}>
+                <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
+                <Text fontWeight="700" color="var(--app-text-primary)">
+                  {translateText("Privacy policy", language)}
+                </Text>
+              </HStack>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel bg="var(--app-surface-elevated)" borderTop="1px solid var(--app-border)">
+              <Stack spacing={3} fontSize="sm" color="var(--app-text-secondary)">
+                <Text>
+                  {translateText(
+                    "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold.",
+                    language,
+                  )}
+                </Text>
+                <Text>
+                  {translateText(
+                    "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key.",
+                    language,
+                  )}
+                </Text>
+                <Text>
+                  {translateText(
+                    "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
+                    language,
+                  )}
+                </Text>
+              </Stack>
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
+
         {showSignIn ? (
           <Stack
             spacing={3}
@@ -9276,6 +9318,7 @@ export default function CitizenshipGuide() {
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [isSigningInWithKey, setIsSigningInWithKey] = useState(false);
   const [accountReloadNonce, setAccountReloadNonce] = useState(0);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const hasTriggeredKeygenRef = useRef(false);
   const accountCreationPromiseRef = useRef(null);
   const hasLoadedProgressRef = useRef(false);
@@ -9860,6 +9903,37 @@ export default function CitizenshipGuide() {
                 onToggle={toggleTheme}
                 language={pageLanguage}
               />
+              <Button
+                type="button"
+                size="sm"
+                minH="40px"
+                borderRadius="full"
+                border="1px solid"
+                leftIcon={<Icon as={Copy} boxSize="14px" />}
+                onClick={() => {
+                  playSubmitSound();
+                  copySecretKey();
+                }}
+                {...topControlProps}
+              >
+                {translateText("Key", pageLanguage)}
+              </Button>
+              <IconButton
+                type="button"
+                aria-label={translateText("Privacy policy", pageLanguage)}
+                title={translateText("Privacy policy", pageLanguage)}
+                onClick={() => {
+                  playSelectSound();
+                  setIsPrivacyOpen(true);
+                }}
+                icon={<Icon as={ShieldCheck} boxSize="17px" />}
+                size="sm"
+                minW="40px"
+                h="40px"
+                borderRadius="full"
+                border="1px solid"
+                {...topControlProps}
+              />
               {/*
               <Button
                 type="button"
@@ -10231,6 +10305,40 @@ export default function CitizenshipGuide() {
           ) : null}
         </Stack>
       </Container>
+      <Modal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="var(--app-surface)" color="var(--app-text-primary)">
+          <ModalHeader>
+            <HStack spacing={2}>
+              <Icon as={ShieldCheck} color="#0f766e" />
+              <Text>{translateText("Privacy policy", pageLanguage)}</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={5}>
+            <Stack spacing={3} fontSize="sm" color="var(--app-text-secondary)">
+              <Text>
+                {translateText(
+                  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold.",
+                  pageLanguage,
+                )}
+              </Text>
+              <Text>
+                {translateText(
+                  "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key.",
+                  pageLanguage,
+                )}
+              </Text>
+              <Text>
+                {translateText(
+                  "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
+                  pageLanguage,
+                )}
+              </Text>
+            </Stack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
