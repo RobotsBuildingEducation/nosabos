@@ -1,7 +1,14 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
+
 import {
   Accordion,
   AccordionButton,
@@ -34,6 +41,12 @@ import {
   MenuList,
   MenuOptionGroup,
   Progress,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
   SimpleGrid,
   Stack,
   Textarea,
@@ -85,6 +98,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
+import { SiMonkeytie } from "react-icons/si";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -121,8 +135,7 @@ const CITIZENSHIP_TEAL_BUTTON_PROPS = {
 
 const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   en: {
-    bg:
-      "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
+    bg: "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
     canton: "#3c3b6e",
   },
   es: {
@@ -286,7 +299,11 @@ const normalizeCitizenshipAnswers = (rawAnswers = {}) => {
 };
 
 const normalizeChecklistProgress = (rawProgress = {}) => {
-  if (!rawProgress || typeof rawProgress !== "object" || Array.isArray(rawProgress)) {
+  if (
+    !rawProgress ||
+    typeof rawProgress !== "object" ||
+    Array.isArray(rawProgress)
+  ) {
     return {};
   }
 
@@ -343,8 +360,7 @@ const normalizeAssistantChat = (rawChat) => {
   return {
     messages,
     saved: rawChat.saved === true && messages.length > 0,
-    updatedAt:
-      typeof rawChat.updatedAt === "string" ? rawChat.updatedAt : "",
+    updatedAt: typeof rawChat.updatedAt === "string" ? rawChat.updatedAt : "",
   };
 };
 
@@ -364,7 +380,9 @@ const normalizeCitizenshipProgress = (rawProgress) => {
       ? Math.max(0, Math.floor(questionIndex))
       : 0,
     showResults: rawProgress.showResults === true,
-    checklistProgress: normalizeChecklistProgress(rawProgress.checklistProgress),
+    checklistProgress: normalizeChecklistProgress(
+      rawProgress.checklistProgress,
+    ),
     assistantChat: normalizeSavedAssistantChat(rawProgress.assistantChat),
     updatedAt:
       typeof rawProgress.updatedAt === "string" ? rawProgress.updatedAt : "",
@@ -488,7 +506,7 @@ const ES_TEXT = {
   "Mexican parent": "Padre o madre mexicano/a",
   "Family record": "Registro familiar",
   "One step at a time": "Un paso a la vez",
-  "Question": "Pregunta",
+  Question: "Pregunta",
   of: "de",
   answered: "respondidas",
   Back: "Atrás",
@@ -498,7 +516,7 @@ const ES_TEXT = {
   "Edit answers": "Editar respuestas",
   "Jump to question": "Ir a la pregunta",
   "Finish edits": "Terminar cambios",
-  "Theme": "Tema",
+  Theme: "Tema",
   "Switch to dark mode": "Cambiar a modo oscuro",
   "Switch to light mode": "Cambiar a modo claro",
   Reset: "Reiniciar",
@@ -522,8 +540,8 @@ const ES_TEXT = {
   "Unable to copy secret key.": "No se pudo copiar la clave secreta.",
   "Unable to save this intro. You can still continue.":
     "No se pudo guardar esta introducción. Aun así puedes continuar.",
-  "English": "English",
-  "Spanish": "Español",
+  English: "English",
+  Spanish: "Español",
   "Intake answered": "Preguntas respondidas",
   Why: "Por qué",
   "Naturalization modality": "Modalidad de naturalización",
@@ -664,8 +682,10 @@ const ES_TEXT = {
   "Yes, long-form certified": "Sí, certificada en formato largo",
   "Short abstract only": "Solo extracto corto",
   "Hospital certificate only": "Solo certificado del hospital",
-  "Yes, at least 6 months before birth": "Sí, al menos 6 meses antes del nacimiento",
-  "Yes, but after birth or under 6 months": "Sí, pero después del nacimiento o menos de 6 meses antes",
+  "Yes, at least 6 months before birth":
+    "Sí, al menos 6 meses antes del nacimiento",
+  "Yes, but after birth or under 6 months":
+    "Sí, pero después del nacimiento o menos de 6 meses antes",
   "Yes, father": "Sí, padre",
   "Yes, mother": "Sí, madre",
   "Non-U.S.": "Fuera de EE. UU.",
@@ -883,7 +903,8 @@ const PT_TEXT = {
     "É necessária revisão do consulado, SRE, registro civil ou jurídica",
   "SRE nationality and naturalization": "Nacionalidade e naturalização da SRE",
   "MiConsulado appointments": "Agendamentos MiConsulado",
-  "U.S. dual nationality guidance": "Orientação dos EUA sobre dupla nacionalidade",
+  "U.S. dual nationality guidance":
+    "Orientação dos EUA sobre dupla nacionalidade",
   Identity: "Identidade",
   Documents: "Documentos",
   Applicant: "Solicitante",
@@ -1444,7 +1465,8 @@ const FR_TEXT = {
   "Mexican birth acta": "Acte de naissance mexicain",
   "Born abroad": "Né/e à l'étranger",
   "Naturalized Mexican": "Mexicain/e naturalisé/e",
-  "Accents, spelling, or order differ": "Accents, orthographe ou ordre différents",
+  "Accents, spelling, or order differ":
+    "Accents, orthographe ou ordre différents",
   "Married surname issue": "Question de nom marital",
   "Yes, long-form certified": "Oui, intégral certifié",
   "Short abstract only": "Seulement un extrait court",
@@ -1562,8 +1584,7 @@ const JA_TEXT = {
   "This keeps the final warnings accurate. It does not decide the route by itself.":
     "最終的な注意事項を正確にするための質問です。これだけでルートは決まりません。",
   "Where were you born?": "どこで生まれましたか？",
-  "Birthplace is the first legal divider.":
-    "出生地は最初の法的な分岐点です。",
+  "Birthplace is the first legal divider.": "出生地は最初の法的な分岐点です。",
   "Do you already have any Mexican document?":
     "すでにメキシコの書類を持っていますか？",
   "Existing proof can turn this into a records or passport task instead of an acquisition task.":
@@ -1609,8 +1630,7 @@ const JA_TEXT = {
     "INM登録住所は申請住所と同じですか？",
   "During the last two years, how much time were you outside Mexico?":
     "過去2年間にメキシコ国外にいた期間はどのくらいですか？",
-  "Are you married to a Mexican citizen?":
-    "メキシコ国民と結婚していますか？",
+  "Are you married to a Mexican citizen?": "メキシコ国民と結婚していますか？",
   "Do you have a Mexican child by birth?":
     "出生によりメキシコ国籍の子どもがいますか？",
   "Are you a direct descendant of a Mexican by birth?":
@@ -1770,8 +1790,7 @@ const HI_TEXT = {
   "This keeps the final warnings accurate. It does not decide the route by itself.":
     "यह अंतिम चेतावनियों को सटीक रखता है। यह अपने आप मार्ग तय नहीं करता।",
   "Where were you born?": "आपका जन्म कहां हुआ था?",
-  "Birthplace is the first legal divider.":
-    "जन्मस्थान पहला कानूनी विभाजन है।",
+  "Birthplace is the first legal divider.": "जन्मस्थान पहला कानूनी विभाजन है।",
   "Do you already have any Mexican document?":
     "क्या आपके पास पहले से कोई मैक्सिकन दस्तावेज़ है?",
   "Existing proof can turn this into a records or passport task instead of an acquisition task.":
@@ -1901,7 +1920,8 @@ const HI_TEXT = {
   "Prerequisites or review needed": "पूर्व-शर्तें या समीक्षा चाहिए",
   "5-year general residence": "5-वर्षीय सामान्य निवास",
   "Distinguished-service route": "विशिष्ट सेवा मार्ग",
-  "1-year adoption / parental authority route": "1-वर्षीय गोद/अभिभावक अधिकार मार्ग",
+  "1-year adoption / parental authority route":
+    "1-वर्षीय गोद/अभिभावक अधिकार मार्ग",
   "marriage to a Mexican citizen": "मैक्सिकन नागरिक से विवाह",
   "Mexican child by birth": "जन्म से मैक्सिकन बच्चा",
   "direct descent from Mexican by birth": "जन्म से मैक्सिकन से सीधा वंश",
@@ -1923,12 +1943,14 @@ const AR_TEXT = {
   "Birth registration abroad": "تسجيل الميلاد في الخارج",
   "Dual nationality path": "مسار الجنسية المزدوجة",
   "Parent-chain first": "توثيق سلسلة الوالد أولا",
-  "Document the Mexican parent before applicant": "وثق الوالد المكسيكي قبل مقدم الطلب",
+  "Document the Mexican parent before applicant":
+    "وثق الوالد المكسيكي قبل مقدم الطلب",
   "Declaratoria / recovery": "إقرار / استرداد",
   "Mexican by birth with pre-1998 foreign nationality issue":
     "مكسيكي/ة بالميلاد مع مسألة جنسية أجنبية قبل 1998",
   Naturalization: "التجنس",
-  "Carta de Naturalizacion path through SRE": "مسار Carta de Naturalización عبر SRE",
+  "Carta de Naturalizacion path through SRE":
+    "مسار Carta de Naturalización عبر SRE",
   "Not eligible yet": "غير مؤهل بعد",
   "Build the missing residence, document, or timing prerequisite":
     "استكمل شرط الإقامة أو الوثيقة أو التوقيت الناقص",
@@ -1937,7 +1959,8 @@ const AR_TEXT = {
     "تحتاج مراجعة القنصلية أو SRE أو السجل المدني أو مراجعة قانونية",
   "SRE nationality and naturalization": "الجنسية والتجنس لدى SRE",
   "MiConsulado appointments": "مواعيد MiConsulado",
-  "U.S. dual nationality guidance": "إرشادات الولايات المتحدة حول الجنسية المزدوجة",
+  "U.S. dual nationality guidance":
+    "إرشادات الولايات المتحدة حول الجنسية المزدوجة",
   Identity: "الهوية",
   Documents: "الوثائق",
   Applicant: "مقدم الطلب",
@@ -1968,14 +1991,17 @@ const AR_TEXT = {
   "Official references": "مراجع رسمية",
   "Likely base route": "المسار الأساسي المحتمل",
   "Find the route": "اعثر على المسار",
-  "Answer more questions to narrow the route.": "أجب عن أسئلة أخرى لتضييق المسار.",
-  "Complete the intake to generate a checklist.": "أكمل الأسئلة لإنشاء قائمة مهام.",
+  "Answer more questions to narrow the route.":
+    "أجب عن أسئلة أخرى لتضييق المسار.",
+  "Complete the intake to generate a checklist.":
+    "أكمل الأسئلة لإنشاء قائمة مهام.",
   "What is your current country of citizenship?": "ما بلد جنسيتك الحالية؟",
   "This keeps the final warnings accurate. It does not decide the route by itself.":
     "هذا يحافظ على دقة التحذيرات النهائية. لا يحدد المسار وحده.",
   "Where were you born?": "أين ولدت؟",
   "Birthplace is the first legal divider.": "مكان الميلاد هو أول فاصل قانوني.",
-  "Do you already have any Mexican document?": "هل لديك بالفعل أي وثيقة مكسيكية؟",
+  "Do you already have any Mexican document?":
+    "هل لديك بالفعل أي وثيقة مكسيكية؟",
   "Existing proof can turn this into a records or passport task instead of an acquisition task.":
     "قد يحول الدليل الموجود هذا إلى مهمة سجلات أو جواز سفر بدلا من اكتساب الجنسية.",
   "Are you applying for yourself or for a minor?": "هل تقدم لنفسك أم لقاصر؟",
@@ -1983,7 +2009,8 @@ const AR_TEXT = {
     "أي قنصلية أو ولاية مكسيكية ستتعامل مع الحالة؟",
   "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.":
     "يمكنك استخدام الرمز البريدي أو القنصلية المفضلة أو الولاية المكسيكية. تخط إذا كنت لا تعرف بعد.",
-  "ZIP, preferred consulate, or Mexican state": "رمز بريدي، قنصلية مفضلة، أو ولاية مكسيكية",
+  "ZIP, preferred consulate, or Mexican state":
+    "رمز بريدي، قنصلية مفضلة، أو ولاية مكسيكية",
   "Were you registered with a Mexican civil registry?":
     "هل تم تسجيلك في سجل مدني مكسيكي؟",
   "Did you acquire another nationality before March 20, 1998?":
@@ -1992,14 +2019,16 @@ const AR_TEXT = {
     "هل شهادة ميلادك المكسيكية مسجلة متأخرة أو لا تطابق هويتك؟",
   "Was at least one legal parent Mexican at or before your birth?":
     "هل كان أحد الوالدين القانونيين على الأقل مكسيكيا عند ميلادك أو قبله؟",
-  "What proof does the Mexican parent have?": "ما الدليل الذي يملكه الوالد المكسيكي؟",
+  "What proof does the Mexican parent have?":
+    "ما الدليل الذي يملكه الوالد المكسيكي؟",
   "Was the Mexican parent born in Mexico, born abroad, or naturalized Mexican?":
     "هل ولد الوالد المكسيكي في المكسيك أو في الخارج أو تجنس مكسيكيا؟",
   "Do parent names on your foreign birth certificate match the Mexican parent records?":
     "هل تتطابق أسماء الوالدين في شهادة ميلادك الأجنبية مع السجلات المكسيكية؟",
   "Do you have a long-form certified birth certificate?":
     "هل لديك شهادة ميلاد كاملة ومعتمدة؟",
-  "Were your parents married before your birth?": "هل كان والداك متزوجين قبل ميلادك؟",
+  "Were your parents married before your birth?":
+    "هل كان والداك متزوجين قبل ميلادك؟",
   "Is either parent deceased, absent, unavailable, or unwilling to participate?":
     "هل أحد الوالدين متوفى أو غائب أو غير متاح أو غير راغب في المشاركة؟",
   "Are you over 18?": "هل عمرك أكثر من 18؟",
@@ -2015,7 +2044,8 @@ const AR_TEXT = {
     "هل عنوانك المسجل لدى INM هو نفسه عنوان الطلب؟",
   "During the last two years, how much time were you outside Mexico?":
     "خلال العامين الماضيين، كم من الوقت كنت خارج المكسيك؟",
-  "Are you married to a Mexican citizen?": "هل أنت متزوج/ة من مواطن/ة مكسيكي/ة؟",
+  "Are you married to a Mexican citizen?":
+    "هل أنت متزوج/ة من مواطن/ة مكسيكي/ة؟",
   "Do you have a Mexican child by birth?": "هل لديك طفل مكسيكي بالميلاد؟",
   "Are you a direct descendant of a Mexican by birth?":
     "هل أنت من نسل مباشر لشخص مكسيكي بالميلاد؟",
@@ -2064,7 +2094,8 @@ const AR_TEXT = {
   "Short abstract only": "ملخص قصير فقط",
   "Hospital certificate only": "شهادة مستشفى فقط",
   "Yes, at least 6 months before birth": "نعم، قبل الميلاد بستة أشهر على الأقل",
-  "Yes, but after birth or under 6 months": "نعم، لكن بعد الميلاد أو قبل أقل من 6 أشهر",
+  "Yes, but after birth or under 6 months":
+    "نعم، لكن بعد الميلاد أو قبل أقل من 6 أشهر",
   "Yes, father": "نعم، الأب",
   "Yes, mother": "نعم، الأم",
   "Non-U.S.": "خارج الولايات المتحدة",
@@ -2094,7 +2125,8 @@ const AR_TEXT = {
   "Prerequisites or review needed": "تحتاج شروطا مسبقة أو مراجعة",
   "5-year general residence": "إقامة عامة 5 سنوات",
   "Distinguished-service route": "مسار الخدمات المتميزة",
-  "1-year adoption / parental authority route": "مسار سنة واحدة للتبني / السلطة الأبوية",
+  "1-year adoption / parental authority route":
+    "مسار سنة واحدة للتبني / السلطة الأبوية",
   "marriage to a Mexican citizen": "الزواج من مواطن/ة مكسيكي/ة",
   "Mexican child by birth": "طفل مكسيكي بالميلاد",
   "direct descent from Mexican by birth": "نسب مباشر من مكسيكي بالميلاد",
@@ -2121,7 +2153,8 @@ const ZH_TEXT = {
   "Mexican by birth with pre-1998 foreign nationality issue":
     "出生即为墨西哥人，但有1998年前外国国籍问题",
   Naturalization: "入籍",
-  "Carta de Naturalizacion path through SRE": "通过 SRE 申请 Carta de Naturalización",
+  "Carta de Naturalizacion path through SRE":
+    "通过 SRE 申请 Carta de Naturalización",
   "Not eligible yet": "暂不符合条件",
   "Build the missing residence, document, or timing prerequisite":
     "先补齐居留、文件或时间要求",
@@ -2171,12 +2204,15 @@ const ZH_TEXT = {
   "Do you already have any Mexican document?": "你已经有任何墨西哥文件吗？",
   "Existing proof can turn this into a records or passport task instead of an acquisition task.":
     "已有证明可能让这变成记录或护照事项，而不是取得国籍事项。",
-  "Are you applying for yourself or for a minor?": "你是为自己申请，还是为未成年人申请？",
-  "Which consulate or Mexican state will handle the case?": "哪个领事馆或墨西哥州将处理此案？",
+  "Are you applying for yourself or for a minor?":
+    "你是为自己申请，还是为未成年人申请？",
+  "Which consulate or Mexican state will handle the case?":
+    "哪个领事馆或墨西哥州将处理此案？",
   "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.":
     "可填写邮编、首选领事馆或墨西哥州。不确定可跳过。",
   "ZIP, preferred consulate, or Mexican state": "邮编、首选领事馆或墨西哥州",
-  "Were you registered with a Mexican civil registry?": "你是否已在墨西哥民事登记处登记？",
+  "Were you registered with a Mexican civil registry?":
+    "你是否已在墨西哥民事登记处登记？",
   "Did you acquire another nationality before March 20, 1998?":
     "你是否在1998年3月20日前取得过另一国国籍？",
   "Is your Mexican birth certificate late-registered or inconsistent with your ID?":
@@ -2188,8 +2224,10 @@ const ZH_TEXT = {
     "该父/母是出生在墨西哥、出生在国外，还是归化为墨西哥人？",
   "Do parent names on your foreign birth certificate match the Mexican parent records?":
     "你的外国出生证明上的父母姓名是否与墨西哥记录一致？",
-  "Do you have a long-form certified birth certificate?": "你有完整认证版出生证明吗？",
-  "Were your parents married before your birth?": "你的父母在你出生前已结婚吗？",
+  "Do you have a long-form certified birth certificate?":
+    "你有完整认证版出生证明吗？",
+  "Were your parents married before your birth?":
+    "你的父母在你出生前已结婚吗？",
   "Is either parent deceased, absent, unavailable, or unwilling to participate?":
     "父母中是否有人已故、缺席、无法参与或不愿参与？",
   "Are you over 18?": "你是否超过18岁？",
@@ -2197,7 +2235,8 @@ const ZH_TEXT = {
     "你的出生证明是否在美国以外签发，或不是英语/西班牙语？",
   "Do you currently live in Mexico with legal resident status?":
     "你目前是否以合法居民身份居住在墨西哥？",
-  "How long have you had qualifying residence in Mexico?": "你在墨西哥已有多久符合条件的居留？",
+  "How long have you had qualifying residence in Mexico?":
+    "你在墨西哥已有多久符合条件的居留？",
   "Is your resident card valid at least six months beyond filing and does it show CURP?":
     "你的居留卡在提交后是否至少仍有效六个月，并显示 CURP？",
   "Is your INM-registered address the same as your application address?":
@@ -2206,13 +2245,15 @@ const ZH_TEXT = {
     "过去两年中，你在墨西哥境外总共多久？",
   "Are you married to a Mexican citizen?": "你是否与墨西哥公民结婚？",
   "Do you have a Mexican child by birth?": "你是否有出生即为墨西哥国籍的子女？",
-  "Are you a direct descendant of a Mexican by birth?": "你是否是出生墨西哥人的直系后代？",
+  "Are you a direct descendant of a Mexican by birth?":
+    "你是否是出生墨西哥人的直系后代？",
   "Are you originally from Latin America or the Iberian Peninsula?":
     "你是否原籍拉丁美洲或伊比利亚半岛？",
   "Are you recognized as a refugee by COMAR?": "你是否被 COMAR 认定为难民？",
   "Are you a minor adopted by Mexican citizens or under Mexican parental authority?":
     "你是否是被墨西哥公民收养的未成年人，或受墨西哥父母权管辖？",
-  "Have you performed distinguished services benefiting Mexico?": "你是否做出过有益于墨西哥的杰出服务？",
+  "Have you performed distinguished services benefiting Mexico?":
+    "你是否做出过有益于墨西哥的杰出服务？",
   "Do you have criminal history, pending charges, or a prison sentence in any country?":
     "你在任何国家是否有犯罪记录、待审指控或服刑判决？",
   "Can you speak Spanish and pass Mexican history/culture exams?":
@@ -2301,7 +2342,8 @@ Object.assign(PT_TEXT, {
   "Waiting for birthplace": "Aguardando local de nascimento",
   "Start with birthplace and existing Mexican records.":
     "Comece pelo local de nascimento e pelos registros mexicanos existentes.",
-  "Confirm where the applicant was born.": "Confirme onde a pessoa solicitante nasceu.",
+  "Confirm where the applicant was born.":
+    "Confirme onde a pessoa solicitante nasceu.",
   "You already have a Mexican nationality document on the record.":
     "Você já tem um documento de nacionalidade mexicana registrado.",
   "Get certified copies of the Mexican acta or document if needed.":
@@ -2373,7 +2415,8 @@ Object.assign(IT_TEXT, {
   "Waiting for birthplace": "In attesa del luogo di nascita",
   "Start with birthplace and existing Mexican records.":
     "Inizia dal luogo di nascita e dai registri messicani esistenti.",
-  "Confirm where the applicant was born.": "Conferma dove è nato/a il richiedente.",
+  "Confirm where the applicant was born.":
+    "Conferma dove è nato/a il richiedente.",
   "You already have a Mexican nationality document on the record.":
     "Hai già un documento di nazionalità messicana registrato.",
   "Get certified copies of the Mexican acta or document if needed.":
@@ -2517,7 +2560,8 @@ Object.assign(JA_TEXT, {
   "Waiting for birthplace": "出生地を待っています",
   "Start with birthplace and existing Mexican records.":
     "出生地と既存のメキシコ記録から始めます。",
-  "Confirm where the applicant was born.": "申請者がどこで生まれたか確認してください。",
+  "Confirm where the applicant was born.":
+    "申請者がどこで生まれたか確認してください。",
   "You already have a Mexican nationality document on the record.":
     "すでにメキシコ国籍を示す書類があります。",
   "Get certified copies of the Mexican acta or document if needed.":
@@ -2589,7 +2633,8 @@ Object.assign(HI_TEXT, {
   "Waiting for birthplace": "जन्मस्थान की प्रतीक्षा",
   "Start with birthplace and existing Mexican records.":
     "जन्मस्थान और मौजूदा मैक्सिकन रिकॉर्ड से शुरू करें।",
-  "Confirm where the applicant was born.": "पुष्टि करें कि आवेदक का जन्म कहां हुआ।",
+  "Confirm where the applicant was born.":
+    "पुष्टि करें कि आवेदक का जन्म कहां हुआ।",
   "You already have a Mexican nationality document on the record.":
     "आपके रिकॉर्ड में पहले से मैक्सिकन राष्ट्रीयता दस्तावेज़ है।",
   "Get certified copies of the Mexican acta or document if needed.":
@@ -2856,7 +2901,8 @@ Object.assign(IT_TEXT, {
   "paid help": "aiuto pagato",
   Meaning: "Significato",
   "User guidance": "Guida per l'utente",
-  "Mexico citizenship route report": "Report sul percorso di cittadinanza messicana",
+  "Mexico citizenship route report":
+    "Report sul percorso di cittadinanza messicana",
   Generated: "Generato",
   Outcome: "Risultato",
   Route: "Percorso",
@@ -2897,7 +2943,8 @@ Object.assign(FR_TEXT, {
   "paid help": "aide payante",
   Meaning: "Signification",
   "User guidance": "Conseil utilisateur",
-  "Mexico citizenship route report": "Rapport de parcours de citoyenneté mexicaine",
+  "Mexico citizenship route report":
+    "Rapport de parcours de citoyenneté mexicaine",
   Generated: "Généré",
   Outcome: "Résultat",
   Route: "Parcours",
@@ -3093,7 +3140,8 @@ Object.assign(ES_TEXT, {
   "Analyze my checklist": "Analizar mi checklist",
   "Next best action": "Siguiente mejor acción",
   "Resolve this before moving forward.": "Resuelve esto antes de avanzar.",
-  "Work on this checklist item next.": "Trabaja en este punto del checklist ahora.",
+  "Work on this checklist item next.":
+    "Trabaja en este punto del checklist ahora.",
   "Checklist complete": "Checklist completo",
   "All checklist items are marked complete. Review official requirements before filing or attending an appointment.":
     "Todos los puntos del checklist están marcados como completos. Revisa los requisitos oficiales antes de presentar o asistir a una cita.",
@@ -3152,7 +3200,8 @@ Object.assign(PT_TEXT, {
   "Analyze my checklist": "Analisar meu checklist",
   "Next best action": "Próxima melhor ação",
   "Resolve this before moving forward.": "Resolva isso antes de avançar.",
-  "Work on this checklist item next.": "Trabalhe neste item do checklist agora.",
+  "Work on this checklist item next.":
+    "Trabalhe neste item do checklist agora.",
   "Checklist complete": "Checklist completo",
   "All checklist items are marked complete. Review official requirements before filing or attending an appointment.":
     "Todos os itens do checklist estão completos. Revise os requisitos oficiais antes de protocolar ou ir a uma consulta.",
@@ -3210,8 +3259,10 @@ Object.assign(IT_TEXT, {
   "Assist me": "Aiutami",
   "Analyze my checklist": "Analizza la checklist",
   "Next best action": "Prossima azione migliore",
-  "Resolve this before moving forward.": "Risolvi questo punto prima di andare avanti.",
-  "Work on this checklist item next.": "Lavora ora su questo punto della checklist.",
+  "Resolve this before moving forward.":
+    "Risolvi questo punto prima di andare avanti.",
+  "Work on this checklist item next.":
+    "Lavora ora su questo punto della checklist.",
   "Checklist complete": "Checklist completa",
   "All checklist items are marked complete. Review official requirements before filing or attending an appointment.":
     "Tutti i punti della checklist sono completati. Verifica i requisiti ufficiali prima di presentare o andare all'appuntamento.",
@@ -3270,7 +3321,8 @@ Object.assign(FR_TEXT, {
   "Analyze my checklist": "Analyser ma checklist",
   "Next best action": "Prochaine meilleure action",
   "Resolve this before moving forward.": "Résous cela avant d'avancer.",
-  "Work on this checklist item next.": "Travaille ensuite sur cet élément de la checklist.",
+  "Work on this checklist item next.":
+    "Travaille ensuite sur cet élément de la checklist.",
   "Checklist complete": "Checklist complète",
   "All checklist items are marked complete. Review official requirements before filing or attending an appointment.":
     "Tous les éléments sont terminés. Vérifie les exigences officielles avant de déposer ou d'aller au rendez-vous.",
@@ -3311,7 +3363,8 @@ Object.assign(FR_TEXT, {
   "Thinking through your checklist...": "Analyse de ta checklist...",
   Saved: "Enregistré",
   "Save chat": "Enregistrer le chat",
-  "Ask about a checklist item...": "Pose une question sur un élément de la checklist...",
+  "Ask about a checklist item...":
+    "Pose une question sur un élément de la checklist...",
   Send: "Envoyer",
   "Chat saved": "Chat enregistré",
   "This conversation will stay with your citizenship checklist.":
@@ -3329,7 +3382,8 @@ Object.assign(JA_TEXT, {
   "Analyze my checklist": "チェックリストを分析",
   "Next best action": "次にやるべきこと",
   "Resolve this before moving forward.": "先にこれを解決してください。",
-  "Work on this checklist item next.": "次はこのチェックリスト項目に取り組んでください。",
+  "Work on this checklist item next.":
+    "次はこのチェックリスト項目に取り組んでください。",
   "Checklist complete": "チェックリスト完了",
   "All checklist items are marked complete. Review official requirements before filing or attending an appointment.":
     "すべて完了しています。申請や予約前に公式要件を確認してください。",
@@ -4239,8 +4293,7 @@ Object.assign(JA_TEXT, {
     "遅延登録または未登録の証拠について、該当する民事登録機関または領事館に確認してください。",
   "Collect older supporting records such as baptismal, school, medical, parent, or sibling records.":
     "洗礼、学校、医療、親、兄弟姉妹などの古い補足記録を集めてください。",
-  "Foreign naturalization timing is unknown.":
-    "外国国籍取得の時期が不明です。",
+  "Foreign naturalization timing is unknown.": "外国国籍取得の時期が不明です。",
   "Confirm the exact date another nationality was acquired.":
     "別の国籍を取得した正確な日付を確認してください。",
   "Mexican acta may be late-registered or inconsistent with ID.":
@@ -4279,8 +4332,7 @@ Object.assign(JA_TEXT, {
     "対象資格が始まったら、居住期間と不在期間の記録を開始してください。",
   "Distinguished services are discretionary and should be reviewed before relying on the route.":
     "顕著な貢献によるルートは裁量的なため、依拠する前に確認が必要です。",
-  "High-discretion naturalization route.":
-    "裁量性の高い帰化ルートです。",
+  "High-discretion naturalization route.": "裁量性の高い帰化ルートです。",
   "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.":
     "メキシコへの文化、社会、科学、技術、芸術、スポーツ、事業、その他の貢献を示す証拠を準備してください。",
   "Ask SRE or counsel whether residence can be shortened or waived.":
@@ -4360,8 +4412,7 @@ Object.assign(HI_TEXT, {
     "पात्र स्थिति शुरू होते ही निवास समय और अनुपस्थिति का रिकॉर्ड रखना शुरू करें।",
   "Distinguished services are discretionary and should be reviewed before relying on the route.":
     "विशिष्ट सेवाओं वाला मार्ग विवेकाधीन है और उस पर निर्भर करने से पहले समीक्षा होनी चाहिए।",
-  "High-discretion naturalization route.":
-    "उच्च विवेकाधीन प्राकृतिककरण मार्ग।",
+  "High-discretion naturalization route.": "उच्च विवेकाधीन प्राकृतिककरण मार्ग।",
   "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.":
     "मेक्सिको को सांस्कृतिक, सामाजिक, वैज्ञानिक, तकनीकी, कलात्मक, खेल, व्यापार या अन्य लाभ का प्रमाण तैयार करें।",
   "Ask SRE or counsel whether residence can be shortened or waived.":
@@ -4441,8 +4492,7 @@ Object.assign(AR_TEXT, {
     "ابدأ بتتبع مدة الإقامة والغيابات عند بدء الوضع المؤهل.",
   "Distinguished services are discretionary and should be reviewed before relying on the route.":
     "الخدمات المتميزة تقديرية ويجب مراجعتها قبل الاعتماد على هذا المسار.",
-  "High-discretion naturalization route.":
-    "مسار تجنس عالي التقدير.",
+  "High-discretion naturalization route.": "مسار تجنس عالي التقدير.",
   "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.":
     "جهز أدلة على منفعة ثقافية أو اجتماعية أو علمية أو تقنية أو فنية أو رياضية أو تجارية أو غيرها للمكسيك.",
   "Ask SRE or counsel whether residence can be shortened or waived.":
@@ -4482,8 +4532,7 @@ Object.assign(ZH_TEXT, {
     "向相关民事登记机构或领事馆询问迟登记或未登记需要哪些证据。",
   "Collect older supporting records such as baptismal, school, medical, parent, or sibling records.":
     "收集较早的支持记录，例如洗礼、学校、医疗、父母或兄弟姐妹记录。",
-  "Foreign naturalization timing is unknown.":
-    "外国归化时间未知。",
+  "Foreign naturalization timing is unknown.": "外国归化时间未知。",
   "Confirm the exact date another nationality was acquired.":
     "确认取得另一国籍的准确日期。",
   "Mexican acta may be late-registered or inconsistent with ID.":
@@ -4522,8 +4571,7 @@ Object.assign(ZH_TEXT, {
     "符合条件的身份开始后，开始记录居留时间和离境情况。",
   "Distinguished services are discretionary and should be reviewed before relying on the route.":
     "杰出服务路线具有裁量性，依赖该路线前应先审核。",
-  "High-discretion naturalization route.":
-    "高度裁量的入籍路线。",
+  "High-discretion naturalization route.": "高度裁量的入籍路线。",
   "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.":
     "准备对墨西哥有文化、社会、科学、技术、艺术、体育、商业或其他贡献的证据。",
   "Ask SRE or counsel whether residence can be shortened or waived.":
@@ -4700,8 +4748,7 @@ Object.assign(AR_TEXT, {
     "أنشأنا مفتاحا سريا لمساحة الجنسية هذه.",
   "This account is ready.": "هذا الحساب جاهز.",
   "Invalid secret key": "المفتاح السري غير صالح",
-  "Paste an nsec key that starts with nsec.":
-    "الصق مفتاح nsec يبدأ بـ nsec.",
+  "Paste an nsec key that starts with nsec.": "الصق مفتاح nsec يبدأ بـ nsec.",
   "Switched account": "تم تبديل الحساب",
   "Your citizenship workspace is now using that key.":
     "مساحة الجنسية لديك تستخدم هذا المفتاح الآن.",
@@ -4755,10 +4802,14 @@ const TWO_YEAR_ROUTE_LABELS = {
 };
 
 const SHORTER_ROUTE_SENTENCES = {
-  es: (subject) => `${subject} puede apoyar una ruta de naturalización más corta.`,
-  pt: (subject) => `${subject} pode apoiar uma rota de naturalização mais curta.`,
-  it: (subject) => `${subject} può sostenere un percorso di naturalizzazione più breve.`,
-  fr: (subject) => `${subject} peut appuyer un parcours de naturalisation plus court.`,
+  es: (subject) =>
+    `${subject} puede apoyar una ruta de naturalización más corta.`,
+  pt: (subject) =>
+    `${subject} pode apoiar uma rota de naturalização mais curta.`,
+  it: (subject) =>
+    `${subject} può sostenere un percorso di naturalizzazione più breve.`,
+  fr: (subject) =>
+    `${subject} peut appuyer un parcours de naturalisation plus court.`,
   ja: (subject) => `${subject} はより短い帰化ルートの根拠になり得ます。`,
   hi: (subject) => `${subject} छोटे नैचुरलाइज़ेशन मार्ग का आधार हो सकता है।`,
   ar: (subject) => `يمكن أن يدعم ${subject} مسار تجنس أقصر.`,
@@ -4776,10 +4827,12 @@ const BASE_ROUTE_REMAINS_SENTENCES = {
     `${routeTitle} resta possibile, ma il punto segnalato va risolto prima.`,
   fr: (routeTitle) =>
     `${routeTitle} reste possible, mais le point signalé doit être résolu d'abord.`,
-  ja: (routeTitle) => `${routeTitle} はまだ可能ですが、先に指摘事項を解決してください。`,
+  ja: (routeTitle) =>
+    `${routeTitle} はまだ可能ですが、先に指摘事項を解決してください。`,
   hi: (routeTitle) =>
     `${routeTitle} अभी भी संभव है, लेकिन चिह्नित मुद्दे को पहले हल करना चाहिए।`,
-  ar: (routeTitle) => `يبقى ${routeTitle} ممكنا، لكن يجب حل المسألة المشار إليها أولا.`,
+  ar: (routeTitle) =>
+    `يبقى ${routeTitle} ممكنا، لكن يجب حل المسألة المشار إليها أولا.`,
   zh: (routeTitle) => `${routeTitle} 仍然可能，但应先解决标记的问题。`,
 };
 
@@ -4798,7 +4851,10 @@ const translateText = (text, language = "en") => {
   }
 
   if (text.endsWith(" can support a shorter naturalization route.")) {
-    const subject = text.replace(" can support a shorter naturalization route.", "");
+    const subject = text.replace(
+      " can support a shorter naturalization route.",
+      "",
+    );
     const translatedSubject = translateText(subject, normalizedLanguage);
     const template = SHORTER_ROUTE_SENTENCES[normalizedLanguage];
     return template ? template(translatedSubject) : text;
@@ -4869,7 +4925,8 @@ const TEST_PREFILL_ANSWERS = {
   passportReady: "yes",
 };
 
-const hasAny = (values, targets) => values.some((value) => targets.includes(value));
+const hasAny = (values, targets) =>
+  values.some((value) => targets.includes(value));
 
 const strongMexicanDocs = [
   "birth_acta",
@@ -4891,7 +4948,8 @@ const parentSoftProof = ["parent_matricula", "parent_ine"];
 const isBornOutsideMexico = (birthplace) =>
   ["us", "other_country", "unknown"].includes(birthplace);
 
-const isParentMexicanYes = (value) => ["mother", "father", "both"].includes(value);
+const isParentMexicanYes = (value) =>
+  ["mother", "father", "both"].includes(value);
 
 const addUnique = (list, item) => {
   if (!list.includes(item)) list.push(item);
@@ -4940,7 +4998,9 @@ const evaluateCitizenshipRoute = (answers) => {
 
   if (hasNationalityDoc) {
     routeCode = "R1";
-    reasons.push("You already have a Mexican nationality document on the record.");
+    reasons.push(
+      "You already have a Mexican nationality document on the record.",
+    );
     checklist.push(
       "Get certified copies of the Mexican acta or document if needed.",
       "Confirm CURP and name consistency across IDs.",
@@ -4949,10 +5009,16 @@ const evaluateCitizenshipRoute = (answers) => {
   }
 
   if (!routeCode && answers.birthplace === "mexico") {
-    if (answers.registeredMexico === "no" || answers.registeredMexico === "unknown") {
+    if (
+      answers.registeredMexico === "no" ||
+      answers.registeredMexico === "unknown"
+    ) {
       routeCode = "R7";
       baseRoute = "R1";
-      addUnique(blockers, "Mexican civil registry record is missing or uncertain.");
+      addUnique(
+        blockers,
+        "Mexican civil registry record is missing or uncertain.",
+      );
       checklist.push(
         "Ask the relevant civil registry or consulate about late/no registration evidence.",
         "Collect older supporting records such as baptismal, school, medical, parent, or sibling records.",
@@ -4971,11 +5037,16 @@ const evaluateCitizenshipRoute = (answers) => {
       routeCode = "R7";
       baseRoute = "R1";
       addUnique(blockers, "Foreign naturalization timing is unknown.");
-      checklist.push("Confirm the exact date another nationality was acquired.");
+      checklist.push(
+        "Confirm the exact date another nationality was acquired.",
+      );
     } else if (answers.actaIssue === "yes" || answers.actaIssue === "unknown") {
       routeCode = "R7";
       baseRoute = "R1";
-      addUnique(blockers, "Mexican acta may be late-registered or inconsistent with ID.");
+      addUnique(
+        blockers,
+        "Mexican acta may be late-registered or inconsistent with ID.",
+      );
       checklist.push(
         "Compare the acta against current ID, parents' records, and marriage/name-change documents.",
         "Ask the civil registry or consulate whether correction or supplemental proof is required.",
@@ -4993,7 +5064,9 @@ const evaluateCitizenshipRoute = (answers) => {
 
   if (!routeCode && answers.birthplace === "mexican_ship_aircraft") {
     routeCode = "R1";
-    reasons.push("Birth on a Mexican vessel or aircraft can be a Mexican-by-birth category.");
+    reasons.push(
+      "Birth on a Mexican vessel or aircraft can be a Mexican-by-birth category.",
+    );
     checklist.push(
       "Collect the vessel/aircraft birth record and parent identity records.",
       "Ask the consulate or civil registry which office should issue or recognize the acta.",
@@ -5002,9 +5075,14 @@ const evaluateCitizenshipRoute = (answers) => {
   }
 
   if (!routeCode && isBornOutsideMexico(answers.birthplace)) {
-    if (isParentMexicanYes(answers.parentMexicanAtBirth) && hasParentStrongProof) {
+    if (
+      isParentMexicanYes(answers.parentMexicanAtBirth) &&
+      hasParentStrongProof
+    ) {
       routeCode = "R2";
-      reasons.push("At least one legal parent was Mexican at or before the applicant's birth.");
+      reasons.push(
+        "At least one legal parent was Mexican at or before the applicant's birth.",
+      );
       checklist.push(
         "Use MiConsulado and choose civil registry / birth registration, not passport.",
         "Bring the applicant's long-form certified birth certificate.",
@@ -5012,9 +5090,14 @@ const evaluateCitizenshipRoute = (answers) => {
         "Bring parent IDs, marriage/name-change records, and witnesses if the consulate requires them.",
         "After the Mexican acta is issued, confirm CURP and schedule a Mexican passport appointment.",
       );
-    } else if (isParentMexicanYes(answers.parentMexicanAtBirth) && hasParentSoftProof) {
+    } else if (
+      isParentMexicanYes(answers.parentMexicanAtBirth) &&
+      hasParentSoftProof
+    ) {
       routeCode = "R2";
-      reasons.push("The parent appears Mexican, but the appointment will likely need stronger nationality proof.");
+      reasons.push(
+        "The parent appears Mexican, but the appointment will likely need stronger nationality proof.",
+      );
       checklist.push(
         "Obtain the Mexican parent's certified birth acta or Carta de Naturalizacion before the appointment.",
         "Then prepare the applicant's long-form birth certificate and parent ID records.",
@@ -5024,7 +5107,9 @@ const evaluateCitizenshipRoute = (answers) => {
       ["none", "unknown", ""].includes(answers.parentProof)
     ) {
       routeCode = "R3";
-      reasons.push("The parent link may qualify, but the Mexican parent must be documented first.");
+      reasons.push(
+        "The parent link may qualify, but the Mexican parent must be documented first.",
+      );
       checklist.push(
         "Find or request the parent's Mexican birth acta, declaratoria, or Carta de Naturalizacion.",
         "If the parent was born abroad and never registered, document the parent first.",
@@ -5033,17 +5118,26 @@ const evaluateCitizenshipRoute = (answers) => {
     }
 
     if (answers.parentMexicanAtBirth === "parent_after_birth") {
-      addUnique(blockers, "Parent became Mexican after the applicant was born.");
+      addUnique(
+        blockers,
+        "Parent became Mexican after the applicant was born.",
+      );
     }
     if (answers.parentOrigin === "born_abroad" && !hasParentStrongProof) {
       routeCode = routeCode === "R2" ? "R7" : "R3";
       baseRoute = "R3";
-      addUnique(blockers, "Parent was born abroad and may need their own Mexican record first.");
+      addUnique(
+        blockers,
+        "Parent was born abroad and may need their own Mexican record first.",
+      );
     }
     if (answers.parentNamesMatch && answers.parentNamesMatch !== "yes") {
       baseRoute = baseRoute || routeCode || "R2";
       routeCode = "R7";
-      addUnique(blockers, "Parent names do not clearly match across birth and Mexican records.");
+      addUnique(
+        blockers,
+        "Parent names do not clearly match across birth and Mexican records.",
+      );
     }
     if (
       ["short_abstract", "hospital_only", "no"].includes(
@@ -5052,8 +5146,14 @@ const evaluateCitizenshipRoute = (answers) => {
     ) {
       baseRoute = baseRoute || routeCode || "R2";
       routeCode = routeCode === "R3" ? "R3" : "R7";
-      addUnique(blockers, "Applicant does not yet have a long-form certified birth certificate.");
-      addUnique(checklist, "Order the long-form certified birth certificate before attending.");
+      addUnique(
+        blockers,
+        "Applicant does not yet have a long-form certified birth certificate.",
+      );
+      addUnique(
+        checklist,
+        "Order the long-form certified birth certificate before attending.",
+      );
     }
     if (
       ["late_or_after_birth", "no", "unknown"].includes(
@@ -5073,7 +5173,10 @@ const evaluateCitizenshipRoute = (answers) => {
     if (answers.parentAvailability && answers.parentAvailability !== "no") {
       baseRoute = baseRoute || routeCode || "R2";
       routeCode = routeCode === "R3" ? "R3" : "R7";
-      addUnique(blockers, "A parent is deceased, absent, unavailable, or unwilling to participate.");
+      addUnique(
+        blockers,
+        "A parent is deceased, absent, unavailable, or unwilling to participate.",
+      );
     }
     if (
       ["non_us", "non_english", "unknown"].includes(answers.foreignBirthRecord)
@@ -5085,7 +5188,12 @@ const evaluateCitizenshipRoute = (answers) => {
     }
   }
 
-  if (!routeCode || routeCode === "R7" && baseRoute === "R2" && blockers.includes("Parent became Mexican after the applicant was born.")) {
+  if (
+    !routeCode ||
+    (routeCode === "R7" &&
+      baseRoute === "R2" &&
+      blockers.includes("Parent became Mexican after the applicant was born."))
+  ) {
     const naturalization = evaluateNaturalization(answers);
     if (!routeCode || answers.parentMexicanAtBirth === "parent_after_birth") {
       return naturalization;
@@ -5132,15 +5240,18 @@ const evaluateNaturalization = (answers) => {
   const hasOneYear = ["1_2", "2_5", "5_plus"].includes(residenceYears);
 
   const specialTwoYearRoutes = [];
-  if (answers.marriedMexican === "yes") specialTwoYearRoutes.push("marriage to a Mexican citizen");
-  if (answers.mexicanChild === "yes") specialTwoYearRoutes.push("Mexican child by birth");
+  if (answers.marriedMexican === "yes")
+    specialTwoYearRoutes.push("marriage to a Mexican citizen");
+  if (answers.mexicanChild === "yes")
+    specialTwoYearRoutes.push("Mexican child by birth");
   if (["parent", "grandparent"].includes(answers.descendant)) {
     specialTwoYearRoutes.push("direct descent from Mexican by birth");
   }
   if (answers.latinIberian === "yes") {
     specialTwoYearRoutes.push("Latin American or Iberian origin");
   }
-  if (answers.refugee === "yes") specialTwoYearRoutes.push("recognized refugee checklist");
+  if (answers.refugee === "yes")
+    specialTwoYearRoutes.push("recognized refugee checklist");
 
   const hasOneYearRoute = ["yes", "former"].includes(
     answers.adoptedParentalAuthority,
@@ -5149,7 +5260,9 @@ const evaluateNaturalization = (answers) => {
   if (answers.distinguishedService === "yes") {
     routeCode = "R7";
     modality = "Distinguished-service route";
-    reasons.push("Distinguished services are discretionary and should be reviewed before relying on the route.");
+    reasons.push(
+      "Distinguished services are discretionary and should be reviewed before relying on the route.",
+    );
     blockers.push("High-discretion naturalization route.");
     checklist.push(
       "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.",
@@ -5157,7 +5270,9 @@ const evaluateNaturalization = (answers) => {
     );
   } else if (!hasQualifyingResidence) {
     routeCode = "R6";
-    reasons.push("Naturalization generally requires temporary or permanent resident status.");
+    reasons.push(
+      "Naturalization generally requires temporary or permanent resident status.",
+    );
     checklist.push(
       "Move from tourist/FMM, no status, or temporary student status into qualifying temporary or permanent residence.",
       "Start tracking residence time and absences once qualifying status begins.",
@@ -5165,25 +5280,40 @@ const evaluateNaturalization = (answers) => {
   } else if (hasFiveYears) {
     routeCode = "R5";
     modality = "5-year general residence";
-    reasons.push("Five or more years of qualifying residence can support the general route.");
+    reasons.push(
+      "Five or more years of qualifying residence can support the general route.",
+    );
   } else if (specialTwoYearRoutes.length && hasTwoYears) {
     routeCode = "R5";
     modality = `2-year route: ${specialTwoYearRoutes[0]}`;
-    reasons.push(`${specialTwoYearRoutes[0]} can support a shorter naturalization route.`);
+    reasons.push(
+      `${specialTwoYearRoutes[0]} can support a shorter naturalization route.`,
+    );
   } else if (hasOneYearRoute && hasOneYear) {
     routeCode = "R5";
     modality = "1-year adoption / parental authority route";
-    reasons.push("Adoption or Mexican parental authority can support a one-year route with custody review.");
+    reasons.push(
+      "Adoption or Mexican parental authority can support a one-year route with custody review.",
+    );
   } else if (specialTwoYearRoutes.length || hasOneYearRoute) {
     routeCode = "R6";
-    modality = specialTwoYearRoutes[0] || "1-year adoption / parental authority route";
-    reasons.push("A shorter route may exist, but the residence clock is not long enough yet.");
-    checklist.push("Keep qualifying residence active until the route minimum is met.");
+    modality =
+      specialTwoYearRoutes[0] || "1-year adoption / parental authority route";
+    reasons.push(
+      "A shorter route may exist, but the residence clock is not long enough yet.",
+    );
+    checklist.push(
+      "Keep qualifying residence active until the route minimum is met.",
+    );
   } else {
     routeCode = "R6";
     modality = "5-year general residence";
-    reasons.push("No shorter statutory route is selected, and the five-year clock is not complete.");
-    checklist.push("Continue qualifying temporary or permanent residence toward five years.");
+    reasons.push(
+      "No shorter statutory route is selected, and the five-year clock is not complete.",
+    );
+    checklist.push(
+      "Continue qualifying temporary or permanent residence toward five years.",
+    );
   }
 
   if (routeCode === "R5") {
@@ -5204,31 +5334,58 @@ const evaluateNaturalization = (answers) => {
   }
   if (answers.absences === "over_6_months") {
     routeCode = "R6";
-    addUnique(blockers, "Absences exceed six months total during the last two years.");
-    addUnique(checklist, "Calculate a new filing date after the absence window clears.");
+    addUnique(
+      blockers,
+      "Absences exceed six months total during the last two years.",
+    );
+    addUnique(
+      checklist,
+      "Calculate a new filing date after the absence window clears.",
+    );
   }
-  if (["pending", "conviction", "sentence", "unknown"].includes(answers.criminalHistory)) {
+  if (
+    ["pending", "conviction", "sentence", "unknown"].includes(
+      answers.criminalHistory,
+    )
+  ) {
     routeCode = "R7";
-    addUnique(blockers, "Criminal history or pending case needs review before naturalization.");
+    addUnique(
+      blockers,
+      "Criminal history or pending case needs review before naturalization.",
+    );
   }
   if (["no", "maybe"].includes(answers.examReady)) {
-    addUnique(checklist, "Use the SRE study guide and practice before scheduling exams.");
+    addUnique(
+      checklist,
+      "Use the SRE study guide and practice before scheduling exams.",
+    );
   }
   if (answers.passportReady === "no") {
-    addUnique(blockers, "Foreign passport does not yet meet the filing-validity requirement.");
+    addUnique(
+      blockers,
+      "Foreign passport does not yet meet the filing-validity requirement.",
+    );
   }
   if (answers.passportReady === "recently_renewed") {
-    addUnique(checklist, "Prepare prior passport copies or INM migration-flow proof.");
+    addUnique(
+      checklist,
+      "Prepare prior passport copies or INM migration-flow proof.",
+    );
   }
   if (answers.descendant === "great_grandparent") {
-    addUnique(blockers, "More distant descent should be reviewed before relying on a two-year route.");
+    addUnique(
+      blockers,
+      "More distant descent should be reviewed before relying on a two-year route.",
+    );
   }
 
   notices.push(...buildWarnings(routeCode));
 
   return {
     route: ROUTES[routeCode || "R6"],
-    confidence: blockers.length ? "Prerequisites or review needed" : "Likely route",
+    confidence: blockers.length
+      ? "Prerequisites or review needed"
+      : "Likely route",
     baseRoute: null,
     modality,
     reasons,
@@ -5243,8 +5400,13 @@ const buildWarnings = (routeCode, baseRoute) => {
     "U.S. citizens generally do not automatically lose U.S. citizenship by acquiring another nationality, and U.S. dual nationals generally must use a U.S. passport to enter and leave the United States.",
   ];
 
-  if (["R1", "R2", "R3", "R4"].includes(routeCode) || ["R1", "R2"].includes(baseRoute)) {
-    warnings.push("Mexicans by birth cannot be deprived of Mexican nationality.");
+  if (
+    ["R1", "R2", "R3", "R4"].includes(routeCode) ||
+    ["R1", "R2"].includes(baseRoute)
+  ) {
+    warnings.push(
+      "Mexicans by birth cannot be deprived of Mexican nationality.",
+    );
   }
 
   if (routeCode === "R5" || baseRoute === "R5") {
@@ -6261,12 +6423,18 @@ const OptionButton = ({ option, selected, onClick }) => (
     px={3}
     py={2}
     borderColor={selected ? option.accent || "#0f766e" : "var(--app-border)"}
-    bg={selected ? option.bg || "rgba(15, 118, 110, 0.12)" : "var(--app-surface-elevated)"}
+    bg={
+      selected
+        ? option.bg || "rgba(15, 118, 110, 0.12)"
+        : "var(--app-surface-elevated)"
+    }
     color="var(--app-text-primary)"
     boxShadow="none"
     transform="none"
     _hover={{
-      bg: selected ? option.bg || "rgba(15, 118, 110, 0.16)" : "var(--app-surface-muted)",
+      bg: selected
+        ? option.bg || "rgba(15, 118, 110, 0.16)"
+        : "var(--app-surface-muted)",
       borderColor: option.accent || "#0f766e",
     }}
     _active={{
@@ -6286,7 +6454,9 @@ const OptionButton = ({ option, selected, onClick }) => (
         flexShrink={0}
         bg={selected ? option.accent || "#0f766e" : "transparent"}
         border="1px solid"
-        borderColor={selected ? option.accent || "#0f766e" : "var(--app-border-strong)"}
+        borderColor={
+          selected ? option.accent || "#0f766e" : "var(--app-border-strong)"
+        }
         color="white"
       >
         {selected ? <Icon as={Check} boxSize="13px" /> : null}
@@ -6297,13 +6467,30 @@ const OptionButton = ({ option, selected, onClick }) => (
   </Button>
 );
 
-const SingleChoice = ({ label, value, options, onChange, helper, onSelectSound }) => (
+const SingleChoice = ({
+  label,
+  value,
+  options,
+  onChange,
+  helper,
+  onSelectSound,
+}) => (
   <Box>
-    <Text fontWeight="700" color="var(--app-text-primary)" mb={2} textAlign="start">
+    <Text
+      fontWeight="700"
+      color="var(--app-text-primary)"
+      mb={2}
+      textAlign="start"
+    >
       {label}
     </Text>
     {helper ? (
-      <Text color="var(--app-text-muted)" fontSize="sm" mb={3} textAlign="start">
+      <Text
+        color="var(--app-text-muted)"
+        fontSize="sm"
+        mb={3}
+        textAlign="start"
+      >
         {helper}
       </Text>
     ) : null}
@@ -6323,15 +6510,32 @@ const SingleChoice = ({ label, value, options, onChange, helper, onSelectSound }
   </Box>
 );
 
-const MultiChoice = ({ label, values, options, onChange, helper, onSelectSound }) => {
+const MultiChoice = ({
+  label,
+  values,
+  options,
+  onChange,
+  helper,
+  onSelectSound,
+}) => {
   const selectedValues = values || [];
   return (
     <Box>
-      <Text fontWeight="700" color="var(--app-text-primary)" mb={2} textAlign="start">
+      <Text
+        fontWeight="700"
+        color="var(--app-text-primary)"
+        mb={2}
+        textAlign="start"
+      >
         {label}
       </Text>
       {helper ? (
-        <Text color="var(--app-text-muted)" fontSize="sm" mb={3} textAlign="start">
+        <Text
+          color="var(--app-text-muted)"
+          fontSize="sm"
+          mb={3}
+          textAlign="start"
+        >
           {helper}
         </Text>
       ) : null}
@@ -6349,7 +6553,9 @@ const MultiChoice = ({ label, values, options, onChange, helper, onSelectSound }
                   onChange(selected ? [] : ["none"]);
                   return;
                 }
-                const withoutNone = selectedValues.filter((item) => item !== "none");
+                const withoutNone = selectedValues.filter(
+                  (item) => item !== "none",
+                );
                 onChange(
                   selected
                     ? withoutNone.filter((item) => item !== option.value)
@@ -6366,11 +6572,21 @@ const MultiChoice = ({ label, values, options, onChange, helper, onSelectSound }
 
 const TextField = ({ label, value, onChange, placeholder, helper }) => (
   <Box>
-    <Text fontWeight="700" color="var(--app-text-primary)" mb={2} textAlign="start">
+    <Text
+      fontWeight="700"
+      color="var(--app-text-primary)"
+      mb={2}
+      textAlign="start"
+    >
       {label}
     </Text>
     {helper ? (
-      <Text color="var(--app-text-muted)" fontSize="sm" mb={3} textAlign="start">
+      <Text
+        color="var(--app-text-muted)"
+        fontSize="sm"
+        mb={3}
+        textAlign="start"
+      >
         {helper}
       </Text>
     ) : null}
@@ -6715,7 +6931,10 @@ const CitizenshipIntro = ({
         </Box>
         <Box>
           <Stack spacing={3}>
-            <Text color="var(--app-text-secondary)" fontSize={{ base: "md", md: "lg" }}>
+            <Text
+              color="var(--app-text-secondary)"
+              fontSize={{ base: "md", md: "lg" }}
+            >
               {translateText(
                 "Find the right Mexico citizenship path before you book appointments or collect documents.",
                 language,
@@ -6800,7 +7019,11 @@ const CitizenshipIntro = ({
             minW={{ base: "100%", sm: "176px" }}
             h="52px"
             _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
-            _active={{ bg: "rgba(15, 118, 110, 0.12)", boxShadow: "none", transform: "none" }}
+            _active={{
+              bg: "rgba(15, 118, 110, 0.12)",
+              boxShadow: "none",
+              transform: "none",
+            }}
             _disabled={{ opacity: 0.58, cursor: "not-allowed" }}
           >
             {translateText("Next", language)}
@@ -6837,6 +7060,56 @@ const CitizenshipIntro = ({
             {translateText("Sign in", language)}
           </Button>
         </Flex>
+
+        <Accordion allowToggle>
+          <AccordionItem
+            border="1px solid"
+            borderColor="var(--app-border)"
+            borderRadius="8px"
+          >
+            <AccordionButton
+              onClick={onSelectSound}
+              _hover={{ bg: "var(--app-surface-muted)" }}
+            >
+              <HStack flex="1" textAlign="start" spacing={2}>
+                <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
+                <Text fontWeight="700" color="var(--app-text-primary)">
+                  {translateText("Privacy policy", language)}
+                </Text>
+              </HStack>
+              <AccordionIcon />
+            </AccordionButton>
+            <AccordionPanel
+              bg="var(--app-surface-elevated)"
+              borderTop="1px solid var(--app-border)"
+            >
+              <Stack
+                spacing={3}
+                fontSize="sm"
+                color="var(--app-text-secondary)"
+              >
+                <Text>
+                  {translateText(
+                    "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
+                    language,
+                  )}
+                </Text>
+                <Text>
+                  {translateText(
+                    "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
+                    language,
+                  )}
+                </Text>
+                <Text>
+                  {translateText(
+                    "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
+                    language,
+                  )}
+                </Text>
+              </Stack>
+            </AccordionPanel>
+          </AccordionItem>
+        </Accordion>
 
         {showSignIn ? (
           <Stack
@@ -6947,10 +7220,19 @@ const DNExpressWorthItPrimer = ({
   return (
     <Stack spacing={5} textAlign="start">
       <Box>
-        <Heading as="h1" size="lg" letterSpacing="0" color="var(--app-text-primary)" mb={3}>
+        <Heading
+          as="h1"
+          size="lg"
+          letterSpacing="0"
+          color="var(--app-text-primary)"
+          mb={3}
+        >
           {post.title}
         </Heading>
-        <Text color="var(--app-text-secondary)" fontSize={{ base: "md", md: "lg" }}>
+        <Text
+          color="var(--app-text-secondary)"
+          fontSize={{ base: "md", md: "lg" }}
+        >
           {post.subtitle}
         </Text>
       </Box>
@@ -6977,12 +7259,15 @@ const DNExpressWorthItPrimer = ({
         reduceMotion
         index={openCaseIndexes}
         onChange={(nextIndexes) => {
-          setOpenCaseIndexes(Array.isArray(nextIndexes) ? nextIndexes : [nextIndexes]);
+          setOpenCaseIndexes(
+            Array.isArray(nextIndexes) ? nextIndexes : [nextIndexes],
+          );
         }}
         sx={{ overflowAnchor: "none" }}
       >
         {post.cards.map((card) => {
-          const tone = WORTH_IT_TONE_STYLES[card.tone] || WORTH_IT_TONE_STYLES.green;
+          const tone =
+            WORTH_IT_TONE_STYLES[card.tone] || WORTH_IT_TONE_STYLES.green;
           const cost = WORTH_IT_CASE_COSTS[card.tone];
           return (
             <AccordionItem
@@ -7001,7 +7286,13 @@ const DNExpressWorthItPrimer = ({
                 _hover={{ bg: "rgba(255, 255, 255, 0.04)" }}
               >
                 <HStack flex="1" spacing={3} textAlign="start" align="center">
-                  <Badge bg={tone.color} color="white" borderRadius="6px" px={2} py={1}>
+                  <Badge
+                    bg={tone.color}
+                    color="white"
+                    borderRadius="6px"
+                    px={2}
+                    py={1}
+                  >
                     {card.status}
                   </Badge>
                   <Box>
@@ -7009,7 +7300,8 @@ const DNExpressWorthItPrimer = ({
                       {card.title}
                     </Text>
                     <Text color="var(--app-text-muted)" fontSize="sm">
-                      {cost.diy} DIY / {cost.paid} {translateText("paid help", language)}
+                      {cost.diy} DIY / {cost.paid}{" "}
+                      {translateText("paid help", language)}
                     </Text>
                   </Box>
                 </HStack>
@@ -7024,10 +7316,19 @@ const DNExpressWorthItPrimer = ({
                     bg="var(--app-surface)"
                     p={3}
                   >
-                    <Text color="var(--app-text-muted)" fontSize="xs" fontWeight="800" mb={1}>
+                    <Text
+                      color="var(--app-text-muted)"
+                      fontSize="xs"
+                      fontWeight="800"
+                      mb={1}
+                    >
                       {translateText("DIY official route", language)}
                     </Text>
-                    <Text color="var(--app-text-primary)" fontSize="sm" fontWeight="800">
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontSize="sm"
+                      fontWeight="800"
+                    >
                       {cost.diy}
                     </Text>
                   </Box>
@@ -7038,10 +7339,19 @@ const DNExpressWorthItPrimer = ({
                     bg="var(--app-surface)"
                     p={3}
                   >
-                    <Text color="var(--app-text-muted)" fontSize="xs" fontWeight="800" mb={1}>
+                    <Text
+                      color="var(--app-text-muted)"
+                      fontSize="xs"
+                      fontWeight="800"
+                      mb={1}
+                    >
                       {translateText("Paid-help range", language)}
                     </Text>
-                    <Text color="var(--app-text-primary)" fontSize="sm" fontWeight="800">
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontSize="sm"
+                      fontWeight="800"
+                    >
                       {cost.paid}
                     </Text>
                   </Box>
@@ -7052,20 +7362,38 @@ const DNExpressWorthItPrimer = ({
                     bg="var(--app-surface)"
                     p={3}
                   >
-                    <Text color="var(--app-text-muted)" fontSize="xs" fontWeight="800" mb={1}>
+                    <Text
+                      color="var(--app-text-muted)"
+                      fontSize="xs"
+                      fontWeight="800"
+                      mb={1}
+                    >
                       {translateText("Recommendation", language)}
                     </Text>
-                    <Text color="var(--app-text-primary)" fontSize="sm" fontWeight="800">
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontSize="sm"
+                      fontWeight="800"
+                    >
                       {card.title}
                     </Text>
                   </Box>
                 </SimpleGrid>
                 <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                   <Box>
-                    <Text color="var(--app-text-primary)" fontSize="sm" fontWeight="800" mb={2}>
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontSize="sm"
+                      fontWeight="800"
+                      mb={2}
+                    >
                       {translateText("Meaning", language)}
                     </Text>
-                    <Text color="var(--app-text-secondary)" fontSize="sm" mb={3}>
+                    <Text
+                      color="var(--app-text-secondary)"
+                      fontSize="sm"
+                      mb={3}
+                    >
                       {card.body}
                     </Text>
                     <Stack spacing={2}>
@@ -7086,10 +7414,20 @@ const DNExpressWorthItPrimer = ({
                     </Stack>
                   </Box>
                   <Box>
-                    <Text color="var(--app-text-primary)" fontSize="sm" fontWeight="800" mb={2}>
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontSize="sm"
+                      fontWeight="800"
+                      mb={2}
+                    >
                       {translateText("User guidance", language)}
                     </Text>
-                    <Text color="var(--app-text-secondary)" fontSize="sm" fontWeight="700" mb={3}>
+                    <Text
+                      color="var(--app-text-secondary)"
+                      fontSize="sm"
+                      fontWeight="700"
+                      mb={3}
+                    >
                       {card.bestMove}
                     </Text>
                     <Text color="var(--app-text-muted)" fontSize="xs">
@@ -7102,7 +7440,6 @@ const DNExpressWorthItPrimer = ({
           );
         })}
       </Accordion>
-
     </Stack>
   );
 };
@@ -7114,7 +7451,8 @@ const QUESTION_DEFINITIONS = [
     icon: UserRound,
     type: "single",
     label: "What is your current country of citizenship?",
-    helper: "This keeps the final warnings accurate. It does not decide the route by itself.",
+    helper:
+      "This keeps the final warnings accurate. It does not decide the route by itself.",
     options: [
       { value: "us", label: "U.S." },
       { value: "mexico", label: "Mexico" },
@@ -7131,11 +7469,36 @@ const QUESTION_DEFINITIONS = [
     label: "Where were you born?",
     helper: "Birthplace is the first legal divider.",
     options: [
-      { value: "mexico", label: "Mexico", accent: "#0f766e", bg: "rgba(15,118,110,0.12)" },
-      { value: "us", label: "U.S.", accent: "#1d4ed8", bg: "rgba(29,78,216,0.12)" },
-      { value: "other_country", label: "Other country", accent: "#7c3aed", bg: "rgba(124,58,237,0.12)" },
-      { value: "mexican_ship_aircraft", label: "Mexican ship or aircraft", accent: "#b45309", bg: "rgba(180,83,9,0.14)" },
-      { value: "unknown", label: "Unknown", accent: "#475569", bg: "rgba(71,85,105,0.12)" },
+      {
+        value: "mexico",
+        label: "Mexico",
+        accent: "#0f766e",
+        bg: "rgba(15,118,110,0.12)",
+      },
+      {
+        value: "us",
+        label: "U.S.",
+        accent: "#1d4ed8",
+        bg: "rgba(29,78,216,0.12)",
+      },
+      {
+        value: "other_country",
+        label: "Other country",
+        accent: "#7c3aed",
+        bg: "rgba(124,58,237,0.12)",
+      },
+      {
+        value: "mexican_ship_aircraft",
+        label: "Mexican ship or aircraft",
+        accent: "#b45309",
+        bg: "rgba(180,83,9,0.14)",
+      },
+      {
+        value: "unknown",
+        label: "Unknown",
+        accent: "#475569",
+        bg: "rgba(71,85,105,0.12)",
+      },
     ],
   },
   {
@@ -7144,7 +7507,8 @@ const QUESTION_DEFINITIONS = [
     icon: FileBadge2,
     type: "multi",
     label: "Do you already have any Mexican document?",
-    helper: "Existing proof can turn this into a records or passport task instead of an acquisition task.",
+    helper:
+      "Existing proof can turn this into a records or passport task instead of an acquisition task.",
     options: [
       { value: "birth_acta", label: "Mexican birth certificate" },
       { value: "passport", label: "Mexican passport" },
@@ -7174,7 +7538,8 @@ const QUESTION_DEFINITIONS = [
     icon: MapPin,
     type: "text",
     label: "Which consulate or Mexican state will handle the case?",
-    helper: "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.",
+    helper:
+      "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.",
     placeholder: "ZIP, preferred consulate, or Mexican state",
     optional: true,
   },
@@ -7210,7 +7575,8 @@ const QUESTION_DEFINITIONS = [
     section: "Born in Mexico",
     icon: Home,
     type: "single",
-    label: "Is your Mexican birth certificate late-registered or inconsistent with your ID?",
+    label:
+      "Is your Mexican birth certificate late-registered or inconsistent with your ID?",
     when: (answers) => answers.birthplace === "mexico",
     options: [
       { value: "yes", label: "Yes" },
@@ -7229,7 +7595,10 @@ const QUESTION_DEFINITIONS = [
       { value: "mother", label: "Mother" },
       { value: "father", label: "Father" },
       { value: "both", label: "Both" },
-      { value: "parent_after_birth", label: "Parent became Mexican after my birth" },
+      {
+        value: "parent_after_birth",
+        label: "Parent became Mexican after my birth",
+      },
       { value: "not_sure", label: "Not sure" },
       { value: "no", label: "No" },
     ],
@@ -7246,7 +7615,10 @@ const QUESTION_DEFINITIONS = [
       { value: "parent_passport", label: "Mexican passport" },
       { value: "parent_matricula", label: "Matricula" },
       { value: "parent_ine", label: "INE" },
-      { value: "parent_naturalization_letter", label: "Carta de Naturalizacion" },
+      {
+        value: "parent_naturalization_letter",
+        label: "Carta de Naturalizacion",
+      },
       { value: "parent_declaratoria", label: "Declaratoria / certificate" },
       { value: "none", label: "None" },
       { value: "unknown", label: "Unknown" },
@@ -7257,7 +7629,8 @@ const QUESTION_DEFINITIONS = [
     section: "Mexican parent",
     icon: UsersRound,
     type: "single",
-    label: "Was the Mexican parent born in Mexico, born abroad, or naturalized Mexican?",
+    label:
+      "Was the Mexican parent born in Mexico, born abroad, or naturalized Mexican?",
     when: (answers) => isBornOutsideMexico(answers.birthplace),
     options: [
       { value: "born_mexico", label: "Born in Mexico" },
@@ -7271,12 +7644,16 @@ const QUESTION_DEFINITIONS = [
     section: "Documents",
     icon: FileBadge2,
     type: "single",
-    label: "Do parent names on your foreign birth certificate match the Mexican parent records?",
+    label:
+      "Do parent names on your foreign birth certificate match the Mexican parent records?",
     when: (answers) => isBornOutsideMexico(answers.birthplace),
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
-      { value: "minor_difference", label: "Accents, spelling, or order differ" },
+      {
+        value: "minor_difference",
+        label: "Accents, spelling, or order differ",
+      },
       { value: "married_surname", label: "Married surname issue" },
       { value: "unknown", label: "Unknown" },
     ],
@@ -7303,8 +7680,14 @@ const QUESTION_DEFINITIONS = [
     label: "Were your parents married before your birth?",
     when: (answers) => isBornOutsideMexico(answers.birthplace),
     options: [
-      { value: "six_months_before", label: "Yes, at least 6 months before birth" },
-      { value: "late_or_after_birth", label: "Yes, but after birth or under 6 months" },
+      {
+        value: "six_months_before",
+        label: "Yes, at least 6 months before birth",
+      },
+      {
+        value: "late_or_after_birth",
+        label: "Yes, but after birth or under 6 months",
+      },
       { value: "no", label: "No" },
       { value: "unknown", label: "Unknown" },
     ],
@@ -7314,7 +7697,8 @@ const QUESTION_DEFINITIONS = [
     section: "Family record",
     icon: UsersRound,
     type: "single",
-    label: "Is either parent deceased, absent, unavailable, or unwilling to participate?",
+    label:
+      "Is either parent deceased, absent, unavailable, or unwilling to participate?",
     when: (answers) => isBornOutsideMexico(answers.birthplace),
     options: [
       { value: "no", label: "No" },
@@ -7341,7 +7725,8 @@ const QUESTION_DEFINITIONS = [
     section: "Documents",
     icon: FileBadge2,
     type: "single",
-    label: "Was your birth certificate issued outside the U.S. or in a language other than English/Spanish?",
+    label:
+      "Was your birth certificate issued outside the U.S. or in a language other than English/Spanish?",
     when: (answers) => isBornOutsideMexico(answers.birthplace),
     options: [
       { value: "us", label: "U.S." },
@@ -7383,7 +7768,8 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: FileBadge2,
     type: "single",
-    label: "Is your resident card valid at least six months beyond filing and does it show CURP?",
+    label:
+      "Is your resident card valid at least six months beyond filing and does it show CURP?",
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
@@ -7395,7 +7781,8 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: MapPin,
     type: "single",
-    label: "Is your INM-registered address the same as your application address?",
+    label:
+      "Is your INM-registered address the same as your application address?",
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
@@ -7478,7 +7865,8 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: UsersRound,
     type: "single",
-    label: "Are you a minor adopted by Mexican citizens or under Mexican parental authority?",
+    label:
+      "Are you a minor adopted by Mexican citizens or under Mexican parental authority?",
     options: [
       { value: "yes", label: "Yes" },
       { value: "former", label: "Formerly, now adult" },
@@ -7501,7 +7889,8 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: AlertTriangle,
     type: "single",
-    label: "Do you have criminal history, pending charges, or a prison sentence in any country?",
+    label:
+      "Do you have criminal history, pending charges, or a prison sentence in any country?",
     options: [
       { value: "no", label: "No" },
       { value: "pending", label: "Pending case" },
@@ -7528,7 +7917,8 @@ const QUESTION_DEFINITIONS = [
     section: "Naturalization",
     icon: FileBadge2,
     type: "single",
-    label: "Do you have a valid foreign passport with at least 45 business days of validity?",
+    label:
+      "Do you have a valid foreign passport with at least 45 business days of validity?",
     options: [
       { value: "yes", label: "Yes" },
       { value: "no", label: "No" },
@@ -7572,7 +7962,9 @@ const formatQuestionAnswer = (question, answers, language) => {
   if (Array.isArray(value)) {
     if (!value.length) return translateText("Not answered", language);
     return value
-      .map((item) => translateText(optionLabelByValue.get(item) || item, language))
+      .map((item) =>
+        translateText(optionLabelByValue.get(item) || item, language),
+      )
       .join(", ");
   }
 
@@ -7609,7 +8001,9 @@ const buildCitizenshipReportText = ({
   ];
 
   if (route?.subtitle) {
-    lines.push(`${translateText("Status", language)}: ${translateText(route.subtitle, language)}`);
+    lines.push(
+      `${translateText("Status", language)}: ${translateText(route.subtitle, language)}`,
+    );
   }
 
   if (baseRoute) {
@@ -7631,11 +8025,12 @@ const buildCitizenshipReportText = ({
   }
 
   lines.push("", translateText("Why", language));
-  (evaluation.reasons.length ? evaluation.reasons : ["Answer more questions to narrow the route."]).forEach(
-    (reason) => {
-      lines.push(`- ${translateText(reason, language)}`);
-    },
-  );
+  (evaluation.reasons.length
+    ? evaluation.reasons
+    : ["Answer more questions to narrow the route."]
+  ).forEach((reason) => {
+    lines.push(`- ${translateText(reason, language)}`);
+  });
 
   if (evaluation.blockers.length) {
     lines.push("", translateText("Resolve first", language));
@@ -7680,25 +8075,29 @@ const CHECKLIST_STAGE_DEFINITIONS = [
   {
     id: "resolve",
     title: "Fix blockers",
-    description: "Clear issues that could stop the case before collecting everything else.",
+    description:
+      "Clear issues that could stop the case before collecting everything else.",
     tone: "#dc2626",
   },
   {
     id: "documents",
     title: "Document collection",
-    description: "Gather identity, civil registry, family, and nationality records.",
+    description:
+      "Gather identity, civil registry, family, and nationality records.",
     tone: "#1d4ed8",
   },
   {
     id: "appointment",
     title: "Appointment prep",
-    description: "Prepare scheduling, appearances, witnesses, and appointment-specific items.",
+    description:
+      "Prepare scheduling, appearances, witnesses, and appointment-specific items.",
     tone: "#7c3aed",
   },
   {
     id: "filing",
     title: "Naturalization filing",
-    description: "Prepare SRE filing documents, residence proof, exams, and modality evidence.",
+    description:
+      "Prepare SRE filing documents, residence proof, exams, and modality evidence.",
     tone: "#b91c1c",
   },
   {
@@ -7970,7 +8369,10 @@ const getCitizenshipItemDetail = (item, kind = "checklist") => {
 
 const createCitizenshipChatMessageId = () => {
   const randomId = globalThis.crypto?.randomUUID?.();
-  return randomId || `citizenship-chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  return (
+    randomId ||
+    `citizenship-chat-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
 };
 
 const createCitizenshipChatMessage = (role, text = "", done = true) => ({
@@ -8003,21 +8405,27 @@ const buildCitizenshipAssistantContext = ({
     evaluation.baseRoute
       ? `Likely base route: ${evaluation.baseRoute} - ${ROUTES[evaluation.baseRoute]?.title || ""}`
       : "",
-    evaluation.modality ? `Naturalization modality: ${evaluation.modality}` : "",
+    evaluation.modality
+      ? `Naturalization modality: ${evaluation.modality}`
+      : "",
     "",
     "Reasons shown to the user:",
-    ...(evaluation.reasons.length ? evaluation.reasons : ["No route reasons yet."]).map(
-      (reason) => `- ${reason}`,
-    ),
+    ...(evaluation.reasons.length
+      ? evaluation.reasons
+      : ["No route reasons yet."]
+    ).map((reason) => `- ${reason}`),
     "",
     "Blockers shown to the user:",
-    ...(evaluation.blockers.length ? evaluation.blockers : ["No blockers currently flagged."]).map(
-      (blocker) => `- ${blocker}`,
-    ),
+    ...(evaluation.blockers.length
+      ? evaluation.blockers
+      : ["No blockers currently flagged."]
+    ).map((blocker) => `- ${blocker}`),
     "",
     "Checklist with current progress:",
     ...checklistItems.map((item) => {
-      const status = checklistProgress[getChecklistItemId(item)] ? "done" : "pending";
+      const status = checklistProgress[getChecklistItemId(item)]
+        ? "done"
+        : "pending";
       return `- [${status}] ${item}`;
     }),
     "",
@@ -8076,7 +8484,10 @@ const buildCitizenshipAssistantFollowUpPrompt = ({
   const languageName = getCitizenshipAssistantLanguageName(language);
   const history = messages
     .slice(-8)
-    .map((message) => `${message.role === "user" ? "User" : "Assistant"}: ${message.text}`)
+    .map(
+      (message) =>
+        `${message.role === "user" ? "User" : "Assistant"}: ${message.text}`,
+    )
     .join("\n");
 
   return [
@@ -8139,7 +8550,13 @@ const getCitizenshipAssistantFallbackMessage = (language) =>
     ),
   ].join("\n\n");
 
-const QuestionStep = ({ question, value, onChange, language, onSelectSound }) => {
+const QuestionStep = ({
+  question,
+  value,
+  onChange,
+  language,
+  onSelectSound,
+}) => {
   if (!question) return null;
   const localizedQuestion = getLocalizedQuestion(question, language);
   if (localizedQuestion.type === "multi") {
@@ -8178,7 +8595,11 @@ const QuestionStep = ({ question, value, onChange, language, onSelectSound }) =>
 };
 
 const CitizenshipItemDetail = ({ detail, language }) => (
-  <Stack spacing={3} borderInlineStart="2px solid var(--app-border-strong)" ps={3}>
+  <Stack
+    spacing={3}
+    borderInlineStart="2px solid var(--app-border-strong)"
+    ps={3}
+  >
     {[
       ["Why it matters", detail.why],
       ["What to check", detail.check],
@@ -8243,11 +8664,19 @@ const ResultPanel = ({
               <Icon as={RouteIcon} boxSize="24px" />
             </Box>
             <Box textAlign="start">
-              <Heading as="h2" size="md" letterSpacing="0" color="var(--app-text-primary)">
+              <Heading
+                as="h2"
+                size="md"
+                letterSpacing="0"
+                color="var(--app-text-primary)"
+              >
                 {translateText(route?.title || "Find the route", language)}
               </Heading>
               <Text color="var(--app-text-secondary)" fontSize="sm">
-                {translateText(route?.subtitle || evaluation.confidence, language)}
+                {translateText(
+                  route?.subtitle || evaluation.confidence,
+                  language,
+                )}
               </Text>
             </Box>
           </HStack>
@@ -8257,7 +8686,11 @@ const ResultPanel = ({
             <Text color="var(--app-text-muted)" fontSize="sm">
               {translateText("Completion", language)}
             </Text>
-            <Text color="var(--app-text-secondary)" fontSize="sm" fontWeight="700">
+            <Text
+              color="var(--app-text-secondary)"
+              fontSize="sm"
+              fontWeight="700"
+            >
               {completionPercent}%
             </Text>
           </HStack>
@@ -8281,16 +8714,23 @@ const ResultPanel = ({
             {translateText("Why", language)}
           </Text>
           <Stack spacing={2}>
-            {(evaluation.reasons.length ? evaluation.reasons : ["Answer more questions to narrow the route."]).map(
-              (reason) => (
-                <HStack key={reason} spacing={2} align="flex-start">
-                  <Icon as={Check} color="#0f766e" boxSize="16px" mt="2px" flexShrink={0} />
-                  <Text color="var(--app-text-secondary)" fontSize="sm">
-                    {translateText(reason, language)}
-                  </Text>
-                </HStack>
-              ),
-            )}
+            {(evaluation.reasons.length
+              ? evaluation.reasons
+              : ["Answer more questions to narrow the route."]
+            ).map((reason) => (
+              <HStack key={reason} spacing={2} align="flex-start">
+                <Icon
+                  as={Check}
+                  color="#0f766e"
+                  boxSize="16px"
+                  mt="2px"
+                  flexShrink={0}
+                />
+                <Text color="var(--app-text-secondary)" fontSize="sm">
+                  {translateText(reason, language)}
+                </Text>
+              </HStack>
+            ))}
           </Stack>
         </Box>
 
@@ -8299,7 +8739,13 @@ const ResultPanel = ({
             <Text fontWeight="800" mb={2} color="var(--app-text-primary)">
               {translateText("Naturalization modality", language)}
             </Text>
-            <Badge borderRadius="6px" px={2} py={1} bg="rgba(185, 28, 28, 0.1)" color="#b91c1c">
+            <Badge
+              borderRadius="6px"
+              px={2}
+              py={1}
+              bg="rgba(185, 28, 28, 0.1)"
+              color="#b91c1c"
+            >
               {translateText(evaluation.modality, language)}
             </Badge>
           </Box>
@@ -8332,7 +8778,12 @@ const ResultPanel = ({
                           onClick={onSelectSound}
                           _hover={{ bg: "rgba(220, 38, 38, 0.06)" }}
                         >
-                          <HStack spacing={2} align="flex-start" flex="1" textAlign="start">
+                          <HStack
+                            spacing={2}
+                            align="flex-start"
+                            flex="1"
+                            textAlign="start"
+                          >
                             <Icon
                               as={AlertTriangle}
                               color="#dc2626"
@@ -8340,7 +8791,10 @@ const ResultPanel = ({
                               mt="2px"
                               flexShrink={0}
                             />
-                            <Text color="var(--app-text-secondary)" fontSize="sm">
+                            <Text
+                              color="var(--app-text-secondary)"
+                              fontSize="sm"
+                            >
                               {translateText(blocker, language)}
                             </Text>
                           </HStack>
@@ -8357,7 +8811,10 @@ const ResultPanel = ({
                           </HStack>
                         </AccordionButton>
                         <AccordionPanel px={3} pt={0} pb={3}>
-                          <CitizenshipItemDetail detail={detail} language={language} />
+                          <CitizenshipItemDetail
+                            detail={detail}
+                            language={language}
+                          />
                         </AccordionPanel>
                       </AccordionItem>
                     </Accordion>
@@ -8534,11 +8991,20 @@ const ChecklistPanel = ({
           </Text>
         </Box>
         <Stack spacing={2} align="flex-end">
-          <Text color="var(--app-text-muted)" fontSize="sm" fontWeight="700" whiteSpace="nowrap">
+          <Text
+            color="var(--app-text-muted)"
+            fontSize="sm"
+            fontWeight="700"
+            whiteSpace="nowrap"
+          >
             {checklistPercent}% {translateText("complete", language)}
           </Text>
           {assistantChatSaved ? (
-            <Badge borderRadius="6px" bg="rgba(15, 118, 110, 0.12)" color="#0f766e">
+            <Badge
+              borderRadius="6px"
+              bg="rgba(15, 118, 110, 0.12)"
+              color="#0f766e"
+            >
               {translateText("Saved chat", language)}
             </Badge>
           ) : null}
@@ -8552,7 +9018,12 @@ const ChecklistPanel = ({
         sx={{ "& > div": { bg: "#1d4ed8" } }}
         mb={4}
       />
-      <Text color="var(--app-text-primary)" fontWeight="800" fontSize="sm" mb={3}>
+      <Text
+        color="var(--app-text-primary)"
+        fontWeight="800"
+        fontSize="sm"
+        mb={3}
+      >
         {translateText("Checklist stages", language)}
       </Text>
       <Stack spacing={4}>
@@ -8566,8 +9037,18 @@ const ChecklistPanel = ({
               <HStack justify="space-between" align="flex-start" gap={3} mb={2}>
                 <Box>
                   <HStack spacing={2} align="center">
-                    <Box w="8px" h="8px" borderRadius="full" bg={stage.tone} flexShrink={0} />
-                    <Text color="var(--app-text-primary)" fontWeight="800" fontSize="sm">
+                    <Box
+                      w="8px"
+                      h="8px"
+                      borderRadius="full"
+                      bg={stage.tone}
+                      flexShrink={0}
+                    />
+                    <Text
+                      color="var(--app-text-primary)"
+                      fontWeight="800"
+                      fontSize="sm"
+                    >
                       {translateText(stage.title, language)}
                     </Text>
                   </HStack>
@@ -8594,9 +9075,15 @@ const ChecklistPanel = ({
                     <Box
                       key={itemId}
                       border="1px solid"
-                      borderColor={isDone ? "rgba(29, 78, 216, 0.24)" : "var(--app-border)"}
+                      borderColor={
+                        isDone ? "rgba(29, 78, 216, 0.24)" : "var(--app-border)"
+                      }
                       borderRadius="8px"
-                      bg={isDone ? "rgba(29, 78, 216, 0.06)" : "var(--app-surface)"}
+                      bg={
+                        isDone
+                          ? "rgba(29, 78, 216, 0.06)"
+                          : "var(--app-surface)"
+                      }
                       overflow="hidden"
                     >
                       <Accordion allowMultiple>
@@ -8613,7 +9100,10 @@ const ChecklistPanel = ({
                                 isChecked={isDone}
                                 onChange={(event) => {
                                   onSelectSound?.();
-                                  onChecklistItemChange(item, event.target.checked);
+                                  onChecklistItemChange(
+                                    item,
+                                    event.target.checked,
+                                  );
                                 }}
                                 colorScheme="blue"
                                 aria-label={translateText(item, language)}
@@ -8641,14 +9131,19 @@ const ChecklistPanel = ({
                                 flex="1"
                                 textAlign="start"
                                 color={
-                                  isDone ? "var(--app-text-muted)" : "var(--app-text-secondary)"
+                                  isDone
+                                    ? "var(--app-text-muted)"
+                                    : "var(--app-text-secondary)"
                                 }
                                 fontSize="sm"
                                 transition="color 0.16s ease"
                               >
                                 {translateText(item, language)}
                               </Text>
-                              <AccordionIcon color="var(--app-text-muted)" ms={3} />
+                              <AccordionIcon
+                                color="var(--app-text-muted)"
+                                ms={3}
+                              />
                             </AccordionButton>
                           </HStack>
                           <AccordionPanel
@@ -8657,7 +9152,10 @@ const ChecklistPanel = ({
                             pb={3}
                             borderTop="1px solid var(--app-border)"
                           >
-                            <CitizenshipItemDetail detail={detail} language={language} />
+                            <CitizenshipItemDetail
+                              detail={detail}
+                              language={language}
+                            />
                           </AccordionPanel>
                         </AccordionItem>
                       </Accordion>
@@ -8673,6 +9171,88 @@ const ChecklistPanel = ({
   );
 };
 
+const ConsulateFinderPanel = ({
+  language,
+  locationAnswer,
+  onLocationChange,
+  onSelectSound,
+}) => {
+  const [locationInput, setLocationInput] = useState(locationAnswer || "");
+
+  useEffect(() => {
+    setLocationInput(locationAnswer || "");
+  }, [locationAnswer]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const nextValue = (locationInput || "").trim();
+      if (nextValue !== (locationAnswer || "")) {
+        onLocationChange(nextValue);
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [locationAnswer, locationInput, onLocationChange]);
+
+  const normalizedLocation = (locationInput || "").trim();
+  const query = normalizedLocation
+    ? `nearest Mexican consulate ${normalizedLocation}`
+    : "nearest Mexican consulate";
+  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+
+  return (
+    <Box
+      border="1px solid var(--app-border)"
+      borderRadius="8px"
+      bg="var(--app-surface)"
+      boxShadow="var(--app-shadow-soft)"
+      p={{ base: 4, md: 5 }}
+      textAlign="start"
+    >
+      <Stack spacing={3}>
+        <Text color="var(--app-text-primary)" fontWeight="800">
+          {translateText("Find nearest Mexican consulate", language)}
+        </Text>
+        <Text color="var(--app-text-muted)" fontSize="sm">
+          {translateText(
+            "Use your ZIP code, city, or state to quickly find nearby Mexican consulates.",
+            language,
+          )}
+        </Text>
+        <Input
+          value={locationInput}
+          onChange={(event) => setLocationInput(event.target.value)}
+          placeholder={translateText("ZIP code, city, or state", language)}
+          bg="var(--app-surface-elevated)"
+          borderColor="var(--app-border)"
+          _hover={{ borderColor: "var(--app-border-strong)" }}
+          _focusVisible={{
+            borderColor: "#1d4ed8",
+            boxShadow: "0 0 0 1px #1d4ed8",
+          }}
+        />
+        <HStack>
+          <Button
+            as="a"
+            href={searchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onSelectSound}
+            leftIcon={<Icon as={MapPin} boxSize="16px" />}
+            bg="#1d4ed8"
+            color="white"
+            borderRadius="8px"
+            _hover={{ bg: "#1e40af" }}
+            _active={{ bg: "#1e3a8a" }}
+          >
+            {translateText("Search consulates", language)}
+          </Button>
+        </HStack>
+      </Stack>
+    </Box>
+  );
+};
+
 const CitizenshipMarkdown = ({ children }) => (
   <Box
     color="inherit"
@@ -8680,7 +9260,7 @@ const CitizenshipMarkdown = ({ children }) => (
     lineHeight="1.72"
     sx={{
       "& > *:last-child": { marginBottom: 0 },
-      "p": { marginBottom: "0.7rem" },
+      p: { marginBottom: "0.7rem" },
       "h1, h2, h3": {
         color: "inherit",
         fontWeight: 750,
@@ -8689,17 +9269,17 @@ const CitizenshipMarkdown = ({ children }) => (
         marginTop: "0.95rem",
         marginBottom: "0.4rem",
       },
-      "h1": { fontSize: "1.02rem" },
-      "h2": { fontSize: "0.98rem" },
-      "h3": { fontSize: "0.94rem" },
+      h1: { fontSize: "1.02rem" },
+      h2: { fontSize: "0.98rem" },
+      h3: { fontSize: "0.94rem" },
       "ul, ol": {
         paddingInlineStart: "1.1rem",
         marginBottom: "0.7rem",
         listStylePosition: "outside",
       },
-      "ul": { listStyleType: "disc" },
-      "ol": { listStyleType: "decimal" },
-      "li": {
+      ul: { listStyleType: "disc" },
+      ol: { listStyleType: "decimal" },
+      li: {
         marginBottom: "0.35rem",
         paddingInlineStart: "0.18rem",
       },
@@ -8707,22 +9287,22 @@ const CitizenshipMarkdown = ({ children }) => (
         color: "currentColor",
         fontWeight: 600,
       },
-      "strong": { color: "inherit", fontWeight: 760 },
-      "em": { fontStyle: "italic" },
-      "a": {
+      strong: { color: "inherit", fontWeight: 760 },
+      em: { fontStyle: "italic" },
+      a: {
         color: "inherit",
         textDecoration: "underline",
         textUnderlineOffset: "3px",
         textDecorationThickness: "1px",
       },
-      "code": {
+      code: {
         border: "1px solid var(--app-border)",
         borderRadius: "5px",
         background: "transparent",
         padding: "0.08rem 0.28rem",
         fontSize: "0.92em",
       },
-      "pre": {
+      pre: {
         border: "1px solid var(--app-border)",
         borderRadius: "8px",
         background: "transparent",
@@ -8735,13 +9315,13 @@ const CitizenshipMarkdown = ({ children }) => (
         background: "transparent",
         padding: 0,
       },
-      "blockquote": {
+      blockquote: {
         borderInlineStart: "3px solid var(--app-border-strong)",
         paddingInlineStart: "0.75rem",
         marginBottom: "0.7rem",
         color: "inherit",
       },
-      "table": {
+      table: {
         width: "100%",
         borderCollapse: "collapse",
         marginBottom: "0.7rem",
@@ -8776,7 +9356,10 @@ const CitizenshipAssistantDrawer = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const messagesEndRef = useRef(null);
   const starterRequestKeyRef = useRef("");
-  const chat = useMemo(() => normalizeAssistantChat(assistantChat), [assistantChat]);
+  const chat = useMemo(
+    () => normalizeAssistantChat(assistantChat),
+    [assistantChat],
+  );
   const messages = chat.messages;
   const checklistItems = useMemo(
     () => getCitizenshipChecklistItems(evaluation),
@@ -8825,7 +9408,11 @@ const CitizenshipAssistantDrawer = ({
       const normalizedUserText = userText.trim();
       if (isGenerating || (!starter && !normalizedUserText)) return;
 
-      const assistantMessage = createCitizenshipChatMessage("assistant", "", false);
+      const assistantMessage = createCitizenshipChatMessage(
+        "assistant",
+        "",
+        false,
+      );
       const userMessage = starter
         ? null
         : createCitizenshipChatMessage("user", normalizedUserText, true);
@@ -8870,7 +9457,8 @@ const CitizenshipAssistantDrawer = ({
                 userText: normalizedUserText,
               });
 
-        const result = await citizenshipAssistantModel.generateContentStream(prompt);
+        const result =
+          await citizenshipAssistantModel.generateContentStream(prompt);
         let fullText = "";
 
         for await (const chunk of result.stream) {
@@ -8996,9 +9584,17 @@ const CitizenshipAssistantDrawer = ({
         borderLeft="1px solid"
         borderColor="var(--app-border)"
       >
-        <DrawerHeader borderBottom="1px solid" borderColor="var(--app-border)" py={4}>
+        <DrawerHeader
+          borderBottom="1px solid"
+          borderColor="var(--app-border)"
+          py={4}
+        >
           <Flex align="flex-start" justify="space-between" gap={3}>
-            <Text fontSize="md" fontWeight="800" color="var(--app-text-primary)">
+            <Text
+              fontSize="md"
+              fontWeight="800"
+              color="var(--app-text-primary)"
+            >
               {translateText("Citizenship assistant", language)}
             </Text>
             <DrawerCloseButton
@@ -9044,8 +9640,14 @@ const CitizenshipAssistantDrawer = ({
                     alignSelf={isUser ? "flex-end" : "flex-start"}
                     maxW="92%"
                     border="1px solid"
-                    borderColor={isUser ? "rgba(29, 78, 216, 0.28)" : "var(--app-border)"}
-                    bg={isUser ? "rgba(29, 78, 216, 0.1)" : "var(--app-surface-elevated)"}
+                    borderColor={
+                      isUser ? "rgba(29, 78, 216, 0.28)" : "var(--app-border)"
+                    }
+                    bg={
+                      isUser
+                        ? "rgba(29, 78, 216, 0.1)"
+                        : "var(--app-surface-elevated)"
+                    }
                     borderRadius="8px"
                     px={3}
                     py={2}
@@ -9057,7 +9659,11 @@ const CitizenshipAssistantDrawer = ({
                         color={isUser ? "#1d4ed8" : "#0f766e"}
                         boxSize="14px"
                       />
-                      <Text color="var(--app-text-muted)" fontSize="xs" fontWeight="800">
+                      <Text
+                        color="var(--app-text-muted)"
+                        fontSize="xs"
+                        fontWeight="800"
+                      >
                         {isUser
                           ? translateText("You", language)
                           : translateText("Assistant", language)}
@@ -9067,7 +9673,10 @@ const CitizenshipAssistantDrawer = ({
                       <CitizenshipMarkdown>{message.text}</CitizenshipMarkdown>
                     ) : message.done ? null : (
                       <Text color="var(--app-text-secondary)" fontSize="sm">
-                        {translateText("Thinking through your checklist...", language)}
+                        {translateText(
+                          "Thinking through your checklist...",
+                          language,
+                        )}
                       </Text>
                     )}
                   </Box>
@@ -9078,7 +9687,13 @@ const CitizenshipAssistantDrawer = ({
           </Box>
 
           <Box borderTop="1px solid" borderColor="var(--app-border)" p={4}>
-            <Flex justify="space-between" align="center" gap={2} mb={3} wrap="wrap">
+            <Flex
+              justify="space-between"
+              align="center"
+              gap={2}
+              mb={3}
+              wrap="wrap"
+            >
               <HStack spacing={2} align="center">
                 <Button
                   type="button"
@@ -9098,10 +9713,17 @@ const CitizenshipAssistantDrawer = ({
                 {messages.length ? (
                   <Badge
                     borderRadius="6px"
-                    bg={chat.saved ? "rgba(15, 118, 110, 0.12)" : "rgba(180, 83, 9, 0.14)"}
+                    bg={
+                      chat.saved
+                        ? "rgba(15, 118, 110, 0.12)"
+                        : "rgba(180, 83, 9, 0.14)"
+                    }
                     color={chat.saved ? "#0f766e" : "#b45309"}
                   >
-                    {translateText(chat.saved ? "Saved chat" : "Unsaved chat", language)}
+                    {translateText(
+                      chat.saved ? "Saved chat" : "Unsaved chat",
+                      language,
+                    )}
                   </Badge>
                 ) : null}
               </HStack>
@@ -9126,7 +9748,10 @@ const CitizenshipAssistantDrawer = ({
                     sendMessage();
                   }
                 }}
-                placeholder={translateText("Ask about a checklist item...", language)}
+                placeholder={translateText(
+                  "Ask about a checklist item...",
+                  language,
+                )}
                 minH="86px"
                 maxH="220px"
                 resize="vertical"
@@ -9184,7 +9809,9 @@ export default function CitizenshipGuide() {
     initialCitizenshipState.showResults,
   );
   const [showIntro, setShowIntro] = useState(initialCitizenshipState.showIntro);
-  const [showPrimer, setShowPrimer] = useState(initialCitizenshipState.showPrimer);
+  const [showPrimer, setShowPrimer] = useState(
+    initialCitizenshipState.showPrimer,
+  );
   const [checklistProgress, setChecklistProgress] = useState(
     initialCitizenshipState.checklistProgress,
   );
@@ -9197,6 +9824,7 @@ export default function CitizenshipGuide() {
   const [isPreparingAccount, setIsPreparingAccount] = useState(false);
   const [isSigningInWithKey, setIsSigningInWithKey] = useState(false);
   const [accountReloadNonce, setAccountReloadNonce] = useState(0);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const hasTriggeredKeygenRef = useRef(false);
   const accountCreationPromiseRef = useRef(null);
   const hasLoadedProgressRef = useRef(false);
@@ -9209,6 +9837,9 @@ export default function CitizenshipGuide() {
   const playSubmitSound = useCallback(() => {
     playSound(submitActionSound);
   }, [playSound]);
+  const setHandlingLocation = useCallback((value) => {
+    setAnswers((current) => ({ ...current, handlingLocation: value }));
+  }, []);
   const setAnswer = (key, value) => {
     lastSavedAssistantChatRef.current = createEmptyAssistantChat();
     setAnswers((current) => ({ ...current, [key]: value }));
@@ -9320,7 +9951,10 @@ export default function CitizenshipGuide() {
           data?.citizenshipProgress,
         );
         const localProgress = readLocalCitizenshipProgress();
-        const progress = chooseMostRecentProgress(remoteProgress, localProgress);
+        const progress = chooseMostRecentProgress(
+          remoteProgress,
+          localProgress,
+        );
 
         if (progress) {
           setAnswers(progress.answers);
@@ -9357,8 +9991,14 @@ export default function CitizenshipGuide() {
     };
   }, [accountKeys.npub, accountReloadNonce]);
 
-  const evaluation = useMemo(() => evaluateCitizenshipRoute(answers), [answers]);
-  const visibleQuestions = useMemo(() => getVisibleQuestions(answers), [answers]);
+  const evaluation = useMemo(
+    () => evaluateCitizenshipRoute(answers),
+    [answers],
+  );
+  const visibleQuestions = useMemo(
+    () => getVisibleQuestions(answers),
+    [answers],
+  );
   const currentIndex = Math.min(questionIndex, visibleQuestions.length - 1);
   const currentQuestion = visibleQuestions[currentIndex];
   const totalQuestions = visibleQuestions.length;
@@ -9376,7 +10016,9 @@ export default function CitizenshipGuide() {
     showResults || isEditingAnswers ? 100 : Math.round(progressValue);
 
   useEffect(() => {
-    setQuestionIndex((index) => Math.min(index, Math.max(visibleQuestions.length - 1, 0)));
+    setQuestionIndex((index) =>
+      Math.min(index, Math.max(visibleQuestions.length - 1, 0)),
+    );
   }, [visibleQuestions.length]);
 
   useEffect(() => {
@@ -9387,7 +10029,8 @@ export default function CitizenshipGuide() {
   }, [assistantChat]);
 
   useEffect(() => {
-    if (showIntro || showPrimer || !hasLoadedProgressRef.current) return undefined;
+    if (showIntro || showPrimer || !hasLoadedProgressRef.current)
+      return undefined;
 
     const currentSavedChat = normalizeSavedAssistantChat(assistantChat);
     const progress = buildCitizenshipProgress({
@@ -9661,12 +10304,12 @@ export default function CitizenshipGuide() {
       const progress = buildCitizenshipProgress({
         answers,
         questionIndex,
-      showResults,
-      checklistProgress,
-      assistantChat: normalizeSavedAssistantChat(assistantChat).saved
-        ? assistantChat
-        : lastSavedAssistantChatRef.current,
-    });
+        showResults,
+        checklistProgress,
+        assistantChat: normalizeSavedAssistantChat(assistantChat).saved
+          ? assistantChat
+          : lastSavedAssistantChatRef.current,
+      });
       await persistCitizenshipProgress(progress, { markOnboarded: true });
       if (typeof window !== "undefined") {
         window.localStorage.setItem(CITIZENSHIP_ONBOARDED_STORAGE_KEY, "true");
@@ -9735,7 +10378,10 @@ export default function CitizenshipGuide() {
   };
 
   const QuestionIcon = currentQuestion?.icon || CircleHelp;
-  const localizedCurrentQuestion = getLocalizedQuestion(currentQuestion, pageLanguage);
+  const localizedCurrentQuestion = getLocalizedQuestion(
+    currentQuestion,
+    pageLanguage,
+  );
   const topControlProps = getTopControlProps(isLightTheme);
   const pageMenuTranslations =
     linksPageTranslations[pageLanguage] || linksPageTranslations.en;
@@ -9747,7 +10393,11 @@ export default function CitizenshipGuide() {
       color="var(--app-text-primary)"
       dir={pageDirection}
     >
-      <Box borderBottom="1px solid" borderColor="var(--app-border)" bg="var(--app-surface)">
+      <Box
+        borderBottom="1px solid"
+        borderColor="var(--app-border)"
+        bg="var(--app-surface)"
+      >
         <Container maxW="4xl" px={{ base: 4, md: 6 }} py={3}>
           <Flex align="center" justify="space-between" gap={3} flexWrap="wrap">
             <IconButton
@@ -9777,6 +10427,38 @@ export default function CitizenshipGuide() {
                 isLightTheme={isLightTheme}
                 onToggle={toggleTheme}
                 language={pageLanguage}
+              />
+              <IconButton
+                type="button"
+                aria-label={translateText("Copy key", pageLanguage)}
+                title={translateText("Copy key", pageLanguage)}
+                icon={<Icon as={SiMonkeytie} boxSize="17px" />}
+                size="sm"
+                minW="40px"
+                h="40px"
+                borderRadius="full"
+                border="1px solid"
+                onClick={() => {
+                  playSubmitSound();
+                  copySecretKey();
+                }}
+                {...topControlProps}
+              />
+              <IconButton
+                type="button"
+                aria-label={translateText("Privacy policy", pageLanguage)}
+                title={translateText("Privacy policy", pageLanguage)}
+                onClick={() => {
+                  playSelectSound();
+                  setIsPrivacyOpen(true);
+                }}
+                icon={<Icon as={ShieldCheck} boxSize="17px" />}
+                size="sm"
+                minW="40px"
+                h="40px"
+                borderRadius="full"
+                border="1px solid"
+                {...topControlProps}
               />
               {/*
               <Button
@@ -9825,8 +10507,8 @@ export default function CitizenshipGuide() {
               isSigningIn={isSigningInWithKey}
               hasAccountKey={Boolean(
                 accountKeys.npub &&
-                  accountKeys.nsec &&
-                  accountKeys.nsec !== "nip07",
+                accountKeys.nsec &&
+                accountKeys.nsec !== "nip07",
               )}
             />
           ) : null}
@@ -9843,95 +10525,121 @@ export default function CitizenshipGuide() {
 
           {!showIntro && !showPrimer && !showResults ? (
             <Box>
-            <HStack justify="space-between" mb={2}>
-              {isEditingAnswers ? (
-                <Menu placement="bottom-start">
-                  <MenuButton
-                    as={Button}
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    borderRadius="8px"
-                    bg="var(--app-surface-elevated)"
-                    borderColor="var(--app-border)"
-                    color="var(--app-text-primary)"
-                    boxShadow="none"
-                    transform="none"
-                    aria-label={translateText("Jump to question", pageLanguage)}
-                    rightIcon={<Icon as={ChevronDown} boxSize="15px" />}
-                    _hover={{ bg: "var(--app-surface-muted)" }}
-                    _active={{ boxShadow: "none", transform: "none" }}
+              <HStack justify="space-between" mb={2}>
+                {isEditingAnswers ? (
+                  <Menu placement="bottom-start">
+                    <MenuButton
+                      as={Button}
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      borderRadius="8px"
+                      bg="var(--app-surface-elevated)"
+                      borderColor="var(--app-border)"
+                      color="var(--app-text-primary)"
+                      boxShadow="none"
+                      transform="none"
+                      aria-label={translateText(
+                        "Jump to question",
+                        pageLanguage,
+                      )}
+                      rightIcon={<Icon as={ChevronDown} boxSize="15px" />}
+                      _hover={{ bg: "var(--app-surface-muted)" }}
+                      _active={{ boxShadow: "none", transform: "none" }}
+                    >
+                      {translateText("Question", pageLanguage)}{" "}
+                      {currentIndex + 1}
+                    </MenuButton>
+                    <MenuList
+                      bg="var(--app-surface-elevated)"
+                      borderColor="var(--app-border)"
+                      boxShadow="var(--app-shadow-soft)"
+                      maxH="320px"
+                      overflowY="auto"
+                      minW={{ base: "calc(100vw - 32px)", sm: "360px" }}
+                      zIndex={20}
+                    >
+                      {visibleQuestions.map((question, index) => {
+                        const localizedQuestion = getLocalizedQuestion(
+                          question,
+                          pageLanguage,
+                        );
+                        const isCurrentQuestion = index === currentIndex;
+                        const isAnswered = hasQuestionAnswer(question, answers);
+
+                        return (
+                          <MenuItem
+                            key={question.id}
+                            onClick={() => {
+                              playSelectSound();
+                              setQuestionIndex(index);
+                            }}
+                            bg={
+                              isCurrentQuestion
+                                ? "var(--app-surface-muted)"
+                                : "transparent"
+                            }
+                            _hover={{ bg: "var(--app-surface-muted)" }}
+                            whiteSpace="normal"
+                            alignItems="flex-start"
+                            gap={3}
+                            py={3}
+                          >
+                            <Icon
+                              as={isAnswered ? Check : CircleHelp}
+                              color={
+                                isAnswered ? "#0f766e" : "var(--app-text-muted)"
+                              }
+                              boxSize="16px"
+                              mt="3px"
+                              flexShrink={0}
+                            />
+                            <Box textAlign="start">
+                              <Text
+                                color="var(--app-text-muted)"
+                                fontSize="xs"
+                                fontWeight="800"
+                              >
+                                {translateText("Question", pageLanguage)}{" "}
+                                {index + 1}
+                                {localizedQuestion?.section
+                                  ? ` · ${localizedQuestion.section}`
+                                  : ""}
+                              </Text>
+                              <Text
+                                color="var(--app-text-primary)"
+                                fontSize="sm"
+                              >
+                                {localizedQuestion?.question ||
+                                  question.question}
+                              </Text>
+                            </Box>
+                          </MenuItem>
+                        );
+                      })}
+                    </MenuList>
+                  </Menu>
+                ) : (
+                  <Text
+                    color="var(--app-text-muted)"
+                    fontSize="sm"
+                    fontWeight="700"
                   >
                     {translateText("Question", pageLanguage)} {currentIndex + 1}
-                  </MenuButton>
-                  <MenuList
-                    bg="var(--app-surface-elevated)"
-                    borderColor="var(--app-border)"
-                    boxShadow="var(--app-shadow-soft)"
-                    maxH="320px"
-                    overflowY="auto"
-                    minW={{ base: "calc(100vw - 32px)", sm: "360px" }}
-                    zIndex={20}
-                  >
-                    {visibleQuestions.map((question, index) => {
-                      const localizedQuestion = getLocalizedQuestion(question, pageLanguage);
-                      const isCurrentQuestion = index === currentIndex;
-                      const isAnswered = hasQuestionAnswer(question, answers);
-
-                      return (
-                        <MenuItem
-                          key={question.id}
-                          onClick={() => {
-                            playSelectSound();
-                            setQuestionIndex(index);
-                          }}
-                          bg={isCurrentQuestion ? "var(--app-surface-muted)" : "transparent"}
-                          _hover={{ bg: "var(--app-surface-muted)" }}
-                          whiteSpace="normal"
-                          alignItems="flex-start"
-                          gap={3}
-                          py={3}
-                        >
-                          <Icon
-                            as={isAnswered ? Check : CircleHelp}
-                            color={isAnswered ? "#0f766e" : "var(--app-text-muted)"}
-                            boxSize="16px"
-                            mt="3px"
-                            flexShrink={0}
-                          />
-                          <Box textAlign="start">
-                            <Text color="var(--app-text-muted)" fontSize="xs" fontWeight="800">
-                              {translateText("Question", pageLanguage)} {index + 1}
-                              {localizedQuestion?.section
-                                ? ` · ${localizedQuestion.section}`
-                                : ""}
-                            </Text>
-                            <Text color="var(--app-text-primary)" fontSize="sm">
-                              {localizedQuestion?.question || question.question}
-                            </Text>
-                          </Box>
-                        </MenuItem>
-                      );
-                    })}
-                  </MenuList>
-                </Menu>
-              ) : (
-                <Text color="var(--app-text-muted)" fontSize="sm" fontWeight="700">
-                  {translateText("Question", pageLanguage)} {currentIndex + 1}
+                  </Text>
+                )}
+                <Text color="var(--app-text-muted)" fontSize="sm">
+                  {completionPercent}% {translateText("complete", pageLanguage)}
                 </Text>
-              )}
-              <Text color="var(--app-text-muted)" fontSize="sm">
-                {completionPercent}% {translateText("complete", pageLanguage)}
-              </Text>
-            </HStack>
-            <Progress
-              value={completionPercent}
-              h="8px"
-              borderRadius="999px"
-              bg="rgba(148, 163, 184, 0.18)"
-              sx={{ "& > div": { bg: "#0f766e" } }}
-            />
-          </Box>
+              </HStack>
+              <Progress
+                value={completionPercent}
+                h="8px"
+                borderRadius="999px"
+                bg="rgba(148, 163, 184, 0.18)"
+                sx={{ "& > div": { bg: "#0f766e" } }}
+              />
+            </Box>
           ) : null}
 
           {!showIntro && !showPrimer && !showResults ? (
@@ -9943,106 +10651,109 @@ export default function CitizenshipGuide() {
                 bg="var(--app-surface)"
                 p={{ base: 4, md: 7 }}
               >
-              <HStack spacing={3} mb={6} align="center">
-                <Box
-                  display="inline-flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  w="38px"
-                  h="38px"
-                  borderRadius="8px"
-                  bg="rgba(15, 118, 110, 0.14)"
-                  color="#0f766e"
-                  flexShrink={0}
-                >
-                  <Icon as={QuestionIcon} boxSize="20px" />
-                </Box>
-                <Box textAlign="start">
-                  <Text
-                    color="var(--app-text-muted)"
-                    fontSize="xs"
-                    fontWeight="800"
-                    textTransform="uppercase"
+                <HStack spacing={3} mb={6} align="center">
+                  <Box
+                    display="inline-flex"
+                    alignItems="center"
+                    justifyContent="center"
+                    w="38px"
+                    h="38px"
+                    borderRadius="8px"
+                    bg="rgba(15, 118, 110, 0.14)"
+                    color="#0f766e"
+                    flexShrink={0}
                   >
-                    {localizedCurrentQuestion?.section ||
-                      translateText("Question", pageLanguage)}
-                  </Text>
-                </Box>
-              </HStack>
-
-              <QuestionStep
-                question={currentQuestion}
-                value={answers[currentQuestion?.id]}
-                onChange={(value) => setAnswer(currentQuestion.id, value)}
-                language={pageLanguage}
-                onSelectSound={playSelectSound}
-              />
-
-              <Flex
-                justify="space-between"
-                align="center"
-                gap={3}
-                mt={8}
-                direction="row"
-                wrap="wrap"
-              >
-                <Button
-                  variant="outline"
-                  borderRadius="8px"
-                  bg="var(--app-surface-elevated)"
-                  borderColor="var(--app-border)"
-                  color="var(--app-text-primary)"
-                  boxShadow="none"
-                  transform="none"
-                  minW="112px"
-                  h="48px"
-                  isDisabled={currentIndex === 0}
-                  onClick={goBack}
-                  _hover={{ bg: "var(--app-surface-muted)" }}
-                  _active={{ boxShadow: "none", transform: "none" }}
-                >
-                  {translateText("Back", pageLanguage)}
-                </Button>
-                <HStack spacing={3} justify="flex-end">
-                  {currentQuestion?.optional ? (
-                    <Button
-                      variant="ghost"
-                      color="var(--app-text-secondary)"
-                      boxShadow="none"
-                      transform="none"
-                      minW="112px"
-                      h="48px"
-                      onClick={goNext}
-                      _hover={{ bg: "var(--app-surface-muted)" }}
-                      _active={{ boxShadow: "none", transform: "none" }}
+                    <Icon as={QuestionIcon} boxSize="20px" />
+                  </Box>
+                  <Box textAlign="start">
+                    <Text
+                      color="var(--app-text-muted)"
+                      fontSize="xs"
+                      fontWeight="800"
+                      textTransform="uppercase"
                     >
-                      {translateText("Skip", pageLanguage)}
-                    </Button>
-                  ) : null}
+                      {localizedCurrentQuestion?.section ||
+                        translateText("Question", pageLanguage)}
+                    </Text>
+                  </Box>
+                </HStack>
+
+                <QuestionStep
+                  question={currentQuestion}
+                  value={answers[currentQuestion?.id]}
+                  onChange={(value) => setAnswer(currentQuestion.id, value)}
+                  language={pageLanguage}
+                  onSelectSound={playSelectSound}
+                />
+
+                <Flex
+                  justify="space-between"
+                  align="center"
+                  gap={3}
+                  mt={8}
+                  direction="row"
+                  wrap="wrap"
+                >
                   <Button
                     variant="outline"
                     borderRadius="8px"
                     bg="var(--app-surface-elevated)"
-                    borderColor="#0f766e"
-                    color="#0f766e"
+                    borderColor="var(--app-border)"
+                    color="var(--app-text-primary)"
                     boxShadow="none"
                     transform="none"
-                    isDisabled={!canContinue}
-                    onClick={goNext}
                     minW="112px"
                     h="48px"
-                    _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
-                    _active={{
-                      bg: "rgba(15, 118, 110, 0.12)",
-                      boxShadow: "none",
-                      transform: "none",
-                    }}
-                    _disabled={{ opacity: 0.58, cursor: "not-allowed" }}
+                    isDisabled={currentIndex === 0}
+                    onClick={goBack}
+                    _hover={{ bg: "var(--app-surface-muted)" }}
+                    _active={{ boxShadow: "none", transform: "none" }}
                   >
-                    {translateText(isLastQuestion ? "Done" : "Next", pageLanguage)}
+                    {translateText("Back", pageLanguage)}
                   </Button>
-                </HStack>
-              </Flex>
+                  <HStack spacing={3} justify="flex-end">
+                    {currentQuestion?.optional ? (
+                      <Button
+                        variant="ghost"
+                        color="var(--app-text-secondary)"
+                        boxShadow="none"
+                        transform="none"
+                        minW="112px"
+                        h="48px"
+                        onClick={goNext}
+                        _hover={{ bg: "var(--app-surface-muted)" }}
+                        _active={{ boxShadow: "none", transform: "none" }}
+                      >
+                        {translateText("Skip", pageLanguage)}
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      borderRadius="8px"
+                      bg="var(--app-surface-elevated)"
+                      borderColor="#0f766e"
+                      color="#0f766e"
+                      boxShadow="none"
+                      transform="none"
+                      isDisabled={!canContinue}
+                      onClick={goNext}
+                      minW="112px"
+                      h="48px"
+                      _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
+                      _active={{
+                        bg: "rgba(15, 118, 110, 0.12)",
+                        boxShadow: "none",
+                        transform: "none",
+                      }}
+                      _disabled={{ opacity: 0.58, cursor: "not-allowed" }}
+                    >
+                      {translateText(
+                        isLastQuestion ? "Done" : "Next",
+                        pageLanguage,
+                      )}
+                    </Button>
+                  </HStack>
+                </Flex>
               </Box>
               {isEditingAnswers ? (
                 <Flex justify="center" mt={3}>
@@ -10127,6 +10838,12 @@ export default function CitizenshipGuide() {
                 isLightTheme={isLightTheme}
                 onSelectSound={playSelectSound}
               />
+              <ConsulateFinderPanel
+                language={pageLanguage}
+                locationAnswer={answers.handlingLocation}
+                onLocationChange={setHandlingLocation}
+                onSelectSound={playSelectSound}
+              />
               <CitizenshipAssistantDrawer
                 isOpen={isAssistantOpen}
                 onClose={closeAssistant}
@@ -10143,6 +10860,49 @@ export default function CitizenshipGuide() {
           ) : null}
         </Stack>
       </Container>
+      <Modal
+        isOpen={isPrivacyOpen}
+        onClose={() => setIsPrivacyOpen(false)}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent
+          bg="var(--app-surface)"
+          color="var(--app-text-primary)"
+          border="1px solid"
+          borderColor="var(--app-border)"
+        >
+          <ModalHeader>
+            <HStack spacing={2}>
+              <Icon as={ShieldCheck} color="#0f766e" />
+              <Text>{translateText("Privacy policy", pageLanguage)}</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={5}>
+            <Stack spacing={4} fontSize="sm" color="var(--app-text-secondary)">
+              <Text>
+                {translateText(
+                  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
+                  pageLanguage,
+                )}
+              </Text>
+              <Text>
+                {translateText(
+                  "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
+                  pageLanguage,
+                )}
+              </Text>
+              <Text>
+                {translateText(
+                  "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
+                  pageLanguage,
+                )}
+              </Text>
+            </Stack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
