@@ -3020,10 +3020,10 @@ Object.assign(HI_TEXT, {
   complete: "पूर्ण",
   "Document collection progress": "दस्तावेज़ संग्रह प्रगति",
   "Download report": "रिपोर्ट डाउनलोड करें",
-  "DIY official route": "आधिकारिक DIY मार्ग",
-  "Paid-help range": "Paid help range",
+  "DIY official route": "आधिकारिक खुद करने वाला मार्ग",
+  "Paid-help range": "भुगतान वाली मदद की सीमा",
   Recommendation: "सिफारिश",
-  "paid help": "paid help",
+  "paid help": "भुगतान वाली मदद",
   Meaning: "अर्थ",
   "User guidance": "यूज़र मार्गदर्शन",
   "Mexico citizenship route report": "मेक्सिको नागरिकता मार्ग रिपोर्ट",
@@ -4604,6 +4604,25 @@ Object.assign(ZH_TEXT, {
     "更远的血统关系在依赖两年路线前应先审核。",
 });
 
+const PRIVACY_POLICY_TITLE = "Privacy policy";
+const PRIVACY_POLICY_COPY = [
+  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
+  "Your identity stays private. We have no way of identifying you.",
+  "You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
+  "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
+];
+const [
+  PRIVACY_POLICY_SAVED_DATA,
+  PRIVACY_POLICY_IDENTITY_PRIVATE,
+  PRIVACY_POLICY_KEYS,
+  PRIVACY_POLICY_KEY_LOSS,
+] = PRIVACY_POLICY_COPY;
+const CONSULATE_FINDER_TITLE = "Find nearest Mexican consulate";
+const CONSULATE_FINDER_DESCRIPTION =
+  "Use your ZIP code, city, or state to quickly find nearby Mexican consulates.";
+const CONSULATE_FINDER_PLACEHOLDER = "ZIP code, city, or state";
+const CONSULATE_FINDER_BUTTON = "Search consulates";
+
 Object.assign(ES_TEXT, {
   "Already have a key?": "¿Ya tienes una clave?",
   "Sign in": "Iniciar sesión",
@@ -4624,6 +4643,20 @@ Object.assign(ES_TEXT, {
   "Unable to sign in.": "No se pudo iniciar sesión.",
   "Creating your key failed. You can still paste an existing key.":
     "No se pudo crear tu clave. Aún puedes pegar una clave existente.",
+  [PRIVACY_POLICY_TITLE]: "Política de privacidad",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "Los datos guardados solo se usan para tu experiencia de cuenta, para que puedas volver, editar respuestas y mantenerte organizado/a en todos tus dispositivos. Nunca se venden ni se comparten.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "Tu identidad se mantiene privada. No tenemos forma de identificarte.",
+  [PRIVACY_POLICY_KEYS]:
+    "Recibes claves en lugar de crear una cuenta personal, y no guardamos tu clave secreta. Solo tú puedes acceder a tu información con tu clave.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "Si pierdes tu clave secreta, pierdes acceso a tu cuenta. No podemos recuperarla por ti.",
+  [CONSULATE_FINDER_TITLE]: "Encuentra el consulado mexicano más cercano",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "Usa tu código postal, ciudad o estado para encontrar rápidamente consulados mexicanos cercanos.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "Código postal, ciudad o estado",
+  [CONSULATE_FINDER_BUTTON]: "Buscar consulados",
 });
 
 Object.assign(PT_TEXT, {
@@ -4646,6 +4679,20 @@ Object.assign(PT_TEXT, {
   "Unable to sign in.": "Não foi possível entrar.",
   "Creating your key failed. You can still paste an existing key.":
     "Não foi possível criar sua chave. Você ainda pode colar uma chave existente.",
+  [PRIVACY_POLICY_TITLE]: "Política de privacidade",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "Os dados salvos são usados apenas para a experiência da sua conta, para que você possa voltar, editar respostas e se organizar em todos os dispositivos. Eles nunca são vendidos nem compartilhados.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "Sua identidade permanece privada. Não temos como identificar você.",
+  [PRIVACY_POLICY_KEYS]:
+    "Você recebe chaves em vez de criar uma conta pessoal, e não salvamos sua chave secreta. Só você pode acessar suas informações com sua chave.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "Se você perder sua chave secreta, perderá o acesso à sua conta. Não podemos recuperá-la para você.",
+  [CONSULATE_FINDER_TITLE]: "Encontre o consulado mexicano mais próximo",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "Use seu CEP, cidade ou estado para encontrar rapidamente consulados mexicanos próximos.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "CEP, cidade ou estado",
+  [CONSULATE_FINDER_BUTTON]: "Buscar consulados",
 });
 
 Object.assign(IT_TEXT, {
@@ -4668,6 +4715,20 @@ Object.assign(IT_TEXT, {
   "Unable to sign in.": "Impossibile accedere.",
   "Creating your key failed. You can still paste an existing key.":
     "Creazione della chiave non riuscita. Puoi comunque incollare una chiave esistente.",
+  [PRIVACY_POLICY_TITLE]: "Informativa sulla privacy",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "I dati salvati vengono usati solo per l'esperienza del tuo account, così puoi tornare, modificare le risposte e restare organizzato su tutti i dispositivi. Non vengono mai venduti né condivisi.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "La tua identità resta privata. Non abbiamo modo di identificarti.",
+  [PRIVACY_POLICY_KEYS]:
+    "Ti vengono fornite chiavi invece di creare un account personale, e non salviamo la tua chiave segreta. Solo tu puoi accedere alle tue informazioni con la tua chiave.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "Se perdi la chiave segreta, perdi l'accesso al tuo account. Non possiamo recuperarla per te.",
+  [CONSULATE_FINDER_TITLE]: "Trova il consolato messicano più vicino",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "Usa CAP, città o stato per trovare rapidamente i consolati messicani vicini.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "CAP, città o stato",
+  [CONSULATE_FINDER_BUTTON]: "Cerca consolati",
 });
 
 Object.assign(FR_TEXT, {
@@ -4690,6 +4751,20 @@ Object.assign(FR_TEXT, {
   "Unable to sign in.": "Impossible de se connecter.",
   "Creating your key failed. You can still paste an existing key.":
     "La création de votre clé a échoué. Vous pouvez toujours coller une clé existante.",
+  [PRIVACY_POLICY_TITLE]: "Politique de confidentialité",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "Les données enregistrées servent uniquement à l'expérience de votre compte, afin que vous puissiez revenir, modifier vos réponses et rester organisé sur tous vos appareils. Elles ne sont jamais vendues ni partagées.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "Votre identité reste privée. Nous n'avons aucun moyen de vous identifier.",
+  [PRIVACY_POLICY_KEYS]:
+    "Vous recevez des clés au lieu de créer un compte personnel, et nous n'enregistrons pas votre clé secrète. Vous seul pouvez accéder à vos informations avec votre clé.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "Si vous perdez votre clé secrète, vous perdez l'accès à votre compte. Nous ne pouvons pas la récupérer pour vous.",
+  [CONSULATE_FINDER_TITLE]: "Trouvez le consulat mexicain le plus proche",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "Utilisez votre code postal, votre ville ou votre État pour trouver rapidement les consulats mexicains proches.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "Code postal, ville ou État",
+  [CONSULATE_FINDER_BUTTON]: "Rechercher des consulats",
 });
 
 Object.assign(JA_TEXT, {
@@ -4712,6 +4787,20 @@ Object.assign(JA_TEXT, {
   "Unable to sign in.": "サインインできませんでした。",
   "Creating your key failed. You can still paste an existing key.":
     "キーを作成できませんでした。既存のキーを貼り付けることはできます。",
+  [PRIVACY_POLICY_TITLE]: "プライバシーポリシー",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "保存されたデータはアカウント体験のためだけに使われます。戻って回答を編集したり、複数のデバイスで整理して使ったりできます。販売や共有はされません。",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "あなたの身元は非公開のままです。こちらがあなたを特定する方法はありません。",
+  [PRIVACY_POLICY_KEYS]:
+    "個人アカウントを作成する代わりにキーが渡されます。こちらでは秘密鍵を保存しません。あなたのキーを使えるのはあなただけなので、情報にアクセスできるのもあなただけです。",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "秘密鍵を失うと、アカウントにアクセスできなくなります。こちらでは復元できません。",
+  [CONSULATE_FINDER_TITLE]: "最寄りのメキシコ領事館を探す",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "郵便番号、市区町村、または州を使って、近くのメキシコ領事館をすばやく探せます。",
+  [CONSULATE_FINDER_PLACEHOLDER]: "郵便番号、市区町村、または州",
+  [CONSULATE_FINDER_BUTTON]: "領事館を検索",
 });
 
 Object.assign(HI_TEXT, {
@@ -4734,6 +4823,20 @@ Object.assign(HI_TEXT, {
   "Unable to sign in.": "साइन इन नहीं हो सका।",
   "Creating your key failed. You can still paste an existing key.":
     "आपकी कुंजी नहीं बन सकी। आप फिर भी मौजूदा कुंजी चिपका सकते हैं।",
+  [PRIVACY_POLICY_TITLE]: "गोपनीयता नीति",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "सेव किया गया डेटा केवल आपके खाते के अनुभव के लिए उपयोग होता है, ताकि आप वापस आ सकें, उत्तर संपादित कर सकें, और सभी डिवाइस पर व्यवस्थित रह सकें। इसे कभी बेचा या साझा नहीं किया जाता।",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "आपकी पहचान निजी रहती है। हमारे पास आपको पहचानने का कोई तरीका नहीं है।",
+  [PRIVACY_POLICY_KEYS]:
+    "व्यक्तिगत खाता बनाने के बजाय आपको कुंजियाँ दी जाती हैं, और हम आपकी गुप्त कुंजी सेव नहीं करते। केवल आप अपनी कुंजी से अपनी जानकारी तक पहुँच सकते हैं।",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "अगर आप अपनी गुप्त कुंजी खो देते हैं, तो आपके खाते तक पहुँच चली जाती है। हम इसे आपके लिए वापस नहीं ला सकते।",
+  [CONSULATE_FINDER_TITLE]: "निकटतम मैक्सिकन वाणिज्य दूतावास खोजें",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "अपने ZIP कोड, शहर या राज्य से पास के मैक्सिकन वाणिज्य दूतावास जल्दी खोजें।",
+  [CONSULATE_FINDER_PLACEHOLDER]: "ZIP कोड, शहर या राज्य",
+  [CONSULATE_FINDER_BUTTON]: "वाणिज्य दूतावास खोजें",
 });
 
 Object.assign(AR_TEXT, {
@@ -4755,6 +4858,20 @@ Object.assign(AR_TEXT, {
   "Unable to sign in.": "تعذر تسجيل الدخول.",
   "Creating your key failed. You can still paste an existing key.":
     "تعذر إنشاء مفتاحك. ما زال بإمكانك لصق مفتاح موجود.",
+  [PRIVACY_POLICY_TITLE]: "سياسة الخصوصية",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "البيانات المحفوظة تُستخدم فقط لتجربة حسابك، حتى تتمكن من الرجوع وتعديل الإجابات والبقاء منظما عبر الأجهزة. لا يتم بيعها أو مشاركتها أبدا.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "تظل هويتك خاصة. لا توجد لدينا طريقة للتعرف عليك.",
+  [PRIVACY_POLICY_KEYS]:
+    "تحصل على مفاتيح بدلا من إنشاء حساب شخصي، ولا نحفظ مفتاحك السري. أنت وحدك تستطيع الوصول إلى معلوماتك باستخدام مفتاحك.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "إذا فقدت مفتاحك السري، فستفقد الوصول إلى حسابك. لا يمكننا استرجاعه لك.",
+  [CONSULATE_FINDER_TITLE]: "ابحث عن أقرب قنصلية مكسيكية",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "استخدم الرمز البريدي أو المدينة أو الولاية للعثور بسرعة على القنصليات المكسيكية القريبة.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "الرمز البريدي أو المدينة أو الولاية",
+  [CONSULATE_FINDER_BUTTON]: "ابحث عن القنصليات",
 });
 
 Object.assign(ZH_TEXT, {
@@ -4777,6 +4894,19 @@ Object.assign(ZH_TEXT, {
   "Unable to sign in.": "无法登录。",
   "Creating your key failed. You can still paste an existing key.":
     "密钥创建失败。你仍然可以粘贴已有密钥。",
+  [PRIVACY_POLICY_TITLE]: "隐私政策",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "保存的数据只用于你的账户体验，让你可以返回、编辑答案，并在不同设备上保持有序。它绝不会被出售或分享。",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]: "你的身份保持私密。我们无法识别你的身份。",
+  [PRIVACY_POLICY_KEYS]:
+    "你会获得密钥，而不是创建个人账户；我们也不会保存你的密钥。只有你可以用自己的密钥访问你的信息。",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "如果你丢失密钥，就会失去账户访问权限。我们无法为你恢复。",
+  [CONSULATE_FINDER_TITLE]: "查找最近的墨西哥领事馆",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "使用邮编、城市或州，快速查找附近的墨西哥领事馆。",
+  [CONSULATE_FINDER_PLACEHOLDER]: "邮编、城市或州",
+  [CONSULATE_FINDER_BUTTON]: "搜索领事馆",
 });
 
 const TEXT_TRANSLATIONS = {
@@ -5579,7 +5709,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Mejor movimiento: prueba primero la ruta oficial del consulado. La ayuda pagada puede valer la pena solo si quieres comodidad.",
         priceNote:
-          "Estimado DIY: muy bajo costo. Servicio pagado: cientos de dólares. Recomendación: ahorra el dinero salvo que valores la comodidad.",
+          "Estimado por cuenta propia: costo muy bajo. Servicio pagado: cientos de dólares. Recomendación: ahorra el dinero salvo que valores la comodidad.",
       },
       {
         tone: "yellow",
@@ -5598,7 +5728,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Mejor movimiento: corrige o verifica el documento antes de agendar. Una revisión de bajo costo puede servir, pero no pagues un paquete grande antes de conocer el bloqueo exacto.",
         priceNote:
-          "Estimado DIY: bajo a moderado. Revisión pagada: quizá útil. Recomendación: paga por claridad, no por un paquete completo demasiado pronto.",
+          "Estimado por cuenta propia: bajo a moderado. Revisión pagada: quizá útil. Recomendación: paga por claridad, no por un paquete completo demasiado pronto.",
       },
       {
         tone: "red",
@@ -5618,7 +5748,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Mejor movimiento: no pagues solo por ayuda de ciudadanía. Pregunta qué registro está mal, quién lo arregla, dónde se arregla y qué pasa si el consulado lo rechaza.",
         priceNote:
-          "Estimado DIY: impredecible. Ayuda pagada/legal: potencialmente útil. Recomendación: considérala solo si resuelve el bloqueo real.",
+          "Estimado por cuenta propia: impredecible. Ayuda pagada/legal: potencialmente útil. Recomendación: considérala solo si resuelve el bloqueo real.",
       },
     ],
     closingTitle: "¿Qué estás pagando realmente?",
@@ -5688,7 +5818,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Melhor passo: tente primeiro a rota oficial do consulado. Ajuda paga pode valer apenas pela conveniência.",
         priceNote:
-          "Estimativa DIY: custo muito baixo. Serviço pago: centenas de dólares. Recomendação: economize salvo se a conveniência valer para você.",
+          "Estimativa por conta própria: custo muito baixo. Serviço pago: centenas de dólares. Recomendação: economize salvo se a conveniência valer para você.",
       },
       {
         tone: "yellow",
@@ -5707,7 +5837,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Melhor passo: corrija ou verifique o documento antes de marcar. Uma revisão barata pode ajudar, mas não pague um pacote grande antes de saber o bloqueio exato.",
         priceNote:
-          "Estimativa DIY: baixa a moderada. Revisão paga: pode valer. Recomendação: pague por clareza, não por um pacote completo cedo demais.",
+          "Estimativa por conta própria: baixa a moderada. Revisão paga: pode valer. Recomendação: pague por clareza, não por um pacote completo cedo demais.",
       },
       {
         tone: "red",
@@ -5727,7 +5857,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Melhor passo: não pague apenas por ajuda de cidadania. Pergunte qual registro está errado, quem corrigirá, onde será corrigido e o que acontece se o consulado rejeitar.",
         priceNote:
-          "Estimativa DIY: imprevisível. Ajuda paga/legal: potencialmente útil. Recomendação: considere apenas se resolver o bloqueio real.",
+          "Estimativa por conta própria: imprevisível. Ajuda paga/legal: potencialmente útil. Recomendação: considere apenas se resolver o bloqueio real.",
       },
     ],
     closingTitle: "Pelo que você está pagando?",
@@ -5906,7 +6036,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Meilleur choix: essayez d'abord la voie officielle du consulat. L'aide payante vaut surtout si vous voulez de la commodité.",
         priceNote:
-          "Estimation DIY: coût très faible. Service payant: centaines de dollars. Recommandation: économisez sauf si la commodité vaut ce prix.",
+          "Estimation par soi-même: coût très faible. Service payant: centaines de dollars. Recommandation: économisez sauf si la commodité vaut ce prix.",
       },
       {
         tone: "yellow",
@@ -5925,7 +6055,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Meilleur choix: corrigez ou vérifiez le problème avant le rendez-vous. Une revue peu coûteuse peut aider, mais ne payez pas un gros forfait avant de connaître le blocage exact.",
         priceNote:
-          "Estimation DIY: faible à modérée. Revue payante: possiblement utile. Recommandation: payez pour la clarté, pas trop tôt pour un forfait complet.",
+          "Estimation par soi-même: faible à modérée. Revue payante: possiblement utile. Recommandation: payez pour la clarté, pas trop tôt pour un forfait complet.",
       },
       {
         tone: "red",
@@ -5945,7 +6075,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "Meilleur choix: ne payez pas simplement pour de l'aide citoyenneté. Demandez quel acte est erroné, qui le corrigera, où, et ce qui se passe si le consulat refuse.",
         priceNote:
-          "Estimation DIY: imprévisible. Aide payante/juridique: potentiellement utile. Recommandation: seulement si cela résout le vrai blocage.",
+          "Estimation par soi-même: imprévisible. Aide payante/juridique: potentiellement utile. Recommandation: seulement si cela résout le vrai blocage.",
       },
     ],
     closingTitle: "Que payez-vous vraiment?",
@@ -6015,7 +6145,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最善策: まず公式の領事館ルートを試す。有料支援は便利さを買う場合のみ価値があります。",
         priceNote:
-          "DIY目安: とても低額。有料サービス: 数百ドル。推奨: 便利さに価値を感じない限り節約。",
+          "自分で行う場合の目安: とても低額。有料サービス: 数百ドル。推奨: 便利さに価値を感じない限り節約。",
       },
       {
         tone: "yellow",
@@ -6034,7 +6164,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最善策: 予約前に問題を確認または修正する。低額レビューは有用ですが、正確な障害が分かる前に大きなパッケージを買わないでください。",
         priceNote:
-          "DIY目安: 低から中程度。有料レビュー: 価値ありの場合あり。推奨: 早すぎるフルパッケージではなく明確さに払う。",
+          "自分で行う場合の目安: 低から中程度。有料レビュー: 価値ありの場合あり。推奨: 早すぎるフルパッケージではなく明確さに払う。",
       },
       {
         tone: "red",
@@ -6054,7 +6184,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最善策: 単なる国籍支援に払わないでください。どの記録が悪いのか、誰がどこで直すのか、領事館が拒否したらどうなるのかを確認してください。",
         priceNote:
-          "DIY目安: 予測困難。有料/法的支援: 価値がある場合あり。推奨: 実際の障害を解決する場合のみ検討。",
+          "自分で行う場合の目安: 予測困難。有料/法的支援: 価値がある場合あり。推奨: 実際の障害を解決する場合のみ検討。",
       },
     ],
     closingTitle: "本当に何に払うのか？",
@@ -6082,109 +6212,109 @@ const DNEXPRESS_POSTS = {
     subtitle:
       "कभी-कभी, लेकिन यह इस बात पर निर्भर है कि आप सुविधा के लिए भुगतान कर रहे हैं या असली दस्तावेज़ समस्या ठीक कराने के लिए।",
     intro: [
-      "अगर आपका जन्म अमेरिका में मैक्सिकन माता-पिता से हुआ है, तो मैक्सिकन कौंसुलेट के ज़रिए जन्म पंजीकरण अक्सर मुफ्त या बहुत कम खर्च में हो सकता है।",
-      "इसलिए paid service हमेशा जरूरी नहीं है। असली सवाल यह है कि आपका केस साफ है, थोड़ा उलझा है, या सच में जटिल है।",
+      "अगर आपका जन्म अमेरिका में मैक्सिकन माता-पिता से हुआ है, तो मैक्सिकन वाणिज्य दूतावास के ज़रिए जन्म पंजीकरण अक्सर मुफ्त या बहुत कम खर्च में हो सकता है।",
+      "इसलिए भुगतान वाली सेवा हमेशा जरूरी नहीं है। असली सवाल यह है कि आपका मामला साफ है, थोड़ा उलझा है, या सच में जटिल है।",
     ],
     priceFooter:
-      "कीमतें provider, consulate और case complexity पर निर्भर करती हैं। भुगतान से पहले current fees जरूर verify करें।",
+      "कीमतें सेवा प्रदाता, वाणिज्य दूतावास और मामले की जटिलता पर निर्भर करती हैं। भुगतान से पहले मौजूदा शुल्क जरूर जांचें।",
     priceComparison: [
       {
-        title: "Official DIY route",
+        title: "आधिकारिक खुद करने वाला मार्ग",
         items: [
-          "Birth registration: अक्सर मुफ्त",
-          "पहला Mexican birth certificate: अक्सर मुफ्त",
-          "Extra certified copies: आमतौर पर कम लागत",
-          "मुख्य खर्च: records, copies, apostilles, translations या corrections",
+          "जन्म पंजीकरण: अक्सर मुफ्त",
+          "पहला मैक्सिकन जन्म प्रमाणपत्र: अक्सर मुफ्त",
+          "अतिरिक्त प्रमाणित प्रतियां: आमतौर पर कम लागत",
+          "मुख्य खर्च: रिकॉर्ड मंगाना, प्रतियां, अपोस्टिल, अनुवाद या जरूरत पड़ने पर सुधार",
         ],
       },
       {
-        title: "Paid help route",
+        title: "भुगतान वाली मदद का मार्ग",
         items: [
-          "Clean-case help: अक्सर सैकड़ों डॉलर",
-          "Record corrections: अधिक खर्च हो सकता है",
-          "Name changes या Mexico-side registration काम काफी महंगा हो सकता है",
-          "मुख्य value: सुविधा, review और कठिन records ठीक करना",
+          "साफ मामले में मदद: अक्सर सैकड़ों डॉलर",
+          "रिकॉर्ड सुधार: अधिक खर्च हो सकता है",
+          "नाम बदलाव या मेक्सिको में पंजीकरण का काम काफी महंगा हो सकता है",
+          "मुख्य लाभ: सुविधा, समीक्षा और कठिन रिकॉर्ड समस्याओं को ठीक करना",
         ],
       },
     ],
     cards: [
       {
         tone: "green",
-        status: "Green case",
-        title: "शायद worth it नहीं",
-        body: "अगर documents पहले से match करते हैं, तो full-service help की जरूरत शायद नहीं है।",
+        status: "हरा मामला",
+        title: "शायद इसकी जरूरत नहीं",
+        body: "अगर आपके दस्तावेज़ पहले से मेल खाते हैं, तो पूरी सेवा वाली मदद की जरूरत शायद नहीं है।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
-          "आपके पास long-form U.S. birth certificate है",
-          "Mexican parent के पास Mexican birth certificate है",
-          "Documents में names match करते हैं",
-          "Parent information clear है",
-          "Adoption, paternity, court order, deceased-parent या major name issue नहीं है",
+          "आपके पास लंबे प्रारूप वाला प्रमाणित अमेरिकी जन्म प्रमाणपत्र है",
+          "आपके मैक्सिकन माता-पिता के पास मैक्सिकन जन्म प्रमाणपत्र है",
+          "दस्तावेज़ों में नाम मेल खाते हैं",
+          "माता-पिता की जानकारी साफ है",
+          "गोद लेने, पितृत्व, अदालत के आदेश, दिवंगत माता-पिता या बड़े नाम-समस्या का मामला नहीं है",
         ],
         bestMove:
-          "Best move: पहले official consulate route आज़माएं। Paid help केवल convenience के लिए worth it हो सकती है।",
+          "सबसे अच्छा कदम: पहले आधिकारिक वाणिज्य दूतावास वाला मार्ग आज़माएं। भुगतान वाली मदद सिर्फ सुविधा के लिए उपयोगी हो सकती है।",
         priceNote:
-          "DIY estimate: बहुत कम cost. Paid service: सैकड़ों डॉलर. Recommendation: convenience जरूरी न हो तो पैसे बचाएं।",
+          "खुद करने का अनुमान: बहुत कम लागत। भुगतान वाली सेवा: सैकड़ों डॉलर। सिफारिश: अगर सुविधा जरूरी नहीं है, तो पैसे बचाएं।",
       },
       {
         tone: "yellow",
-        status: "Yellow case",
-        title: "Document review उपयोगी हो सकता है",
-        body: "Issue fixable हो सकता है, लेकिन शायद expensive full-service package अभी justify नहीं करता।",
+        status: "पीला मामला",
+        title: "दस्तावेज़ समीक्षा उपयोगी हो सकती है",
+        body: "समस्या ठीक हो सकती है, लेकिन अभी महंगे पूरी-सेवा पैकेज को सही ठहराने लायक शायद नहीं है।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
-          "आपके पास केवल short-form birth certificate है",
-          "Parent का Mexican birth certificate order करना है",
-          "Name में हल्का फर्क है",
-          "एक document में married name है",
-          "Marriage certificate, apostille या translation चाहिए",
-          "आपको exact match का भरोसा नहीं है",
+          "आपके पास केवल छोटे प्रारूप वाला जन्म प्रमाणपत्र है",
+          "आपको माता-पिता का मैक्सिकन जन्म प्रमाणपत्र मंगाना है",
+          "नाम में हल्का फर्क है",
+          "किसी दस्तावेज़ में शादी के बाद वाला नाम है",
+          "विवाह प्रमाणपत्र, अपोस्टिल या अनुवाद चाहिए",
+          "आपको भरोसा नहीं है कि दस्तावेज़ बिल्कुल मेल खाते हैं",
         ],
         bestMove:
-          "Best move: appointment से पहले issue verify या fix करें। Low-cost review helpful हो सकता है, लेकिन exact blocker जाने बिना बड़ा package न खरीदें।",
+          "सबसे अच्छा कदम: अपॉइंटमेंट से पहले समस्या की पुष्टि करें या उसे ठीक करें। कम लागत वाली समीक्षा मदद कर सकती है, लेकिन सटीक रुकावट जाने बिना बड़ा पैकेज न खरीदें।",
         priceNote:
-          "DIY estimate: low to moderate. Paid review: शायद worth it. Recommendation: clarity के लिए pay करें, full package के लिए बहुत जल्दी नहीं।",
+          "खुद करने का अनुमान: कम से मध्यम। भुगतान वाली समीक्षा: शायद उपयोगी। सिफारिश: स्पष्टता के लिए भुगतान करें, बहुत जल्दी पूरी सेवा के लिए नहीं।",
       },
       {
         tone: "red",
-        status: "Red case",
-        title: "Paid help worth it हो सकती है",
-        body: "Service तब value दे सकती है जब वह registration रोकने वाली specific problem solve करे।",
+        status: "लाल मामला",
+        title: "भुगतान वाली मदद उपयोगी हो सकती है",
+        body: "सेवा तभी सच में मूल्य दे सकती है जब वह पंजीकरण रोक रही खास समस्या को हल करे।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
-          "Parent deceased, absent या unwilling है",
-          "Mexican parent birth certificate पर नहीं है",
-          "Parent information गलत है",
-          "Parents birth से पहले married नहीं थे और father participation चाहिए",
-          "Adoption, paternity, court order या legal name change है",
-          "Mexican parent का record missing, irregular या correction चाहता है",
-          "Consulate कहता है case Mexico में handle होगा",
+          "माता-पिता में से कोई दिवंगत, अनुपस्थित या उपस्थित होने को तैयार नहीं है",
+          "मैक्सिकन माता-पिता जन्म प्रमाणपत्र में दर्ज नहीं हैं",
+          "माता-पिता की जानकारी गलत है",
+          "जन्म से पहले माता-पिता विवाहित नहीं थे और पिता की भागीदारी चाहिए",
+          "गोद लेने, पितृत्व, अदालत के आदेश या कानूनी नाम बदलाव का मामला है",
+          "मैक्सिकन माता-पिता का रिकॉर्ड गायब, अनियमित या सुधार योग्य है",
+          "वाणिज्य दूतावास कहता है कि मामला मेक्सिको में संभालना होगा",
         ],
         bestMove:
-          "Best move: सिर्फ citizenship help के लिए pay न करें। पूछें कौन सा record गलत है, कौन ठीक करेगा, कहाँ ठीक होगा और rejection पर क्या होगा।",
+          "सबसे अच्छा कदम: सिर्फ नागरिकता मदद के नाम पर भुगतान न करें। पूछें कौन सा रिकॉर्ड गलत है, कौन ठीक करेगा, कहाँ ठीक होगा, और वाणिज्य दूतावास ने अस्वीकार किया तो क्या होगा।",
         priceNote:
-          "DIY estimate: unpredictable. Paid/legal help: potentially worth it. Recommendation: तभी consider करें जब actual blocker solve हो।",
+          "खुद करने का अनुमान: अनिश्चित। भुगतान वाली या कानूनी मदद: उपयोगी हो सकती है। सिफारिश: तभी विचार करें जब वे असली रुकावट हल करें।",
       },
     ],
     closingTitle: "आप असल में किसके लिए भुगतान कर रहे हैं?",
     closing:
-      "आप Mexican citizenship नहीं खरीद रहे। अगर आप Mexican parent से qualify करते हैं, तो आप जन्म से ही Mexican हो सकते हैं। भुगतान proof में मदद के लिए है।",
-    officialChecklistTitle: "Official document checklist",
+      "आप मैक्सिकन नागरिकता नहीं खरीद रहे। अगर आप मैक्सिकन माता-पिता के आधार पर पात्र हैं, तो आप जन्म से ही मैक्सिकन हो सकते हैं। भुगतान केवल इसे साबित करने में मदद के लिए है।",
+    officialChecklistTitle: "आधिकारिक दस्तावेज़ सूची",
     officialChecklistIntro:
-      "Clean U.S.-born child of Mexican parent case में appointment से पहले ये documents verify करें। Consulate rules vary कर सकते हैं।",
+      "अमेरिका में जन्मे और मैक्सिकन माता-पिता वाले साफ मामले में अपॉइंटमेंट से पहले आम तौर पर ये दस्तावेज़ जांचे जाते हैं। वाणिज्य दूतावासों की जरूरतें अलग हो सकती हैं।",
     officialChecklist: [
-      "Long-form certified U.S. birth certificate",
-      "Mexican parent का certified Mexican birth certificate या Carta de Naturalizacion",
-      "Applicant photo ID, minor के लिए school/medical ID",
-      "Parent IDs",
-      "Parents' marriage certificate अगर relevant हो",
-      "Name-change, divorce या death records अगर names changed हों",
-      "Non-U.S., non-English या non-Spanish records के लिए apostille/legalization और translation",
+      "लंबे प्रारूप वाला प्रमाणित अमेरिकी जन्म प्रमाणपत्र",
+      "मैक्सिकन माता-पिता का प्रमाणित मैक्सिकन जन्म प्रमाणपत्र या Carta de Naturalizacion",
+      "आवेदक की फोटो पहचान, या नाबालिग के लिए स्कूल/चिकित्सा पहचान",
+      "माता-पिता की पहचान",
+      "यदि लागू हो तो माता-पिता का विवाह प्रमाणपत्र",
+      "नाम बदले हों तो नाम-परिवर्तन, तलाक या मृत्यु रिकॉर्ड",
+      "अमेरिका, अंग्रेज़ी या स्पेनिश से अलग रिकॉर्ड के लिए अपोस्टिल/कानूनीकरण और अनुवाद",
     ],
-    primaryCta: "मेरा citizenship questionnaire शुरू करें",
-    secondaryCta: "Official document checklist दिखाएं",
-    secondaryCtaHide: "Official document checklist छिपाएं",
-    stickyTakeaway: "Problem-solving के लिए pay करें, citizenship के लिए नहीं।",
+    primaryCta: "मेरी नागरिकता प्रश्नावली शुरू करें",
+    secondaryCta: "आधिकारिक दस्तावेज़ सूची दिखाएं",
+    secondaryCtaHide: "आधिकारिक दस्तावेज़ सूची छिपाएं",
+    stickyTakeaway: "समस्या हल कराने के लिए भुगतान करें, नागरिकता के लिए नहीं।",
   },
   ar: {
     title: "هل يستحق DNExpress الدفع؟",
@@ -6233,7 +6363,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "أفضل خطوة: جرّب المسار الرسمي في القنصلية أولا. قد تكون المساعدة المدفوعة مفيدة فقط إذا كنت تريد الراحة.",
         priceNote:
-          "تقدير DIY: تكلفة منخفضة جدا. الخدمة المدفوعة: مئات الدولارات. التوصية: وفر المال إلا إذا كانت الراحة مهمة لك.",
+          "تقدير القيام بها بنفسك: تكلفة منخفضة جدا. الخدمة المدفوعة: مئات الدولارات. التوصية: وفر المال إلا إذا كانت الراحة مهمة لك.",
       },
       {
         tone: "yellow",
@@ -6252,7 +6382,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "أفضل خطوة: أصلح أو تحقق من المشكلة قبل الموعد. قد تفيد مراجعة منخفضة التكلفة، لكن لا تدفع لحزمة كبيرة قبل معرفة العائق الدقيق.",
         priceNote:
-          "تقدير DIY: منخفض إلى متوسط. المراجعة المدفوعة: قد تستحق. التوصية: ادفع للوضوح، لا لحزمة كاملة مبكرة.",
+          "تقدير القيام بها بنفسك: منخفض إلى متوسط. المراجعة المدفوعة: قد تستحق. التوصية: ادفع للوضوح، لا لحزمة كاملة مبكرة.",
       },
       {
         tone: "red",
@@ -6272,7 +6402,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "أفضل خطوة: لا تدفع فقط مقابل مساعدة جنسية. اسأل ما السجل الخاطئ، من سيصلحه، أين سيصلح، وماذا يحدث إذا رفضته القنصلية.",
         priceNote:
-          "تقدير DIY: غير متوقع. المساعدة المدفوعة/القانونية: قد تستحق. التوصية: فكر بها فقط إذا حلت العائق الحقيقي.",
+          "تقدير القيام بها بنفسك: غير متوقع. المساعدة المدفوعة/القانونية: قد تستحق. التوصية: فكر بها فقط إذا حلت العائق الحقيقي.",
       },
     ],
     closingTitle: "مقابل ماذا تدفع فعلا؟",
@@ -6342,7 +6472,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最佳做法：先走官方领事馆路线。付费帮助可能只在你重视便利时值得。",
         priceNote:
-          "DIY 估计：成本很低。付费服务：数百美元。建议：除非你愿意为便利付费，否则省下这笔钱。",
+          "自办估计：成本很低。付费服务：数百美元。建议：除非你愿意为便利付费，否则省下这笔钱。",
       },
       {
         tone: "yellow",
@@ -6361,7 +6491,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最佳做法：预约前先确认或修正文件问题。低成本审核可能有用，但在知道具体障碍前不要购买大套餐。",
         priceNote:
-          "DIY 估计：低到中等。付费审核：可能值得。建议：为清晰度付费，不要太早买全套。",
+          "自办估计：低到中等。付费审核：可能值得。建议：为清晰度付费，不要太早买全套。",
       },
       {
         tone: "red",
@@ -6381,7 +6511,7 @@ const DNEXPRESS_POSTS = {
         bestMove:
           "最佳做法：不要只为“国籍帮助”付费。问清楚哪份记录错了、谁来修、在哪里修，以及领事馆拒绝后怎么办。",
         priceNote:
-          "DIY 估计：不可预测。付费/法律帮助：可能值得。建议：只有能解决真实障碍时才考虑。",
+          "自办估计：不可预测。付费/法律帮助：可能值得。建议：只有能解决真实障碍时才考虑。",
       },
     ],
     closingTitle: "你真正支付的是什么？",
@@ -7074,7 +7204,7 @@ const CitizenshipIntro = ({
               <HStack flex="1" textAlign="start" spacing={2}>
                 <Icon as={ShieldCheck} boxSize="16px" color="#0f766e" />
                 <Text fontWeight="700" color="var(--app-text-primary)">
-                  {translateText("Privacy policy", language)}
+                  {translateText(PRIVACY_POLICY_TITLE, language)}
                 </Text>
               </HStack>
               <AccordionIcon />
@@ -7088,24 +7218,11 @@ const CitizenshipIntro = ({
                 fontSize="sm"
                 color="var(--app-text-secondary)"
               >
-                <Text>
-                  {translateText(
-                    "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
-                    language,
-                  )}
-                </Text>
-                <Text>
-                  {translateText(
-                    "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
-                    language,
-                  )}
-                </Text>
-                <Text>
-                  {translateText(
-                    "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
-                    language,
-                  )}
-                </Text>
+                {PRIVACY_POLICY_COPY.map((paragraph) => (
+                  <Text key={paragraph}>
+                    {translateText(paragraph, language)}
+                  </Text>
+                ))}
               </Stack>
             </AccordionPanel>
           </AccordionItem>
@@ -7187,24 +7304,181 @@ const WORTH_IT_TONE_STYLES = {
 };
 
 const WORTH_IT_CASE_COSTS = {
-  green: {
-    caseType: "Green",
-    diy: "$0-$75 before passport",
-    paid: "$200-$400+",
-    recommendation: "Probably not worth it",
+  en: {
+    green: {
+      summary: "$0-$75 before passport DIY / $200-$400+ paid help",
+      diy: "$0-$75 before passport",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "$50-$300+ DIY / $150-$500+ paid review",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary: "Unpredictable DIY: $150-$1,000+ / paid help: $500-$1,200+",
+      diy: "Unpredictable: $150-$1,000+",
+      paid: "$500-$1,200+",
+    },
   },
-  yellow: {
-    caseType: "Yellow",
-    diy: "$50-$300+",
-    paid: "$150-$500+",
-    recommendation: "Maybe worth a document review",
+  es: {
+    green: {
+      summary:
+        "Por cuenta propia antes del pasaporte: $0-$75 / ayuda pagada: $200-$400+",
+      diy: "$0-$75 antes del pasaporte",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "Por cuenta propia: $50-$300+ / revisión pagada: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "Por cuenta propia impredecible: $150-$1,000+ / ayuda pagada: $500-$1,200+",
+      diy: "Impredecible: $150-$1,000+",
+      paid: "$500-$1,200+",
+    },
   },
-  red: {
-    caseType: "Red",
-    diy: "Unpredictable: $150-$1,000+",
-    paid: "$500-$1,200+",
-    recommendation: "Could be worth it",
+  pt: {
+    green: {
+      summary:
+        "Por conta própria antes do passaporte: US$0-US$75 / ajuda paga: US$200-US$400+",
+      diy: "US$0-US$75 antes do passaporte",
+      paid: "US$200-US$400+",
+    },
+    yellow: {
+      summary:
+        "Por conta própria: US$50-US$300+ / revisão paga: US$150-US$500+",
+      diy: "US$50-US$300+",
+      paid: "US$150-US$500+",
+    },
+    red: {
+      summary:
+        "Por conta própria imprevisível: US$150-US$1.000+ / ajuda paga: US$500-US$1.200+",
+      diy: "Imprevisível: US$150-US$1.000+",
+      paid: "US$500-US$1.200+",
+    },
   },
+  it: {
+    green: {
+      summary:
+        "Fai da te prima del passaporto: $0-$75 / aiuto pagato: $200-$400+",
+      diy: "$0-$75 prima del passaporto",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "Fai da te: $50-$300+ / revisione pagata: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "Fai da te imprevedibile: $150-$1.000+ / aiuto pagato: $500-$1.200+",
+      diy: "Imprevedibile: $150-$1.000+",
+      paid: "$500-$1.200+",
+    },
+  },
+  fr: {
+    green: {
+      summary:
+        "Par soi-meme avant le passeport: 0-75 $ / aide payante: 200-400 $+",
+      diy: "0-75 $ avant le passeport",
+      paid: "200-400 $+",
+    },
+    yellow: {
+      summary: "Par soi-meme: 50-300 $+ / revue payante: 150-500 $+",
+      diy: "50-300 $+",
+      paid: "150-500 $+",
+    },
+    red: {
+      summary:
+        "Par soi-meme imprevisible: 150-1 000 $+ / aide payante: 500-1 200 $+",
+      diy: "Imprevisible: 150-1 000 $+",
+      paid: "500-1 200 $+",
+    },
+  },
+  ja: {
+    green: {
+      summary: "パスポート前に自分で行う場合: $0-$75 / 有料支援: $200-$400+",
+      diy: "$0-$75（パスポート前）",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "自分で行う場合: $50-$300+ / 有料レビュー: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "自分で行う費用は予測困難: $150-$1,000+ / 有料支援: $500-$1,200+",
+      diy: "予測困難: $150-$1,000+",
+      paid: "$500-$1,200+",
+    },
+  },
+  hi: {
+    green: {
+      summary:
+        "पासपोर्ट से पहले खुद करने पर: $0-$75 / भुगतान वाली मदद: $200-$400+",
+      diy: "$0-$75 पासपोर्ट से पहले",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "खुद करने पर: $50-$300+ / भुगतान वाली समीक्षा: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "खुद करने का खर्च अनिश्चित: $150-$1,000+ / भुगतान वाली मदद: $500-$1,200+",
+      diy: "अनिश्चित: $150-$1,000+",
+      paid: "$500-$1,200+",
+    },
+  },
+  ar: {
+    green: {
+      summary: "بنفسك قبل جواز السفر: $0-$75 / مساعدة مدفوعة: $200-$400+",
+      diy: "$0-$75 قبل جواز السفر",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "بنفسك: $50-$300+ / مراجعة مدفوعة: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "بنفسك بتكلفة غير متوقعة: $150-$1,000+ / مساعدة مدفوعة: $500-$1,200+",
+      diy: "غير متوقعة: $150-$1,000+",
+      paid: "$500-$1,200+",
+    },
+  },
+  zh: {
+    green: {
+      summary: "护照前自办：$0-$75 / 付费帮助：$200-$400+",
+      diy: "$0-$75（护照前）",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "自办：$50-$300+ / 付费审核：$150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary: "自办费用不可预测：$150-$1,000+ / 付费帮助：$500-$1,200+",
+      diy: "不可预测：$150-$1,000+",
+      paid: "$500-$1,200+",
+    },
+  },
+};
+
+const getWorthItCaseCost = (language, tone) => {
+  const normalizedLanguage = normalizeSupportLanguage(language);
+  return (
+    WORTH_IT_CASE_COSTS[normalizedLanguage]?.[tone] ||
+    WORTH_IT_CASE_COSTS.en[tone] ||
+    WORTH_IT_CASE_COSTS.en.green
+  );
 };
 
 const DNExpressWorthItPrimer = ({
@@ -7268,7 +7542,7 @@ const DNExpressWorthItPrimer = ({
         {post.cards.map((card) => {
           const tone =
             WORTH_IT_TONE_STYLES[card.tone] || WORTH_IT_TONE_STYLES.green;
-          const cost = WORTH_IT_CASE_COSTS[card.tone];
+          const cost = getWorthItCaseCost(language, card.tone);
           return (
             <AccordionItem
               key={card.status}
@@ -7300,8 +7574,7 @@ const DNExpressWorthItPrimer = ({
                       {card.title}
                     </Text>
                     <Text color="var(--app-text-muted)" fontSize="sm">
-                      {cost.diy} DIY / {cost.paid}{" "}
-                      {translateText("paid help", language)}
+                      {cost.summary}
                     </Text>
                   </Box>
                 </HStack>
@@ -9211,18 +9484,15 @@ const ConsulateFinderPanel = ({
     >
       <Stack spacing={3}>
         <Text color="var(--app-text-primary)" fontWeight="800">
-          {translateText("Find nearest Mexican consulate", language)}
+          {translateText(CONSULATE_FINDER_TITLE, language)}
         </Text>
         <Text color="var(--app-text-muted)" fontSize="sm">
-          {translateText(
-            "Use your ZIP code, city, or state to quickly find nearby Mexican consulates.",
-            language,
-          )}
+          {translateText(CONSULATE_FINDER_DESCRIPTION, language)}
         </Text>
         <Input
           value={locationInput}
           onChange={(event) => setLocationInput(event.target.value)}
-          placeholder={translateText("ZIP code, city, or state", language)}
+          placeholder={translateText(CONSULATE_FINDER_PLACEHOLDER, language)}
           bg="var(--app-surface-elevated)"
           borderColor="var(--app-border)"
           _hover={{ borderColor: "var(--app-border-strong)" }}
@@ -9245,7 +9515,7 @@ const ConsulateFinderPanel = ({
             _hover={{ bg: "#1e40af" }}
             _active={{ bg: "#1e3a8a" }}
           >
-            {translateText("Search consulates", language)}
+            {translateText(CONSULATE_FINDER_BUTTON, language)}
           </Button>
         </HStack>
       </Stack>
@@ -10446,8 +10716,8 @@ export default function CitizenshipGuide() {
               />
               <IconButton
                 type="button"
-                aria-label={translateText("Privacy policy", pageLanguage)}
-                title={translateText("Privacy policy", pageLanguage)}
+                aria-label={translateText(PRIVACY_POLICY_TITLE, pageLanguage)}
+                title={translateText(PRIVACY_POLICY_TITLE, pageLanguage)}
                 onClick={() => {
                   playSelectSound();
                   setIsPrivacyOpen(true);
@@ -10730,22 +11000,36 @@ export default function CitizenshipGuide() {
                     <Button
                       variant="outline"
                       borderRadius="8px"
-                      bg="var(--app-surface-elevated)"
-                      borderColor="#0f766e"
-                      color="#0f766e"
+                      bg="rgba(20, 184, 166, 0.1)"
+                      borderColor="#14b8a6"
+                      borderWidth="2px"
+                      color="#2dd4bf"
                       boxShadow="none"
                       transform="none"
+                      fontWeight="800"
                       isDisabled={!canContinue}
                       onClick={goNext}
                       minW="112px"
                       h="48px"
-                      _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
+                      _hover={{
+                        bg: "rgba(20, 184, 166, 0.16)",
+                        borderColor: "#2dd4bf",
+                        color: "#5eead4",
+                      }}
                       _active={{
-                        bg: "rgba(15, 118, 110, 0.12)",
+                        bg: "rgba(20, 184, 166, 0.22)",
                         boxShadow: "none",
                         transform: "none",
                       }}
-                      _disabled={{ opacity: 0.58, cursor: "not-allowed" }}
+                      _disabled={{
+                        bg: "var(--app-surface-elevated)",
+                        borderColor: "var(--app-border)",
+                        color: "var(--app-text-muted)",
+                        boxShadow: "none",
+                        cursor: "not-allowed",
+                        opacity: 0.54,
+                        transform: "none",
+                      }}
                     >
                       {translateText(
                         isLastQuestion ? "Done" : "Next",
@@ -10761,16 +11045,22 @@ export default function CitizenshipGuide() {
                     type="button"
                     variant="outline"
                     borderRadius="8px"
-                    bg="var(--app-surface-elevated)"
-                    borderColor="#0f766e"
-                    color="#0f766e"
+                    bg="rgba(20, 184, 166, 0.1)"
+                    borderColor="#14b8a6"
+                    borderWidth="2px"
+                    color="#2dd4bf"
                     boxShadow="none"
                     transform="none"
+                    fontWeight="800"
                     w={{ base: "100%", sm: "50%" }}
                     onClick={finishEdits}
-                    _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
+                    _hover={{
+                      bg: "rgba(20, 184, 166, 0.16)",
+                      borderColor: "#2dd4bf",
+                      color: "#5eead4",
+                    }}
                     _active={{
-                      bg: "rgba(15, 118, 110, 0.12)",
+                      bg: "rgba(20, 184, 166, 0.22)",
                       boxShadow: "none",
                       transform: "none",
                     }}
@@ -10869,36 +11159,23 @@ export default function CitizenshipGuide() {
         <ModalContent
           bg="var(--app-surface)"
           color="var(--app-text-primary)"
-          border="1px solid"
-          borderColor="var(--app-border)"
+          border="4px solid"
+          borderColor="#0f766e"
         >
           <ModalHeader>
             <HStack spacing={2}>
               <Icon as={ShieldCheck} color="#0f766e" />
-              <Text>{translateText("Privacy policy", pageLanguage)}</Text>
+              <Text>{translateText(PRIVACY_POLICY_TITLE, pageLanguage)}</Text>
             </HStack>
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={5}>
             <Stack spacing={4} fontSize="sm" color="var(--app-text-secondary)">
-              <Text>
-                {translateText(
-                  "Saved data is only used for your account experience, so you can return, edit answers, and stay organized across devices. It is never sold or shared.",
-                  pageLanguage,
-                )}
-              </Text>
-              <Text>
-                {translateText(
-                  "Your identity stays private. You are given keys instead of creating a personal account, and we do not save your secret key. Only you can access your information with your key.",
-                  pageLanguage,
-                )}
-              </Text>
-              <Text>
-                {translateText(
-                  "If you lose your secret key, you lose access to your account. We cannot recover it for you.",
-                  pageLanguage,
-                )}
-              </Text>
+              {PRIVACY_POLICY_COPY.map((paragraph) => (
+                <Text key={paragraph}>
+                  {translateText(paragraph, pageLanguage)}
+                </Text>
+              ))}
             </Stack>
           </ModalBody>
         </ModalContent>
