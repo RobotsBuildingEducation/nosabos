@@ -39,17 +39,18 @@ export const MAP_CHOICES = [
       hi: "बनाई गई दुनिया",
       ar: "العالم المتولّد",
       zh: "生成的世界",
+      de: "Erstellte Welt",
     },
     emoji: "✨",
   },
 ];
 
 const MAP_NAME_BY_ID = {
-  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد", zh: "生成的世界" },
-  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة", zh: "客厅" },
-  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", ja: "公園", hi: "उद्यान", ar: "الحديقة", zh: "公园" },
-  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", ja: "空港", hi: "हवाई अड्डा", ar: "المطار", zh: "机场" },
-  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية", zh: "问候广场" },
+  [REVIEW_WORLD_ID]: { en: "Generated World", es: "Mundo generado", pt: "Mundo gerado", it: "Mondo generato", fr: "Monde genere", de: "Erstellte Welt", ja: "生成された世界", hi: "बनाई गई दुनिया", ar: "العالم المتولّد", zh: "生成的世界" },
+  livingRoom: { en: "Living Room", es: "Sala", pt: "Sala", it: "Soggiorno", fr: "Salon", de: "Wohnzimmer", ja: "リビングルーム", hi: "बैठक कक्ष", ar: "غرفة المعيشة", zh: "客厅" },
+  park: { en: "Park", es: "Parque", pt: "Parque", it: "Parco", fr: "Parc", de: "Park", ja: "公園", hi: "उद्यान", ar: "الحديقة", zh: "公园" },
+  airport: { en: "Airport", es: "Aeropuerto", pt: "Aeroporto", it: "Aeroporto", fr: "Aeroport", de: "Flughafen", ja: "空港", hi: "हवाई अड्डा", ar: "المطار", zh: "机场" },
+  [TUTORIAL_MAP_ID]: { en: "Greeting Plaza", es: "Plaza de Saludos", pt: "Praca das Saudacoes", it: "Piazza dei Saluti", fr: "Place des salutations", de: "Begrüßungsplatz", ja: "あいさつ広場", hi: "अभिवादन चौक", ar: "ساحة التحية", zh: "问候广场" },
 };
 
 function getMapName(mapId, lang = "en") {
@@ -409,6 +410,7 @@ function normalizeQuestions(questions, supportLang) {
       pt: "Escolha a opcao correta.",
       it: "Scegli l'opzione corretta.",
       fr: "Choisis la bonne option.",
+      de: "Wähle die richtige Option.",
       ja: "正しい選択肢を選んでください。",
       hi: "सही विकल्प चुनें।",
       ar: "اختر الإجابة الصحيحة.",
@@ -3151,6 +3153,7 @@ async function fallbackScenario(
       pt: getMapName(mapId, "pt"),
       it: getMapName(mapId, "it"),
       fr: getMapName(mapId, "fr"),
+      de: getMapName(mapId, "de"),
       ja: getMapName(mapId, "ja"),
       hi: getMapName(mapId, "hi"),
       ar: getMapName(mapId, "ar"),
@@ -3603,6 +3606,7 @@ function normalizeScenario({
         pt: String(raw?.name?.pt || getMapName(mapId, "pt")),
         it: String(raw?.name?.it || getMapName(mapId, "it")),
         fr: String(raw?.name?.fr || getMapName(mapId, "fr")),
+        de: String(raw?.name?.de || getMapName(mapId, "de")),
         ja: String(raw?.name?.ja || getMapName(mapId, "ja")),
         hi: String(raw?.name?.hi || getMapName(mapId, "hi")),
         ar: String(raw?.name?.ar || getMapName(mapId, "ar")),
@@ -3671,6 +3675,7 @@ function normalizeScenario({
     pt: String(raw?.name?.pt || (Array.isArray(environment?.names?.pt) ? environment.names.pt[0] : environment?.names?.pt) || getMapName(mapId, "pt")),
     it: String(raw?.name?.it || (Array.isArray(environment?.names?.it) ? environment.names.it[0] : environment?.names?.it) || getMapName(mapId, "it")),
     fr: String(raw?.name?.fr || (Array.isArray(environment?.names?.fr) ? environment.names.fr[0] : environment?.names?.fr) || getMapName(mapId, "fr")),
+    de: String(raw?.name?.de || (Array.isArray(environment?.names?.de) ? environment.names.de[0] : environment?.names?.de) || getMapName(mapId, "de")),
     ja: String(raw?.name?.ja || (Array.isArray(environment?.names?.ja) ? environment.names.ja[0] : environment?.names?.ja) || getMapName(mapId, "ja")),
     hi: String(raw?.name?.hi || (Array.isArray(environment?.names?.hi) ? environment.names.hi[0] : environment?.names?.hi) || getMapName(mapId, "hi")),
     ar: String(raw?.name?.ar || (Array.isArray(environment?.names?.ar) ? environment.names.ar[0] : environment?.names?.ar) || getMapName(mapId, "ar")),

@@ -1132,6 +1132,8 @@ export default function GrammarBook({
           ? "Copiado (pergunta + dica + traducao)"
           : userLanguage === "ar"
             ? "اتنسخ (السؤال + التلميح + الترجمة)"
+          : userLanguage === "de"
+            ? "Kopiert (Frage + Hinweis + Übersetzung)"
           : userLanguage === "es"
             ? "Copiado (pregunta + pista + traducción)"
             : "Copied (question + hint + translation)"),
@@ -1584,6 +1586,62 @@ Fournis une breve explication encourageante (2-3 phrases) qui :
 3. Donne une astuce pour retenir les bonnes associations
 
 Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportName}.`,
+          },
+          de: {
+            fill: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Lückentextfrage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort (oder Hinweis): ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, warum die Antwort nicht passt, die richtige Antwort klärt und einen hilfreichen Merktipp gibt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            mc: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Multiple-Choice-Frage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, warum die Auswahl falsch war, warum die richtige Antwort passt und wie man den Unterschied behält.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            ma: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Mehrfachauswahlfrage falsch beantwortet.
+
+Frage: ${question}
+Antworten des Lernenden: ${userAnswer}
+Richtige Antworten: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, welche Antworten fehlten oder falsch gewählt wurden, warum die richtigen Antworten passen und wie man sie erkennt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            speak: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender wollte etwas auf ${targetName} sagen, wurde aber nicht richtig verstanden.
+
+Zielsatz: ${correctAnswer}
+Gesagt wurde: ${userAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze) zu möglichen Aussprache- oder Formulierungsproblemen, mit Tipps zur richtigen Aussprache und Motivation zum erneuten Versuch.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            match: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat Zuordnungen versucht, aber falsche Paare gebildet.
+
+Frage: ${question}
+Zuordnungen des Lernenden: ${userAnswer}
+Hinweis: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die falsche Zuordnungen erklärt, die richtigen Beziehungen klärt und einen Merktipp gibt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
           },
           ja: {
             fill: `あなたは${targetName}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
@@ -4136,6 +4194,7 @@ Return JSON ONLY:
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isGermanUI = userLanguage === "de";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
     const isChineseUI = userLanguage === "zh";
@@ -4150,6 +4209,8 @@ Return JSON ONLY:
         ? "Exercice d'association de mots. Reponds en associant chaque element de la colonne gauche avec la bonne option de la banque de mots."
         : isPortugueseUI
         ? "Exercicio de associacao de palavras. Responda ligando cada item da coluna esquerda a opcao correta do banco de palavras."
+        : isGermanUI
+        ? "Wortzuordnungsübung. Antworte, indem du jedes Element der linken Spalte mit der richtigen Option aus der Wortbank verbindest."
         : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde emparejando cada elemento de la columna izquierda con la opción correcta del banco de palabras."
         : "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
@@ -4164,6 +4225,8 @@ Return JSON ONLY:
           ? `Invite ou consigne : ${mStem}`
           : isPortugueseUI
           ? `Instrucao: ${mStem}`
+          : isGermanUI
+          ? `Anweisung: ${mStem}`
           : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
@@ -4179,6 +4242,8 @@ Return JSON ONLY:
           ? `Colonne gauche : ${mLeft.join(" | ")}`
           : isPortugueseUI
           ? `Coluna esquerda: ${mLeft.join(" | ")}`
+          : isGermanUI
+          ? `Linke Spalte: ${mLeft.join(" | ")}`
           : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
@@ -4194,6 +4259,8 @@ Return JSON ONLY:
           ? `Banque de mots : ${mRight.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${mRight.join(" | ")}`
+          : isGermanUI
+          ? `Wortbank: ${mRight.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
@@ -4209,6 +4276,8 @@ Return JSON ONLY:
           ? `Indice : ${mHint}`
           : isPortugueseUI
           ? `Dica: ${mHint}`
+          : isGermanUI
+          ? `Hinweis: ${mHint}`
           : isSpanishUI
           ? `Pista: ${mHint}`
           : `Hint: ${mHint}`

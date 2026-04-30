@@ -209,6 +209,7 @@ import {
   normalizeSupportLanguage,
 } from "./constants/languages";
 import { syncDocumentLanguage } from "./utils/documentLanguage";
+import { getGermanCopy } from "./utils/germanCopy";
 
 /* ---------------------------
    Small helpers
@@ -237,7 +238,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
+  return ["en", "es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -285,8 +286,12 @@ const TARGET_LANGUAGE_LABELS = {
   ga: "Irish",
   yua: "Yucatec Maya",
 };
-const uiCopy = (lang, copy) =>
-  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+const uiCopy = (lang, copy) => {
+  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  if (copy[normalized]) return copy[normalized];
+  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
+  return copy.en;
+};
 const SESSION_TIMER_STORAGE_KEY = "sessionTimerState";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -698,6 +703,7 @@ function TopBar({
     pt: "segundos",
     it: "secondi",
     fr: "secondes",
+    de: "Sekunden",
     ja: "秒",
     ar: "ثواني",
     zh: "秒",
@@ -714,6 +720,7 @@ function TopBar({
       pt: "Mais curta = mais responsiva; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para uma fala natural.",
       it: "Più breve = più reattiva; più lunga = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
       fr: "Plus court = plus reactif ; plus long = te laisse finir de parler. 1,2 seconde est recommande pour une parole naturelle.",
+      de: "Kürzer = reaktionsschneller; länger = gibt dir Zeit, auszusprechen. 1,2 Sekunden werden für natürliche Sprache empfohlen.",
       ja: "短いほど反応が速く、長いほど話し終える時間ができます。自然な会話には1.2秒がおすすめです。",
       ar: "الأقصر = استجابة أسرع؛ الأطول = يديك وقت تخلص كلامك. ١٫٢ ثانية مناسب للكلام الطبيعي.",
       zh: "更短 = 反应更快；更长 = 给你更多时间说完。自然对话建议 1.2 秒。",

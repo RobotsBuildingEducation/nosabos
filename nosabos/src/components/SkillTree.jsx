@@ -1704,6 +1704,16 @@ const GAME_LOADING_MESSAGES = {
     "Mise en scene...",
     "Creation de votre aventure...",
   ],
+  de: [
+    "Deine Welt wird gebaut...",
+    "Figuren werden platziert...",
+    "Quest-Dialoge werden geschrieben...",
+    "Wortschatz-Herausforderungen werden erstellt...",
+    "Das Kartenlayout wird entworfen...",
+    "Sprachrätsel werden vorbereitet...",
+    "Die Szene wird eingerichtet...",
+    "Dein Abenteuer wird geschmiedet...",
+  ],
   ja: [
     "あなたの世界を作っています...",
     "NPCを配置しています...",

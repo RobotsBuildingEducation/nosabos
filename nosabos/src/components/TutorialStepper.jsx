@@ -48,6 +48,7 @@ const MODULE_CONFIG = {
       hi: "शब्दावली",
       ar: "المفردات",
       zh: "词汇",
+      de: "Wortschatz",
     },
     shortLabel: {
       en: "Vocab",
@@ -59,6 +60,7 @@ const MODULE_CONFIG = {
       hi: "शब्द",
       ar: "كلمات",
       zh: "词汇",
+      de: "Wörter",
     },
     description: {
       en: "Learn new words through interactive questions.",
@@ -70,6 +72,7 @@ const MODULE_CONFIG = {
       hi: "इंटरैक्टिव प्रश्नों के माध्यम से नए शब्द सीखें।",
       ar: "اتعلّم كلمات جديدة من خلال أسئلة تفاعلية.",
       zh: "通过互动问题学习新单词。",
+      de: "Lerne neue Wörter mit interaktiven Fragen.",
     },
   },
   grammar: {
@@ -85,6 +88,7 @@ const MODULE_CONFIG = {
       hi: "व्याकरण",
       ar: "القواعد",
       zh: "语法",
+      de: "Grammatik",
     },
     shortLabel: {
       en: "Grammar",
@@ -96,6 +100,7 @@ const MODULE_CONFIG = {
       hi: "व्याक.",
       ar: "قواعد",
       zh: "语法",
+      de: "Gramm.",
     },
     description: {
       en: "Master grammar rules through exercises.",
@@ -107,6 +112,7 @@ const MODULE_CONFIG = {
       hi: "अभ्यासों के ज़रिए व्याकरण के नियमों में पकड़ बनाइए।",
       ar: "اتقن قواعد اللغة من خلال التمارين.",
       zh: "通过练习掌握语法规则。",
+      de: "Meistere Grammatikregeln mit Übungen.",
     },
   },
   reading: {
@@ -122,6 +128,7 @@ const MODULE_CONFIG = {
       hi: "पठन",
       ar: "القراءة",
       zh: "阅读",
+      de: "Lesen",
     },
     shortLabel: {
       en: "Read",
@@ -133,6 +140,7 @@ const MODULE_CONFIG = {
       hi: "पढ़ें",
       ar: "اقرأ",
       zh: "阅读",
+      de: "Lesen",
     },
     description: {
       en: "Improve your reading skills by following along with passages.",
@@ -144,6 +152,7 @@ const MODULE_CONFIG = {
       hi: "पैसेज के साथ पढ़ते हुए अपनी पठन क्षमता बेहतर बनाइए।",
       ar: "حسّن مهارات القراءة وأنت بتتابع النصوص.",
       zh: "跟读文章，提升阅读能力。",
+      de: "Verbessere dein Lesen, indem du Texten folgst.",
     },
   },
   stories: {
@@ -159,6 +168,7 @@ const MODULE_CONFIG = {
       hi: "कहानियाँ",
       ar: "القصص",
       zh: "故事",
+      de: "Geschichten",
     },
     shortLabel: {
       en: "Story",
@@ -170,6 +180,7 @@ const MODULE_CONFIG = {
       hi: "कहानी",
       ar: "قصة",
       zh: "故事",
+      de: "Geschichte",
     },
     description: {
       en: "Practice with interactive stories by reading and speaking sentence by sentence.",
@@ -181,6 +192,7 @@ const MODULE_CONFIG = {
       hi: "इंटरैक्टिव कहानियों के साथ वाक्य-दर-वाक्य पढ़कर और बोलकर अभ्यास करें।",
       ar: "اتدرّب بقصص تفاعلية من خلال القراءة والكلام جملة بجملة.",
       zh: "通过逐句阅读和朗读互动故事进行练习。",
+      de: "Übe mit interaktiven Geschichten, Satz für Satz beim Lesen und Sprechen.",
     },
   },
   realtime: {
@@ -196,6 +208,7 @@ const MODULE_CONFIG = {
       hi: "चैट",
       ar: "محادثة",
       zh: "聊天",
+      de: "Chat",
     },
     shortLabel: {
       en: "Chat",
@@ -207,6 +220,7 @@ const MODULE_CONFIG = {
       hi: "बोलें",
       ar: "تكلّم",
       zh: "说话",
+      de: "Sprechen",
     },
     description: {
       en: "Practice speaking with realtime conversations.",
@@ -218,6 +232,7 @@ const MODULE_CONFIG = {
       hi: "रीयलटाइम बातचीत के साथ बोलने का अभ्यास करें।",
       ar: "اتدرّب على الكلام من خلال محادثات مباشرة.",
       zh: "通过实时对话练习口语。",
+      de: "Übe Sprechen mit Echtzeitgesprächen.",
     },
   },
   game: {
@@ -233,6 +248,7 @@ const MODULE_CONFIG = {
       hi: "गेम",
       ar: "لعبة",
       zh: "游戏",
+      de: "Spiel",
     },
     shortLabel: {
       en: "Game",
@@ -244,6 +260,7 @@ const MODULE_CONFIG = {
       hi: "गेम",
       ar: "لعبة",
       zh: "游戏",
+      de: "Spiel",
     },
     description: {
       en: "Review what you learned by playing an interactive game.",
@@ -255,6 +272,7 @@ const MODULE_CONFIG = {
       hi: "इंटरैक्टिव गेम खेलकर जो सीखा है उसका पुनरावलोकन करें।",
       ar: "راجع اللي اتعلمته من خلال لعبة تفاعلية.",
       zh: "通过互动游戏复习所学内容。",
+      de: "Wiederhole, was du gelernt hast, mit einem interaktiven Spiel.",
     },
   },
 };

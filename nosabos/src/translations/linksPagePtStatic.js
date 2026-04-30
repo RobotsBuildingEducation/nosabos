@@ -103,6 +103,7 @@ export const LINKS_PAGE_PT_STATIC = {
   language_en: "Inglês",
   language_es: "Espanhol",
   language_fr: "Francês",
+  language_de: "Alemão",
   language_it: "Italiano",
   language_hi: "Hindi",
   language_ja: "Japonês",

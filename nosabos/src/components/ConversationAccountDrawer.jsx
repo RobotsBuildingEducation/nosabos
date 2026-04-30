@@ -58,6 +58,10 @@ export default function ConversationAccountDrawer({
       ? {
           title: "Impostazioni conversazione",
         }
+      : lang === "de"
+      ? {
+          title: "Gesprächseinstellungen",
+        }
       : lang === "ar"
       ? {
           title: "إعدادات المحادثة",

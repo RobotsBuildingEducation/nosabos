@@ -58,6 +58,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
 import VoiceOrb from "./VoiceOrb";
@@ -176,6 +177,12 @@ const CHINESE_SUPPORT_COPY = {
 };
 
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "de") {
+    if (typeof en === "string" && /'s Account$/.test(en)) {
+      return `Konto von ${en.replace(/'s Account$/, "")}`;
+    }
+    return getGermanCopy(en) || en;
+  }
   if (lang === "zh") {
     if (typeof en === "string") {
       if (/'s Account$/.test(en)) {
@@ -1368,6 +1375,28 @@ export function BitcoinWalletSection({
       nip07NsecWarning:
         "يُستخدم مفتاحك فقط لإنشاء المحفظة ولا يتم حفظه.",
     };
+    const de = {
+      createWallet: "Wallet erstellen",
+      loadingWallet: "Wallet wird erstellt…",
+      deposit: "Einzahlen",
+      loadingAddress: "Adresse wird erstellt…",
+      or: "oder",
+      copyAddress: "Adresse kopieren",
+      ps: "Nutze eine kompatible Lightning-Wallet, um die Rechnung zu bezahlen.",
+      activeWalletTitle: "Deine Wallet ist aktiv",
+      verifyTransactions: "Transaktionen prüfen",
+      generateNew: "Neue Adresse erstellen",
+      balanceLabel: "Guthaben",
+      cardNameLabel: "Wallet",
+      scholarshipNote:
+        "Deine Einzahlungen helfen uns, durch Lernen Stipendien zu schaffen mit ",
+      nip07NsecTitle: "Geheimer Schlüssel erforderlich",
+      nip07NsecDescription:
+        "Du bist mit einer Browser-Erweiterung angemeldet, daher haben wir keinen Zugriff auf deinen privaten Schlüssel. Gib unten deinen nsec ein, um eine Wallet zu erstellen.",
+      nip07NsecPlaceholder: "nsec1 eingeben...",
+      nip07NsecWarning:
+        "Dein Schlüssel wird nur zum Erstellen der Wallet verwendet und nicht gespeichert.",
+    };
     return (
       walletLang === "ja"
         ? ja
@@ -1381,6 +1410,8 @@ export function BitcoinWalletSection({
         ? hi
         : walletLang === "ar"
         ? ar
+        : walletLang === "de"
+        ? de
         : walletLang === "es"
         ? es
         : en

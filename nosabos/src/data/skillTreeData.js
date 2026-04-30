@@ -20,6 +20,7 @@ import { withJapaneseSkillTreeText } from "./skillTree/japaneseLocalizer.js";
 import { withPortugueseSkillTreeText } from "./skillTree/portugueseLocalizer.js";
 import { withArabicSkillTreeText } from "./skillTree/arabicLocalizer.js";
 import { withChineseSkillTreeText } from "./skillTree/chineseLocalizer.js";
+import { withGermanSkillTreeText } from "./skillTree/germanLocalizer.js";
 
 const withLocalizedSkillTreeText = (skillTree) =>
   withArabicSkillTreeText(
@@ -27,7 +28,9 @@ const withLocalizedSkillTreeText = (skillTree) =>
       withHindiSkillTreeText(
         withJapaneseSkillTreeText(
           withFrenchSkillTreeText(
-            withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+            withGermanSkillTreeText(
+              withItalianSkillTreeText(withPortugueseSkillTreeText(skillTree)),
+            ),
           ),
         ),
       ),

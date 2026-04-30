@@ -154,6 +154,9 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   it: {
     bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
   },
+  de: {
+    bg: "linear-gradient(180deg, #000000 0 33.33%, #dd0000 33.33% 66.66%, #ffce00 66.66% 100%)",
+  },
   hi: {
     bg: "linear-gradient(180deg, #ff9933 0 33.33%, #fff 33.33% 66.66%, #138808 66.66% 100%)",
     chakra: "#1a4ba0",
@@ -4942,11 +4945,490 @@ Object.assign(ZH_TEXT, {
   [CONSULATE_FINDER_BUTTON]: "搜索领事馆",
 });
 
+const DE_TEXT = {
+  "Already Mexican by birth": "Bereits Mexikaner/in durch Geburt",
+  "Document/passport path": "Dokumenten-/Passweg",
+  "Birth registration abroad": "Geburtsregistrierung im Ausland",
+  "Dual nationality path": "Weg zur doppelten Staatsangehörigkeit",
+  "Parent-chain first": "Zuerst die Elternkette dokumentieren",
+  "Document the Mexican parent before applicant":
+    "Dokumentiere zuerst den mexikanischen Elternteil",
+  "Declaratoria / recovery": "Declaratoria / Wiedererlangung",
+  "Mexican by birth with pre-1998 foreign nationality issue":
+    "Mexikanisch durch Geburt mit ausländischer Staatsangehörigkeit vor 1998",
+  "Carta de Naturalizacion path through SRE":
+    "Einbürgerungsweg über Carta de Naturalización bei SRE",
+  "Not eligible yet": "Noch nicht berechtigt",
+  "Build the missing residence, document, or timing prerequisite":
+    "Fehlende Aufenthalts-, Dokumenten- oder Zeitvoraussetzung aufbauen",
+  "Manual review": "Manuelle Prüfung",
+  "Consulate, SRE, civil registry, or legal review needed":
+    "Prüfung durch Konsulat, SRE, Standesamt oder Rechtsberatung nötig",
+  "SRE nationality and naturalization": "SRE Staatsangehörigkeit und Einbürgerung",
+  "MiConsulado appointments": "MiConsulado-Termine",
+  "U.S. dual nationality guidance": "Hinweise zur doppelten US-Staatsangehörigkeit",
+  "Born in Mexico": "In Mexiko geboren",
+  "Mexican parent": "Mexikanischer Elternteil",
+  "Family record": "Familienunterlagen",
+  "One step at a time": "Ein Schritt nach dem anderen",
+  "Edit answers": "Antworten bearbeiten",
+  "Jump to question": "Zur Frage springen",
+  "Finish edits": "Bearbeitung abschließen",
+  "Switch to dark mode": "In den dunklen Modus wechseln",
+  "Switch to light mode": "In den hellen Modus wechseln",
+  "Reset questions": "Fragen zurücksetzen",
+  "Test prefill": "Testdaten einfüllen",
+  "Start questions": "Fragen starten",
+  "Copy key": "Schlüssel kopieren",
+  "Citizenship route finder": "Finder für den Weg zur Staatsangehörigkeit",
+  "Find the right Mexico citizenship path before you book appointments or collect documents.":
+    "Finde den passenden Weg zur mexikanischen Staatsangehörigkeit, bevor du Termine buchst oder Dokumente sammelst.",
+  "This tool asks one question at a time and separates people who are already Mexican by birth from people who need naturalization.":
+    "Dieses Tool stellt jeweils eine Frage und unterscheidet Menschen, die bereits durch Geburt mexikanisch sind, von Menschen, die eine Einbürgerung brauchen.",
+  "Before you start, save your secret key somewhere safe. It is how you access your account and return to your citizenship answers later. We cannot recover it for you.":
+    "Speichere vor dem Start deinen geheimen Schlüssel sicher. Damit greifst du auf dein Konto zu und kehrst später zu deinen Antworten zurück. Wir können ihn nicht wiederherstellen.",
+  "Secret key copied": "Geheimer Schlüssel kopiert",
+  "No secret key found": "Kein geheimer Schlüssel gefunden",
+  "Sign in or create an account before copying your secret key.":
+    "Melde dich an oder erstelle ein Konto, bevor du deinen geheimen Schlüssel kopierst.",
+  "Unable to copy secret key.": "Geheimer Schlüssel konnte nicht kopiert werden.",
+  "Unable to save this intro. You can still continue.":
+    "Diese Einführung konnte nicht gespeichert werden. Du kannst trotzdem fortfahren.",
+  "Intake answered": "Fragebogen beantwortet",
+  "Naturalization modality": "Einbürgerungsmodalität",
+  "Resolve first": "Zuerst klären",
+  "Document collection progress": "Fortschritt beim Dokumentensammeln",
+  "Critical warnings": "Wichtige Warnungen",
+  "Official references": "Offizielle Quellen",
+  "Download report": "Bericht herunterladen",
+  "DIY official route": "Offizieller Weg in Eigenregie",
+  "Paid-help range": "Bereich für bezahlte Hilfe",
+  "paid help": "bezahlte Hilfe",
+  "User guidance": "Benutzerhinweis",
+  "Mexico citizenship route report": "Bericht zum Weg zur mexikanischen Staatsangehörigkeit",
+  "Questionnaire answers": "Antworten im Fragebogen",
+  "Not answered": "Nicht beantwortet",
+  "Likely base route": "Wahrscheinlicher Basisweg",
+  "Find the route": "Weg finden",
+  "Answer more questions to narrow the route.":
+    "Beantworte weitere Fragen, um den Weg einzugrenzen.",
+  "Complete the intake to generate a checklist.":
+    "Schließe den Fragebogen ab, um eine Checkliste zu erstellen.",
+  "What is your current country of citizenship?":
+    "Welches Land ist derzeit deine Staatsangehörigkeit?",
+  "This keeps the final warnings accurate. It does not decide the route by itself.":
+    "Das hält die abschließenden Warnungen korrekt. Es entscheidet den Weg nicht allein.",
+  "Where were you born?": "Wo wurdest du geboren?",
+  "Birthplace is the first legal divider.":
+    "Der Geburtsort ist die erste rechtliche Weichenstellung.",
+  "Do you already have any Mexican document?":
+    "Hast du bereits ein mexikanisches Dokument?",
+  "Existing proof can turn this into a records or passport task instead of an acquisition task.":
+    "Vorhandene Nachweise können daraus eine Dokumenten- oder Passaufgabe machen statt eines Erwerbsverfahrens.",
+  "Are you applying for yourself or for a minor?":
+    "Beantragst du für dich selbst oder für Minderjährige?",
+  "Which consulate or Mexican state will handle the case?":
+    "Welches Konsulat oder welcher mexikanische Bundesstaat bearbeitet den Fall?",
+  "ZIP, preferred consulate, or Mexican state":
+    "PLZ, bevorzugtes Konsulat oder mexikanischer Bundesstaat",
+  "Were you registered with a Mexican civil registry?":
+    "Wurdest du bei einem mexikanischen Standesamt registriert?",
+  "Did you acquire another nationality before March 20, 1998?":
+    "Hast du vor dem 20. März 1998 eine andere Staatsangehörigkeit erworben?",
+  "Was at least one legal parent Mexican at or before your birth?":
+    "War mindestens ein rechtlicher Elternteil bei oder vor deiner Geburt mexikanisch?",
+  "What proof does the Mexican parent have?":
+    "Welchen Nachweis hat der mexikanische Elternteil?",
+  "Do you have a long-form certified birth certificate?":
+    "Hast du eine vollständige beglaubigte Geburtsurkunde?",
+  "Do you currently live in Mexico with legal resident status?":
+    "Lebst du derzeit mit legalem Aufenthaltsstatus in Mexiko?",
+  "How long have you had qualifying residence in Mexico?":
+    "Wie lange hast du bereits qualifizierenden Aufenthalt in Mexiko?",
+  "Are you married to a Mexican citizen?":
+    "Bist du mit einer mexikanischen Staatsangehörigen oder einem mexikanischen Staatsangehörigen verheiratet?",
+  "Do you have a Mexican child by birth?":
+    "Hast du ein mexikanisches Kind durch Geburt?",
+  "Do you have criminal history, pending charges, or a prison sentence in any country?":
+    "Hast du Vorstrafen, laufende Verfahren oder eine Haftstrafe in irgendeinem Land?",
+  "Can you speak Spanish and pass Mexican history/culture exams?":
+    "Kannst du Spanisch sprechen und Prüfungen zu mexikanischer Geschichte/Kultur bestehen?",
+  "U.S.": "USA",
+  "Other country": "Anderes Land",
+  "Mexican ship or aircraft": "Mexikanisches Schiff oder Flugzeug",
+  "Mexican birth certificate": "Mexikanische Geburtsurkunde",
+  "Mexican passport": "Mexikanischer Reisepass",
+  "Declaratoria / certificate": "Declaratoria / Bescheinigung",
+  "Carta de Naturalizacion": "Carta de Naturalización",
+  "Self, adult": "Ich selbst, erwachsen",
+  "Parent/guardian for child": "Elternteil/Vormund für ein Kind",
+  "Attorney/authorized person": "Anwalt oder bevollmächtigte Person",
+  "Not applicable": "Nicht zutreffend",
+  "Yes, before March 20, 1998": "Ja, vor dem 20. März 1998",
+  "Acquired after that date": "Nach diesem Datum erworben",
+  "Parent became Mexican after my birth":
+    "Elternteil wurde nach meiner Geburt mexikanisch",
+  "Not sure": "Nicht sicher",
+  "Mexican birth acta": "Mexikanische Geburtsakte",
+  "Born abroad": "Im Ausland geboren",
+  "Naturalized Mexican": "Eingebürgerte/r Mexikaner/in",
+  "Yes, long-form certified": "Ja, vollständig beglaubigt",
+  "Permanent resident": "Daueraufenthalt",
+  "Temporary resident": "Vorübergehender Aufenthalt",
+  "Temporary student": "Vorübergehender Student",
+  "Tourist/FMM": "Tourist/FMM",
+  "5+ years": "5+ Jahre",
+  "2-5 years": "2-5 Jahre",
+  "1-2 years": "1-2 Jahre",
+  "Less than 1 year": "Weniger als 1 Jahr",
+  "None / no qualifying residence": "Keiner / kein qualifizierender Aufenthalt",
+  "Not applicable / no qualifying residence yet":
+    "Nicht zutreffend / noch kein qualifizierender Aufenthalt",
+  "Under 6 months total": "Insgesamt unter 6 Monaten",
+  "Over 6 months total": "Insgesamt über 6 Monate",
+  "Waiting for birthplace": "Warte auf den Geburtsort",
+  "Start with birthplace and existing Mexican records.":
+    "Beginne mit dem Geburtsort und vorhandenen mexikanischen Unterlagen.",
+  "Confirm where the applicant was born.":
+    "Bestätige, wo die antragstellende Person geboren wurde.",
+  "Likely route": "Wahrscheinlicher Weg",
+  "Needs document review": "Dokumentenprüfung erforderlich",
+  "Prerequisites or review needed": "Voraussetzungen oder Prüfung erforderlich",
+  "You already have a Mexican nationality document on the record.":
+    "Du hast bereits ein mexikanisches Staatsangehörigkeitsdokument in den Unterlagen.",
+  "Get certified copies of the Mexican acta or document if needed.":
+    "Besorge bei Bedarf beglaubigte Kopien der mexikanischen Akte oder des Dokuments.",
+  "Confirm CURP and name consistency across IDs.":
+    "Bestätige CURP und Namensgleichheit über alle Ausweise hinweg.",
+  "Mexican civil registry record is missing or uncertain.":
+    "Der mexikanische Standesamteintrag fehlt oder ist unklar.",
+  "People born in Mexico are Mexican by birth.":
+    "In Mexiko geborene Personen sind durch Geburt mexikanisch.",
+  "Locate or obtain a certified Mexican birth acta.":
+    "Finde oder besorge eine beglaubigte mexikanische Geburtsakte.",
+  "At least one legal parent was Mexican at or before the applicant's birth.":
+    "Mindestens ein rechtlicher Elternteil war bei oder vor der Geburt der antragstellenden Person mexikanisch.",
+  "Use MiConsulado and choose civil registry / birth registration, not passport.":
+    "Nutze MiConsulado und wähle Standesamt / Geburtsregistrierung, nicht Reisepass.",
+  "Bring the applicant's long-form certified birth certificate.":
+    "Bring die vollständige beglaubigte Geburtsurkunde der antragstellenden Person mit.",
+  "Naturalization generally requires temporary or permanent resident status.":
+    "Einbürgerung erfordert normalerweise vorübergehenden oder dauerhaften Aufenthaltsstatus.",
+  "Start tracking residence time and absences once qualifying status begins.":
+    "Verfolge Aufenthaltszeit und Abwesenheiten, sobald der qualifizierende Status beginnt.",
+  "Five or more years of qualifying residence can support the general route.":
+    "Fünf oder mehr Jahre qualifizierender Aufenthalt können den allgemeinen Weg stützen.",
+  "A shorter route may exist, but the residence clock is not long enough yet.":
+    "Ein kürzerer Weg kann bestehen, aber die Aufenthaltszeit reicht noch nicht.",
+  "Keep qualifying residence active until the route minimum is met.":
+    "Halte den qualifizierenden Aufenthalt aktiv, bis die Mindestzeit erreicht ist.",
+  "Use the SRE study guide and practice before scheduling exams.":
+    "Nutze den SRE-Lernleitfaden und übe, bevor du Prüfungen terminierst.",
+  "Assist me": "Hilf mir",
+  "Analyze my checklist": "Meine Checkliste analysieren",
+  "Next best action": "Nächster bester Schritt",
+  "Resolve this before moving forward.":
+    "Klär das, bevor du weitermachst.",
+  "Checklist complete": "Checkliste vollständig",
+  "High priority": "Hohe Priorität",
+  "Appointment-stopper": "Terminblocker",
+  "Route guidance": "Routenhinweis",
+  "Checklist stages": "Checklistenphasen",
+  "Fix blockers": "Blocker beheben",
+  "Document collection": "Dokumente sammeln",
+  "Appointment prep": "Terminvorbereitung",
+  "Naturalization filing": "Einbürgerungsantrag",
+  "After approval": "Nach der Genehmigung",
+  "Other tasks": "Andere Aufgaben",
+  "Unsaved chat": "Ungespeicherter Chat",
+  "Saved chat": "Gespeicherter Chat",
+  "Citizenship assistant": "Staatsangehörigkeitsassistent",
+  "Checklist support": "Checklistenhilfe",
+  "Thinking through your checklist...": "Checkliste wird durchdacht...",
+  "Save chat": "Chat speichern",
+  "Ask about a checklist item...": "Frag zu einem Checklistenpunkt...",
+  "Chat saved": "Chat gespeichert",
+  "Assistant unavailable": "Assistent nicht verfügbar",
+  "Try again in a moment.": "Versuche es gleich noch einmal.",
+  "Why it matters": "Warum es wichtig ist",
+  "What to check": "Was prüfen",
+  "How to resolve": "So klärst du es",
+  "Common mistake": "Häufiger Fehler",
+  "Already have a key?": "Hast du schon einen Schlüssel?",
+  "Sign in": "Anmelden",
+  "Paste your secret key": "Geheimen Schlüssel einfügen",
+  "Use this key": "Diesen Schlüssel verwenden",
+  Cancel: "Abbrechen",
+  "Account ready": "Konto bereit",
+  "Preparing your key...": "Schlüssel wird vorbereitet...",
+  "We created a secret key for this citizenship workspace.":
+    "Wir haben einen geheimen Schlüssel für diesen Staatsangehörigkeitsbereich erstellt.",
+  "This account is ready.": "Dieses Konto ist bereit.",
+  "Invalid secret key": "Ungültiger geheimer Schlüssel",
+  "Paste an nsec key that starts with nsec.":
+    "Füge einen nsec-Schlüssel ein, der mit nsec beginnt.",
+  "Switched account": "Konto gewechselt",
+  "Your citizenship workspace is now using that key.":
+    "Dein Staatsangehörigkeitsbereich verwendet jetzt diesen Schlüssel.",
+  "Unable to sign in.": "Anmeldung nicht möglich.",
+  "Creating your key failed. You can still paste an existing key.":
+    "Schlüsselerstellung fehlgeschlagen. Du kannst weiterhin einen vorhandenen Schlüssel einfügen.",
+  [PRIVACY_POLICY_TITLE]: "Datenschutzrichtlinie",
+  [PRIVACY_POLICY_SAVED_DATA]:
+    "Gespeicherte Daten werden nur für dein Kontoerlebnis verwendet, damit du zurückkehren, Antworten bearbeiten und geräteübergreifend organisiert bleiben kannst. Sie werden nie verkauft oder geteilt.",
+  [PRIVACY_POLICY_IDENTITY_PRIVATE]:
+    "Deine Identität bleibt privat. Wir haben keine Möglichkeit, dich zu identifizieren.",
+  [PRIVACY_POLICY_KEYS]:
+    "Statt eines persönlichen Kontos erhältst du Schlüssel; deinen geheimen Schlüssel speichern wir nicht. Nur du kannst mit deinem Schlüssel auf deine Informationen zugreifen.",
+  [PRIVACY_POLICY_KEY_LOSS]:
+    "Wenn du deinen geheimen Schlüssel verlierst, verlierst du den Zugriff auf dein Konto. Wir können ihn nicht wiederherstellen.",
+  [CONSULATE_FINDER_TITLE]: "Nächstes mexikanisches Konsulat finden",
+  [CONSULATE_FINDER_DESCRIPTION]:
+    "Nutze PLZ, Stadt oder Bundesstaat, um schnell nahe mexikanische Konsulate zu finden.",
+  [CONSULATE_FINDER_PLACEHOLDER]: "PLZ, Stadt oder Bundesstaat",
+  [CONSULATE_FINDER_BUTTON]: "Konsulate suchen",
+};
+
+Object.assign(DE_TEXT, {
+  Assistant: "Assistent",
+  Back: "Zurück",
+  Cancel: "Abbrechen",
+  Checked: "Erledigt",
+  Checklist: "Checkliste",
+  Completion: "Fortschritt",
+  Documents: "Dokumente",
+  Generated: "Erstellt",
+  Identity: "Identität",
+  Location: "Ort",
+  Meaning: "Bedeutung",
+  Naturalization: "Einbürgerung",
+  Next: "Weiter",
+  Outcome: "Ergebnis",
+  Pending: "Ausstehend",
+  Question: "Frage",
+  Recommendation: "Empfehlung",
+  Route: "Weg",
+  Send: "Senden",
+  Skip: "Überspringen",
+  Status: "Status",
+  Why: "Warum",
+  You: "Du",
+  "Accents, spelling, or order differ":
+    "Akzente, Schreibweise oder Reihenfolge weichen ab",
+  Applicant: "Antragstellende Person",
+  "Are you a direct descendant of a Mexican by birth?":
+    "Bist du direkte/r Nachkomme/in einer durch Geburt mexikanischen Person?",
+  "Are you a minor adopted by Mexican citizens or under Mexican parental authority?":
+    "Bist du minderjährig und von mexikanischen Staatsangehörigen adoptiert oder unter mexikanischer elterlicher Sorge?",
+  "Are you originally from Latin America or the Iberian Peninsula?":
+    "Stammst du ursprünglich aus Lateinamerika oder von der Iberischen Halbinsel?",
+  "Are you over 18?": "Bist du über 18?",
+  "Are you recognized as a refugee by COMAR?":
+    "Bist du von COMAR als Flüchtling anerkannt?",
+  Both: "Beide",
+  Conviction: "Verurteilung",
+  CURP: "CURP",
+  "Do parent names on your foreign birth certificate match the Mexican parent records?":
+    "Stimmen die Namen der Eltern auf deiner ausländischen Geburtsurkunde mit den mexikanischen Elternunterlagen überein?",
+  "Do you have a valid foreign passport with at least 45 business days of validity?":
+    "Hast du einen gültigen ausländischen Reisepass mit mindestens 45 Werktagen Restgültigkeit?",
+  "During the last two years of qualifying residence, how much time were you outside Mexico?":
+    "Wie viel Zeit warst du während der letzten zwei Jahre qualifizierenden Aufenthalts außerhalb Mexikos?",
+  "Exempt/minor/over 60/refugee": "Befreit/minderjährig/über 60/Flüchtling",
+  Father: "Vater",
+  "Formerly, now adult": "Früher, jetzt erwachsen",
+  Grandparent: "Großelternteil",
+  "Great-grandparent": "Urgroßelternteil",
+  "Have you performed distinguished services benefiting Mexico?":
+    "Hast du herausragende Leistungen erbracht, die Mexiko zugutekommen?",
+  "Hospital certificate only": "Nur Krankenhausbescheinigung",
+  INE: "INE",
+  "Is either parent deceased, absent, unavailable, or unwilling to participate?":
+    "Ist ein Elternteil verstorben, abwesend, nicht verfügbar oder nicht bereit mitzuwirken?",
+  "Is your INM-registered address the same as your application address?":
+    "Ist deine bei INM registrierte Adresse dieselbe wie deine Antragsadresse?",
+  "Is your Mexican birth certificate late-registered or inconsistent with your ID?":
+    "Wurde deine mexikanische Geburtsurkunde verspätet registriert oder stimmt sie nicht mit deinem Ausweis überein?",
+  "Is your resident card valid at least six months beyond filing and does it show CURP?":
+    "Ist deine Aufenthaltskarte mindestens sechs Monate über die Einreichung hinaus gültig und zeigt sie CURP?",
+  "Married surname issue": "Problem mit Ehenamen",
+  Matricula: "Matrícula",
+  Maybe: "Vielleicht",
+  Mexico: "Mexiko",
+  Mother: "Mutter",
+  Multiple: "Mehrere",
+  No: "Nein",
+  "Non-English": "Nicht Englisch",
+  "Non-U.S.": "Nicht USA",
+  None: "Keine",
+  Other: "Andere",
+  Parent: "Elternteil",
+  "Pending case": "Laufendes Verfahren",
+  "Recently renewed": "Kürzlich erneuert",
+  "Sentence being served": "Laufende Haftstrafe",
+  "Short abstract only": "Nur Kurzfassung",
+  Unknown: "Unbekannt",
+  "Was the Mexican parent born in Mexico, born abroad, or naturalized Mexican?":
+    "Wurde der mexikanische Elternteil in Mexiko geboren, im Ausland geboren oder eingebürgert?",
+  "Was your birth certificate issued outside the U.S. or in a language other than English/Spanish?":
+    "Wurde deine Geburtsurkunde außerhalb der USA ausgestellt oder in einer anderen Sprache als Englisch/Spanisch?",
+  "Were your parents married before your birth?":
+    "Waren deine Eltern vor deiner Geburt verheiratet?",
+  Yes: "Ja",
+  "Yes, at least 6 months before birth":
+    "Ja, mindestens 6 Monate vor der Geburt",
+  "Yes, but after birth or under 6 months":
+    "Ja, aber nach der Geburt oder weniger als 6 Monate vorher",
+  "Yes, father": "Ja, Vater",
+  "Yes, mother": "Ja, Mutter",
+  "You can use a ZIP, preferred consulate, or Mexican state. Skip it if you do not know yet.":
+    "Du kannst eine PLZ, ein bevorzugtes Konsulat oder einen mexikanischen Bundesstaat verwenden. Überspringe es, wenn du es noch nicht weißt.",
+  complete: "vollständig",
+  "I could not reach the assistant right now, but your checklist is still saved.":
+    "Ich konnte den Assistenten gerade nicht erreichen, aber deine Checkliste ist weiterhin gespeichert.",
+  "Start with unresolved blockers, then gather the highest-proof records first: long-form birth records, Mexican actas, IDs, name-change documents, and any consulate-specific items.":
+    "Beginne mit offenen Blockern und sammle dann zuerst die stärksten Nachweise: vollständige Geburtsunterlagen, mexikanische Actas, Ausweise, Namensänderungsdokumente und alle konsulatsspezifischen Unterlagen.",
+  "This conversation will stay with your citizenship checklist.":
+    "Diese Unterhaltung bleibt bei deiner Staatsangehörigkeits-Checkliste.",
+  "1-year adoption / parental authority route":
+    "1-Jahres-Weg über Adoption / elterliche Sorge",
+  "5-year general residence": "Allgemeiner 5-Jahres-Aufenthalt",
+  "A parent is deceased, absent, unavailable, or unwilling to participate.":
+    "Ein Elternteil ist verstorben, abwesend, nicht verfügbar oder nicht bereit mitzuwirken.",
+  "Absences exceed six months total during the last two years.":
+    "Die Abwesenheiten überschreiten insgesamt sechs Monate in den letzten zwei Jahren.",
+  "Add apostille/legalization and authorized translation steps for non-U.S. or non-English/non-Spanish records.":
+    "Füge Apostille/Legalisation und beglaubigte Übersetzungen für nicht-US-amerikanische oder nicht englische/spanische Unterlagen hinzu.",
+  "Adoption or Mexican parental authority can support a one-year route with custody review.":
+    "Adoption oder mexikanische elterliche Sorge kann nach Sorgerechtsprüfung einen 1-Jahres-Weg stützen.",
+  "After the Mexican acta is issued, confirm CURP and schedule a Mexican passport appointment.":
+    "Nach Ausstellung der mexikanischen Akte CURP bestätigen und einen Termin für den mexikanischen Pass vereinbaren.",
+  "Applicant does not yet have a long-form certified birth certificate.":
+    "Die antragstellende Person hat noch keine vollständige beglaubigte Geburtsurkunde.",
+  "Application address must match INM records.":
+    "Die Adresse im Antrag muss mit den INM-Unterlagen übereinstimmen.",
+  "Apply for Mexican passport, matricula, INE, or other ID.":
+    "Mexikanischen Reisepass, Matrícula, INE oder anderen Ausweis beantragen.",
+  "Ask SRE or counsel whether residence can be shortened or waived.":
+    "SRE oder Rechtsberatung fragen, ob die Aufenthaltszeit verkürzt oder erlassen werden kann.",
+  "Ask the civil registry or consulate whether correction or supplemental proof is required.":
+    "Standesamt oder Konsulat fragen, ob eine Korrektur oder zusätzlicher Nachweis erforderlich ist.",
+  "Ask the consulate or civil registry which office should issue or recognize the acta.":
+    "Konsulat oder Standesamt fragen, welche Stelle die Akte ausstellen oder anerkennen soll.",
+  "Ask the relevant civil registry or consulate about late/no registration evidence.":
+    "Beim zuständigen Standesamt oder Konsulat nach Nachweisen für verspätete oder fehlende Registrierung fragen.",
+  "Birth on a Mexican vessel or aircraft can be a Mexican-by-birth category.":
+    "Geburt auf einem mexikanischen Schiff oder Flugzeug kann eine Kategorie mexikanischer Staatsangehörigkeit durch Geburt sein.",
+  "Born in Mexico, but foreign nationality was acquired before March 20, 1998.":
+    "In Mexiko geboren, aber vor dem 20. März 1998 wurde eine ausländische Staatsangehörigkeit erworben.",
+  "Bring parent IDs, marriage/name-change records, and witnesses if the consulate requires them.":
+    "Ausweise der Eltern, Ehe-/Namensänderungsunterlagen und Zeugen mitbringen, falls das Konsulat sie verlangt.",
+  "Bring the Mexican parent's acta, passport, Carta de Naturalizacion, or declaratoria as applicable.":
+    "Die Akte, den Pass, die Carta de Naturalización oder Declaratoria des mexikanischen Elternteils mitbringen, soweit zutreffend.",
+  "Calculate a new filing date after the absence window clears.":
+    "Ein neues Einreichungsdatum berechnen, nachdem das Abwesenheitsfenster frei ist.",
+  "Collect older supporting records such as baptismal, school, medical, parent, or sibling records.":
+    "Ältere Nachweise sammeln, z. B. Tauf-, Schul-, Medizin-, Eltern- oder Geschwisterunterlagen.",
+  "Collect the vessel/aircraft birth record and parent identity records.":
+    "Geburtsnachweis des Schiffs/Flugzeugs und Identitätsunterlagen der Eltern sammeln.",
+  "Compare the acta against current ID, parents' records, and marriage/name-change documents.":
+    "Die Akte mit aktuellem Ausweis, Elternunterlagen und Ehe-/Namensänderungsdokumenten vergleichen.",
+  "Confirm CURP and fix record errors before passport or ID appointment.":
+    "CURP bestätigen und Registerfehler vor dem Pass- oder Ausweistermin korrigieren.",
+  "Confirm resident card is valid at least six months beyond the filing date and shows CURP.":
+    "Bestätigen, dass die Aufenthaltskarte mindestens sechs Monate über das Einreichungsdatum hinaus gültig ist und CURP zeigt.",
+  "Confirm the exact date another nationality was acquired.":
+    "Das genaue Datum bestätigen, an dem eine andere Staatsangehörigkeit erworben wurde.",
+  "Continue qualifying temporary or permanent residence toward five years.":
+    "Qualifizierenden vorübergehenden oder dauerhaften Aufenthalt bis zu fünf Jahren fortsetzen.",
+  "Criminal history or pending case needs review before naturalization.":
+    "Vorstrafen oder laufende Verfahren müssen vor der Einbürgerung geprüft werden.",
+  "Distinguished services are discretionary and should be reviewed before relying on the route.":
+    "Herausragende Leistungen sind Ermessenssache und sollten geprüft werden, bevor man sich auf diesen Weg stützt.",
+  "Distinguished-service route": "Weg über herausragende Leistungen",
+  "Find or request the parent's Mexican birth acta, declaratoria, or Carta de Naturalizacion.":
+    "Mexikanische Geburtsakte, Declaratoria oder Carta de Naturalización des Elternteils finden oder beantragen.",
+  "Foreign naturalization timing is unknown.":
+    "Der Zeitpunkt der ausländischen Einbürgerung ist unbekannt.",
+  "Foreign passport does not yet meet the filing-validity requirement.":
+    "Der ausländische Reisepass erfüllt die Gültigkeitsanforderung für die Einreichung noch nicht.",
+  "Gather ID, photos, and name-change or marriage records.":
+    "Ausweis, Fotos sowie Namensänderungs- oder Eheunterlagen sammeln.",
+  "Gather modality proof such as marriage acta, child's Mexican acta, descent records, origin-country birth certificate, COMAR letter, or custody/adoption records.":
+    "Nachweise zur Modalität sammeln, z. B. Eheakte, mexikanische Akte des Kindes, Abstammungsunterlagen, Geburtsurkunde des Herkunftslands, COMAR-Schreiben oder Sorgerechts-/Adoptionsunterlagen.",
+  "Gather proof of foreign naturalization with apostille if required.":
+    "Nachweis der ausländischen Einbürgerung sammeln, mit Apostille falls erforderlich.",
+  "High-discretion naturalization route.":
+    "Einbürgerungsweg mit hohem Ermessensanteil.",
+  "If the parent was born abroad and never registered, document the parent first.":
+    "Wenn der Elternteil im Ausland geboren und nie registriert wurde, zuerst den Elternteil dokumentieren.",
+  "Latin American or Iberian origin": "Lateinamerikanische oder iberische Herkunft",
+  "Make sure the DNN-3 address matches the INM-registered address.":
+    "Sicherstellen, dass die DNN-3-Adresse mit der bei INM registrierten Adresse übereinstimmt.",
+  "Mexican acta may be late-registered or inconsistent with ID.":
+    "Die mexikanische Akte kann verspätet registriert oder nicht mit dem Ausweis konsistent sein.",
+  "Mexican child by birth": "Mexikanisches Kind durch Geburt",
+  "Mexicans by birth cannot be deprived of Mexican nationality.":
+    "Mexikaner/innen durch Geburt kann die mexikanische Staatsangehörigkeit nicht entzogen werden.",
+  "More distant descent should be reviewed before relying on a two-year route.":
+    "Entferntere Abstammung sollte geprüft werden, bevor man sich auf einen 2-Jahres-Weg stützt.",
+  "Move from tourist/FMM, no status, or temporary student status into qualifying temporary or permanent residence.":
+    "Von Tourist/FMM, ohne Status oder temporärem Studentenstatus in qualifizierenden vorübergehenden oder dauerhaften Aufenthalt wechseln.",
+  "Naturalized Mexican nationality can be lost in specific situations, including voluntarily acquiring another foreign nationality, using a foreign passport as a Mexican in certain contexts, or residing abroad for five continuous years.":
+    "Eine eingebürgerte mexikanische Staatsangehörigkeit kann in bestimmten Situationen verloren gehen, darunter freiwilliger Erwerb einer anderen Staatsangehörigkeit, Nutzung eines ausländischen Passes als Mexikaner/in in bestimmten Kontexten oder fünf Jahre ununterbrochener Aufenthalt im Ausland.",
+  "No shorter statutory route is selected, and the five-year clock is not complete.":
+    "Es ist kein kürzerer gesetzlicher Weg ausgewählt und die Fünfjahresfrist ist noch nicht erfüllt.",
+  "Obtain the Mexican parent's certified birth acta or Carta de Naturalizacion before the appointment.":
+    "Vor dem Termin die beglaubigte Geburtsakte oder Carta de Naturalización des mexikanischen Elternteils beschaffen.",
+  "Order the long-form certified birth certificate before attending.":
+    "Vor dem Termin die vollständige beglaubigte Geburtsurkunde bestellen.",
+  "Parent appearance, marriage timing, or special power of attorney issue needs consulate review.":
+    "Erscheinen des Elternteils, Zeitpunkt der Ehe oder Spezialvollmacht muss vom Konsulat geprüft werden.",
+  "Parent became Mexican after the applicant was born.":
+    "Der Elternteil wurde nach der Geburt der antragstellenden Person mexikanisch.",
+  "Parent names do not clearly match across birth and Mexican records.":
+    "Die Namen der Eltern stimmen zwischen Geburts- und mexikanischen Unterlagen nicht eindeutig überein.",
+  "Parent was born abroad and may need their own Mexican record first.":
+    "Der Elternteil wurde im Ausland geboren und benötigt möglicherweise zuerst eine eigene mexikanische Registrierung.",
+  "Prepare DNN-3, resident card, full passport copies, entries/exits letter, CURP, photos, payment, and criminal-record certificates.":
+    "DNN-3, Aufenthaltskarte, vollständige Passkopien, Ein-/Ausreisebescheinigung, CURP, Fotos, Zahlung und Strafregisterbescheinigungen vorbereiten.",
+  "Prepare Mexican birth acta.": "Mexikanische Geburtsakte vorbereiten.",
+  "Prepare evidence of cultural, social, scientific, technical, artistic, sports, business, or other benefit to Mexico.":
+    "Nachweise für kulturellen, sozialen, wissenschaftlichen, technischen, künstlerischen, sportlichen, geschäftlichen oder sonstigen Nutzen für Mexiko vorbereiten.",
+  "Prepare prior passport copies or INM migration-flow proof.":
+    "Frühere Passkopien oder INM-Nachweis über Migrationsbewegungen vorbereiten.",
+  "Proceed to passport/ID after the Mexican nationality record is issued.":
+    "Nach Ausstellung des mexikanischen Staatsangehörigkeitsnachweises mit Pass/Ausweis fortfahren.",
+  "Resident card validity or CURP is not ready.":
+    "Gültigkeit der Aufenthaltskarte oder CURP ist noch nicht bereit.",
+  "Schedule passport, matricula, INE, or record-correction steps as applicable.":
+    "Pass-, Matrícula-, INE- oder Registerkorrekturschritte nach Bedarf terminieren.",
+  "Study for Spanish, Mexican history, and culture exams unless an exception applies.":
+    "Für Spanisch sowie mexikanische Geschichte und Kultur lernen, sofern keine Ausnahme gilt.",
+  "The parent appears Mexican, but the appointment will likely need stronger nationality proof.":
+    "Der Elternteil scheint mexikanisch zu sein, aber der Termin braucht wahrscheinlich stärkere Staatsangehörigkeitsnachweise.",
+  "The parent link may qualify, but the Mexican parent must be documented first.":
+    "Die Elternverbindung kann qualifizieren, aber der mexikanische Elternteil muss zuerst dokumentiert werden.",
+  "Then prepare the applicant's long-form birth certificate and parent ID records.":
+    "Danach die vollständige Geburtsurkunde der antragstellenden Person und Ausweisunterlagen der Eltern vorbereiten.",
+  "Then reopen the applicant's birth registration checklist.":
+    "Danach die Checkliste für die Geburtsregistrierung der antragstellenden Person erneut öffnen.",
+  "This tool is an eligibility guide, not a legal decision. SRE, consulates, and civil registry offices apply the final requirements.":
+    "Dieses Tool ist ein Eignungsleitfaden, keine rechtliche Entscheidung. SRE, Konsulate und Standesämter wenden die endgültigen Anforderungen an.",
+  "U.S. citizens generally do not automatically lose U.S. citizenship by acquiring another nationality, and U.S. dual nationals generally must use a U.S. passport to enter and leave the United States.":
+    "US-Staatsbürger/innen verlieren die US-Staatsangehörigkeit in der Regel nicht automatisch durch Erwerb einer anderen Staatsangehörigkeit; US-Doppelstaatsangehörige müssen in der Regel mit einem US-Pass in die USA ein- und ausreisen.",
+  "direct descent from Mexican by birth":
+    "direkte Abstammung von einer durch Geburt mexikanischen Person",
+  "marriage to a Mexican citizen": "Ehe mit einer mexikanischen Staatsangehörigen oder einem mexikanischen Staatsangehörigen",
+  "recognized refugee checklist": "Checkliste für anerkannte Flüchtlinge",
+});
+
 const TEXT_TRANSLATIONS = {
   es: ES_TEXT,
   pt: PT_TEXT,
   it: IT_TEXT,
   fr: FR_TEXT,
+  de: DE_TEXT,
   ja: JA_TEXT,
   hi: HI_TEXT,
   ar: AR_TEXT,
@@ -4958,6 +5440,7 @@ const TWO_YEAR_ROUTE_LABELS = {
   pt: "Rota de 2 anos",
   it: "Percorso di 2 anni",
   fr: "Parcours de 2 ans",
+  de: "2-Jahres-Weg",
   ja: "2年ルート",
   hi: "2-वर्षीय मार्ग",
   ar: "مسار سنتين",
@@ -4973,6 +5456,8 @@ const SHORTER_ROUTE_SENTENCES = {
     `${subject} può sostenere un percorso di naturalizzazione più breve.`,
   fr: (subject) =>
     `${subject} peut appuyer un parcours de naturalisation plus court.`,
+  de: (subject) =>
+    `${subject} kann einen kürzeren Einbürgerungsweg unterstützen.`,
   ja: (subject) => `${subject} はより短い帰化ルートの根拠になり得ます。`,
   hi: (subject) => `${subject} छोटे नैचुरलाइज़ेशन मार्ग का आधार हो सकता है।`,
   ar: (subject) => `يمكن أن يدعم ${subject} مسار تجنس أقصر.`,
@@ -4990,6 +5475,8 @@ const BASE_ROUTE_REMAINS_SENTENCES = {
     `${routeTitle} resta possibile, ma il punto segnalato va risolto prima.`,
   fr: (routeTitle) =>
     `${routeTitle} reste possible, mais le point signalé doit être résolu d'abord.`,
+  de: (routeTitle) =>
+    `${routeTitle} bleibt möglich, aber der markierte Punkt sollte zuerst geklärt werden.`,
   ja: (routeTitle) =>
     `${routeTitle} はまだ可能ですが、先に指摘事項を解決してください。`,
   hi: (routeTitle) =>
@@ -6362,6 +6849,91 @@ const DUAL_CITIZENSHIP_BENEFITS = {
   },
 };
 
+DUAL_CITIZENSHIP_BENEFITS.de = {
+  title: "Vorteile der doppelten mexikanischen Staatsangehörigkeit",
+  subtitle:
+    "Beginne mit den Rechten, die in jedem Alter wichtig sind, und sieh dann, wie sie in verschiedenen Lebensphasen zählen können.",
+  overallTitle: "Größte allgemeine Vorteile",
+  overallBenefits: [
+    "In Mexiko leben, ohne ein Visum zu benötigen",
+    "In Mexiko arbeiten, ohne Arbeitserlaubnis",
+    "Bei mexikanischen Wahlen wählen",
+    "Mexikanischen Ausweis und Reisepass erhalten",
+    "Eigentum leichter besitzen",
+    "Staatsangehörigkeit an Kinder weitergeben",
+    "Sicherer in Mexiko in Rente gehen",
+    "US-Staatsangehörigkeit behalten und zugleich mexikanische Rechte gewinnen",
+  ],
+  ageTitle: "Vorteile nach Altersgruppe",
+  ageGroups: [
+    {
+      range: "0-17 Jahre",
+      items: [
+        "Mexikanische Geburtsregistrierung",
+        "Mexikanischer Reisepass",
+        "CURP / offizieller mexikanischer Identitätseintrag",
+        "Leichterer zukünftiger Zugang zu Mexiko",
+        "Leichter mit Familie in Mexiko leben",
+        "Hält spätere Optionen für Schule, Arbeit, Eigentum und Erbschaft offen",
+      ],
+    },
+    {
+      range: "18-24 Jahre",
+      items: [
+        "Möglichkeit zur INE-Wähler-ID",
+        "Wahlrecht bei mexikanischen Wahlen",
+        "Arbeiten in Mexiko ohne Arbeitsvisum",
+        "Leichter mieten, Bankkonto eröffnen, studieren und lokale Dienste nutzen",
+        "Leichter ein Leben in den USA oder Mexiko aufbauen",
+      ],
+    },
+    {
+      range: "25-39 Jahre",
+      items: [
+        "In Mexiko ohne Einwanderungssponsoring arbeiten",
+        "Ein Unternehmen leichter gründen",
+        "Eigentum leichter kaufen",
+        "Land direkt besitzen statt Ausländerstrukturen in Sperrzonen zu nutzen",
+        "Mexikanische Staatsangehörigkeit an Kinder weitergeben, wenn berechtigt",
+        "Familienumzug einfacher gestalten",
+      ],
+    },
+    {
+      range: "40-54 Jahre",
+      items: [
+        "Mehr Flexibilität für Umzug oder Teilzeit-Leben in Mexiko",
+        "Einfachere Eigentums- und Vermögensplanung",
+        "Einfachere Bank-, Steuer- und Rechtsstruktur",
+        "Familie in Mexiko leichter unterstützen",
+        "Gesundheits- und Ruhestandspläne früher aufbauen",
+      ],
+    },
+    {
+      range: "55-64 Jahre",
+      items: [
+        "Einfachere Vorruhestandsplanung",
+        "Lange Zeit in Mexiko verbringen ohne Touristen-/Aufenthaltsgrenzen",
+        "Leichter Eigentum kaufen, renovieren oder sich einrichten",
+        "Das Leben in Mexiko vor dem Ruhestand leichter testen",
+        "Möglicher Zugang zu Seniorenprogrammen ab etwa 60, je nach Anforderungen",
+      ],
+    },
+    {
+      range: "65+",
+      items: [
+        "Als mexikanische/r Staatsangehörige/r in Mexiko in Rente gehen",
+        "Langfristiger Aufenthalt ohne Visasorgen",
+        "Leichterer Zugang zu mexikanischen Seniorenprogrammen, wenn berechtigt",
+        "Mögliche föderale Seniorenrente bei Leben in Mexiko und erfüllten Voraussetzungen",
+        "Mexiko-Aufenthalt mit US Social Security kombinieren, wenn berechtigt",
+        "Sicherere grenzüberschreitende Ruhestandsplanung",
+      ],
+    },
+  ],
+  primaryCta: "DNExpress-Kosten vergleichen",
+  backCta: "Zurück zu den Vorteilen",
+};
+
 const getDualCitizenshipBenefits = (language) =>
   DUAL_CITIZENSHIP_BENEFITS[normalizeSupportLanguage(language)] ||
   DUAL_CITIZENSHIP_BENEFITS.en;
@@ -7350,6 +7922,116 @@ const DNEXPRESS_POSTS = {
   },
 };
 
+DNEXPRESS_POSTS.de = {
+  title: "Lohnt sich DNExpress?",
+  subtitle:
+    "Manchmal, aber es hängt davon ab, ob du für Bequemlichkeit zahlst oder ein echtes Dokumentenproblem lösen musst.",
+  intro: [
+    "Wenn du in den USA geboren wurdest und einen mexikanischen Elternteil hast, ist die offizielle mexikanische Geburtsregistrierung über ein mexikanisches Konsulat oft kostenlos oder sehr günstig.",
+    "Ein bezahlter Service ist also nicht automatisch nötig. Entscheidend ist, ob dein Fall sauber, leicht kompliziert oder wirklich schwierig ist.",
+  ],
+  priceFooter:
+    "Preise variieren je nach Anbieter, Konsulat und Komplexität. Prüfe aktuelle Gebühren immer vor der Zahlung.",
+  priceComparison: [
+    {
+      title: "Offizieller Weg in Eigenregie",
+      items: [
+        "Geburtsregistrierung: oft kostenlos",
+        "Erste mexikanische Geburtsurkunde: oft kostenlos",
+        "Zusätzliche beglaubigte Kopien: meist günstig",
+        "Hauptkosten: Urkunden, Kopien, Apostillen, Übersetzungen und ggf. Korrekturen",
+      ],
+    },
+    {
+      title: "Weg mit bezahlter Hilfe",
+      items: [
+        "Hilfe bei sauberem Fall: oft mehrere hundert Dollar",
+        "Korrekturen von Urkunden: können mehr kosten",
+        "Namensänderungen oder Registrierung in Mexiko können deutlich teurer werden",
+        "Hauptwert: Bequemlichkeit, Prüfung und Lösung schwieriger Unterlagen",
+      ],
+    },
+  ],
+  cards: [
+    {
+      tone: "green",
+      status: "Grüner Fall",
+      title: "Wahrscheinlich nicht lohnend",
+      body: "Du brauchst wahrscheinlich keine Vollservice-Hilfe, wenn deine Dokumente bereits zusammenpassen.",
+      examplesTitle: "Das bedeutet meistens:",
+      examples: [
+        "Du hast deine vollständige US-Geburtsurkunde",
+        "Dein mexikanischer Elternteil hat seine mexikanische Geburtsurkunde",
+        "Namen stimmen dokumentenübergreifend überein",
+        "Elternangaben sind klar",
+        "Keine Adoption, Vaterschaftsfrage, Gerichtsentscheidung, verstorbener Elternteil oder größeres Namensproblem",
+      ],
+      bestMove:
+        "Bester Schritt: Versuche zuerst den offiziellen Konsulatsweg. Bezahlte Hilfe lohnt sich vielleicht nur, wenn du Bequemlichkeit möchtest.",
+      priceNote:
+        "Eigenregie: sehr geringe Kosten. Bezahlter Service: mehrere hundert Dollar. Empfehlung: spare das Geld, außer Bequemlichkeit ist dir wichtig.",
+    },
+    {
+      tone: "yellow",
+      status: "Gelber Fall",
+      title: "Vielleicht lohnt eine Dokumentenprüfung",
+      body: "Es kann ein lösbares Problem geben, aber wahrscheinlich noch keinen Grund für ein teures Vollpaket.",
+      examplesTitle: "Das bedeutet meistens:",
+      examples: [
+        "Du hast nur eine Kurzform der Geburtsurkunde",
+        "Du musst die mexikanische Geburtsurkunde deines Elternteils bestellen",
+        "Ein Name weicht leicht ab",
+        "Ein Elternteil nutzt in einem Dokument einen Ehenamen",
+        "Du brauchst Heiratsurkunde, Apostille oder Übersetzung",
+        "Du bist unsicher, ob die Dokumente exakt übereinstimmen",
+      ],
+      bestMove:
+        "Bester Schritt: Kläre oder korrigiere das Dokumentenproblem vor dem Konsulatstermin. Eine günstige Prüfung kann nützlich sein, aber zahle nicht zu früh für ein großes Paket.",
+      priceNote:
+        "Eigenregie: niedrig bis moderat. Bezahlte Prüfung: möglicherweise sinnvoll. Empfehlung: zahle für Klarheit, nicht zu früh für ein Vollpaket.",
+    },
+    {
+      tone: "red",
+      status: "Roter Fall",
+      title: "Bezahlte Hilfe kann sich lohnen",
+      body: "Hier kann ein Service wirklich Wert bringen, aber nur wenn er das konkrete Problem löst, das deine Registrierung blockiert.",
+      examplesTitle: "Das bedeutet meistens:",
+      examples: [
+        "Ein Elternteil ist verstorben, abwesend oder nicht bereit zu erscheinen",
+        "Der mexikanische Elternteil fehlt in der Geburtsurkunde",
+        "Falsche Elternangaben stehen im Eintrag",
+        "Die Eltern waren vor der Geburt nicht verheiratet und die Mitwirkung des Vaters ist nötig",
+        "Es gibt Adoption, Vaterschaft, Gerichtsbeschluss oder rechtliche Namensänderung",
+        "Der Eintrag des mexikanischen Elternteils fehlt, ist unregelmäßig oder braucht Korrektur",
+        "Das Konsulat sagt, der Fall müsse in Mexiko bearbeitet werden",
+      ],
+      bestMove:
+        "Bester Schritt: Zahle nicht einfach für Staatsangehörigkeitshilfe. Frage genau, welcher Eintrag falsch ist, wer ihn wo korrigiert und was passiert, wenn das Konsulat ablehnt.",
+      priceNote:
+        "Eigenregie: unvorhersehbar. Bezahlte/rechtliche Hilfe: potenziell sinnvoll. Empfehlung: nur erwägen, wenn sie den echten Blocker löst.",
+    },
+  ],
+  closingTitle: "Wofür zahlst du wirklich?",
+  closing:
+    "Du kaufst keine mexikanische Staatsangehörigkeit. Wenn du über einen mexikanischen Elternteil qualifizierst, bist du möglicherweise bereits durch Geburt mexikanisch. Du zahlst für Hilfe, das zu beweisen.",
+  officialChecklistTitle: "Offizielle Dokumentencheckliste",
+  officialChecklistIntro:
+    "Für einen sauberen Fall einer in den USA geborenen Person mit mexikanischem Elternteil sind dies übliche Dokumente vor der Terminbuchung. Konsulate können variieren.",
+  officialChecklist: [
+    "Vollständige beglaubigte US-Geburtsurkunde",
+    "Beglaubigte mexikanische Geburtsurkunde des mexikanischen Elternteils oder Carta de Naturalizacion",
+    "Lichtbildausweis der antragstellenden Person oder Schul-/Medizinausweis bei Minderjährigen",
+    "Ausweise der Eltern",
+    "Heiratsurkunde der Eltern, falls relevant",
+    "Namensänderungs-, Scheidungs- oder Sterbeeinträge bei Namensänderungen",
+    "Apostille/Legalisierung und Übersetzung, wenn Unterlagen nicht aus den USA, nicht auf Englisch oder nicht auf Spanisch sind",
+  ],
+  primaryCta: "Meinen Staatsangehörigkeitsfragebogen starten",
+  secondaryCta: "Offizielle Dokumentencheckliste anzeigen",
+  secondaryCtaHide: "Offizielle Dokumentencheckliste ausblenden",
+  stickyTakeaway: "Zahle für Problemlösung, nicht für Staatsangehörigkeit.",
+};
+
 const getDNExpressPost = (language) =>
   DNEXPRESS_POSTS[normalizeSupportLanguage(language)] || DNEXPRESS_POSTS.en;
 
@@ -7947,12 +8629,14 @@ const CitizenshipIntro = ({
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="solid"
             borderRadius="8px"
-            bg="var(--app-surface-elevated)"
-            borderColor="#0f766e"
-            color="#0f766e"
-            boxShadow="none"
+            bg="#0f766e"
+            border="2px solid"
+            borderColor="#2dd4bf"
+            color="white"
+            boxShadow="0 0 0 1px rgba(45, 212, 191, 0.32), 0 12px 24px rgba(13, 148, 136, 0.24)"
+            fontWeight="800"
             transform="none"
             onClick={() => {
               onSubmitSound?.();
@@ -7962,13 +8646,26 @@ const CitizenshipIntro = ({
             isDisabled={isPreparingAccount}
             minW={{ base: "100%", sm: "176px" }}
             h="52px"
-            _hover={{ bg: "rgba(15, 118, 110, 0.08)" }}
+            _hover={{
+              bg: "#0d9488",
+              borderColor: "#5eead4",
+              boxShadow:
+                "0 0 0 1px rgba(94, 234, 212, 0.42), 0 14px 28px rgba(13, 148, 136, 0.30)",
+            }}
             _active={{
-              bg: "rgba(15, 118, 110, 0.12)",
+              bg: "#0f766e",
+              boxShadow: "0 0 0 1px rgba(45, 212, 191, 0.28)",
+              transform: "translateY(1px)",
+            }}
+            _disabled={{
+              bg: "var(--app-surface-elevated)",
+              borderColor: "var(--app-border)",
+              color: "var(--app-text-muted)",
               boxShadow: "none",
+              opacity: 0.58,
+              cursor: "not-allowed",
               transform: "none",
             }}
-            _disabled={{ opacity: 0.58, cursor: "not-allowed" }}
           >
             {translateText("Next", language)}
           </Button>
@@ -8210,6 +8907,25 @@ const WORTH_IT_CASE_COSTS = {
         "Par soi-meme imprevisible: 150-1 000 $+ / aide payante: 500-1 200 $+",
       diy: "Imprevisible: 150-1 000 $+",
       paid: "500-1 200 $+",
+    },
+  },
+  de: {
+    green: {
+      summary:
+        "Eigenregie vor dem Reisepass: $0-$75 / bezahlte Hilfe: $200-$400+",
+      diy: "$0-$75 vor dem Reisepass",
+      paid: "$200-$400+",
+    },
+    yellow: {
+      summary: "Eigenregie: $50-$300+ / bezahlte Prüfung: $150-$500+",
+      diy: "$50-$300+",
+      paid: "$150-$500+",
+    },
+    red: {
+      summary:
+        "Unvorhersehbare Eigenregie: $150-$1,000+ / bezahlte Hilfe: $500-$1,200+",
+      diy: "Unvorhersehbar: $150-$1,000+",
+      paid: "$500-$1,200+",
     },
   },
   ja: {

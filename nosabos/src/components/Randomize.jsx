@@ -11,6 +11,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import translations from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import { getLanguageXp } from "../utils/progressTracking";
 import VoiceOrb from "./VoiceOrb";
 import XpProgressHeader from "./XpProgressHeader";
@@ -52,8 +53,12 @@ const MODES = [
   { key: "reading" },
 ];
 
-const uiCopy = (lang, copy) =>
-  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+const uiCopy = (lang, copy) => {
+  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  if (copy[normalized]) return copy[normalized];
+  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
+  return copy.en;
+};
 
 function strongNpub(user) {
   return (

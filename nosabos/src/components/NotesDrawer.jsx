@@ -77,6 +77,7 @@ const MODULE_LABELS = {
     hi: "फ्लैशकार्ड",
     ar: "بطاقة",
     zh: "抽认卡",
+    de: "Karte",
   },
   vocabulary: {
     en: "Vocabulary",
@@ -88,6 +89,7 @@ const MODULE_LABELS = {
     hi: "शब्दावली",
     ar: "المفردات",
     zh: "词汇",
+    de: "Wortschatz",
   },
   grammar: {
     en: "Grammar",
@@ -99,6 +101,7 @@ const MODULE_LABELS = {
     hi: "व्याकरण",
     ar: "القواعد",
     zh: "语法",
+    de: "Grammatik",
   },
 };
 
@@ -138,6 +141,8 @@ export default function NotesDrawer({
       ? "Minhas notas"
       : lang === "it"
       ? "Le mie note"
+      : lang === "de"
+      ? "Meine Notizen"
       : lang === "hi"
       ? "मेरे नोट्स"
       : lang === "es"
@@ -154,6 +159,8 @@ export default function NotesDrawer({
       ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
       : lang === "it"
       ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
+      : lang === "de"
+      ? "Noch keine Notizen. Schließe Karten, Wortschatz oder Grammatik ab, um automatisch Notizen zu erstellen."
       : lang === "hi"
       ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
       : lang === "ar"
@@ -172,6 +179,8 @@ export default function NotesDrawer({
       ? "Limpar tudo"
       : lang === "it"
       ? "Cancella tutto"
+      : lang === "de"
+      ? "Alle löschen"
       : lang === "hi"
       ? "सब साफ़ करें"
       : lang === "ar"
@@ -190,6 +199,8 @@ export default function NotesDrawer({
       ? "Licao"
       : lang === "it"
       ? "Lezione"
+      : lang === "de"
+      ? "Lektion"
       : lang === "hi"
       ? "पाठ"
       : lang === "ar"
@@ -208,6 +219,8 @@ export default function NotesDrawer({
       ? "Sem notas"
       : lang === "it"
       ? "Nessuna nota"
+      : lang === "de"
+      ? "Keine Notizen"
       : lang === "hi"
       ? "कोई नोट नहीं"
       : lang === "ar"
@@ -230,6 +243,8 @@ export default function NotesDrawer({
       ? "Nota"
       : lang === "it"
       ? "Nota"
+      : lang === "de"
+      ? "Notiz"
       : lang === "hi"
       ? "नोट"
       : lang === "ar"
@@ -264,6 +279,10 @@ export default function NotesDrawer({
       return `${formattedCount} ${count === 1 ? "nota" : "note"}`;
     }
 
+    if (lang === "de") {
+      return `${formattedCount} ${count === 1 ? "Notiz" : "Notizen"}`;
+    }
+
     if (lang === "hi") {
       return `${formattedCount} नोट`;
     }
@@ -285,6 +304,8 @@ export default function NotesDrawer({
       ? "Ouvir"
       : lang === "it"
       ? "Ascolta"
+      : lang === "de"
+      ? "Anhören"
       : lang === "hi"
       ? "सुनें"
       : lang === "ar"
@@ -303,6 +324,8 @@ export default function NotesDrawer({
       ? "Excluir nota"
       : lang === "it"
       ? "Elimina nota"
+      : lang === "de"
+      ? "Notiz löschen"
       : lang === "hi"
       ? "नोट हटाएं"
       : lang === "ar"

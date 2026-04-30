@@ -560,6 +560,7 @@ export function formatRelativeReviewTime(
     if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
+    if (lang === "de") return "Nicht geplant";
     if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
     if (lang === "ar") return "غير مجدول";
@@ -606,6 +607,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return "Nao agendado";
     if (lang === "it") return "Non programmato";
     if (lang === "fr") return "Non programme";
+    if (lang === "de") return "Nicht geplant";
     if (lang === "hi") return "निर्धारित नहीं";
     if (lang === "ja") return "未スケジュール";
     if (lang === "ar") return "غير مجدول";
@@ -624,6 +626,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return `Hoje as ${timeLabel}`;
     if (lang === "it") return `Oggi alle ${timeLabel}`;
     if (lang === "fr") return `Aujourd'hui a ${timeLabel}`;
+    if (lang === "de") return `Heute um ${timeLabel}`;
     if (lang === "hi") return `आज ${timeLabel} बजे`;
     if (lang === "ja") return `今日 ${timeLabel}`;
     if (lang === "ar") return `اليوم الساعة ${timeLabel}`;
@@ -638,6 +641,7 @@ export function formatAbsoluteReviewTime(
     if (lang === "pt") return `Amanha as ${timeLabel}`;
     if (lang === "it") return `Domani alle ${timeLabel}`;
     if (lang === "fr") return `Demain a ${timeLabel}`;
+    if (lang === "de") return `Morgen um ${timeLabel}`;
     if (lang === "hi") return `कल ${timeLabel} बजे`;
     if (lang === "ja") return `明日 ${timeLabel}`;
     if (lang === "ar") return `بكرة الساعة ${timeLabel}`;
@@ -657,6 +661,7 @@ export function formatAbsoluteReviewTime(
   if (lang === "pt") return `${dateLabel} as ${timeLabel}`;
   if (lang === "it") return `${dateLabel} alle ${timeLabel}`;
   if (lang === "fr") return `${dateLabel} a ${timeLabel}`;
+  if (lang === "de") return `${dateLabel} um ${timeLabel}`;
   if (lang === "hi") return `${dateLabel} ${timeLabel} बजे`;
   if (lang === "ja") return `${dateLabel} ${timeLabel}`;
   if (lang === "ar") return `${dateLabel} الساعة ${timeLabel}`;

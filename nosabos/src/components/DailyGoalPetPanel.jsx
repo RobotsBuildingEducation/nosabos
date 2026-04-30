@@ -219,6 +219,32 @@ function getCopy(lang) {
     };
   }
 
+  if (lang === "de") {
+    return {
+      title: "Dein Begleiter",
+      subtitle: "Halte ihn gesund, indem du dein tägliches XP-Ziel erreichst.",
+      health: "Gesundheit",
+      happy: "Glücklich",
+      healthy: "Gesund",
+      unhappy: "Traurig",
+      stressed: "Gestresst",
+      unhealthy: "Kränklich",
+      dead: "Inaktiv",
+      reward: "Ziel erreicht",
+      penalty: "Ziel verfehlt",
+      rewardFooter: "Die Gesundheit steigt auf {health}%",
+      penaltyFooter: "Die Gesundheit sinkt auf {health}%",
+      latestAchieved: "Letzte Aktualisierung: +{delta}% für dein erreichtes Ziel",
+      latestMissed: "Letzte Aktualisierung: {delta}% für dein verfehltes Ziel",
+      managementHint: "Erreiche heute dein Ziel, damit er stark bleibt.",
+      celebrationHint: "Dein Begleiter hat einen Gesundheitsschub bekommen.",
+      rewardBadge: "Belohnung +{delta}%",
+      penaltyBadge: "Risiko -{delta}%",
+      previewHint:
+        "Nur Vorschau. Das ändert die echte Gesundheit deines Begleiters nicht.",
+    };
+  }
+
   if (lang === "pt") {
     return {
       title: "Seu companheiro",

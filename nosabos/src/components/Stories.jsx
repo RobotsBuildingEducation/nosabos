@@ -210,7 +210,7 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   const lang = user?.appLanguage || localStorage.getItem("appLanguage") || "en";
-  return ["es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].includes(lang) ? lang : "en";
+  return ["es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh"].includes(lang) ? lang : "en";
 };
 
 // Extract text from a Gemini streaming chunk (tolerant to shapes)
@@ -281,7 +281,7 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh", "bilingual"].includes(p.supportLang)
+        supportLang: ["en", "es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
         voice: p.voice || "alloy",
@@ -409,7 +409,19 @@ export default function StoryMode({
   // Content languages
   const supportLang =
     progress.supportLang === "bilingual"
-      ? (["es", "pt", "it", "fr", "ja", "hi", "ar"].includes(uiLang) ? uiLang : "en")
+      ? ([
+          "es",
+          "pt",
+          "it",
+          "fr",
+          "de",
+          "ja",
+          "hi",
+          "ar",
+          "zh",
+        ].includes(uiLang)
+          ? uiLang
+          : "en")
       : progress.supportLang;
   const targetTextProps = getBidiTextProps(targetLang);
   const supportTextProps = getBidiTextProps(supportLang);

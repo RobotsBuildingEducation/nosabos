@@ -26,6 +26,10 @@ import {
   translateFlashcardConceptToChinese,
   withChineseFlashcardText,
 } from "./flashcards/chineseLocalizer.js";
+import {
+  translateFlashcardConceptToGerman,
+  withGermanFlashcardText,
+} from "./flashcards/germanLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
   withArabicFlashcardText(
@@ -33,7 +37,9 @@ const withLocalizedFlashcardText = (cards) =>
       withHindiFlashcardText(
         withJapaneseFlashcardText(
           withFrenchFlashcardText(
-            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+            withGermanFlashcardText(
+              withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+            ),
           ),
         ),
       ),
@@ -3897,7 +3903,7 @@ export const FLASHCARD_DATA = withLocalizedFlashcardText([
   },
   {
     id: "a2-cloth-12",
-    concept: { en: "Watch", es: "Reloj" },
+    concept: { en: "Watch", es: "Reloj", de: "Uhr" },
     cefrLevel: "A2",
     category: "clothing",
     type: "word",
@@ -6394,7 +6400,7 @@ export const FLASHCARD_DATA = withLocalizedFlashcardText([
   },
   {
     id: "b2-social-16",
-    concept: { en: "Immigration", es: "Inmigración" },
+    concept: { en: "Immigration", es: "Inmigración", de: "Einwanderung" },
     cefrLevel: "B2",
     category: "social-issues",
     type: "word",
@@ -7896,7 +7902,7 @@ export const getConceptText = (card, supportLang) => {
     const hash = (card.id || "")
       .split("")
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const languages = ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"];
+    const languages = ["en", "es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh"];
     const selectedLang = languages[hash % languages.length];
     if (selectedLang === "pt" && !card.concept.pt) {
       return translateFlashcardConceptToPortuguese(
@@ -7915,6 +7921,9 @@ export const getConceptText = (card, supportLang) => {
     }
     if (selectedLang === "zh" && !card.concept.zh) {
       return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
+    }
+    if (selectedLang === "de" && !card.concept.de) {
+      return translateFlashcardConceptToGerman(card.concept.en || card.concept.es);
     }
     return card.concept[selectedLang] || card.concept.en;
   }
@@ -7940,6 +7949,10 @@ export const getConceptText = (card, supportLang) => {
 
   if (supportLang === "zh" && !card.concept.zh) {
     return translateFlashcardConceptToChinese(card.concept.en || card.concept.es);
+  }
+
+  if (supportLang === "de" && !card.concept.de) {
+    return translateFlashcardConceptToGerman(card.concept.en || card.concept.es);
   }
 
   // Otherwise use the specified language, fallback to English

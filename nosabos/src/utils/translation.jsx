@@ -2,6 +2,7 @@
 
 import { Button, HStack } from "@chakra-ui/react";
 import { TRANSLATION_AR_STATIC } from "./translationArStatic";
+import { TRANSLATION_DE_STATIC } from "./translationDeStatic";
 import { TRANSLATION_HI_STATIC } from "./translationHiStatic";
 import { TRANSLATION_PT_STATIC } from "./translationPtStatic";
 import { TRANSLATION_ZH_STATIC } from "./translationZhStatic";
@@ -3537,6 +3538,75 @@ translations.fr = {
   vocab_create_note: "Creer une note",
   vocab_note_saved: "Note enregistree !",
   vocab_lesson_progress: "Progression de la lecon",
+};
+
+translations.de = {
+  ...translations.en,
+  ...TRANSLATION_DE_STATIC,
+  "passcode.instructions": (
+    <div>
+      Gib den Abonnement-Zugangscode ein, um fortzufahren.
+      <br />
+      <br />
+      <div>
+        <b style={{ marginBottom: 6 }}>Mit einem Abo erhältst du:</b>
+        <ol style={{ marginTop: 12, marginLeft: 24 }}>
+          <li style={{ marginBottom: 8 }}>
+            Zugriff auf mehrere KI-gestützte Bildungs-Apps.
+          </li>
+          <li style={{ marginBottom: 8 }}>Persönliche Unterstützung.</li>
+          <li style={{ marginBottom: 8 }}>
+            Eine wachsende Sammlung von Inhalten für Abonnenten zu
+            Startup-Engineering, Business und Investieren.
+          </li>
+          <li style={{ marginBottom: 8 }}>
+            Die Möglichkeit, unsere Mission zu unterstützen, durch Lernen
+            Stipendien zu schaffen.
+          </li>
+        </ol>
+        <br />
+        <HStack>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank",
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            Abonnieren
+          </Button>
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/146522893?forSale=true",
+                "_blank",
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/146522893?forSale=true",
+                  "_blank",
+                );
+              }
+            }}
+          >
+            Einmal zahlen
+          </Button>{" "}
+        </HStack>
+      </div>
+    </div>
+  ),
 };
 
 translations.ja = {

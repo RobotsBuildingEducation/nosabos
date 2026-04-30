@@ -161,6 +161,9 @@ const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   it: {
     bg: "linear-gradient(90deg, #009246 0 33.33%, #fff 33.33% 66.66%, #ce2b37 66.66% 100%)",
   },
+  de: {
+    bg: "linear-gradient(180deg, #000000 0 33.33%, #dd0000 33.33% 66.66%, #ffce00 66.66% 100%)",
+  },
   hi: {
     bg: "linear-gradient(180deg, #ff9933 0 33.33%, #fff 33.33% 66.66%, #138808 66.66% 100%)",
     chakra: "#1a4ba0",

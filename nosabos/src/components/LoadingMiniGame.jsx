@@ -528,6 +528,102 @@ OUTDOOR_NAMES.ar = [
   "حقل الزهور البرية",
 ];
 
+OUTDOOR_NAMES.de = [
+  "Stadtplatz",
+  "Dorfanger",
+  "Waldlichtung",
+  "Park am Fluss",
+  "Abendwiese",
+  "Mondscheingarten",
+  "Kopfsteinpflasterplatz",
+  "Flüsterhain",
+  "Laternenhof",
+  "Wildblumenfeld",
+];
+
+INDOOR_ROOM_TYPES[0].names.de = [
+  "Alte Bibliothek",
+  "Leseraum",
+  "Studierzimmer",
+  "Bücherecke",
+  "Staubiges Archiv",
+];
+INDOOR_ROOM_TYPES[1].names.de = [
+  "Gemütliche Hütte",
+  "Warmes Häuschen",
+  "Rast der Reisenden",
+  "Kaminlodge",
+  "Berghütte",
+];
+INDOOR_ROOM_TYPES[2].names.de = [
+  "Handwerkswerkstatt",
+  "Bastelraum",
+  "Macherraum",
+  "Tüftlerlabor",
+  "Erfinderversteck",
+];
+INDOOR_ROOM_TYPES[3].names.de = [
+  "Gästezimmer",
+  "Gemütliches Schlafzimmer",
+  "Traumzimmer",
+  "Nickerchenraum",
+  "Ruhehafen",
+];
+INDOOR_ROOM_TYPES[4].names.de = [
+  "Lounge",
+  "Gemeinschaftsraum",
+  "Versammlungssaal",
+  "Soziale Ecke",
+  "Teeraum",
+];
+
+SIGN_MESSAGES.de = [
+  "Willkommen, Abenteurer! Erkunde die Welt, während dein Spiel lädt.",
+  "Tipp: Sprich im echten Spiel mit NPCs, um Wortschatz zu üben!",
+  "Schon gewusst? Sprachenlernen ist wie ein Level-up fürs Gehirn.",
+  "Profi-Tipp: Schließe Quests ab, um XP zu verdienen und neue Lektionen freizuschalten!",
+  "Die Brücke verbindet zwei Welten... genau wie Sprachen.",
+  "Betritt die Türen, um neue Räume zu entdecken!",
+  "Jedes gelernte Wort ist ein Schritt in einem großen Abenteuer.",
+  "Je mehr du erkundest, desto mehr entdeckst du!",
+  "Geheimnis: Manche Wege führen zu verborgenen Schätzen...",
+  "Wusstest du? Diese Karte ändert sich bei jedem Laden!",
+  "Sprachen öffnen Türen zu neuen Welten. Buchstäblich!",
+  "Erkunde weiter! Es gibt immer etwas Neues zu finden.",
+];
+
+CHEST_MESSAGES.de = [
+  "Du hast einen verborgenen Schatz gefunden! ...es ist Wissen!",
+  "In einer Schriftrolle steht: 'Übung macht den Meister'",
+  "Du entdeckst eine leuchtende Rune... sie sagt 'XP +100' (nur Spaß)",
+  "Drinnen liegt eine kleine Karte aller Welten, die du erkunden wirst!",
+  "Eine Goldmünze! Moment... es ist ein Wortschatz-Token.",
+  "Du hast eine alte Grammatikrolle gefunden!",
+  "Die Truhe enthält... Motivation! +10 Willenskraft.",
+  "Drinnen findest du eine Notiz: 'Du machst das großartig!'",
+];
+
+LAMP_MESSAGES.de = [
+  "Die Lampe flackert warm. Hier fühlt es sich gemütlich an.",
+  "Ein sanftes Leuchten beleuchtet alten Text... unleserlich.",
+  "Das Licht tanzt wie kleine Funken.",
+  "Du spürst ein warmes Leuchten der Ermutigung.",
+];
+
+PLANT_MESSAGES.de = [
+  "Eine glückliche kleine Pflanze. Sie scheint diesen Platz zu mögen.",
+  "Die Blätter rascheln sanft, als du vorbeigehst.",
+  "Diese Pflanze ist länger hier, als sich irgendjemand erinnert.",
+  "Eine kleine Blume blüht. Wie schön!",
+];
+
+TABLE_MESSAGES.de = [
+  "Ein stabiler Holztisch. Jemand hat Notizen zu Verbkonjugationen dagelassen.",
+  "Der Tisch trägt Kratzspuren von jahrelangen Lernsitzungen.",
+  "Bücher und Papiere liegen über die Oberfläche verstreut.",
+  "Ein halb gelöstes Rätsel liegt auf dem Tisch.",
+];
+
 INDOOR_ROOM_TYPES[0].names.ar = [
   "المكتبة القديمة",
   "غرفة القراءة",
@@ -963,6 +1059,7 @@ function generateWorld(seed) {
     pt: pick(rng, OUTDOOR_NAMES.pt),
     it: pick(rng, OUTDOOR_NAMES.it),
     fr: pick(rng, OUTDOOR_NAMES.fr),
+    de: pick(rng, OUTDOOR_NAMES.de),
     ja: pick(rng, OUTDOOR_NAMES.ja),
     hi: pick(rng, OUTDOOR_NAMES.hi),
     ar: pick(rng, OUTDOOR_NAMES.ar),
@@ -981,6 +1078,7 @@ function generateWorld(seed) {
     pt: pick(rng, roomType1.names.pt),
     it: pick(rng, roomType1.names.it),
     fr: pick(rng, roomType1.names.fr),
+    de: pick(rng, roomType1.names.de),
     ja: pick(rng, roomType1.names.ja),
     hi: pick(rng, roomType1.names.hi),
     ar: pick(rng, roomType1.names.ar),
@@ -994,6 +1092,7 @@ function generateWorld(seed) {
     pt: pick(rng, roomType2.names.pt),
     it: pick(rng, roomType2.names.it),
     fr: pick(rng, roomType2.names.fr),
+    de: pick(rng, roomType2.names.de),
     ja: pick(rng, roomType2.names.ja),
     hi: pick(rng, roomType2.names.hi),
     ar: pick(rng, roomType2.names.ar),

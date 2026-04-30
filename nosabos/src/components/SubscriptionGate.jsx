@@ -17,6 +17,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { getGermanCopy } from "../utils/germanCopy";
 
 const ARABIC_SUPPORT_COPY = {
   "Enter the passcode": "اكتب رمز الدخول",
@@ -31,6 +32,7 @@ const CHINESE_SUPPORT_COPY = {
 };
 
 function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;

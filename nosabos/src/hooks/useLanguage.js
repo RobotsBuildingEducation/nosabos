@@ -48,6 +48,13 @@ const spanishTimezones = [
 ];
 
 const italianTimezones = ["Europe/Rome", "Europe/Vatican", "Europe/San_Marino"];
+const germanTimezones = [
+  "Europe/Berlin",
+  "Europe/Vienna",
+  "Europe/Zurich",
+  "Europe/Vaduz",
+  "Europe/Luxembourg",
+];
 const hindiTimezones = ["Asia/Kolkata", "Asia/Calcutta"];
 const arabicTimezones = ["Africa/Cairo"];
 const chineseTimezones = [
@@ -129,6 +136,9 @@ const detectLanguageFromTimezone = () => {
     }
     if (italianTimezones.includes(timezone)) {
       return "it";
+    }
+    if (germanTimezones.includes(timezone)) {
+      return "de";
     }
     if (frenchTimezones.includes(timezone)) {
       return "fr";

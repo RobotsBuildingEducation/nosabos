@@ -198,6 +198,13 @@ CEFR_LEVEL_INFO.B1.name.zh = "中级";
 CEFR_LEVEL_INFO.B2.name.zh = "中高级";
 CEFR_LEVEL_INFO.C1.name.zh = "高级";
 CEFR_LEVEL_INFO.C2.name.zh = "精通";
+CEFR_LEVEL_INFO["Pre-A1"].name.de = "Absolute Anfänger";
+CEFR_LEVEL_INFO.A1.name.de = "Anfänger";
+CEFR_LEVEL_INFO.A2.name.de = "Grundstufe";
+CEFR_LEVEL_INFO.B1.name.de = "Mittelstufe";
+CEFR_LEVEL_INFO.B2.name.de = "Obere Mittelstufe";
+CEFR_LEVEL_INFO.C1.name.de = "Fortgeschritten";
+CEFR_LEVEL_INFO.C2.name.de = "Meisterschaft";
 
 const CEFR_LEVEL_OFFERINGS = {
   "Pre-A1": {
@@ -426,14 +433,49 @@ CEFR_LEVEL_OFFERINGS.C2.zh = [
   "轻松处理非常复杂的话题。",
   "语言接近母语者水平。",
 ];
+CEFR_LEVEL_OFFERINGS["Pre-A1"].de = [
+  "Stark geführte Lektionen mit grundlegenden Wörtern und Sätzen.",
+  "Sehr kurze Aufgaben mit viel Wiederholung.",
+  "Fokus auf Selbstvertrauen und Grundlagen des Verstehens.",
+];
+CEFR_LEVEL_OFFERINGS.A1.de = [
+  "Anfängermodule für Begrüßungen, persönliche Angaben und Alltag.",
+  "Einfache Gesprächsübungen mit häufiger Unterstützung.",
+  "Grundwortschatz und einfache Satzmuster.",
+];
+CEFR_LEVEL_OFFERINGS.A2.de = [
+  "Kurze Alltagssituationen zu Einkaufen, Zeit, Familie und Orten.",
+  "Einfachere Dialoge mit mehr Ideen als A1.",
+  "Sprache zunehmend praktisch einsetzen.",
+];
+CEFR_LEVEL_OFFERINGS.B1.de = [
+  "Mittlere Gespräche über Meinungen, Erfahrungen und Routinen.",
+  "Offene Fragen und etwas längere Antworten.",
+  "Fokus auf Klarheit und das Verbinden von Ideen.",
+];
+CEFR_LEVEL_OFFERINGS.B2.de = [
+  "Tiefere Diskussionen über reale Situationen und komplexere Ideen.",
+  "Übung im Erklären und Verteidigen von Meinungen.",
+  "Mehr Flexibilität und schnellere Reaktion beim Sprechen.",
+];
+CEFR_LEVEL_OFFERINGS.C1.de = [
+  "Fortgeschrittene Sprache in längeren, präziseren Antworten.",
+  "Umgang mit abstrakten Ideen und feinen Details.",
+  "Fokus auf Ton, Bedeutung und passende Wortwahl.",
+];
+CEFR_LEVEL_OFFERINGS.C2.de = [
+  "Höchste Genauigkeit, Flüssigkeit und Flexibilität.",
+  "Komplexe Themen mühelos behandeln.",
+  "Sprache nahe am Niveau von Muttersprachlern.",
+];
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", zh: "发音" },
-  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", ja: "文法", zh: "语法" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", ja: "語彙", zh: "词汇" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", zh: "流利度" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", zh: "自信度" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", zh: "理解力" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", de: "Aussprache", ja: "発音", zh: "发音" },
+  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", de: "Grammatik", ja: "文法", zh: "语法" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", de: "Wortschatz", ja: "語彙", zh: "词汇" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", de: "Flüssigkeit", ja: "流暢さ", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", de: "Sicherheit", ja: "自信", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", de: "Verständnis", ja: "理解", zh: "理解力" },
 ];
 
 const ASSESSMENT_CRITERIA_AR = {
@@ -2132,6 +2174,7 @@ Return ONLY valid JSON:
       pt: "Palavras soltas, muletas ou respostas muito curtas. Falhas frequentes de compreensão.",
       it: "Parole isolate, riempitivi o risposte molto brevi. Frequenti problemi di comprensione.",
       fr: "Mots isoles, remplissages ou reponses tres courtes. Ruptures frequentes de comprehension.",
+      de: "Einzelne Wörter, Füllwörter oder sehr kurze Antworten. Häufige Verständnisabbrüche.",
       ja: "単語だけ、つなぎ言葉、または非常に短い回答。理解の途切れが多い。",
       hi: "अलग-अलग शब्द, भराव शब्द या बहुत छोटे उत्तर। समझ बार-बार टूटती है।",
       zh: "只有单词、填充词或很短的回答。理解经常中断。",
@@ -2145,6 +2188,7 @@ Return ONLY valid JSON:
       pt: "Consegue lidar com cumprimentos e informações pessoais básicas com padrões simples memorizados.",
       it: "Riesce a gestire saluti e dati personali con schemi semplici e memorizzati.",
       fr: "Peut gerer les salutations et les bases personnelles avec des modeles simples memorises.",
+      de: "Kann Begrüßungen und persönliche Grundlagen mit einfachen gelernten Mustern bewältigen.",
       ja: "あいさつや個人情報を、覚えた簡単な型で扱える。",
       hi: "सरल, याद किए हुए ढाँचों से अभिवादन और बुनियादी निजी जानकारी संभालने में सक्षम है।",
       zh: "能用简单记忆句型处理问候和基本个人信息。",
@@ -2158,6 +2202,7 @@ Return ONLY valid JSON:
       pt: "Consegue falar sobre temas rotineiros e responder perguntas diretas com poucos detalhes.",
       it: "Riesce a discutere argomenti di routine e rispondere a domande semplici con dettagli limitati.",
       fr: "Peut discuter de sujets routiniers et repondre a des questions simples avec peu de details.",
+      de: "Kann Routinethemen besprechen und einfache Fragen mit begrenzten Details beantworten.",
       ja: "日常的な話題を話し、直接的な質問に限られた詳細で答えられる。",
       hi: "रोज़मर्रा के विषयों पर बात करने और सीधे सवालों का सीमित विवरण के साथ जवाब देने में सक्षम है।",
       zh: "能讨论日常话题，并用有限细节回答直接问题。",
@@ -2171,6 +2216,7 @@ Return ONLY valid JSON:
       pt: "Consegue explicar opiniões, narrar acontecimentos e manter conversas curtas com alguns erros.",
       it: "Sa esprimere opinioni, narrare eventi e sostenere brevi conversazioni con qualche errore.",
       fr: "Peut expliquer des opinions, raconter des evenements et maintenir de courtes conversations avec quelques erreurs.",
+      de: "Kann Meinungen erklären, Ereignisse erzählen und kurze Gespräche mit einigen Fehlern führen.",
       ja: "意見を説明し、出来事を語り、多少の誤りがあっても短い会話を続けられる。",
       hi: "राय समझाने, घटनाएँ बताने और कुछ त्रुटियों के साथ छोटी बातचीत बनाए रखने में सक्षम है।",
       zh: "能表达观点、叙述事件，并在有些错误的情况下维持短对话。",
@@ -2184,6 +2230,7 @@ Return ONLY valid JSON:
       pt: "Consegue se comunicar com clareza sobre temas familiares e abstratos, com bom controle e fluência.",
       it: "Sa comunicare chiaramente su argomenti familiari e astratti con buon controllo e fluidità.",
       fr: "Peut communiquer clairement sur des sujets familiers et abstraits avec un bon controle et une bonne fluidite.",
+      de: "Kann sich klar über vertraute und abstrakte Themen mit guter Kontrolle und Flüssigkeit austauschen.",
       ja: "身近な話題や抽象的な話題について、良い制御と流暢さで明確に伝えられる。",
       hi: "परिचित और अमूर्त विषयों पर अच्छे नियंत्रण और प्रवाह के साथ स्पष्ट संवाद करने में सक्षम है।",
       zh: "能就熟悉和抽象话题清晰交流，控制力和流利度较好。",
@@ -2197,6 +2244,7 @@ Return ONLY valid JSON:
       pt: "Consegue produzir linguagem flexível e cheia de nuances em respostas mais longas, com forte compreensão.",
       it: "Sa produrre un linguaggio flessibile e sfumato in risposte più lunghe con forte comprensione.",
       fr: "Peut produire une langue souple et nuancee dans des reponses longues avec une forte comprehension.",
+      de: "Kann in längeren Antworten flexible, nuancierte Sprache mit starkem Verständnis verwenden.",
       ja: "長めの回答で、柔軟でニュアンスのある表現を強い理解とともに使える。",
       hi: "लंबे उत्तरों में मजबूत समझ के साथ लचीली और बारीक भाषा का प्रयोग करने में सक्षम है।",
       zh: "能在较长回答中灵活、细致地使用语言，并表现出较强理解力。",
@@ -2210,6 +2258,7 @@ Return ONLY valid JSON:
       pt: "Precisão, rapidez e adaptabilidade quase nativas em temas complexos.",
       it: "Precisione, velocità e adattabilità quasi native su argomenti complessi.",
       fr: "Precision, vitesse et adaptabilite presque natives sur des sujets complexes.",
+      de: "Nahezu muttersprachliche Genauigkeit, Geschwindigkeit und Anpassungsfähigkeit bei komplexen Themen.",
       ja: "複雑な話題でも、ネイティブに近い正確さ、速さ、適応力がある。",
       hi: "जटिल विषयों पर लगभग मातृभाषी जैसी सटीकता, गति और अनुकूलनशीलता।",
       zh: "在复杂话题中接近母语者的准确度、速度和适应能力。",

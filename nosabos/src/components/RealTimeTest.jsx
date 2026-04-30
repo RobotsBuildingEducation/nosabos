@@ -282,9 +282,36 @@ function splitByDelimiters(text) {
   return raw.length ? raw : [String(text).trim()];
 }
 
-function tidyPairs(rawPairs) {
+function normalizePairText(text) {
+  return String(text || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textIncludesPair(haystack, needle) {
+  const normalizedHaystack = normalizePairText(haystack);
+  const normalizedNeedle = normalizePairText(needle);
+  return !!normalizedNeedle && normalizedHaystack.includes(normalizedNeedle);
+}
+
+function filterPairsForPrimaryText(pairs, primaryText) {
+  if (!Array.isArray(pairs)) return [];
+  return pairs.filter((pair) => textIncludesPair(primaryText, pair?.lhs));
+}
+
+function tidyPairs(rawPairs, sourceText = "") {
   if (!Array.isArray(rawPairs)) return [];
   const results = [];
+
+  const addPair = (lhsValue, rhsValue) => {
+    const lhs = String(lhsValue || "").trim();
+    const rhs = String(rhsValue || "").trim();
+    if (!lhs || !rhs) return;
+    if (sourceText && !textIncludesPair(sourceText, lhs)) return;
+    results.push({ lhs, rhs });
+  };
 
   rawPairs.forEach((pair) => {
     const lhs = String(pair?.lhs || "").trim();
@@ -297,15 +324,13 @@ function tidyPairs(rawPairs) {
       if (lhsParts.length === rhsParts.length && lhsParts.length > 1) {
         lhsParts.forEach((segment, idx) => {
           const translated = rhsParts[idx] || "";
-          if (segment && translated) {
-            results.push({ lhs: segment, rhs: translated });
-          }
+          addPair(segment, translated);
         });
         return;
       }
     }
 
-    results.push({ lhs, rhs });
+    addPair(lhs, rhs);
   });
 
   return results.slice(0, 8);
@@ -398,9 +423,12 @@ function AlignedBubble({
       });
     });
   }
-  const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
+  const visiblePairs = filterPairsForPrimaryText(pairs, primaryText);
+  const primaryNodes = decorate(
+    buildAlignedNodes(primaryText, visiblePairs, "lhs"),
+  );
   const secondaryNodes = decorate(
-    buildAlignedNodes(secondaryText, pairs, "rhs"),
+    buildAlignedNodes(secondaryText, visiblePairs, "rhs"),
   );
   const primaryTextProps = getBidiTextProps(primaryLang);
   const secondaryTextProps = getBidiTextProps(secondaryLang);
@@ -471,7 +499,7 @@ function AlignedBubble({
           </Box>
         )}
 
-        {!!pairs?.length && showSecondary && (
+        {!!visiblePairs?.length && showSecondary && (
           <Wrap
             spacing={3}
             mt={3}
@@ -479,7 +507,7 @@ function AlignedBubble({
             dir={primaryTextProps.dir}
             sx={{ unicodeBidi: "isolate" }}
           >
-            {pairs.slice(0, 8).map((p, i) => {
+            {visiblePairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
                 <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
@@ -1632,6 +1660,8 @@ export default function RealTimeTest({
         ? "こんにちはと言う"
         : goalLang === "fr"
         ? "Dis bonjour"
+        : goalLang === "de"
+        ? "Sag Hallo"
         : goalLang === "es"
         ? "Di hola"
         : goalLang === "pt"
@@ -1646,6 +1676,8 @@ export default function RealTimeTest({
     const successCriteria =
       goalLang === "ja"
         ? "学習者がこんにちはと言う。"
+        : goalLang === "de"
+        ? "Der Lernende sagt Hallo."
         : goalLang === "es"
         ? "El estudiante dice hola."
         : goalLang === "pt"
@@ -1666,6 +1698,7 @@ export default function RealTimeTest({
       title_pt: "Diga olá",
       title_it: "Di' ciao",
       title_fr: "Dis bonjour",
+      title_de: "Sag Hallo",
       title_ja: "こんにちはと言う",
       title_hi: "नमस्ते कहें",
       title_ar: "قول أهلا",
@@ -1674,6 +1707,7 @@ export default function RealTimeTest({
       rubric_pt: 'O aluno diz "olá".',
       rubric_it: "Lo studente dice ciao.",
       rubric_fr: "L'apprenant dit bonjour.",
+      rubric_de: "Der Lernende sagt Hallo.",
       rubric_ja: "学習者がこんにちはと言う。",
       rubric_hi: "सीखने वाला नमस्ते कहता है।",
       rubric_ar: "المتعلم يقول أهلًا.",
@@ -1683,6 +1717,7 @@ export default function RealTimeTest({
       successCriteria_pt: 'O aluno diz "olá".',
       successCriteria_it: "Lo studente dice ciao.",
       successCriteria_fr: "L'apprenant dit bonjour.",
+      successCriteria_de: "Der Lernende sagt Hallo.",
       successCriteria_ja: "学習者がこんにちはと言う。",
       successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
       successCriteria_ar: "المتعلم يقول أهلًا.",
@@ -1800,6 +1835,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             parsed.successCriteria ||
             (goalLangCode === "pt"
               ? `Conclua a tarefa sobre ${topic}`
+              : goalLangCode === "de"
+                ? `Schließe die Aufgabe zu ${topic} ab`
               : goalLangCode === "hi"
                 ? `${topic} से जुड़ा कार्य पूरा करें`
                 : `Complete the ${topic} task`),
@@ -1825,6 +1862,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Cumprimente o aluno e faça com que ele responda com uma troca de cumprimentos adequada.",
           successCriteria:
             'O aluno diz "olá" e responde adequadamente a "como vai?"',
+        },
+        de: {
+          scenario: "Sag Hallo und frage, wie es jemandem geht",
+          prompt:
+            "Begrüße den Lernenden und lass ihn mit einem passenden kurzen Austausch antworten.",
+          successCriteria:
+            'Der Lernende sagt "Hallo" und antwortet passend auf "Wie geht es dir?"',
         },
         hi: {
           scenario: "नमस्ते कहें और किसी का हाल पूछें",
@@ -1856,6 +1900,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno produz números corretamente em um contexto com significado",
         },
+        de: {
+          scenario: "Nenne deine Telefonnummer oder dein Alter",
+          prompt:
+            "Frag den Lernenden nach Telefonnummer, Alter oder einer anderen Zahl im Kontext.",
+          successCriteria:
+            "Der Lernende nennt Zahlen korrekt in einem sinnvollen Kontext",
+        },
         hi: {
           scenario: "अपना फोन नंबर या उम्र बताएं",
           prompt:
@@ -1885,6 +1936,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Você é um garçom/barista. Anote o pedido de comida ou bebida do aluno.",
           successCriteria:
             "O aluno faz pelo menos um pedido usando expressões adequadas",
+        },
+        de: {
+          scenario: "Bestelle etwas zu essen oder zu trinken",
+          prompt:
+            "Du bist Kellner oder Barista. Nimm die Essens- oder Getränkebestellung des Lernenden auf.",
+          successCriteria:
+            "Der Lernende bestellt mindestens einen Artikel mit passenden Formulierungen",
         },
         hi: {
           scenario: "कुछ खाने या पीने का ऑर्डर दें",
@@ -1916,6 +1974,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno descreve um lugar com pelo menos 2 ou 3 detalhes",
         },
+        de: {
+          scenario: "Beschreibe, wo du wohnst oder wohin du reisen möchtest",
+          prompt:
+            "Frag den Lernenden nach einem Ort: wo er wohnt, wohin er reisen möchte oder welcher Ort ihm gefällt.",
+          successCriteria:
+            "Der Lernende beschreibt einen Ort mit mindestens 2-3 Details",
+        },
         hi: {
           scenario: "बताएं कि आप कहाँ रहते हैं या कहाँ जाना चाहते हैं",
           prompt:
@@ -1945,6 +2010,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Você é um vendedor. Ajude o aluno a comprar um item, falando sobre preço e opções.",
           successCriteria:
             "O aluno pergunta sobre um item e conclui uma transação simples",
+        },
+        de: {
+          scenario: "Kaufe etwas in einem Geschäft",
+          prompt:
+            "Du bist Verkäufer. Hilf dem Lernenden, einen Artikel zu kaufen und über Preis und Optionen zu sprechen.",
+          successCriteria:
+            "Der Lernende fragt nach einem Artikel und schließt einen einfachen Kauf ab",
         },
         hi: {
           scenario: "दुकान से कुछ खरीदें",
@@ -1976,6 +2048,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno entende ou produz direções com vocabulário de localização",
         },
+        de: {
+          scenario: "Frage nach dem Weg oder gib eine Wegbeschreibung",
+          prompt:
+            "Gib entweder eine Wegbeschreibung oder frag den Lernenden, wie man irgendwo hinkommt.",
+          successCriteria:
+            "Der Lernende versteht oder gibt Wegbeschreibungen mit Ortswortschatz",
+        },
         hi: {
           scenario: "रास्ता पूछें या बताएं",
           prompt:
@@ -2006,6 +2085,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           successCriteria:
             "O aluno descreve pelo menos 2 familiares com alguns detalhes",
         },
+        de: {
+          scenario: "Beschreibe deine Familienmitglieder",
+          prompt:
+            "Frag den Lernenden nach seiner Familie: wer dazugehört, Alter, Namen usw.",
+          successCriteria:
+            "Der Lernende beschreibt mindestens 2 Familienmitglieder mit einigen Details",
+        },
         hi: {
           scenario: "अपने परिवार के सदस्यों का वर्णन करें",
           prompt:
@@ -2035,6 +2121,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             "Pergunte ao aluno o que faz em diferentes momentos do dia: rotina da manhã, refeições etc.",
           successCriteria:
             "O aluno descreve atividades ligadas a horários específicos",
+        },
+        de: {
+          scenario: "Sprich über deinen Tagesablauf",
+          prompt:
+            "Frag den Lernenden, was er zu verschiedenen Tageszeiten macht: Morgenroutine, Mahlzeiten usw.",
+          successCriteria:
+            "Der Lernende beschreibt Aktivitäten in Verbindung mit bestimmten Zeiten",
         },
         hi: {
           scenario: "अपनी रोज़मर्रा की दिनचर्या बताएं",
@@ -2080,6 +2173,21 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
             : "Faça perguntas de acompanhamento para incentivar respostas mais longas."
         }`,
         successCriteria: `O aluno produz várias palavras ou expressões relevantes sobre ${topic} em contexto`,
+      };
+    }
+
+    if (goalLangCode === "de") {
+      return {
+        scenario:
+          focusPoints.length > 0
+            ? `Nutze ${focusPoints[0]} in einer echten Situation`
+            : `Erzähle etwas über ${topic}`,
+        prompt: `Erstelle ein realistisches Szenario, in dem der Lernende Wortschatz zu ${topic} verwenden muss. ${
+          focusPoints.length
+            ? `Übe besonders: ${focusPoints.slice(0, 2).join(", ")}.`
+            : "Stelle Folgefragen, damit die Antwort länger wird."
+        }`,
+        successCriteria: `Der Lernende verwendet mehrere relevante Wörter oder Ausdrücke zu ${topic} im Kontext`,
       };
     }
 
@@ -3181,18 +3289,6 @@ Return ONLY JSON:
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
-        const shouldAutoTranslate =
-          showTranslations &&
-          normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE) !==
-            normalizePracticeLanguage(
-              targetLangRef.current || targetLang,
-              DEFAULT_TARGET_LANGUAGE,
-            );
-        if (shouldAutoTranslate) {
-          window.setTimeout(() => {
-            translateMessage(mid).catch(() => {});
-          }, 0);
-        }
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
         respToMsg.current.delete(rid);
       }
@@ -3270,7 +3366,10 @@ Return ONLY JSON:
       return;
     }
 
-    const prompt = buildMessageTranslationPrompt(target);
+    const sourceLanguage = getBaseLanguageCode(
+      m.lang || targetLangRef.current || "",
+    );
+    const prompt = buildMessageTranslationPrompt(target, sourceLanguage);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -3315,7 +3414,7 @@ Return ONLY JSON:
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
-    const pairs = tidyPairs(rawPairs);
+    const pairs = tidyPairs(rawPairs, src);
 
     updateMessage(id, (prev) => ({
       ...prev,
@@ -3330,49 +3429,6 @@ Return ONLY JSON:
       pairs,
     });
   }
-
-  useEffect(() => {
-    if (!showTranslations) return;
-    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
-    const assistantMessages = messagesRef.current.filter(
-      (message) =>
-        message.role === "assistant" &&
-        message.done &&
-        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
-    );
-
-    assistantMessages.forEach((message) => {
-      const currentTranslationLang = normalizeSupportLanguage(
-        message.translationLang,
-        "",
-      );
-      const sourceLang = getBaseLanguageCode(
-        message.lang || targetLangRef.current,
-      );
-      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
-
-      if (!sourceText) return;
-
-      if (sourceLang === target) {
-        if (
-          currentTranslationLang !== target ||
-          message.translation !== sourceText ||
-          (message.pairs?.length || 0) > 0
-        ) {
-          updateMessage(message.id, (prev) => ({
-            ...prev,
-            translation: sourceText,
-            translationLang: target,
-            pairs: [],
-          }));
-        }
-        return;
-      }
-
-      if (currentTranslationLang === target && message.translation) return;
-      translateMessage(message.id).catch(() => {});
-    });
-  }, [uiLang, showTranslations]);
 
   async function upsertAssistantTurn(mid, { text, lang, translation, pairs }) {
     const npub = strongNpub(user);

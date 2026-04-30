@@ -419,9 +419,36 @@ function splitByDelimiters(text) {
   return raw.length ? raw : [String(text).trim()];
 }
 
-function tidyPairs(rawPairs) {
+function normalizePairText(text) {
+  return String(text || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function textIncludesPair(haystack, needle) {
+  const normalizedHaystack = normalizePairText(haystack);
+  const normalizedNeedle = normalizePairText(needle);
+  return !!normalizedNeedle && normalizedHaystack.includes(normalizedNeedle);
+}
+
+function filterPairsForPrimaryText(pairs, primaryText) {
+  if (!Array.isArray(pairs)) return [];
+  return pairs.filter((pair) => textIncludesPair(primaryText, pair?.lhs));
+}
+
+function tidyPairs(rawPairs, sourceText = "") {
   if (!Array.isArray(rawPairs)) return [];
   const results = [];
+
+  const addPair = (lhsValue, rhsValue) => {
+    const lhs = String(lhsValue || "").trim();
+    const rhs = String(rhsValue || "").trim();
+    if (!lhs || !rhs) return;
+    if (sourceText && !textIncludesPair(sourceText, lhs)) return;
+    results.push({ lhs, rhs });
+  };
 
   rawPairs.forEach((pair) => {
     const lhs = String(pair?.lhs || "").trim();
@@ -434,15 +461,13 @@ function tidyPairs(rawPairs) {
       if (lhsParts.length === rhsParts.length && lhsParts.length > 1) {
         lhsParts.forEach((segment, idx) => {
           const translated = rhsParts[idx] || "";
-          if (segment && translated) {
-            results.push({ lhs: segment, rhs: translated });
-          }
+          addPair(segment, translated);
         });
         return;
       }
     }
 
-    results.push({ lhs, rhs });
+    addPair(lhs, rhs);
   });
 
   return results.slice(0, 8);
@@ -533,9 +558,12 @@ function AlignedBubble({
       });
     });
   }
-  const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
+  const visiblePairs = filterPairsForPrimaryText(pairs, primaryText);
+  const primaryNodes = decorate(
+    buildAlignedNodes(primaryText, visiblePairs, "lhs"),
+  );
   const secondaryNodes = decorate(
-    buildAlignedNodes(secondaryText, pairs, "rhs"),
+    buildAlignedNodes(secondaryText, visiblePairs, "rhs"),
   );
   const primaryTextProps = getBidiTextProps(primaryLang);
   const secondaryTextProps = getBidiTextProps(secondaryLang);
@@ -610,7 +638,7 @@ function AlignedBubble({
           </Box>
         )}
 
-        {!!pairs?.length && showSecondary && (
+        {!!visiblePairs?.length && showSecondary && (
           <Wrap
             spacing={3}
             mt={3}
@@ -618,7 +646,7 @@ function AlignedBubble({
             dir={primaryTextProps.dir}
             sx={{ unicodeBidi: "isolate" }}
           >
-            {pairs.slice(0, 8).map((p, i) => {
+            {visiblePairs.slice(0, 8).map((p, i) => {
               const color = colorFor(i);
               return (
                 <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
@@ -2288,6 +2316,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
                 ? "Ben fatto! Hai completato l'obiettivo."
                 : sLang === "fr"
                   ? "Bravo ! Tu as atteint l'objectif."
+                  : sLang === "de"
+                    ? "Gut gemacht! Du hast das Ziel erreicht."
                   : sLang === "ja"
                   ? "よくできました！目標を達成しました。"
                   : sLang === "hi"
@@ -2310,6 +2340,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
                 ? "Prova a parlare dell'obiettivo."
                 : sLang === "fr"
                   ? "Essaie de parler de l'objectif."
+                  : sLang === "de"
+                    ? "Versuche, über das Ziel zu sprechen."
                   : sLang === "ja"
                   ? "目標について話してみてください。"
                   : sLang === "hi"
@@ -2374,7 +2406,7 @@ The goal should be appropriate for ${selectedLevel} level (${
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)"}`;
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "de": "goal in German (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)", "zh": "goal in Mandarin Chinese (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -2746,7 +2778,10 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
-    const prompt = buildMessageTranslationPrompt(target);
+    const sourceLanguage = getBaseLanguageCode(
+      m.lang || targetLangRef.current || "",
+    );
+    const prompt = buildMessageTranslationPrompt(target, sourceLanguage);
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2791,7 +2826,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
-    const pairs = tidyPairs(rawPairs);
+    const pairs = tidyPairs(rawPairs, src);
 
     updateMessage(id, (prev) => ({
       ...prev,
@@ -2815,52 +2850,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       setUiState(previousUiState === "thinking" ? "idle" : previousUiState);
     }
   }
-
-  useEffect(() => {
-    if (!showTranslations) return;
-    const target = normalizeSupportLanguage(
-      resolvedSupportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
-    const assistantMessages = messagesRef.current.filter(
-      (message) =>
-        message.role === "assistant" &&
-        message.done &&
-        `${message.textFinal || ""}${message.textStream || ""}`.trim(),
-    );
-
-    assistantMessages.forEach((message) => {
-      const currentTranslationLang = normalizeSupportLanguage(
-        message.translationLang,
-        "",
-      );
-      const sourceLang = getBaseLanguageCode(
-        message.lang || targetLangRef.current,
-      );
-      const sourceText = `${message.textFinal || ""} ${message.textStream || ""}`.trim();
-
-      if (!sourceText) return;
-
-      if (sourceLang === target) {
-        if (
-          currentTranslationLang !== target ||
-          message.translation !== sourceText ||
-          (message.pairs?.length || 0) > 0
-        ) {
-          updateMessage(message.id, (prev) => ({
-            ...prev,
-            translation: sourceText,
-            translationLang: target,
-            pairs: [],
-          }));
-        }
-        return;
-      }
-
-      if (currentTranslationLang === target && message.translation) return;
-      translateMessage(message.id).catch(() => {});
-    });
-  }, [messages, resolvedSupportLang, showTranslations]);
 
   /* ---------------------------
      Render

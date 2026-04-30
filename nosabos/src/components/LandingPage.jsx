@@ -51,6 +51,7 @@ import {
   getSupportLanguageOptions,
 } from "../constants/languages";
 import { LANDING_PAGE_AR_STATIC } from "../translations/landingPageArStatic";
+import { LANDING_PAGE_DE_STATIC } from "../translations/landingPageDeStatic";
 import { LANDING_PAGE_HI_STATIC } from "../translations/landingPageHiStatic";
 import { LANDING_PAGE_PT_STATIC } from "../translations/landingPagePtStatic";
 import { LANDING_PAGE_ZH_STATIC } from "../translations/landingPageZhStatic";
@@ -501,6 +502,7 @@ const translations = {
 };
 
 translations.pt = LANDING_PAGE_PT_STATIC;
+translations.de = LANDING_PAGE_DE_STATIC;
 translations.hi = LANDING_PAGE_HI_STATIC;
 translations.zh = LANDING_PAGE_ZH_STATIC;
 translations.ar = {

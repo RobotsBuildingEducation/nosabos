@@ -80,6 +80,7 @@ import remarkGfm from "remark-gfm";
 
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import { FiSend } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 import useSoundSettings from "../hooks/useSoundSettings";
@@ -170,6 +171,7 @@ const CHINESE_SUPPORT_COPY = {
 };
 
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;

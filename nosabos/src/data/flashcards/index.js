@@ -6,7 +6,7 @@
  * based on user progress, significantly improving performance.
  */
 
-import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from './common';
+import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from './common.js';
 
 // Cache for loaded flashcard data
 const flashcardCache = new Map();

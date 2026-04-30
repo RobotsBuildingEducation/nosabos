@@ -7,6 +7,7 @@ import selectSound from "../assets/select.mp3";
 const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const WEEKDAYS_PT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const WEEKDAYS_DE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
 const WEEKDAYS_JA = ["日", "月", "火", "水", "木", "金", "土"];
 const WEEKDAYS_AR = ["ح", "ن", "ث", "ر", "خ", "ج", "س"];
 const WEEKDAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
@@ -22,6 +23,10 @@ const MONTHS_ES = [
 const MONTHS_PT = [
   "Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+const MONTHS_DE = [
+  "Januar", "Februar", "März", "April", "Mai", "Juni",
+  "Juli", "August", "September", "Oktober", "November", "Dezember"
 ];
 const MONTHS_JA = [
   "1月", "2月", "3月", "4月", "5月", "6月",
@@ -99,6 +104,8 @@ export default function GoalCalendar({
         ? WEEKDAYS_AR
       : lang === "pt"
         ? WEEKDAYS_PT
+        : lang === "de"
+          ? WEEKDAYS_DE
         : lang === "es"
           ? WEEKDAYS_ES
           : WEEKDAYS_EN;
@@ -111,6 +118,8 @@ export default function GoalCalendar({
         ? MONTHS_AR
       : lang === "pt"
         ? MONTHS_PT
+        : lang === "de"
+          ? MONTHS_DE
         : lang === "es"
           ? MONTHS_ES
           : MONTHS_EN;
@@ -228,6 +237,8 @@ export default function GoalCalendar({
                 ? "上个月"
                 : lang === "pt"
                 ? "Mes anterior"
+                : lang === "de"
+                ? "Vorheriger Monat"
                 : lang === "es"
                 ? "Mes anterior"
                 : "Previous month"
@@ -260,6 +271,8 @@ export default function GoalCalendar({
                 ? "下个月"
                 : lang === "pt"
                 ? "Proximo mes"
+                : lang === "de"
+                ? "Nächster Monat"
                 : lang === "es"
                 ? "Mes siguiente"
                 : "Next month"
@@ -353,6 +366,8 @@ export default function GoalCalendar({
                 ? "已完成"
                 : lang === "pt"
                 ? "Concluido"
+                : lang === "de"
+                ? "Abgeschlossen"
                 : lang === "es"
                 ? "Completado"
                 : "Completed")}
@@ -368,6 +383,8 @@ export default function GoalCalendar({
                 ? "未完成"
                 : lang === "pt"
                 ? "Pendente"
+                : lang === "de"
+                ? "Ausstehend"
                 : lang === "es"
                 ? "Pendiente"
                 : "Incomplete")}
@@ -389,6 +406,8 @@ export default function GoalCalendar({
                 ? "今天"
               : lang === "pt"
                 ? "Hoje"
+              : lang === "de"
+                ? "Heute"
                 : lang === "es"
                   ? "Hoy"
                   : "Today"}

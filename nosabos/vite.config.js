@@ -9,7 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       workbox: {
-        maximumFileSizeToCacheInBytes: 8600000,
+        maximumFileSizeToCacheInBytes: 10000000,
       },
       manifest: {
         name: "No Sabos",

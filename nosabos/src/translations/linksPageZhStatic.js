@@ -98,6 +98,7 @@ export const LINKS_PAGE_ZH_STATIC = {
   language_en: "英语",
   language_es: "西班牙语",
   language_fr: "法语",
+  language_de: "德语",
   language_it: "意大利语",
   language_hi: "印地语",
   language_ar: "埃及阿拉伯语",
