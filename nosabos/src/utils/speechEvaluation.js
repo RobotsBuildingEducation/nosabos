@@ -265,6 +265,16 @@ const STOPWORDS = {
     "stessa", "stessi", "stesse", "solo", "sola", "soli", "sole", "già", "ora",
     "ancora", "sempre", "mai", "qui", "qua", "là", "lì", "così", "bene",
   ]),
+  de: new Set([
+    "der", "die", "das", "den", "dem", "des", "ein", "eine", "einer", "einem",
+    "einen", "und", "oder", "aber", "doch", "in", "im", "am", "an", "auf",
+    "zu", "zum", "zur", "von", "vom", "mit", "für", "ohne", "über", "unter",
+    "ich", "du", "er", "sie", "es", "wir", "ihr", "mich", "dich", "uns",
+    "mein", "dein", "sein", "ihr", "unser", "euer", "ist", "bin", "bist",
+    "sind", "seid", "war", "waren", "sein", "haben", "hat", "habe", "hast",
+    "nicht", "kein", "ja", "nein", "auch", "nur", "schon", "noch", "sehr",
+    "so", "hier", "da", "dort", "wer", "was", "wo", "wann", "warum", "wie",
+  ]),
   hi: new Set([
     "का", "की", "के", "को", "से", "में", "पर", "और", "या", "तो", "भी", "ही",
     "यह", "ये", "वह", "वे", "मैं", "हम", "तुम", "आप", "वो", "जो", "क्या", "क्यों",
@@ -566,6 +576,13 @@ const SPEECH_REASON_MESSAGES = {
     "low-word-f1": "Includi le parole chiave del contenuto.",
     "low-confidence": "Pronuncia con chiarezza e riduci il rumore di fondo.",
   },
+  de: {
+    "speech-quality": "Sprich etwas lauter und halte ein gleichmäßiges Tempo.",
+    "not-target-lang": (targetLabel) => `Versuche, auf ${targetLabel} zu sprechen.`,
+    "low-char-sim": "Bleib näher am ursprünglichen Text.",
+    "low-word-f1": "Nimm die wichtigsten Inhaltswörter auf.",
+    "low-confidence": "Sprich deutlich und reduziere Hintergrundgeräusche.",
+  },
   hi: {
     "speech-quality": "थोड़ा ज़ोर से और स्थिर गति में बोलिए।",
     "not-target-lang": (targetLabel) => `${targetLabel} में बोलने की कोशिश कीजिए।`,
@@ -619,6 +636,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
                 ? "o idioma alvo"
               : lang === "it"
                 ? "la lingua obiettivo"
+                : lang === "de"
+                  ? "die Zielsprache"
                 : lang === "hi"
                   ? "लक्ष्य भाषा"
                 : lang === "zh"
@@ -642,6 +661,8 @@ export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = 
           ? "Tente novamente falando com clareza."
         : lang === "it"
           ? "Riprova parlando chiaramente."
+          : lang === "de"
+            ? "Versuche es noch einmal und sprich deutlich."
           : lang === "hi"
             ? "स्पष्ट बोलते हुए फिर से कोशिश कीजिए।"
           : lang === "zh"

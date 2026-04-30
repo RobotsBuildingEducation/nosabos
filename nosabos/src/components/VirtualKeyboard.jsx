@@ -395,6 +395,68 @@ export default function VirtualKeyboard({
   };
 
   const layout = getKeyboardLayout();
+  const keyboardText = {
+    uppercase:
+      userLanguage === "ja"
+        ? "大文字"
+        : userLanguage === "ar"
+        ? "حروف كبيرة"
+        : userLanguage === "pt"
+        ? "Maiusculas"
+        : userLanguage === "de"
+        ? "Großbuchstaben"
+        : userLanguage === "es"
+        ? "Mayúsculas"
+        : "Uppercase",
+    lowercase:
+      userLanguage === "ja"
+        ? "小文字"
+        : userLanguage === "ar"
+        ? "حروف صغيرة"
+        : userLanguage === "pt"
+        ? "Minusculas"
+        : userLanguage === "de"
+        ? "Kleinbuchstaben"
+        : userLanguage === "es"
+        ? "Minúsculas"
+        : "Lowercase",
+    close:
+      userLanguage === "ja"
+        ? "キーボードを閉じる"
+        : userLanguage === "ar"
+        ? "إغلاق لوحة المفاتيح"
+        : userLanguage === "pt"
+        ? "Fechar teclado"
+        : userLanguage === "de"
+        ? "Tastatur schließen"
+        : userLanguage === "es"
+        ? "Cerrar teclado"
+        : "Close keyboard",
+    space:
+      userLanguage === "ja"
+        ? "スペース"
+        : userLanguage === "ar"
+        ? "مسافة"
+        : userLanguage === "pt"
+        ? "Espaco"
+        : userLanguage === "de"
+        ? "Leertaste"
+        : userLanguage === "es"
+        ? "Espacio"
+        : "Space",
+    backspace:
+      userLanguage === "ja"
+        ? "削除"
+        : userLanguage === "ar"
+        ? "حذف"
+        : userLanguage === "pt"
+        ? "Apagar"
+        : userLanguage === "de"
+        ? "Rücktaste"
+        : userLanguage === "es"
+        ? "Borrar"
+        : "Backspace",
+  };
 
   return (
     <Box
@@ -435,40 +497,12 @@ export default function VirtualKeyboard({
               variant={isUpperCase ? "solid" : "outline"}
               onClick={() => setIsUpperCase(!isUpperCase)}
             >
-              {isUpperCase
-                ? userLanguage === "ja"
-                  ? "大文字"
-                  : userLanguage === "ar"
-                    ? "حروف كبيرة"
-                  : userLanguage === "pt"
-                  ? "Maiusculas"
-                  : userLanguage === "es"
-                  ? "Mayúsculas"
-                  : "Uppercase"
-                : userLanguage === "ja"
-                ? "小文字"
-                : userLanguage === "ar"
-                ? "حروف صغيرة"
-                : userLanguage === "pt"
-                ? "Minusculas"
-                : userLanguage === "es"
-                ? "Minúsculas"
-                : "Lowercase"}
+              {isUpperCase ? keyboardText.uppercase : keyboardText.lowercase}
             </Button>
           )}
         </HStack>
         <IconButton
-          aria-label={
-            userLanguage === "ja"
-              ? "キーボードを閉じる"
-              : userLanguage === "ar"
-              ? "إغلاق لوحة المفاتيح"
-              : userLanguage === "pt"
-              ? "Fechar teclado"
-              : userLanguage === "es"
-              ? "Cerrar teclado"
-              : "Close keyboard"
-          }
+          aria-label={keyboardText.close}
           icon={<MdClose />}
           size="sm"
           variant="ghost"
@@ -526,28 +560,10 @@ export default function VirtualKeyboard({
             }}
             onClick={handleSpace}
           >
-            {userLanguage === "ja"
-              ? "スペース"
-              : userLanguage === "ar"
-              ? "مسافة"
-              : userLanguage === "pt"
-              ? "Espaco"
-              : userLanguage === "es"
-              ? "Espacio"
-              : "Space"}
+            {keyboardText.space}
           </Button>
           <IconButton
-            aria-label={
-              userLanguage === "ja"
-                ? "削除"
-                : userLanguage === "ar"
-                ? "حذف"
-                : userLanguage === "pt"
-                ? "Apagar"
-                : userLanguage === "es"
-                ? "Borrar"
-                : "Backspace"
-            }
+            aria-label={keyboardText.backspace}
             icon={<MdBackspace />}
             size="sm"
             minW="60px"

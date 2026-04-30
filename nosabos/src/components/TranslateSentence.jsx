@@ -119,6 +119,8 @@ export default function TranslateSentence({
           ? "助手"
         : userLanguage === "ja"
           ? "アシスタント"
+          : userLanguage === "de"
+            ? "Assistent"
           : userLanguage === "pt" || userLanguage === "it"
             ? "Assistente"
             : userLanguage === "es"
@@ -256,6 +258,7 @@ export default function TranslateSentence({
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isGermanUI = userLanguage === "de";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
     const isChineseUI = userLanguage === "zh";
@@ -270,6 +273,8 @@ export default function TranslateSentence({
         ? "Traduis cette phrase avec la banque de mots fournie."
         : isPortugueseUI
         ? "Traduza esta frase usando o banco de palavras fornecido."
+        : isGermanUI
+        ? "Übersetze diesen Satz mit der vorgegebenen Wortbank."
         : isSpanishUI
         ? "Traduce esta oración usando el banco de palabras proporcionado."
         : "Translate this sentence using the provided word bank.",
@@ -284,6 +289,8 @@ export default function TranslateSentence({
           ? `Phrase a traduire : ${sourceSentence}`
           : isPortugueseUI
           ? `Frase para traduzir: ${sourceSentence}`
+          : isGermanUI
+          ? `Zu übersetzender Satz: ${sourceSentence}`
           : isSpanishUI
           ? `Oración para traducir: ${sourceSentence}`
           : `Sentence to translate: ${sourceSentence}`
@@ -299,6 +306,8 @@ export default function TranslateSentence({
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${wordBank.join(" | ")}`
+          : isGermanUI
+          ? `Wortbank: ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
@@ -314,6 +323,8 @@ export default function TranslateSentence({
           ? `Indice : ${hint}`
           : isPortugueseUI
           ? `Dica: ${hint}`
+          : isGermanUI
+          ? `Hinweis: ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
           : `Hint: ${hint}`
@@ -328,6 +339,8 @@ export default function TranslateSentence({
         ? "Reponds avec la traduction correcte assemblee a partir des options de la banque de mots."
         : isPortugueseUI
         ? "Responda com a traducao correta montada com as opcoes do banco de palavras."
+        : isGermanUI
+        ? "Antworte mit der richtigen Übersetzung, zusammengesetzt aus den Optionen der Wortbank."
         : isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
         : "Respond with the correct translation assembled from the word bank options.",

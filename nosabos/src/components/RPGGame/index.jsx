@@ -379,6 +379,38 @@ QUEST_LOG_COPY.zh = {
   continueTask: (npcName) => `与 ${npcName} 对话以继续。`,
 };
 
+OBJECT_SEARCH_TEST_COPY.de = {
+  intro: (itemName) =>
+    `Ich brauche ${itemName}. Durchsuche die Objekte in einem beliebigen Raum auf dieser Karte. In jedem ist ein Gegenstand versteckt. Bring mir den richtigen.`,
+  wrongItem: (wrongName, correctName) =>
+    `Das ist ${wrongName}. Ich brauche noch ${correctName}. Such weiter in den Objekten.`,
+  success: (itemName) => `Perfekt. ${itemName} ist genau das, was ich gebraucht habe.`,
+  chooseItem: "Wähle einen Gegenstand zum Abgeben:",
+  foundItem: (itemName) => `Gefunden: ${itemName}`,
+  alreadyChecked: "Dieses Objekt hast du schon untersucht.",
+  nothingFound: "Hier ist nichts Nützliches.",
+  continueSearching: "Weitersuchen",
+};
+
+QUEST_LOG_COPY.de = {
+  title: "Questlog",
+  button: "Questlog",
+  currentTask: "Aktuelle Aufgabe",
+  progress: (done, total) => `Fortschritt: ${done}/${total}`,
+  complete: "Quest abgeschlossen! Gute Arbeit.",
+  defaultTask: "Erkunde weiter und sprich mit der nächsten Figur.",
+  startObjectSearch: (npcName, itemName) =>
+    `Sprich mit ${npcName}, um die Suche nach ${itemName} zu starten.`,
+  searchObjects: (itemName) =>
+    `Durchsuche untersuchbare Objekte in einem beliebigen Raum nach ${itemName}. Jedes Objekt versteckt einen Gegenstand.`,
+  returnItem: (itemName, npcName) => `Bring ${itemName} zurück zu ${npcName}.`,
+  gatherSearch: (itemName) => `Suche in diesem Bereich nach ${itemName}.`,
+  gatherHint: (hint) => `Hinweis: ${hint}`,
+  choiceTask: (npcName) => `Sprich mit ${npcName} und wähle eine Antwort.`,
+  speechTask: (npcName) => `Sprich mit ${npcName} und antworte mit deiner Stimme.`,
+  continueTask: (npcName) => `Sprich mit ${npcName}, um fortzufahren.`,
+};
+
 function clampGatherVisualInt(value, min, max, fallback) {
   const num = Number.isFinite(Number(value)) ? Number(value) : fallback;
   return Math.max(min, Math.min(max, Math.round(num)));
@@ -2002,6 +2034,50 @@ UI_TEXT.zh = {
   closeDialogue: "关闭对话",
 };
 
+UI_TEXT.de = {
+  talkHint: "Leertaste drücken oder tippen, um zu sprechen",
+  correct: "Richtig!",
+  incorrect: "Versuch es noch einmal!",
+  completed: "Glückwunsch! Du hast alle Fragen richtig beantwortet!",
+  playAgain: "Noch einmal spielen",
+  back: "Zurück",
+  progress: "Fortschritt",
+  answeredOf: "von",
+  moveHint: "Pfeiltasten oder WASD zum Bewegen",
+  touchMove: "Tippen zum Bewegen, NPC antippen zum Sprechen",
+  chooseScenario: "Szenario wählen",
+  scenario: "Szenario",
+  newWorld: "Neue Welt",
+  quest: "Quest",
+  lockedNpc: "Du solltest anfangen mit",
+  response: "Antwort",
+  micStart: "Mikrofon starten",
+  micStop: "Mikrofon stoppen",
+  heardYou: "Ich habe gehört",
+  speechUnavailable: "Sprache ist in diesem Browser nicht verfügbar",
+  noSpeechMatch: "Das habe ich nicht verstanden. Versuch es noch einmal.",
+  continue: "Weiter",
+  skip: "Überspringen",
+  loading: "Wird geladen",
+  loadingTutorialScene: "Tutorialszene wird geladen...",
+  loadingGeneratingGame: "Dein Spiel wird erstellt...",
+  enableMusic: "Musik einschalten",
+  disableMusic: "Musik ausschalten",
+  musicOn: "Musik an",
+  musicOff: "Musik aus",
+  help: "Hilfe",
+  inventory: "Inventar",
+  noItems: "Noch keine Gegenstände.",
+  dropItem: "Ablegen",
+  wrongItem: "der falsche Gegenstand",
+  speechContinue: "Ich verstehe. Machen wir weiter.",
+  thinking: "Denkt nach...",
+  translateText: "Text übersetzen",
+  undoTranslation: "Übersetzung rückgängig machen",
+  chooseCorrect: "Wähle die richtige Option.",
+  closeDialogue: "Dialog schließen",
+};
+
 const SCENARIO_EMOJIS = {
   [REVIEW_WORLD_ID]: "✨",
   [TUTORIAL_MAP_ID]: "👋",
@@ -2101,6 +2177,17 @@ GAME_LOADING_MESSAGES.zh = [
   "正在准备语言谜题...",
   "正在布置场景...",
   "正在创造你的冒险...",
+];
+
+GAME_LOADING_MESSAGES.de = [
+  "Deine Welt wird gebaut...",
+  "NPCs werden platziert...",
+  "Questdialoge werden geschrieben...",
+  "Wortschatzaufgaben werden erstellt...",
+  "Das Kartenlayout wird entworfen...",
+  "Sprachrätsel werden vorbereitet...",
+  "Die Szene wird aufgebaut...",
+  "Dein Abenteuer wird geschmiedet...",
 ];
 
 const SCENARIO_OBJECT_VISUALS = {
@@ -2364,6 +2451,34 @@ const OBJECT_EXAMINE_FALLBACK_LABELS = {
     freezer: "फ़्रीज़र",
     object: "वस्तु",
   },
+  de: {
+    tree: "Baum",
+    house: "Haus",
+    building: "Gebäude",
+    pavilion: "Pavillon",
+    greenhouse: "Gewächshaus",
+    doorway: "Türöffnung",
+    bookshelf: "Bücherregal",
+    shelf: "Regal",
+    tv: "Fernseher",
+    sofa: "Sofa",
+    plant: "Pflanze",
+    table: "Tisch",
+    lamp: "Lampe",
+    sign: "Schild",
+    gate: "Tor",
+    speaker: "Lautsprecher",
+    balloons: "Ballons",
+    desk: "Schreibtisch",
+    suitcaseStack: "Kofferstapel",
+    counter: "Theke",
+    stove: "Herd",
+    fridge: "Kühlschrank",
+    bench: "Bank",
+    register: "Kasse",
+    freezer: "Gefrierschrank",
+    object: "Objekt",
+  },
 };
 
 OBJECT_EXAMINE_FALLBACK_LABELS.ar = {
@@ -2432,6 +2547,7 @@ const OBJECT_EXAMINE_FALLBACK_SENTENCES = {
   fr: (label) => `Tu remarques ${label}.`,
   ja: (label) => `${label}に気づきます。`,
   hi: (label) => `आपको ${label} दिखता है।`,
+  de: (label) => `Du bemerkst ${label}.`,
 };
 
 OBJECT_EXAMINE_FALLBACK_SENTENCES.ar = (label) => `إنت ملاحظ ${label}.`;

@@ -39,6 +39,7 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import { getGermanCopy } from "../utils/germanCopy";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -216,6 +217,7 @@ const CHINESE_SUPPORT_COPY = {
 };
 
 function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+  if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;
@@ -603,6 +605,8 @@ export default function RealWorldTasksModal({
               ? `领取 +${REAL_WORLD_TASKS_REWARD_XP} XP`
             : lang === "it"
               ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
+              : lang === "de"
+                ? `+${REAL_WORLD_TASKS_REWARD_XP} XP abholen`
               : lang === "es"
                 ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
                 : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;

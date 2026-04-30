@@ -6,7 +6,7 @@
  * based on user progress, significantly improving performance.
  */
 
-import { CEFR_LEVELS } from "../flashcards/common";
+import { CEFR_LEVELS } from "../flashcards/common.js";
 
 // Cache for loaded skill tree data
 const skillTreeCache = new Map();

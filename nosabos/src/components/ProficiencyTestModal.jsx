@@ -108,6 +108,8 @@ export default function ProficiencyTestModal({
                     ? "este idioma"
                     : lang === "it"
                     ? "questa lingua"
+                    : lang === "de"
+                    ? "diese Sprache"
                     : lang === "es"
                     ? "el idioma"
                     : "the language"),

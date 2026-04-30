@@ -108,6 +108,8 @@ export default function RepeatWhatYouHear({
           ? "助手"
         : userLanguage === "ja"
           ? "アシスタント"
+          : userLanguage === "de"
+            ? "Assistent"
           : userLanguage === "pt" || userLanguage === "it"
             ? "Assistente"
             : userLanguage === "es"
@@ -283,6 +285,7 @@ export default function RepeatWhatYouHear({
     const isFrenchUI = userLanguage === "fr";
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isGermanUI = userLanguage === "de";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
     const isChineseUI = userLanguage === "zh";
@@ -297,6 +300,8 @@ export default function RepeatWhatYouHear({
         ? "Exercice \"Repete ce que tu entends\". Reponds avec la phrase telle qu'elle a ete entendue en utilisant la banque de mots."
         : isPortugueseUI
         ? "Exercicio de repetir o que voce ouve. Responda com a frase exatamente como foi dita usando o banco de palavras."
+        : isGermanUI
+        ? "Übung \"Wiederhole, was du hörst\". Antworte mit dem Satz genau so, wie er gesprochen wurde, und nutze die Wortbank."
         : isSpanishUI
         ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
         : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
@@ -311,6 +316,8 @@ export default function RepeatWhatYouHear({
           ? `Phrase prononcee : ${sourceSentence}`
           : isPortugueseUI
           ? `Frase falada: ${sourceSentence}`
+          : isGermanUI
+          ? `Gesprochener Satz: ${sourceSentence}`
           : isSpanishUI
           ? `Frase pronunciada: ${sourceSentence}`
           : `Spoken sentence: ${sourceSentence}`
@@ -326,6 +333,8 @@ export default function RepeatWhatYouHear({
           ? `Banque de mots : ${wordBank.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${wordBank.join(" | ")}`
+          : isGermanUI
+          ? `Wortbank: ${wordBank.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
@@ -341,6 +350,8 @@ export default function RepeatWhatYouHear({
           ? `Indice : ${hint}`
           : isPortugueseUI
           ? `Dica: ${hint}`
+          : isGermanUI
+          ? `Hinweis: ${hint}`
           : isSpanishUI
           ? `Pista: ${hint}`
           : `Hint: ${hint}`

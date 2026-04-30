@@ -48,6 +48,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { syncDocumentLanguage } from "../utils/documentLanguage";
+import { getGermanCopy } from "../utils/germanCopy";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
 import { useThemeStore } from "../useThemeStore";
@@ -81,7 +82,7 @@ const isDefaultPersonaValue = (value) => {
   if (value === undefined || value === null) return true;
   const normalized = normalizePersonaValue(value);
   if (!normalized) return false;
-  return ["en", "es", "pt", "it", "fr", "ja", "hi", "ar", "zh"].some(
+  return ["en", "es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh"].some(
     (lang) =>
       normalized ===
         normalizePersonaValue(translations?.[lang]?.DEFAULT_PERSONA) ||
@@ -101,8 +102,12 @@ const personaForSupportLanguage = (currentPersona, supportLang) => {
 };
 
 const STEPS = ["languages", "voice", "extra"];
-const uiCopy = (lang, copy) =>
-  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+const uiCopy = (lang, copy) => {
+  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  if (copy[normalized]) return copy[normalized];
+  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
+  return copy.en;
+};
 
 export default function Onboarding({
   onComplete,
@@ -301,6 +306,7 @@ export default function Onboarding({
     pt: "segundos",
     it: "secondi",
     fr: "secondes",
+    de: "Sekunden",
     ja: "秒",
     ar: "ثانية",
     zh: "秒",
@@ -317,6 +323,7 @@ export default function Onboarding({
     pt: ["Idiomas", "Voz", "Efeitos"],
     it: ["Lingue", "Voce", "Effetti"],
     fr: ["Langues", "Voix", "Effets"],
+    de: ["Sprachen", "Stimme", "Effekte"],
     ja: ["言語", "音声", "効果"],
     ar: ["اللغات", "الصوت", "المؤثرات"],
     zh: ["语言", "声音", "效果"],
@@ -818,6 +825,7 @@ export default function Onboarding({
                       pt: "Voltar",
                       it: "Indietro",
                       fr: "Retour",
+                      de: "Zurück",
                       ja: "戻る",
                       ar: "رجوع",
                       zh: "返回",

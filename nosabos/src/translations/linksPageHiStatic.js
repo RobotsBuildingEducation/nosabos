@@ -103,6 +103,7 @@ export const LINKS_PAGE_HI_STATIC = {
   language_en: "अंग्रेज़ी",
   language_es: "स्पैनिश",
   language_fr: "फ़्रेंच",
+  language_de: "जर्मन",
   language_it: "इतालवी",
   language_hi: "हिंदी",
   language_ja: "जापानी",

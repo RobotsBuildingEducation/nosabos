@@ -38,6 +38,7 @@ import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -102,8 +103,12 @@ function useT(uiLang = "en") {
   };
 }
 
-const uiCopy = (lang, copy) =>
-  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+const uiCopy = (lang, copy) => {
+  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  if (copy[normalized]) return copy[normalized];
+  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
+  return copy.en;
+};
 
 function getStoredAppLanguage(fallback = DEFAULT_SUPPORT_LANGUAGE) {
   if (typeof window === "undefined") return fallback;
@@ -816,12 +821,12 @@ function buildStreamingPrompt({
    Speech format grading helpers
 --------------------------- */
 const SPEECH_CRITERIA = [
-  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", ja: "正確さ", hi: "शुद्धता", ar: "الدقة", zh: "准确性" },
-  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", ja: "完全性", hi: "पूर्णता", ar: "الاكتمال", zh: "完整性" },
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", ja: "発音", hi: "उच्चारण", ar: "النطق", zh: "发音" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", ja: "流暢さ", hi: "प्रवाह", ar: "الطلاقة", zh: "流利度" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", ja: "自信", hi: "आत्मविश्वास", ar: "الثقة", zh: "自信度" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", ja: "理解", hi: "समझ", ar: "الفهم", zh: "理解力" },
+  { key: "accuracy", en: "Accuracy", es: "Precisión", it: "Precisione", fr: "Precision", de: "Genauigkeit", ja: "正確さ", hi: "शुद्धता", ar: "الدقة", zh: "准确性" },
+  { key: "completeness", en: "Completeness", es: "Completitud", it: "Completezza", fr: "Completude", de: "Vollständigkeit", ja: "完全性", hi: "पूर्णता", ar: "الاكتمال", zh: "完整性" },
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", de: "Aussprache", ja: "発音", hi: "उच्चारण", ar: "النطق", zh: "发音" },
+  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", de: "Flüssigkeit", ja: "流暢さ", hi: "प्रवाह", ar: "الطلاقة", zh: "流利度" },
+  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", de: "Sicherheit", ja: "自信", hi: "आत्मविश्वास", ar: "الثقة", zh: "自信度" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", de: "Verständnis", ja: "理解", hi: "समझ", ar: "الفهم", zh: "理解力" },
 ];
 
 function speechScoreColor(score) {

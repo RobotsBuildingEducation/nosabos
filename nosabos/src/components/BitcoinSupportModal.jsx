@@ -31,6 +31,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { translations } from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   getLanguageDirection,
@@ -71,6 +72,7 @@ const CHINESE_SUPPORT_COPY = {
 };
 
 function supportCopy(lang, en, es, pt, it, fr, ja, hi = null, ar = null) {
+  if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
     if (ar) return ar;

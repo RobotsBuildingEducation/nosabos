@@ -54,6 +54,7 @@ const CEFR_LEVELS = [
       hi: "नींव",
       ar: "الأساسيات",
       zh: "基础",
+      de: "Grundlagen",
     },
     description: {
       en: "First words and phrases",
@@ -65,6 +66,7 @@ const CEFR_LEVELS = [
       hi: "पहले शब्द और वाक्यांश",
       ar: "أول كلمات وعبارات",
       zh: "最初的单词和短语",
+      de: "Erste Wörter und Sätze",
     },
     color: "#8B5CF6",
   },
@@ -80,6 +82,7 @@ const CEFR_LEVELS = [
       hi: "शुरुआती",
       ar: "مبتدئ",
       zh: "初学者",
+      de: "Anfänger",
     },
     description: {
       en: "Basic survival language",
@@ -91,6 +94,7 @@ const CEFR_LEVELS = [
       hi: "बुनियादी रोज़मर्रा की भाषा",
       ar: "لغة أساسية للحياة اليومية",
       zh: "基础生存语言",
+      de: "Grundlegende Alltagssprache",
     },
     color: "#3B82F6",
   },
@@ -106,6 +110,7 @@ const CEFR_LEVELS = [
       hi: "प्रारंभिक",
       ar: "أساسي",
       zh: "初级",
+      de: "Elementar",
     },
     description: {
       en: "Simple everyday communication",
@@ -117,6 +122,7 @@ const CEFR_LEVELS = [
       hi: "सरल दैनिक संवाद",
       ar: "تواصل يومي بسيط",
       zh: "简单日常交流",
+      de: "Einfache Alltagskommunikation",
     },
     color: "#8B5CF6",
   },
@@ -132,6 +138,7 @@ const CEFR_LEVELS = [
       hi: "मध्यम",
       ar: "متوسط",
       zh: "中级",
+      de: "Mittelstufe",
     },
     description: {
       en: "Handle everyday situations",
@@ -143,6 +150,7 @@ const CEFR_LEVELS = [
       hi: "रोज़मर्रा की स्थितियाँ संभालना",
       ar: "التعامل مع مواقف الحياة اليومية",
       zh: "应对日常情境",
+      de: "Alltagssituationen bewältigen",
     },
     color: "#A855F7",
   },
@@ -158,6 +166,7 @@ const CEFR_LEVELS = [
       hi: "उच्च मध्यम",
       ar: "متوسط متقدم",
       zh: "中高级",
+      de: "Obere Mittelstufe",
     },
     description: {
       en: "Complex discussions",
@@ -169,6 +178,7 @@ const CEFR_LEVELS = [
       hi: "जटिल चर्चाएँ",
       ar: "مناقشات معقدة",
       zh: "复杂讨论",
+      de: "Komplexe Gespräche",
     },
     color: "#F97316",
   },
@@ -184,6 +194,7 @@ const CEFR_LEVELS = [
       hi: "उन्नत",
       ar: "متقدم",
       zh: "高级",
+      de: "Fortgeschritten",
     },
     description: {
       en: "Sophisticated language use",
@@ -195,6 +206,7 @@ const CEFR_LEVELS = [
       hi: "परिष्कृत भाषा प्रयोग",
       ar: "استخدام متقن للغة",
       zh: "成熟精细的语言运用",
+      de: "Anspruchsvoller Sprachgebrauch",
     },
     color: "#EF4444",
   },
@@ -210,6 +222,7 @@ const CEFR_LEVELS = [
       hi: "निपुणता",
       ar: "إتقان",
       zh: "精通",
+      de: "Meisterschaft",
     },
     description: {
       en: "Near-native proficiency",
@@ -221,6 +234,7 @@ const CEFR_LEVELS = [
       hi: "लगभग मातृभाषी दक्षता",
       ar: "طلاقة قريبة من المتحدث الأصلي",
       zh: "接近母语水平",
+      de: "Nahezu muttersprachliche Kompetenz",
     },
     color: "#EC4899",
   },
@@ -286,6 +300,21 @@ function getConversationSettingsUi(lang) {
         "ex. Je suis medecin et je veux pratiquer des conversations avec des patients...",
       save: "Enregistrer",
       close: "Fermer",
+    },
+    de: {
+      title: "Gesprächseinstellungen",
+      proficiencyLabel: "Sprachniveau",
+      proficiencyHint:
+        "Lege den Schwierigkeitsgrad für Gesprächsthemen fest",
+      pronunciationLabel: "Aussprachetraining",
+      pronunciationHint: "Die KI hilft dir, deine Aussprache zu verbessern",
+      subjectLabel: "Eigene Themen",
+      subjectHint:
+        "Lege Themen fest, die du üben möchtest (z. B. Medizin, Arbeit, Reisen)",
+      subjectPlaceholder:
+        "z. B. Ich bin Ärztin und möchte Gespräche mit Patienten üben...",
+      save: "Speichern",
+      close: "Schließen",
     },
     ja: {
       title: "会話設定",

@@ -410,6 +410,50 @@ Fournis une breve explication encourageante (2-3 phrases) qui :
 
 Reste concis, bienveillant et centre sur l'apprentissage. Ecris toute ta reponse en ${supportLang}.`,
     },
+    de: {
+      fillPrompt: `Du bist ein hilfreicher Sprachcoach für ${targetLang}. Ein Lernender hat eine Lückentextfrage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort (oder Hinweis): ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportLang}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die:
+1. erklärt, warum die Antwort nicht passt oder was missverstanden wurde
+2. die richtige Antwort und ihre Bedeutung klärt
+3. einen hilfreichen Merktipp gibt
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportLang}.`,
+      mcPrompt: `Du bist ein hilfreicher Sprachcoach für ${targetLang}. Ein Lernender hat eine Multiple-Choice-Frage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportLang}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die:
+1. erklärt, warum die Auswahl falsch war
+2. klärt, warum die richtige Antwort passt
+3. einen hilfreichen Merktipp zum Unterschied gibt
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportLang}.`,
+      maPrompt: `Du bist ein hilfreicher Sprachcoach für ${targetLang}. Ein Lernender hat eine Mehrfachauswahlfrage falsch beantwortet.
+
+Frage: ${question}
+Antworten des Lernenden: ${userAnswer}
+Richtige Antworten: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportLang}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die:
+1. erklärt, welche Antworten gefehlt haben oder fälschlich gewählt wurden
+2. klärt, warum die richtigen Antworten passen
+3. einen hilfreichen Tipp gibt, um richtige Antworten zu erkennen
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportLang}.`,
+    },
     zh: {
       fillPrompt: `你是一位乐于助人的语言导师，正在教授${targetLang}。学生在填空题中回答错误。
 

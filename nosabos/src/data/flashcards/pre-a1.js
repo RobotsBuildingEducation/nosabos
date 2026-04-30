@@ -13,6 +13,7 @@ import { withJapaneseFlashcardText } from "./japaneseLocalizer.js";
 import { withPortugueseFlashcardText } from "./portugueseLocalizer.js";
 import { withArabicFlashcardText } from "./arabicLocalizer.js";
 import { withChineseFlashcardText } from "./chineseLocalizer.js";
+import { withGermanFlashcardText } from "./germanLocalizer.js";
 
 const withLocalizedFlashcardText = (cards) =>
   withArabicFlashcardText(
@@ -20,7 +21,9 @@ const withLocalizedFlashcardText = (cards) =>
       withHindiFlashcardText(
         withJapaneseFlashcardText(
           withFrenchFlashcardText(
-            withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+            withGermanFlashcardText(
+              withItalianFlashcardText(withPortugueseFlashcardText(cards)),
+            ),
           ),
         ),
       ),

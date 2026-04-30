@@ -202,6 +202,7 @@ const SUPPORT_LANGUAGE_CODES_BASE = [
   "pt",
   "it",
   "fr",
+  "de",
   "ja",
   "hi",
   "ar",
@@ -238,6 +239,7 @@ const SORT_LOCALES = {
   pt: "pt",
   it: "it",
   fr: "fr",
+  de: "de",
   ja: "ja",
   hi: "hi",
 };
@@ -340,7 +342,7 @@ function withTierTag(label, tier, ui = {}, uiLang = "en") {
       ui.onboarding_language_tag_alpha ||
       (uiLang === "ja"
         ? "アルファ"
-        : ["es", "pt", "it", "fr", "hi", "ar"].includes(uiLang)
+        : ["es", "pt", "it", "fr", "de", "hi", "ar"].includes(uiLang)
           ? "alfa"
           : "alpha");
     return `${label} (${alphaLabel})`;

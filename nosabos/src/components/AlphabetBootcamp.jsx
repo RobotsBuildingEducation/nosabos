@@ -64,6 +64,10 @@ import {
   translateAlphabetMeaningToChinese,
   withChineseAlphabetSupport,
 } from "../data/alphabetChineseLocalizer";
+import {
+  translateAlphabetMeaningToGerman,
+  withGermanAlphabetSupport,
+} from "../data/alphabetGermanLocalizer";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -285,12 +289,30 @@ const LANGUAGE_NAMES_ZH = {
   yua: "尤卡坦玛雅语",
 };
 
+const LANGUAGE_NAMES_DE = {
+  ru: "Russisch",
+  ja: "Japanisch",
+  en: "Englisch",
+  es: "Spanisch",
+  pt: "Portugiesisch",
+  fr: "Französisch",
+  it: "Italienisch",
+  nl: "Niederländisch",
+  de: "Deutsch",
+  nah: "Nahuatl",
+  el: "Griechisch",
+  pl: "Polnisch",
+  ga: "Irisch",
+  yua: "Yucatec-Maya",
+};
+
 const LANGUAGE_NAMES_BY_UI = {
   en: LANGUAGE_NAMES_EN,
   es: LANGUAGE_NAMES_ES,
   pt: LANGUAGE_NAMES_PT,
   it: LANGUAGE_NAMES_IT,
   fr: LANGUAGE_NAMES_FR,
+  de: LANGUAGE_NAMES_DE,
   ja: LANGUAGE_NAMES_JA,
   hi: LANGUAGE_NAMES_HI,
   ar: LANGUAGE_NAMES_AR,
@@ -433,6 +455,23 @@ const LANGUAGE_SCRIPTS_ZH = {
   yua: "拉丁字母",
 };
 
+const LANGUAGE_SCRIPTS_DE = {
+  ru: "kyrillisches Alphabet",
+  ja: "Hiragana oder Katakana",
+  en: "lateinisches Alphabet",
+  es: "lateinisches Alphabet",
+  pt: "lateinisches Alphabet",
+  fr: "lateinisches Alphabet",
+  it: "lateinisches Alphabet",
+  nl: "lateinisches Alphabet",
+  de: "lateinisches Alphabet",
+  nah: "lateinisches Alphabet",
+  el: "griechisches Alphabet",
+  pl: "lateinisches Alphabet",
+  ga: "lateinisches Alphabet",
+  yua: "lateinisches Alphabet",
+};
+
 const LANGUAGE_SCRIPTS_BY_UI = {
   en: LANGUAGE_SCRIPTS,
   es: {
@@ -454,6 +493,7 @@ const LANGUAGE_SCRIPTS_BY_UI = {
   pt: LANGUAGE_SCRIPTS_PT,
   it: LANGUAGE_SCRIPTS_IT,
   fr: LANGUAGE_SCRIPTS_FR,
+  de: LANGUAGE_SCRIPTS_DE,
   ja: LANGUAGE_SCRIPTS_JA,
   hi: LANGUAGE_SCRIPTS_HI,
   ar: LANGUAGE_SCRIPTS_AR,
@@ -610,6 +650,44 @@ const ALPHABET_UI_TEXT = {
     startSkillTree: "Commencer l'arbre",
     collection: "Collection",
     loadError: "Impossible de charger l'alphabet. Reessaie.",
+  },
+  de: {
+    vowel: "Vokal",
+    consonant: "Konsonant",
+    sign: "Zeichen",
+    practice: "Üben",
+    playSound: "Laut abspielen",
+    playWord: "Wort abspielen",
+    close: "Schließen",
+    sayThisWord: "Sprich dieses Wort:",
+    grading: "Wird bewertet...",
+    nextWord: "Nächstes Wort",
+    tryAgain: "Erneut versuchen",
+    back: "Zurück",
+    connecting: "Verbindung wird hergestellt...",
+    stop: "Stopp",
+    record: "Aufnehmen",
+    recordingErrorTitle: "Aufnahmefehler",
+    recordingErrorDescription: "Aufnahme nicht möglich. Bitte versuche es erneut.",
+    gradingErrorTitle: "Bewertungsfehler",
+    gradingErrorDescription: "Deine Antwort konnte nicht bewertet werden.",
+    speechUnsupportedTitle: "Sprache wird nicht unterstützt",
+    speechUnsupportedDescription:
+      "Dein Browser unterstützt keine Spracherkennung.",
+    micDeniedTitle: "Mikrofon verweigert",
+    micDeniedDescription: "Erlaube den Mikrofonzugriff zum Aufnehmen.",
+    generateWordErrorTitle: "Kein neues Wort generierbar",
+    level: "Level",
+    progress: "Fortschritt",
+    alphabetHeadline: "{language}-Alphabet",
+    alphabetSubhead:
+      "Beginne mit den Buchstaben und Lauten von {language}.",
+    note:
+      "Wechsle danach im Menü zum Pfadmodus, um Lektionen zu erkunden.",
+    complete: "Glückwunsch! Du hast das Alphabet abgeschlossen.",
+    startSkillTree: "Skill-Tree starten",
+    collection: "Sammlung",
+    loadError: "Das Alphabet konnte nicht geladen werden. Bitte versuche es erneut.",
   },
   ja: {
     vowel: "母音",
@@ -829,6 +907,7 @@ const LOCALIZED_FIELD_SUFFIX = {
   pt: "Pt",
   it: "It",
   fr: "Fr",
+  de: "De",
   ja: "Ja",
   hi: "Hi",
   ar: "Ar",
@@ -856,6 +935,7 @@ const getMeaningText = (meaning, uiLang) => {
       meaning.pt ||
       meaning.it ||
       meaning.fr ||
+      meaning.de ||
       meaning.ja ||
       meaning.zh ||
       ""
@@ -896,6 +976,7 @@ const normalizeMeaning = (meaning) => {
       pt: "",
       it: "",
       fr: "",
+      de: "",
       ja: "",
       hi: "",
       ar: "",
@@ -910,6 +991,7 @@ const normalizeMeaning = (meaning) => {
       pt: translateAlphabetMeaningToPortuguese(source) || "",
       it: translateAlphabetMeaningToItalian(source) || "",
       fr: translateAlphabetMeaningToFrench(source) || "",
+      de: translateAlphabetMeaningToGerman(source) || "",
       ja: translateAlphabetMeaningToJapanese(source) || "",
       hi: translateAlphabetMeaningToHindi(source) || "",
       ar: translateAlphabetMeaningToArabic(source) || "",
@@ -925,6 +1007,7 @@ const normalizeMeaning = (meaning) => {
     meaning.pt ||
     meaning.it ||
     meaning.fr ||
+    meaning.de ||
     meaning.ja ||
     meaning.zh ||
     "";
@@ -932,12 +1015,13 @@ const normalizeMeaning = (meaning) => {
   const pt = meaning.pt || translateAlphabetMeaningToPortuguese(meaning) || "";
   const it = meaning.it || translateAlphabetMeaningToItalian(meaning) || "";
   const fr = meaning.fr || translateAlphabetMeaningToFrench(meaning) || "";
+  const de = meaning.de || translateAlphabetMeaningToGerman(meaning) || "";
   const ja = meaning.ja || translateAlphabetMeaningToJapanese(meaning) || "";
   const hi = meaning.hi || translateAlphabetMeaningToHindi(meaning) || "";
   const ar = meaning.ar || translateAlphabetMeaningToArabic(meaning) || "";
   const zh = meaning.zh || translateAlphabetMeaningToChinese(meaning) || "";
 
-  return { en, es, pt, it, fr, ja, hi, ar, zh };
+  return { en, es, pt, it, fr, de, ja, hi, ar, zh };
 };
 
 // Build AI grading prompt for alphabet practice
@@ -1807,7 +1891,9 @@ const withLocalizedAlphabetSupport = (letters) =>
       withHindiAlphabetSupport(
         withJapaneseAlphabetSupport(
           withFrenchAlphabetSupport(
-            withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+            withGermanAlphabetSupport(
+              withItalianAlphabetSupport(withPortugueseAlphabetSupport(letters)),
+            ),
           ),
         ),
       ),

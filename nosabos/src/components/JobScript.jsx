@@ -36,6 +36,7 @@ import {
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
+import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -304,8 +305,12 @@ async function saveStoryTurn(npub, payload) {
 /* ================================
    UI text (driven by APP UI language only)
 =================================== */
-const uiCopy = (lang, copy) =>
-  copy[normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE)] || copy.en;
+const uiCopy = (lang, copy) => {
+  const normalized = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
+  if (copy[normalized]) return copy[normalized];
+  if (normalized === "de") return getGermanCopy(copy.en) || copy.en;
+  return copy.en;
+};
 
 function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {

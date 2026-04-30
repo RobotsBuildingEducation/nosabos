@@ -188,6 +188,7 @@ export const linksPageTranslations = {
     language_en: "English",
     language_es: "Spanish",
     language_fr: "French",
+    language_de: "German",
     language_it: "Italian",
     language_hi: "Hindi",
     language_ar: "Egyptian Arabic",
@@ -379,6 +380,7 @@ export const linksPageTranslations = {
     language_en: "Inglese",
     language_es: "Spagnolo",
     language_fr: "Francese",
+    language_de: "Tedesco",
     language_it: "Italiano",
     language_hi: "Hindi",
     language_ar: "Arabo egiziano",
@@ -573,6 +575,7 @@ export const linksPageTranslations = {
     language_en: "Inglés",
     language_es: "Español",
     language_fr: "Francés",
+    language_de: "Alemán",
     language_it: "Italiano",
     language_hi: "Hindi",
     language_ar: "Árabe egipcio",
@@ -771,22 +774,58 @@ linksPageTranslations.ar = {
   aboutContent: (
     <div>
       <p style={{ marginBottom: 12 }}>شكرًا إنك بتشوف شغلي!</p>
+
       <p style={{ marginBottom: 12 }}>
-        أنا Sheilfer. درست علوم الحاسب وكان هدفي دايمًا أتعلم هندسة البرمجيات
-        علشان أبني تكنولوجيا تعليمية. بحب التعلم والتعليم، وبحس إن ده المكان
-        اللي أقدر أستخدم فيه مهاراتي بأفضل شكل.
+        أنا Sheilfer. درست علوم الحاسب، وكنت دايمًا ناوي أتعلم هندسة
+        البرمجيات علشان أبني تكنولوجيا تعليمية. بشكل عام، أنا بحب التعلم
+        والتدريس والتعليم، وبؤمن إن ده أكتر مكان أقدر أستخدم فيه مهاراتي بأفضل
+        شكل.
       </p>
+
       <p style={{ marginBottom: 12 }}>
-        بدأت فكرة Robots Building Education في 2015 لأني حسيت إن تكنولوجيا
-        التعليم كانت دايمًا متأخرة عن اللي الإنترنت فعلاً يقدر يعمله.
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          بدأت فكرة اسمها Robots Building Education في 2015 لأني كنت حاسس إن
+          تكنولوجيا التعليم دايمًا متأخرة عن اللي الإنترنت كان قادر يعمله.
+        </span>{" "}
+        الألعاب الأونلاين ومنتديات الإنترنت كانت بتشد انتباه الناس بجد لأنها
+        ممتعة، وجذابة، وأحيانًا حتى إدمانية.
       </p>
+
       <p style={{ marginBottom: 12 }}>
-        Robots Building Education بالنسبة لي هي إن التعلم يكون له أثر حقيقي
-        لحظة ما تتعلم وتتقدم. الرؤية على المدى الطويل هي دعم المدارس،
-        المدرسين، والطلاب بشكل فعلي ومن غير حدود.
+        وقتها، كطالب جامعة، كنت محبط شوية إني بحط ساعات كتير في الدراسة، لكن
+        ده ما كانش بيظهر فعليًا إلا لما أكون تقريبًا خلصت الجامعة، وده ممكن
+        ياخد لحد 20 سنة! كنت حاسس إن في حاجة ناقصة.
       </p>
+
       <p style={{ marginBottom: 12 }}>
-        فمرّة تانية، شكرًا إنك بتتابع شغلي. ده بيفرق معايا جدًا.
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education هي فكرة إن تعلمك يكون له أثر حقيقي في نفس
+          لحظة التعلم والتقدم.{" "}
+        </span>
+        حاليًا بقول عليها "خلق منح دراسية من خلال التعلم" لأنها أسهل شوية في
+        تخيل اللي التكنولوجيا بتعمله فعليًا تحت السطح، لكن الرؤية طويلة المدى
+        هي إن تكنولوجيا التعليم تشتغل بطريقة تقدر تدعم المدارس، والمعلمين،
+        والطلاب بشكل مؤثر ومن غير حدود.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        فكر فيها كطريقة تخلي ممتلكات الإنترنت تموّل المدارس، شبيه بالطريقة اللي
+        العقارات بتعمل بيها كده.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        علشان كده ممكن تشوف حاجات على منصتي بتشتغل بطرق ما شفتهاش قبل كده. بعض
+        الأشياء ناعمة وسلسة جدًا مقارنة باللي بيحصل فعليًا، وده جزئيًا لأني
+        كنت مصر جدًا على بناء الفكرة دي وتحويلها لتجربة حقيقية للناس.{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          أنا مؤمن بصدق إن دي الطريقة اللي المفروض العالم يشتغل بيها، لأنه مش
+          منطقي بالنسبة لي إن مليارات الساعات من العمل في التعليم اليومي أونلاين
+          تعدي من غير ما حد يلاحظها أو تتسجل علنًا.
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        فمرة تانية، شكرًا إنك بتشوف شغلي! ده معناه كبير جدًا بالنسبة لي.
       </p>
     </div>
   ),
@@ -884,6 +923,7 @@ linksPageTranslations.ar = {
   language_en: "الإنجليزية",
   language_es: "الإسبانية",
   language_fr: "الفرنسية",
+  language_de: "الألمانية",
   language_it: "الإيطالية",
   language_hi: "الهندية",
   language_ar: "العربية المصرية",
@@ -1054,6 +1094,7 @@ linksPageTranslations.fr = {
   language_en: "Anglais",
   language_es: "Espagnol",
   language_fr: "Français",
+  language_de: "Allemand",
   language_it: "Italien",
   language_hi: "Hindi",
   language_ar: "Arabe egyptien",
@@ -1073,27 +1114,58 @@ linksPageTranslations.ja = {
       <p style={{ marginBottom: 12 }}>私の活動を見てくれてありがとうございます！</p>
 
       <p style={{ marginBottom: 12 }}>
-        私はSheilferです。コンピューターサイエンスを学び、教育技術を作るために
-        ソフトウェアエンジニアリングを身につけたいと考えてきました。学ぶこと、
-        教えること、教育が好きで、そこに自分の力を一番活かせると信じています。
+        私は Sheilfer です。コンピューターサイエンスを学び、教育技術を作るために、
+        ずっとソフトウェアエンジニアリングを学びたいと思っていました。全般的に、
+        学ぶこと、教えること、教育が好きで、自分の力を一番活かせるのはそこだと
+        信じています。
       </p>
 
       <p style={{ marginBottom: 12 }}>
         <span style={{ color: "var(--links-accent-primary)" }}>
-          Robots Building Educationというアイデアは、教育技術がインターネットの可能性に
-          追いついていないと感じた2015年に始めました。
+          Robots Building Education というアイデアは、教育技術がインターネットで
+          本来できることにいつも追いついていないと感じたことから、2015 年に
+          始めました。
         </span>{" "}
-        オンラインゲームや掲示板は、楽しく、夢中になれて、人の注意を強く引きつけていました。
+        オンラインゲームやインターネットフォーラムは、楽しく、夢中になれて、
+        ときには中毒性さえあるため、人々の注意を強く引きつけていました。
       </p>
 
       <p style={{ marginBottom: 12 }}>
-        Robots Building Educationは、学習と進歩の瞬間に本当の影響が生まれるようにする
-        という考えです。今は「学習で奨学金を作る」と表現していますが、長期的には
-        学校、先生、学生を国境なく支えられる教育技術を目指しています。
+        当時、大学生だった私は、勉強に何時間も注ぎ込んでも、その努力が実感できる
+        形で反映されるのは、実質的に大学を卒業する頃になってからで、それには
+        20 年近くかかることもある、ということに少し不満を感じていました。何かが
+        欠けているように感じました。
       </p>
 
       <p style={{ marginBottom: 12 }}>
-        改めて、私の活動を見てくれてありがとうございます。心から感謝しています。
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education は、学び、前に進んでいるその瞬間に、あなたの
+          学習が実際の影響を持つというアイデアです。{" "}
+        </span>
+        今は「学習で奨学金を作る」と表現しています。その方が、技術が裏側で実際に
+        何をしているのかを少し想像しやすいからです。ただ、長期的な構想は、教育技術が
+        学校、先生、学生を国境なく意味のある形で支えられるように機能することです。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        インターネット上の資産が、不動産が学校を支えるのと似た形で学校に資金を
+        届ける仕組みだと考えてください。
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        だから、このプラットフォームでは、これまで見たことのない形で動くものを見るかも
+        しれません。実際に裏側で起きていることを考えると、かなり滑らかで摩擦が少なく
+        見える部分もあります。それは、このアイデアを作り、人々にとって本物の体験にする
+        ために、私が粘り強く取り組んできたからでもあります。{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          私は本気で、世界はこうあるべきだと信じています。日々のオンライン教育に
+          費やされている何十億時間もの努力が、公に気づかれず、記録もされないのは、
+          私には筋が通らないからです。
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        改めて、私の活動を見てくれてありがとうございます！心から大きな意味があります。
       </p>
     </div>
   ),
@@ -1192,9 +1264,191 @@ linksPageTranslations.ja = {
   language_en: "英語",
   language_es: "スペイン語",
   language_fr: "フランス語",
+  language_de: "ドイツ語",
   language_it: "イタリア語",
   language_hi: "ヒンディー語",
   language_ar: "エジプトアラビア語",
   language_ja: "日本語",
   language_zh: "中国語（普通話）",
+};
+
+linksPageTranslations.de = {
+  ...linksPageTranslations.en,
+  welcome: "Willkommen",
+  customizeProfile: "Profil anpassen",
+  profile: "Profil",
+  about: "Info",
+  aboutTitle: "Info",
+  aboutContent: (
+    <div>
+      <p style={{ marginBottom: 12 }}>Danke, dass du dir meine Arbeit ansiehst!</p>
+
+      <p style={{ marginBottom: 12 }}>
+        Ich heiße Sheilfer. Ich habe Informatik studiert und wollte immer
+        Softwareentwicklung lernen, um Bildungstechnologie zu bauen. Insgesamt
+        liebe ich Lernen, Lehren und Bildung und glaube, dass meine Fähigkeiten
+        dort am besten eingesetzt sind.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-primary)" }}>
+          Ich habe diese Idee namens Robots Building Education 2015 angefangen,
+          weil ich das Gefühl hatte, dass Bildungstechnologie immer hinter dem
+          zurückblieb, wozu das Internet eigentlich fähig war.
+        </span>{" "}
+        Online-Videospiele und Internetforen haben die Aufmerksamkeit der Menschen
+        wirklich gefesselt, weil sie Spaß machten, einnehmend und sogar süchtig
+        machend waren.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Damals, als Student, war ich ziemlich frustriert, dass ich Stunden in mein
+        Studium steckte, sich das aber nie wirklich zeigte, bis ich im Grunde mit
+        dem Studium fertig war, was bis zu 20 Jahre dauern kann! Es fühlte sich
+        an, als würde etwas fehlen.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        <span style={{ color: "var(--links-accent-warm)" }}>
+          Robots Building Education ist die Idee, dass dein Lernen genau im Moment
+          des Lernens und Fortschritts echte Wirkung hat.{" "}
+        </span>
+        Im Moment nenne ich es „Stipendien durch Lernen schaffen“, weil man sich
+        so etwas leichter vorstellen kann, was die Technologie im Hintergrund
+        tatsächlich tut. Die langfristige Vision ist aber, dass Bildungstechnologie
+        so funktioniert, dass sie Schulen, Lehrkräfte und Lernende grenzenlos und
+        sinnvoll unterstützen kann.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Stell es dir als eine Art vor, wie Internet-Eigentum Schulen finanzieren
+        kann, ähnlich wie Immobilien das tun.
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Deshalb wirst du auf meiner Plattform vielleicht Dinge sehen, die auf eine
+        Weise funktionieren, die du so noch nie gesehen hast. Manche Dinge wirken
+        ziemlich reibungslos und einfach, gemessen daran, was tatsächlich passiert,
+        und das liegt teilweise daran, dass ich unermüdlich daran gearbeitet habe,
+        diese Idee zu schaffen und sie zu einer echten Erfahrung für Menschen zu
+        machen.{" "}
+        <span style={{ color: "var(--links-accent-pink)" }}>
+          Ich glaube wirklich, dass die Welt so funktionieren sollte, weil es für
+          mich keinen Sinn ergibt, dass Milliarden Stunden Arbeit in täglicher
+          Online-Bildung unbemerkt bleiben und öffentlich nicht festgehalten
+          werden.
+        </span>
+      </p>
+
+      <p style={{ marginBottom: 12 }}>
+        Also noch einmal: Danke, dass du dir meine Arbeit ansiehst! Das bedeutet
+        mir wirklich sehr viel.
+      </p>
+    </div>
+  ),
+  english: "ENGLISCH",
+  spanish: "SPANISCH",
+  list: "LISTE",
+  carousel: "KARUSSELL",
+  previousLink: "Vorheriger Link",
+  nextLink: "Nächster Link",
+  launchApp: "App öffnen",
+  subscribe: "Abonnieren",
+  buyApps: "Apps kaufen",
+  noSabosTitle: "No Sabos",
+  noSabosDescription:
+    "Dein persönlicher Sprachcoach. Lerne und entdecke neue Sprachen mit intelligenten Übungstools.",
+  rbeTitle: "Robots Building Education",
+  rbeDescription:
+    "Dein persönlicher Programmiercoach. Lerne schnell die Grundlagen der Softwareentwicklung, um KI-Coding-Tools für deine Ideen zu nutzen.",
+  citizenshipTitle: "Checkliste für doppelte Staatsbürgerschaft (100% kostenlos)",
+  citizenshipDescription:
+    "Finde deinen Weg zur mexikanischen Doppelstaatsbürgerschaft, speichere deinen Fortschritt und organisiere die nötigen Dokumente.",
+  patreonTitle: "Patreon",
+  patreonDescription:
+    "Zahle einmal, um die Apps zu besitzen, oder abonniere zusätzliche Inhalte zu Softwareentwicklung, Business, Finanzen und Updates.",
+  rbeModalTitle: "Robots Building Education",
+  rbeModalDescription:
+    "Du verwendest deinen geheimen Schlüssel, um dich bei deinem Konto anzumelden. Wenn du über soziale Medien eingestiegen bist, musst du das nur einmal tun.",
+  copySecretKey: "Geheimen Schlüssel kopieren",
+  goToApp: "Zur App",
+  close: "Schließen",
+  roadmapCashTitle: "Roadmap.Cash (kostenlos)",
+  roadmapCashDescription:
+    "Ein kostenloses Tool für persönliche Finanzplanung. Gib beliebige Daten ein und wir erstellen Visualisierungen, Pläne und Coaching.",
+  roadmapCashModalTitle: "Roadmap.Cash",
+  roadmapCashModalDescription:
+    "Du verwendest deinen geheimen Schlüssel, um im Menü zu deinem Konto zu wechseln.",
+  customizeProfileTitle: "Profil anpassen",
+  username: "Benutzername",
+  enterUsername: "Gib deinen Benutzernamen ein",
+  profilePictureUrl: "Profilbild-URL",
+  profilePicturePlaceholder: "https://beispiel.de/dein-bild.jpg",
+  saveProfile: "Profil speichern",
+  secretKey: "Geheimer Schlüssel",
+  secretKeyWarning:
+    "Dein geheimer Schlüssel ist dein Passwort für dezentrale Apps. Bewahre ihn sicher auf und teile ihn nie.",
+  switchAccount: "Konto wechseln",
+  pasteNsec: "nsec-Schlüssel hier einfügen",
+  switchAccountHelp:
+    "Gib einen anderen nsec ein, um zu einem anderen Nostr-Konto zu wechseln",
+  bitcoinWallet: "Bitcoin-Wallet",
+  walletDescription1:
+    "Deine Einzahlungen helfen uns, durch Lernen Stipendien zu schaffen.",
+  walletDescription2:
+    "Wenn du in den Apps Fragen beantwortest, wird es an ausgewählte Empfänger gesendet.",
+  loadingWallet: "Wallet wird geladen...",
+  secretKeyRequired: "Geheimer Schlüssel erforderlich",
+  nip07Warning:
+    "Du bist mit einer Browser-Erweiterung angemeldet, daher haben wir keinen Zugriff auf deinen privaten Schlüssel. Gib unten deinen nsec ein, um eine Wallet zu erstellen.",
+  enterNsec: "nsec1 eingeben...",
+  keyNotStored:
+    "Dein Schlüssel wird nur zum Erstellen der Wallet verwendet und nicht gespeichert.",
+  createWallet: "Wallet erstellen",
+  creatingWallet: "Wallet wird erstellt...",
+  deposit: "Einzahlen",
+  copyAddress: "Adresse kopieren",
+  or: "oder",
+  lightningInstructions:
+    "Nutze eine kompatible Lightning-Wallet, um die Rechnung zu bezahlen.",
+  cashApp: "Cash App",
+  generateNewQR: "Neuen QR-Code erstellen",
+  wallet: "Wallet",
+  balance: "Guthaben",
+  sats: "Sats",
+  noChanges: "Keine Änderungen",
+  enterUsernameOrPicture:
+    "Bitte gib einen Benutzernamen oder eine Profilbild-URL ein",
+  profileUpdated: "Profil aktualisiert",
+  profileSaved: "Dein Profil wurde in Nostr gespeichert",
+  error: "Fehler",
+  failedUpdateProfile: "Profil konnte nicht aktualisiert werden",
+  noSecretKey: "Kein geheimer Schlüssel",
+  usingExtension: "Du signierst mit einer Browser-Erweiterung",
+  copied: "Kopiert!",
+  secretKeyCopied: "Geheimer Schlüssel in die Zwischenablage kopiert",
+  failedCopy: "Kopieren fehlgeschlagen",
+  invalidKey: "Ungültiger Schlüssel",
+  enterValidNsec: "Bitte gib einen gültigen nsec-Schlüssel ein",
+  accountSwitched: "Konto gewechselt",
+  loginSuccess: "Erfolgreich mit neuem Konto angemeldet",
+  authFailed: "Ungültiger geheimer Schlüssel oder Authentifizierung fehlgeschlagen",
+  secretKeyRequiredToast: "Gib deinen nsec ein, um die Wallet zu erstellen.",
+  keyMustStartNsec: "Der Schlüssel muss mit „nsec“ beginnen.",
+  walletCreated: "Wallet erstellt",
+  walletReady: "Deine Bitcoin-Wallet ist bereit.",
+  failedCreateWallet: "Wallet konnte nicht erstellt werden",
+  failedDeposit: "Einzahlung konnte nicht gestartet werden",
+  addressCopied: "Adresse kopiert",
+  invoiceCopied: "Lightning-Rechnung in die Zwischenablage kopiert.",
+  language_en: "Englisch",
+  language_es: "Spanisch",
+  language_fr: "Französisch",
+  language_de: "Deutsch",
+  language_it: "Italienisch",
+  language_hi: "Hindi",
+  language_ar: "Ägyptisches Arabisch",
+  language_ja: "Japanisch",
+  language_pt: "Portugiesisch",
+  language_zh: "Mandarin-Chinesisch",
 };

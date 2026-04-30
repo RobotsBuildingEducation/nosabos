@@ -684,6 +684,48 @@ WORLD_BLUEPRINTS.forEach((blueprint, index) => {
   blueprint.summary.zh = blueprint.summary.zh || zh.summary;
 });
 
+const WORLD_BLUEPRINTS_DE = [
+  {
+    names: ["Gemütliches Wohnzimmer", "Familienwohnung", "Nachbarschaftshaus"],
+    summary: "ein warmes Zuhause voller Alltagsgegenstände und bewohnter Details",
+  },
+  {
+    names: ["Belebte Esshalle", "Nachbarschaftsküche", "Marktcafe"],
+    summary: "ein lebendiger Essbereich mit Theken, Geräten und praktischen Requisiten",
+  },
+  {
+    names: ["Ruhiger Bibliothekssaal", "Leseraum", "Archiv der Schreibenden"],
+    summary: "ein Studienraum voller Bücher mit Regalen, Schreibtischen und Leseecken",
+  },
+  {
+    names: ["Internationales Terminal", "Transitbereich", "Reisezentrum"],
+    summary: "ein internationaler Reisebereich mit Gates, Schildern und Wartezonen",
+  },
+  {
+    names: ["Waldpfad", "Gartenspaziergang", "Parklichtung"],
+    summary: "ein offenes Naturgebiet mit gewundenen Wegen, Grün und Orientierungspunkten",
+  },
+  {
+    names: ["Bürgersaal", "Konferenzatrium", "Öffentliches Forum"],
+    summary: "ein gepflegter öffentlicher Raum mit Tischen, Schildern und formellen Treffpunkten",
+  },
+  {
+    names: ["Forschungslabor", "Innovationsstudio", "Wissenschaftswerkstatt"],
+    summary: "ein sauberer technischer Raum mit Ausrüstung, Stauraum und Lernstationen",
+  },
+  {
+    names: ["Festivalplatz", "Feierterrasse", "Straßenfest"],
+    summary: "ein farbenfroher sozialer Raum mit Klang, Dekoration und Veranstaltungsenergie",
+  },
+];
+
+WORLD_BLUEPRINTS.forEach((blueprint, index) => {
+  const de = WORLD_BLUEPRINTS_DE[index];
+  if (!de) return;
+  blueprint.names.de = blueprint.names.de || de.names;
+  blueprint.summary.de = blueprint.summary.de || de.summary;
+});
+
 const GATHER_POOLS_BY_THEME = {
   home: {
     es: {

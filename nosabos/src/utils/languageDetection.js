@@ -89,6 +89,14 @@ const ITALIAN_TIMEZONES = [
   'Europe/San_Marino',
 ];
 
+const GERMAN_TIMEZONES = [
+  'Europe/Berlin',
+  'Europe/Vienna',
+  'Europe/Zurich',
+  'Europe/Vaduz',
+  'Europe/Luxembourg',
+];
+
 const HINDI_TIMEZONES = [
   'Asia/Kolkata',
   'Asia/Calcutta',
@@ -169,6 +177,7 @@ const JAPANESE_TIMEZONES = [
  */
 const SPANISH_LANGUAGE_CODES = ['es', 'es-ES', 'es-MX', 'es-AR', 'es-CO', 'es-CL', 'es-PE', 'es-VE'];
 const ITALIAN_LANGUAGE_CODES = ['it', 'it-IT', 'it-CH', 'it-SM', 'it-VA'];
+const GERMAN_LANGUAGE_CODES = ['de', 'de-DE', 'de-AT', 'de-CH', 'de-LI', 'de-LU'];
 const HINDI_LANGUAGE_CODES = ['hi', 'hi-IN', 'hi-Latn', 'hi-Latn-IN', 'hi-Deva', 'hi-Deva-IN'];
 const ARABIC_LANGUAGE_CODES = ['ar', 'ar-EG', 'ar-Arab', 'ar-Arab-EG', 'arz'];
 const CHINESE_LANGUAGE_CODES = ['zh', 'zh-CN', 'zh-Hans', 'zh-Hans-CN', 'zh-SG', 'zh-TW', 'zh-Hant', 'zh-HK', 'zh-MO', 'cmn'];
@@ -194,6 +203,16 @@ export function isItalianTimezone() {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return ITALIAN_TIMEZONES.includes(timezone);
+  } catch (error) {
+    console.warn('Could not detect timezone:', error);
+    return false;
+  }
+}
+
+export function isGermanTimezone() {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return GERMAN_TIMEZONES.includes(timezone);
   } catch (error) {
     console.warn('Could not detect timezone:', error);
     return false;
@@ -281,6 +300,20 @@ export function isItalianBrowserLanguage() {
       : [navigator.language || navigator.userLanguage];
     return languages.some((lang) =>
       ITALIAN_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
+    );
+  } catch (error) {
+    console.warn('Could not detect browser language:', error);
+    return false;
+  }
+}
+
+export function isGermanBrowserLanguage() {
+  try {
+    const languages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language || navigator.userLanguage];
+    return languages.some((lang) =>
+      GERMAN_LANGUAGE_CODES.some((code) => lang?.toLowerCase().startsWith(code.toLowerCase().split('-')[0])),
     );
   } catch (error) {
     console.warn('Could not detect browser language:', error);
@@ -398,6 +431,10 @@ export function detectUserLanguage() {
     return 'it';
   }
 
+  if (isGermanTimezone()) {
+    return 'de';
+  }
+
   if (isHindiTimezone()) {
     return 'hi';
   }
@@ -429,6 +466,10 @@ export function detectUserLanguage() {
 
   if (isItalianBrowserLanguage()) {
     return 'it';
+  }
+
+  if (isGermanBrowserLanguage()) {
+    return 'de';
   }
 
   if (isHindiBrowserLanguage()) {

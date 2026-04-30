@@ -1253,6 +1253,8 @@ export default function Vocabulary({
           ? "Copiado (pergunta + dica + traducao)"
           : userLanguage === "ar"
             ? "اتنسخ (السؤال + التلميح + الترجمة)"
+          : userLanguage === "de"
+            ? "Kopiert (Frage + Hinweis + Übersetzung)"
           : userLanguage === "es"
             ? "Copiado (pregunta + pista + traducción)"
             : "Copied (question + hint + translation)"),
@@ -1577,6 +1579,62 @@ Proporciona una breve explicación alentadora (2-3 oraciones) que:
 3. Proporcione un consejo para recordar los emparejamientos correctos
 
 Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+          },
+          de: {
+            fill: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Lückentextfrage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort (oder Hinweis): ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, warum die Antwort nicht passt, die richtige Antwort klärt und einen hilfreichen Merktipp gibt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            mc: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Multiple-Choice-Frage falsch beantwortet.
+
+Frage: ${question}
+Antwort des Lernenden: ${userAnswer}
+Richtige Antwort: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, warum die Auswahl falsch war, warum die richtige Antwort passt und wie man den Unterschied behält.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            ma: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat eine Mehrfachauswahlfrage falsch beantwortet.
+
+Frage: ${question}
+Antworten des Lernenden: ${userAnswer}
+Richtige Antworten: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die erklärt, welche Antworten fehlten oder falsch gewählt wurden, warum die richtigen Antworten passen und wie man sie erkennt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            speak: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender wollte etwas auf ${targetName} sagen, wurde aber nicht richtig verstanden.
+
+Zielsatz: ${correctAnswer}
+Gesagt wurde: ${userAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze) zu möglichen Aussprache- oder Formulierungsproblemen, mit Tipps zur richtigen Aussprache und Motivation zum erneuten Versuch.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
+            match: `Du bist ein hilfreicher Sprachcoach für ${targetName}. Ein Lernender hat Zuordnungen versucht, aber falsche Paare gebildet.
+
+Frage: ${question}
+Zuordnungen des Lernenden: ${userAnswer}
+Hinweis: ${correctAnswer}
+
+WICHTIG: Gib deine Erklärung auf ${supportName}.
+
+Gib eine kurze, ermutigende Erklärung (2-3 Sätze), die falsche Zuordnungen erklärt, die richtigen Beziehungen klärt und einen Merktipp gibt.
+
+Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Antwort auf ${supportName}.`,
           },
           ja: {
             fill: `あなたは${targetName}を教える親切な語学チューターです。学習者が穴埋め問題に間違えて答えました。
@@ -4292,6 +4350,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isGermanUI = userLanguage === "de";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
     const isChineseUI = userLanguage === "zh";
@@ -4304,6 +4363,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         ? "这是单词配对练习。请把单词与词库中的正确选项配对作答。"
         : isPortugueseUI
         ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
+        : isGermanUI
+        ? "Wortzuordnungsübung. Antworte, indem du die Wörter den Optionen in der Wortbank zuordnest."
         : isSpanishUI
         ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
         : "Match the words exercise. Respond by matching the words with the word bank options.",
@@ -4316,6 +4377,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `说明：${mStem}`
           : isPortugueseUI
           ? `Instrucao: ${mStem}`
+          : isGermanUI
+          ? `Anweisung: ${mStem}`
           : isSpanishUI
           ? `Indicador o consigna: ${mStem}`
           : `Prompt: ${mStem}`
@@ -4329,6 +4392,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `左侧栏：${mLeft.join(" | ")}`
           : isPortugueseUI
           ? `Coluna esquerda: ${mLeft.join(" | ")}`
+          : isGermanUI
+          ? `Linke Spalte: ${mLeft.join(" | ")}`
           : isSpanishUI
           ? `Columna izquierda: ${mLeft.join(" | ")}`
           : `Left column: ${mLeft.join(" | ")}`
@@ -4342,6 +4407,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `词库：${mRight.join(" | ")}`
           : isPortugueseUI
           ? `Banco de palavras: ${mRight.join(" | ")}`
+          : isGermanUI
+          ? `Wortbank: ${mRight.join(" | ")}`
           : isSpanishUI
           ? `Banco de palabras: ${mRight.join(" | ")}`
           : `Word bank: ${mRight.join(" | ")}`
@@ -4355,6 +4422,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `提示：${mHint}`
           : isPortugueseUI
             ? `Dica: ${mHint}`
+          : isGermanUI
+            ? `Hinweis: ${mHint}`
           : isSpanishUI
             ? `Pista: ${mHint}`
             : `Hint: ${mHint}`
@@ -4375,6 +4444,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     if (isLoadingAssistantSupport || assistantSupportText) return;
     const isPortugueseUI = userLanguage === "pt";
     const isSpanishUI = userLanguage === "es";
+    const isGermanUI = userLanguage === "de";
     const isJapaneseUI = userLanguage === "ja";
     const isArabicUI = userLanguage === "ar";
     const isChineseUI = userLanguage === "zh";
@@ -4388,6 +4458,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? "大声说出来（翻译）。请说出给定单词在练习语言中的翻译。"
           : isPortugueseUI
           ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
+          : isGermanUI
+          ? "Laut sagen (übersetzen). Sage die Übersetzung des gezeigten Wortes in der Übungssprache."
           : isSpanishUI
           ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
           : "Say it aloud (translate). Provide the target language translation for the given word."
@@ -4399,6 +4471,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? "大声说出来（补全）。请帮助学习者用缺失的词说完整句子。"
           : isPortugueseUI
           ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
+          : isGermanUI
+          ? "Laut sagen (ergänzen). Hilf dem Lernenden, den ganzen Satz mit dem fehlenden Wort zu sagen."
           : isSpanishUI
           ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
           : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
@@ -4413,6 +4487,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `说明：${sPrompt}`
           : isPortugueseUI
           ? `Instrucao: ${sPrompt}`
+          : isGermanUI
+          ? `Anweisung: ${sPrompt}`
           : isSpanishUI
           ? `Consigna o indicación: ${sPrompt}`
           : `Prompt: ${sPrompt}`
@@ -4426,6 +4502,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `学习者看到的内容：${sStimulus}`
           : isPortugueseUI
           ? `Mostrado ao aluno: ${sStimulus}`
+          : isGermanUI
+          ? `Dem Lernenden gezeigt: ${sStimulus}`
           : isSpanishUI
           ? `Mostrado al estudiante: ${sStimulus}`
           : `Shown to learner: ${sStimulus}`
@@ -4439,6 +4517,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `预期口头答案：${sTarget}`
           : isPortugueseUI
           ? `Resposta falada esperada: ${sTarget}`
+          : isGermanUI
+          ? `Erwartete gesprochene Antwort: ${sTarget}`
           : isSpanishUI
           ? `Respuesta hablada esperada: ${sTarget}`
           : `Expected spoken answer: ${sTarget}`
@@ -4452,6 +4532,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `提示：${sHint}`
           : isPortugueseUI
             ? `Dica: ${sHint}`
+          : isGermanUI
+            ? `Hinweis: ${sHint}`
           : isSpanishUI
             ? `Pista: ${sHint}`
             : `Hint: ${sHint}`
@@ -4465,6 +4547,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? `辅助翻译/上下文：${sTranslation}`
           : isPortugueseUI
           ? `Traducao ou contexto de apoio: ${sTranslation}`
+          : isGermanUI
+          ? `Hilfsübersetzung/Kontext: ${sTranslation}`
           : isSpanishUI
           ? `Traducción o contexto de apoyo: ${sTranslation}`
           : `Support translation/context: ${sTranslation}`
