@@ -303,7 +303,7 @@ export const translations = {
     app_help_chat: "Help",
     app_notes: "Notes",
     real_world_tasks_title: "Immersion practice",
-    app_mode_menu: "Mode",
+    app_mode_menu: "Menu",
     app_mode_alphabet: "Alphabet",
     app_mode_path: "Path",
     app_mode_cards: "Cards",

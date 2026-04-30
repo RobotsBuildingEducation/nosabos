@@ -98,6 +98,7 @@ import {
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const submitSpinner = <Spinner size="sm" thickness="2px" color="currentColor" />;
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -5486,18 +5487,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGFill ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("vocab_submit")
-                )}
+                {loadingGFill ? submitSpinner : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -5759,18 +5749,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMC ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("vocab_submit")
-                )}
+                {loadingGMC ? submitSpinner : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -6045,18 +6024,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingGMA ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("vocab_submit")
-                )}
+                {loadingGMA ? submitSpinner : t("vocab_submit")}
               </Button>
             </Stack>
 
@@ -6692,18 +6660,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("vocab_submit")
-                )}
+                {loadingMJ ? submitSpinner : t("vocab_submit")}
               </Button>
             </Stack>
 
