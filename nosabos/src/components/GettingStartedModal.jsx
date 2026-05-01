@@ -265,6 +265,7 @@ export default function GettingStartedModal({
               onClick={handleGotIt}
               fontWeight="bold"
               rounded="lg"
+              p={8}
               minH="40px"
             >
               {ui("app_install_got_it")}

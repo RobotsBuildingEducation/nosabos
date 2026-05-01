@@ -179,6 +179,22 @@ body {
   gap: 12px;
 }
 
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 460ms ease;
+  will-change: opacity;
+  transform: translateZ(0);
+}
+
+.boot-overlay.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
 a {
   font-weight: 500;
   color: #646cff;

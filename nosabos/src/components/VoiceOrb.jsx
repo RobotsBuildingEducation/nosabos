@@ -213,6 +213,157 @@ void main(){
   gl_FragColor = vec4(col, mask);
 }`;
 
+const createVoiceOrbWorkerSource = () => `
+const VERT = ${JSON.stringify(VERT)};
+const FRAG = ${JSON.stringify(FRAG)};
+
+let canvas;
+let gl;
+let prog;
+let uTime;
+let uEnergy;
+let uMode;
+let uTheme;
+let raf = null;
+let timer = null;
+let then = 0;
+let size = 75;
+let dpr = 1;
+let theme = "dark";
+let targetEnergy = 0;
+let targetMode = 0;
+let energy = 0;
+let mode = 0;
+
+function compile(gl, type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  return s;
+}
+
+function setOrbState(state) {
+  if (state === "listening") {
+    targetEnergy = 1;
+    targetMode = 1;
+    return;
+  }
+  if (state === "speaking") {
+    targetEnergy = 1;
+    targetMode = 2;
+    return;
+  }
+  targetEnergy = 0;
+  targetMode = 0;
+}
+
+function resize() {
+  if (!canvas) return;
+  const px = Math.max(1, Math.round(size * dpr));
+  canvas.width = px;
+  canvas.height = px;
+}
+
+function scheduleFrame() {
+  if (typeof self.requestAnimationFrame === "function") {
+    raf = self.requestAnimationFrame(frame);
+    return;
+  }
+  timer = setTimeout(() => frame(performance.now()), 1000 / 60);
+}
+
+function frame(now) {
+  now *= 0.001;
+  const dt = Math.min(now - then, 0.05);
+  then = now;
+
+  energy += (targetEnergy - energy) * Math.min(dt * 2.5, 1);
+  mode += (targetMode - mode) * Math.min(dt * 3.0, 1);
+
+  const px = Math.max(1, Math.round(size * dpr));
+  gl.viewport(0, 0, px, px);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.uniform1f(uTime, now);
+  gl.uniform1f(uEnergy, energy);
+  gl.uniform1f(uMode, mode);
+  gl.uniform1f(uTheme, theme === "light" ? 1.0 : 0.0);
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+  scheduleFrame();
+}
+
+function init(offscreen) {
+  canvas = offscreen;
+  resize();
+  gl = canvas.getContext("webgl", {
+    alpha: true,
+    antialias: false,
+    depth: false,
+    stencil: false,
+    preserveDrawingBuffer: false,
+    powerPreference: "low-power",
+  }) || canvas.getContext("experimental-webgl");
+  if (!gl) return;
+
+  prog = gl.createProgram();
+  gl.attachShader(prog, compile(gl, gl.VERTEX_SHADER, VERT));
+  gl.attachShader(prog, compile(gl, gl.FRAGMENT_SHADER, FRAG));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(
+    gl.ARRAY_BUFFER,
+    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
+    gl.STATIC_DRAW,
+  );
+  const loc = gl.getAttribLocation(prog, "a_pos");
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+  uTime = gl.getUniformLocation(prog, "u_time");
+  uEnergy = gl.getUniformLocation(prog, "u_energy");
+  uMode = gl.getUniformLocation(prog, "u_mode");
+  uTheme = gl.getUniformLocation(prog, "u_theme");
+
+  scheduleFrame();
+}
+
+self.onmessage = (event) => {
+  const data = event.data || {};
+  if (data.type === "init") {
+    size = data.size || size;
+    dpr = data.dpr || dpr;
+    theme = data.theme || theme;
+    setOrbState(data.state);
+    init(data.canvas);
+    return;
+  }
+  if (data.type === "update") {
+    size = data.size || size;
+    dpr = data.dpr || dpr;
+    theme = data.theme || theme;
+    setOrbState(data.state);
+    resize();
+    return;
+  }
+  if (data.type === "stop") {
+    if (raf && typeof self.cancelAnimationFrame === "function") {
+      self.cancelAnimationFrame(raf);
+    }
+    if (timer) {
+      clearTimeout(timer);
+    }
+    raf = null;
+    timer = null;
+  }
+};
+`;
+
 function compile(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
@@ -228,27 +379,37 @@ function compile(gl, type, src) {
  *   theme    — "dark" | "light"                   (default: app theme)
  *   size     — canvas display size in px          (default: 75)
  *   centered — whether the canvas auto-centers itself (default: true)
+ *   useWorker — render in an OffscreenCanvas worker when supported
+ *   maxDpr   — maximum canvas device-pixel-ratio  (default: 2)
  */
 export default function VoiceOrb({
   state = "idle",
   theme,
   size = 75,
   centered = true,
+  useWorker = false,
+  maxDpr = 2,
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const resolvedTheme = theme || (themeMode === "light" ? "light" : "dark");
   const canvasRef = useRef(null);
+  const workerRef = useRef(null);
   const stateRef = useRef({
     energy: 0,
     mode: 0,
     targetEnergy: 0,
     targetMode: 0,
   });
+  const statePropRef = useRef(state);
   const themeRef = useRef(resolvedTheme);
 
   useEffect(() => {
     themeRef.current = resolvedTheme;
   }, [resolvedTheme]);
+
+  useEffect(() => {
+    statePropRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     const sr = stateRef.current;
@@ -268,8 +429,65 @@ export default function VoiceOrb({
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const DPR = Math.min(window.devicePixelRatio || 1, maxDpr);
     const PX = size * DPR;
+    const canUseWorkerCanvas = (() => {
+      try {
+        return (
+          typeof OffscreenCanvas !== "undefined" &&
+          !!new OffscreenCanvas(1, 1).getContext("webgl")
+        );
+      } catch {
+        return false;
+      }
+    })();
+
+    if (
+      useWorker &&
+      canUseWorkerCanvas &&
+      typeof Worker !== "undefined" &&
+      typeof Blob !== "undefined" &&
+      typeof URL !== "undefined" &&
+      typeof canvas.transferControlToOffscreen === "function"
+    ) {
+      let worker = null;
+      let workerUrl = null;
+
+      try {
+        const offscreen = canvas.transferControlToOffscreen();
+        workerUrl = URL.createObjectURL(
+          new Blob([createVoiceOrbWorkerSource()], {
+            type: "application/javascript",
+          }),
+        );
+        worker = new Worker(workerUrl);
+        workerRef.current = worker;
+        worker.postMessage(
+          {
+            type: "init",
+            canvas: offscreen,
+            size,
+            dpr: DPR,
+            theme: themeRef.current,
+            state: statePropRef.current,
+          },
+          [offscreen],
+        );
+
+        return () => {
+          worker.postMessage({ type: "stop" });
+          worker.terminate();
+          workerRef.current = null;
+          if (workerUrl) URL.revokeObjectURL(workerUrl);
+        };
+      } catch (error) {
+        console.warn("VoiceOrb worker renderer unavailable:", error);
+        workerRef.current = null;
+        if (worker) worker.terminate();
+        if (workerUrl) URL.revokeObjectURL(workerUrl);
+      }
+    }
+
     canvas.width = PX;
     canvas.height = PX;
 
@@ -327,7 +545,20 @@ export default function VoiceOrb({
 
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
-  }, [size]);
+  }, [maxDpr, size, useWorker]);
+
+  useEffect(() => {
+    const worker = workerRef.current;
+    if (!worker) return;
+
+    worker.postMessage({
+      type: "update",
+      size,
+      dpr: Math.min(window.devicePixelRatio || 1, maxDpr),
+      theme: resolvedTheme,
+      state,
+    });
+  }, [maxDpr, resolvedTheme, size, state]);
 
   return (
     <canvas

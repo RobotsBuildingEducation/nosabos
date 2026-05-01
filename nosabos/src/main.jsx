@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
@@ -44,17 +45,82 @@ function RouteFallback() {
 
   return (
     <div className="route-fallback" aria-label="Loading">
-      <VoiceOrb state={orbState} size={88} />
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
+    </div>
+  );
+}
+
+function BootReadyBoundary({ children }) {
+  useEffect(() => {
+    // The page-level fallback is outside this boundary, so mounting the route
+    // content is enough to replace it.
+  }, []);
+
+  return children;
+}
+
+function BootOverlay({ visible }) {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
+  return (
+    <div
+      className={`route-fallback boot-overlay ${
+        visible ? "is-visible" : "is-hidden"
+      }`}
+      aria-label="Loading"
+      aria-hidden={!visible}
+    >
+      <VoiceOrb state={orbState} size={88} useWorker maxDpr={1} />
     </div>
   );
 }
 
 function AppContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
+  const [bootOverlayMounted, setBootOverlayMounted] = useState(hasStoredKey);
+  const [bootOverlayVisible, setBootOverlayVisible] = useState(hasStoredKey);
+  const bootHideFrameRef = useRef(null);
+  const bootHideSecondFrameRef = useRef(null);
+  const bootSettleTimerRef = useRef(null);
+  const bootHideTimerRef = useRef(null);
 
   const handleAuthenticated = useCallback(() => {
     setIsAuthenticated(true);
   }, []);
+
+  const clearBootHideTimers = useCallback(() => {
+    if (bootHideFrameRef.current) {
+      cancelAnimationFrame(bootHideFrameRef.current);
+      bootHideFrameRef.current = null;
+    }
+    if (bootHideSecondFrameRef.current) {
+      cancelAnimationFrame(bootHideSecondFrameRef.current);
+      bootHideSecondFrameRef.current = null;
+    }
+    if (bootSettleTimerRef.current) {
+      clearTimeout(bootSettleTimerRef.current);
+      bootSettleTimerRef.current = null;
+    }
+    if (bootHideTimerRef.current) {
+      clearTimeout(bootHideTimerRef.current);
+      bootHideTimerRef.current = null;
+    }
+  }, []);
+
+  const handleAppBootReady = useCallback(() => {
+    clearBootHideTimers();
+    bootHideFrameRef.current = requestAnimationFrame(() => {
+      bootHideSecondFrameRef.current = requestAnimationFrame(() => {
+        bootSettleTimerRef.current = setTimeout(() => {
+          setBootOverlayVisible(false);
+          bootHideTimerRef.current = setTimeout(() => {
+            setBootOverlayMounted(false);
+            bootHideTimerRef.current = null;
+          }, 520);
+        }, 220);
+      });
+    });
+  }, [clearBootHideTimers]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -66,11 +132,27 @@ function AppContainer() {
     return () => window.removeEventListener("storage", handleStorage);
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    clearBootHideTimers();
+    setBootOverlayMounted(true);
+    setBootOverlayVisible(true);
+  }, [clearBootHideTimers, isAuthenticated]);
+
+  useEffect(() => clearBootHideTimers, [clearBootHideTimers]);
+
   if (!isAuthenticated) {
     return <LandingPage onAuthenticated={handleAuthenticated} />;
   }
 
-  return <App />;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <App onBootReady={handleAppBootReady} />
+      </Suspense>
+      {bootOverlayMounted && <BootOverlay visible={bootOverlayVisible} />}
+    </>
+  );
 }
 
 function ProficiencyContainer() {
@@ -94,7 +176,13 @@ function ProficiencyContainer() {
     return <LandingPage onAuthenticated={handleAuthenticated} />;
   }
 
-  return <ProficiencyTest />;
+  return (
+    <Suspense fallback={null}>
+      <BootReadyBoundary>
+        <ProficiencyTest />
+      </BootReadyBoundary>
+    </Suspense>
+  );
 }
 
 createRoot(document.getElementById("root")).render(
@@ -108,8 +196,22 @@ createRoot(document.getElementById("root")).render(
               <Route path="/onboarding/*" element={<AppContainer />} />
               <Route path="/subscribe" element={<AppContainer />} />
               <Route path="/proficiency" element={<ProficiencyContainer />} />
-              <Route path="/links" element={<LinksPage />} />
-              <Route path="/citizenship" element={<CitizenshipGuide />} />
+              <Route
+                path="/links"
+                element={
+                  <BootReadyBoundary>
+                    <LinksPage />
+                  </BootReadyBoundary>
+                }
+              />
+              <Route
+                path="/citizenship"
+                element={
+                  <BootReadyBoundary>
+                    <CitizenshipGuide />
+                  </BootReadyBoundary>
+                }
+              />
             </Routes>
           </Suspense>
         </Router>

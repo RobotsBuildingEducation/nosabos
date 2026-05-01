@@ -165,7 +165,10 @@ import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
-import { loadLearningPath } from "./data/skillTree/index.js";
+import {
+  loadLearningPath,
+  loadMultiLevelLearningPath,
+} from "./data/skillTree/index.js";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
@@ -1847,7 +1850,7 @@ function TopBar({
 /* -------------------------------------------------------------------------------------------------
    App root
 --------------------------------------------------------------------------------------------------*/
-export default function App() {
+export default function App({ onBootReady } = {}) {
   const toast = useToast();
   const initRef = useRef(false);
   const location = useLocation();
@@ -5811,15 +5814,8 @@ export default function App() {
   const hasHydratedUserProgress =
     user?.progress && typeof user.progress === "object";
 
-  // Sync active levels from user document when it loads
-  useEffect(() => {
-    if (isLoadingApp) return;
-    if (!user) return;
-    if (!hasHydratedUserProgress) return;
-    if (!normalizedTargetLang) return;
-    if (initializedLevelsKey === levelsPersistenceKey) return;
-
-    const savedLessonLevel =
+  const savedLessonLevel = useMemo(
+    () =>
       (CEFR_LEVELS.includes(
         user?.progress?.activeLessonLevels?.[normalizedTargetLang],
       ) &&
@@ -5828,9 +5824,18 @@ export default function App() {
         user.activeLessonLevels[normalizedTargetLang]) ||
       (CEFR_LEVELS.includes(user?.activeLessonLevel) &&
         user.activeLessonLevel) ||
-      currentLessonLevel;
+      currentLessonLevel,
+    [
+      currentLessonLevel,
+      normalizedTargetLang,
+      user?.activeLessonLevel,
+      user?.activeLessonLevels,
+      user?.progress?.activeLessonLevels,
+    ],
+  );
 
-    const savedFlashcardLevel =
+  const savedFlashcardLevel = useMemo(
+    () =>
       (CEFR_LEVELS.includes(
         user?.progress?.activeFlashcardLevels?.[normalizedTargetLang],
       ) &&
@@ -5841,7 +5846,23 @@ export default function App() {
         user.activeFlashcardLevels[normalizedTargetLang]) ||
       (CEFR_LEVELS.includes(user?.activeFlashcardLevel) &&
         user.activeFlashcardLevel) ||
-      currentFlashcardLevel;
+      currentFlashcardLevel,
+    [
+      currentFlashcardLevel,
+      normalizedTargetLang,
+      user?.activeFlashcardLevel,
+      user?.activeFlashcardLevels,
+      user?.progress?.activeFlashcardLevels,
+    ],
+  );
+
+  // Sync active levels from user document when it loads
+  useEffect(() => {
+    if (isLoadingApp) return;
+    if (!user) return;
+    if (!hasHydratedUserProgress) return;
+    if (!normalizedTargetLang) return;
+    if (initializedLevelsKey === levelsPersistenceKey) return;
 
     setActiveLessonLevel(savedLessonLevel);
     setActiveFlashcardLevel(savedFlashcardLevel);
@@ -5854,8 +5875,8 @@ export default function App() {
     initializedLevelsKey,
     levelsPersistenceKey,
     normalizedTargetLang,
-    currentLessonLevel,
-    currentFlashcardLevel,
+    savedLessonLevel,
+    savedFlashcardLevel,
   ]);
 
   // Legacy: Combined active level (for backwards compatibility)
@@ -6086,12 +6107,82 @@ export default function App() {
     }
   }, []);
 
+  const displayActiveLessonLevel =
+    initializedLevelsKey === levelsPersistenceKey
+      ? activeLessonLevel
+      : savedLessonLevel;
+  const displayActiveFlashcardLevel =
+    initializedLevelsKey === levelsPersistenceKey
+      ? activeFlashcardLevel
+      : savedFlashcardLevel;
+
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
   const relevantLevels = useMemo(() => {
     // Include both lesson and flashcard active levels to support mode switching
-    const levelsSet = new Set([activeLessonLevel, activeFlashcardLevel]);
+    const levelsSet = new Set([
+      displayActiveLessonLevel,
+      displayActiveFlashcardLevel,
+    ]);
     return Array.from(levelsSet);
-  }, [activeLessonLevel, activeFlashcardLevel]);
+  }, [displayActiveLessonLevel, displayActiveFlashcardLevel]);
+
+  const relevantLevelsKey = relevantLevels.join("|");
+  const skillTreeInitialUnitsKey = `multi:${resolvedTargetLang}:${relevantLevelsKey}`;
+  const [skillTreeInitialUnits, setSkillTreeInitialUnits] = useState({
+    key: null,
+    units: null,
+  });
+  const [hasCompletedInitialSkillTreeBoot, setHasCompletedInitialSkillTreeBoot] =
+    useState(false);
+
+  useEffect(() => {
+    if (isLoadingApp) return;
+    if (!user) return;
+    if (needsOnboarding || needsSubscriptionPasscode || isSubscriptionRoute)
+      return;
+    if (viewMode !== "skillTree" || pathMode !== "path") return;
+    if (showAlphabetBootcamp) return;
+
+    let isMounted = true;
+    setSkillTreeInitialUnits((prev) =>
+      prev.key === skillTreeInitialUnitsKey
+        ? prev
+        : { key: null, units: null },
+    );
+
+    loadMultiLevelLearningPath(resolvedTargetLang, relevantLevels)
+      .then((nextUnits) => {
+        if (!isMounted) return;
+        setSkillTreeInitialUnits({
+          key: skillTreeInitialUnitsKey,
+          units: nextUnits,
+        });
+      })
+      .catch((error) => {
+        if (!isMounted) return;
+        console.error("Failed to preload skill tree units:", error);
+        setSkillTreeInitialUnits({
+          key: skillTreeInitialUnitsKey,
+          units: [],
+        });
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    isLoadingApp,
+    user,
+    needsOnboarding,
+    needsSubscriptionPasscode,
+    isSubscriptionRoute,
+    viewMode,
+    pathMode,
+    showAlphabetBootcamp,
+    skillTreeInitialUnitsKey,
+    resolvedTargetLang,
+    relevantLevels,
+  ]);
 
   const handleBottomBarSettingsOpen = useCallback(() => {
     // Yield one frame before opening to avoid coupling the tap with
@@ -6102,7 +6193,38 @@ export default function App() {
   /* -----------------------------------
      Loading / Onboarding gates
   ----------------------------------- */
-  if (isLoadingApp || !user) {
+  const shouldHoldForInitialSkillTree =
+    !hasCompletedInitialSkillTreeBoot &&
+    !!user &&
+    !needsOnboarding &&
+    !needsSubscriptionPasscode &&
+    !isSubscriptionRoute &&
+    viewMode === "skillTree" &&
+    pathMode === "path" &&
+    !showAlphabetBootcamp &&
+    skillTreeInitialUnits.key !== skillTreeInitialUnitsKey;
+
+  const isBootLoading = isLoadingApp || !user || shouldHoldForInitialSkillTree;
+
+  useEffect(() => {
+    if (hasCompletedInitialSkillTreeBoot) return;
+    if (isLoadingApp || !user) return;
+    if (shouldHoldForInitialSkillTree) return;
+    setHasCompletedInitialSkillTreeBoot(true);
+  }, [
+    hasCompletedInitialSkillTreeBoot,
+    isLoadingApp,
+    user,
+    shouldHoldForInitialSkillTree,
+  ]);
+
+  useEffect(() => {
+    if (isBootLoading) return;
+    onBootReady?.();
+  }, [isBootLoading, onBootReady]);
+
+  if (isBootLoading) {
+    if (onBootReady) return null;
     return <LoadingOrbFallback minH="100vh" bg="gray.900" />;
   }
 
@@ -6303,9 +6425,7 @@ export default function App() {
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box pb={{ base: 32, md: 24 }} w="100%">
-          {initializedLevelsKey !== levelsPersistenceKey ? (
-            <LoadingOrbFallback minH="60vh" />
-          ) : showAlphabetBootcamp ? (
+          {showAlphabetBootcamp ? (
             <AlphabetBootcamp
               appLanguage={appLanguage}
               targetLang={resolvedTargetLang}
@@ -6327,8 +6447,8 @@ export default function App() {
               showMultipleLevels={true}
               levels={relevantLevels}
               // Mode-specific level props
-              activeLessonLevel={activeLessonLevel}
-              activeFlashcardLevel={activeFlashcardLevel}
+              activeLessonLevel={displayActiveLessonLevel}
+              activeFlashcardLevel={displayActiveFlashcardLevel}
               currentLessonLevel={currentLessonLevel}
               currentFlashcardLevel={currentFlashcardLevel}
               onLessonLevelChange={handleLessonLevelChange}
@@ -6347,6 +6467,8 @@ export default function App() {
               onPathModeChange={setPathMode}
               scrollToLatestTrigger={scrollToLatestTrigger}
               scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
+              initialUnits={skillTreeInitialUnits.units}
+              initialUnitsKey={skillTreeInitialUnits.key || ""}
               // Tutorial props
               isTutorialComplete={hasCompletedSkillTreeTutorial}
             />

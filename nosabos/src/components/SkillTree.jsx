@@ -2450,6 +2450,8 @@ export default function SkillTree({
   scrollToLatestTrigger = 0,
   // Tutorial props
   isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
+  initialUnits = null,
+  initialUnitsKey = "",
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -2518,11 +2520,26 @@ export default function SkillTree({
       : flashcardLevelCompletionStatus;
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
-  const [units, setUnits] = useState([]);
-  const [isLoadingUnits, setIsLoadingUnits] = useState(true);
+  const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
+    showMultipleLevels ? levelsKey : level
+  }`;
+  const hasInitialUnits =
+    Array.isArray(initialUnits) && initialUnitsKey === requestedUnitsKey;
+  const [units, setUnits] = useState(() =>
+    hasInitialUnits ? initialUnits : [],
+  );
+  const [isLoadingUnits, setIsLoadingUnits] = useState(() => !hasInitialUnits);
 
   useEffect(() => {
     let isMounted = true;
+
+    if (hasInitialUnits) {
+      setUnits(initialUnits);
+      setIsLoadingUnits(false);
+      return () => {
+        isMounted = false;
+      };
+    }
 
     async function loadUnits() {
       setIsLoadingUnits(true);
@@ -2554,7 +2571,14 @@ export default function SkillTree({
     return () => {
       isMounted = false;
     };
-  }, [showMultipleLevels, targetLang, levelsKey, level]);
+  }, [
+    showMultipleLevels,
+    targetLang,
+    levelsKey,
+    level,
+    hasInitialUnits,
+    initialUnits,
+  ]);
 
   // Filter units to show only the effective active level for the current mode
   const visibleUnits = useMemo(() => {
