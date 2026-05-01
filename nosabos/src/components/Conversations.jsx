@@ -1228,7 +1228,7 @@ export default function Conversations({
 
     try {
       // Get skill tree topics for context
-      const skillTreeTopics = getRandomSkillTreeTopics(
+      const skillTreeTopics = await getRandomSkillTreeTopics(
         selectedLevel,
         targetLang,
         15,

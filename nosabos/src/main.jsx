@@ -1,27 +1,53 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import "./useThemeStore";
-import App from "./App.jsx";
 import { ChakraProvider } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
-
-import LinksPage from "./components/LinksPage.jsx";
-import SoundExperiment from "./components/SoundExperiment.jsx";
-import ProficiencyTest from "./components/ProficiencyTest.jsx";
-import RPGGame from "./components/RPGGame/index.jsx";
-import CitizenshipGuide from "./components/CitizenshipGuide.jsx";
+import VoiceOrb from "./components/VoiceOrb.jsx";
 
 import "@coinbase/onchainkit/styles.css";
 import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
+
+const App = lazy(() => import("./App.jsx"));
+const LinksPage = lazy(() => import("./components/LinksPage.jsx"));
+const ProficiencyTest = lazy(() => import("./components/ProficiencyTest.jsx"));
+const CitizenshipGuide = lazy(
+  () => import("./components/CitizenshipGuide.jsx"),
+);
 
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
   const secret = localStorage.getItem("local_nsec");
   return Boolean(secret && secret.trim());
 };
+
+const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+function getRandomLoadingOrbState() {
+  return LOADING_ORB_STATES[
+    Math.floor(Math.random() * LOADING_ORB_STATES.length)
+  ];
+}
+
+function RouteFallback() {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
+  return (
+    <div className="route-fallback" aria-label="Loading">
+      <VoiceOrb state={orbState} size={88} />
+    </div>
+  );
+}
 
 function AppContainer() {
   const [isAuthenticated, setIsAuthenticated] = useState(hasStoredKey);
@@ -76,16 +102,16 @@ createRoot(document.getElementById("root")).render(
     <MiniKitContextProvider>
       <div className="app-shell">
         <Router>
-          <Routes>
-            <Route path="/" element={<AppContainer />} />
-            <Route path="/onboarding/*" element={<AppContainer />} />
-            <Route path="/subscribe" element={<AppContainer />} />
-            <Route path="/proficiency" element={<ProficiencyContainer />} />
-            <Route path="/links" element={<LinksPage />} />
-            <Route path="/citizenship" element={<CitizenshipGuide />} />
-            {/* <Route path="/experiments" element={<SoundExperiment />} /> */}
-            {/* <Route path="/game" element={<RPGGame />} /> */}
-          </Routes>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route path="/" element={<AppContainer />} />
+              <Route path="/onboarding/*" element={<AppContainer />} />
+              <Route path="/subscribe" element={<AppContainer />} />
+              <Route path="/proficiency" element={<ProficiencyContainer />} />
+              <Route path="/links" element={<LinksPage />} />
+              <Route path="/citizenship" element={<CitizenshipGuide />} />
+            </Routes>
+          </Suspense>
         </Router>
       </div>
     </MiniKitContextProvider>

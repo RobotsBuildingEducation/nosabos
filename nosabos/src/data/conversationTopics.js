@@ -5,7 +5,7 @@
  * for AI-powered conversation topic generation.
  */
 
-import { getLearningPath } from "./skillTreeData";
+import { loadLearningPath } from "./skillTree/index.js";
 import { translateSkillTreeTextToArabic } from "./skillTree/arabicLocalizer.js";
 import { translateSkillTreeTextToChinese } from "./skillTree/chineseLocalizer.js";
 import { translateSkillTreeTextToGerman } from "./skillTree/germanLocalizer.js";
@@ -18,7 +18,7 @@ import { translateSkillTreeTextToGerman } from "./skillTree/germanLocalizer.js";
  * @param {string} targetLang - Target language code (es, en, pt, fr, it, nl, nah)
  * @returns {string[]} - Array of topic strings
  */
-export function getSkillTreeTopics(level = "A1", targetLang = "es") {
+export async function getSkillTreeTopics(level = "A1", targetLang = "es") {
   const levels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
   const levelIndex = levels.indexOf(level);
   const effectiveIndex = levelIndex === -1 ? 0 : levelIndex;
@@ -28,7 +28,7 @@ export function getSkillTreeTopics(level = "A1", targetLang = "es") {
   // Collect topics from all levels up to and including the user's level
   for (let i = 0; i <= effectiveIndex; i++) {
     const currentLevel = levels[i];
-    const units = getLearningPath(targetLang, currentLevel);
+    const units = await loadLearningPath(targetLang, currentLevel);
 
     if (units && Array.isArray(units)) {
       units.forEach((unit) => {
@@ -69,12 +69,12 @@ export function getSkillTreeTopics(level = "A1", targetLang = "es") {
  * @param {number} count - Number of topics to return
  * @returns {string[]} - Random subset of topics
  */
-export function getRandomSkillTreeTopics(
+export async function getRandomSkillTreeTopics(
   level = "A1",
   targetLang = "es",
   count = 15
 ) {
-  const allTopics = getSkillTreeTopics(level, targetLang);
+  const allTopics = await getSkillTreeTopics(level, targetLang);
 
   // Shuffle and take a subset
   const shuffled = [...allTopics].sort(() => Math.random() - 0.5);

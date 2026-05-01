@@ -1,4 +1,4 @@
-import { getMultiLevelLearningPath } from "../../data/skillTreeData";
+import { loadMultiLevelLearningPath } from "../../data/skillTree/index.js";
 import {
   getLanguagePromptName,
   normalizePracticeLanguage,
@@ -359,8 +359,11 @@ function buildReviewContextBlock(reviewContext = null, lessonTerms = [], levelKe
   };
 }
 
-function getLessonTerms(targetLang) {
-  const units = getMultiLevelLearningPath(targetLang, CEFR_LEVELS_FOR_GAME);
+async function getLessonTerms(targetLang) {
+  const units = await loadMultiLevelLearningPath(
+    targetLang,
+    CEFR_LEVELS_FOR_GAME,
+  );
   return uniqueWords(
     units.flatMap((unit) =>
       (unit.lessons || []).flatMap((lesson) => {
@@ -3788,7 +3791,7 @@ export async function generateScenarioWithAI(
   const lessonTerms =
     overrideTerms ||
     effectiveReviewContext?.reviewTerms ||
-    getLessonTerms(normalizedTargetLang);
+    (await getLessonTerms(normalizedTargetLang));
   const isTutorial = !!effectiveReviewContext?.isTutorial;
   const levelKey = cefrLevel || effectiveReviewContext?.cefrLevel || "A1";
   const npcCount = isTutorial

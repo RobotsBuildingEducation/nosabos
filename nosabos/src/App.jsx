@@ -1,5 +1,7 @@
 // src/App.jsx
 import React, {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useMemo,
@@ -125,12 +127,10 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
-import RPGGame from "./components/RPGGame/index.jsx";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import DailyGoalPetPanel from "./components/DailyGoalPetPanel.jsx";
-import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import { IdentityPanel } from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
@@ -165,7 +165,7 @@ import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import GettingStartedModal from "./components/GettingStartedModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import RandomCharacter from "./components/RandomCharacter";
-import { getLearningPath } from "./data/skillTreeData";
+import { loadLearningPath } from "./data/skillTree/index.js";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
@@ -211,6 +211,8 @@ import {
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 
+const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
+
 /* ---------------------------
    Small helpers
 --------------------------- */
@@ -220,6 +222,36 @@ const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
   "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+function getRandomLoadingOrbState() {
+  return LOADING_ORB_STATES[
+    Math.floor(Math.random() * LOADING_ORB_STATES.length)
+  ];
+}
+
+function LoadingOrbFallback({ minH = "420px", bg }) {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
+  return (
+    <Flex
+      minH={minH}
+      bg={bg}
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      justifyContent="center"
+      p={6}
+    >
+      <VoiceOrb state={orbState} size={88} />
+    </Flex>
+  );
+}
+
+function GameLoadingFallback() {
+  return <LoadingOrbFallback />;
+}
 
 const personaDefaultFor = (lang) =>
   translations?.[lang]?.DEFAULT_PERSONA ||
@@ -2174,7 +2206,7 @@ export default function App() {
     };
   }, [warmupAudio]);
 
-  // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
+  // Tabs (order: Chat, Stories, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("currentTab") || "realtime"
@@ -3658,7 +3690,7 @@ export default function App() {
   };
 
   const enrichLessonForGameReview = useCallback(
-    (lesson) => {
+    async (lesson) => {
       if (!lesson) return lesson;
       if (lesson.gameReviewContext) return lesson;
 
@@ -3667,7 +3699,7 @@ export default function App() {
         inferCefrLevelFromLessonId(lesson.id) ||
         resolvedLevel ||
         "Pre-A1";
-      const units = getLearningPath(resolvedTargetLang, inferredLevel);
+      const units = await loadLearningPath(resolvedTargetLang, inferredLevel);
       const unit =
         units.find((entry) =>
           entry?.lessons?.some((candidate) => candidate?.id === lesson.id),
@@ -3688,7 +3720,7 @@ export default function App() {
   // Handle starting a lesson from the skill tree
   const handleStartLesson = async (lesson, preGeneratedScenario = null) => {
     if (!lesson) return false;
-    const enrichedLesson = enrichLessonForGameReview(lesson);
+    const enrichedLesson = await enrichLessonForGameReview(lesson);
 
     // Store pre-generated scenario for game lessons
     setPreGeneratedGameScenario(preGeneratedScenario || null);
@@ -4670,7 +4702,7 @@ export default function App() {
     });
   }, [markGettingStartedShown, runAfterNextPaint]);
 
-  const handleGettingStartedStart = useCallback(() => {
+  const handleGettingStartedStart = useCallback(async () => {
     flushSync(() => {
       setGettingStartedOpen(false);
     });
@@ -4679,11 +4711,15 @@ export default function App() {
     });
 
     // Find the tutorial lesson from the Pre-A1 learning path and launch it directly
-    const units = getLearningPath(resolvedTargetLang, "Pre-A1");
-    const tutorialUnit = units?.find((u) => u.isTutorial);
-    const tutorialLesson = tutorialUnit?.lessons?.[0];
-    if (tutorialLesson) {
-      handleStartLesson(tutorialLesson);
+    try {
+      const units = await loadLearningPath(resolvedTargetLang, "Pre-A1");
+      const tutorialUnit = units?.find((u) => u.isTutorial);
+      const tutorialLesson = tutorialUnit?.lessons?.[0];
+      if (tutorialLesson) {
+        await handleStartLesson(tutorialLesson);
+      }
+    } catch (error) {
+      console.error("Failed to load getting-started lesson:", error);
     }
   }, [
     markGettingStartedShown,
@@ -6061,16 +6097,10 @@ export default function App() {
   ----------------------------------- */
   if (isLoadingApp || !user) {
     return (
-      <Flex
+      <LoadingOrbFallback
         minH="100vh"
         bg="gray.900"
-        color="gray.100"
-        align="center"
-        justify="center"
-        p={6}
-      >
-        <VoiceOrb state="idle" />
-      </Flex>
+      />
     );
   }
 
@@ -6272,14 +6302,7 @@ export default function App() {
       {viewMode === "skillTree" && (
         <Box pb={{ base: 32, md: 24 }} w="100%">
           {initializedLevelsKey !== levelsPersistenceKey ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              minH="60vh"
-            >
-              <VoiceOrb state="idle" />
-            </Box>
+            <LoadingOrbFallback minH="60vh" />
           ) : showAlphabetBootcamp ? (
             <AlphabetBootcamp
               appLanguage={appLanguage}
@@ -6340,16 +6363,18 @@ export default function App() {
           zIndex={1000}
           bg="gray.900"
         >
-          <RPGGame
-            lessonContext={activeLesson}
-            initialScenario={
-              preGeneratedGameScenario || tutorialGameInitialScenario
-            }
-            targetLang={resolvedTargetLang}
-            supportLang={resolvedSupportLang}
-            onComplete={() => handleReturnToSkillTree()}
-            onSkip={switchToRandomLessonMode}
-          />
+          <Suspense fallback={<GameLoadingFallback />}>
+            <RPGGame
+              lessonContext={activeLesson}
+              initialScenario={
+                preGeneratedGameScenario || tutorialGameInitialScenario
+              }
+              targetLang={resolvedTargetLang}
+              supportLang={resolvedSupportLang}
+              onComplete={() => handleReturnToSkillTree()}
+              onSkip={switchToRandomLessonMode}
+            />
+          </Suspense>
         </Box>
       )}
 
@@ -6493,21 +6518,23 @@ export default function App() {
                   case "game":
                     return (
                       <TabPanel key="game" px={0}>
-                        <RPGGame
-                          lessonContext={activeLesson}
-                          initialScenario={
-                            preGeneratedGameScenario ||
-                            tutorialGameInitialScenario
-                          }
-                          targetLang={resolvedTargetLang}
-                          supportLang={resolvedSupportLang}
-                          onSkip={switchToRandomLessonMode}
-                          onScenarioReady={(scenario) => {
-                            if (activeLesson?.isTutorial && scenario) {
-                              setTutorialGameScenario(scenario);
+                        <Suspense fallback={<GameLoadingFallback />}>
+                          <RPGGame
+                            lessonContext={activeLesson}
+                            initialScenario={
+                              preGeneratedGameScenario ||
+                              tutorialGameInitialScenario
                             }
-                          }}
-                        />
+                            targetLang={resolvedTargetLang}
+                            supportLang={resolvedSupportLang}
+                            onSkip={switchToRandomLessonMode}
+                            onScenarioReady={(scenario) => {
+                              if (activeLesson?.isTutorial && scenario) {
+                                setTutorialGameScenario(scenario);
+                              }
+                            }}
+                          />
+                        </Suspense>
                       </TabPanel>
                     );
                   case "random":
