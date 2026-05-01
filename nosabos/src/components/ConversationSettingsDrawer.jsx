@@ -31,6 +31,10 @@ import {
   DEFAULT_SUPPORT_LANGUAGE,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -637,10 +641,12 @@ export default function ConversationSettingsDrawer({
       closeOnOverlayClick={false}
     >
       <DrawerOverlay
+        motionProps={nativeOverlayMotionProps}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
         backdropFilter="blur(4px)"
       />
       <DrawerContent
+        motionProps={nativeDrawerMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
         color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         borderLeftRadius="24px"

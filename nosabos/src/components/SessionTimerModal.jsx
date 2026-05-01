@@ -33,6 +33,10 @@ import {
   getLanguageDirection,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -551,10 +555,12 @@ export default function SessionTimerModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
       />
       <ModalContent
+        motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
         color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         borderColor={isLightTheme ? APP_BORDER : "gray.700"}

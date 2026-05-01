@@ -210,6 +210,11 @@ import {
 } from "./constants/languages";
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
+import {
+  nativeDrawerMotionProps,
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "./utils/modalMotion";
 
 const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
 
@@ -1158,10 +1163,12 @@ function TopBar({
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
         <DrawerOverlay
           {...settingsSwipeDismiss.overlayProps}
+          motionProps={nativeOverlayMotionProps}
           bg="var(--app-overlay)"
         />
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
+          motionProps={nativeDrawerMotionProps}
           bg="gray.900"
           color="var(--app-text-primary)"
           borderTopRadius="24px"
@@ -6096,12 +6103,7 @@ export default function App() {
      Loading / Onboarding gates
   ----------------------------------- */
   if (isLoadingApp || !user) {
-    return (
-      <LoadingOrbFallback
-        minH="100vh"
-        bg="gray.900"
-      />
-    );
+    return <LoadingOrbFallback minH="100vh" bg="gray.900" />;
   }
 
   const onboardingInitialDraft = {
@@ -6643,9 +6645,15 @@ export default function App() {
         onClose={handleCloseTimeUp}
         isCentered
         size="lg"
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #c084fc 0%, #22d3ee 100%)"
           color="white"
           borderRadius="2xl"
@@ -6723,9 +6731,15 @@ export default function App() {
         onClose={handleCloseDailyGoalModal}
         isCentered
         size="lg"
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)"
           color="white"
           borderRadius="2xl"
@@ -6847,9 +6861,15 @@ export default function App() {
         returnFocusOnClose={false}
         isCentered
         size="lg"
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
           color="white"
           borderRadius="2xl"
@@ -6981,9 +7001,15 @@ export default function App() {
         isCentered
         size="lg"
         closeOnOverlayClick={false}
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg={
             completedProficiencyData?.level
               ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.gradient ||

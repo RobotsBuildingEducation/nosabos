@@ -129,26 +129,16 @@ export default function BitcoinSupportModal({
     body.style.overscrollBehavior = "none";
 
     let rafOne = null;
-    let rafTwo = null;
 
-    // Force a compositor refresh on open. The installed iOS PWA seems to
-    // keep stale hit-testing until the page scrolls; nudging the fixed shell
-    // is a lightweight way to trigger the same refresh without user input.
     rafOne = window.requestAnimationFrame(() => {
       const node = shellRef.current;
       if (!node) return;
-      node.style.transform = "translate3d(0, 0.5px, 0)";
-      void node.getBoundingClientRect();
-      rafTwo = window.requestAnimationFrame(() => {
-        if (shellRef.current) {
-          shellRef.current.style.transform = "translate3d(0, 0, 0)";
-        }
-      });
+      node.style.willChange = "transform, opacity";
+      void node.offsetHeight;
     });
 
     return () => {
       if (rafOne !== null) window.cancelAnimationFrame(rafOne);
-      if (rafTwo !== null) window.cancelAnimationFrame(rafTwo);
       html.style.overflow = previousHtmlOverflow;
       body.style.overflow = previousBodyOverflow;
       html.style.overscrollBehavior = previousHtmlOverscroll;
@@ -456,6 +446,10 @@ export default function BitcoinSupportModal({
           event.preventDefault();
         }
       }}
+      sx={{
+        animation: "app-modal-overlay-in 160ms cubic-bezier(0.22, 1, 0.36, 1) both",
+        willChange: "opacity",
+      }}
     >
       <Box
         ref={shellRef}
@@ -480,10 +474,11 @@ export default function BitcoinSupportModal({
         onMouseDown={(event) => event.stopPropagation()}
         onTouchStart={(event) => event.stopPropagation()}
         sx={{
+          animation: "app-modal-content-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both",
           isolation: "isolate",
           transform: "translate3d(0, 0, 0)",
           WebkitTransform: "translate3d(0, 0, 0)",
-          willChange: "transform",
+          willChange: "transform, opacity",
           "@supports (height: 100dvh)": {
             height: {
               base: "min(80dvh, 720px)",

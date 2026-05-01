@@ -40,6 +40,10 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import { getGermanCopy } from "../utils/germanCopy";
+import {
+  nativeAnchoredDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -614,13 +618,14 @@ export default function RealWorldTasksModal({
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
       <DrawerOverlay
+        {...swipeDismiss.overlayProps}
+        motionProps={nativeOverlayMotionProps}
         bg={ui.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
-        opacity={swipeDismiss.overlayOpacity}
-        transition="opacity 0.18s ease"
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
+        motionProps={nativeAnchoredDrawerMotionProps}
         display="flex"
         flexDirection="column"
         bg={ui.drawerBg}

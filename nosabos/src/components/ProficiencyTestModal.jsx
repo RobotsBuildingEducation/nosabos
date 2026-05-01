@@ -16,6 +16,10 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
 import { t as tFn } from "../utils/translation";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 export default function ProficiencyTestModal({
   isOpen,
@@ -68,10 +72,12 @@ export default function ProficiencyTestModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
       />
       <ModalContent
+        motionProps={nativeModalMotionProps}
         bg="gray.900"
         color="gray.100"
         border="1px solid"

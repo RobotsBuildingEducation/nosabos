@@ -90,6 +90,10 @@ import {
   getLanguagePromptName,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -3284,9 +3288,22 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         supportLang={supportLang}
       />
 
-      <Modal isOpen={isTranscriptOpen} onClose={closeTranscript} size="xl">
-        <ModalOverlay bg="blackAlpha.700" />
-        <ModalContent bg="gray.800" color="gray.100" mx={3}>
+      <Modal
+        isOpen={isTranscriptOpen}
+        onClose={closeTranscript}
+        size="xl"
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          bg="gray.800"
+          color="gray.100"
+          mx={3}
+        >
           <ModalHeader>
             {uiText("ra_conversation_log", "Conversation log")}
           </ModalHeader>

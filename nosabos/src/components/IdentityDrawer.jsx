@@ -68,6 +68,11 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeDrawerMotionProps,
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const HINDI_SUPPORT_COPY = {
   "Enter a display name": "एक प्रदर्शित नाम दर्ज करें",
@@ -951,9 +956,11 @@ export function IdentityPanel({
         leastDestructiveRef={signOutCancelRef}
         onClose={() => setIsSignOutOpen(false)}
         isCentered
+        motionPreset="none"
       >
-        <AlertDialogOverlay>
+        <AlertDialogOverlay motionProps={nativeOverlayMotionProps}>
           <AlertDialogContent
+            motionProps={nativeModalMotionProps}
             bg="gray.800"
             borderColor="whiteAlpha.200"
             border="1px solid"
@@ -992,9 +999,14 @@ export default function IdentityDrawer({ isOpen, onClose, ...panelProps }) {
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay {...swipeDismiss.overlayProps} bg="blackAlpha.600" />
+      <DrawerOverlay
+        {...swipeDismiss.overlayProps}
+        motionProps={nativeOverlayMotionProps}
+        bg="blackAlpha.600"
+      />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
+        motionProps={nativeDrawerMotionProps}
         bg="gray.900"
         color="gray.100"
         borderTopRadius="24px"

@@ -3,6 +3,7 @@ body {
   background-color: var(--app-page-bg) !important;
   color: var(--app-text-primary) !important;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
   transition:
     background-color 220ms ease,
     color 220ms ease;
@@ -203,6 +204,37 @@ body {
 
 #root {
   color: var(--app-text-primary);
+}
+
+.chakra-modal__content,
+.chakra-modal__overlay,
+.chakra-slide.chakra-modal__content {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.chakra-slide.chakra-modal__content {
+  will-change: transform;
+}
+
+@keyframes app-modal-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes app-modal-content-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 @media (min-width: 768px) and (hover: hover) and (pointer: fine) {

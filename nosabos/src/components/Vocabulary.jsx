@@ -95,6 +95,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -6814,9 +6818,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         isCentered
         size="lg"
         closeOnOverlayClick={false}
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
           color="white"
           borderRadius="2xl"
@@ -6932,9 +6942,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         isCentered
         size="lg"
         closeOnOverlayClick={false}
+        motionPreset="none"
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(4px)"
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"
           color="white"
           borderRadius="2xl"

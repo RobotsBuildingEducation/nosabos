@@ -78,6 +78,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -4051,9 +4055,23 @@ Return ONLY JSON:
           </HStack>
         </Center>
 
-        <Modal isOpen={showChatLog} onClose={() => setShowChatLog(false)} size="xl">
-          <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
-          <ModalContent bg="gray.900" color="gray.100" borderWidth="1px">
+        <Modal
+          isOpen={showChatLog}
+          onClose={() => setShowChatLog(false)}
+          size="xl"
+          motionPreset="none"
+        >
+          <ModalOverlay
+            motionProps={nativeOverlayMotionProps}
+            bg="blackAlpha.700"
+            backdropFilter="blur(4px)"
+          />
+          <ModalContent
+            motionProps={nativeModalMotionProps}
+            bg="gray.900"
+            color="gray.100"
+            borderWidth="1px"
+          >
             <ModalHeader>{uiText("ra_chat_log", "Chat log")}</ModalHeader>
             <ModalCloseButton />
             <ModalBody pb={6}>

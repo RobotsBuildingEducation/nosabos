@@ -40,6 +40,10 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages.js";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
@@ -645,11 +649,13 @@ export default function DailyGoalModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
       />
 
       <ModalContent
+        motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
         color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         border="1px solid"
