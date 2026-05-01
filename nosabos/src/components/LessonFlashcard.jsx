@@ -1241,14 +1241,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       color={isRecording ? "white" : undefined}
                       leftIcon={
                         isConnecting ? (
-                          <VoiceOrb
-                            state={
-                              ["idle", "listening", "speaking"][
-                                Math.floor(Math.random() * 3)
-                              ]
-                            }
-                            size={16}
-                          />
+                          <Spinner size="xs" thickness="2px" color="currentColor" />
                         ) : isRecording ? (
                           <RiStopCircleLine size={16} />
                         ) : (

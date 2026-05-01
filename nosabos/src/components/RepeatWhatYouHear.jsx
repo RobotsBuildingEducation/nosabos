@@ -30,6 +30,7 @@ import {
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const submitSpinner = <Spinner size="sm" thickness="2px" color="currentColor" />;
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -684,7 +685,7 @@ export default function RepeatWhatYouHear({
             px={{ base: 7, md: 12 }}
             py={{ base: 3, md: 4 }}
           >
-            {isSubmitting ? <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={24} /> : submitLabel}
+            {isSubmitting ? submitSpinner : submitLabel}
           </Button>
         </Stack>
 

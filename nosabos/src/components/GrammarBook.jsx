@@ -93,6 +93,7 @@ import {
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+const submitSpinner = <Spinner size="sm" thickness="2px" color="currentColor" />;
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -5141,18 +5142,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingG ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("grammar_submit")
-                )}
+                {loadingG ? submitSpinner : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -5424,18 +5414,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMCG ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("grammar_submit")
-                )}
+                {loadingMCG ? submitSpinner : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -5719,18 +5698,7 @@ Return JSON ONLY:
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMAG ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("grammar_submit")
-                )}
+                {loadingMAG ? submitSpinner : t("grammar_submit")}
               </Button>
             </Stack>
 
@@ -6317,18 +6285,7 @@ Return JSON ONLY:
                 px={{ base: 8, md: 14 }}
                 py={{ base: 3, md: 4 }}
               >
-                {loadingMJ ? (
-                  <VoiceOrb
-                    state={
-                      ["idle", "listening", "speaking"][
-                        Math.floor(Math.random() * 3)
-                      ]
-                    }
-                    size={24}
-                  />
-                ) : (
-                  t("grammar_submit")
-                )}
+                {loadingMJ ? submitSpinner : t("grammar_submit")}
               </Button>
             </Stack>
 
