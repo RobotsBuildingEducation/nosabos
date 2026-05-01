@@ -83,8 +83,8 @@ createRoot(document.getElementById("root")).render(
             <Route path="/proficiency" element={<ProficiencyContainer />} />
             <Route path="/links" element={<LinksPage />} />
             <Route path="/citizenship" element={<CitizenshipGuide />} />
-            <Route path="/experiments" element={<SoundExperiment />} />
-            <Route path="/game" element={<RPGGame />} />
+            {/* <Route path="/experiments" element={<SoundExperiment />} /> */}
+            {/* <Route path="/game" element={<RPGGame />} /> */}
           </Routes>
         </Router>
       </div>
