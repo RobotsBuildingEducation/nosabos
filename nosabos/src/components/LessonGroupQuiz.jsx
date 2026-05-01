@@ -62,6 +62,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1456,9 +1460,18 @@ YES or NO
   if (showResults) {
     const passed = correctAnswers >= PASS_SCORE;
     return (
-      <Modal isOpen={true} onClose={handleComplete} size="lg">
-        <ModalOverlay />
-        <ModalContent bg="#1a1e2e" color="white">
+      <Modal
+        isOpen={true}
+        onClose={handleComplete}
+        size="lg"
+        motionPreset="none"
+      >
+        <ModalOverlay motionProps={nativeOverlayMotionProps} />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          bg="#1a1e2e"
+          color="white"
+        >
           <ModalHeader textAlign="center">
             {passed ? quizUi.quizPassed : quizUi.quizFailed}
           </ModalHeader>

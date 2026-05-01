@@ -74,6 +74,10 @@ import {
   getLanguageDirection,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const MotionBox = motion(Box);
 const APP_SURFACE = "var(--app-surface)";
@@ -942,12 +946,20 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      size="xl"
+      isCentered
+      motionPreset="none"
+    >
       <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
         backdropFilter={isLightTheme ? "blur(4px)" : "blur(8px)"}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700"}
       />
       <ModalContent
+        motionProps={nativeModalMotionProps}
         bg={modalShellTheme.bg}
         borderRadius="2xl"
         overflow="hidden"

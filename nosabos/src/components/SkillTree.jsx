@@ -242,6 +242,10 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const Conversations = lazy(() => import("./Conversations"));
 const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
@@ -1957,10 +1961,16 @@ function LessonDetailModal({
       isCentered
       closeOnOverlayClick={!isTransitioningToLesson}
       closeOnEsc={!isTransitioningToLesson}
+      motionPreset="none"
     >
-      <ModalOverlay backdropFilter="blur(8px)" bg="var(--app-overlay)" />
+      <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
+        backdropFilter="blur(8px)"
+        bg="var(--app-overlay)"
+      />
       <ModalContent
         ref={modalContentRef}
+        motionProps={nativeModalMotionProps}
         bg="gray.900"
         color="var(--app-text-primary)"
         borderRadius={gameLoading ? { base: "0", md: "2xl" } : "2xl"}

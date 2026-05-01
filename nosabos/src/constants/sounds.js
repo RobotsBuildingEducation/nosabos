@@ -1,0 +1,10 @@
+export const clickSound = "incorrect";
+export const selectSound = "select";
+export const submitSound = "submit";
+export const submitActionSound = "submitAction";
+export const nextButtonSound = "next";
+export const completeSound = "correct";
+export const deliciousSound = "correct";
+export const sparkleSound = "sparkle";
+export const modeSwitcherSound = "randomChord";
+export const dailyGoalSound = "dailyGoal";

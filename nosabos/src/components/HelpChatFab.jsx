@@ -96,6 +96,10 @@ import {
   normalizePracticeLanguage,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -2134,10 +2138,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
           <DrawerOverlay
             {...chatSwipeDismiss.overlayProps}
+            motionProps={nativeOverlayMotionProps}
             bg="blackAlpha.600"
           />
           <DrawerContent
             {...chatSwipeDismiss.drawerContentProps}
+            motionProps={nativeDrawerMotionProps}
             bg="gray.900"
             color="gray.100"
             borderTopRadius="24px"
@@ -2656,8 +2662,13 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             placement="left"
             onClose={drawerDisclosure.onClose}
           >
-            <DrawerOverlay />
-            <DrawerContent bg="gray.900" color="gray.100" maxW="280px">
+            <DrawerOverlay motionProps={nativeOverlayMotionProps} />
+            <DrawerContent
+              motionProps={nativeDrawerMotionProps}
+              bg="gray.900"
+              color="gray.100"
+              maxW="280px"
+            >
               <DrawerHeader
                 borderBottomWidth="1px"
                 borderColor="gray.800"

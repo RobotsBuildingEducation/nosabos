@@ -86,6 +86,10 @@ import {
 } from "../../utils/softStopButton";
 import { getBidiTextProps, mergeBidiSx } from "../../utils/bidiText";
 import { useThemeStore } from "../../useThemeStore";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../../utils/modalMotion";
 
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
@@ -7338,9 +7342,14 @@ export default function RPGGame({
         }}
         isCentered
         size="sm"
+        motionPreset="none"
       >
-        <ModalOverlay bg={rpgOverlayBg} />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg={rpgOverlayBg}
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg={rpgPanelBg}
           border="2px solid"
           borderColor={rpgPanelBorder}
@@ -7436,9 +7445,14 @@ export default function RPGGame({
         onClose={questLogModal.onClose}
         isCentered
         size="sm"
+        motionPreset="none"
       >
-        <ModalOverlay bg={rpgOverlayBg} />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg={rpgOverlayBg}
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg={rpgPanelBg}
           border="2px solid"
           borderColor={rpgPanelBorder}

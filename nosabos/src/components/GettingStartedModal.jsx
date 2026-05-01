@@ -22,6 +22,10 @@ import submitActionSound from "../assets/submitaction.mp3";
 import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
 import { t as tFn } from "../utils/translation";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -126,10 +130,12 @@ export default function GettingStartedModal({
       returnFocusOnClose={false}
     >
       <ModalOverlay
+        motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
       />
       <ModalContent
+        motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
         color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         border="1px solid"

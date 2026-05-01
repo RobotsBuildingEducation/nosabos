@@ -66,6 +66,10 @@ import { syncDocumentLanguage } from "../utils/documentLanguage";
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 import { linksPageTranslations } from "../translations/linksPage";
 import { useThemeStore } from "../useThemeStore";
+import {
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -1669,9 +1673,19 @@ export default function LinksPage() {
       </Container>
 
       {/* Robots Building Education Modal */}
-      <Modal isOpen={isRbeOpen} onClose={onRbeClose} isCentered size="md">
-        <ModalOverlay bg={modalOverlayBg} />
+      <Modal
+        isOpen={isRbeOpen}
+        onClose={onRbeClose}
+        isCentered
+        size="md"
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg={modalOverlayBg}
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
@@ -1781,9 +1795,14 @@ export default function LinksPage() {
         isCentered
         size="md"
         scrollBehavior="inside"
+        motionPreset="none"
       >
-        <ModalOverlay bg={modalOverlayBg} />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg={modalOverlayBg}
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
@@ -2283,9 +2302,14 @@ export default function LinksPage() {
         isCentered
         size="md"
         scrollBehavior="inside"
+        motionPreset="none"
       >
-        <ModalOverlay bg={modalOverlayBg} />
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg={modalOverlayBg}
+        />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           dir={pageDirection}
           bg={modalBg}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}

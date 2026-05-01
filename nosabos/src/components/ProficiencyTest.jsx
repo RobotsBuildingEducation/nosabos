@@ -63,6 +63,11 @@ import {
   getLanguageDirection,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeDrawerMotionProps,
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -2620,12 +2625,15 @@ Return ONLY valid JSON:
         isOpen={showChatLog}
         onClose={() => setShowChatLog(false)}
         size="xl"
+        motionPreset="none"
       >
         <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(4px)"
         />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderWidth="1px"
@@ -2675,10 +2683,12 @@ Return ONLY valid JSON:
         closeOnEsc={false}
       >
         <DrawerOverlay
+          motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(6px)"
         />
         <DrawerContent
+          motionProps={nativeDrawerMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderTopRadius="24px"
@@ -3097,11 +3107,13 @@ Return ONLY valid JSON:
       >
         <DrawerOverlay
           {...rubricSwipeDismiss.overlayProps}
+          motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(6px)"
         />
         <DrawerContent
           {...rubricSwipeDismiss.drawerContentProps}
+          motionProps={nativeDrawerMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderTopRadius="24px"
@@ -3280,13 +3292,15 @@ Return ONLY valid JSON:
         onClose={() => setShowExitConfirm(false)}
         isCentered
         size="sm"
-        motionPreset="slideInBottom"
+        motionPreset="none"
       >
         <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(4px)"
         />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           border="1px solid"

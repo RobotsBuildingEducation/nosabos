@@ -22,6 +22,10 @@ import TeamView from "./TeamView";
 import useBottomDrawerSwipeDismiss from "../../hooks/useBottomDrawerSwipeDismiss";
 import { translations } from "../../utils/translation.jsx";
 import { useThemeStore } from "../../useThemeStore";
+import {
+  nativeDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../../utils/modalMotion";
 
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -74,11 +78,13 @@ export default function TeamsDrawer({
     <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
       <DrawerOverlay
         {...swipeDismiss.overlayProps}
+        motionProps={nativeOverlayMotionProps}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
         backdropFilter="blur(4px)"
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
+        motionProps={nativeDrawerMotionProps}
         display="flex"
         flexDirection="column"
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

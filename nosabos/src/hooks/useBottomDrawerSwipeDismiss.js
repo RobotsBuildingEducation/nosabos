@@ -314,6 +314,7 @@ export default function useBottomDrawerSwipeDismiss({
     isOpen,
     resetGesture,
     setDrawerOffset,
+    setDragging,
   ]);
 
   useEffect(() => {
@@ -342,9 +343,16 @@ export default function useBottomDrawerSwipeDismiss({
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    let resizeFrame = null;
+
     const handleResize = () => {
-      measureSheetHeight();
-      schedulePresentationSync();
+      if (resizeFrame !== null) return;
+
+      resizeFrame = window.requestAnimationFrame(() => {
+        resizeFrame = null;
+        measureSheetHeight();
+        schedulePresentationSync();
+      });
     };
 
     handleResize();
@@ -358,6 +366,9 @@ export default function useBottomDrawerSwipeDismiss({
     window.addEventListener("resize", handleResize, { passive: true });
 
     return () => {
+      if (resizeFrame !== null) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
       observer?.disconnect();
       window.removeEventListener("resize", handleResize);
     };

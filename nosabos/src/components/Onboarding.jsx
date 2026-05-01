@@ -52,6 +52,10 @@ import { getGermanCopy } from "../utils/germanCopy";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
 import { useThemeStore } from "../useThemeStore";
+import {
+  nativeDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const BASE_PATH = "/onboarding";
 const stepContentReveal = keyframes`
@@ -341,8 +345,12 @@ export default function Onboarding({
       }}
     >
       <Drawer isOpen={true} placement="bottom" onClose={() => {}}>
-        <DrawerOverlay bg="var(--app-overlay)" />
+        <DrawerOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="var(--app-overlay)"
+        />
         <DrawerContent
+          motionProps={nativeDrawerMotionProps}
           bg="gray.900"
           color="gray.100"
           borderTopRadius="24px"

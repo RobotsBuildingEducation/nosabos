@@ -99,6 +99,11 @@ import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
 import { SiMonkeytie } from "react-icons/si";
+import {
+  nativeDrawerMotionProps,
+  nativeModalMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -11542,8 +11547,12 @@ const CitizenshipAssistantDrawer = ({
 
   return (
     <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
-      <DrawerOverlay bg="blackAlpha.500" />
+      <DrawerOverlay
+        motionProps={nativeOverlayMotionProps}
+        bg="blackAlpha.500"
+      />
       <DrawerContent
+        motionProps={nativeDrawerMotionProps}
         bg="var(--app-surface)"
         color="var(--app-text-primary)"
         w={{ base: "92vw", sm: "420px", md: "480px" }}
@@ -12888,9 +12897,11 @@ export default function CitizenshipGuide() {
         isOpen={isPrivacyOpen}
         onClose={() => setIsPrivacyOpen(false)}
         isCentered
+        motionPreset="none"
       >
-        <ModalOverlay />
+        <ModalOverlay motionProps={nativeOverlayMotionProps} />
         <ModalContent
+          motionProps={nativeModalMotionProps}
           bg="var(--app-surface)"
           color="var(--app-text-primary)"
           border="4px solid"

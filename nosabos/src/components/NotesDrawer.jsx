@@ -34,6 +34,10 @@ import {
   getLanguageLocale,
   normalizeSupportLanguage,
 } from "../constants/languages";
+import {
+  nativeDrawerMotionProps,
+  nativeOverlayMotionProps,
+} from "../utils/modalMotion";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -597,13 +601,14 @@ export default function NotesDrawer({
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
       <DrawerOverlay
+        {...swipeDismiss.overlayProps}
+        motionProps={nativeOverlayMotionProps}
         bg={noteUi.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
-        opacity={swipeDismiss.overlayOpacity}
-        transition="opacity 0.18s ease"
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
+        motionProps={nativeDrawerMotionProps}
         display="flex"
         flexDirection="column"
         bg={noteUi.drawerBg}
