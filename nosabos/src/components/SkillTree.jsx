@@ -292,16 +292,20 @@ function getRandomLoadingOrbState() {
   ];
 }
 
-function PathModeFallback() {
+function PathModeFallback({ fill = false }) {
   const orbState = useMemo(getRandomLoadingOrbState, []);
 
   return (
     <Box
-      py={12}
+      w="100%"
+      h={fill ? "100%" : undefined}
+      minH={fill ? "100%" : undefined}
+      py={fill ? 0 : 12}
       textAlign="center"
       display="flex"
       flexDirection="column"
       alignItems="center"
+      justifyContent={fill ? "center" : undefined}
       gap={3}
     >
       <VoiceOrb state={orbState} size={88} />
@@ -2088,7 +2092,7 @@ function LessonDetailModal({
               </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
-              <Suspense fallback={<PathModeFallback />}>
+              <Suspense fallback={<PathModeFallback fill />}>
                 <LoadingMiniGame supportLang={supportLang} />
               </Suspense>
             </Box>
