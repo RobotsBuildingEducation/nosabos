@@ -13,7 +13,11 @@ import {
   RiCheckLine,
   RiLockLine,
 } from "react-icons/ri";
-import { FLASHCARD_DATA, loadRelevantFlashcards } from "../data/flashcardData";
+import {
+  loadAllFlashcards,
+  loadFlashcardsForLevel,
+  loadRelevantFlashcards,
+} from "../data/flashcards/index.js";
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { WaveBar } from "./WaveBar";
@@ -906,12 +910,8 @@ export default function FlashcardSkillTree({
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [isReviewSession, setIsReviewSession] = useState(false);
   const [localProgressOverrides, setLocalProgressOverrides] = useState({});
-  const [flashcardData, setFlashcardData] = useState(() =>
-    activeCEFRLevel
-      ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
-      : FLASHCARD_DATA,
-  );
-  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
+  const [flashcardData, setFlashcardData] = useState([]);
+  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(true);
   const [isReady, setIsReady] = useState(false);
 
   const playSound = useSoundSettings((state) => state.playSound);
@@ -940,7 +940,9 @@ export default function FlashcardSkillTree({
       setIsLoadingFlashcards(true);
 
       try {
-        const relevantFlashcards = await loadRelevantFlashcards(userProgress);
+        const relevantFlashcards = activeCEFRLevel
+          ? await loadFlashcardsForLevel(activeCEFRLevel)
+          : await loadRelevantFlashcards(userProgress);
 
         if (isMounted && relevantFlashcards.length > 0) {
           const filteredFlashcards = activeCEFRLevel
@@ -948,27 +950,25 @@ export default function FlashcardSkillTree({
             : relevantFlashcards;
 
           if (filteredFlashcards.length === 0 && activeCEFRLevel) {
-            setFlashcardData(
-              FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel),
-            );
+            const levelFlashcards = await loadFlashcardsForLevel(activeCEFRLevel);
+            if (isMounted) {
+              setFlashcardData(levelFlashcards);
+            }
           } else {
             setFlashcardData(filteredFlashcards);
           }
         } else if (isMounted) {
-          setFlashcardData(
-            activeCEFRLevel
-              ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
-              : FLASHCARD_DATA,
-          );
+          const fallbackFlashcards = activeCEFRLevel
+            ? await loadFlashcardsForLevel(activeCEFRLevel)
+            : await loadAllFlashcards();
+          if (isMounted) {
+            setFlashcardData(fallbackFlashcards);
+          }
         }
       } catch (error) {
         console.error("Error loading flashcards:", error);
         if (isMounted) {
-          setFlashcardData(
-            activeCEFRLevel
-              ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
-              : FLASHCARD_DATA,
-          );
+          setFlashcardData([]);
         }
       } finally {
         if (isMounted) {
@@ -977,9 +977,7 @@ export default function FlashcardSkillTree({
       }
     }
 
-    if (loadRelevantFlashcards) {
-      loadFlashcards();
-    }
+    loadFlashcards();
 
     return () => {
       isMounted = false;

@@ -40,7 +40,7 @@ import {
   stopTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
-import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
+import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";

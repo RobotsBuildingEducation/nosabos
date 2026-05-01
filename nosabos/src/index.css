@@ -168,6 +168,16 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
 }
+
+.route-fallback {
+  min-height: 100dvh;
+  background: var(--app-page-bg);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+}
+
 a {
   font-weight: 500;
   color: #646cff;

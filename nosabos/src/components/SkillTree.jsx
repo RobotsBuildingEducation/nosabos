@@ -1,4 +1,6 @@
 import React, {
+  Suspense,
+  lazy,
   useState,
   useEffect,
   useMemo,
@@ -29,8 +31,6 @@ import {
 } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
-import FlashcardSkillTree from "./FlashcardSkillTree";
-import Conversations from "./Conversations";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -214,12 +214,11 @@ import {
   RiCheckboxLine,
 } from "react-icons/ri";
 import {
-  getLearningPath,
-  getMultiLevelLearningPath,
+  loadLearningPath,
+  loadMultiLevelLearningPath,
   getUnitProgress,
-  getNextLesson,
   SKILL_STATUS,
-} from "../data/skillTreeData";
+} from "../data/skillTree/index.js";
 import { translateSkillTreeTextToArabic } from "../data/skillTree/arabicLocalizer";
 import { translateSkillTreeTextToChinese } from "../data/skillTree/chineseLocalizer";
 import { translateSkillTreeTextToHindi } from "../data/skillTree/hindiLocalizer";
@@ -242,9 +241,11 @@ import { TbLanguage } from "react-icons/tb";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
-import LoadingMiniGame from "./LoadingMiniGame";
-import { REVIEW_WORLD_ID, generateScenarioWithAI } from "./RPGGame/scenarios";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
+
+const Conversations = lazy(() => import("./Conversations"));
+const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
+const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
 
 const hexToRgb = (hex) => {
   if (typeof hex !== "string") return null;
@@ -278,6 +279,31 @@ const rgbToHex = ({ r, g, b }) => {
 
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 };
+
+const LOADING_ORB_STATES = ["idle", "listening", "speaking"];
+
+function getRandomLoadingOrbState() {
+  return LOADING_ORB_STATES[
+    Math.floor(Math.random() * LOADING_ORB_STATES.length)
+  ];
+}
+
+function PathModeFallback() {
+  const orbState = useMemo(getRandomLoadingOrbState, []);
+
+  return (
+    <Box
+      py={12}
+      textAlign="center"
+      display="flex"
+      flexDirection="column"
+      alignItems="center"
+      gap={3}
+    >
+      <VoiceOrb state={orbState} size={88} />
+    </Box>
+  );
+}
 
 const mixHexColors = (baseHex, mixHex, amount = 0.5) => {
   const base = hexToRgb(baseHex);
@@ -1872,6 +1898,9 @@ function LessonDetailModal({
         gameContent?.topic,
         gameContent?.unitTitle,
       ].filter(Boolean);
+      const { REVIEW_WORLD_ID, generateScenarioWithAI } = await import(
+        "./RPGGame/scenarios"
+      );
 
       const scenario = await generateScenarioWithAI(
         REVIEW_WORLD_ID,
@@ -2049,7 +2078,9 @@ function LessonDetailModal({
               </Flex>
             </Box>
             <Box flex="1" overflow="hidden" position="relative">
-              <LoadingMiniGame supportLang={supportLang} />
+              <Suspense fallback={<PathModeFallback />}>
+                <LoadingMiniGame supportLang={supportLang} />
+              </Suspense>
             </Box>
           </Box>
         ) : (
@@ -2472,12 +2503,44 @@ export default function SkillTree({
       ? lessonLevelCompletionStatus
       : flashcardLevelCompletionStatus;
 
-  // Memoize units to prevent unnecessary recalculations
-  const units = useMemo(() => {
-    return showMultipleLevels
-      ? getMultiLevelLearningPath(targetLang, levels)
-      : getLearningPath(targetLang, level);
-  }, [showMultipleLevels, targetLang, levels, level]);
+  const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
+  const [units, setUnits] = useState([]);
+  const [isLoadingUnits, setIsLoadingUnits] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadUnits() {
+      setIsLoadingUnits(true);
+      try {
+        const nextUnits = showMultipleLevels
+          ? await loadMultiLevelLearningPath(
+              targetLang,
+              levelsKey ? levelsKey.split("|") : [],
+            )
+          : await loadLearningPath(targetLang, level);
+
+        if (isMounted) {
+          setUnits(nextUnits);
+        }
+      } catch (error) {
+        console.error("Failed to load skill tree units:", error);
+        if (isMounted) {
+          setUnits([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingUnits(false);
+        }
+      }
+    }
+
+    loadUnits();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [showMultipleLevels, targetLang, levelsKey, level]);
 
   // Filter units to show only the effective active level for the current mode
   const visibleUnits = useMemo(() => {
@@ -2784,8 +2847,11 @@ export default function SkillTree({
             before the new heavy component mounts on the next frame. */}
         {pathMode !== deferredPathMode ? null : deferredPathMode === "path" ? (
           <Box>
-            <VStack spacing={8} align="stretch">
-              {visibleUnits.length > 0 ? (
+            {isLoadingUnits ? (
+              <PathModeFallback />
+            ) : (
+              <VStack spacing={8} align="stretch">
+                {visibleUnits.length > 0 ? (
                 visibleUnits.map((unit, index) => (
                   <UnitSection
                     key={unit.id}
@@ -2801,39 +2867,48 @@ export default function SkillTree({
                     isTutorialComplete={isTutorialComplete}
                   />
                 ))
-              ) : (
-                <Box textAlign="center" py={12}>
-                  <Text fontSize="lg" color="gray.400">
-                    {getTranslation("skill_tree_no_path")}
-                  </Text>
-                  <Text fontSize="sm" color="gray.500" mt={2}>
-                    {getTranslation("skill_tree_check_back")}
-                  </Text>
-                </Box>
-              )}
-            </VStack>
+                ) : (
+                  <Box textAlign="center" py={12}>
+                    <Text fontSize="lg" color="gray.400">
+                      {getTranslation("skill_tree_no_path")}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500" mt={2}>
+                      {getTranslation("skill_tree_check_back")}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            )}
           </Box>
         ) : deferredPathMode === "flashcards" ? (
           <Box>
-            <FlashcardSkillTree
-              userProgress={userProgress}
-              onStartFlashcard={handleFlashcardComplete}
-              onRandomPractice={handleRandomPractice}
-              targetLang={targetLang}
-              supportLang={supportLang}
-              activeCEFRLevel={effectiveActiveLevel}
-              pauseMs={pauseMs}
-            />
+            <Suspense
+              fallback={<PathModeFallback />}
+            >
+              <FlashcardSkillTree
+                userProgress={userProgress}
+                onStartFlashcard={handleFlashcardComplete}
+                onRandomPractice={handleRandomPractice}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            </Suspense>
           </Box>
         ) : (
           <Box>
-            <Conversations
-              activeNpub={activeNpub}
-              targetLang={targetLang}
-              supportLang={supportLang}
-              pauseMs={pauseMs}
-              maxProficiencyLevel={maxProficiencyLevel}
-            />
+            <Suspense
+              fallback={<PathModeFallback />}
+            >
+              <Conversations
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+              />
+            </Suspense>
           </Box>
         )}
 

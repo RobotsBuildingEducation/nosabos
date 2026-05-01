@@ -13,7 +13,7 @@ import {
   deleteField,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
-import { SKILL_STATUS } from "../data/skillTreeData";
+import { SKILL_STATUS } from "../data/skillTree/index.js";
 
 /**
  * Initialize progress structure for a new user
