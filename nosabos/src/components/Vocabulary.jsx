@@ -610,9 +610,10 @@ function buildSpeakVocabStreamPrompt({
     }). Choose VARIANT:`,
     `- repeat: show the ${TARGET} word/phrase (≤4 words) to repeat aloud.`,
     allowTranslate
-      ? `- translate: show a ${SUPPORT} word/phrase (≤3 words) and have them speak the ${TARGET} translation aloud.`
+      ? `- translate: give any ${SUPPORT} cue only in hint/translation; display must be the ${TARGET} translation the learner will say aloud.`
       : `- translate: SKIP when support language equals ${TARGET}.`,
     `- complete: show a ${TARGET} sentence (≤120 chars) with ___ and have them speak the completed sentence aloud.`,
+    `- CRITICAL: "display" is visible on the Say It Aloud card and MUST be in ${TARGET}, never ${SUPPORT}.`,
     topicDirective,
     `- Provide a concise instruction sentence in ${TARGET} (≤120 chars).`,
     `- Include a hint in ${SUPPORT} (≤10 words).`,
@@ -621,7 +622,7 @@ function buildSpeakVocabStreamPrompt({
       : `- Use empty translation "".`,
     "",
     "Stream as NDJSON:",
-    `{"type":"vocab_speak","phase":"prompt","variant":"repeat|translate|complete","display":"<text shown to learner>","target":"<${TARGET} output to evaluate>","prompt":"<instruction in ${TARGET}>"}`,
+    `{"type":"vocab_speak","phase":"prompt","variant":"repeat|translate|complete","display":"<${TARGET} text shown to learner>","target":"<${TARGET} output to evaluate>","prompt":"<instruction in ${TARGET}>"}`,
     `{"type":"vocab_speak","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}`,
     `{"type":"done"}`,
   ].join("\n");
@@ -630,6 +631,18 @@ function buildSpeakVocabStreamPrompt({
 function normalizeSpeakVariant(variant) {
   const v = (variant || "").toString().toLowerCase();
   return ["repeat", "translate", "complete"].includes(v) ? v : "repeat";
+}
+
+function normalizeSpeakPromptPayload(obj) {
+  const target = typeof obj?.target === "string" ? obj.target.trim() : "";
+  const display =
+    target || (typeof obj?.display === "string" ? obj.display.trim() : "");
+
+  return {
+    target,
+    display,
+    variant: normalizeSpeakVariant(obj?.variant),
+  };
 }
 
 /* MATCH phases:
@@ -2048,22 +2061,19 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
     setQuestionTTsLang(targetLang);
   }, [targetLang]);
 
-  const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
   // Flashcards are excluded from quiz mode (isFinalQuiz)
-  const types = repeatOnlyQuestions
-    ? ["repeat"]
-    : isFinalQuiz
-      ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
-      : [
-          "fill",
-          "mc",
-          "ma",
-          "speak",
-          "match",
-          "translate",
-          "repeat",
-          "flashcard",
-        ];
+  const types = isFinalQuiz
+    ? ["fill", "mc", "ma", "speak", "match", "translate", "repeat"] // no flashcard in quiz
+    : [
+        "fill",
+        "mc",
+        "ma",
+        "speak",
+        "match",
+        "translate",
+        "repeat",
+        "flashcard",
+      ];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -3282,12 +3292,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+              const payload = normalizeSpeakPromptPayload(obj);
               if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
-              if (typeof obj.target === "string") setSTarget(obj.target.trim());
-              if (typeof obj.display === "string")
-                setSStimulus(obj.display.trim());
-              if (typeof obj.variant === "string")
-                setSVariant(normalizeSpeakVariant(obj.variant));
+              if (payload.target) setSTarget(payload.target);
+              if (payload.display) setSStimulus(payload.display);
+              setSVariant(payload.variant);
               got = true;
             } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
               if (typeof obj.hint === "string") setSHint(obj.hint);
@@ -3312,14 +3321,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
               if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+                const payload = normalizeSpeakPromptPayload(obj);
                 if (typeof obj.prompt === "string")
                   setSPrompt(obj.prompt.trim());
-                if (typeof obj.target === "string")
-                  setSTarget(obj.target.trim());
-                if (typeof obj.display === "string")
-                  setSStimulus(obj.display.trim());
-                if (typeof obj.variant === "string")
-                  setSVariant(normalizeSpeakVariant(obj.variant));
+                if (payload.target) setSTarget(payload.target);
+                if (payload.display) setSStimulus(payload.display);
+                setSVariant(payload.variant);
                 got = true;
               } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
                 if (typeof obj.hint === "string") setSHint(obj.hint);
@@ -3370,9 +3377,10 @@ Return JSON ONLY:
 
       const parsed = safeParseJSON(text);
       if (parsed && typeof parsed.target === "string") {
-        setSTarget(parsed.target.trim());
-        setSStimulus(String(parsed.display || parsed.target || "").trim());
-        setSVariant(normalizeSpeakVariant(parsed.variant));
+        const payload = normalizeSpeakPromptPayload(parsed);
+        setSTarget(payload.target);
+        setSStimulus(payload.display);
+        setSVariant(payload.variant);
         setSPrompt(String(parsed.prompt || ""));
         setSHint(String(parsed.hint || ""));
         setSTranslation(String(parsed.translation || ""));
@@ -3391,14 +3399,14 @@ Return JSON ONLY:
               : supportCode === "es"
               ? "bosque"
               : "forest";
-          setSStimulus(supportWord);
-          setSTarget(
+          const targetWord =
             targetLang === "es"
               ? "bosque"
               : targetLang === "nah"
                 ? "kwawitl"
-                : "forest",
-          );
+                : "forest";
+          setSStimulus(targetWord);
+          setSTarget(targetWord);
           setSPrompt(
             targetLang === "es"
               ? `Traduce en voz alta: ${supportWord}.`
@@ -3423,19 +3431,13 @@ Return JSON ONLY:
               : "",
           );
         } else if (fallbackVariant === "complete") {
-          const cloze =
-            targetLang === "es"
-              ? "Completa: La niña ___ una canción."
-              : targetLang === "nah"
-                ? "Tlatzotzona: Pilli ___ tlahkuiloa."
-                : "Complete: The child ___ a song.";
           const completed =
             targetLang === "es"
               ? "La niña canta una canción."
               : targetLang === "nah"
                 ? "Pilli tlahkuiloa tlatzotzontli."
                 : "The child sings a song.";
-          setSStimulus(cloze);
+          setSStimulus(completed);
           setSTarget(completed);
           setSPrompt(
             targetLang === "es"
@@ -6126,7 +6128,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     fontWeight="700"
                     {...targetTextCenterProps}
                   >
-                    {sStimulus || sTarget || "…"}
+                    {sTarget || sStimulus || "…"}
                   </Text>
                 </Box>
               </>

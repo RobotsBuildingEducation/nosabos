@@ -2014,7 +2014,6 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
   const generatorDeckRef = useRef([]);
-  const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
@@ -2027,29 +2026,27 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
       // Flashcards are excluded from quiz mode (isFinalQuiz)
-      const order = repeatOnlyQuestions
-        ? [generateRepeatTranslate]
-        : isFinalQuiz
-          ? [
-              // no flashcard in quiz
-              generateFill,
-              generateMC,
-              generateMA,
-              generateSpeak,
-              generateMatch,
-              generateTranslate,
-              generateRepeatTranslate,
-            ]
-          : [
-              generateFill,
-              generateMC,
-              generateMA,
-              generateSpeak,
-              generateMatch,
-              generateTranslate,
-              generateRepeatTranslate,
-              generateFlashcard,
-            ];
+      const order = isFinalQuiz
+        ? [
+            // no flashcard in quiz
+            generateFill,
+            generateMC,
+            generateMA,
+            generateSpeak,
+            generateMatch,
+            generateTranslate,
+            generateRepeatTranslate,
+          ]
+        : [
+            generateFill,
+            generateMC,
+            generateMA,
+            generateSpeak,
+            generateMatch,
+            generateTranslate,
+            generateRepeatTranslate,
+            generateFlashcard,
+          ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
