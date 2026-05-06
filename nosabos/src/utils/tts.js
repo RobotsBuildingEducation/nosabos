@@ -6,6 +6,7 @@ const REALTIME_URL =
         REALTIME_MODEL,
       )}`
     : "";
+const REALTIME_WARMUP_TTL_MS = 4 * 60 * 1000;
 
 export const TTS_LANG_TAG = {
   ar: "ar-EG",
@@ -108,12 +109,106 @@ function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
 }
 
+function preconnectRealtimeOrigin() {
+  if (realtimePreconnectStarted || !REALTIME_URL) return;
+  if (typeof document === "undefined") return;
+
+  try {
+    const origin = new URL(REALTIME_URL).origin;
+    const link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = origin;
+    link.crossOrigin = "anonymous";
+    document.head?.appendChild(link);
+    realtimePreconnectStarted = true;
+  } catch {
+    // Ignore malformed local env URLs.
+  }
+}
+
+export function warmRealtimeTTS({ force = false } = {}) {
+  preconnectRealtimeOrigin();
+
+  if (!REALTIME_URL || typeof fetch === "undefined") {
+    return Promise.resolve(false);
+  }
+
+  const now = Date.now();
+  if (!force && now - lastRealtimeWarmupAt < REALTIME_WARMUP_TTL_MS) {
+    return realtimeWarmupPromise || Promise.resolve(true);
+  }
+
+  lastRealtimeWarmupAt = now;
+  realtimeWarmupPromise = fetch(REALTIME_URL, {
+    method: "OPTIONS",
+    mode: "cors",
+    cache: "no-store",
+    credentials: "omit",
+  })
+    .then(() => true)
+    .catch(() => false)
+    .finally(() => {
+      realtimeWarmupPromise = null;
+    });
+
+  return realtimeWarmupPromise;
+}
+
+export async function createWarmTTSAudio() {
+  try {
+    const warm = new Audio();
+    warm.playsInline = true;
+    warm.muted = true;
+    warm.volume = 0;
+    warm.src =
+      "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+    await warm.play().catch(() => undefined);
+    try {
+      warm.pause();
+    } catch {
+      // Mobile Safari can reject pausing a just-unlocked element.
+    }
+    try {
+      warm.currentTime = 0;
+    } catch {
+      // Rewinding is best-effort; the warmed element is still reusable.
+    }
+    warm.muted = false;
+    warm.volume = 1;
+    return warm;
+  } catch {
+    return null;
+  }
+}
+
+export function primeTTSAudio() {
+  if (!sharedWarmAudioPromise) {
+    sharedWarmAudioPromise = createWarmTTSAudio().catch(() => null);
+  }
+  return sharedWarmAudioPromise;
+}
+
+async function consumeSharedWarmAudio() {
+  const pendingWarmAudio = sharedWarmAudioPromise;
+  sharedWarmAudioPromise = null;
+  if (!pendingWarmAudio) return null;
+  try {
+    return await pendingWarmAudio;
+  } catch {
+    return null;
+  }
+}
+
 // ============================================================================
 // CACHING LAYER
 // ============================================================================
 
 // In-memory cache for current session (instant access)
 const memoryCache = new Map();
+let realtimePreconnectStarted = false;
+let realtimeWarmupPromise = null;
+let lastRealtimeWarmupAt = 0;
+let sharedWarmAudioPromise = null;
 
 // IndexedDB configuration
 const DB_NAME = "tts-audio-cache";
@@ -363,11 +458,12 @@ async function getRealtimePlayer({
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
   const targetLangTag = langTag || TTS_LANG_TAG.es;
+  void warmRealtimeTTS();
 
   const remoteStream = new MediaStream();
   // Reuse a pre-warmed Audio element if provided (already unlocked by user
   // gesture on mobile) so that play() works outside a gesture context.
-  const audio = warmAudio || new Audio();
+  const audio = warmAudio || (await consumeSharedWarmAudio()) || new Audio();
   // Safari can get stuck on the old data URI source unless we fully detach it
   // before switching the element over to the live WebRTC stream.
   try {
@@ -730,6 +826,31 @@ if (typeof window !== "undefined") {
   setTimeout(() => {
     cleanupExpiredCache();
   }, 5000);
+
+  preconnectRealtimeOrigin();
+  const warmRealtimeWhenIdle = () => {
+    void warmRealtimeTTS();
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    window.requestIdleCallback(warmRealtimeWhenIdle, { timeout: 2500 });
+  } else {
+    setTimeout(warmRealtimeWhenIdle, 1500);
+  }
+
+  const primeFromGesture = () => {
+    void warmRealtimeTTS();
+    void primeTTSAudio();
+  };
+  window.addEventListener("pointerdown", primeFromGesture, {
+    capture: true,
+    once: true,
+    passive: true,
+  });
+  window.addEventListener("touchstart", primeFromGesture, {
+    capture: true,
+    once: true,
+    passive: true,
+  });
 }
 
 function addToCache(cacheKey, blob) {
