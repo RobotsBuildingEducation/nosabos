@@ -57,7 +57,7 @@ import {
   TTS_LANG_TAG,
   getCharacterVoice,
   getCharacterPersonality,
-  getRandomVoice,
+  getPreferredTTSVoice,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import {
@@ -2674,7 +2674,9 @@ function textFromChunk(chunk) {
     const cand = chunk.candidates?.[0];
     if (cand?.content?.parts?.length)
       return cand.content.parts.map((p) => p.text || "").join("");
-  } catch {}
+  } catch {
+    // Best-effort extraction from streaming SDK chunks.
+  }
   return "";
 }
 
@@ -3814,7 +3816,7 @@ export default function RPGGame({
     const applyLine = (rawLine) => {
       if (receivedCount >= translationTargets.length) return;
       const clean = String(rawLine || "")
-        .replace(/^\s*\d+[\).:-]\s*/, "")
+        .replace(/^\s*\d+[).:-]\s*/, "")
         .trim();
       if (!clean) return;
 
@@ -4813,7 +4815,9 @@ export default function RPGGame({
           npcIdx != null ? npcVariantAssignmentsRef.current[npcIdx] : undefined;
         const player = await getTTSPlayer({
           text,
-          voice: characterId ? getCharacterVoice(characterId) : getRandomVoice(),
+          voice: characterId
+            ? getCharacterVoice(characterId)
+            : getPreferredTTSVoice(user?.progress?.voice),
           personality: characterId
             ? getCharacterPersonality(characterId)
             : undefined,
@@ -4827,7 +4831,7 @@ export default function RPGGame({
         // non-blocking
       }
     },
-    [stopNPCSpeech, targetLang],
+    [stopNPCSpeech, targetLang, user?.progress?.voice],
   );
 
   const handleSelectScenario = useCallback(

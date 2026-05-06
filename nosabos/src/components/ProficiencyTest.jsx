@@ -72,11 +72,11 @@ import {
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
 
-const REALTIME_URL = `${
-  import.meta.env.VITE_REALTIME_URL
-}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL,
-)}`;
+const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
+  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
+      REALTIME_MODEL,
+    )}`
+  : "";
 
 const MAX_EXCHANGES = 10;
 const AUTO_DISCONNECT_MS = 15000;

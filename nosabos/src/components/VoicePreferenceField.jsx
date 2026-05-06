@@ -20,9 +20,11 @@ import {
   getTTSPlayer,
   getTTSVoiceOption,
   normalizeTTSVoice,
+  primeTTSAudio,
   stopTTSPlayback,
   TTS_LANG_TAG,
   TTS_VOICE_OPTIONS,
+  warmRealtimeTTS,
 } from "../utils/tts";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -248,6 +250,7 @@ export default function VoicePreferenceField({
   const [isTestingVoice, setIsTestingVoice] = useState(false);
   const previewPlayerRef = useRef(null);
   const previewRequestIdRef = useRef(0);
+  const previewTimeoutRef = useRef(null);
   const personaDraftRef = useRef(voicePersona || "");
   const mountedRef = useRef(true);
 
@@ -278,7 +281,14 @@ export default function VoicePreferenceField({
     personaDraftRef.current = voicePersona || "";
   }, [voicePersona]);
 
+  const clearPreviewTimeout = useCallback(() => {
+    if (!previewTimeoutRef.current) return;
+    clearTimeout(previewTimeoutRef.current);
+    previewTimeoutRef.current = null;
+  }, []);
+
   const stopPreview = useCallback(() => {
+    clearPreviewTimeout();
     const current = previewPlayerRef.current;
     previewPlayerRef.current = null;
     if (!current) return;
@@ -288,10 +298,11 @@ export default function VoicePreferenceField({
     } catch {
       // The active audio element may already have been cleaned up by playback.
     }
-  }, []);
+  }, [clearPreviewTimeout]);
 
   useEffect(() => {
     mountedRef.current = true;
+    void warmRealtimeTTS();
     return () => {
       mountedRef.current = false;
       stopPreview();
@@ -303,15 +314,29 @@ export default function VoicePreferenceField({
     previewRequestIdRef.current = requestId;
     const previewVoice = normalizeTTSVoice(voiceValue);
     const previewPersona = String(personaValue ?? personaDraftRef.current);
+    const warmAudioPromise = primeTTSAudio();
     stopPreview();
     setIsTestingVoice(true);
+    previewTimeoutRef.current = setTimeout(() => {
+      if (previewRequestIdRef.current !== requestId || !mountedRef.current) {
+        return;
+      }
+      previewRequestIdRef.current = requestId + 1;
+      stopPreview();
+      setIsTestingVoice(false);
+    }, 9000);
     try {
       const player = await getTTSPlayer({
         text: getVoicePreviewText(previewVoice, previewLanguage),
         voice: previewVoice,
         personality: previewPersona,
         langTag: TTS_LANG_TAG[previewLanguage] || TTS_LANG_TAG.es,
+        warmAudio: await warmAudioPromise.catch(() => null),
       });
+      if (previewRequestIdRef.current !== requestId || !mountedRef.current) {
+        player.cleanup?.();
+        return;
+      }
       previewPlayerRef.current = player;
       const markStarted = () => {
         if (
@@ -319,6 +344,7 @@ export default function VoicePreferenceField({
           previewPlayerRef.current === player &&
           mountedRef.current
         ) {
+          clearPreviewTimeout();
           setIsTestingVoice(false);
         }
       };
@@ -328,6 +354,7 @@ export default function VoicePreferenceField({
           previewPlayerRef.current === player &&
           mountedRef.current
         ) {
+          clearPreviewTimeout();
           previewPlayerRef.current = null;
           setIsTestingVoice(false);
         }
@@ -338,13 +365,12 @@ export default function VoicePreferenceField({
       player.audio.addEventListener("error", finish, { once: true });
       void player.finalize?.finally(finish)?.catch(() => {});
       await player.ready;
+      markStarted();
       await player.audio.play();
       markStarted();
     } catch (error) {
-      if (
-        previewRequestIdRef.current === requestId &&
-        mountedRef.current
-      ) {
+      if (previewRequestIdRef.current === requestId && mountedRef.current) {
+        clearPreviewTimeout();
         setIsTestingVoice(false);
       }
       if (
@@ -360,6 +386,7 @@ export default function VoicePreferenceField({
       }
     }
   }, [
+    clearPreviewTimeout,
     previewLanguage,
     stopPreview,
     t,
@@ -371,11 +398,19 @@ export default function VoicePreferenceField({
       const nextVoice = normalizeTTSVoice(value);
       const nextPersona = String(personaDraftRef.current || "").slice(0, 240);
       onSelectSound?.();
+      void warmRealtimeTTS();
+      void primeTTSAudio();
       onVoiceChange?.(nextVoice, nextPersona);
       void playVoicePreview(nextVoice, nextPersona);
     },
     [onSelectSound, onVoiceChange, playVoicePreview],
   );
+
+  const handleVoiceMenuOpen = useCallback(() => {
+    onSelectSound?.();
+    void warmRealtimeTTS();
+    void primeTTSAudio();
+  }, [onSelectSound]);
 
   const handlePersonaChange = useCallback(
     (event) => {
@@ -408,7 +443,7 @@ export default function VoicePreferenceField({
           <Text fontSize="xs" fontWeight="semibold" color="gray.400" mb={1}>
             {voiceLabel}
           </Text>
-          <Menu autoSelect={false} isLazy matchWidth onOpen={onSelectSound}>
+          <Menu autoSelect={false} isLazy matchWidth onOpen={handleVoiceMenuOpen}>
             <MenuButton
               as={Button}
               rightIcon={<ChevronDownIcon />}
@@ -421,7 +456,7 @@ export default function VoicePreferenceField({
               w="100%"
               textAlign="left"
               padding={5}
-              onClick={onSelectSound}
+              onClick={handleVoiceMenuOpen}
             >
               <HStack spacing={2} minW={0}>
                 {isTestingVoice ? (
