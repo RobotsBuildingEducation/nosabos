@@ -33,13 +33,13 @@ export const DEFAULT_TTS_VOICE = "alloy";
 // Default to opus for size efficiency; allow callers to request lower-latency formats
 export const DEFAULT_TTS_FORMAT = "opus";
 export const LOW_LATENCY_TTS_FORMAT = "wav";
-
-const MIME_BY_FORMAT = {
-  opus: "audio/ogg; codecs=opus",
-  mp3: "audio/mpeg",
-  wav: "audio/wav",
-  pcm: "audio/pcm",
-};
+const REALTIME_CACHE_FORMAT = "realtime-v1";
+const REALTIME_CACHE_MIME_TYPES = [
+  "audio/webm;codecs=opus",
+  "audio/webm",
+  "audio/mp4;codecs=mp4a.40.2",
+  "audio/mp4",
+];
 
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
@@ -105,10 +105,10 @@ export const CHARACTER_VOICES = {
 };
 
 /**
- * Returns the voice ID for a given character type, falling back to random.
+ * Returns the voice ID for a given character type, falling back to alloy.
  */
 export function getCharacterVoice(characterId) {
-  return CHARACTER_VOICES[characterId]?.voice || getRandomVoice();
+  return CHARACTER_VOICES[characterId]?.voice || DEFAULT_TTS_VOICE;
 }
 
 /**
@@ -264,12 +264,25 @@ const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 let dbPromise = null;
 
 /**
- * Generate a cache key from text (voice-agnostic for better cache hits)
+ * Generate a cache key from the exact playback inputs.
  */
-function getCacheKey(text, langTag, responseFormat = DEFAULT_TTS_FORMAT) {
-  // Normalize text: lowercase, trim, collapse whitespace
-  const normalized = text.toLowerCase().trim().replace(/\s+/g, " ");
-  return `${responseFormat}::${langTag}::${normalized}`;
+function getCacheKey(
+  text,
+  langTag,
+  responseFormat = DEFAULT_TTS_FORMAT,
+  voice = DEFAULT_TTS_VOICE,
+  personality = "",
+) {
+  const normalizedText = (text || "").trim().replace(/\s+/g, " ");
+  const normalizedPersonality = (personality || "").trim().replace(/\s+/g, " ");
+  return [
+    "v2",
+    responseFormat,
+    langTag,
+    sanitizeVoice(voice),
+    normalizedPersonality,
+    normalizedText,
+  ].join("::");
 }
 
 /**
@@ -278,7 +291,7 @@ function getCacheKey(text, langTag, responseFormat = DEFAULT_TTS_FORMAT) {
 function openDB() {
   if (dbPromise) return dbPromise;
 
-  dbPromise = new Promise((resolve, reject) => {
+  dbPromise = new Promise((resolve) => {
     if (typeof indexedDB === "undefined") {
       resolve(null);
       return;
@@ -415,8 +428,6 @@ export async function cleanupExpiredCache() {
 // CORE TTS FUNCTIONS
 // ============================================================================
 
-// Track in-flight requests to avoid duplicate fetches
-const inFlightRequests = new Map();
 const activeTTSPlayers = new Map();
 
 function registerActiveTTSPlayer(audio, cleanup) {
@@ -439,15 +450,21 @@ export function stopTTSPlayback(audio) {
 
   try {
     cleanup?.();
-  } catch {}
+  } catch {
+    // Best-effort media cleanup.
+  }
 
   try {
     audio.pause?.();
-  } catch {}
+  } catch {
+    // Best-effort media cleanup.
+  }
 
   try {
     audio.currentTime = 0;
-  } catch {}
+  } catch {
+    // Best-effort media cleanup.
+  }
 }
 
 export function stopAllTTSPlayback() {
@@ -461,7 +478,9 @@ export function stopAllTTSPlayback() {
   ) {
     try {
       window.speechSynthesis.cancel();
-    } catch {}
+    } catch {
+      // Best-effort media cleanup.
+    }
   }
 }
 
@@ -487,8 +506,16 @@ export async function getTTSPlayer({
   personality,
   langTag,
   warmAudio,
+  disableCache = false,
 } = {}) {
-  return getRealtimePlayer({ text, voice, personality, langTag, warmAudio });
+  return getRealtimePlayer({
+    text,
+    voice,
+    personality,
+    langTag,
+    warmAudio,
+    disableCache,
+  });
 }
 
 async function getRealtimePlayer({
@@ -497,11 +524,29 @@ async function getRealtimePlayer({
   personality,
   langTag,
   warmAudio,
+  disableCache,
 }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = getPreferredTTSVoice(voice);
   const targetLangTag = langTag || TTS_LANG_TAG.es;
+  const cacheKey = getCacheKey(
+    text,
+    targetLangTag,
+    REALTIME_CACHE_FORMAT,
+    sanitizedVoice,
+    personality,
+  );
+
+  if (!disableCache) {
+    const cachedBlob =
+      memoryCache.get(cacheKey) || (await getFromIndexedDB(cacheKey));
+    if (cachedBlob) {
+      memoryCache.set(cacheKey, cachedBlob);
+      return createAudioFromBlob(cachedBlob, warmAudio);
+    }
+  }
+
   void warmRealtimeTTS();
 
   const remoteStream = new MediaStream();
@@ -547,6 +592,87 @@ async function getRealtimePlayer({
   let playbackMonitorTimer = null;
   let responseDoneWatchTimer = null;
   let hardFallbackTimer = null;
+  let shouldCacheRealtimeAudio = false;
+  let cacheRecorder = null;
+  let cacheRecorderDone = Promise.resolve();
+  let resolveCacheRecorderDone = null;
+  const cacheChunks = [];
+
+  const getRealtimeCacheMimeType = () => {
+    if (typeof MediaRecorder === "undefined") return "";
+    if (typeof MediaRecorder.isTypeSupported !== "function") return "";
+    return (
+      REALTIME_CACHE_MIME_TYPES.find((type) =>
+        MediaRecorder.isTypeSupported(type),
+      ) || ""
+    );
+  };
+
+  const startRealtimeCacheRecording = () => {
+    if (disableCache || cacheRecorder || typeof MediaRecorder === "undefined") {
+      return;
+    }
+    if (!remoteStream.getAudioTracks().length) return;
+
+    try {
+      const mimeType = getRealtimeCacheMimeType();
+      cacheRecorder = mimeType
+        ? new MediaRecorder(remoteStream, { mimeType })
+        : new MediaRecorder(remoteStream);
+      cacheRecorderDone = new Promise((resolve) => {
+        resolveCacheRecorderDone = resolve;
+      });
+      cacheRecorder.addEventListener("dataavailable", (event) => {
+        if (event.data?.size) cacheChunks.push(event.data);
+      });
+      cacheRecorder.addEventListener(
+        "stop",
+        () => {
+          if (shouldCacheRealtimeAudio && cacheChunks.length) {
+            const blob = new Blob(cacheChunks, {
+              type:
+                cacheRecorder.mimeType ||
+                cacheChunks[0]?.type ||
+                "audio/webm",
+            });
+            if (blob.size > 512) addToCache(cacheKey, blob);
+          }
+          resolveCacheRecorderDone?.();
+        },
+        { once: true },
+      );
+      cacheRecorder.addEventListener(
+        "error",
+        () => {
+          resolveCacheRecorderDone?.();
+        },
+        { once: true },
+      );
+      cacheRecorder.start(250);
+    } catch {
+      cacheRecorder = null;
+      resolveCacheRecorderDone?.();
+      cacheRecorderDone = Promise.resolve();
+    }
+  };
+
+  const stopRealtimeCacheRecording = () => {
+    if (!cacheRecorder || cacheRecorder.state === "inactive") {
+      return cacheRecorderDone;
+    }
+    try {
+      cacheRecorder.requestData?.();
+    } catch {
+      // Some browsers reject requestData during recorder shutdown.
+    }
+    try {
+      cacheRecorder.stop();
+    } catch {
+      resolveCacheRecorderDone?.();
+    }
+    return cacheRecorderDone;
+  };
+
   audio.addEventListener(
     "playing",
     () => {
@@ -664,6 +790,7 @@ async function getRealtimePlayer({
           if (responseDone) startPlaybackCompletionWatch();
         });
       });
+      startRealtimeCacheRecording();
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
@@ -697,32 +824,43 @@ async function getRealtimePlayer({
     // Long safety net for cases where the stream never settles cleanly.
     const fallbackTimeoutMs = Math.max(45000, text.length * 180 + 10000);
     hardFallbackTimer = setTimeout(finishFinalize, fallbackTimeoutMs);
-  }).finally(() => {
+  }).finally(async () => {
     unregisterActiveTTSPlayer(audio, cleanupFn);
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
     audioEnded = true;
     clearFinalizeTimers();
+    await stopRealtimeCacheRecording();
     // Dispatch 'ended' as a final notification for components that only watch
     // the media element and do not await the finalize promise.
     try {
       if (audio.onended && !audio.ended) {
         audio.dispatchEvent(new Event("ended"));
       }
-    } catch {}
+    } catch {
+      // Some media elements reject synthetic events during teardown.
+    }
     // Clear error handler first to prevent AbortError from firing
     try {
       audio.onerror = null;
-    } catch {}
+    } catch {
+      // Best-effort media cleanup.
+    }
     try {
       dc.close();
-    } catch {}
+    } catch {
+      // Best-effort RTC cleanup.
+    }
     try {
       pc.close();
-    } catch {}
+    } catch {
+      // Best-effort RTC cleanup.
+    }
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
-    } catch {}
+    } catch {
+      // Best-effort media cleanup.
+    }
     // Note: Don't set audio.srcObject = null as it causes AbortError
     // Stopping the tracks is sufficient cleanup
   });
@@ -734,9 +872,12 @@ async function getRealtimePlayer({
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
+        shouldCacheRealtimeAudio = true;
         schedulePlaybackCompletionWatch(180);
       }
-    } catch {}
+    } catch {
+      // Ignore malformed data-channel events.
+    }
   };
 
   // Expose intentionalEnd flag on audio element for components to check
@@ -819,15 +960,61 @@ async function getRealtimePlayer({
  */
 export async function prefetchTTS(items) {
   if (!items || items.length === 0) return;
-  console.warn("prefetchTTS is disabled; realtime playback streams on demand.");
+  const queue = items
+    .map((item) => ({
+      text: (item?.text || "").trim(),
+      langTag: item?.langTag || TTS_LANG_TAG.es,
+      voice: item?.voice,
+      personality: item?.personality,
+    }))
+    .filter((item) => item.text);
+
+  const workerCount = Math.min(2, queue.length);
+  let nextIndex = 0;
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (nextIndex < queue.length) {
+      const item = queue[nextIndex];
+      nextIndex += 1;
+      try {
+        if (
+          await isCached(item.text, item.langTag, {
+            voice: item.voice,
+            personality: item.personality,
+          })
+        ) {
+          continue;
+        }
+        const player = await getTTSPlayer({
+          ...item,
+          disableCache: false,
+        });
+        await player.ready.catch(() => undefined);
+        await player.finalize.catch(() => undefined);
+        player.cleanup?.();
+      } catch {
+        // Prefetch should never block the current lesson.
+      }
+    }
+  });
+  await Promise.all(workers);
 }
 
 /**
  * Check if audio is already cached (memory or IndexedDB)
  * Useful for showing "ready" indicators in UI
  */
-export async function isCached(text, langTag = TTS_LANG_TAG.es) {
-  const cacheKey = getCacheKey(text, langTag);
+export async function isCached(
+  text,
+  langTag = TTS_LANG_TAG.es,
+  { voice, personality } = {},
+) {
+  const cacheKey = getCacheKey(
+    text,
+    langTag,
+    REALTIME_CACHE_FORMAT,
+    getPreferredTTSVoice(voice),
+    personality,
+  );
 
   // Check memory first (instant)
   if (memoryCache.has(cacheKey)) {
@@ -902,131 +1089,44 @@ function addToCache(cacheKey, blob) {
   saveToIndexedDB(cacheKey, blob); // async
 }
 
-function inferMimeType(contentType, responseFormat = DEFAULT_TTS_FORMAT) {
-  if (!contentType) return MIME_BY_FORMAT[responseFormat] || "audio/mpeg";
-  const lower = contentType.toLowerCase();
-  if (lower.includes("audio/opus")) return MIME_BY_FORMAT.opus;
-  if (lower.includes("audio/ogg")) return MIME_BY_FORMAT.opus;
-  if (lower.includes("mpeg")) return MIME_BY_FORMAT.mp3;
-  return lower.split(",")[0].trim();
-}
-
-function appendToSourceBuffer(sourceBuffer, chunk) {
-  return new Promise((resolve, reject) => {
-    const onError = (err) => {
-      sourceBuffer.removeEventListener("error", onError);
-      reject(err);
-    };
-    sourceBuffer.addEventListener("error", onError);
-    sourceBuffer.addEventListener(
-      "updateend",
-      () => {
-        sourceBuffer.removeEventListener("error", onError);
-        resolve();
-      },
-      { once: true },
-    );
-    const buffer =
-      chunk instanceof ArrayBuffer
-        ? chunk
-        : chunk.buffer.slice(
-            chunk.byteOffset,
-            chunk.byteOffset + chunk.byteLength,
-          );
-    sourceBuffer.appendBuffer(buffer);
-  });
-}
-
-function createAudioFromBlob(blob) {
+function createAudioFromBlob(blob, warmAudio = null) {
   const audioUrl = URL.createObjectURL(blob);
-  return {
-    audio: new Audio(audioUrl),
-    audioUrl,
-    ready: Promise.resolve(),
-    finalize: Promise.resolve(),
-    cleanup: () => {
-      try {
-        URL.revokeObjectURL(audioUrl);
-      } catch {}
-    },
+  const audio = warmAudio || new Audio();
+  try {
+    audio.pause?.();
+  } catch {
+    // Best-effort media cleanup.
+  }
+  try {
+    audio.srcObject = null;
+  } catch {
+    // Best-effort media cleanup.
+  }
+  audio.src = audioUrl;
+  audio.autoplay = false;
+  audio.playsInline = true;
+
+  let cleanedUp = false;
+  const cleanup = () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    unregisterActiveTTSPlayer(audio, cleanup);
+    try {
+      URL.revokeObjectURL(audioUrl);
+    } catch {
+      // Object URL may already be gone.
+    }
   };
-}
-
-function streamResponseToAudio({ response, mimeType, cacheKey }) {
-  const mediaSource = new MediaSource();
-  const audioUrl = URL.createObjectURL(mediaSource);
-  const audio = new Audio(audioUrl);
-  const reader = response.body.getReader();
-  const chunks = [];
-
-  let pumpResolve;
-  let pumpReject;
-  const pumpDone = new Promise((resolve, reject) => {
-    pumpResolve = resolve;
-    pumpReject = reject;
-  });
-
-  const ready = new Promise((resolve, reject) => {
-    mediaSource.addEventListener(
-      "sourceopen",
-      () => {
-        let sourceBuffer;
-        try {
-          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
-        } catch (err) {
-          reject(err);
-          pumpReject(err);
-          return;
-        }
-
-        (async () => {
-          let started = false;
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (value && value.length) {
-                const buffer = value.buffer.slice(
-                  value.byteOffset,
-                  value.byteOffset + value.byteLength,
-                );
-                chunks.push(buffer);
-                await appendToSourceBuffer(sourceBuffer, buffer);
-                if (!started) {
-                  started = true;
-                  resolve();
-                }
-              }
-              if (done) break;
-            }
-            mediaSource.endOfStream();
-            if (!started) resolve();
-            pumpResolve();
-          } catch (err) {
-            mediaSource.endOfStream();
-            reject(err);
-            pumpReject(err);
-          }
-        })();
-      },
-      { once: true },
-    );
-  });
-
-  const finalize = pumpDone
-    .then(() => {
-      if (!chunks.length) return null;
-      return new Blob(chunks, { type: mimeType });
-    })
-    .then((blob) => {
-      if (blob && cacheKey) addToCache(cacheKey, blob);
-    })
-    .catch(() => {});
+  registerActiveTTSPlayer(audio, cleanup);
+  audio._ttsCleanup = cleanup;
+  audio.addEventListener("ended", cleanup, { once: true });
+  audio.addEventListener("error", cleanup, { once: true });
 
   return {
     audio,
     audioUrl,
-    ready,
-    finalize,
-    cleanup: () => URL.revokeObjectURL(audioUrl),
+    ready: Promise.resolve(),
+    finalize: Promise.resolve(),
+    cleanup,
   };
 }

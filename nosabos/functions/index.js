@@ -36,6 +36,7 @@ const CORS_ORIGINS = [
 
 // Only permit the models you actually use with /proxyResponses
 const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
+const DEFAULT_REALTIME_MODEL = "gpt-realtime-mini";
 
 // Optionally require Firebase App Check (set true after client wiring)
 const REQUIRE_APPCHECK = false;
@@ -94,6 +95,13 @@ function authzHeader() {
   return { Authorization: `Bearer ${OPENAI_API_KEY}` };
 }
 
+function normalizeRealtimeModel(model) {
+  const value = Array.isArray(model) ? model[0] : model;
+  const trimmed = typeof value === "string" ? value.trim() : "";
+  if (!trimmed || /[/?#\s]/.test(trimmed)) return DEFAULT_REALTIME_MODEL;
+  return trimmed;
+}
+
 // ======================================================
 // 1) Realtime SDP Exchange Proxy
 //    Frontend posts SDP offer here instead of OpenAI.
@@ -102,10 +110,11 @@ function authzHeader() {
 exports.exchangeRealtimeSDP = onRequest(
   {
     region: REGION,
-    maxInstances: 10,
+    minInstances: 1,
+    maxInstances: 5,
     concurrency: 80,
     cors: false, // manual CORS
-    timeoutSeconds: 60,
+    timeoutSeconds: 45,
     memory: "256MiB",
   },
   async (req, res) => {
@@ -118,14 +127,14 @@ exports.exchangeRealtimeSDP = onRequest(
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     let offerSDP = "";
-    let model = "gpt-4o-mini-realtime-preview"; // set your default realtime model
+    let model = normalizeRealtimeModel(req.query?.model);
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {
       const body = req.body || {};
       offerSDP = (body.sdp || "").toString();
       if (typeof body.model === "string" && body.model.trim()) {
-        model = body.model.trim();
+        model = normalizeRealtimeModel(body.model);
       }
     }
     if (!offerSDP) badRequest("Missing SDP offer.");
