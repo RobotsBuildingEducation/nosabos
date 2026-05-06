@@ -51,7 +51,11 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
+import {
+  TTS_LANG_TAG,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+} from "../utils/tts";
 
 const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
 const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
@@ -333,6 +337,7 @@ const HelpChatFab = forwardRef(
     );
 
     const ui = translations[uiLang] || translations.en;
+    const selectedVoice = getPreferredTTSVoice(progress?.voice);
     const helpUi = useMemo(
       () => ({
         noMessagesTitle: supportCopy(
@@ -1366,7 +1371,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             TTS_LANG_TAG[progress?.targetLang] || TTS_LANG_TAG.es || "en-US";
           const player = await getTTSPlayer({
             text: message.text,
-            voice: getRandomVoice(),
+            voice: selectedVoice,
             langTag,
           });
 
@@ -1394,7 +1399,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           clearLoading();
         }
       },
-      [progress?.targetLang, replayingId, stopTtsPlayback],
+      [progress?.targetLang, replayingId, selectedVoice, stopTtsPlayback],
     );
 
     // -- Realtime voice chat functions -------------------------------------------
@@ -1738,7 +1743,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         dcRef.current = dc;
 
         dc.onopen = () => {
-          const voiceName = getRandomVoice();
+          const voiceName = selectedVoice;
           const instructions = buildRealtimeInstructions();
 
           dc.send(
@@ -1790,6 +1795,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
       clearRealtimeAutoStopTimer,
       handleRealtimeEvent,
       scheduleRealtimeAutoStop,
+      selectedVoice,
       helpUi,
       toast,
     ]);

@@ -121,6 +121,7 @@ import Onboarding from "./components/Onboarding";
 import VoiceOrb from "./components/VoiceOrb";
 import RealTimeTest from "./components/RealTimeTest";
 import BottomDrawerDragHandle from "./components/BottomDrawerDragHandle";
+import VoicePreferenceField from "./components/VoicePreferenceField";
 
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
@@ -218,6 +219,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "./utils/modalMotion";
+import { normalizeTTSVoice } from "./utils/tts";
 
 const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
 
@@ -684,7 +686,7 @@ function TopBar({
   const [supportLang, setSupportLang] = useState(
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
-  const [voice, setVoice] = useState(p.voice || "alloy");
+  const [voice, setVoice] = useState(normalizeTTSVoice(p.voice));
   const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
     personaForSupportLanguage(p.voicePersona, defaultPersonaSupportLang) ??
@@ -802,7 +804,7 @@ function TopBar({
     if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
       setSupportLang(incomingLang);
     }
-    setVoice(q.voice || "alloy");
+    setVoice(normalizeTTSVoice(q.voice));
     const draftSupportLang =
       pendingLangRef.current || incomingLang || supportLang || appLanguage;
     const nextVoicePersona =
@@ -1647,39 +1649,56 @@ function TopBar({
                         </Button>
                       )}
 
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <Text fontSize="sm" mb={2}>
-                          {t.ra_persona_label || "Persona"}
-                        </Text>
-                        <Input
-                          value={voicePersona}
-                          onChange={(e) => {
-                            const next = e.target.value.slice(0, 240);
-                            setVoicePersona(next);
-                            rememberTextDraft("voicePersona", next);
-                            debouncedPersist({ voicePersona: next });
-                          }}
-                          bg="gray.700"
-                          placeholder={
-                            (t.ra_persona_placeholder &&
-                              t.ra_persona_placeholder.replace(
-                                "{example}",
-                                translations[appLanguage]
-                                  .onboarding_persona_default_example,
-                              )) ||
-                            `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
-                          }
-                        />
-                        <Text fontSize="xs" opacity={0.7} mt={1}>
-                          {t.ra_persona_help ||
-                            "A short vibe/style hint for the AI voice."}
-                        </Text>
-                      </Box>
+                      <VoicePreferenceField
+                        t={t}
+                        voice={voice}
+                        voicePersona={voicePersona}
+                        targetLang={targetLang}
+                        supportLang={supportLang}
+                        onVoiceChange={(nextVoice, nextPersona) => {
+                          const normalized = normalizeTTSVoice(nextVoice);
+                          const persona = String(
+                            nextPersona ?? voicePersona ?? "",
+                          ).slice(0, 240);
+                          setVoice(normalized);
+                          setVoicePersona(persona);
+                          rememberTextDraft("voicePersona", persona);
+                          persistSettingsAfterPaint({
+                            voice: normalized,
+                            voicePersona: persona,
+                          });
+                        }}
+                        onVoicePersonaChange={(next) => {
+                          setVoicePersona(next);
+                          rememberTextDraft("voicePersona", next);
+                          debouncedPersist({ voicePersona: next });
+                        }}
+                        onSelectSound={() => playSound(selectSound)}
+                        menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
+                        heading={
+                          t.onboarding_section_voice_persona ||
+                          "Voice & Personality"
+                        }
+                        description={
+                          t.onboarding_voice_desc ||
+                          "Choose the voice and style for your coach."
+                        }
+                        personaPlaceholder={
+                          (t.ra_persona_placeholder &&
+                            t.ra_persona_placeholder.replace(
+                              "{example}",
+                              translations[appLanguage]
+                                .onboarding_persona_default_example,
+                            )) ||
+                          `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
+                        }
+                      />
 
                       <Box bg="gray.800" p={3} rounded="md">
                         <HStack justifyContent="space-between" mb={2}>
                           <Text fontSize="sm">
-                            {t.ra_vad_label || "Voice activity pause (seconds)"}
+                            {t.ra_vad_label ||
+                              "How long to wait to respond to your speech"}
                           </Text>
                           <Text fontSize="sm" opacity={0.8}>
                             {pauseSeconds} {vadSecondsLabel}
@@ -3493,7 +3512,7 @@ export default function App({ onBootReady } = {}) {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: nextSupportLang,
-      voice: partial.voice ?? prev.voice ?? "alloy",
+      voice: normalizeTTSVoice(partial.voice ?? prev.voice),
       voicePersona: nextVoicePersona.slice(0, 240),
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? prev.targetLang,
@@ -3631,6 +3650,7 @@ export default function App({ onBootReady } = {}) {
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
         supportLang: normalizedSupportLang,
+        voice: normalizeTTSVoice(payload.voice),
         voicePersona:
           personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
           personaDefaultFor(normalizedSupportLang),

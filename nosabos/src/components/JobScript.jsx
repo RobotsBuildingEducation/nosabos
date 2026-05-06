@@ -44,7 +44,11 @@ import {
   SOFT_STOP_BUTTON_EDGE,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
+import {
+  LOW_LATENCY_TTS_FORMAT,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+} from "../utils/tts";
 import XpProgressHeader from "./XpProgressHeader";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -255,7 +259,7 @@ function useSharedProgress() {
     level: "beginner",
     targetLang: "es",
     supportLang: "en",
-    voice: "alloy",
+    voice: getPreferredTTSVoice(),
   });
 
   useEffect(() => {
@@ -277,7 +281,7 @@ function useSharedProgress() {
           p.supportLang,
           DEFAULT_SUPPORT_LANGUAGE,
         ),
-        voice: p.voice || "alloy",
+        voice: getPreferredTTSVoice(p.voice),
       });
     });
     return () => unsub();
@@ -1619,6 +1623,7 @@ export default function JobScript({
       const player = await getTTSPlayer({
         text,
         langTag,
+        voice: getPreferredTTSVoice(progress.voice),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;

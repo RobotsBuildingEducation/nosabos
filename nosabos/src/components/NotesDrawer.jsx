@@ -23,7 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
-import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
+import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import translations from "../utils/translation";
 import BottomDrawerDragHandle from "./BottomDrawerDragHandle";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
@@ -417,7 +417,7 @@ export default function NotesDrawer({
       const ttsLang = note.targetLang || targetLang || "es";
       const player = await getTTSPlayer({
         text: note.example,
-        voice: getRandomVoice(),
+        voice: getPreferredTTSVoice(),
         langTag: TTS_LANG_TAG[ttsLang] || ttsLang,
       });
 

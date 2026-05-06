@@ -56,6 +56,19 @@ const SUPPORTED_TTS_VOICES = new Set([
   "cedar",
 ]);
 
+export const TTS_VOICE_OPTIONS = [
+  { value: "alloy", type: "boy", description: "Balanced and neutral" },
+  { value: "coral", type: "girl", description: "Bright and friendly" },
+  { value: "ash", type: "boy", description: "Calm and steady" },
+  { value: "shimmer", type: "girl", description: "Soft and upbeat" },
+  { value: "ballad", type: "boy", description: "Smooth and dramatic" },
+  { value: "sage", type: "girl", description: "Warm and composed" },
+  { value: "cedar", type: "boy", description: "Deep and grounded" },
+  { value: "marin", type: "girl", description: "Cheerful and warm" },
+  { value: "echo", type: "boy", description: "Crisp and energetic" },
+  { value: "verse", type: "boy", description: "Expressive and clear" },
+];
+
 // Array version for random selection
 const TTS_VOICES_ARRAY = Array.from(SUPPORTED_TTS_VOICES);
 
@@ -107,6 +120,37 @@ export function getCharacterPersonality(characterId) {
 
 function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
+}
+
+export function normalizeTTSVoice(voice) {
+  return sanitizeVoice(voice);
+}
+
+function getStoredTTSVoicePreference() {
+  if (typeof window === "undefined") return "";
+  try {
+    const raw = window.localStorage?.getItem("progress");
+    if (!raw) return "";
+    const parsed = JSON.parse(raw);
+    return SUPPORTED_TTS_VOICES.has(parsed?.voice) ? parsed.voice : "";
+  } catch {
+    return "";
+  }
+}
+
+export function getPreferredTTSVoice(...candidates) {
+  for (const voice of candidates) {
+    if (SUPPORTED_TTS_VOICES.has(voice)) return voice;
+  }
+  return getStoredTTSVoicePreference() || DEFAULT_TTS_VOICE;
+}
+
+export function getTTSVoiceOption(voice) {
+  const normalized = sanitizeVoice(voice);
+  return (
+    TTS_VOICE_OPTIONS.find((option) => option.value === normalized) ||
+    TTS_VOICE_OPTIONS[0]
+  );
 }
 
 function preconnectRealtimeOrigin() {
@@ -430,7 +474,7 @@ export function stopAllTTSPlayback() {
  * @param {Object} options
  * @param {string} options.text - Text to synthesize
  * @param {string} options.langTag - Language tag (e.g., "es-ES")
- * @param {string} options.voice - Optional specific voice (defaults to random)
+ * @param {string} options.voice - Optional specific voice (defaults to saved preference)
  * @returns {Promise<Blob>} Audio blob
  */
 export async function fetchTTSBlob() {
@@ -456,7 +500,7 @@ async function getRealtimePlayer({
 }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
-  const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+  const sanitizedVoice = getPreferredTTSVoice(voice);
   const targetLangTag = langTag || TTS_LANG_TAG.es;
   void warmRealtimeTTS();
 

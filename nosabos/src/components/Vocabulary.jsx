@@ -57,7 +57,7 @@ import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   TTS_LANG_TAG,
-  getRandomVoice,
+  getPreferredTTSVoice,
   getTTSPlayer,
   LOW_LATENCY_TTS_FORMAT,
   stopAllTTSPlayback,
@@ -1226,7 +1226,7 @@ export default function Vocabulary({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  // Voice will be randomly selected for each TTS call via getRandomVoice()
+  // Voice follows the saved voice preference through getPreferredTTSVoice().
 
   const recentCorrectRef = useRef([]);
 
@@ -5064,6 +5064,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       const player = await getTTSPlayer({
         text,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
         warmAudio,
       });
@@ -5135,6 +5136,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
           responseFormat: LOW_LATENCY_TTS_FORMAT,
           warmAudio,
         });
@@ -5214,6 +5216,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
           responseFormat: LOW_LATENCY_TTS_FORMAT,
           warmAudio,
         });

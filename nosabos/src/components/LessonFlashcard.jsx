@@ -34,7 +34,7 @@ import ReactMarkdown from "react-markdown";
 import VirtualKeyboard from "./VirtualKeyboard";
 import {
   LOW_LATENCY_TTS_FORMAT,
-  getRandomVoice,
+  getPreferredTTSVoice,
   getTTSPlayer,
   stopAllTTSPlayback,
   stopTTSPlayback,
@@ -782,7 +782,7 @@ export default function LessonFlashcard({
       const player = await getTTSPlayer({
         text: answer,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-        voice: getRandomVoice(),
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       audioRef.current = player.audio;

@@ -64,7 +64,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -781,7 +781,7 @@ export default function RealTimeTest({
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
-  const [voice, setVoice] = useState("alloy");
+  const [voice, setVoice] = useState(() => getPreferredTTSVoice());
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example,
   );
@@ -1244,8 +1244,9 @@ export default function RealTimeTest({
       setSupportLang(v);
     }
     if (p.voice) {
-      voiceRef.current = p.voice;
-      setVoice(p.voice);
+      const nextVoice = getPreferredTTSVoice(p.voice);
+      voiceRef.current = nextVoice;
+      setVoice(nextVoice);
     }
     if (typeof p.voicePersona === "string") {
       voicePersonaRef.current = p.voicePersona;
@@ -1476,11 +1477,10 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        // Use saved voice if available, otherwise pick a random one for the session
-        const voiceName =
-          voiceRef.current && voiceRef.current !== "alloy"
-            ? voiceRef.current
-            : getRandomVoice();
+        const voiceName = getPreferredTTSVoice(
+          savedPrefs?.voice,
+          voiceRef.current,
+        );
         voiceRef.current = voiceName;
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
@@ -2875,7 +2875,7 @@ Return ONLY JSON:
     }
     guardrailItemIdsRef.current = [];
 
-    const voiceName = voiceRef.current || "alloy";
+    const voiceName = getPreferredTTSVoice(voiceRef.current);
     const instructions = buildLanguageInstructionsFromRefs();
 
     try {
@@ -2913,7 +2913,7 @@ Return ONLY JSON:
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     safeCancelActiveResponse();
     await waitUntilIdle();
-    const voiceName = voiceRef.current || "alloy";
+    const voiceName = getPreferredTTSVoice(voiceRef.current);
     try {
       dcRef.current.send(
         JSON.stringify({
@@ -2976,7 +2976,7 @@ Return ONLY JSON:
 
   function sendSessionUpdate() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
-    const voiceName = voiceRef.current || "alloy";
+    const voiceName = getPreferredTTSVoice(voiceRef.current);
     const instructions = buildLanguageInstructionsFromRefs();
     try {
       dcRef.current.send(
@@ -3040,7 +3040,7 @@ Return ONLY JSON:
           if (!chunks.length) return;
           const blob = new Blob(chunks, { type: mimeType });
           await idbPutClip(mid, blob, {
-            voice: voiceRef.current || "alloy",
+            voice: getPreferredTTSVoice(voiceRef.current),
             mimeType,
           });
           audioCacheIndexRef.current.add(mid);
@@ -3491,7 +3491,7 @@ Return ONLY JSON:
         partial.supportLang ?? uiLang,
         DEFAULT_SUPPORT_LANGUAGE,
       ),
-      voice: partial.voice ?? voiceRef.current,
+      voice: getPreferredTTSVoice(partial.voice, voiceRef.current),
       voicePersona: partial.voicePersona ?? voicePersonaRef.current,
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? targetLangRef.current,

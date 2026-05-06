@@ -213,11 +213,14 @@ const SupportLanguageFlagSwatch = ({ value }) => {
     <Box
       as="span"
       aria-hidden="true"
-      display="inline-flex"
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
       position="relative"
       w="24px"
       h="24px"
       flexShrink={0}
+      lineHeight="0"
       overflow="hidden"
       rounded="full"
       bg={flag.bg}
@@ -337,12 +340,14 @@ const LanguageFlagIcon = ({ option, value }) => {
     <Box
       as="span"
       aria-hidden="true"
-      display="inline-flex"
+      display="flex"
       alignItems="center"
       justifyContent="center"
       w="24px"
       h="24px"
       flexShrink={0}
+      lineHeight="0"
+      verticalAlign="middle"
       sx={{
         "& svg": {
           display: "block",
@@ -387,12 +392,23 @@ const LanguageMenuFixed = ({
           w="40px"
           h="40px"
           p={0}
-          lineHeight="1"
+          lineHeight="0"
+          position="relative"
           rounded="full"
           border="1px solid"
           {...topControlProps}
         >
-          <LanguageFlagIcon option={selected} value={activeLanguage} />
+          <Box
+            as="span"
+            position="absolute"
+            inset={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            pointerEvents="none"
+          >
+            <LanguageFlagIcon option={selected} value={activeLanguage} />
+          </Box>
         </MenuButton>
         <MenuList
           dir={menuDirection}

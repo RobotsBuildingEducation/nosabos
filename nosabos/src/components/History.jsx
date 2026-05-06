@@ -50,7 +50,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import {
   LOW_LATENCY_TTS_FORMAT,
-  getRandomVoice,
+  getPreferredTTSVoice,
   getTTSPlayer,
   stopAllTTSPlayback,
   TTS_LANG_TAG,
@@ -403,7 +403,7 @@ function useSharedProgress() {
     targetLang: "es",
     supportLang: initialSupportLang,
     showTranslations: true,
-    voice: "alloy",
+    voice: getPreferredTTSVoice(user?.progress?.voice),
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -437,7 +437,7 @@ function useSharedProgress() {
             : normalizeSupportLanguage(p.supportLang, supportFallback),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
-        voice: p.voice || "alloy",
+        voice: getPreferredTTSVoice(p.voice),
       });
       setIsLoading(false);
     });
@@ -1594,7 +1594,7 @@ export default function History({
       const player = await getTTSPlayer({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
-        voice: getRandomVoice(),
+        voice: getPreferredTTSVoice(user?.progress?.voice),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
 
