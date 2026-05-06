@@ -6132,8 +6132,10 @@ export default function App({ onBootReady } = {}) {
     key: null,
     units: null,
   });
-  const [hasCompletedInitialSkillTreeBoot, setHasCompletedInitialSkillTreeBoot] =
-    useState(false);
+  const [
+    hasCompletedInitialSkillTreeBoot,
+    setHasCompletedInitialSkillTreeBoot,
+  ] = useState(false);
 
   useEffect(() => {
     if (isLoadingApp) return;
@@ -6145,9 +6147,7 @@ export default function App({ onBootReady } = {}) {
 
     let isMounted = true;
     setSkillTreeInitialUnits((prev) =>
-      prev.key === skillTreeInitialUnitsKey
-        ? prev
-        : { key: null, units: null },
+      prev.key === skillTreeInitialUnitsKey ? prev : { key: null, units: null },
     );
 
     loadMultiLevelLearningPath(resolvedTargetLang, relevantLevels)

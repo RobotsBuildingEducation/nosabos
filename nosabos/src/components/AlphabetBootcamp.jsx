@@ -1462,16 +1462,23 @@ function LetterCard({
         return;
       }
 
+      let didFinishPlayback = false;
+      let detachCompletionWatcher = () => {};
       const finishPlayback = () => {
         if (requestId !== wordPlaybackRequestRef.current) return;
+        if (didFinishPlayback) return;
+        didFinishPlayback = true;
+        detachCompletionWatcher();
         setIsPlayingWord(false);
         setIsLoadingTts(false);
         wordPlayerRef.current = null;
         player.cleanup?.();
       };
 
-      player.audio.onended = finishPlayback;
-      player.audio.onerror = finishPlayback;
+      detachCompletionWatcher = watchRealtimeAudioCompletion(
+        player.audio,
+        finishPlayback,
+      );
 
       setIsLoadingTts(false);
       setIsPlayingWord(true);
@@ -1672,7 +1679,7 @@ function LetterCard({
                   color={isLoading || isPlaying ? "teal.500" : APP_TEXT_PRIMARY}
                   onClick={() => onPlay(letter)}
                 >
-                  {isLoading || isPlaying ? (
+                  {isLoading ? (
                     <Spinner size={"xs"} />
                   ) : (
                     <FiVolume2 />
@@ -1759,13 +1766,7 @@ function LetterCard({
             </Text>
             <IconButton
               aria-label={uiText(uiLang, "playWord")}
-              icon={
-                isLoadingTts || isPlayingWord ? (
-                  <Spinner size="xs" />
-                ) : (
-                  <FiVolume2 />
-                )
-              }
+              icon={isLoadingTts ? <Spinner size="xs" /> : <FiVolume2 />}
               size="sm"
               variant="ghost"
               color={isLoadingTts || isPlayingWord ? "teal.500" : APP_TEXT_PRIMARY}
@@ -1927,6 +1928,127 @@ function shuffleArray(arr) {
   return shuffled;
 }
 
+function watchRealtimeAudioCompletion(audio, onDone) {
+  if (!audio) return () => {};
+
+  let hasStarted = false;
+  let isDetached = false;
+  let silenceTimer = null;
+  let levelPollTimer = null;
+  let audioContext = null;
+  let mediaSource = null;
+  let analyser = null;
+  let levelSamples = null;
+  const audioTracks = audio.srcObject?.getAudioTracks?.() || [];
+
+  const clearSilenceTimer = () => {
+    if (!silenceTimer) return;
+    clearTimeout(silenceTimer);
+    silenceTimer = null;
+  };
+  const markStarted = () => {
+    hasStarted = true;
+    clearSilenceTimer();
+  };
+  const scheduleSilenceFinish = () => {
+    if (!hasStarted || silenceTimer) return;
+    silenceTimer = setTimeout(() => {
+      silenceTimer = null;
+      onDone();
+    }, 700);
+  };
+  const finishAfterStart = () => {
+    const currentTime = Number.isFinite(audio.currentTime)
+      ? audio.currentTime
+      : 0;
+    if (hasStarted || currentTime > 0.01) onDone();
+  };
+  const finish = () => {
+    onDone();
+  };
+  const detach = () => {
+    if (isDetached) return;
+    isDetached = true;
+    clearSilenceTimer();
+    if (levelPollTimer) {
+      clearTimeout(levelPollTimer);
+      levelPollTimer = null;
+    }
+    audio.removeEventListener("playing", markStarted);
+    audio.removeEventListener("ended", finish);
+    audio.removeEventListener("error", finish);
+    audioTracks.forEach((track) => {
+      track.removeEventListener("unmute", markStarted);
+      track.removeEventListener("mute", finishAfterStart);
+      track.removeEventListener("ended", finishAfterStart);
+    });
+    try {
+      mediaSource?.disconnect?.();
+    } catch {
+      // The source may already be disconnected when playback is cleaned up.
+    }
+    try {
+      analyser?.disconnect?.();
+    } catch {
+      // The analyser may already be disconnected when playback is cleaned up.
+    }
+    try {
+      audioContext?.close?.();
+    } catch {
+      // Closing is best-effort; the browser will reclaim the context.
+    }
+  };
+
+  const pollAudioLevel = () => {
+    if (isDetached || !analyser || !levelSamples) return;
+
+    analyser.getByteTimeDomainData(levelSamples);
+    let sumSquares = 0;
+    for (let i = 0; i < levelSamples.length; i += 1) {
+      const centered = (levelSamples[i] - 128) / 128;
+      sumSquares += centered * centered;
+    }
+    const rms = Math.sqrt(sumSquares / levelSamples.length);
+
+    if (rms > 0.006) {
+      markStarted();
+    } else {
+      scheduleSilenceFinish();
+    }
+
+    levelPollTimer = setTimeout(pollAudioLevel, 80);
+  };
+
+  audio.addEventListener("playing", markStarted, { once: true });
+  audio.addEventListener("ended", finish, { once: true });
+  audio.addEventListener("error", finish, { once: true });
+
+  audioTracks.forEach((track) => {
+    if (!track.muted && track.readyState === "live") markStarted();
+    track.addEventListener("unmute", markStarted, { once: true });
+    track.addEventListener("mute", finishAfterStart);
+    track.addEventListener("ended", finishAfterStart);
+  });
+
+  try {
+    const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextCtor && audio.srcObject instanceof MediaStream) {
+      audioContext = new AudioContextCtor();
+      mediaSource = audioContext.createMediaStreamSource(audio.srcObject);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      levelSamples = new Uint8Array(analyser.fftSize);
+      mediaSource.connect(analyser);
+      void audioContext.resume?.();
+      pollAudioLevel();
+    }
+  } catch {
+    // Fall back to media and track events when Web Audio is unavailable.
+  }
+
+  return detach;
+}
+
 export default function AlphabetBootcamp({
   appLanguage = "en",
   targetLang,
@@ -2061,8 +2183,13 @@ export default function AlphabetBootcamp({
           return;
         }
 
+        let didFinishPlayback = false;
+        let detachCompletionWatcher = () => {};
         const finishPlayback = () => {
           if (requestId !== playbackRequestRef.current) return;
+          if (didFinishPlayback) return;
+          didFinishPlayback = true;
+          detachCompletionWatcher();
           setPlayingId(null);
           setLoadingId(null);
           playerRef.current = null;
@@ -2070,8 +2197,10 @@ export default function AlphabetBootcamp({
         };
 
         const audio = player.audio;
-        audio.onended = finishPlayback;
-        audio.onerror = finishPlayback;
+        detachCompletionWatcher = watchRealtimeAudioCompletion(
+          audio,
+          finishPlayback,
+        );
 
         setLoadingId(null);
         setPlayingId(data.id);
