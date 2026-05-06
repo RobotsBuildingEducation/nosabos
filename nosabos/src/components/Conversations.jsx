@@ -74,7 +74,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE } from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   getRandomSkillTreeTopics,
@@ -1059,7 +1059,9 @@ export default function Conversations({
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs
-  const [voice, setVoice] = useState(user?.progress?.voice || "alloy");
+  const [voice, setVoice] = useState(
+    getPreferredTTSVoice(user?.progress?.voice),
+  );
   const [voicePersona, setVoicePersona] = useState(
     user?.progress?.voicePersona ||
       translations.en.onboarding_persona_default_example,
@@ -1720,7 +1722,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
-          if (data.progress?.voice) setVoice(data.progress.voice);
+          if (data.progress?.voice)
+            setVoice(getPreferredTTSVoice(data.progress.voice));
           if (data.progress?.voicePersona)
             setVoicePersona(data.progress.voicePersona);
           if (typeof data.progress?.showTranslations === "boolean") {
@@ -2106,7 +2109,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
-    const voiceName = voiceRef.current || "alloy";
+    const voiceName = getPreferredTTSVoice(voiceRef.current);
     const instructions = buildLanguageInstructions();
 
     try {

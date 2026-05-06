@@ -76,7 +76,7 @@ import {
   RiCloseLine,
   RiStarFill,
 } from "react-icons/ri";
-import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import { getPreferredTTSVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
@@ -1445,6 +1445,7 @@ function LetterCard({
       const player = await getTTSPlayer({
         text: practiceWord,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        voice: getPreferredTTSVoice(),
       });
 
       if (requestId !== wordPlaybackRequestRef.current) {
@@ -2167,6 +2168,7 @@ export default function AlphabetBootcamp({
         const player = await getTTSPlayer({
           text,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
         });
 
         if (requestId !== playbackRequestRef.current) {

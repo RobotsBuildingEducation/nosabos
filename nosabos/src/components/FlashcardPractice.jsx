@@ -35,7 +35,7 @@ import {
 import { MdOutlineSupportAgent } from "react-icons/md";
 import {
   LOW_LATENCY_TTS_FORMAT,
-  getRandomVoice,
+  getPreferredTTSVoice,
   getTTSPlayer,
   stopTTSPlayback,
   TTS_LANG_TAG,
@@ -899,7 +899,7 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
       const player = await getTTSPlayer({
         text: streamedAnswer,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-        voice: getRandomVoice(),
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
 

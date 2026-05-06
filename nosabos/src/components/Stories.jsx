@@ -53,7 +53,6 @@ import {
 } from "../utils/softStopButton";
 import {
   LOW_LATENCY_TTS_FORMAT,
-  getRandomVoice,
   getTTSPlayer,
   stopAllTTSPlayback,
   TTS_LANG_TAG,
@@ -238,7 +237,6 @@ function useSharedProgress() {
     level: "beginner",
     targetLang: "es",
     supportLang: "en", // 'en' | 'es' | 'bilingual'
-    voice: "alloy",
   });
 
   // ✅ NEW: track when we've loaded progress at least once
@@ -284,7 +282,6 @@ function useSharedProgress() {
         supportLang: ["en", "es", "pt", "it", "fr", "de", "ja", "hi", "ar", "zh", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
-        voice: p.voice || "alloy",
       });
 
       // ✅ we've seen the first snapshot (existing doc or not)
@@ -504,9 +501,33 @@ export default function StoryMode({
   }, []);
 
   /* ------------------------- Character Voice Mapping ------------------------- */
-  // Voices categorized by typical sound
-  const MASCULINE_VOICES = ["echo", "verse", "ash", "cedar"];
-  const FEMININE_VOICES = ["shimmer", "coral", "ballad", "sage", "marin"];
+  // Voices categorized by typical sound. Stories assign these once per character.
+  const MALE_CHARACTER_VOICES = [
+    "echo",
+    "verse",
+    "ash",
+    "cedar",
+    "ballad",
+    "alloy",
+  ];
+  const FEMALE_CHARACTER_VOICES = ["shimmer", "coral", "sage", "marin"];
+  const STORY_NARRATOR_VOICE = "cedar";
+
+  const canonicalCharacterName = (name) =>
+    String(name || "")
+      .trim()
+      .toLowerCase();
+
+  const normalizeCharacterGender = (gender) => {
+    const value = String(gender || "")
+      .trim()
+      .toLowerCase();
+    if (["female", "feminine", "woman", "girl", "f"].includes(value))
+      return "female";
+    if (["male", "masculine", "man", "boy", "m"].includes(value))
+      return "male";
+    return "";
+  };
 
   // Common name patterns (covers Spanish, English, Portuguese, French, Italian)
   const FEMININE_NAME_PATTERNS = [
@@ -521,37 +542,53 @@ export default function StoryMode({
     /^isabel/i,
   ];
 
-  // Build a stable voice mapping for characters in the current story
+  const inferCharacterGender = (name) =>
+    FEMININE_NAME_PATTERNS.some((pattern) => pattern.test(name || ""))
+      ? "female"
+      : "male";
+
+  // Build a stable voice mapping for characters in the current story.
+  // No Math.random here: each character keeps the same voice across playback.
   const characterVoiceMap = useMemo(() => {
     const map = new Map();
     if (!storyData?.sentences) return map;
 
-    const characters = [
-      ...new Set(storyData.sentences.map((s) => s.character).filter(Boolean)),
-    ];
+    const characters = [];
+    const seen = new Set();
 
-    // Shuffle voice arrays for variety between stories
-    const shuffledMasc = [...MASCULINE_VOICES].sort(() => Math.random() - 0.5);
-    const shuffledFem = [...FEMININE_VOICES].sort(() => Math.random() - 0.5);
-    let mascIdx = 0;
-    let femIdx = 0;
-
-    characters.forEach((name) => {
-      const isFeminine = FEMININE_NAME_PATTERNS.some((pattern) =>
-        pattern.test(name),
-      );
-
-      if (isFeminine) {
-        map.set(name, shuffledFem[femIdx % shuffledFem.length]);
-        femIdx++;
-      } else {
-        map.set(name, shuffledMasc[mascIdx % shuffledMasc.length]);
-        mascIdx++;
+    storyData.sentences.forEach((sentence) => {
+      const name = String(sentence.character || "").trim();
+      if (!name) return;
+      const key = canonicalCharacterName(name);
+      const gender = normalizeCharacterGender(sentence.gender);
+      const existing = characters.find((character) => character.key === key);
+      if (existing) {
+        if (!existing.gender && gender) existing.gender = gender;
+        return;
       }
+      if (seen.has(key)) return;
+      seen.add(key);
+      characters.push({ key, name, gender });
+    });
+
+    const genderIndex = { male: 0, female: 0 };
+    characters.forEach(({ key, name, gender }) => {
+      const voiceGender = gender || inferCharacterGender(name);
+      const pool =
+        voiceGender === "female" ? FEMALE_CHARACTER_VOICES : MALE_CHARACTER_VOICES;
+      const index = genderIndex[voiceGender] % pool.length;
+      genderIndex[voiceGender] += 1;
+      map.set(key, pool[index]);
     });
 
     return map;
   }, [storyData?.sentences]);
+
+  const getStableCharacterVoice = useCallback(
+    (name) =>
+      characterVoiceMap.get(canonicalCharacterName(name)) || STORY_NARRATOR_VOICE,
+    [characterVoiceMap],
+  );
 
   // pseudo alignment based on duration
   function buildWordTimeline(tokens, totalDurationSec) {
@@ -618,6 +655,10 @@ export default function StoryMode({
     const sentences = (raw.sentences || []).map((s) => ({
       tgt: s?.[tgtCode] ?? s?.es ?? s?.en ?? "",
       sup: s?.[supCode] ?? s?.en ?? s?.es ?? "",
+      ...(s?.character && { character: String(s.character).trim() }),
+      ...(normalizeCharacterGender(s?.gender) && {
+        gender: normalizeCharacterGender(s.gender),
+      }),
     }));
 
     if (!fullTgt || !sentences.length) return null;
@@ -647,6 +688,12 @@ export default function StoryMode({
       const validated = parts.map((tgt, i) => ({
         tgt,
         sup: data.sentences[i]?.[supKey] || data.sentences[i]?.sup || "",
+        ...(data.sentences[i]?.character && {
+          character: data.sentences[i].character,
+        }),
+        ...(normalizeCharacterGender(data.sentences[i]?.gender) && {
+          gender: normalizeCharacterGender(data.sentences[i].gender),
+        }),
       }));
       return { ...data, sentences: validated };
     }
@@ -991,13 +1038,8 @@ export default function StoryMode({
       // Check for tutorial mode first
       const isTutorial = lessonContent?.topic === "tutorial";
 
-      // Randomly select story type: 'paragraph' or 'conversation'
-      // Tutorial mode always uses conversation (character script)
-      const selectedStoryType = isTutorial
-        ? "conversation"
-        : Math.random() < 0.5
-          ? "paragraph"
-          : "conversation";
+      // Stories use character scripts so voice assignment can stay stable.
+      const selectedStoryType = "conversation";
       setStoryType(selectedStoryType);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
@@ -1034,10 +1076,11 @@ export default function StoryMode({
           "- NO headings, NO commentary, NO code fences.",
           "",
           "Output protocol (NDJSON, one compact JSON object per line):",
-          `1) For each line of dialogue, output: {"type":"sentence","character":"<character name>","tgt":"<${tName} dialogue line>","sup":"<${sName} translation>"}`,
+          `1) For each line of dialogue, output: {"type":"sentence","character":"<character name>","gender":"male or female","tgt":"<${tName} dialogue line>","sup":"<${sName} translation>"}`,
           '2) After the final line, output: {"type":"done"}',
           "",
           "IMPORTANT: The 'character' field must contain ONLY the character's name. Do NOT include the name in the 'tgt' field.",
+          "IMPORTANT: Keep the same gender for the same character every time they speak.",
           "",
           "Begin now and follow the protocol exactly.",
         ].join(" ");
@@ -1095,6 +1138,9 @@ export default function StoryMode({
             sup: String(obj.sup || "").trim(),
             // Include character name for conversation scripts
             ...(obj.character && { character: String(obj.character).trim() }),
+            ...(normalizeCharacterGender(obj.gender) && {
+              gender: normalizeCharacterGender(obj.gender),
+            }),
           };
           const key = `${item.tgt}|||${item.sup}`;
           if (seenLineKeys.has(key)) return;
@@ -1218,6 +1264,7 @@ export default function StoryMode({
               [sLang]: s.sup,
               // Preserve character for conversation scripts
               ...(s.character && { character: s.character }),
+              ...(s.gender && { gender: s.gender }),
             })),
           },
           tLang,
@@ -1236,6 +1283,9 @@ export default function StoryMode({
             ...s,
             ...(prev.sentences[idx]?.character && {
               character: prev.sentences[idx].character,
+            }),
+            ...(prev.sentences[idx]?.gender && {
+              gender: prev.sentences[idx].gender,
             }),
           })),
         };
@@ -1335,7 +1385,7 @@ export default function StoryMode({
       const player = await getTTSPlayer({
         text,
         langTag,
-        voice: voice || getRandomVoice(),
+        voice: voice || STORY_NARRATOR_VOICE,
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;
@@ -1937,8 +1987,8 @@ export default function StoryMode({
                           const isLeft = idx % 2 === 0;
                           const isThisLinePlaying = playingLineIndex === idx;
                           const characterVoice = sentence.character
-                            ? characterVoiceMap.get(sentence.character)
-                            : null;
+                            ? getStableCharacterVoice(sentence.character)
+                            : STORY_NARRATOR_VOICE;
                           return (
                             <Flex
                               key={idx}
@@ -2194,8 +2244,8 @@ export default function StoryMode({
                           playTargetTTS(
                             currentSentence?.tgt,
                             currentSentence?.character
-                              ? characterVoiceMap.get(currentSentence.character)
-                              : null,
+                              ? getStableCharacterVoice(currentSentence.character)
+                              : STORY_NARRATOR_VOICE,
                           )
                         }
                         aria-label={uiText.listen}

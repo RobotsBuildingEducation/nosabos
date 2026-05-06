@@ -54,6 +54,7 @@ import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   LOW_LATENCY_TTS_FORMAT,
   TTS_LANG_TAG,
+  getPreferredTTSVoice,
   getTTSPlayer,
   stopAllTTSPlayback,
 } from "../utils/tts";
@@ -1085,8 +1086,8 @@ export default function GrammarBook({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  // Voice will be randomly selected inside getTTSPlayer()
-  // voicePreference is kept for backwards compatibility but not used for selection
+  // Voice follows the saved voice preference through getPreferredTTSVoice().
+  // voicePreference is kept for backwards compatibility but not used for selection.
 
   const recentCorrectRef = useRef([]);
 
@@ -4505,6 +4506,7 @@ Return JSON ONLY:
       const player = await getTTSPlayer({
         text,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
         warmAudio,
       });
@@ -4576,6 +4578,7 @@ Return JSON ONLY:
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
           responseFormat: LOW_LATENCY_TTS_FORMAT,
           warmAudio,
         });
@@ -4655,6 +4658,7 @@ Return JSON ONLY:
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
           responseFormat: LOW_LATENCY_TTS_FORMAT,
           warmAudio,
         });

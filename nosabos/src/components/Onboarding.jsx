@@ -51,11 +51,13 @@ import { syncDocumentLanguage } from "../utils/documentLanguage";
 import { getGermanCopy } from "../utils/germanCopy";
 import RandomCharacter from "./RandomCharacter";
 import ThemeModeField from "./ThemeModeField";
+import VoicePreferenceField from "./VoicePreferenceField";
 import { useThemeStore } from "../useThemeStore";
 import {
   nativeDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { normalizeTTSVoice } from "../utils/tts";
 
 const BASE_PATH = "/onboarding";
 const stepContentReveal = keyframes`
@@ -144,6 +146,7 @@ export default function Onboarding({
         initialDraft.targetLang,
         getDefaultTargetForSupport(initialSupportLang),
       ),
+      voice: normalizeTTSVoice(initialDraft.voice),
       voicePersona:
         personaForSupportLanguage(
           initialDraft.voicePersona,
@@ -174,6 +177,7 @@ export default function Onboarding({
 
   const [level, setLevel] = useState(defaults.level);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
+  const [voice, setVoice] = useState(defaults.voice);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
@@ -256,6 +260,7 @@ export default function Onboarding({
       const payload = {
         level,
         supportLang,
+        voice,
         voicePersona,
         targetLang,
         pauseMs,
@@ -276,18 +281,6 @@ export default function Onboarding({
     ui.onboarding_persona_default_example || "patient, encouraging, playful",
   );
 
-  const VAD_LABEL =
-    ui.ra_vad_label ||
-    uiCopy(supportLang, {
-      en: "Pause between replies",
-      es: "Pausa entre turnos",
-      pt: "Pausa entre respostas",
-      it: "Pausa tra le risposte",
-      fr: "Pause entre les reponses",
-      ja: "返答の間のポーズ",
-      ar: "الوقفة بين الردود",
-      zh: "回答之间的停顿",
-    });
   const VAD_HINT =
     ui.onboarding_vad_hint ||
     uiCopy(supportLang, {
@@ -467,7 +460,6 @@ export default function Onboarding({
                         bg="gray.800"
                         p={3}
                         rounded="md"
-                        minH={{ base: "158px", md: "146px" }}
                         display="flex"
                         flexDirection="column"
                       >
@@ -477,8 +469,7 @@ export default function Onboarding({
                         <Text
                           fontSize="xs"
                           opacity={0.7}
-                          mb={3}
-                          minH={{ base: "42px", md: "36px" }}
+                          mb="12px"
                         >
                           {ui.onboarding_support_language_desc}
                         </Text>
@@ -495,7 +486,6 @@ export default function Onboarding({
                             w="100%"
                             textAlign="left"
                             padding={5}
-                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>
@@ -563,7 +553,6 @@ export default function Onboarding({
                         bg="gray.800"
                         p={3}
                         rounded="md"
-                        minH={{ base: "158px", md: "146px" }}
                         display="flex"
                         flexDirection="column"
                       >
@@ -573,8 +562,7 @@ export default function Onboarding({
                         <Text
                           fontSize="xs"
                           opacity={0.7}
-                          mb={3}
-                          minH={{ base: "42px", md: "36px" }}
+                          mb="12px"
                         >
                           {ui.onboarding_practice_language_desc}
                         </Text>
@@ -592,7 +580,6 @@ export default function Onboarding({
                             textAlign="left"
                             title={ui.onboarding_practice_label_title}
                             padding={5}
-                            mt="auto"
                             onClick={() => playSound(selectSound)}
                           >
                             <HStack spacing={2}>
@@ -668,21 +655,22 @@ export default function Onboarding({
                   {/* ── Step 2: Voice ── */}
                   {step === 1 && (
                     <>
-                      {/* Voice Personality */}
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                          {ui.onboarding_section_voice_persona}
-                        </Text>
-                        <Text fontSize="xs" opacity={0.7} mb={3}>
-                          {ui.onboarding_persona_help_text}
-                        </Text>
-                        <Input
-                          value={voicePersona}
-                          onChange={(e) => setVoicePersona(e.target.value)}
-                          bg="gray.700"
-                          placeholder={personaPlaceholder}
-                        />
-                      </Box>
+                      <VoicePreferenceField
+                        t={ui}
+                        voice={voice}
+                        voicePersona={voicePersona}
+                        targetLang={targetLang}
+                        supportLang={supportLang}
+                        onVoiceChange={setVoice}
+                        onVoicePersonaChange={setVoicePersona}
+                        onSelectSound={() => playSound(selectSound)}
+                        heading={ui.onboarding_section_voice_persona}
+                        description={
+                          ui.onboarding_voice_desc ||
+                          ui.onboarding_persona_help_text
+                        }
+                        personaPlaceholder={personaPlaceholder}
+                      />
 
                       {/* Voice Activity Pause Slider */}
                       <Box bg="gray.800" p={3} rounded="md">
@@ -692,12 +680,9 @@ export default function Onboarding({
                         <Text fontSize="xs" opacity={0.7} mb={3}>
                           {ui.onboarding_vad_explanation}
                         </Text>
-                        <HStack justify="space-between" mb={2}>
-                          <Text fontSize="sm">{VAD_LABEL}</Text>
-                          <Text fontSize="sm" opacity={0.8}>
-                            {pauseSeconds} {secondsLabel}
-                          </Text>
-                        </HStack>
+                        <Text fontSize="sm" opacity={0.8} textAlign="right" mb={2}>
+                          {pauseSeconds} {secondsLabel}
+                        </Text>
                         <Slider
                           aria-label="onboarding-pause-slider"
                           min={200}

@@ -57,6 +57,7 @@ import {
   TTS_LANG_TAG,
   getCharacterVoice,
   getCharacterPersonality,
+  getRandomVoice,
 } from "../../utils/tts";
 import { callResponses } from "../../utils/llm";
 import {
@@ -4812,7 +4813,7 @@ export default function RPGGame({
           npcIdx != null ? npcVariantAssignmentsRef.current[npcIdx] : undefined;
         const player = await getTTSPlayer({
           text,
-          voice: characterId ? getCharacterVoice(characterId) : undefined,
+          voice: characterId ? getCharacterVoice(characterId) : getRandomVoice(),
           personality: characterId
             ? getCharacterPersonality(characterId)
             : undefined,

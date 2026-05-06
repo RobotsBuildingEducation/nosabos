@@ -45,6 +45,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import {
   TTS_LANG_TAG,
   fetchTTSBlob,
+  getPreferredTTSVoice,
   getTTSPlayer,
   LOW_LATENCY_TTS_FORMAT,
 } from "../utils/tts";
@@ -1380,6 +1381,7 @@ YES or NO
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          voice: getPreferredTTSVoice(),
           responseFormat: LOW_LATENCY_TTS_FORMAT,
         });
 

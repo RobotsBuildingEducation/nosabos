@@ -53,7 +53,7 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
+import { getPreferredTTSVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
@@ -963,6 +963,7 @@ export default function ProficiencyTest() {
     DEFAULT_SUPPORT_LANGUAGE,
   );
   const voicePersona = user?.progress?.voicePersona || "";
+  const selectedVoice = getPreferredTTSVoice(user?.progress?.voice);
   const pauseMs = user?.progress?.pauseMs || 800;
 
   const ui = translations[supportLang] || translations.en;
@@ -1961,7 +1962,7 @@ Return ONLY valid JSON:
       dcRef.current = dc;
 
       dc.onopen = () => {
-        const voiceName = getRandomVoice();
+        const voiceName = selectedVoice;
         const instructions = buildProficiencyInstructions();
 
         dc.send(
