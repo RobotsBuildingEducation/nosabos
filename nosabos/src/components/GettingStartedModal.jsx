@@ -15,7 +15,7 @@ import {
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuCopy, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuCopy, LuKeyRound, LuSettings } from "react-icons/lu";
 import { RxExternalLink } from "react-icons/rx";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -39,7 +39,6 @@ const APP_SHADOW = "var(--app-shadow-soft)";
 export default function GettingStartedModal({
   isOpen,
   onClose,
-  onStartTutorial,
   secretKey = "",
   lang = "en",
   useSharedBackdrop = false,
@@ -75,7 +74,7 @@ export default function GettingStartedModal({
     if (!secretKey) return;
     navigator.clipboard.writeText(secretKey);
     toast({
-      title: ui("app_install_copied"),
+      title: tFn(lang, "app_install_copied"),
       status: "success",
       duration: 2000,
       isClosable: true,
@@ -270,6 +269,23 @@ export default function GettingStartedModal({
             >
               {ui("app_install_got_it")}
             </Button>
+            <Text
+              fontSize="xs"
+              color={isLightTheme ? APP_TEXT_MUTED : "whiteAlpha.700"}
+              textAlign="center"
+              lineHeight="1.45"
+            >
+              {ui("app_install_footer_note")}{" "}
+              <Box
+                as="span"
+                display="inline-flex"
+                verticalAlign="text-bottom"
+                aria-hidden="true"
+              >
+                <LuSettings size={12} />
+              </Box>{" "}
+              {ui("app_install_footer_icon_label")}
+            </Text>
           </VStack>
         </ModalBody>
       </ModalContent>

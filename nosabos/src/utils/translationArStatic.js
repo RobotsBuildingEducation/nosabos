@@ -271,6 +271,8 @@ export const TRANSLATION_AR_STATIC = {
   app_mode_conversation: "المحادثة",
   app_install_title: "ثبّت التطبيق",
   app_install_subtitle: "لأفضل تجربة، ثبّت التطبيق على جهازك.",
+  app_install_footer_note: "هتلاقي التعليمات في قائمة الإعدادات عند",
+  app_install_footer_icon_label: "الأيقونة.",
   app_install_step1: "افتح قائمة المتصفح.",
   app_install_step2: "افتح في المتصفح.",
   app_install_step3: "اختار مشاركة أو تثبيت.",

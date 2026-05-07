@@ -265,6 +265,9 @@ export const TRANSLATION_DE_STATIC = {
   app_install_title: "Als App installieren",
   app_install_subtitle:
     "Installiere die App auf deinem Gerät für die beste Erfahrung.",
+  app_install_footer_note:
+    "Die Anleitung findest du im Einstellungsmenü mit dem",
+  app_install_footer_icon_label: "Symbol.",
   app_install_step1: "Öffne das Browsermenü.",
   app_install_step2: "Im Browser öffnen.",
   app_install_step3: "Wähle Teilen oder Installieren.",

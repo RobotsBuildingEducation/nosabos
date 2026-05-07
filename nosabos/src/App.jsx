@@ -2761,12 +2761,9 @@ export default function App({ onBootReady } = {}) {
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
-  const [
-    shouldShowGettingStartedAfterProficiency,
-    setShouldShowGettingStartedAfterProficiency,
-  ] = useState(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
-  const gettingStartedCheckDoneRef = useRef(false);
+  const [pendingInstallModalAfterTutorial, setPendingInstallModalAfterTutorial] =
+    useState(false);
 
   const blurActiveElement = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -2908,48 +2905,6 @@ export default function App({ onBootReady } = {}) {
     timerModalOpen,
     proficiencyTestOpen,
     shouldShowProficiencyAfterTimer,
-  ]);
-
-  // Show getting started tutorial modal once after the proficiency decision.
-  // Covers: proficiency skipped, proficiency test completed, or returning user
-  // who has a proficiency decision but never saw this modal.
-  useEffect(() => {
-    if (gettingStartedCheckDoneRef.current) return;
-    if (isLoadingApp || !user || !activeNpub) return;
-    if (needsOnboarding) return;
-    // Wait until all onboarding-chain modals are closed
-    if (
-      dailyGoalOpen ||
-      timerModalOpen ||
-      proficiencyTestOpen ||
-      gettingStartedOpen
-    )
-      return;
-
-    // User must have made a proficiency decision already
-    const hasProficiencyDecision =
-      user?.proficiencyPlacement != null &&
-      user?.proficiencyPlacement !== undefined;
-    if (!hasProficiencyDecision) return;
-
-    // Only show once ever
-    if (user?.gettingStartedModalShown) {
-      gettingStartedCheckDoneRef.current = true;
-      return;
-    }
-
-    gettingStartedCheckDoneRef.current = true;
-
-    setGettingStartedOpen(true);
-  }, [
-    isLoadingApp,
-    user,
-    activeNpub,
-    needsOnboarding,
-    dailyGoalOpen,
-    timerModalOpen,
-    proficiencyTestOpen,
-    gettingStartedOpen,
   ]);
 
   useEffect(() => {
@@ -3709,11 +3664,9 @@ export default function App({ onBootReady } = {}) {
 
       // Prompt for daily goal right after onboarding
       proficiencyCheckDoneRef.current = true;
-      gettingStartedCheckDoneRef.current = true;
       setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
       setShouldShowProficiencyAfterTimer(true);
-      setShouldShowGettingStartedAfterProficiency(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -4183,8 +4136,11 @@ export default function App({ onBootReady } = {}) {
     setShowTutorialBitcoinModal(false);
     setPendingTutorialBitcoinModal(false);
     pendingTutorialBitcoinModalRef.current = false;
+    if (!user?.gettingStartedModalShown) {
+      setPendingInstallModalAfterTutorial(true);
+    }
     void markTutorialBitcoinModalShown();
-  }, [markTutorialBitcoinModalShown]);
+  }, [markTutorialBitcoinModalShown, user?.gettingStartedModalShown]);
 
   // Handle closing the proficiency completion modal and navigating to next level
   const handleCloseProficiencyCompletionModal = useCallback(() => {
@@ -4281,6 +4237,86 @@ export default function App({ onBootReady } = {}) {
     pendingTutorialBitcoinModal,
     showCompletionModal,
     showProficiencyCompletionModal,
+  ]);
+
+  useEffect(() => {
+    if (!pendingInstallModalAfterTutorial) return;
+
+    if (user?.gettingStartedModalShown) {
+      setPendingInstallModalAfterTutorial(false);
+      return;
+    }
+
+    if (
+      showTutorialBitcoinModal ||
+      celebrateOpen ||
+      showCompletionModal ||
+      showProficiencyCompletionModal ||
+      dailyGoalOpen ||
+      timerModalOpen ||
+      proficiencyTestOpen ||
+      gettingStartedOpen
+    ) {
+      return;
+    }
+
+    if (typeof window === "undefined" || typeof document === "undefined") {
+      setGettingStartedOpen(true);
+      setPendingInstallModalAfterTutorial(false);
+      return;
+    }
+
+    let cancelled = false;
+    let timeoutId = null;
+    let rafId = null;
+    let attempts = 0;
+
+    const tryOpen = () => {
+      if (cancelled) return;
+
+      const activeModalContainers = document.querySelectorAll(
+        ".chakra-modal__content-container",
+      ).length;
+      const activeModalOverlays = document.querySelectorAll(
+        ".chakra-modal__overlay",
+      ).length;
+      const modalStackStillClosing =
+        activeModalContainers > 0 || activeModalOverlays > 0;
+
+      if (!modalStackStillClosing || attempts >= 12) {
+        setGettingStartedOpen(true);
+        setPendingInstallModalAfterTutorial(false);
+        return;
+      }
+
+      attempts += 1;
+      timeoutId = window.setTimeout(tryOpen, 60);
+    };
+
+    rafId = window.requestAnimationFrame(() => {
+      timeoutId = window.setTimeout(tryOpen, 0);
+    });
+
+    return () => {
+      cancelled = true;
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [
+    celebrateOpen,
+    dailyGoalOpen,
+    gettingStartedOpen,
+    pendingInstallModalAfterTutorial,
+    proficiencyTestOpen,
+    showCompletionModal,
+    showProficiencyCompletionModal,
+    showTutorialBitcoinModal,
+    timerModalOpen,
+    user?.gettingStartedModalShown,
   ]);
 
   // When the user switches practice languages, return them to the skill tree
@@ -4653,15 +4689,8 @@ export default function App({ onBootReady } = {}) {
   }, [shouldShowProficiencyAfterTimer]);
 
   const handleProficiencySkip = useCallback(async () => {
-    const shouldOpenGettingStarted = shouldShowGettingStartedAfterProficiency;
-
     flushSync(() => {
       setProficiencyTestOpen(false);
-      if (shouldOpenGettingStarted) {
-        gettingStartedCheckDoneRef.current = true;
-        setShouldShowGettingStartedAfterProficiency(false);
-        setGettingStartedOpen(true);
-      }
     });
     // Persist skip so the modal doesn't reappear every session.
     // "skipped" is a sentinel — treated as falsy by the placement check
@@ -4694,7 +4723,6 @@ export default function App({ onBootReady } = {}) {
     patchUser,
     user?.proficiencyPlacements,
     resolvedTargetLang,
-    shouldShowGettingStartedAfterProficiency,
   ]);
 
   const handleProficiencyTakeTest = useCallback(() => {
@@ -4703,7 +4731,7 @@ export default function App({ onBootReady } = {}) {
     navigate("/proficiency");
   }, [navigate]);
 
-  // Getting started modal: mark as shown and persist to Firestore
+  // Install modal: mark as shown and persist to Firestore.
   const markGettingStartedShown = useCallback(async () => {
     const id = resolveNpub();
     if (id) {
@@ -4731,32 +4759,6 @@ export default function App({ onBootReady } = {}) {
       markGettingStartedShown();
     });
   }, [markGettingStartedShown, runAfterNextPaint]);
-
-  const handleGettingStartedStart = useCallback(async () => {
-    flushSync(() => {
-      setGettingStartedOpen(false);
-    });
-    runAfterNextPaint(() => {
-      markGettingStartedShown();
-    });
-
-    // Find the tutorial lesson from the Pre-A1 learning path and launch it directly
-    try {
-      const units = await loadLearningPath(resolvedTargetLang, "Pre-A1");
-      const tutorialUnit = units?.find((u) => u.isTutorial);
-      const tutorialLesson = tutorialUnit?.lessons?.[0];
-      if (tutorialLesson) {
-        await handleStartLesson(tutorialLesson);
-      }
-    } catch (error) {
-      console.error("Failed to load getting-started lesson:", error);
-    }
-  }, [
-    markGettingStartedShown,
-    handleStartLesson,
-    resolvedTargetLang,
-    runAfterNextPaint,
-  ]);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -6767,7 +6769,6 @@ export default function App({ onBootReady } = {}) {
       <GettingStartedModal
         isOpen={gettingStartedOpen}
         onClose={handleGettingStartedSkip}
-        onStartTutorial={handleGettingStartedStart}
         secretKey={activeNsec}
         lang={appLanguage}
         useSharedBackdrop={isOnboardingChainModalOpen}

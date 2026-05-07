@@ -334,6 +334,8 @@ export const TRANSLATION_HI_STATIC = {
   app_mode_conversation: "बातचीत",
   app_install_title: "ऐप के रूप में इंस्टॉल करें",
   app_install_subtitle: "सबसे अच्छे अनुभव के लिए इसे अपने डिवाइस पर इंस्टॉल करें।",
+  app_install_footer_note: "निर्देश सेटिंग्स मेनू में",
+  app_install_footer_icon_label: "आइकन के साथ मिलेंगे।",
   app_install_step1: "ब्राउज़र मेनू खोलें।",
   app_install_step2: "ब्राउज़र में खोलें।",
   app_install_step3: "'Share' या 'Install' चुनें।",
