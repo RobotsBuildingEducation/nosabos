@@ -160,6 +160,8 @@ export const TRANSLATION_PT_STATIC = {
   "proficiency_listening": "Ouvindo",
   "proficiency_thinking": "Pensando",
   "app_install_subtitle": "Para a melhor experiência, instale o app no seu dispositivo.",
+  "app_install_footer_note": "As instruções ficam no menu de configurações com o",
+  "app_install_footer_icon_label": "ícone.",
   "app_install_step6": "Copie a chave secreta para entrar.",
   "app_install_got_it": "Entendido!",
   "app_install_copied": "Copiado!",

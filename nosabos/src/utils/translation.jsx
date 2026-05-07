@@ -631,6 +631,9 @@ export const translations = {
     proficiency_thinking: "Thinking",
     app_install_subtitle:
       "For the best experience, install the app on your device.",
+    app_install_footer_note:
+      "Instructions can be found in the settings menu with the",
+    app_install_footer_icon_label: "icon.",
     app_install_step6: "Copy secret key to sign in.",
     app_install_got_it: "Got it!",
     app_install_copied: "Copied!",
@@ -1117,6 +1120,9 @@ export const translations = {
     proficiency_thinking: "Pensando",
     app_install_subtitle:
       "Para la mejor experiencia, instala la app en tu dispositivo.",
+    app_install_footer_note:
+      "Las instrucciones se encuentran en el menu de configuracion con el",
+    app_install_footer_icon_label: "icono.",
     app_install_step6: "Copia la llave secreta para iniciar sesión.",
     app_install_got_it: "¡Entendido!",
     app_install_copied: "¡Copiada!",
@@ -2395,6 +2401,9 @@ translations.it = {
   proficiency_thinking: "Pensando",
   app_install_subtitle:
     "Per la migliore esperienza, installa l'app sul tuo dispositivo.",
+  app_install_footer_note:
+    "Le istruzioni si trovano nel menu delle impostazioni con l'",
+  app_install_footer_icon_label: "icona.",
   app_install_step6: "Copia la chiave segreta per accedere.",
   app_install_got_it: "Capito!",
   app_install_copied: "Copiato!",
@@ -3275,6 +3284,9 @@ translations.fr = {
   proficiency_thinking: "Reflechit",
   app_install_subtitle:
     "Pour la meilleure experience, installe l'app sur ton appareil.",
+  app_install_footer_note:
+    "Les instructions se trouvent dans le menu des parametres avec l'",
+  app_install_footer_icon_label: "icone.",
   app_install_step6: "Copie la cle secrete pour te reconnecter.",
   app_install_got_it: "Compris !",
   app_install_copied: "Copie !",
@@ -3989,6 +4001,8 @@ translations.ja = {
   app_install_step6: "サインイン用のシークレットキーをコピーします。",
   app_install_subtitle:
     "最高の体験のために、このアプリを端末にインストールしてください。",
+  app_install_footer_note: "手順は設定メニューの",
+  app_install_footer_icon_label: "アイコンから確認できます。",
   app_install_got_it: "了解",
   app_install_copied: "コピーしました！",
   app_close: "閉じる",
@@ -4779,6 +4793,9 @@ translations.pt = {
   proficiency_thinking: "Pensando",
   app_install_subtitle:
     "Para a melhor experiência, instale o app no seu dispositivo.",
+  app_install_footer_note:
+    "As instruções ficam no menu de configurações com o",
+  app_install_footer_icon_label: "ícone.",
   app_install_step1: "Abra o menu do navegador.",
   app_install_step2: "Abra no navegador.",
   app_install_step6: "Copie a chave secreta para entrar.",

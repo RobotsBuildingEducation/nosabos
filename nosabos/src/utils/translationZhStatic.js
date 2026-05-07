@@ -696,6 +696,8 @@ export const TRANSLATION_ZH_STATIC = {
   app_install_aria: "安装",
   app_install_title: "安装为应用",
   app_install_subtitle: "把应用安装到设备上，方便快速打开。",
+  app_install_footer_note: "说明可在设置菜单的",
+  app_install_footer_icon_label: "图标中找到。",
   app_install_step1: "打开浏览器菜单。",
   app_install_step2: "选择“添加到主屏幕”或“安装应用”。",
   app_install_step3: "确认安装。",
