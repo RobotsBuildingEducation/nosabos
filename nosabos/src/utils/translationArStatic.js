@@ -269,6 +269,7 @@ export const TRANSLATION_AR_STATIC = {
   app_mode_path: "المسار",
   app_mode_cards: "البطاقات",
   app_mode_conversation: "المحادثة",
+  app_mode_tutor: "المعلّم",
   app_install_title: "ثبّت التطبيق",
   app_install_subtitle: "لأفضل تجربة، ثبّت التطبيق على جهازك.",
   app_install_footer_note: "هتلاقي التعليمات في قائمة الإعدادات عند",

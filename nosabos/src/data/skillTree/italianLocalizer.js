@@ -29,8 +29,7 @@ const TEXT_TRANSLATIONS = {
     "20 verbi quotidiani e richieste brevi per cavartela",
   "20 words for time, transport, and finding your way":
     "20 parole per tempo, trasporti e orientamento",
-  "a guided tour of all learning modules":
-    "Un tour guidato di tutti i moduli di apprendimento",
+  "learn basic introductions": "Impara le presentazioni di base",
   "abstract concepts": "Concetti astratti",
   "academic writing": "Scrittura accademica",
   "accent and usage": "Accento e uso",
@@ -439,8 +438,8 @@ const TEXT_TRANSLATIONS = {
     "Pratica le presentazioni in conversazioni reali",
   "practice numbers in everyday situations":
     "Pratica i numeri in situazioni quotidiane",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "Pratica il parlato con conversazioni in tempo reale. Di' ciao per completare questa attività.",
+  "practice basic introductions in a realtime tutoring session.":
+    "Pratica le presentazioni di base in una sessione di tutoraggio in tempo reale.",
   "practice using larger numbers with prices and money":
     "Pratica i numeri più grandi con prezzi e denaro",
   "practice with interactive stories that say hello.":

@@ -530,6 +530,37 @@ async function ensureOnboardingField(db, id, data) {
   return data;
 }
 
+function addLanguageLessonProgress(map, data) {
+  if (!data?.targetLang || !data?.lessonId) return;
+  const targetLang = String(data.targetLang).toLowerCase();
+  if (!map[targetLang]) map[targetLang] = {};
+  map[targetLang][data.lessonId] = {
+    ...(map[targetLang][data.lessonId] || {}),
+    ...data,
+  };
+}
+
+function mergeLanguageLessonProgressMaps(...maps) {
+  return maps.reduce((merged, map) => {
+    if (!map || typeof map !== "object") return merged;
+    Object.entries(map).forEach(([lang, lessons]) => {
+      if (!lessons || typeof lessons !== "object") return;
+      if (!merged[lang]) merged[lang] = {};
+      Object.entries(lessons).forEach(([lessonId, data]) => {
+        merged[lang][lessonId] = {
+          ...(merged[lang][lessonId] || {}),
+          ...data,
+        };
+      });
+    });
+    return merged;
+  }, {});
+}
+
+function isLegacyTutorLessonProgress(data) {
+  return !!data?.tutorAgendaProgress;
+}
+
 async function loadUserObjectFromDB(db, id) {
   if (!id) return null;
   try {
@@ -543,24 +574,33 @@ async function loadUserObjectFromDB(db, id) {
       ...snap.data(),
     });
 
-    const [languageLessonsSnapshot, languageFlashcardsSnapshot] =
-      await Promise.all([
-        getDocs(collection(db, "users", id, "languageLessons")),
-        getDocs(collection(db, "users", id, "languageFlashcards")),
-      ]);
+    const [
+      languageLessonsSnapshot,
+      tutorLanguageLessonsSnapshot,
+      languageFlashcardsSnapshot,
+    ] = await Promise.all([
+      getDocs(collection(db, "users", id, "languageLessons")),
+      getDocs(collection(db, "users", id, "tutorLanguageLessons")),
+      getDocs(collection(db, "users", id, "languageFlashcards")),
+    ]);
 
     const languageLessons = {};
+    const legacyTutorLanguageLessons = {};
     languageLessonsSnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (!data?.targetLang || !data?.lessonId) return;
+      if (isLegacyTutorLessonProgress(data)) {
+        addLanguageLessonProgress(legacyTutorLanguageLessons, data);
+        return;
+      }
+      addLanguageLessonProgress(languageLessons, data);
+    });
 
-      const targetLang = String(data.targetLang).toLowerCase();
-      if (!languageLessons[targetLang]) languageLessons[targetLang] = {};
-
-      languageLessons[targetLang][data.lessonId] = {
-        ...(languageLessons[targetLang][data.lessonId] || {}),
-        ...data,
-      };
+    const tutorLanguageLessons = mergeLanguageLessonProgressMaps(
+      legacyTutorLanguageLessons,
+    );
+    tutorLanguageLessonsSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      addLanguageLessonProgress(tutorLanguageLessons, data);
     });
 
     const languageFlashcards = {};
@@ -584,6 +624,7 @@ async function loadUserObjectFromDB(db, id) {
     // Use subcollections as the canonical source of truth for lesson/flashcard progress.
     // This intentionally ignores any legacy nested progress JSON fields.
     userData.progress.languageLessons = languageLessons;
+    userData.progress.tutorLanguageLessons = tutorLanguageLessons;
     userData.progress.languageFlashcards = languageFlashcards;
 
     return userData;
@@ -2274,12 +2315,12 @@ export default function App({ onBootReady } = {}) {
     "yua",
   ];
 
-  // Path mode state (path, flashcards, conversations, alphabet bootcamp)
+  // Path mode state (path, flashcards, conversations, tutor, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("pathMode") || "path";
+      return localStorage.getItem("pathMode") || "tutor";
     }
-    return "path";
+    return "tutor";
   });
   const lastPathTargetRef = useRef(null);
 
@@ -2296,24 +2337,30 @@ export default function App({ onBootReady } = {}) {
     }
   }, [pathMode]);
 
-  // Reset to skill tree path on language switch; also validate pathMode
+  // Reset to Tutor on language switch; also validate pathMode
   useEffect(() => {
-    const validModes = ["alphabet", "path", "flashcards", "conversations"];
+    const validModes = [
+      "alphabet",
+      "path",
+      "flashcards",
+      "conversations",
+      "tutor",
+    ];
     if (!validModes.includes(pathMode)) {
-      setPathMode("path");
+      setPathMode("tutor");
       if (user) {
         lastPathTargetRef.current = resolvedTargetLang;
       }
       return;
     }
 
-    // When user explicitly switches languages, reset to skill tree path
+    // When user explicitly switches languages, reset to the primary Tutor mode
     if (
       user &&
       lastPathTargetRef.current !== null &&
       lastPathTargetRef.current !== resolvedTargetLang
     ) {
-      setPathMode("path");
+      setPathMode("tutor");
     }
 
     // Only update ref when user data is loaded (prevents false "change" detection on initial load)
@@ -2726,11 +2773,13 @@ export default function App({ onBootReady } = {}) {
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
 
-  // Show skill tree tutorial on first login (only once per session)
+  // Show the action bar tutorial on first login (only once per session)
   useEffect(() => {
     if (skillTreeTutorialCheckedRef.current) return;
     if (!user || !activeNpub) return;
     if (isLoadingApp || needsOnboarding) return;
+    if (viewMode !== "skillTree" || !["path", "tutor"].includes(pathMode))
+      return;
 
     skillTreeTutorialCheckedRef.current = true;
 
@@ -2741,7 +2790,7 @@ export default function App({ onBootReady } = {}) {
         setShowSkillTreeTutorial(true);
       }, 500);
     }
-  }, [user, activeNpub, isLoadingApp, needsOnboarding]);
+  }, [user, activeNpub, isLoadingApp, needsOnboarding, viewMode, pathMode]);
 
   /* -----------------------------------
      Daily goal modals (open logic)
@@ -2762,8 +2811,10 @@ export default function App({ onBootReady } = {}) {
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
   const proficiencyCheckDoneRef = useRef(false);
   const [gettingStartedOpen, setGettingStartedOpen] = useState(false);
-  const [pendingInstallModalAfterTutorial, setPendingInstallModalAfterTutorial] =
-    useState(false);
+  const [
+    pendingInstallModalAfterTutorial,
+    setPendingInstallModalAfterTutorial,
+  ] = useState(false);
 
   const blurActiveElement = useCallback(() => {
     if (typeof document === "undefined") return;
@@ -3034,7 +3085,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 400 && !subscriptionVerified,
+    () => subscriptionXp >= 0 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -3515,10 +3566,11 @@ export default function App({ onBootReady } = {}) {
     );
 
     // Strip subcollection-backed data from the progress field before writing
-    // to the user document. languageLessons and languageFlashcards live in
+    // to the user document. languageLessons, tutorLanguageLessons, and languageFlashcards live in
     // their own subcollections and must not be duplicated (stale) in the doc.
     const {
       languageLessons: _ll,
+      tutorLanguageLessons: _tll,
       languageFlashcards: _lf,
       ...progressForFirestore
     } = next;
@@ -3630,9 +3682,11 @@ export default function App({ onBootReady } = {}) {
 
       try {
         localStorage.setItem("appLanguage", uiLangForPersist);
+        localStorage.setItem("pathMode", "tutor");
       } catch {}
       syncDocumentLanguage(uiLangForPersist);
       setAppLanguage(uiLangForPersist);
+      setPathMode("tutor");
 
       await setDoc(
         doc(database, "users", id),
@@ -4141,6 +4195,17 @@ export default function App({ onBootReady } = {}) {
     }
     void markTutorialBitcoinModalShown();
   }, [markTutorialBitcoinModalShown, user?.gettingStartedModalShown]);
+
+  const handleTutorFirstLessonComplete = useCallback(() => {
+    if (user?.tutorialBitcoinModalShown) {
+      if (!user?.gettingStartedModalShown) {
+        setPendingInstallModalAfterTutorial(true);
+      }
+      return;
+    }
+
+    setPendingTutorialBitcoinModal(true);
+  }, [user?.gettingStartedModalShown, user?.tutorialBitcoinModalShown]);
 
   // Handle closing the proficiency completion modal and navigating to next level
   const handleCloseProficiencyCompletionModal = useCallback(() => {
@@ -4718,12 +4783,7 @@ export default function App({ onBootReady } = {}) {
         console.warn("Failed to persist proficiency skip:", e);
       }
     }
-  }, [
-    resolveNpub,
-    patchUser,
-    user?.proficiencyPlacements,
-    resolvedTargetLang,
-  ]);
+  }, [resolveNpub, patchUser, user?.proficiencyPlacements, resolvedTargetLang]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     proficiencyCheckDoneRef.current = true;
@@ -4880,30 +4940,61 @@ export default function App({ onBootReady } = {}) {
       activeNpub,
       "languageFlashcards",
     );
+    const tutorLessonProgressRef = collection(
+      database,
+      "users",
+      activeNpub,
+      "tutorLanguageLessons",
+    );
 
     const unsubLessons = onSnapshot(lessonProgressRef, (snapshot) => {
       const languageLessons = {};
+      const legacyTutorLanguageLessons = {};
 
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        if (!data?.targetLang || !data?.lessonId) return;
-
-        const lang = String(data.targetLang).toLowerCase();
-        if (!languageLessons[lang]) languageLessons[lang] = {};
-
-        languageLessons[lang][data.lessonId] = {
-          ...(languageLessons[lang][data.lessonId] || {}),
-          ...data,
-        };
+        if (isLegacyTutorLessonProgress(data)) {
+          addLanguageLessonProgress(legacyTutorLanguageLessons, data);
+          return;
+        }
+        addLanguageLessonProgress(languageLessons, data);
       });
 
       const latestUser = useUserStore.getState()?.user || {};
       const currentProgress = latestUser?.progress || {};
+      const tutorLanguageLessons = mergeLanguageLessonProgressMaps(
+        legacyTutorLanguageLessons,
+        currentProgress?.tutorLanguageLessons,
+      );
 
       patchUser?.({
         progress: {
           ...currentProgress,
           languageLessons,
+          tutorLanguageLessons,
+        },
+      });
+    });
+
+    const unsubTutorLessons = onSnapshot(tutorLessonProgressRef, (snapshot) => {
+      const tutorLanguageLessons = {};
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        addLanguageLessonProgress(tutorLanguageLessons, data);
+      });
+
+      const latestUser = useUserStore.getState()?.user || {};
+      const currentProgress = latestUser?.progress || {};
+      const mergedTutorLanguageLessons = mergeLanguageLessonProgressMaps(
+        currentProgress?.tutorLanguageLessons,
+        tutorLanguageLessons,
+      );
+
+      patchUser?.({
+        progress: {
+          ...currentProgress,
+          tutorLanguageLessons: mergedTutorLanguageLessons,
         },
       });
     });
@@ -4937,6 +5028,7 @@ export default function App({ onBootReady } = {}) {
 
     return () => {
       unsubLessons();
+      unsubTutorLessons();
       unsubFlashcards();
     };
   }, [activeNpub, patchUser]);
@@ -4954,11 +5046,12 @@ export default function App({ onBootReady } = {}) {
       const rawProgress = data?.progress || { totalXp: newXp };
 
       // The user document's progress field may contain stale languageLessons/
-      // languageFlashcards data written by saveGlobalSettings. The subcollection
+      // tutorLanguageLessons/languageFlashcards data written by saveGlobalSettings. The subcollection
       // listeners and loadUserObjectFromDB are the only sources of truth for
       // these maps, so strip them from rawProgress before merging.
       const {
         languageLessons: _rawLL,
+        tutorLanguageLessons: _rawTLL,
         languageFlashcards: _rawLF,
         ...rawProgressWithoutSubcollections
       } = rawProgress;
@@ -4967,6 +5060,7 @@ export default function App({ onBootReady } = {}) {
         ...existingProgress,
         ...rawProgressWithoutSubcollections,
         languageLessons: existingProgress?.languageLessons ?? {},
+        tutorLanguageLessons: existingProgress?.tutorLanguageLessons ?? {},
         languageFlashcards: existingProgress?.languageFlashcards ?? {},
       };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
@@ -4980,6 +5074,7 @@ export default function App({ onBootReady } = {}) {
 
       const hasHydratedProgressMaps =
         Object.keys(existingProgress?.languageLessons || {}).length > 0 ||
+        Object.keys(existingProgress?.tutorLanguageLessons || {}).length > 0 ||
         Object.keys(existingProgress?.languageFlashcards || {}).length > 0;
 
       if (hasHydratedProgressMaps) {
@@ -6436,9 +6531,13 @@ export default function App({ onBootReady } = {}) {
         />
       )}
 
-      {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
+      {/* Tutorial Action Bar Popovers - shows on first login on main learning surfaces */}
       <TutorialActionBarPopovers
-        isActive={showSkillTreeTutorial && viewMode === "skillTree"}
+        isActive={
+          showSkillTreeTutorial &&
+          viewMode === "skillTree" &&
+          ["path", "tutor"].includes(pathMode)
+        }
         lang={appLanguage}
         onComplete={handleSkillTreeTutorialComplete}
         isOnSkillTree={true}
@@ -6491,6 +6590,7 @@ export default function App({ onBootReady } = {}) {
               scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
               initialUnits={skillTreeInitialUnits.units}
               initialUnitsKey={skillTreeInitialUnits.key || ""}
+              onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
               // Tutorial props
               isTutorialComplete={hasCompletedSkillTreeTutorial}
             />
@@ -7312,7 +7412,7 @@ function BottomActionBar({
   realWorldTasksTimerProgress = 0,
   notesIsLoading = false,
   notesIsDone = false,
-  pathMode = "path",
+  pathMode = "tutor",
   onPathModeChange,
   onScrollToLatest,
   currentTab,
@@ -7409,6 +7509,18 @@ function BottomActionBar({
           ja: "会話",
         }),
       icon: RiChat3Line,
+    },
+    {
+      id: "tutor",
+      label:
+        t?.app_mode_tutor ||
+        uiCopy(appLanguage, {
+          en: "Tutor",
+          es: "Tutor",
+          it: "Tutor",
+          ja: "チューター",
+        }),
+      icon: RiBook2Line,
     },
   ];
 

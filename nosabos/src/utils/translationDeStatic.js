@@ -196,6 +196,7 @@ export const TRANSLATION_DE_STATIC = {
   app_mode_path: "Pfad",
   app_mode_cards: "Karten",
   app_mode_conversation: "Gespräch",
+  app_mode_tutor: "Tutor",
   app_mode_help: "Hilfe",
   app_notes: "Notizen",
   app_account: "Konto",

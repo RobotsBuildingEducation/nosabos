@@ -176,6 +176,7 @@ export const TRANSLATION_PT_STATIC = {
   "app_mode_path": "Rota",
   "app_mode_cards": "Tarjetas",
   "app_mode_conversation": "Conversa",
+  "app_mode_tutor": "Tutor",
   "onboarding_final_step_title": "Copie sua chave secreta para entrar na sua conta",
   "onboarding_final_step_description": "Esta chave é a única forma de acessar suas contas nos apps da Robots Building Education. Guarde-a em um gerenciador de senhas ou em um lugar seguro. Não podemos recuperá-la para você.",
   "onboarding_copy_key": "Copiar llave",

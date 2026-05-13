@@ -250,7 +250,7 @@ export function useSpeechPractice({
                 prefix_padding_ms: 120,
               },
               input_audio_transcription: {
-                model: "whisper-1",
+                model: "gpt-4o-mini-transcribe",
                 language: whisperLang,
               },
             },

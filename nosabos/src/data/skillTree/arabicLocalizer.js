@@ -137,8 +137,7 @@ const TEXT_TRANSLATIONS = {
     "كمّل الشرح التمهيدي بلعبة مراجعة قصيرة.",
   "learn how to use the app and explore all features":
     "اتعلّم إزاي تستخدم التطبيق وتكتشف كل المزايا",
-  "a guided tour of all learning modules":
-    "جولة إرشادية في كل وحدات التعلّم",
+  "learn basic introductions": "اتعلّم التعارف الأساسي",
   "learn words for the people in your life":
     "اتعلّم كلمات للناس الموجودين في حياتك",
   "the learner says hello.": "يقول المتعلم أهلًا.",
@@ -240,8 +239,8 @@ const TEXT_TRANSLATIONS = {
     "20 فعل يومي وطلبات قصيرة عشان تخلّص أمورك",
   "20 words for time, transport, and finding your way":
     "20 كلمة عن الوقت والمواصلات وإزاي تلاقي طريقك",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "اتدرّب على الكلام من خلال محادثات مباشرة. قول أهلًا علشان تكمّل النشاط ده.",
+  "practice basic introductions in a realtime tutoring session.":
+    "اتدرّب على التعارف الأساسي في جلسة معلّم مباشرة.",
   "practice with interactive stories that say hello.":
     "اتدرّب بقصص تفاعلية فيها أهلًا.",
   "improve your reading skills with a simple hello passage.":

@@ -192,12 +192,12 @@ void main(){
   vec3 darkDeep  = vec3(0.03, 0.10, 0.70);
   vec3 darkBlue  = vec3(0.20, 0.72, 0.99);
   vec3 darkCyan  = vec3(0.95, 0.94, 1.00);
-  vec3 darkCore  = vec3(0.95, 0.94, 1.00);
+  vec3 darkCore  = vec3(0.66, 0.94, 1.00);
 
-  vec3 lightDeep = vec3(0.93, 0.82, 0.88);
-  vec3 lightBlue = vec3(0.96, 0.56, 0.72);
-  vec3 lightCyan = vec3(0.96, 0.56, 0.72);
-  vec3 lightCore = vec3(0.95, 0.94, 1.00);
+vec3 lightDeep = vec3(0.72, 0.92, 0.86); // soft mint shadow
+vec3 lightBlue = vec3(0.00, 0.86, 0.75); // electric teal primary
+vec3 lightCyan = vec3(0.48, 0.99, 0.78); // soft green secondary
+vec3 lightCore = vec3(0.82, 1.00, 0.96); // pale green-white highlight
 
   vec3 cMain = mix(darkBlue, lightBlue, u_theme); // primary
   vec3 cLow  = mix(darkDeep, lightDeep, u_theme); // shadow

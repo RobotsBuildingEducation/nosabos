@@ -264,6 +264,7 @@ export const TRANSLATION_ZH_STATIC = {
   app_mode_path: "路径",
   app_mode_cards: "卡片",
   app_mode_conversation: "会话",
+  app_mode_tutor: "导师",
   path_switcher_path: "路径",
   path_switcher_flashcards: "卡片",
   path_switcher_conversations: "会话",

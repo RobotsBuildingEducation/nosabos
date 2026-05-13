@@ -2121,7 +2121,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
             modalities: ["audio", "text"],
             voice: voiceName,
             turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "whisper-1" },
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
             output_audio_format: "pcm16",
           },
         }),

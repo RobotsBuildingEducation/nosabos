@@ -248,6 +248,7 @@ import {
 } from "../utils/modalMotion";
 
 const Conversations = lazy(() => import("./Conversations"));
+const Tutor = lazy(() => import("./Tutor"));
 const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
 
@@ -2448,6 +2449,7 @@ export default function SkillTree({
   onPathModeChange,
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
+  onTutorFirstLessonComplete,
   // Tutorial props
   isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
   initialUnits = null,
@@ -2518,6 +2520,8 @@ export default function SkillTree({
     pathMode === "path"
       ? lessonLevelCompletionStatus
       : flashcardLevelCompletionStatus;
+  const isConversationStyleMode =
+    pathMode === "conversations" || pathMode === "tutor";
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
@@ -2793,8 +2797,8 @@ export default function SkillTree({
         position="relative"
         zIndex={1}
       >
-        {/* CEFR Level Navigator - hidden in conversations mode */}
-        {effectiveOnLevelChange && pathMode !== "conversations" && (
+        {/* CEFR Level Navigator - hidden in conversation-style modes */}
+        {effectiveOnLevelChange && !isConversationStyleMode && (
           <CEFRLevelNavigator
             currentLevel={effectiveCurrentLevel}
             activeCEFRLevel={effectiveActiveLevel}
@@ -2805,8 +2809,8 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header - hidden in conversations mode */}
-        {pathMode !== "conversations" && (
+        {/* Minimal Progress Header - hidden in conversation-style modes */}
+        {!isConversationStyleMode && (
           <Box mb={4} display="flex" justifyContent={"center"}>
 
             <HStack
@@ -2934,7 +2938,7 @@ export default function SkillTree({
               />
             </Suspense>
           </Box>
-        ) : (
+        ) : deferredPathMode === "conversations" ? (
           <Box>
             <Suspense
               fallback={<PathModeFallback />}
@@ -2948,7 +2952,22 @@ export default function SkillTree({
               />
             </Suspense>
           </Box>
-        )}
+        ) : deferredPathMode === "tutor" ? (
+          <Box>
+            <Suspense
+              fallback={<PathModeFallback />}
+            >
+              <Tutor
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                onFirstLessonComplete={onTutorFirstLessonComplete}
+              />
+            </Suspense>
+          </Box>
+        ) : null}
 
         {/* Lesson Detail Modal */}
         <LessonDetailModal

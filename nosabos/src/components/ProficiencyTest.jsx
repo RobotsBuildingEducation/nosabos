@@ -552,6 +552,34 @@ function normalizeCefrLevel(level) {
   return level;
 }
 
+function getTutorPlacementStartLevelStorageKey(targetLang = "es") {
+  return `tutorPlacementStartLevel:${String(targetLang || "es").toLowerCase()}`;
+}
+
+function getTutorPathLevelStorageKey(targetLang = "es") {
+  return `tutorPathLevel:${String(targetLang || "es").toLowerCase()}`;
+}
+
+function getTutorPathLessonStorageKey(targetLang = "es") {
+  return `tutorPathLesson:${String(targetLang || "es").toLowerCase()}`;
+}
+
+function queueTutorPlacementStart(targetLang, level) {
+  if (typeof window === "undefined" || !CEFR_LEVELS.includes(level)) return;
+  try {
+    const langKey = String(targetLang || "es").toLowerCase();
+    window.localStorage.setItem("pathMode", "tutor");
+    window.localStorage.setItem(getTutorPathLevelStorageKey(langKey), level);
+    window.localStorage.removeItem(getTutorPathLessonStorageKey(langKey));
+    if (level !== "Pre-A1") {
+      window.localStorage.setItem(
+        getTutorPlacementStartLevelStorageKey(langKey),
+        level,
+      );
+    }
+  } catch {}
+}
+
 function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   const normalized = normalizeCefrLevel(modelLevel) || "Pre-A1";
   const levelRank = {
@@ -1754,9 +1782,7 @@ Return ONLY valid JSON:
     }
 
     try {
-      // Mark all levels up to the assessed level as unlocked
-      // by setting the user's proficiency placement level per-language
-      const levelIndex = CEFR_LEVELS.indexOf(assessedLevel);
+      queueTutorPlacementStart(targetLang, assessedLevel);
 
       await setDoc(
         doc(database, "users", currentNpub),
@@ -1766,7 +1792,11 @@ Return ONLY valid JSON:
           proficiencyPlacementAt: new Date().toISOString(),
           activeLessonLevel: assessedLevel,
           activeFlashcardLevel: assessedLevel,
-          "progress.level": assessedLevel,
+          progress: {
+            level: assessedLevel,
+            activeLessonLevels: { [targetLang]: assessedLevel },
+            activeFlashcardLevels: { [targetLang]: assessedLevel },
+          },
           updatedAt: new Date().toISOString(),
         },
         { merge: true },
@@ -1784,6 +1814,14 @@ Return ONLY valid JSON:
         progress: {
           ...(user?.progress || {}),
           level: assessedLevel,
+          activeLessonLevels: {
+            ...(user?.progress?.activeLessonLevels || {}),
+            [targetLang]: assessedLevel,
+          },
+          activeFlashcardLevels: {
+            ...(user?.progress?.activeFlashcardLevels || {}),
+            [targetLang]: assessedLevel,
+          },
         },
       });
     } catch (e) {
@@ -1791,7 +1829,15 @@ Return ONLY valid JSON:
     }
 
     navigate("/");
-  }, [currentNpub, assessedLevel, navigate, patchUser, user?.progress]);
+  }, [
+    currentNpub,
+    assessedLevel,
+    targetLang,
+    navigate,
+    patchUser,
+    user?.progress,
+    user?.proficiencyPlacements,
+  ]);
 
   /* ---- Confirm exit: mark placement as skipped and leave ---- */
   const handleConfirmExit = useCallback(async () => {
@@ -1974,7 +2020,7 @@ Return ONLY valid JSON:
               voice: voiceName,
               turn_detection: buildTurnDetectionConfig(),
               input_audio_transcription: {
-                model: "whisper-1",
+                model: "gpt-4o-mini-transcribe",
                 language: targetLanguageCode,
                 prompt:
                   "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",

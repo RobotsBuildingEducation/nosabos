@@ -195,8 +195,7 @@ const EXTRA_DIRECT_TRANSLATIONS = {
     "用事をこなすための日常動詞20語と短い頼み方",
   "20 words for time, transport, and finding your way":
     "時間・交通・道案内の20語",
-  "a guided tour of all learning modules":
-    "すべての学習モジュールをめぐるガイドツアー",
+  "learn basic introductions": "基本的な自己紹介を学ぶ",
   "add 20 words for names, family, and moving around":
     "名前・家族・移動に関する20語を追加で学ぶ",
   "basic greetings and farewells": "基本のあいさつと別れの表現",
@@ -225,8 +224,8 @@ const EXTRA_DIRECT_TRANSLATIONS = {
   "link vocabulary and grammar from the unit in a guided scenario.":
     "ガイド付きの場面でこのユニットの語彙と文法を結びつける。",
   "practice in real situations": "実際の場面で練習する",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "リアルタイム会話で話す練習をする。このアクティビティではあいさつして完了する。",
+  "practice basic introductions in a realtime tutoring session.":
+    "リアルタイムのチューターセッションで基本的な自己紹介を練習する。",
   "practice with interactive stories that say hello.":
     "あいさつが出てくる対話型ストーリーで練習する。",
   "round out 100 words with connectors, feelings, and quick questions":

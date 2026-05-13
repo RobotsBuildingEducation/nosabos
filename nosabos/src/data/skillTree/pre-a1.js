@@ -52,8 +52,8 @@ export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
           es: "Primeros Pasos",
         },
         description: {
-          en: "A guided tour of all learning modules",
-          es: "Un recorrido guiado por todos los módulos de aprendizaje",
+          en: "Learn basic introductions",
+          es: "Aprende introducciones básicas",
         },
         xpRequired: 0,
         xpReward: 50,
@@ -62,46 +62,61 @@ export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
         content: {
           vocabulary: {
             topic: "tutorial",
-            focusPoints: ["hello", "hi", "good morning", "greetings"],
+            focusPoints: [
+              "hello",
+              "my name is",
+              "good morning",
+              "good afternoon",
+              "good night",
+              "how are you",
+            ],
             tutorialDescription: {
-              en: "Learn new words with interactive questions. Practice saying hello.",
-              es: "Aprende nuevas palabras mediante preguntas interactivas. Practica decir hola.",
+              en: "Learn first introduction phrases with interactive questions.",
+              es: "Aprende tus primeras frases de introducción con preguntas interactivas.",
             },
           },
           grammar: {
             topic: "tutorial",
-            focusPoints: ["hello patterns", "simple greetings"],
+            focusPoints: [
+              "basic introduction patterns",
+              "time-based greetings",
+              "simple wellbeing questions",
+            ],
             tutorialDescription: {
-              en: "Master grammar rules through exercises. Practice greeting patterns.",
-              es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
+              en: "Practice simple patterns for introductions and greetings.",
+              es: "Practica patrones simples para introducciones y saludos.",
             },
           },
           reading: {
             topic: "tutorial",
-            prompt: "Read a simple hello greeting",
+            prompt: "Read a simple introduction exchange",
             tutorialDescription: {
-              en: "Improve your reading skills with a simple hello passage.",
-              es: "Mejora tus habilidades de lectura con un texto simple de saludo.",
+              en: "Read a short exchange with basic introductions.",
+              es: "Lee un intercambio corto con introducciones básicas.",
             },
           },
           stories: {
             topic: "tutorial",
-            prompt: "Practice saying hello in a story",
+            prompt: "Practice basic introductions in a story",
             tutorialDescription: {
-              en: "Practice with interactive stories that say hello.",
-              es: "Practica con historias interactivas que dicen hola.",
+              en: "Practice basic introductions in a short interactive story.",
+              es: "Practica introducciones básicas en una historia interactiva corta.",
             },
           },
           realtime: {
             topic: "tutorial",
-            scenario: "Say hello",
-            prompt: "Practice saying hello in a live chat",
-            successCriteria: "The learner says hello.",
-            successCriteria_es: 'El estudiante dice "hola".',
-            successCriteria_fr: 'L\'apprenant dit "bonjour".',
+            scenario: "Learn basic introductions",
+            prompt:
+              "Practice hello, my name is, good morning, good afternoon, good night, and how are you",
+            successCriteria:
+              "The learner makes understandable attempts at hello, my name is, good morning, good afternoon, good night, and how are you.",
+            successCriteria_es:
+              'El estudiante intenta de forma comprensible decir "hola", "me llamo", "buenos días", "buenas tardes", "buenas noches" y "¿cómo estás?".',
+            successCriteria_fr:
+              'L\'apprenant essaie de dire de façon compréhensible "bonjour", "je m\'appelle", "bonjour", "bon après-midi", "bonne nuit" et "comment ça va ?".',
             tutorialDescription: {
-              en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
-              es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
+              en: "Practice basic introductions in a realtime tutoring session.",
+              es: "Practica introducciones básicas en una sesión de tutoría en tiempo real.",
             },
           },
           game: {
@@ -111,6 +126,14 @@ export const SKILL_TREE_PRE_A1 = withLocalizedSkillTreeText([
               en: "Finish the tutorial by playing a short game review.",
               es: "Termina el tutorial jugando un breve repaso en modo juego.",
             },
+            focusPoints: [
+              "hello",
+              "my name is",
+              "good morning",
+              "good afternoon",
+              "good night",
+              "how are you",
+            ],
           },
         },
       },

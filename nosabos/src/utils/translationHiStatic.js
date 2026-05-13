@@ -332,6 +332,7 @@ export const TRANSLATION_HI_STATIC = {
   app_mode_path: "पथ",
   app_mode_cards: "कार्ड्स",
   app_mode_conversation: "बातचीत",
+  app_mode_tutor: "ट्यूटर",
   app_install_title: "ऐप के रूप में इंस्टॉल करें",
   app_install_subtitle: "सबसे अच्छे अनुभव के लिए इसे अपने डिवाइस पर इंस्टॉल करें।",
   app_install_footer_note: "निर्देश सेटिंग्स मेनू में",
