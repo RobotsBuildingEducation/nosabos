@@ -2233,8 +2233,8 @@ export default function App({ onBootReady } = {}) {
     const resolvedThemeMode = normalizeThemeMode(
       user?.themeMode ||
         (typeof window !== "undefined"
-          ? localStorage.getItem("themeMode")
-          : "dark"),
+          ? localStorage.getItem("themeMode") || "light"
+          : "light"),
     );
     syncThemeMode(resolvedThemeMode);
   }, [syncThemeMode, user?.themeMode]);
@@ -2643,7 +2643,7 @@ export default function App({ onBootReady } = {}) {
   const DEFAULT_PROGRESS = {
     level: "Pre-A1",
     supportLang: appLanguage, // Use detected/selected app language
-    voice: "alloy",
+    voice: "marin",
     voicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
       translations?.en?.onboarding_persona_default_example ||
@@ -3085,7 +3085,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 0 && !subscriptionVerified,
+    () => subscriptionXp >= 400 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -3496,7 +3496,7 @@ export default function App({ onBootReady } = {}) {
     const prev = user?.progress || {
       level: "Pre-A1",
       supportLang: "en",
-      voice: "alloy",
+      voice: "marin",
       voicePersona: translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
       showTranslations: true,

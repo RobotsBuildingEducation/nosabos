@@ -146,7 +146,7 @@ export default function Onboarding({
         initialDraft.targetLang,
         getDefaultTargetForSupport(initialSupportLang),
       ),
-      voice: normalizeTTSVoice(initialDraft.voice),
+      voice: normalizeTTSVoice(initialDraft.voice || "marin"),
       voicePersona:
         personaForSupportLanguage(
           initialDraft.voicePersona,
@@ -167,11 +167,11 @@ export default function Onboarding({
           ? initialDraft.soundVolume
           : 40,
       themeMode:
-        initialDraft.themeMode === "light"
-          ? "light"
-          : storedThemeMode === "light"
-            ? "light"
-            : "dark",
+        initialDraft.themeMode === "dark" || initialDraft.themeMode === "light"
+          ? initialDraft.themeMode
+          : storedThemeMode === "dark"
+            ? "dark"
+            : "light",
     };
   }, [initialDraft, initialSupportLang, storedThemeMode, ui.DEFAULT_PERSONA]);
 

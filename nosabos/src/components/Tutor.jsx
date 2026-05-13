@@ -32,10 +32,7 @@ import {
 } from "@chakra-ui/react";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import {
-  FaStop,
-  FaRegCommentDots,
-} from "react-icons/fa";
+import { FaStop, FaRegCommentDots } from "react-icons/fa";
 import { MdOutlineTranslate } from "react-icons/md";
 import {
   RiArrowLeftLine,
@@ -49,10 +46,7 @@ import {
 } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import {
-  database,
-  analytics,
-} from "../firebaseResources/firebaseResources";
+import { database, analytics } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -71,20 +65,16 @@ import {
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import {
-  completeTutorLesson,
+  completeLesson,
   getLanguageXp,
-  saveTutorAgendaProgress,
-  startTutorLesson,
+  startLesson,
 } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import {
-  DEFAULT_TTS_VOICE,
-  getPreferredTTSVoice,
-} from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -97,28 +87,24 @@ import RandomCharacter from "./RandomCharacter";
 import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
-  getLanguagePromptName as getRawLanguagePromptName,
+  getLanguagePromptName,
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
-import tutorMainCharacterSprite from "../sprites/tutor/main_character_tutor_transparent.png";
 
-const REALTIME_MODEL =
-  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+const TUTOR_REALTIME_MODEL =
+  (import.meta.env.VITE_TUTOR_REALTIME_MODEL || "gpt-realtime") + "";
 
 const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
   ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL,
+      TUTOR_REALTIME_MODEL,
     )}`
   : "";
-const TUTOR_TRANSCRIPTION_MODEL =
-  import.meta.env.VITE_TUTOR_TRANSCRIPTION_MODEL || "gpt-4o-mini-transcribe";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const TUTOR_COMPLETED_AGENDA_PREVIEW_ON_START = false;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 const AUTO_DISCONNECT_MS = 15000;
@@ -130,86 +116,8 @@ const ARCHIVE_GLYPH_STREAM_JITTER_MS = 22;
 const ARCHIVE_INCOMING_HOLD_MS = 170;
 const archiveLayoutCache = new Map();
 let archiveMeasureContext = null;
-const TUTOR_REALTIME_VOICE = "marin";
-const TUTOR_QUALITY_REALTIME_VOICES = new Set(["marin", "cedar"]);
-const TUTOR_CHARACTER_SPRITE_COLUMNS = 6;
-const TUTOR_CHARACTER_SPRITE_ROWS = 6;
-const TUTOR_WHISPER_STT_LANG = {
-  es: "es",
-  pt: "pt",
-  fr: "fr",
-  it: "it",
-  ja: "ja",
-  nl: "nl",
-  ru: "ru",
-  de: "de",
-  el: "el",
-  pl: "pl",
-  ga: "ga",
-  zh: "zh",
-};
-const TUTOR_SPANISH_TRANSCRIPTION_VARIANTS = {
-  "me llamo": [
-    "me yamo",
-    "me lamo",
-    "me iamo",
-    "mi llamo",
-    "mi yamo",
-    "mi lamo",
-    "mi amo",
-    "mi iamo",
-    "me amo",
-  ],
-  mama: ["ma ma"],
-  papa: ["pa pa"],
-  hermano: ["ermano", "er mano", "her mano", "airmano", "air mano"],
-  hermana: [
-    "ermana",
-    "er mana",
-    "her mana",
-    "airmana",
-    "air mana",
-    "paramaham",
-  ],
-  familia: ["fa milia", "fa mi lia", "familiar"],
-  hola: ["ola"],
-  "buenos dias": ["bueno dias", "buenos dia"],
-  "buenas tardes": ["buena tardes", "buenas tarde"],
-  "buenas noches": ["buena noches", "buenas noche"],
-  "como estas": ["como esta", "como estas tu"],
-};
-const TUTOR_FOCUS_MEANING_HINTS = {
-  en: {
-    mama: "mom",
-    papa: "dad",
-    hermano: "brother",
-    hermana: "sister",
-    familia: "family",
-    hola: "hello",
-    adios: "goodbye",
-    gracias: "thank you",
-    "muchas gracias": "thank you very much",
-    "de nada": "you're welcome",
-    "por favor": "please",
-    si: "yes",
-    no: "no",
-    claro: "of course",
-    vale: "okay",
-    "de acuerdo": "agreed",
-    cero: "zero",
-    uno: "one",
-    dos: "two",
-    tres: "three",
-    cuatro: "four",
-    cinco: "five",
-    rojo: "red",
-    azul: "blue",
-    amarillo: "yellow",
-    "me llamo": "my name is",
-    soy: "I am",
-    "mi nombre es": "my name is",
-  },
-};
+const TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION =
+  "You are a language tutor. You must pronounce words correctly when code switching and changing languages.";
 
 /* ---------------------------
    Utils & helpers
@@ -280,207 +188,67 @@ const TUTOR_CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 const TUTOR_LEVEL_INFO = {
   "Pre-A1": {
     label: "A0",
-    name: {
-      en: "Ultimate Beginner",
-      es: "Principiante total",
-      pt: "Iniciante absoluto",
-      it: "Principiante assoluto",
-      fr: "Grand débutant",
-      de: "Kompletter Anfänger",
-      ja: "完全初心者",
-      hi: "पूर्ण शुरुआती",
-      ar: "مبتدئ تمامًا",
-      zh: "零基础入门",
-    },
-    description: {
-      en: "First words and recognition",
-      es: "Primeras palabras y reconocimiento",
-      pt: "Primeiras palavras e reconhecimento",
-      it: "Prime parole e riconoscimento",
-      fr: "Premiers mots et reconnaissance",
-      de: "Erste Wörter und Wiedererkennen",
-      ja: "最初の単語と認識",
-      hi: "पहले शब्द और पहचान",
-      ar: "أول الكلمات والتعرّف عليها",
-      zh: "最初的单词和识别",
-    },
+    name: { en: "Ultimate Beginner", es: "Principiante Total" },
+    description: { en: "First words and recognition", es: "Primeras palabras" },
     color: "#8B5CF6",
   },
   A1: {
     label: "A1",
-    name: {
-      en: "Beginner",
-      es: "Principiante",
-      pt: "Iniciante",
-      it: "Principiante",
-      fr: "Débutant",
-      de: "Anfänger",
-      ja: "初級",
-      hi: "शुरुआती",
-      ar: "مبتدئ",
-      zh: "初学者",
-    },
-    description: {
-      en: "Basic survival language",
-      es: "Lenguaje básico de supervivencia",
-      pt: "Linguagem básica de sobrevivência",
-      it: "Lingua essenziale di base",
-      fr: "Langue de survie de base",
-      de: "Grundlegende Alltagssprache",
-      ja: "基本的な生活表現",
-      hi: "बुनियादी कामचलाऊ भाषा",
-      ar: "لغة أساسية للمواقف اليومية",
-      zh: "基础生存语言",
-    },
+    name: { en: "Beginner", es: "Principiante" },
+    description: { en: "Basic survival language", es: "Lenguaje basico" },
     color: "#3B82F6",
   },
   A2: {
     label: "A2",
-    name: {
-      en: "Elementary",
-      es: "Elemental",
-      pt: "Elementar",
-      it: "Elementare",
-      fr: "Élémentaire",
-      de: "Grundstufe",
-      ja: "初中級",
-      hi: "प्राथमिक",
-      ar: "أساسي",
-      zh: "基础级",
-    },
+    name: { en: "Elementary", es: "Elemental" },
     description: {
       en: "Simple everyday communication",
-      es: "Comunicación cotidiana simple",
-      pt: "Comunicação simples do dia a dia",
-      it: "Comunicazione quotidiana semplice",
-      fr: "Communication simple du quotidien",
-      de: "Einfache Alltagskommunikation",
-      ja: "簡単な日常会話",
-      hi: "सरल रोज़मर्रा की बातचीत",
-      ar: "تواصل يومي بسيط",
-      zh: "简单日常交流",
+      es: "Comunicacion cotidiana",
     },
     color: "#8B5CF6",
   },
   B1: {
     label: "B1",
-    name: {
-      en: "Intermediate",
-      es: "Intermedio",
-      pt: "Intermediário",
-      it: "Intermedio",
-      fr: "Intermédiaire",
-      de: "Mittelstufe",
-      ja: "中級",
-      hi: "मध्य स्तर",
-      ar: "متوسط",
-      zh: "中级",
-    },
+    name: { en: "Intermediate", es: "Intermedio" },
     description: {
       en: "Handle everyday situations",
-      es: "Maneja situaciones cotidianas",
-      pt: "Lide com situações do dia a dia",
-      it: "Gestisci situazioni quotidiane",
-      fr: "Gère les situations du quotidien",
-      de: "Alltagssituationen bewältigen",
-      ja: "日常場面に対応する",
-      hi: "रोज़मर्रा की स्थितियों को संभालें",
-      ar: "التعامل مع المواقف اليومية",
-      zh: "应对日常情境",
+      es: "Situaciones cotidianas",
     },
     color: "#A855F7",
   },
   B2: {
     label: "B2",
-    name: {
-      en: "Upper Intermediate",
-      es: "Intermedio alto",
-      pt: "Intermediário avançado",
-      it: "Intermedio avanzato",
-      fr: "Intermédiaire avancé",
-      de: "Obere Mittelstufe",
-      ja: "中上級",
-      hi: "उच्च मध्य स्तर",
-      ar: "متوسط متقدم",
-      zh: "中高级",
-    },
-    description: {
-      en: "Complex discussions",
-      es: "Discusiones complejas",
-      pt: "Discussões complexas",
-      it: "Discussioni complesse",
-      fr: "Discussions complexes",
-      de: "Komplexe Gespräche",
-      ja: "複雑な話し合い",
-      hi: "जटिल चर्चाएँ",
-      ar: "نقاشات معقدة",
-      zh: "复杂讨论",
-    },
+    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+    description: { en: "Complex discussions", es: "Discusiones complejas" },
     color: "#F97316",
   },
   C1: {
     label: "C1",
-    name: {
-      en: "Advanced",
-      es: "Avanzado",
-      pt: "Avançado",
-      it: "Avanzato",
-      fr: "Avancé",
-      de: "Fortgeschritten",
-      ja: "上級",
-      hi: "उन्नत",
-      ar: "متقدم",
-      zh: "高级",
-    },
-    description: {
-      en: "Sophisticated language use",
-      es: "Uso sofisticado del idioma",
-      pt: "Uso sofisticado do idioma",
-      it: "Uso sofisticato della lingua",
-      fr: "Usage sophistiqué de la langue",
-      de: "Anspruchsvoller Sprachgebrauch",
-      ja: "高度な言語運用",
-      hi: "परिष्कृत भाषा प्रयोग",
-      ar: "استخدام متقدم ومرن للغة",
-      zh: "熟练而精细的语言运用",
-    },
+    name: { en: "Advanced", es: "Avanzado" },
+    description: { en: "Sophisticated language use", es: "Uso sofisticado" },
     color: "#EF4444",
   },
   C2: {
     label: "C2",
-    name: {
-      en: "Mastery",
-      es: "Dominio",
-      pt: "Domínio",
-      it: "Padronanza",
-      fr: "Maîtrise",
-      de: "Beherrschung",
-      ja: "熟達",
-      hi: "निपुणता",
-      ar: "إتقان",
-      zh: "精通",
-    },
+    name: { en: "Mastery", es: "Maestria" },
     description: {
       en: "Near-native proficiency",
       es: "Competencia casi nativa",
-      pt: "Proficiência quase nativa",
-      it: "Competenza quasi madrelingua",
-      fr: "Maîtrise quasi native",
-      de: "Nahezu muttersprachliche Kompetenz",
-      ja: "ネイティブに近い運用力",
-      hi: "लगभग मातृभाषी दक्षता",
-      ar: "طلاقة قريبة من المتحدث الأصلي",
-      zh: "接近母语者的熟练度",
     },
     color: "#EC4899",
   },
 };
+
+function isTutorEarlyLevel(level) {
+  return level === "Pre-A1" || level === "A1";
+}
+
+function isTutorAdvancedConversationLevel(level) {
+  return level === "B2" || level === "C1" || level === "C2";
+}
 const TUTOR_STARTER_LESSON_IDS = new Set([
   "lesson-tutorial-1",
   "lesson-tutorial-a1",
-]);
-const TUTOR_AGENDA_ONLY_COMPLETION_LESSON_IDS = new Set([
-  "lesson-tutorial-1",
 ]);
 const TUTOR_STARTER_AGENDA_ITEMS = [
   {
@@ -706,26 +474,6 @@ function getTutorLessonSubjects(lesson) {
   return compactUnique(subjects);
 }
 
-function getTutorLessonFocusAgendaItems(lesson) {
-  const content = lesson?.content || {};
-  const focusPoints = [];
-  Object.values(content).forEach((block) => {
-    if (!block || typeof block !== "object") return;
-    if (!Array.isArray(block.focusPoints)) return;
-    block.focusPoints.forEach((point) => {
-      const phrase = String(point || "").trim();
-      if (!phrase || /\bwith\b/i.test(phrase)) return;
-      focusPoints.push(phrase);
-    });
-  });
-
-  return compactUnique(focusPoints).map((phrase, index) => ({
-    id: `focus-${index}-${normalizeTutorAgendaSpeech(phrase).slice(0, 24)}`,
-    phrase,
-    label: phrase,
-  }));
-}
-
 function buildTutorLessonContext(lesson, unit, lang = "en") {
   if (!lesson) return null;
   const subjects = getTutorLessonSubjects(lesson);
@@ -748,10 +496,38 @@ function buildTutorLessonContext(lesson, unit, lang = "en") {
       agendaTitle ? `Agenda: ${agendaTitle}` : "",
       agendaSubtitle ? `Focus: ${agendaSubtitle}` : "",
       includeSourceDetails && title ? `Source lesson: ${title}` : "",
-      includeSourceDetails && description ? `Source description: ${description}` : "",
-      includeSourceDetails && subjects.length ? `Subjects: ${subjects.join(" | ")}` : "",
+      includeSourceDetails && description
+        ? `Source description: ${description}`
+        : "",
+      includeSourceDetails && subjects.length
+        ? `Subjects: ${subjects.join(" | ")}`
+        : "",
     ]).join("\n"),
   };
+}
+
+function buildTutorCodeSwitchingAudioInstruction(targetLanguageName = "") {
+  return [
+    TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION,
+    targetLanguageName
+      ? `When you include ${targetLanguageName} words or phrases, pronounce those words as ${targetLanguageName} even if the surrounding tutoring language is different.`
+      : "",
+    targetLanguageName
+      ? `Say each ${targetLanguageName} model phrase as a short standalone phrase. Do not blend it into a support-language sentence.`
+      : "",
+    "Write target-language words in normal spelling. Do not use phonetic respelling, hyphenation, or transliteration unless the learner explicitly asks.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function extractRealtimeItemText(item) {
+  const parts = Array.isArray(item?.content) ? item.content : [];
+  return parts
+    .map((part) => (typeof part?.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 }
 
 function getTutorStarterAgendaTitleText() {
@@ -773,11 +549,6 @@ function getTutorStarterAgendaTitleText() {
 function isTutorStarterAgendaLesson(lesson) {
   const id = String(lesson?.id || "");
   return TUTOR_STARTER_LESSON_IDS.has(id);
-}
-
-function shouldCompleteTutorStarterOnAgenda(lesson) {
-  const id = String(lesson?.id || "");
-  return TUTOR_AGENDA_ONLY_COMPLETION_LESSON_IDS.has(id);
 }
 
 function getTutorStarterAgendaSummary(lang = "en") {
@@ -832,15 +603,6 @@ function getTutorStarterItemSupportTask(item, supportLang = "en") {
   return tasks[item?.id] || getTutorStarterItemSupportMeaning(item, normalized);
 }
 
-function getTutorFocusItemSupportMeaning(item, supportLang = "en") {
-  const normalized = normalizeSupportLanguage(
-    supportLang,
-    DEFAULT_SUPPORT_LANGUAGE,
-  );
-  const phraseKey = normalizeTutorAgendaSpeech(item?.phrase || item?.label || "");
-  return TUTOR_FOCUS_MEANING_HINTS[normalized]?.[phraseKey] || "";
-}
-
 function normalizeTutorAgendaSpeech(text) {
   return String(text || "")
     .normalize("NFD")
@@ -851,305 +613,6 @@ function normalizeTutorAgendaSpeech(text) {
     .trim();
 }
 
-function getTutorAgendaKnownTranscriptionVariants(phrase, targetLang = "es") {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || targetLang || "es";
-  if (baseLang !== "es") return [];
-  const normalizedPhrase = normalizeTutorAgendaSpeech(phrase);
-  return TUTOR_SPANISH_TRANSCRIPTION_VARIANTS[normalizedPhrase] || [];
-}
-
-function getTutorAgendaCompactSpeech(text) {
-  return normalizeTutorAgendaSpeech(text).replace(/\s+/g, "");
-}
-
-function getTutorAgendaPhoneticKey(text, targetLang = "es") {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || targetLang || "es";
-  const normalized = normalizeTutorAgendaSpeech(text);
-  if (baseLang !== "es") return normalized.replace(/\s+/g, "");
-
-  return normalized
-    .split(/\s+/g)
-    .filter(Boolean)
-    .map((token) =>
-      token
-        .replace(/^h+/, "")
-        .replace(/h/g, "")
-        .replace(/ll/g, "y")
-        .replace(/y/g, "i")
-        .replace(/v/g, "b")
-        .replace(/qu/g, "k")
-        .replace(/c(?=[ei])/g, "s")
-        .replace(/c/g, "k")
-        .replace(/z/g, "s"),
-    )
-    .join("");
-}
-
-function getTutorAgendaEditDistance(a, b) {
-  const left = String(a || "");
-  const right = String(b || "");
-  if (left === right) return 0;
-  if (!left) return right.length;
-  if (!right) return left.length;
-
-  const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-  const current = Array(right.length + 1).fill(0);
-  for (let i = 1; i <= left.length; i += 1) {
-    current[0] = i;
-    for (let j = 1; j <= right.length; j += 1) {
-      current[j] = Math.min(
-        previous[j] + 1,
-        current[j - 1] + 1,
-        previous[j - 1] + (left[i - 1] === right[j - 1] ? 0 : 1),
-      );
-    }
-    for (let j = 0; j <= right.length; j += 1) {
-      previous[j] = current[j];
-    }
-  }
-  return previous[right.length];
-}
-
-function isTutorAgendaPhoneticNearMatch(text, phrase, targetLang = "es") {
-  const expectedKey = getTutorAgendaPhoneticKey(phrase, targetLang);
-  const spokenKey = getTutorAgendaPhoneticKey(text, targetLang);
-  if (!expectedKey || !spokenKey) return false;
-  if (expectedKey === spokenKey) return true;
-  if (expectedKey.length < 5 || spokenKey.length < 4) return false;
-
-  const maxDistance = expectedKey.length >= 7 ? 2 : 1;
-  return getTutorAgendaEditDistance(spokenKey, expectedKey) <= maxDistance;
-}
-
-function getTutorAgendaTokens(text) {
-  return normalizeTutorAgendaSpeech(text).split(" ").filter(Boolean);
-}
-
-function isTutorAgendaTokenMatch(spokenToken, expectedToken, targetLang = "es") {
-  const spoken = normalizeTutorAgendaSpeech(spokenToken);
-  const expected = normalizeTutorAgendaSpeech(expectedToken);
-  if (!spoken || !expected) return false;
-  if (spoken === expected) return true;
-
-  const baseLang = getBaseLanguageCode(targetLang || "es") || targetLang || "es";
-  if (baseLang === "es" && expected.startsWith("h") && spoken === expected.slice(1)) {
-    return true;
-  }
-
-  return false;
-}
-
-function isTutorAgendaTokenNearMatch(
-  spokenToken,
-  expectedToken,
-  targetLang = "es",
-) {
-  if (isTutorAgendaTokenMatch(spokenToken, expectedToken, targetLang)) {
-    return true;
-  }
-
-  const spoken = normalizeTutorAgendaSpeech(spokenToken);
-  const expected = normalizeTutorAgendaSpeech(expectedToken);
-  if (!spoken || !expected || expected.length < 4 || spoken.length < 3) {
-    return false;
-  }
-
-  const spokenKey = getTutorAgendaPhoneticKey(spoken, targetLang);
-  const expectedKey = getTutorAgendaPhoneticKey(expected, targetLang);
-  const maxDistance = expectedKey.length >= 7 ? 2 : 1;
-  return (
-    Math.abs(spokenKey.length - expectedKey.length) <= maxDistance &&
-    getTutorAgendaEditDistance(spokenKey, expectedKey) <= maxDistance
-  );
-}
-
-function doesTutorAgendaTextLooselyMatchPhrase(text, phrase, targetLang = "es") {
-  if (doesTutorAgendaTextMatchPhrase(text, phrase, targetLang)) return true;
-
-  const textTokens = getTutorAgendaTokens(text);
-  const phraseTokens = getTutorAgendaTokens(phrase);
-  if (phraseTokens.length < 3 || !textTokens.length) return false;
-
-  const matchedTokens = phraseTokens.filter((expectedToken) =>
-    textTokens.some((token) =>
-      isTutorAgendaTokenNearMatch(token, expectedToken, targetLang),
-    ),
-  ).length;
-  const minimumMatches =
-    phraseTokens.length <= 4
-      ? phraseTokens.length - 1
-      : Math.ceil(phraseTokens.length * 0.72);
-
-  return matchedTokens >= Math.max(2, minimumMatches);
-}
-
-function doesTutorAgendaTextMatchPhrase(text, phrase, targetLang = "es") {
-  const normalizedText = normalizeTutorAgendaSpeech(text);
-  const normalizedPhrase = normalizeTutorAgendaSpeech(phrase);
-  if (!normalizedText || !normalizedPhrase) return false;
-
-  const phraseVariants = compactUnique([
-    normalizedPhrase,
-    ...getTutorAgendaKnownTranscriptionVariants(normalizedPhrase, targetLang),
-  ]);
-  if (
-    phraseVariants.some(
-      (variant) =>
-        variant !== normalizedPhrase &&
-        doesTutorAgendaTextMatchPhrase(normalizedText, variant, targetLang),
-    )
-  ) {
-    return true;
-  }
-
-  if (` ${normalizedText} `.includes(` ${normalizedPhrase} `)) {
-    return true;
-  }
-  const compactText = getTutorAgendaCompactSpeech(normalizedText);
-  const compactPhrase = getTutorAgendaCompactSpeech(normalizedPhrase);
-  if (compactPhrase && compactText === compactPhrase) {
-    return true;
-  }
-  if (
-    compactPhrase.length >= 4 &&
-    compactText.length <= compactPhrase.length + 3 &&
-    compactText.includes(compactPhrase)
-  ) {
-    return true;
-  }
-  if (isTutorAgendaPhoneticNearMatch(normalizedText, normalizedPhrase, targetLang)) {
-    return true;
-  }
-  if (
-    !normalizedPhrase.includes(" ") &&
-    /[^\x00-\x7F]/.test(normalizedPhrase) &&
-    normalizedText.includes(normalizedPhrase)
-  ) {
-    return true;
-  }
-
-  const textTokens = getTutorAgendaTokens(normalizedText);
-  const phraseTokens = getTutorAgendaTokens(normalizedPhrase);
-  if (!textTokens.length || !phraseTokens.length) return false;
-
-  if (phraseTokens.length === 1) {
-    return textTokens.some((token) =>
-      isTutorAgendaTokenMatch(token, phraseTokens[0], targetLang),
-    );
-  }
-
-  for (let start = 0; start <= textTokens.length - phraseTokens.length; start += 1) {
-    const windowTokens = textTokens.slice(start, start + phraseTokens.length);
-    const allMatch = phraseTokens.every((expectedToken, index) =>
-      isTutorAgendaTokenMatch(windowTokens[index], expectedToken, targetLang),
-    );
-    if (allMatch) return true;
-  }
-
-  return false;
-}
-
-function getTutorAgendaPhraseVariants(phrase, targetLang = "es") {
-  const raw = String(phrase || "").trim();
-  if (!raw) return [];
-  return compactUnique([
-    raw,
-    ...getTutorAgendaKnownTranscriptionVariants(raw, targetLang),
-    ...raw
-      .split(/\s*(?:,|;|\/|\|)\s*/g)
-      .map((part) => part.trim())
-      .filter((part) => part && part !== raw),
-  ]);
-}
-
-function doesTutorAgendaTextMatchFocusItem(text, item, targetLang = "es") {
-  return getTutorAgendaPhraseVariants(
-    item?.phrase || item?.label || "",
-    targetLang,
-  ).some((phrase) => doesTutorAgendaTextLooselyMatchPhrase(text, phrase, targetLang));
-}
-
-function getTutorQuotedPhrases(text) {
-  const phrases = [];
-  const source = String(text || "");
-  const quoteRegex = /["“”]([^"“”]{2,180})["“”]/g;
-  let match;
-  while ((match = quoteRegex.exec(source))) {
-    const phrase = String(match[1] || "").trim();
-    if (phrase) phrases.push(phrase);
-  }
-  return compactUnique(phrases);
-}
-
-function getTutorRequestedPhrasesFromAssistantText(text) {
-  const source = String(text || "");
-  if (!source.trim()) return [];
-
-  const phrases = [];
-  const quotedAfterRequest =
-    /\b(?:say|repeat|try|saying|repeating|repite|repitelo|repítelo|repetir|di|dilo|intenta(?:\s+(?:decir|repetir))?|your turn(?: to (?:use|repeat|say))?|tu turno|ahora t[uú])\b[^"“”]{0,120}["“”]([^"“”]{2,180})["“”]/gi;
-  let match;
-  while ((match = quotedAfterRequest.exec(source))) {
-    phrases.push(String(match[1] || "").trim());
-  }
-
-  const unquotedAfterColon =
-    /\b(?:repeat after me|say|repeat|try|repite|repitelo|repítelo|repetir|di|dilo|intenta(?:\s+(?:decir|repetir))?)\b[^:]{0,80}:\s*([^."“”!?]{2,120})[.!?]?/gi;
-  while ((match = unquotedAfterColon.exec(source))) {
-    phrases.push(String(match[1] || "").trim());
-  }
-
-  const quotedPhrases = getTutorQuotedPhrases(source);
-  const asksForPractice =
-    /\b(?:say|repeat|try|your turn|give it a try|go ahead|repite|repitelo|repítelo|repetir|di|dilo|intenta|tu turno|ahora t[uú]|vamos)\b/i.test(
-      source,
-    );
-  if (!phrases.length && asksForPractice && quotedPhrases.length) {
-    phrases.push(quotedPhrases[quotedPhrases.length - 1]);
-  }
-
-  return compactUnique(
-    phrases
-      .map((phrase) =>
-        phrase
-          .replace(/^\s*(?:please\s+)?(?:say|repeat|try)\s+/i, "")
-          .trim(),
-      )
-      .filter((phrase) => phrase.length >= 2),
-  );
-}
-
-function getLatestTutorAssistantRequestedPhrases(
-  messages = [],
-) {
-  const latestAssistant = [...(messages || [])]
-    .filter((message) => message?.role === "assistant")
-    .sort((a, b) => (b.ts || 0) - (a.ts || 0))
-    .find((message) =>
-      `${message?.textFinal || ""}${message?.textStream || ""}`.trim(),
-    );
-  const assistantText = `${latestAssistant?.textFinal || ""}${
-    latestAssistant?.textStream || ""
-  }`;
-  return getTutorRequestedPhrasesFromAssistantText(assistantText);
-}
-
-function getLatestTutorAssistantRequestedPhraseMatch(
-  userMessage,
-  messages = [],
-  targetLang = "es",
-) {
-  const requestedPhrases = getLatestTutorAssistantRequestedPhrases(messages)
-    .slice()
-    .sort((a, b) => b.length - a.length);
-
-  return (
-    requestedPhrases.find((phrase) =>
-      doesTutorAgendaTextLooselyMatchPhrase(userMessage, phrase, targetLang),
-    ) || ""
-  );
-}
-
 function getTutorStarterAgendaMatches(text, targetLang = "es") {
   const baseLang = getBaseLanguageCode(targetLang || "es") || "es";
   const normalizedText = normalizeTutorAgendaSpeech(text);
@@ -1157,9 +620,10 @@ function getTutorStarterAgendaMatches(text, targetLang = "es") {
 
   return TUTOR_STARTER_AGENDA_ITEMS.filter((item) => {
     const examples = item.examples[baseLang] || item.examples.en || [];
-    return examples.some((example) =>
-      doesTutorAgendaTextLooselyMatchPhrase(normalizedText, example, targetLang),
-    );
+    return examples.some((example) => {
+      const normalizedExample = normalizeTutorAgendaSpeech(example);
+      return normalizedExample && normalizedText.includes(normalizedExample);
+    });
   }).map((item) => item.id);
 }
 
@@ -1169,17 +633,6 @@ function getNextTutorStarterAgendaItem(progress = {}) {
 
 function isTutorStarterAgendaComplete(progress = {}) {
   return TUTOR_STARTER_AGENDA_ITEMS.every((item) => progress[item.id]);
-}
-
-function getNextTutorLessonFocusAgendaItem(lesson, progress = {}) {
-  return getTutorLessonFocusAgendaItems(lesson).find(
-    (item) => !progress[item.id],
-  ) || null;
-}
-
-function isTutorLessonFocusAgendaComplete(lesson, progress = {}) {
-  const items = getTutorLessonFocusAgendaItems(lesson);
-  return items.length > 0 && items.every((item) => progress[item.id]);
 }
 
 function cleanTutorSubjectText(subject) {
@@ -1244,216 +697,9 @@ function getTutorLessonAgendaSubtitle(lesson, unit, lang = "en") {
   );
 }
 
-function buildTutorCompletedAgendaData({
-  lesson,
-  unit,
-  targetLang = "es",
-  supportLang = "en",
-  starterProgress = {},
-  focusProgress = {},
-  xpEarned = 0,
-  forceComplete = false,
-  isPreview = false,
-} = {}) {
-  const normalizedSupport = normalizeSupportLanguage(
-    supportLang,
-    DEFAULT_SUPPORT_LANGUAGE,
-  );
-  const level = unit?.cefrLevel || unit?.level || "Pre-A1";
-  const isStarter = isTutorStarterAgendaLesson(lesson);
-  const items = isStarter
-    ? TUTOR_STARTER_AGENDA_ITEMS.map((item) => ({
-        id: item.id,
-        task: getTutorStarterItemSupportTask(item, normalizedSupport),
-        phrase: getTutorStarterItemModelPhrase(item, targetLang),
-        meaning: getTutorStarterItemSupportMeaning(item, normalizedSupport),
-        completed: forceComplete || !!starterProgress?.[item.id],
-      }))
-    : getTutorLessonFocusAgendaItems(lesson).map((item) => ({
-        id: item.id,
-        task:
-          getTutorFocusItemSupportMeaning(item, normalizedSupport) ||
-          item.label ||
-          item.phrase,
-        phrase: item.phrase || item.label,
-        meaning: getTutorFocusItemSupportMeaning(item, normalizedSupport),
-        completed: forceComplete || !!focusProgress?.[item.id],
-      }));
-
-  const fallbackTitle = getTutorLessonAgendaTitle(lesson, unit, normalizedSupport);
-  const normalizedItems = items.length
-    ? items
-    : [
-        {
-          id: "lesson-focus",
-          task: tutorCopy(normalizedSupport, {
-            en: "completed the lesson focus",
-            es: "completaste el enfoque de la leccion",
-            pt: "concluiu o foco da licao",
-            it: "hai completato il focus della lezione",
-            fr: "tu as termine l'objectif de la lecon",
-            de: "du hast den Lektionsfokus abgeschlossen",
-            ja: "レッスンの目標を完了しました",
-            hi: "आपने पाठ का लक्ष्य पूरा किया",
-            ar: "كملت هدف الدرس",
-            zh: "完成了课程重点",
-          }),
-          phrase: fallbackTitle,
-          meaning: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
-          completed: true,
-        },
-      ];
-
-  const completedCount = normalizedItems.filter((item) => item.completed).length;
-
-  return {
-    title: fallbackTitle,
-    subtitle: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
-    unitTitle: getTutorDisplayText(unit?.title, normalizedSupport),
-    level,
-    levelLabel: TUTOR_LEVEL_INFO[level]?.label || level,
-    xpEarned,
-    targetLang,
-    supportLang: normalizedSupport,
-    items: normalizedItems,
-    completedCount,
-    totalCount: normalizedItems.length,
-    isPreview,
-  };
-}
-
-function buildTutorCompletedAgendaPreviewData({
-  targetLang = "es",
-  supportLang = "en",
-} = {}) {
-  return buildTutorCompletedAgendaData({
-    lesson: {
-      id: "lesson-tutorial-1",
-      title: getTutorStarterAgendaTitleText(),
-      description: getTutorStarterAgendaTitleText(),
-      xpReward: 50,
-    },
-    unit: {
-      title: { en: "Getting Started", es: "Primeros Pasos" },
-      cefrLevel: "Pre-A1",
-    },
-    targetLang,
-    supportLang,
-    starterProgress: Object.fromEntries(
-      TUTOR_STARTER_AGENDA_ITEMS.map((item) => [item.id, true]),
-    ),
-    xpEarned: 50,
-    forceComplete: true,
-    isPreview: true,
-  });
-}
-
 function getTutorLevelIndex(level) {
   const index = TUTOR_CEFR_LEVELS.indexOf(level);
   return index >= 0 ? index : TUTOR_CEFR_LEVELS.indexOf("A1");
-}
-
-function isEarlyTutorProficiencyLevel(level) {
-  return level === "Pre-A1" || level === "A1";
-}
-
-function getLanguagePromptName(code) {
-  const name = getRawLanguagePromptName(code);
-  return String(name || "")
-    .replace(/\s*\([^)]*\)/g, "")
-    .trim();
-}
-
-function buildTutorAudioPronunciationInstructions(targetLang, targetLanguageName) {
-  const baseLang = getBaseLanguageCode(targetLang || "") || targetLang || "";
-  const spanishHint =
-    baseLang === "es"
-      ? 'For Spanish, h is silent. Pronounce words like "hermano" and "hermana" as Spanish words, not English words.'
-      : "";
-
-  return [
-    `When speaking ${targetLanguageName || "target-language"} words or phrases, use native ${targetLanguageName || "target-language"} pronunciation, even when the surrounding explanation is in another language.`,
-    "Treat every target-language word or phrase as a code-switched speech island: switch into the target language for that word or phrase, then switch back for the surrounding tutoring prose.",
-    "Do not anglicize isolated target-language words.",
-    spanishHint,
-    "When modeling a target word, code-switch naturally in the same sentence. Do not preface it with a language label.",
-    "Do not say phrases like 'In Spanish', 'En español', or other language-label prefaces.",
-    "Do not mention locale codes, language tags, or parenthetical language labels.",
-    "Do not add pronunciation explanations, syllable splits, or phonetic respellings unless the learner asks.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function buildTutorCurrentPhraseAudioInstructions(
-  phrase,
-  targetLang,
-  targetLanguageName,
-) {
-  const cleanedPhrase = String(phrase || "").trim();
-  if (!cleanedPhrase) return "";
-
-  return [
-    `Naturally model the exact current phrase "${cleanedPhrase}" inside the tutoring sentence.`,
-    `Treat "${cleanedPhrase}" as a target-language speech island: speak that phrase in native ${targetLanguageName || "target-language"}, then return to the surrounding tutoring language.`,
-    `A good response shape is: a varied natural transition, a quick meaning hint when useful, then an invitation to try "${cleanedPhrase}".`,
-    `Pronounce "${cleanedPhrase}" with native ${targetLanguageName || "target-language"} phonology, not the support-language accent.`,
-    "Do not use the same opener every turn. Avoid repetitive starts like 'Great', 'Great job', 'Now', 'Next', or 'Okay'.",
-    "Do not say a language label before the target phrase.",
-    "Do not add language-name parentheticals, locale labels, phonetic spellings, syllable splits, or pronunciation coaching.",
-  ].join(" ");
-}
-
-function getTutorRealtimeVoice(voice) {
-  const preferred = getPreferredTTSVoice(voice);
-  return TUTOR_QUALITY_REALTIME_VOICES.has(preferred)
-    ? preferred
-    : TUTOR_REALTIME_VOICE;
-}
-
-function buildTutorInputAudioTranscriptionPrompt(
-  targetLang = "es",
-  expectedPhrases = [],
-) {
-  const targetLanguageName =
-    getLanguagePromptName(targetLang) || "the target language";
-  const phraseHints = compactUnique(
-    expectedPhrases
-      .flatMap((phrase) => getTutorAgendaPhraseVariants(phrase, targetLang))
-      .map((phrase) => String(phrase || "").trim())
-      .filter(Boolean),
-  ).slice(0, 10);
-  const likelyPhraseText = phraseHints.length
-    ? ` The learner is likely attempting one of these ${targetLanguageName} lesson phrases: ${phraseHints
-        .map((phrase) => `"${phrase}"`)
-        .join(", ")}.`
-    : "";
-
-  return [
-    `Transcribe the learner's speech as ${targetLanguageName}.`,
-    "This is a language tutoring practice turn, so favor the target language when the audio is ambiguous.",
-    likelyPhraseText,
-    "Do not translate. Do not switch scripts or languages unless the learner clearly did.",
-    "Accept accented, clipped, or spaced-out attempts as the closest target-language phrase when they plausibly match.",
-    "If the learner clearly says an unrelated word or phrase, transcribe that instead.",
-  ]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function getTutorInputAudioTranscriptionConfig(
-  targetLang = "es",
-  expectedPhrases = [],
-) {
-  const baseLang = getBaseLanguageCode(targetLang || "es") || targetLang || "es";
-  const language = TUTOR_WHISPER_STT_LANG[baseLang];
-  const prompt = buildTutorInputAudioTranscriptionPrompt(
-    targetLang,
-    expectedPhrases,
-  );
-  const config = { model: TUTOR_TRANSCRIPTION_MODEL, prompt };
-  if (language) config.language = language;
-  return config;
 }
 
 function getTutorStorageLang(targetLang) {
@@ -1466,14 +712,6 @@ function getTutorPathLevelStorageKey(targetLang) {
 
 function getTutorPathLessonStorageKey(targetLang) {
   return `tutorPathLesson:${getTutorStorageLang(targetLang)}`;
-}
-
-function getTutorPlacementStartLevelStorageKey(targetLang) {
-  return `tutorPlacementStartLevel:${getTutorStorageLang(targetLang)}`;
-}
-
-function getTutorAgendaProgressStorageKey(targetLang, lessonId) {
-  return `tutorAgendaProgress:${getTutorStorageLang(targetLang)}:${lessonId}`;
 }
 
 function readStoredTutorLevel(targetLang) {
@@ -1501,7 +739,8 @@ function readStoredTutorLessonId(targetLang) {
   if (typeof window === "undefined") return "";
   try {
     return (
-      window.localStorage.getItem(getTutorPathLessonStorageKey(targetLang)) || ""
+      window.localStorage.getItem(getTutorPathLessonStorageKey(targetLang)) ||
+      ""
     );
   } catch {
     return "";
@@ -1511,69 +750,9 @@ function readStoredTutorLessonId(targetLang) {
 function writeStoredTutorLessonId(targetLang, lessonId) {
   if (typeof window === "undefined" || !lessonId) return;
   try {
-    window.localStorage.setItem(getTutorPathLessonStorageKey(targetLang), lessonId);
-  } catch {}
-}
-
-function readStoredTutorPlacementStartLevel(targetLang) {
-  if (typeof window === "undefined") return "";
-  try {
-    const stored = window.localStorage.getItem(
-      getTutorPlacementStartLevelStorageKey(targetLang),
-    );
-    return TUTOR_CEFR_LEVELS.includes(stored) ? stored : "";
-  } catch {
-    return "";
-  }
-}
-
-function clearStoredTutorPlacementStartLevel(targetLang) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.removeItem(getTutorPlacementStartLevelStorageKey(targetLang));
-  } catch {}
-}
-
-function normalizeTutorAgendaProgress(source, allowedIds = []) {
-  const items =
-    source && typeof source.items === "object" ? source.items : source;
-  if (!items || typeof items !== "object") return {};
-
-  const allowed = new Set(allowedIds);
-  return Object.entries(items).reduce((acc, [id, value]) => {
-    if ((!allowed.size || allowed.has(id)) && value === true) {
-      acc[id] = true;
-    }
-    return acc;
-  }, {});
-}
-
-function readStoredTutorAgendaProgress(targetLang, lessonId, allowedIds = []) {
-  if (typeof window === "undefined" || !lessonId) return {};
-  try {
-    const raw = window.localStorage.getItem(
-      getTutorAgendaProgressStorageKey(targetLang, lessonId),
-    );
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    return normalizeTutorAgendaProgress(parsed, allowedIds);
-  } catch {
-    return {};
-  }
-}
-
-function writeStoredTutorAgendaProgress(targetLang, lessonId, progress = {}) {
-  if (typeof window === "undefined" || !lessonId) return;
-  try {
     window.localStorage.setItem(
-      getTutorAgendaProgressStorageKey(targetLang, lessonId),
-      JSON.stringify({
-        updatedAt: Date.now(),
-        items: Object.entries(progress).reduce((acc, [id, value]) => {
-          if (value === true) acc[id] = true;
-          return acc;
-        }, {}),
-      }),
+      getTutorPathLessonStorageKey(targetLang),
+      lessonId,
     );
   } catch {}
 }
@@ -1581,20 +760,10 @@ function writeStoredTutorAgendaProgress(targetLang, lessonId, progress = {}) {
 function findTutorLessonById(units, lessonId) {
   if (!lessonId) return null;
   for (const unit of units || []) {
-    const lesson = unit?.lessons?.find((candidate) => candidate.id === lessonId);
-    if (lesson) return { lesson, unit };
-  }
-  return null;
-}
-
-function findTutorLessonPosition(units, lessonId) {
-  if (!lessonId) return null;
-  for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
-    const unit = units[unitIndex];
-    const lessonIndex = (unit?.lessons || []).findIndex(
-      (lesson) => lesson.id === lessonId,
+    const lesson = unit?.lessons?.find(
+      (candidate) => candidate.id === lessonId,
     );
-    if (lessonIndex >= 0) return { unitIndex, lessonIndex };
+    if (lesson) return { lesson, unit };
   }
   return null;
 }
@@ -1603,7 +772,8 @@ function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
   if (lessonIndex === 0) {
     if (unitIndex === 0) return true;
     const previousUnit = units[unitIndex - 1];
-    const previousLesson = previousUnit?.lessons?.[previousUnit.lessons.length - 1];
+    const previousLesson =
+      previousUnit?.lessons?.[previousUnit.lessons.length - 1];
     return (
       progressLessons?.[previousLesson?.id]?.status === SKILL_STATUS.COMPLETED
     );
@@ -1611,7 +781,9 @@ function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
 
   const unit = units[unitIndex];
   const previousLesson = unit?.lessons?.[lessonIndex - 1];
-  return progressLessons?.[previousLesson?.id]?.status === SKILL_STATUS.COMPLETED;
+  return (
+    progressLessons?.[previousLesson?.id]?.status === SKILL_STATUS.COMPLETED
+  );
 }
 
 function findLatestTutorUnlockedLesson(units, progressLessons) {
@@ -1632,51 +804,6 @@ function findLatestTutorUnlockedLesson(units, progressLessons) {
         isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex)
       ) {
         return { lesson, unit, status: SKILL_STATUS.AVAILABLE };
-      }
-    }
-  }
-  return null;
-}
-
-function findFirstTutorLessonInLevel(units, level, progressLessons = {}) {
-  if (!TUTOR_CEFR_LEVELS.includes(level)) return null;
-
-  for (const unit of units || []) {
-    if (unit?.cefrLevel !== level) continue;
-
-    for (const lesson of unit?.lessons || []) {
-      const progress = progressLessons?.[lesson.id];
-      if (progress?.status === SKILL_STATUS.IN_PROGRESS) {
-        return { lesson, unit, status: SKILL_STATUS.IN_PROGRESS };
-      }
-      if (progress?.status !== SKILL_STATUS.COMPLETED) {
-        return { lesson, unit, status: SKILL_STATUS.AVAILABLE };
-      }
-    }
-  }
-
-  return null;
-}
-
-function findNextTutorLessonAfter(units, lessonId, progressLessons = {}) {
-  let foundCurrent = false;
-  for (const unit of units || []) {
-    for (const lesson of unit?.lessons || []) {
-      if (foundCurrent) {
-        const progress = progressLessons?.[lesson.id];
-        if (progress?.status !== SKILL_STATUS.COMPLETED) {
-          return {
-            lesson,
-            unit,
-            status:
-              progress?.status === SKILL_STATUS.IN_PROGRESS
-                ? SKILL_STATUS.IN_PROGRESS
-                : SKILL_STATUS.AVAILABLE,
-          };
-        }
-      }
-      if (lesson.id === lessonId) {
-        foundCurrent = true;
       }
     }
   }
@@ -2317,9 +1444,7 @@ function TutorInlineFeedbackNote({
         minW={0}
         border="1px solid"
         borderColor={
-          isLightTheme
-            ? "rgba(201, 116, 93, 0.30)"
-            : "rgba(251, 146, 60, 0.34)"
+          isLightTheme ? "rgba(201, 116, 93, 0.30)" : "rgba(251, 146, 60, 0.34)"
         }
         bg={
           isLightTheme
@@ -2391,53 +1516,6 @@ function RowRight({ children }) {
     </HStack>
   );
 }
-
-function TutorMessageSprite({ spriteIndex = 0, isLightTheme = false }) {
-  const totalSprites = TUTOR_CHARACTER_SPRITE_COLUMNS * TUTOR_CHARACTER_SPRITE_ROWS;
-  const safeIndex =
-    ((Number(spriteIndex) || 0) % totalSprites + totalSprites) % totalSprites;
-  const frameColumn = safeIndex % TUTOR_CHARACTER_SPRITE_COLUMNS;
-  const frameRow = Math.floor(safeIndex / TUTOR_CHARACTER_SPRITE_COLUMNS);
-  const x =
-    TUTOR_CHARACTER_SPRITE_COLUMNS <= 1
-      ? 0
-      : (frameColumn / (TUTOR_CHARACTER_SPRITE_COLUMNS - 1)) * 100;
-  const y =
-    TUTOR_CHARACTER_SPRITE_ROWS <= 1
-      ? 0
-      : (frameRow / (TUTOR_CHARACTER_SPRITE_ROWS - 1)) * 100;
-
-  return (
-    <HStack
-      w="100%"
-      justify="flex-start"
-      align="flex-start"
-      mt={{ base: "-10px", md: "-12px" }}
-      mb={{ base: 0, md: 1 }}
-      pl={{ base: 4, md: 6 }}
-      pointerEvents="none"
-      aria-hidden="true"
-    >
-      <Box
-        width={{ base: "70px", md: "82px" }}
-        height={{ base: "70px", md: "82px" }}
-        backgroundImage={`url(${tutorMainCharacterSprite})`}
-        backgroundRepeat="no-repeat"
-        backgroundSize={`${TUTOR_CHARACTER_SPRITE_COLUMNS * 100}% ${
-          TUTOR_CHARACTER_SPRITE_ROWS * 100
-        }%`}
-        backgroundPosition={`${x}% ${y}%`}
-        sx={{
-          imageRendering: "pixelated",
-          filter: isLightTheme
-            ? "drop-shadow(0 12px 18px rgba(103, 80, 52, 0.16))"
-            : "drop-shadow(0 14px 22px rgba(0, 0, 0, 0.42)) drop-shadow(0 0 18px rgba(56, 189, 248, 0.12))",
-        }}
-      />
-    </HStack>
-  );
-}
-
 function UserBubble({ label, text, textLang = "en" }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
@@ -2451,9 +1529,7 @@ function UserBubble({ label, text, textLang = "en" }) {
       boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
       border="1px solid"
       borderColor={
-        isLightTheme
-          ? "rgba(108, 182, 191, 0.22)"
-          : "rgba(255,255,255,0.08)"
+        isLightTheme ? "rgba(108, 182, 191, 0.22)" : "rgba(255,255,255,0.08)"
       }
     >
       <Box
@@ -2749,21 +1825,27 @@ function TutorPathLevelHeader({
           px={4}
           py={2}
           borderRadius="16px"
-          bg={isLightTheme ? levelInfo.color : undefined}
+          bg={
+            isLightTheme
+              ? "linear-gradient(135deg, rgba(255,253,249,0.98) 0%, rgba(255,247,237,0.98) 100%)"
+              : undefined
+          }
           bgGradient={
             isLightTheme
               ? undefined
               : `linear(135deg, ${levelInfo.color}, ${levelInfo.color}aa)`
           }
           border="2px solid"
-          borderColor={isLightTheme ? `${levelInfo.color}dd` : `${levelInfo.color}ee`}
-          color="white"
+          borderColor={
+            isLightTheme ? `${levelInfo.color}99` : `${levelInfo.color}ee`
+          }
+          color={isLightTheme ? "#2f261d" : "white"}
           fontSize="md"
           fontWeight="black"
-          textShadow="0 1px 3px rgba(0,0,0,0.35)"
+          textShadow={isLightTheme ? "none" : "0 1px 3px rgba(0,0,0,0.45)"}
           boxShadow={
             isLightTheme
-              ? `0 8px 22px ${levelInfo.color}30`
+              ? `0 8px 24px ${levelInfo.color}22`
               : `0 10px 26px ${levelInfo.color}40, inset 0 1px 0 rgba(255,255,255,0.24)`
           }
         >
@@ -2830,68 +1912,6 @@ function TutorPathLevelHeader({
   );
 }
 
-function TutorLessonProgressRing({
-  percent = 0,
-  label = "",
-  isComplete = false,
-  isLightTheme = false,
-}) {
-  const safePercent = Math.max(0, Math.min(100, Math.round(percent || 0)));
-  const progressColor = isComplete ? "#34D399" : "#5EEAD4";
-  const trackColor = isLightTheme
-    ? "rgba(31,41,55,0.14)"
-    : "rgba(255,255,255,0.18)";
-  const innerBg = isLightTheme ? "rgba(255,255,255,0.92)" : "rgba(5,10,22,0.9)";
-  const iconColor = isLightTheme ? "#166534" : "#D1FAE5";
-
-  return (
-    <Box
-      role="progressbar"
-      aria-label={label || "Lesson progress"}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={safePercent}
-      title={label || `${safePercent}%`}
-      w="26px"
-      h="26px"
-      borderRadius="full"
-      display="grid"
-      placeItems="center"
-      flexShrink={0}
-      bg={`conic-gradient(${progressColor} ${safePercent}%, ${trackColor} 0)`}
-      boxShadow={
-        isComplete
-          ? `0 0 14px ${progressColor}55`
-          : isLightTheme
-            ? "0 1px 4px rgba(15,23,42,0.08)"
-            : "0 0 10px rgba(94,234,212,0.12)"
-      }
-      transition="background 180ms ease, box-shadow 180ms ease"
-    >
-      <Box
-        w="18px"
-        h="18px"
-        borderRadius="full"
-        bg={innerBg}
-        display="grid"
-        placeItems="center"
-      >
-        {isComplete ? (
-          <Box as={RiCheckLine} boxSize="13px" color={iconColor} />
-        ) : (
-          <Box
-            w="5px"
-            h="5px"
-            borderRadius="full"
-            bg={progressColor}
-            opacity={safePercent > 0 ? 0.95 : 0.45}
-          />
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 function TutorPathLessonNode({
   lesson,
   unit,
@@ -2907,7 +1927,11 @@ function TutorPathLessonNode({
   const isCompleted = status === SKILL_STATUS.COMPLETED;
   const isInProgress = status === SKILL_STATUS.IN_PROGRESS;
   const isClickable = !isLocked;
-  const Icon = isCompleted ? RiCheckLine : isLocked ? RiLockLine : RiBookOpenLine;
+  const Icon = isCompleted
+    ? RiCheckLine
+    : isLocked
+      ? RiLockLine
+      : RiBookOpenLine;
   const color = unit?.color || "#38BDF8";
   const nodeBg = isLocked
     ? isLightTheme
@@ -3010,7 +2034,11 @@ function TutorPathLessonNode({
                 cy="53"
                 r={ringRadius}
                 fill="none"
-                stroke={isLightTheme ? "rgba(247,199,74,0.46)" : "rgba(224,170,44,0.34)"}
+                stroke={
+                  isLightTheme
+                    ? "rgba(247,199,74,0.46)"
+                    : "rgba(224,170,44,0.34)"
+                }
                 strokeWidth="10"
               />
               <circle
@@ -3075,11 +2103,15 @@ function TutorPathUnit({
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
   const zigzagOffset =
-    useBreakpointValue({ base: 90, sm: 110, md: 140, lg: 180 }, { ssr: false }) ||
-    90;
+    useBreakpointValue(
+      { base: 90, sm: 110, md: 140, lg: 180 },
+      { ssr: false },
+    ) || 90;
   const svgWidth =
-    useBreakpointValue({ base: 240, sm: 260, md: 300, lg: 320 }, { ssr: false }) ||
-    240;
+    useBreakpointValue(
+      { base: 240, sm: 260, md: 300, lg: 320 },
+      { ssr: false },
+    ) || 240;
   const completedCount = unit.lessons.filter(
     (lesson) =>
       userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED,
@@ -3235,15 +2267,13 @@ function TutorPathUnit({
 export default function Tutor({
   activeNpub = "",
   targetLang = "es",
-  supportLang = "en",
+  supportLang = "",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
-  onFirstLessonComplete,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
-  const soundIsInitialized = useSoundSettings((s) => s.isInitialized);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
@@ -3278,10 +2308,11 @@ export default function Tutor({
   const replayRidSetRef = useRef(new Set());
   const ignoredRidSetRef = useRef(new Set());
   const replayAudioRef = useRef(null);
+  const guardrailItemIdsRef = useRef([]);
+  const pendingGuardrailTextRef = useRef("");
   const tutorKickoffSentRef = useRef(false);
   const tutorKickoffTimerRef = useRef(null);
   const tutorSessionReadyRef = useRef(false);
-  const pendingTutorResponseSendersRef = useRef([]);
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -3334,7 +2365,7 @@ export default function Tutor({
   const voiceRef = useRef(voice);
   const voicePersonaRef = useRef(voicePersona);
   const targetLangRef = useRef(targetLang);
-  const supportLangRef = useRef(supportLang);
+  const supportLangRef = useRef(supportLang || "");
   const pauseMsRef = useRef(pauseMs);
 
   // Hydrate refs on changes
@@ -3348,7 +2379,7 @@ export default function Tutor({
     targetLangRef.current = targetLang;
   }, [targetLang]);
   useEffect(() => {
-    supportLangRef.current = supportLang;
+    supportLangRef.current = supportLang || "";
   }, [supportLang]);
   useEffect(() => {
     pauseMsRef.current = pauseMs;
@@ -3361,30 +2392,22 @@ export default function Tutor({
 
   // XP
   const [xp, setXp] = useState(0);
-  const xpRef = useRef(0);
   const [streak, setStreak] = useState(0);
-
-  useEffect(() => {
-    xpRef.current = xp;
-  }, [xp]);
 
   const tutorUserProgress = useMemo(() => {
     const progressLanguageKey = String(targetLang || "es").toLowerCase();
-    const tutorLanguageLessons = user?.progress?.tutorLanguageLessons;
-    const hasTutorLanguageLessons =
-      tutorLanguageLessons && typeof tutorLanguageLessons === "object";
-    const lessonsForLanguage = hasTutorLanguageLessons
-      ? tutorLanguageLessons?.[progressLanguageKey] ||
-        tutorLanguageLessons?.[targetLang] ||
+    const languageLessons = user?.progress?.languageLessons;
+    const hasLanguageLessons =
+      languageLessons && typeof languageLessons === "object";
+    const lessonsForLanguage = hasLanguageLessons
+      ? languageLessons?.[progressLanguageKey] ||
+        languageLessons?.[targetLang] ||
         {}
-      : {};
+      : user?.progress?.lessons || {};
 
     return {
       totalXp: xp,
       lessons: lessonsForLanguage,
-      tutorLanguageLessons: hasTutorLanguageLessons
-        ? tutorLanguageLessons
-        : undefined,
       targetLang,
     };
   }, [targetLang, user?.progress, xp]);
@@ -3410,26 +2433,15 @@ export default function Tutor({
   const selectedTutorUnitRef = useRef(null);
   const [tutorLessonEarnedXp, setTutorLessonEarnedXp] = useState(0);
   const tutorLessonEarnedXpRef = useRef(0);
-  const [tutorStarterAgendaProgress, setTutorStarterAgendaProgress] = useState({});
+  const [tutorStarterAgendaProgress, setTutorStarterAgendaProgress] = useState(
+    {},
+  );
   const tutorStarterAgendaProgressRef = useRef({});
-  const tutorPromptedAgendaItemIdRef = useRef("");
-  const [tutorLessonAgendaProgress, setTutorLessonAgendaProgress] = useState({});
-  const tutorLessonAgendaProgressRef = useRef({});
-  const tutorPromptedLessonAgendaItemIdRef = useRef("");
   const tutorLessonCompletionTriggeredRef = useRef(false);
-  const pendingFirstLessonCompletionFlowRef = useRef(false);
-  const [completedTutorLessonData, setCompletedTutorLessonData] = useState(null);
-  const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
-  const [completedTutorAgendaData, setCompletedTutorAgendaData] =
+  const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
-  const [showTutorCompletedAgenda, setShowTutorCompletedAgenda] =
-    useState(false);
-  const completedAgendaPreviewShownRef = useRef(false);
-  const lessonCompleteSoundKeyRef = useRef("");
+  const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
   const tutorResumeAppliedRef = useRef("");
-  const advancedPlacementOnboardingTurnsRef = useRef(0);
-  const advancedPlacementOnboardingTriggeredRef = useRef(false);
-  const pendingAdvancedPlacementOnboardingFlowRef = useRef(false);
 
   useEffect(() => {
     const storedLevel = readStoredTutorLevel(targetLang);
@@ -3452,115 +2464,9 @@ export default function Tutor({
   }, [tutorLessonEarnedXp]);
 
   useEffect(() => {
-    if (!showTutorLessonComplete) {
-      lessonCompleteSoundKeyRef.current = "";
-      return;
-    }
-
-    const soundKey =
-      completedTutorLessonData?.lessonId ||
-      completedTutorLessonData?.title ||
-      "tutor-lesson-complete";
-    if (lessonCompleteSoundKeyRef.current === soundKey) return;
-
-    if (soundIsInitialized) {
-      lessonCompleteSoundKeyRef.current = soundKey;
-      playSound("lessonComplete");
-      return;
-    }
-
-    const playAfterUserGesture = () => {
-      lessonCompleteSoundKeyRef.current = soundKey;
-      playSound("lessonComplete");
-    };
-
-    window.addEventListener("pointerdown", playAfterUserGesture, { once: true });
-    window.addEventListener("keydown", playAfterUserGesture, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", playAfterUserGesture);
-      window.removeEventListener("keydown", playAfterUserGesture);
-    };
-  }, [
-    completedTutorLessonData?.lessonId,
-    completedTutorLessonData?.title,
-    playSound,
-    showTutorLessonComplete,
-    soundIsInitialized,
-  ]);
-
-  function readTutorAgendaProgressFromUserProgress(lessonId, allowedIds = []) {
-    if (!lessonId) return {};
-    return normalizeTutorAgendaProgress(
-      tutorUserProgress.lessons?.[lessonId]?.tutorAgendaProgress,
-      allowedIds,
-    );
-  }
-
-  function persistTutorAgendaProgress(lesson, progress = {}) {
-    const lessonId = lesson?.id;
-    if (!lessonId) return;
-
-    const lang = targetLangRef.current;
-    writeStoredTutorAgendaProgress(lang, lessonId, progress);
-
-    if (!currentNpub) return;
-    saveTutorAgendaProgress(currentNpub, lessonId, lang, progress).catch(
-      (error) => {
-        console.error("Failed to save Tutor agenda progress:", error);
-      },
-    );
-  }
-
-  function hydrateTutorAgendaProgress(lesson, langOverride = targetLangRef.current) {
-    const lessonId = lesson?.id;
-    if (!lessonId) {
-      tutorStarterAgendaProgressRef.current = {};
-      setTutorStarterAgendaProgress({});
-      tutorLessonAgendaProgressRef.current = {};
-      setTutorLessonAgendaProgress({});
-      tutorPromptedAgendaItemIdRef.current = "";
-      tutorPromptedLessonAgendaItemIdRef.current = "";
-      return;
-    }
-
-    if (isTutorStarterAgendaLesson(lesson)) {
-      const allowedIds = TUTOR_STARTER_AGENDA_ITEMS.map((item) => item.id);
-      const stored = {
-        ...readStoredTutorAgendaProgress(langOverride, lessonId, allowedIds),
-        ...readTutorAgendaProgressFromUserProgress(lessonId, allowedIds),
-      };
-      if (Object.keys(stored).length) {
-        writeStoredTutorAgendaProgress(langOverride, lessonId, stored);
-      }
-      tutorStarterAgendaProgressRef.current = stored;
-      setTutorStarterAgendaProgress(stored);
-      tutorLessonAgendaProgressRef.current = {};
-      setTutorLessonAgendaProgress({});
-    } else {
-      const allowedIds = getTutorLessonFocusAgendaItems(lesson).map(
-        (item) => item.id,
-      );
-      const stored = {
-        ...readStoredTutorAgendaProgress(langOverride, lessonId, allowedIds),
-        ...readTutorAgendaProgressFromUserProgress(lessonId, allowedIds),
-      };
-      if (Object.keys(stored).length) {
-        writeStoredTutorAgendaProgress(langOverride, lessonId, stored);
-      }
-      tutorLessonAgendaProgressRef.current = stored;
-      setTutorLessonAgendaProgress(stored);
-      tutorStarterAgendaProgressRef.current = {};
-      setTutorStarterAgendaProgress({});
-    }
-
-    tutorPromptedAgendaItemIdRef.current = "";
-    tutorPromptedLessonAgendaItemIdRef.current = "";
-  }
-
-  useEffect(() => {
-    hydrateTutorAgendaProgress(selectedTutorLesson, targetLang);
-  }, [selectedTutorLesson?.id, targetLang, tutorUserProgress.lessons]);
+    tutorStarterAgendaProgressRef.current = {};
+    setTutorStarterAgendaProgress({});
+  }, [selectedTutorLesson?.id, targetLang]);
 
   useEffect(() => {
     const langKey = String(targetLang || "es").toLowerCase();
@@ -3596,7 +2502,9 @@ export default function Tutor({
 
   const tutorLevelCompletionStatus = useMemo(() => {
     return TUTOR_CEFR_LEVELS.reduce((acc, level) => {
-      const levelUnits = tutorPathUnits.filter((unit) => unit.cefrLevel === level);
+      const levelUnits = tutorPathUnits.filter(
+        (unit) => unit.cefrLevel === level,
+      );
       const totalLessons = levelUnits.reduce(
         (sum, unit) => sum + (unit.lessons?.length || 0),
         0,
@@ -3628,22 +2536,6 @@ export default function Tutor({
   const [isTutorAgendaHydrating, setIsTutorAgendaHydrating] = useState(true);
   const isTutorAgendaHydratingRef = useRef(true);
 
-  const placedTutorLevel = useMemo(() => {
-    const placement =
-      user?.proficiencyPlacements?.[String(targetLang || "es").toLowerCase()] ||
-      user?.proficiencyPlacements?.[targetLang] ||
-      null;
-    return TUTOR_CEFR_LEVELS.includes(placement) ? placement : "";
-  }, [targetLang, user?.proficiencyPlacements]);
-  const hasA1PlusTutorPlacement =
-    placedTutorLevel && getTutorLevelIndex(placedTutorLevel) >= getTutorLevelIndex("A1");
-
-  useEffect(() => {
-    advancedPlacementOnboardingTurnsRef.current = 0;
-    advancedPlacementOnboardingTriggeredRef.current = false;
-    pendingAdvancedPlacementOnboardingFlowRef.current = false;
-  }, [placedTutorLevel, targetLang]);
-
   useEffect(() => {
     isTutorPathLoadingRef.current = isTutorPathLoading;
   }, [isTutorPathLoading]);
@@ -3656,44 +2548,24 @@ export default function Tutor({
     if (!tutorPathUnits.length) return;
     const progressLessons = tutorUserProgress.lessons || {};
     const storedLevel = readStoredTutorLevel(targetLang);
-    const placementStartLevel = readStoredTutorPlacementStartLevel(targetLang);
-    const placementStartLesson =
-      placementStartLevel && placementStartLevel !== "Pre-A1"
-        ? findFirstTutorLessonInLevel(
-            tutorPathUnits,
-            placementStartLevel,
-            progressLessons,
-          )
-        : null;
     const storedLessonId = readStoredTutorLessonId(targetLang);
     const storedLesson = findTutorLessonById(tutorPathUnits, storedLessonId);
     const storedLessonProgress = storedLesson
       ? progressLessons?.[storedLesson.lesson.id]
       : null;
-    const storedLessonPosition = storedLesson
-      ? findTutorLessonPosition(tutorPathUnits, storedLesson.lesson.id)
-      : null;
-    const storedLessonStatus =
-      storedLessonProgress?.status === SKILL_STATUS.COMPLETED ||
-      storedLessonProgress?.status === SKILL_STATUS.IN_PROGRESS
-        ? storedLessonProgress.status
-        : storedLessonPosition &&
-            isTutorLessonUnlocked(
-              tutorPathUnits,
-              progressLessons,
-              storedLessonPosition.unitIndex,
-              storedLessonPosition.lessonIndex,
-            )
-          ? SKILL_STATUS.AVAILABLE
-          : SKILL_STATUS.LOCKED;
     const storedLessonIsUsable =
-      !placementStartLesson && storedLesson && storedLessonStatus !== SKILL_STATUS.LOCKED;
-    const resumeLesson = placementStartLesson || (storedLessonIsUsable
+      storedLesson && storedLessonProgress?.status !== SKILL_STATUS.COMPLETED;
+    const resumeLesson = storedLessonIsUsable
       ? {
           ...storedLesson,
-          status: storedLessonStatus,
+          status:
+            storedLessonProgress?.status === SKILL_STATUS.IN_PROGRESS
+              ? SKILL_STATUS.IN_PROGRESS
+              : SKILL_STATUS.AVAILABLE,
         }
-      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons));
+      : !storedLevel
+        ? findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons)
+        : null;
 
     if (resumeLesson?.unit?.cefrLevel) {
       setActiveTutorLevel(resumeLesson.unit.cefrLevel);
@@ -3711,9 +2583,7 @@ export default function Tutor({
         const lessonStartXp =
           progressLessons?.[resumeLesson.lesson.id]?.lessonStartXp ?? xp;
         const earned =
-          resumeLesson.status === SKILL_STATUS.COMPLETED
-            ? resumeLesson.lesson.xpReward || 0
-            : resumeLesson.status === SKILL_STATUS.IN_PROGRESS
+          resumeLesson.status === SKILL_STATUS.IN_PROGRESS
             ? Math.min(
                 resumeLesson.lesson.xpReward || 0,
                 Math.max(0, xp - lessonStartXp),
@@ -3724,19 +2594,13 @@ export default function Tutor({
         setSelectedTutorUnit(resumeLesson.unit);
         selectedTutorLessonRef.current = resumeLesson.lesson;
         selectedTutorUnitRef.current = resumeLesson.unit;
-        hydrateTutorAgendaProgress(resumeLesson.lesson, targetLang);
         setTutorLessonEarnedXp(earned);
         tutorLessonEarnedXpRef.current = earned;
-        tutorLessonCompletionTriggeredRef.current =
-          resumeLesson.status === SKILL_STATUS.COMPLETED;
-        if (placementStartLesson) {
-          writeStoredTutorLevel(targetLang, resumeLesson.unit.cefrLevel);
-          writeStoredTutorLessonId(targetLang, resumeLesson.lesson.id);
-          clearStoredTutorPlacementStartLevel(targetLang);
-        }
+        tutorLessonCompletionTriggeredRef.current = false;
         setConversationSettings((prev) => ({
           ...prev,
-          proficiencyLevel: resumeLesson.unit?.cefrLevel || prev.proficiencyLevel,
+          proficiencyLevel:
+            resumeLesson.unit?.cefrLevel || prev.proficiencyLevel,
         }));
         appliedResumeLesson = true;
       }
@@ -3817,8 +2681,7 @@ export default function Tutor({
       );
     }
 
-    const lessonStartXp =
-      tutorUserProgress.lessons?.[lesson.id]?.lessonStartXp;
+    const lessonStartXp = tutorUserProgress.lessons?.[lesson.id]?.lessonStartXp;
     if (
       typeof lessonStartXp !== "number" ||
       typeof tutorUserProgress.totalXp !== "number" ||
@@ -3831,52 +2694,6 @@ export default function Tutor({
         Math.max(1, lesson.xpReward)) *
         100,
     );
-  }
-
-  function isTutorFocusAgendaLesson(lesson, unit) {
-    if (!lesson || isTutorStarterAgendaLesson(lesson)) return false;
-    const level =
-      unit?.cefrLevel ||
-      unit?.level ||
-      conversationSettingsRef.current.proficiencyLevel ||
-      maxProficiencyLevel ||
-      "A1";
-    return (
-      isEarlyTutorProficiencyLevel(level) &&
-      getTutorLessonFocusAgendaItems(lesson).length > 0
-    );
-  }
-
-  function selectTutorLessonForAgenda(lesson, unit, options = {}) {
-    if (!lesson) return;
-    const {
-      earned = 0,
-      isCompleted = false,
-      persist = true,
-    } = options;
-    const safeEarned = Math.max(0, earned || 0);
-
-    setSelectedTutorLesson(lesson);
-    setSelectedTutorUnit(unit || null);
-    selectedTutorLessonRef.current = lesson;
-    selectedTutorUnitRef.current = unit || null;
-    hydrateTutorAgendaProgress(lesson, targetLangRef.current);
-    tutorLessonEarnedXpRef.current = isCompleted
-      ? lesson.xpReward || 0
-      : safeEarned;
-    setTutorLessonEarnedXp(isCompleted ? lesson.xpReward || 0 : safeEarned);
-    tutorLessonCompletionTriggeredRef.current = !!isCompleted;
-    tutorKickoffSentRef.current = false;
-    setConversationSettings((prev) => ({
-      ...prev,
-      proficiencyLevel: unit?.cefrLevel || prev.proficiencyLevel,
-    }));
-
-    if (unit?.cefrLevel) {
-      setActiveTutorLevel(unit.cefrLevel);
-      if (persist) writeStoredTutorLevel(targetLangRef.current, unit.cefrLevel);
-    }
-    if (persist) writeStoredTutorLessonId(targetLangRef.current, lesson.id);
   }
 
   function handleTutorPathOpen() {
@@ -3906,16 +2723,29 @@ export default function Tutor({
           )
         : 0;
 
-    selectTutorLessonForAgenda(lesson, unit, {
-      earned,
-      isCompleted,
-      persist: true,
-    });
+    setSelectedTutorLesson(lesson);
+    setSelectedTutorUnit(unit);
+    selectedTutorLessonRef.current = lesson;
+    selectedTutorUnitRef.current = unit;
+    tutorLessonEarnedXpRef.current = isCompleted
+      ? lesson.xpReward || 0
+      : earned;
+    setTutorLessonEarnedXp(isCompleted ? lesson.xpReward || 0 : earned);
+    tutorLessonCompletionTriggeredRef.current = isCompleted;
+    setConversationSettings((prev) => ({
+      ...prev,
+      proficiencyLevel: unit?.cefrLevel || prev.proficiencyLevel,
+    }));
+    if (unit?.cefrLevel) {
+      writeStoredTutorLevel(targetLangRef.current, unit.cefrLevel);
+      setActiveTutorLevel(unit.cefrLevel);
+    }
+    writeStoredTutorLessonId(targetLangRef.current, lesson.id);
     closeTutorPath();
 
     if (currentNpub && !isCompleted) {
       try {
-        await startTutorLesson(
+        await startLesson(
           currentNpub,
           lesson.id,
           targetLangRef.current,
@@ -3970,24 +2800,12 @@ export default function Tutor({
     persistedSupportLang: user?.progress?.supportLang,
     storedUiLang,
   });
+  supportLangRef.current = resolvedSupportLang;
 
   const uiLang = resolvedSupportLang;
   const ui = translations[uiLang] || translations.en;
   const uiText = (key, fallback = "") =>
     ui?.[key] || translations.en?.[key] || fallback;
-
-  useEffect(() => {
-    if (!TUTOR_COMPLETED_AGENDA_PREVIEW_ON_START) return;
-    if (completedAgendaPreviewShownRef.current) return;
-    completedAgendaPreviewShownRef.current = true;
-    setCompletedTutorAgendaData(
-      buildTutorCompletedAgendaPreviewData({
-        targetLang,
-        supportLang: resolvedSupportLang,
-      }),
-    );
-    setShowTutorCompletedAgenda(true);
-  }, [resolvedSupportLang, targetLang]);
 
   useEffect(() => {
     inlineFeedbackRef.current =
@@ -4040,8 +2858,6 @@ export default function Tutor({
     const text = `${m.textFinal || ""}${m.textStream || ""}`.trim();
     return Boolean(text);
   });
-  const [tutorSpriteIndex, setTutorSpriteIndex] = useState(0);
-  const tutorSpriteMessageIdRef = useRef("");
   const previousAssistantIdRef = useRef(null);
   const liveBubbleSurfaceRef = useRef(null);
   const liveBubbleTextRef = useRef(null);
@@ -4052,27 +2868,13 @@ export default function Tutor({
   const [archiveAnimation, setArchiveAnimation] = useState(null);
   const [isChatLogHighlighted, setIsChatLogHighlighted] = useState(false);
   const [hiddenIncomingMessageId, setHiddenIncomingMessageId] = useState(null);
-  const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
+  const chatLogButtonHighlightProps = getChatLogButtonHighlightProps(
+    isChatLogHighlighted,
+    isLightTheme,
+  );
   const shouldMuteIncomingBubble =
     hiddenIncomingMessageId != null &&
     latestAssistantMessage?.id === hiddenIncomingMessageId;
-
-  useEffect(() => {
-    const nextMessageId = latestAssistantMessage?.id || "";
-    if (!nextMessageId || tutorSpriteMessageIdRef.current === nextMessageId) {
-      return;
-    }
-    const hadPreviousMessage = !!tutorSpriteMessageIdRef.current;
-    tutorSpriteMessageIdRef.current = nextMessageId;
-    setTutorSpriteIndex(
-      (current) =>
-        hadPreviousMessage
-          ? (current + 1) %
-            (TUTOR_CHARACTER_SPRITE_COLUMNS * TUTOR_CHARACTER_SPRITE_ROWS)
-          : 0,
-    );
-  }, [latestAssistantMessage?.id]);
 
   const captureLiveBubbleSnapshot = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -4352,10 +3154,7 @@ export default function Tutor({
         if (snap.exists()) {
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
-          if (Number.isFinite(languageXp)) {
-            xpRef.current = languageXp;
-            setXp(languageXp);
-          }
+          if (Number.isFinite(languageXp)) setXp(languageXp);
           if (data.progress?.voice)
             setVoice(getPreferredTTSVoice(data.progress.voice));
           if (data.progress?.voicePersona)
@@ -4439,8 +3238,6 @@ export default function Tutor({
     clearAutoStopTimer();
     clearTutorKickoffTimer();
     tutorKickoffSentRef.current = false;
-    tutorSessionReadyRef.current = false;
-    pendingTutorResponseSendersRef.current = [];
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
@@ -4482,9 +3279,9 @@ export default function Tutor({
       dcRef.current = dc;
 
       dc.onopen = () => {
+        aliveRef.current = true;
         setTimeout(() => {
           applyLanguagePolicyNow();
-          scheduleTutorLessonKickoff(120);
         }, 60);
       };
 
@@ -4505,10 +3302,10 @@ export default function Tutor({
       aliveRef.current = true;
       setUiState("idle");
       scheduleAutoStop();
-      scheduleTutorLessonKickoff(120);
     } catch (e) {
       clearAutoStopTimer();
       clearTutorKickoffTimer();
+      tutorSessionReadyRef.current = false;
       setStatus("disconnected");
       setUiState("idle");
       setErr(e?.message || String(e));
@@ -4522,7 +3319,6 @@ export default function Tutor({
     aliveRef.current = false;
     tutorKickoffSentRef.current = false;
     tutorSessionReadyRef.current = false;
-    pendingTutorResponseSendersRef.current = [];
     assistantInputLockedRef.current = false;
     assistantSpeakingRef.current = false;
     pendingUserAudioCommitRef.current = false;
@@ -4597,6 +3393,8 @@ export default function Tutor({
     recTailRef.current.clear();
     replayRidSetRef.current.clear();
     ignoredRidSetRef.current.clear();
+    guardrailItemIdsRef.current = [];
+    pendingGuardrailTextRef.current = "";
 
     stopReplayAudio();
     setReplayingId(null);
@@ -4641,71 +3439,26 @@ export default function Tutor({
       getLanguagePromptName(tLang) || "the target language";
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
-    const tutorAudioPronunciationInstructions =
-      buildTutorAudioPronunciationInstructions(tLang, targetLanguageName);
-    const targetBaseCode = getBaseLanguageCode(tLang || "es") || tLang || "es";
-    const needsSupportLanguageScaffold = supportCode !== targetBaseCode;
-    const isEarlyTutorLevel = isEarlyTutorProficiencyLevel(selectedLevel);
-    const isBridgeTutorLevel = selectedLevel === "A2";
+    const codeSwitchingAudioInstruction =
+      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
+    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
     const starterAgendaLesson = isTutorStarterAgendaLesson(
       selectedTutorLessonRef.current,
     );
 
-    let strict;
-	    if (isEarlyTutorLevel) {
-	      strict =
-	        !needsSupportLanguageScaffold
-	          ? `BILINGUAL TUTOR MODE: The support language and target language are both ${targetLanguageName}. Use simple teacher language, then model tiny ${targetLanguageName} phrases for the learner to try or complete.`
-	          : `BEGINNER BILINGUAL TUTOR MODE: This overrides any target-language-only behavior. Use ${supportLanguageName} for every explanation, transition, acknowledgement, correction, and instruction. Use ${targetLanguageName} only inside natural code-switched examples or exact words the learner should say. Never write a whole response mostly in ${targetLanguageName}; scaffold the learner like a tutor.`;
-    } else if (isBridgeTutorLevel) {
-      strict =
-        supportCode === tLang
-          ? `Guided tutor mode: Teach mostly in simple ${targetLanguageName}. Model short answers before asking the learner to respond.`
-          : `Guided tutor mode: Use mostly ${targetLanguageName}, with short ${supportLanguageName} hints when introducing a task, correcting mistakes, or explaining a useful phrase.`;
-    } else if (tLang === "nah") {
-      strict =
-        "Respond ONLY in Eastern Huasteca Nahuatl (Náhuatl Huasteco Oriental). Do not use Spanish or English.";
-    } else if (tLang === "es") {
-      strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
-    } else if (tLang === "pt") {
-      strict =
-        "Responda APENAS em português brasileiro. Não use espanhol ou inglês.";
-    } else if (tLang === "fr") {
-      strict =
-        "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
-    } else if (tLang === "it") {
-      strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
-    } else if (tLang === "zh") {
-      strict =
-        "请只用普通话中文回答。不要使用英语或西班牙语。Respond ONLY in Mandarin Chinese.";
-    } else if (tLang === "nl") {
-      strict =
-        "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
-    } else if (tLang === "ja") {
-      strict =
-        "日本語のみで応答してください。英語やスペイン語は使用しないでください。Respond ONLY in Japanese.";
-    } else if (tLang === "ru") {
-      strict =
-        "Отвечайте ТОЛЬКО на русском языке. Не используйте английский или испанский. Respond ONLY in Russian.";
-    } else if (tLang === "de") {
-      strict =
-        "Antworten Sie NUR auf Deutsch. Verwenden Sie kein Englisch oder Spanisch. Respond ONLY in German.";
-    } else if (tLang === "el") {
-      strict =
-        "Απαντήστε ΜΟΝΟ στα ελληνικά. Μην χρησιμοποιείτε αγγλικά ή ισπανικά. Respond ONLY in Greek.";
-    } else if (tLang === "pl") {
-      strict =
-        "Odpowiadaj TYLKO po polsku. Nie używaj angielskiego ani hiszpańskiego. Respond ONLY in Polish.";
-    } else if (tLang === "ga") {
-      strict =
-        "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
-    } else if (tLang === "yua") {
-      strict =
-        "T'aanen tu'ux maaya t'aan. Ma' a ts'íibaj inglés wa español. Respond ONLY in Yucatec Maya.";
-    } else {
-      strict =
-        "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
-    }
+    const strict = (() => {
+      if (supportCode === tLang) {
+        return `LOCALIZED TUTOR MODE: The support language and target language are both ${targetLanguageName}. Teach in level-appropriate ${targetLanguageName}.`;
+      }
+      if (isEarlyTutorLevel) {
+        return `BEGINNER BILINGUAL MODE: Use ${supportLanguageName} for brief narration, explanations, encouragement, transitions, and questions. Use ${targetLanguageName} for exact model phrases, examples, and learner practice prompts.`;
+      }
+      if (isAdvancedTutorLevel) {
+        return `ADVANCED IMMERSION MODE: Conduct the tutoring session almost entirely in ${targetLanguageName}. Use ${supportLanguageName} only if the learner explicitly asks for clarification or is clearly stuck.`;
+      }
+      return `TARGET-LANGUAGE-FIRST MODE: Give instructions primarily in simple ${targetLanguageName}. Use ${supportLanguageName} only as a short rescue clarification, not as the default teaching language.`;
+    })();
 
     // Proficiency level guidance
     const levelGuidance = {
@@ -4719,78 +3472,62 @@ export default function Tutor({
       C2: "CRITICAL: User is near-native (C2). Use native-like expressions, colloquialisms, and subtle distinctions. Can use any grammatical structure. Can handle any topic with precision and style.",
     };
 
-    const proficiencyHint = starterAgendaLesson
-      ? "CRITICAL: User is at the beginning of Tutor. Keep language simple, adult, and supportive. Do not choose practice phrases from memory or previous turns; only use the current response instructions for the exact next phrase."
-      : levelGuidance[selectedLevel] || levelGuidance.A1;
-    const tutorPedagogyInstructions = starterAgendaLesson
+    const proficiencyHint = levelGuidance[selectedLevel] || levelGuidance.A1;
+    const tutorPedagogyInstructions = isEarlyTutorLevel
       ? [
           "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
-          `For each reply, use brief ${supportLanguageName} guidance, then the exact ${targetLanguageName} model phrase from the current response instructions.`,
-          "When the learner answers with an understandable attempt at the current model phrase, accept it and move to the next item supplied by the current response instructions.",
-          "Vary the first words of each reply. Do not start every turn with praise or transitions like 'Great', 'Great job', 'Nice work', 'Now', 'Next', or 'Okay'. It is fine to skip praise and move directly into the next tiny step.",
-          "Never invent your own example phrase in session-level instructions. Never ask for the previous phrase again.",
-          "Use fill-in-the-blank prompts, brief repetition, and simple choices without naming any phrase except the current response phrase.",
+          `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
+          "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
+          "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare replies like 'Hola. Bien.'",
+          `Use fill-in-the-blank prompts, brief repetition, and simple choices. Example: 'Great. In ${targetLanguageName}, say: [model phrase]. Your turn.'`,
+          "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
         ].join(" ")
-	      : isEarlyTutorLevel
-	        ? [
-	          "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
-	          `For each reply, use this rhythm: optional varied ${supportLanguageName} acknowledgement or transition, brief ${supportLanguageName} setup, one exact ${targetLanguageName} model phrase spoken as a target-language speech island, then a ${supportLanguageName} prompt to try, choose, or complete that phrase once.`,
-	          "When the learner answers with the requested word or phrase, accept understandable attempts, acknowledge meaning, and move to the next tiny step. Correct only if the answer is a different word or meaning.",
-	          "Never ask for the same phrase twice in a row. Never repeat target words several times without explaining the task. Avoid bare replies like 'Hola. Bien.'",
-	          `Use fill-in-the-blank prompts, brief repetition, and simple choices. Example shapes: 'This one means family: "[model phrase]." Try it once.' or 'Let's add one word: "[model phrase]." Your turn.'`,
-	          "Do not start every turn with praise or transitions like 'Great', 'Great job', 'Nice work', 'Now', 'Next', or 'Okay'. Vary the cadence and sometimes begin directly with the teaching point.",
-	          "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
-	          ].join(" ")
-        : isBridgeTutorLevel
-          ? [
-            "TUTORING STYLE: Coach the learner through short exchanges.",
-            "Use target language first, then add a quick support-language hint only when it helps.",
-            "Ask one focused follow-up question and give a model answer when the learner hesitates.",
-            ].join(" ")
-          : "TUTORING STYLE: Stay conversational but still coach. Correct gently, ask purposeful follow-ups, and connect feedback to the selected lesson agenda.";
+      : selectedLevel === "A2" || selectedLevel === "B1"
+        ? [
+            "TUTORING STYLE: Coach through short target-language exchanges.",
+            `Use mostly ${targetLanguageName} for instructions and prompts. Keep sentences simple enough for ${selectedLevel}.`,
+            `Use ${supportLanguageName} only for a very short clarification after confusion, then return to ${targetLanguageName}.`,
+            "Ask one focused follow-up question and give a short model answer when the learner hesitates.",
+          ].join(" ")
+        : [
+            "TUTORING STYLE: Use conversational immersion, not beginner drills.",
+            `Keep the dialogue in ${targetLanguageName} and make it feel like a natural conversation tied to the selected lesson agenda.`,
+            "Ask open-ended follow-ups, respond to the learner's ideas, and weave corrections into the conversation.",
+            "Only pause for explicit teaching or support-language clarification when the learner asks or is clearly stuck.",
+          ].join(" ");
     const replyLengthInstruction = isEarlyTutorLevel
       ? "Keep replies short but instructional: 1-3 compact sentences, usually under 45 words."
-      : "Keep replies very brief (<=25 words) and natural.";
+      : isAdvancedTutorLevel
+        ? "Keep replies natural and conversational: usually 2-4 concise sentences, with one clear follow-up question."
+        : "Keep replies brief and target-language-first: 1-3 short sentences.";
     const speechAcceptanceInstructions = isEarlyTutorLevel
       ? [
-		          "SPEECH ACCEPTANCE RULE: Sound quality is not the gate for progress.",
-		          "If the learner makes an understandable or plausible attempt at the requested word or phrase, count it as successful and move forward even if accents, audio, or transcription are imperfect.",
-	          "Do not grade how the learner sounds. Do not drill the same phrase repeatedly. Do not split syllables, emphasize syllables, discuss stress, or coach pronunciation unless the learner explicitly asks for sound coaching.",
-          "For normal Tutor flow, treat speech transcription as approximate. If you understand the intended greeting or phrase, accept it and advance to the next micro-step.",
-          "If your previous assistant message already asked the learner to say the same phrase, do not ask for that exact phrase again; switch to a simpler prompt, a choice, or the next lesson step.",
-          "If the transcript is a completely different answer from the requested word or phrase, gently correct the word choice and ask for the current phrase again once.",
+          "SPEECH ACCEPTANCE RULE: Sound quality is not the gate for progress.",
+          "If the learner makes an understandable attempt at the requested target phrase, count it as successful even if accents, audio, or transcription are imperfect.",
+          "Do not count unrelated words, random phrases, support-language filler, or a different target phrase as successful.",
+          "Do not grade how the learner sounds. Do not drill the same phrase repeatedly. Do not split syllables unless the learner explicitly asks for sound coaching.",
+          "For normal Tutor flow, treat speech transcription as approximate, but the transcript must still represent the requested phrase or meaning before you advance.",
+          "If your previous assistant message already asked the learner to say the same phrase and they did not match it, stay on that agenda item but switch to a simpler prompt or choice.",
+          "If an attempt is not the requested phrase or meaning, do not say it was correct; give a short correction and ask for the same model phrase again.",
         ].join(" ")
-      : [
-          "SPEECH ACCEPTANCE RULE: Do not grade how the learner sounds or over-drill. If the learner is understandable, keep the conversation moving.",
-          "For advanced Tutor lessons, a substantially correct attempt at the requested phrase is enough. Do not require perfect accent, rhythm, fluency, speed, stress, or connected speech.",
-          "FORBIDDEN LOOP: Never keep the learner on the same sentence to polish pronunciation, fluency, rhythm, accent, or word connection. Do not say 'casi perfecto', 'pulir', 'corregir', 'pronunciacion', 'fluidez', 'ritmo', 'acento', 'repeat again', or 'try once more' unless the learner explicitly asks for pronunciation coaching.",
-        ].join(" ");
+      : "SPEECH ACCEPTANCE RULE: Do not grade how the learner sounds or over-drill. If the learner expresses the requested meaning, keep the conversation moving; if the answer is unrelated or clearly wrong, correct it.";
+
     // Custom subjects context
     const customSubjectsContext = customSubjects
       ? `CUSTOM CONTEXT: The user wants to practice conversations related to: "${customSubjects}". Try to incorporate relevant vocabulary and scenarios from this context when appropriate.`
       : "";
-	    const tutorLessonContext = tutorLessonDetails?.promptText
-	      ? `LESSON AGENDA: The user selected this Tutor lesson.\n${tutorLessonDetails.promptText}\nUse this agenda to decide what to teach and practice throughout the session. Keep the lesson plan aligned with this agenda.`
-	      : "";
-	    const earlyLanguageBoundaryContext =
-	      isEarlyTutorLevel && needsSupportLanguageScaffold
-	        ? [
-	            `BEGINNER LANGUAGE BOUNDARY: In every response, keep all prose in ${supportLanguageName}.`,
-	            `Use ${targetLanguageName} only for natural code-switched model phrases, vocabulary examples, or tiny learner prompts.`,
-	            `Do not say transitions like "Muy bien", "Ahora vamos", "Empecemos", or "Repite" in ${targetLanguageName} when ${supportLanguageName} is the support language.`,
-	            `Preferred shape: optional varied ${supportLanguageName} acknowledgement or transition, ${supportLanguageName} setup, a ${targetLanguageName} phrase spoken as a target-language speech island, then a ${supportLanguageName} invitation to try it once.`,
-	          ].join(" ")
-	        : "";
-	    const starterAgendaContext = starterAgendaLesson
-	      ? [
-          "STARTER INTRODUCTIONS LESSON: The app controls the fixed agenda one item at a time.",
-          needsSupportLanguageScaffold
-            ? `LANGUAGE BOUNDARY: For this beginner lesson, all teaching text must be in ${supportLanguageName}. Only the natural code-switched model phrase should be in ${targetLanguageName}.`
-            : "",
-          "Do not infer, remember, or choose the next practice phrase from this session instruction or from previous turns.",
-          "For each response, follow only the current response instructions for the exact agenda item and exact model phrase.",
-          "One understandable attempt at the current model phrase completes the current agenda item. Never ask for the same item again unless the current response instructions explicitly say it is the active item.",
-          "If all agenda items are complete, follow the current response instructions for completion or review.",
+    const tutorLessonContext = tutorLessonDetails?.promptText
+      ? `LESSON AGENDA: The user selected this Tutor lesson.\n${tutorLessonDetails.promptText}\nUse this agenda to decide what to teach and practice throughout the session. Keep the lesson plan aligned with this agenda.`
+      : "";
+    const starterAgendaContext = starterAgendaLesson
+      ? [
+          "STARTER INTRODUCTIONS LESSON: This first Tutor lesson has a fixed agenda.",
+          `Required agenda in ${targetLanguageName}: ${getTutorStarterAgendaPromptText(tLang)}.`,
+          "Teach and practice the items one at a time: hello, my name is, good morning, good afternoon, good night, and how are you.",
+          "For 'my name is', model a safe example with a fictional name or invite the learner to use any name; do not require personal details.",
+          "Only the app-tracked acceptance state completes an agenda item. Do not advance when the learner says unrelated words, filler, or a different target phrase.",
+          "After all agenda items have been practiced, combine or review the covered concepts until the lesson XP requirement is complete.",
+          buildTutorStarterProgressInstructions(),
         ].join(" ")
       : "";
     const feedbackText = String(inlineFeedbackRef.current || "").trim();
@@ -4800,23 +3537,24 @@ export default function Tutor({
 
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
-	      strict,
-	      proficiencyHint,
-	      customSubjectsContext,
-	      tutorLessonContext,
-	      earlyLanguageBoundaryContext,
-	      starterAgendaContext,
+      strict,
+      codeSwitchingAudioInstruction,
+      proficiencyHint,
+      customSubjectsContext,
+      tutorLessonContext,
+      starterAgendaContext,
       feedbackContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       tutorPedagogyInstructions,
-      tutorAudioPronunciationInstructions,
       speechAcceptanceInstructions,
       replyLengthInstruction,
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
       isEarlyTutorLevel
         ? "Ask one tiny practice prompt at a time. Keep the learner producing target-language words, not just listening."
-        : "Ask follow-up questions to keep the conversation flowing.",
+        : isAdvancedTutorLevel
+          ? "Keep the conversation flowing in the target language; avoid phrase-drill mode unless teaching a specific expression."
+          : "Ask focused target-language follow-up questions to keep the learner producing full thoughts.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -4832,27 +3570,26 @@ export default function Tutor({
     );
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
-    const tutorAudioPronunciationInstructions =
-      buildTutorAudioPronunciationInstructions(tLang, targetLanguageName);
-	    const lesson = selectedTutorLessonRef.current;
-	    const unit = selectedTutorUnitRef.current;
-	    const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
-	    const agendaSubtitle = getTutorLessonAgendaSubtitle(lesson, unit, supportCode);
-	    const selectedLevel =
-	      unit?.cefrLevel ||
-	      unit?.level ||
-	      conversationSettingsRef.current.proficiencyLevel ||
-	      maxProficiencyLevel ||
-	      "A1";
-	    const isEarlyTutorLevel = isEarlyTutorProficiencyLevel(selectedLevel);
-	    const targetBaseCode = getBaseLanguageCode(tLang || "es") || tLang || "es";
-	    const needsSupportLanguageScaffold = supportCode !== targetBaseCode;
-	    const earlyLanguageBoundary =
-	      isEarlyTutorLevel && needsSupportLanguageScaffold
-	        ? `BEGINNER LANGUAGE BOUNDARY: Use ${supportLanguageName} for all explanations, transitions, acknowledgements, and instructions. Use ${targetLanguageName} only inside natural code-switched model phrases or vocabulary examples. Do not give a mostly ${targetLanguageName} reply.`
-	        : "";
+    const codeSwitchingAudioInstruction =
+      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const lesson = selectedTutorLessonRef.current;
+    const unit = selectedTutorUnitRef.current;
+    const selectedLevel =
+      unit?.cefrLevel ||
+      unit?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
+    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
+    const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
+    const agendaSubtitle = getTutorLessonAgendaSubtitle(
+      lesson,
+      unit,
+      supportCode,
+    );
 
-	    if (isTutorStarterAgendaLesson(lesson)) {
+    if (isTutorStarterAgendaLesson(lesson)) {
       const nextItem = getNextTutorStarterAgendaItem(
         tutorStarterAgendaProgressRef.current,
       );
@@ -4865,20 +3602,29 @@ export default function Tutor({
       });
     }
 
-	    return [
-	      "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
-		      earlyLanguageBoundary,
-		      tutorAudioPronunciationInstructions,
-		      `Use the selected lesson agenda: ${agendaTitle}${
-	        agendaSubtitle ? ` - ${agendaSubtitle}` : ""
-	      }.`,
-	      isEarlyTutorLevel && needsSupportLanguageScaffold
-	        ? `Use this structure: a short ${supportLanguageName} orientation, one ${targetLanguageName} phrase from the agenda spoken as a target-language speech island, then a short ${supportLanguageName} prompt asking for one tiny practice attempt.`
-	        : `Briefly orient the learner in ${supportLanguageName} if they are a beginner, model one useful ${targetLanguageName} phrase, then ask for one tiny practice attempt.`,
-	      "After one understandable attempt at the requested phrase, move forward instead of asking the learner to repeat the same phrase.",
-	      "Avoid stock openers and do not begin with the same phrase used in the previous Tutor turn.",
-	      "Keep the opening concise and tutor-like.",
-    ].join(" ");
+    return [
+      "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
+      codeSwitchingAudioInstruction,
+      `Use the selected lesson agenda: ${agendaTitle}${
+        agendaSubtitle ? ` - ${agendaSubtitle}` : ""
+      }.`,
+      isEarlyTutorLevel
+        ? `Briefly orient the learner in ${supportLanguageName}, model one useful ${targetLanguageName} phrase, then ask for one tiny practice attempt.`
+        : isAdvancedTutorLevel
+          ? `Start in ${targetLanguageName} with a natural conversational opener about the agenda, then ask one open-ended question.`
+          : `Start in simple ${targetLanguageName}, give one short model or prompt, then ask a focused question the learner can answer in ${targetLanguageName}.`,
+      supportCode !== tLang && !isEarlyTutorLevel
+        ? `Do not default to ${supportLanguageName}; use it only for a quick clarification if needed.`
+        : "",
+      isEarlyTutorLevel
+        ? "Move forward only after the learner gives the requested phrase or the app-tracked agenda accepts the attempt."
+        : "Use the lesson agenda as the guide, but let the learner's answers shape the next conversational follow-up.",
+      isAdvancedTutorLevel
+        ? "Keep the opening concise, adult, and conversational."
+        : "Keep the opening concise and tutor-like.",
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   function getTutorAgendaItemLabel(item, lang = "en") {
@@ -4903,13 +3649,9 @@ export default function Tutor({
       getLanguagePromptName(supportCode) || "the user's support language";
     const targetLanguageName =
       getLanguagePromptName(targetLang) || "the target language";
-    const tutorAudioPronunciationInstructions =
-      buildTutorAudioPronunciationInstructions(targetLang, targetLanguageName);
-    const targetBaseCode =
-      getBaseLanguageCode(targetLang || "es") || targetLang || "es";
-    const needsSupportLanguageScaffold = supportCode !== targetBaseCode;
+    const codeSwitchingAudioInstruction =
+      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
     const phrase = item ? getTutorStarterItemModelPhrase(item, targetLang) : "";
-    const meaning = item ? getTutorStarterItemSupportMeaning(item, supportCode) : "";
     const task = item ? getTutorStarterItemSupportTask(item, supportCode) : "";
     const progress = tutorStarterAgendaProgressRef.current || {};
     const lesson = selectedTutorLessonRef.current;
@@ -4935,49 +3677,36 @@ export default function Tutor({
     )
       .filter(Boolean)
       .join(", ");
-    const latestTranscript = acceptedItems ? "" : String(userMessage || "").trim();
-    const latestWasRejected = !!latestTranscript && !isKickoff;
+    const latestTranscript = String(userMessage || "").trim();
     const currentPhrase = phrase || "";
-    const currentPhraseAudioInstructions =
-      buildTutorCurrentPhraseAudioInstructions(
-        currentPhrase,
-        targetLang,
-        targetLanguageName,
-      );
-    const completedCount = TUTOR_STARTER_AGENDA_ITEMS.filter(
-      (agendaItem) => progress[agendaItem.id],
-    ).length;
+    const latestTurnWasAccepted = acceptedItemIds.length > 0;
+    const completedPhrases = TUTOR_STARTER_AGENDA_ITEMS.filter(
+      (agendaItem) => progress[agendaItem.id] && agendaItem.id !== item?.id,
+    )
+      .map((agendaItem) =>
+        getTutorStarterItemModelPhrase(agendaItem, targetLang),
+      )
+      .filter(Boolean)
+      .join(", ");
 
     if (!item) {
-      if (shouldCompleteTutorStarterOnAgenda(lesson)) {
-        return [
-          "You are the realtime voice tutor for this Tutor lesson.",
-          "The required first-lesson agenda is complete.",
-          needsSupportLanguageScaffold
-            ? `Use only ${supportLanguageName} for the completion message. Do not switch into ${targetLanguageName}.`
-            : `Use ${supportLanguageName} for a brief, warm completion message.`,
-          tutorAudioPronunciationInstructions,
-          "Do not ask for another practice attempt.",
-          "Do not review, repeat, or introduce another phrase.",
-          "Keep it to one short sentence.",
-        ].join("\n");
-      }
-
       return [
         "You are the realtime voice tutor for this Tutor lesson.",
+        codeSwitchingAudioInstruction,
         "The lesson agenda is complete. Keep practicing by reviewing or combining only the concepts already covered.",
-        needsSupportLanguageScaffold
-          ? `Use ${supportLanguageName} for all guidance, acknowledgement, and instructions. Use ${targetLanguageName} only inside model phrases spoken as target-language speech islands.`
-          : `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for model phrases.`,
-        tutorAudioPronunciationInstructions,
+        `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for model phrases.`,
+        supportCode === targetLang
+          ? ""
+          : `Do not answer entirely in ${targetLanguageName}; keep teacher talk in ${supportLanguageName}.`,
         `Covered concepts: ${completedItems || getTutorStarterAgendaSummary(supportCode)}.`,
         `Allowed model phrases: ${reviewPhrases}.`,
         `XP remaining before lesson completion: ${remainingXp}.`,
-        latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
+        latestTranscript
+          ? `Latest learner transcript: "${latestTranscript}".`
+          : "",
         "Ask for one small review task or one simple combination of learned concepts.",
         "Do not introduce new subjects, advanced vocabulary, or open-ended free conversation.",
         "Do not mention pronunciation, accents, or sound quality. Do not ask the learner to repeat for pronunciation.",
-        "Vary the opener. Do not start each review with praise or a stock transition.",
         "Keep it natural and concise: 1-2 short sentences.",
       ]
         .filter(Boolean)
@@ -4986,47 +3715,42 @@ export default function Tutor({
 
     return [
       "You are the realtime voice tutor for this Tutor lesson.",
+      codeSwitchingAudioInstruction,
       "The app controls the agenda. Your job is to tutor the current agenda item naturally.",
-      needsSupportLanguageScaffold
-        ? `Use ${supportLanguageName} for every explanation, varied acknowledgement, transition, and instruction. Use ${targetLanguageName} only inside the exact model phrase the learner should try, naturally code-switched into the sentence.`
-        : `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for the phrase the learner should try.`,
-      tutorAudioPronunciationInstructions,
-      currentPhraseAudioInstructions,
-      needsSupportLanguageScaffold
-        ? `Response shape: optional varied ${supportLanguageName} acknowledgement or transition, one short ${supportLanguageName} meaning gloss, then naturally model exactly this ${targetLanguageName} phrase: "${phrase}".`
-        : "",
+      `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for the phrase the learner should try.`,
+      supportCode === targetLang
+        ? ""
+        : `Do not answer entirely in ${targetLanguageName}; keep teacher talk in ${supportLanguageName}.`,
       `Current agenda item: ${item.id}.`,
       `Current subject: ${task}.`,
       `Model phrase: "${phrase}".`,
-      meaning ? `Meaning to teach first: "${phrase}" means "${meaning}".` : "",
-      completedCount ? `${completedCount} agenda item(s) are already complete.` : "",
-      acceptedItems
-        ? "The app accepted the learner's last attempt. Move forward now."
+      currentPhrase
+        ? `When you say "${currentPhrase}", pronounce it correctly as ${targetLanguageName}.`
         : "",
-      latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
-      latestWasRejected
-        ? `The app did not accept the latest attempt because it did not contain the current model phrase "${currentPhrase}". Treat this as a word-choice miss, not a pronunciation issue.`
+      completedItems ? `Already completed: ${completedItems}.` : "",
+      completedPhrases
+        ? `Do not prompt these completed phrases again: ${completedPhrases}.`
+        : "",
+      acceptedItems
+        ? `The app accepted the learner's last attempt for: ${acceptedItems}. The latest transcript belongs to that completed step. Move forward now.`
+        : "",
+      latestTranscript && !latestTurnWasAccepted && !isKickoff
+        ? `The app did NOT accept the latest transcript as the current phrase. Do not say "nice work", "great", or imply the learner got it right. Briefly correct in ${supportLanguageName}, then ask them to try exactly this ${targetLanguageName} phrase: "${currentPhrase}".`
+        : "",
+      latestTranscript
+        ? `Latest learner transcript: "${latestTranscript}".`
         : "",
       isKickoff
         ? "Start the lesson and introduce only this first agenda item."
-        : latestWasRejected
-          ? `Gently say that was not quite the requested phrase, remind the learner what "${currentPhrase}" means, and ask for "${currentPhrase}" once.`
-          : "Use a varied human transition, or skip praise, then introduce only the current agenda item.",
+        : latestTurnWasAccepted
+          ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item."
+          : "Briefly correct the learner, then keep practicing only the current agenda item.",
       currentPhrase
         ? `Your next practice prompt MUST be for the current model phrase: "${currentPhrase}".`
         : "",
-      currentPhrase
-        ? `Before asking the learner to repeat it, briefly tell them what "${currentPhrase}" means in ${supportLanguageName}.`
-        : "",
-      currentPhrase
-        ? `Your reply must not ask for any other phrase. It must move the learner to "${currentPhrase}" now.`
-        : "",
       "Never ask the learner to repeat an already completed agenda item.",
       "Never say 'remember' followed by a completed phrase as the main practice prompt.",
-      "Never say 'try that again', 'say it again', or 'see how it sounds' after an accepted attempt.",
-      "Never say 'listen carefully' before the target phrase.",
-      "Do not begin this reply with the same stock opener as the last turn. Avoid repetitive starts like 'Great', 'Great job', 'Nice work', 'Now', 'Next', or 'Okay'.",
-      "If the learner attempted the current phrase, treat it as progress. If they said a different word or phrase, correct the word choice gently. Do not judge pronunciation.",
+      "Only app-accepted turns are progress. Do not treat unrelated words, random phrases, or a different target phrase as progress.",
       "Do not ask the learner to repeat for pronunciation, do not split syllables, and do not rate accent.",
       "Do not drift into topics beyond the current agenda item.",
       "Keep it natural and concise: 1-2 short sentences.",
@@ -5047,10 +3771,6 @@ export default function Tutor({
   } = {}) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
-    if (isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) {
-      tutorPromptedAgendaItemIdRef.current = item?.id || "";
-      applyLanguagePolicyNow();
-    }
 
     clearAutoStopTimer();
     setUiState("thinking");
@@ -5058,172 +3778,24 @@ export default function Tutor({
     setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
 
     try {
-      sendTutorResponseAfterSessionReady({
-        modalities: ["audio", "text"],
-        voice: getTutorRealtimeVoice(voiceRef.current),
-        conversation: "none",
-        instructions: buildTutorAgendaResponseInstructions({
-          item,
-          isKickoff,
-          supportLang,
-          targetLang,
-          userMessage,
-          acceptedItemIds,
-          kind,
+      dcRef.current.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: buildTutorAgendaResponseInstructions({
+              item,
+              isKickoff,
+              supportLang,
+              targetLang,
+              userMessage,
+              acceptedItemIds,
+              kind,
+            }),
+            metadata: { kind },
+          },
         }),
-        metadata: { kind },
-      });
-    } catch {
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
-    }
-  }
-
-  function buildTutorLessonAgendaResponseInstructions({
-    item,
-    isKickoff = false,
-    userMessage = "",
-    acceptedItemIds = [],
-    kind = "tutor_followup",
-  } = {}) {
-    const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
-    const supportCode = normalizeSupportLanguage(
-      supportLangRef.current || resolvedSupportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
-    const tLang = targetLangRef.current || targetLang || "es";
-    const targetLanguageName =
-      getLanguagePromptName(tLang) || "the target language";
-    const tutorAudioPronunciationInstructions =
-      buildTutorAudioPronunciationInstructions(tLang, targetLanguageName);
-    const supportLanguageName =
-      getLanguagePromptName(supportCode) || "the user's support language";
-    const targetBaseCode = getBaseLanguageCode(tLang || "es") || tLang || "es";
-    const needsSupportLanguageScaffold = supportCode !== targetBaseCode;
-    const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
-    const allItems = getTutorLessonFocusAgendaItems(lesson);
-    const progress = tutorLessonAgendaProgressRef.current || {};
-    const completedItems = allItems.filter((agendaItem) => progress[agendaItem.id]);
-    const acceptedItems = allItems.filter((agendaItem) =>
-      acceptedItemIds.includes(agendaItem.id),
-    );
-    const completedText = completedItems.length
-      ? completedItems.map((agendaItem) => agendaItem.phrase).join(", ")
-      : "none yet";
-    const acceptedText = acceptedItems
-      .map((agendaItem) => agendaItem.phrase)
-      .join(", ");
-    const remainingItems = allItems
-      .filter((agendaItem) => !progress[agendaItem.id])
-      .map((agendaItem) => agendaItem.phrase)
-      .join(", ");
-    const latestTranscript = String(userMessage || "").trim();
-    const latestWasRejected = !!latestTranscript && !acceptedText && !isKickoff;
-    const itemMeaning = item
-      ? getTutorFocusItemSupportMeaning(item, supportCode)
-      : "";
-    const currentPhraseAudioInstructions = item
-      ? buildTutorCurrentPhraseAudioInstructions(
-          item.phrase,
-          tLang,
-          targetLanguageName,
-        )
-      : "";
-
-    if (!item) {
-      return [
-        "You are the realtime voice tutor for this Tutor lesson.",
-        "The app-tracked lesson focus agenda is complete. Review or combine only the focus items already covered until the XP requirement is met.",
-        needsSupportLanguageScaffold
-          ? `Use ${supportLanguageName} for all prose, acknowledgements, transitions, and instructions. Use ${targetLanguageName} only inside natural code-switched examples.`
-          : `Use simple ${supportLanguageName} tutoring language.`,
-        tutorAudioPronunciationInstructions,
-        `Lesson: ${agendaTitle}.`,
-        `Completed focus items: ${completedText}.`,
-        latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
-        "Ask one tiny review prompt that combines or contrasts learned words.",
-        "Absolutely do not mention pronunciation, syllables, stress, emphasis, accent, or sound quality.",
-        "Do not ask the learner to repeat a word because of how it sounded.",
-        "Vary the opener. Do not start each review with praise or a stock transition.",
-        "Keep it natural and concise: 1-2 short sentences.",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    }
-
-    return [
-      "You are the realtime voice tutor for this Tutor lesson.",
-      "The app controls the lesson focus agenda. Use the app state as the source of truth for what is complete.",
-      needsSupportLanguageScaffold
-        ? `BEGINNER LANGUAGE BOUNDARY: Use ${supportLanguageName} for every varied acknowledgement, transition, explanation, and instruction. Use ${targetLanguageName} only inside the exact model word or phrase, naturally code-switched into the sentence.`
-        : `Use simple ${supportLanguageName} tutoring language.`,
-      tutorAudioPronunciationInstructions,
-      currentPhraseAudioInstructions,
-      `Lesson: ${agendaTitle}.`,
-      `Completed focus items: ${completedText}.`,
-      acceptedText
-        ? `The app accepted the learner's latest attempt as completing: ${acceptedText}. Do not say it was close. Do not ask for it again.`
-        : "",
-      latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
-      latestWasRejected
-        ? `The app did not accept the latest attempt because it did not contain the current focus item "${item.phrase}". Treat this as a word-choice miss, not a pronunciation issue.`
-        : "",
-      remainingItems ? `Remaining focus items after this one: ${remainingItems}.` : "",
-      `Current focus item: "${item.phrase}".`,
-      itemMeaning
-        ? `Meaning to teach first: "${item.phrase}" means "${itemMeaning}".`
-        : `Before asking the learner to repeat "${item.phrase}", briefly explain its meaning in ${supportLanguageName}.`,
-      isKickoff
-        ? "Kick off the lesson with this first focus item."
-        : latestWasRejected
-          ? `Gently say that was not quite the requested word, remind the learner what "${item.phrase}" means, and ask for "${item.phrase}" once.`
-          : "Use a varied human transition, or skip praise, and move to this current focus item now.",
-      `Your next practice prompt MUST be for "${item.phrase}".`,
-      `The learner should know what "${item.phrase}" means before they try to say it.`,
-      `Write the target word exactly as "${item.phrase}" with no hyphenation, no phonetic spelling, and no syllable split.`,
-      "Absolutely do not mention pronunciation, syllables, stress, emphasis, accent, or sound quality.",
-      "Do not ask the learner to repeat the previous word. Do not say 'try again', 'say it again', 'listen carefully', 'focus on the first part', or 'let's emphasize'.",
-      "Do not begin this reply with the same stock opener as the last turn. Avoid repetitive starts like 'Great', 'Great job', 'Nice work', 'Now', 'Next', or 'Okay'.",
-      "One understandable attempt at the current word or phrase is enough; then the app will move to the next item.",
-      "Keep it natural and concise: 1-2 short sentences.",
-      `Response kind: ${kind}.`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-  }
-
-  function requestRealtimeTutorLessonAgendaResponse({
-    item,
-    kind,
-    isKickoff = false,
-    userMessage = "",
-    acceptedItemIds = [],
-  } = {}) {
-    if (!aliveRef.current) return;
-    if (!dcRef.current || dcRef.current.readyState !== "open") return;
-
-    tutorPromptedLessonAgendaItemIdRef.current = item?.id || "";
-    applyLanguagePolicyNow();
-    clearAutoStopTimer();
-    setUiState("thinking");
-    setMood("thoughtful");
-    setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
-
-    try {
-      sendTutorResponseAfterSessionReady({
-        modalities: ["audio", "text"],
-        voice: getTutorRealtimeVoice(voiceRef.current),
-        conversation: "none",
-        instructions: buildTutorLessonAgendaResponseInstructions({
-          item,
-          isKickoff,
-          userMessage,
-          acceptedItemIds,
-          kind,
-        }),
-        metadata: { kind },
-      });
+      );
     } catch {
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -5269,10 +3841,15 @@ export default function Tutor({
 
     return [
       "APP-TRACKED STARTER AGENDA STATE:",
-      latestTranscript ? `Latest learner transcript: "${latestTranscript}".` : "",
+      latestTranscript
+        ? `Latest learner transcript: "${latestTranscript}".`
+        : "",
       `Completed agenda items: ${completedText}.`,
       acceptedText
         ? `The app has accepted the latest turn as completing: ${acceptedText}. Do not say it was close. Do not ask for those words again.`
+        : "",
+      latestTranscript && !acceptedText
+        ? "The app did not accept the latest turn. Do not advance the agenda, do not award praise, and keep the learner on the current phrase."
         : "",
       nextItem
         ? `Next agenda item: ${getTutorAgendaItemLabel(
@@ -5280,13 +3857,16 @@ export default function Tutor({
             supportCode,
           )}. Model this ${targetLanguageName} phrase if useful: "${nextModel}".`
         : "All agenda items are complete. Review or combine covered concepts until the lesson XP requirement is complete.",
-      "Use the app-tracked agenda state as the source of truth. Do not evaluate accent, sound quality, or pronunciation. Only advance when the learner attempts the current target word or phrase.",
+      "Use the app-tracked agenda state as the source of truth. Do not evaluate accent, sound quality, or pronunciation. Only explicitly accepted agenda items are complete.",
     ]
       .filter(Boolean)
       .join(" ");
   }
 
-  function buildTutorFollowupInstructions(userMessage = "", acceptedItemIds = []) {
+  function buildTutorFollowupInstructions(
+    userMessage = "",
+    acceptedItemIds = [],
+  ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     const supportCode = normalizeSupportLanguage(
@@ -5298,72 +3878,50 @@ export default function Tutor({
       getLanguagePromptName(tLang) || "the target language";
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
-    const tutorAudioPronunciationInstructions =
-      buildTutorAudioPronunciationInstructions(tLang, targetLanguageName);
+    const codeSwitchingAudioInstruction =
+      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
     const selectedLevel =
-	      unit?.cefrLevel ||
-	      unit?.level ||
-	      conversationSettingsRef.current.proficiencyLevel ||
-	      maxProficiencyLevel ||
-	      "A1";
-	    const isEarlyTutorLevel = isEarlyTutorProficiencyLevel(selectedLevel);
-	    const targetBaseCode = getBaseLanguageCode(tLang || "es") || tLang || "es";
-	    const needsSupportLanguageScaffold = supportCode !== targetBaseCode;
-	    const earlyLanguageBoundary =
-	      isEarlyTutorLevel && needsSupportLanguageScaffold
-	        ? [
-	            `BEGINNER LANGUAGE BOUNDARY: Keep the whole tutoring response in ${supportLanguageName} except for natural code-switched ${targetLanguageName} words or phrases.`,
-	            `Do not use ${targetLanguageName} for acknowledgements, transitions, explanations, or commands like "now", "let's continue", "let's practice", "start", or "repeat".`,
-	            `If moving to a new concept, explain the move in ${supportLanguageName}, then model one tiny ${targetLanguageName} phrase from the agenda as a target-language speech island.`,
-	          ].join(" ")
-	        : "";
-    const latestRequestedPhrases = getLatestTutorAssistantRequestedPhrases(
-      messagesRef.current,
-    );
-    const latestRequestedPhrase =
-      latestRequestedPhrases[latestRequestedPhrases.length - 1] || "";
-    const matchedRequestedPhrase = getLatestTutorAssistantRequestedPhraseMatch(
-      userMessage,
-      messagesRef.current,
-      tLang,
-    );
+      unit?.cefrLevel ||
+      unit?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
+    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
 
-	    if (isTutorStarterAgendaLesson(lesson)) {
+    if (isTutorStarterAgendaLesson(lesson)) {
       return [
         "Respond to the learner's latest turn as their tutor.",
+        codeSwitchingAudioInstruction,
         buildTutorStarterProgressInstructions(userMessage, acceptedItemIds),
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
-        "Accepted app-tracked items are complete. Continue to the next agenda item.",
-        "Use a varied opener or skip the opener entirely. Do not start every turn with praise.",
+        acceptedItemIds.length
+          ? "The latest app-tracked item is complete. Continue to the next agenda item."
+          : "The latest turn was not accepted. Keep the learner on the current agenda item and ask for the model phrase again.",
       ]
         .filter(Boolean)
         .join(" ");
     }
 
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
-	    return [
-	      "Respond to the learner's latest turn as their tutor.",
-	      earlyLanguageBoundary,
-	      tutorAudioPronunciationInstructions,
-	      userMessage ? `Latest learner transcript: "${userMessage}".` : "",
-	      matchedRequestedPhrase
-	        ? `APP ACCEPTANCE: The learner's latest transcript matches or substantially matches the phrase you just requested: "${matchedRequestedPhrase}". Treat it as correct and complete. Do not say it was close, do not refine it, and do not ask for the same phrase again. Move to a different next lesson step.`
-	        : userMessage && latestRequestedPhrase
-	          ? `APP REJECTION: The learner's latest transcript does not resemble the phrase you just requested: "${latestRequestedPhrase}". Treat this as off-task or the wrong phrase, not as a pronunciation issue. Gently ask for "${latestRequestedPhrase}" one more time and do not introduce a new phrase yet.`
-	          : userMessage
-	            ? "PRACTICE POLICY: The learner made a spoken attempt but no specific requested phrase was detected. Keep the lesson moving, but do not claim the learner completed a requested phrase unless it matched."
-	          : "",
-	      `Keep teaching from the selected agenda: ${agendaTitle}.`,
-	      "If the learner's meaning is understandable, accept it and move forward. Do not evaluate accent or sound quality.",
-	      "If the learner repeats the phrase you requested exactly or nearly exactly, always accept it and move on.",
-	      "If APP REJECTION is present, do not move forward, do not praise the answer as correct, and do not introduce a new target phrase.",
-	      "FORBIDDEN LOOP: Do not ask the learner to repeat the same phrase for pronunciation, fluency, rhythm, accent, stress, speed, or word connection. Do not say 'casi perfecto', 'pulir', 'corregir', 'pronunciacion', 'fluidez', 'ritmo', 'acento', 'repeat again', or 'try once more' unless the learner explicitly asks for sound coaching.",
-	      "Do not mention pronunciation, syllables, stress, emphasis, accent, fluency, rhythm, or sound quality unless the learner explicitly asks.",
-	      "Use a varied opener or skip the opener entirely. Do not start every turn with praise.",
-	      isEarlyTutorLevel
-	        ? "Ask for one tiny next practice attempt only. Do not ask them to repeat the previous phrase if they attempted it."
-	        : "",
-	    ]
+    return [
+      "Respond to the learner's latest turn as their tutor.",
+      codeSwitchingAudioInstruction,
+      userMessage ? `Latest learner transcript: "${userMessage}".` : "",
+      `Keep teaching from the selected agenda: ${agendaTitle}.`,
+      isEarlyTutorLevel
+        ? `Use ${supportLanguageName} for coaching, explanations, and questions. Use ${targetLanguageName} only for examples, model phrases, and practice prompts.`
+        : isAdvancedTutorLevel
+          ? `Respond almost entirely in ${targetLanguageName}. Make it feel like a natural conversation, not a phrase drill.`
+          : `Respond primarily in simple ${targetLanguageName}. Use ${supportLanguageName} only for a short clarification if the learner seems stuck.`,
+      supportCode !== tLang && !isEarlyTutorLevel
+        ? `Do not default back to ${supportLanguageName}; the learner is ${selectedLevel}, so they should practice following instructions in ${targetLanguageName}.`
+        : "",
+      "If the learner's meaning is understandable, accept it and move forward. Do not evaluate accent or sound quality.",
+      isAdvancedTutorLevel
+        ? "Ask one purposeful open-ended follow-up in the target language and weave corrections into your reply."
+        : "",
+    ]
       .filter(Boolean)
       .join(" ");
   }
@@ -5426,10 +3984,6 @@ export default function Tutor({
     setUiState(status === "connected" ? "listening" : "idle");
     setMood("neutral");
     if (aliveRef.current) scheduleAutoStop();
-    if (pendingAdvancedPlacementOnboardingFlowRef.current) {
-      pendingAdvancedPlacementOnboardingFlowRef.current = false;
-      onFirstLessonComplete?.();
-    }
   }
 
   function scheduleAssistantUnlockAfterQuiet() {
@@ -5478,67 +4032,23 @@ export default function Tutor({
     setMood("thoughtful");
   }
 
-  function releaseTutorPendingTurn() {
-    setAssistantInputLocked(false);
-    setUiState(status === "connected" ? "listening" : "idle");
-    setMood("neutral");
-    if (aliveRef.current) scheduleAutoStop();
-  }
-
-  function getCurrentTutorExpectedTranscriptionPhrases() {
-    const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
-    const tLang = targetLangRef.current || targetLang || "es";
-    const baseLang = getBaseLanguageCode(tLang || "es") || tLang || "es";
-    const phrases = [];
-
-    if (isTutorStarterAgendaLesson(lesson)) {
-      const promptedItem = TUTOR_STARTER_AGENDA_ITEMS.find(
-        (item) =>
-          item.id === tutorPromptedAgendaItemIdRef.current &&
-          !tutorStarterAgendaProgressRef.current[item.id],
-      );
-      const currentItem =
-        promptedItem ||
-        getNextTutorStarterAgendaItem(tutorStarterAgendaProgressRef.current);
-      if (currentItem) {
-        phrases.push(getTutorStarterItemModelPhrase(currentItem, tLang));
-        phrases.push(...(currentItem.examples?.[baseLang] || []));
-        phrases.push(...(currentItem.examples?.en || []));
-      }
-    } else if (isTutorFocusAgendaLesson(lesson, unit)) {
-      const agendaItems = getTutorLessonFocusAgendaItems(lesson);
-      const promptedItem = agendaItems.find(
-        (item) =>
-          item.id === tutorPromptedLessonAgendaItemIdRef.current &&
-          !tutorLessonAgendaProgressRef.current[item.id],
-      );
-      const currentItem =
-        promptedItem ||
-        getNextTutorLessonFocusAgendaItem(
-          lesson,
-          tutorLessonAgendaProgressRef.current,
-        );
-      if (currentItem) {
-        phrases.push(currentItem.phrase, currentItem.label);
-      }
-    }
-
-    phrases.push(
-      ...getLatestTutorAssistantRequestedPhrases(messagesRef.current).slice(-2),
-    );
-
-    return compactUnique(
-      phrases.map((phrase) => String(phrase || "").trim()).filter(Boolean),
-    ).slice(0, 8);
-  }
-
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
-    const voiceName = getTutorRealtimeVoice(voiceRef.current);
+    const voiceName = getPreferredTTSVoice(voiceRef.current);
     const instructions = buildLanguageInstructions();
-    const expectedPhrases = getCurrentTutorExpectedTranscriptionPhrases();
+
+    const previousGuardrailIds = Array.from(
+      new Set(guardrailItemIdsRef.current),
+    );
+    for (const id of previousGuardrailIds) {
+      try {
+        dcRef.current.send(
+          JSON.stringify({ type: "conversation.item.delete", item_id: id }),
+        );
+      } catch {}
+    }
+    guardrailItemIdsRef.current = [];
 
     try {
       dcRef.current.send(
@@ -5549,46 +4059,13 @@ export default function Tutor({
             modalities: ["audio", "text"],
             voice: voiceName,
             turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: getTutorInputAudioTranscriptionConfig(
-              targetLangRef.current,
-              expectedPhrases,
-            ),
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
             output_audio_format: "pcm16",
           },
         }),
       );
     } catch {}
-  }
-
-  function flushPendingTutorResponses() {
-    const pending = pendingTutorResponseSendersRef.current.splice(0);
-    pending.forEach((send) => {
-      try {
-        send();
-      } catch {}
-    });
-  }
-
-  function sendTutorResponseAfterSessionReady(response) {
-    const send = () => {
-      if (!aliveRef.current) return;
-      if (!dcRef.current || dcRef.current.readyState !== "open") return;
-      dcRef.current.send(
-        JSON.stringify({
-          type: "response.create",
-          response,
-        }),
-      );
-    };
-
-    if (tutorSessionReadyRef.current) {
-      send();
-      return true;
-    }
-
-    pendingTutorResponseSendersRef.current.push(send);
-    applyLanguagePolicyNow();
-    return true;
+    pendingGuardrailTextRef.current = "";
   }
 
   function requestTutorLessonKickoff() {
@@ -5628,39 +4105,21 @@ export default function Tutor({
       return;
     }
 
-    if (
-      isTutorFocusAgendaLesson(
-        selectedTutorLessonRef.current,
-        selectedTutorUnitRef.current,
-      )
-    ) {
-      const nextItem =
-        getNextTutorLessonFocusAgendaItem(
-          selectedTutorLessonRef.current,
-          tutorLessonAgendaProgressRef.current,
-        ) || getTutorLessonFocusAgendaItems(selectedTutorLessonRef.current)[0];
-      requestRealtimeTutorLessonAgendaResponse({
-        item: nextItem,
-        isKickoff: true,
-        kind: "tutor_kickoff",
-      });
-      logEvent(analytics, "tutor_lesson_kickoff_requested", {
-        lessonId: selectedTutorLessonRef.current?.id || "",
-      });
-      return;
-    }
-
     setUiState("thinking");
     setMood("thoughtful");
     setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
 
     try {
-      sendTutorResponseAfterSessionReady({
-        modalities: ["audio", "text"],
-        voice: getTutorRealtimeVoice(voiceRef.current),
-        instructions: buildTutorKickoffInstructions(),
-        metadata: { kind: "tutor_kickoff" },
-      });
+      dcRef.current.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: buildTutorKickoffInstructions(),
+            metadata: { kind: "tutor_kickoff" },
+          },
+        }),
+      );
       logEvent(analytics, "tutor_lesson_kickoff_requested", {
         lessonId: selectedTutorLessonRef.current?.id || "",
       });
@@ -5671,11 +4130,7 @@ export default function Tutor({
     }
   }
 
-  function requestTutorTurnFollowup(
-    userMessage = "",
-    acceptedItemIds = [],
-    acceptedLessonItemIds = [],
-  ) {
+  function requestTutorTurnFollowup(userMessage = "", acceptedItemIds = []) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
@@ -5701,20 +4156,6 @@ export default function Tutor({
       return;
     }
 
-    if (isTutorFocusAgendaLesson(lesson, selectedTutorUnitRef.current)) {
-      const nextItem = getNextTutorLessonFocusAgendaItem(
-        lesson,
-        tutorLessonAgendaProgressRef.current,
-      );
-      requestRealtimeTutorLessonAgendaResponse({
-        item: nextItem,
-        userMessage,
-        acceptedItemIds: acceptedLessonItemIds,
-        kind: "tutor_followup",
-      });
-      return;
-    }
-
     const instructions = buildTutorFollowupInstructions(
       userMessage,
       acceptedItemIds,
@@ -5726,12 +4167,16 @@ export default function Tutor({
     setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
 
     try {
-      sendTutorResponseAfterSessionReady({
-        modalities: ["audio", "text"],
-        voice: getTutorRealtimeVoice(voiceRef.current),
-        instructions,
-        metadata: { kind: "tutor_followup" },
-      });
+      dcRef.current.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions,
+            metadata: { kind: "tutor_followup" },
+          },
+        }),
+      );
     } catch {
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -5744,6 +4189,7 @@ export default function Tutor({
       tutorKickoffTimerRef.current = null;
       if (tutorKickoffSentRef.current) return;
       if (!dcRef.current || dcRef.current.readyState !== "open") return;
+      if (!tutorSessionReadyRef.current) return;
       if (!aliveRef.current) {
         scheduleTutorLessonKickoff(80);
         return;
@@ -5828,88 +4274,29 @@ export default function Tutor({
     }
   }
 
-  async function completeTutorLessonFromXp(
-    lesson,
-    unit,
-    currentTotalXp = xpRef.current,
-  ) {
+  async function completeTutorLessonFromXp(lesson, unit) {
     if (!lesson || tutorLessonCompletionTriggeredRef.current) return;
     const npub = currentNpub;
     if (!npub) return;
 
     tutorLessonCompletionTriggeredRef.current = true;
-    const completionXp = Math.max(0, lesson.xpReward || 0);
-    const totalXpBeforeCompletion = Math.max(0, Number(currentTotalXp) || 0);
-    const totalXpAfterCompletion = totalXpBeforeCompletion + completionXp;
-    const nextTutorLesson = findNextTutorLessonAfter(
-      tutorPathUnits,
-      lesson.id,
-      tutorUserProgress.lessons || {},
-    );
-    await stop();
     try {
-      await completeTutorLesson(
+      await completeLesson(
         npub,
         lesson.id,
-        completionXp || 1,
+        lesson.xpReward || 1,
         targetLangRef.current,
       );
-      if (completionXp > 0) {
-        xpRef.current = totalXpAfterCompletion;
-        setXp(totalXpAfterCompletion);
-        await awardXp(npub, completionXp, targetLangRef.current);
-      }
       setCompletedTutorLessonData({
         title: lesson.title,
-        xpEarned: completionXp,
+        xpEarned: lesson.xpReward || 0,
         lessonId: lesson.id,
         unitTitle: unit?.title,
       });
-      setCompletedTutorAgendaData(
-        buildTutorCompletedAgendaData({
-          lesson,
-          unit,
-          targetLang: targetLangRef.current,
-          supportLang: resolvedSupportLang,
-          starterProgress: tutorStarterAgendaProgressRef.current,
-          focusProgress: tutorLessonAgendaProgressRef.current,
-          xpEarned: completionXp,
-          forceComplete: true,
-        }),
-      );
-      if (shouldCompleteTutorStarterOnAgenda(lesson)) {
-        pendingFirstLessonCompletionFlowRef.current = true;
-      }
-      if (nextTutorLesson?.lesson) {
-        const nextProgress =
-          tutorUserProgress.lessons?.[nextTutorLesson.lesson.id];
-        const nextIsCompleted =
-          nextProgress?.status === SKILL_STATUS.COMPLETED;
-        selectTutorLessonForAgenda(nextTutorLesson.lesson, nextTutorLesson.unit, {
-          earned: 0,
-          isCompleted: nextIsCompleted,
-          persist: true,
-        });
-        if (!nextIsCompleted) {
-          try {
-            await startTutorLesson(
-              npub,
-              nextTutorLesson.lesson.id,
-              targetLangRef.current,
-              tutorUserProgress,
-              totalXpAfterCompletion,
-            );
-          } catch (error) {
-            console.error("Failed to start next Tutor lesson:", error);
-          }
-        }
-      } else {
-        writeStoredTutorLessonId(targetLangRef.current, lesson.id);
-      }
       setShowTutorLessonComplete(true);
       logEvent(analytics, "tutor_lesson_completed", {
         lessonId: lesson.id,
-        xpEarned: completionXp,
+        xpRequired: lesson.xpReward || 0,
       });
     } catch (error) {
       console.error("Failed to complete Tutor lesson:", error);
@@ -5917,7 +4304,7 @@ export default function Tutor({
     }
   }
 
-  function trackTutorLessonXp(xpGain, currentTotalXp = xpRef.current) {
+  function trackTutorLessonXp(xpGain) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     if (!lesson || tutorLessonCompletionTriggeredRef.current) return;
@@ -5930,16 +4317,11 @@ export default function Tutor({
     tutorLessonEarnedXpRef.current = nextEarned;
     setTutorLessonEarnedXp(nextEarned);
 
-    const canCompleteLesson = isTutorStarterAgendaLesson(lesson)
-      ? isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)
-      : isTutorFocusAgendaLesson(lesson, unit)
-        ? isTutorLessonFocusAgendaComplete(
-            lesson,
-            tutorLessonAgendaProgressRef.current,
-          )
-        : true;
+    const canCompleteLesson =
+      !isTutorStarterAgendaLesson(lesson) ||
+      isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
     if (nextEarned >= lesson.xpReward && canCompleteLesson) {
-      void completeTutorLessonFromXp(lesson, unit, currentTotalXp);
+      void completeTutorLessonFromXp(lesson, unit);
     }
   }
 
@@ -5947,138 +4329,43 @@ export default function Tutor({
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     if (!isTutorStarterAgendaLesson(lesson)) return [];
+    if (tutorLessonCompletionTriggeredRef.current) return [];
 
-    const hasSpeech = !!String(userMessage || "").trim();
     const currentItem = getNextTutorStarterAgendaItem(
       tutorStarterAgendaProgressRef.current,
     );
-    const promptedItem =
-      TUTOR_STARTER_AGENDA_ITEMS.find(
-        (item) =>
-          item.id === tutorPromptedAgendaItemIdRef.current &&
-          !tutorStarterAgendaProgressRef.current[item.id],
-      ) || currentItem;
+    if (!currentItem) return [];
+
     const matches = getTutorStarterAgendaMatches(
       userMessage,
       targetLangRef.current,
     );
-    const promptedItemWasMatched =
-      promptedItem && matches.includes(promptedItem.id);
-    if (!hasSpeech || !promptedItem || !promptedItemWasMatched) return [];
+    if (!matches.includes(currentItem.id)) return [];
 
     const nextProgress = { ...tutorStarterAgendaProgressRef.current };
-    nextProgress[promptedItem.id] = true;
+    nextProgress[currentItem.id] = true;
     tutorStarterAgendaProgressRef.current = nextProgress;
     setTutorStarterAgendaProgress(nextProgress);
-    persistTutorAgendaProgress(lesson, nextProgress);
 
     const agendaComplete = TUTOR_STARTER_AGENDA_ITEMS.every(
       (item) => nextProgress[item.id],
     );
-    if (!agendaComplete) return [promptedItem.id];
+    if (!agendaComplete) return [currentItem.id];
 
-    if (
-      !tutorLessonCompletionTriggeredRef.current &&
-      (shouldCompleteTutorStarterOnAgenda(lesson) ||
-        (tutorLessonEarnedXpRef.current || 0) >= (lesson.xpReward || 0))
-    ) {
-      void completeTutorLessonFromXp(lesson, unit, xpRef.current);
+    if ((tutorLessonEarnedXpRef.current || 0) >= (lesson.xpReward || 0)) {
+      void completeTutorLessonFromXp(lesson, unit);
     }
-    return [promptedItem.id];
-  }
-
-  function trackTutorLessonFocusAgendaProgress(userMessage) {
-    const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
-    if (!isTutorFocusAgendaLesson(lesson, unit)) return [];
-
-    const hasSpeech = !!String(userMessage || "").trim();
-    if (!hasSpeech) return [];
-
-    const currentItem = getNextTutorLessonFocusAgendaItem(
-      lesson,
-      tutorLessonAgendaProgressRef.current,
-    );
-    const promptedItem =
-      getTutorLessonFocusAgendaItems(lesson).find(
-        (item) =>
-          item.id === tutorPromptedLessonAgendaItemIdRef.current &&
-          !tutorLessonAgendaProgressRef.current[item.id],
-      ) || currentItem;
-    if (!promptedItem) return [];
-    if (
-      !doesTutorAgendaTextMatchFocusItem(
-        userMessage,
-        promptedItem,
-        targetLangRef.current,
-      )
-    ) {
-      return [];
-    }
-
-    const nextProgress = {
-      ...tutorLessonAgendaProgressRef.current,
-      [promptedItem.id]: true,
-    };
-    tutorLessonAgendaProgressRef.current = nextProgress;
-    setTutorLessonAgendaProgress(nextProgress);
-    persistTutorAgendaProgress(lesson, nextProgress);
-
-    if (
-      isTutorLessonFocusAgendaComplete(lesson, nextProgress) &&
-      !tutorLessonCompletionTriggeredRef.current &&
-      (tutorLessonEarnedXpRef.current || 0) >= (lesson.xpReward || 0)
-    ) {
-      void completeTutorLessonFromXp(lesson, unit, xpRef.current);
-    }
-
-    return [promptedItem.id];
+    return [currentItem.id];
   }
 
   function closeTutorLessonCompleteModal() {
     setShowTutorLessonComplete(false);
     setCompletedTutorLessonData(null);
-    if (completedTutorAgendaData) {
-      setShowTutorCompletedAgenda(true);
-      return;
-    }
-    if (pendingFirstLessonCompletionFlowRef.current) {
-      pendingFirstLessonCompletionFlowRef.current = false;
-      onFirstLessonComplete?.();
-    }
-  }
-
-  function closeTutorCompletedAgendaModal() {
-    setShowTutorCompletedAgenda(false);
-    setCompletedTutorAgendaData(null);
-    if (pendingFirstLessonCompletionFlowRef.current) {
-      pendingFirstLessonCompletionFlowRef.current = false;
-      onFirstLessonComplete?.();
-    }
   }
 
   /* ---------------------------
      Award XP per turn (1-3 XP)
   --------------------------- */
-  function maybeTriggerAdvancedPlacementOnboardingFlow() {
-    if (!onFirstLessonComplete) return;
-    if (advancedPlacementOnboardingTriggeredRef.current) return;
-    if (!hasA1PlusTutorPlacement) return;
-
-    const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
-    if (!lesson || shouldCompleteTutorStarterOnAgenda(lesson)) return;
-
-    const lessonLevel = unit?.cefrLevel || activeTutorLevel;
-    if (getTutorLevelIndex(lessonLevel) < getTutorLevelIndex("A1")) return;
-
-    advancedPlacementOnboardingTurnsRef.current += 1;
-    if (advancedPlacementOnboardingTurnsRef.current < 3) return;
-
-    advancedPlacementOnboardingTriggeredRef.current = true;
-    pendingAdvancedPlacementOnboardingFlowRef.current = true;
-  }
-
   async function awardTurnXp(userMessage = "", aiResponse = "") {
     const npub = currentNpub;
     if (!npub) return;
@@ -6086,10 +4373,8 @@ export default function Tutor({
     // Award 1-3 XP randomly per turn
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
-    const nextTotalXp = xpRef.current + xpGain;
-    xpRef.current = nextTotalXp;
-    setXp(nextTotalXp);
-    trackTutorLessonXp(xpGain, nextTotalXp);
+    setXp((v) => v + xpGain);
+    trackTutorLessonXp(xpGain);
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -6101,7 +4386,6 @@ export default function Tutor({
      Realtime event handler
   --------------------------- */
   async function handleRealtimeEvent(evt) {
-    if (!aliveRef.current) return;
     let data;
     try {
       data = JSON.parse(evt.data);
@@ -6113,11 +4397,26 @@ export default function Tutor({
 
     if (t === "session.updated") {
       tutorSessionReadyRef.current = true;
-      flushPendingTutorResponses();
+      if (aliveRef.current && !tutorKickoffSentRef.current) {
+        scheduleTutorLessonKickoff(80);
+      }
       return;
     }
 
+    if (!aliveRef.current) return;
+
     if (t === "conversation.item.created" && data?.item) {
+      if (data.item?.role === "system") {
+        const text = extractRealtimeItemText(data.item);
+        if (
+          text &&
+          pendingGuardrailTextRef.current &&
+          text === pendingGuardrailTextRef.current
+        ) {
+          guardrailItemIdsRef.current.push(data.item.id);
+          pendingGuardrailTextRef.current = "";
+        }
+      }
       return;
     }
 
@@ -6178,7 +4477,10 @@ export default function Tutor({
       // Record when this response started (user spoke before this)
       responseStartTimeRef.current = Date.now();
       assistantSpeakingRef.current = true;
-      setAssistantInputLocked(true, { clearBuffer: false, updateSession: false });
+      setAssistantInputLocked(true, {
+        clearBuffer: false,
+        updateSession: false,
+      });
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -6198,52 +4500,57 @@ export default function Tutor({
 
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
-        t === "input_audio_transcription.completed")
+        t === "input_audio_transcription.completed") &&
+      data?.transcript
     ) {
       pendingUserAudioCommitRef.current = false;
       const text = (data.transcript || "").trim();
       if (assistantSpeakingRef.current) {
         return;
       }
-      if (!text) {
-        releaseTutorPendingTurn();
-        return;
+      if (text) {
+        const now = Date.now();
+        if (
+          text === lastTranscriptRef.current.text &&
+          now - lastTranscriptRef.current.ts < 2000
+        ) {
+          return;
+        }
+        lastTranscriptRef.current = { text, ts: now };
+        // Use timestamp BEFORE the AI response started so user message appears first
+        const userTs = responseStartTimeRef.current
+          ? responseStartTimeRef.current - 1
+          : now;
+        pushMessage({
+          id: uid(),
+          role: "user",
+          lang: "en",
+          textFinal: text,
+          textStream: "",
+          translation: "",
+          translationLang: "",
+          pairs: [],
+          done: true,
+          ts: userTs,
+        });
+        turnCountRef.current += 1;
+        const acceptedItemIds = trackTutorStarterAgendaProgress(text);
+        requestTutorTurnFollowup(text, acceptedItemIds);
+        const currentLesson = selectedTutorLessonRef.current;
+        const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
+        const starterReviewMatched =
+          isStarterLesson &&
+          isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current) &&
+          getTutorStarterAgendaMatches(text, targetLangRef.current).length > 0;
+        const canAwardXpForTurn =
+          !isStarterLesson ||
+          acceptedItemIds.length > 0 ||
+          starterReviewMatched;
+        // Award XP after the tutor reply is requested so progress state cannot suppress the response.
+        if (canAwardXpForTurn) {
+          awardTurnXp(text, "");
+        }
       }
-      const now = Date.now();
-      lastTranscriptRef.current = { text, ts: now };
-      // Use timestamp BEFORE the AI response started so user message appears first
-      const userTs = responseStartTimeRef.current
-        ? responseStartTimeRef.current - 1
-        : now;
-      pushMessage({
-        id: uid(),
-        role: "user",
-        lang: "en",
-        textFinal: text,
-        textStream: "",
-        translation: "",
-        translationLang: "",
-        pairs: [],
-        done: true,
-        ts: userTs,
-      });
-      turnCountRef.current += 1;
-      maybeTriggerAdvancedPlacementOnboardingFlow();
-      const completionWasAlreadyTriggered =
-        tutorLessonCompletionTriggeredRef.current;
-      const acceptedItemIds = trackTutorStarterAgendaProgress(text);
-      const acceptedLessonItemIds = acceptedItemIds.length
-        ? []
-        : trackTutorLessonFocusAgendaProgress(text);
-      const lessonCompletedFromThisTurn =
-        !completionWasAlreadyTriggered &&
-        tutorLessonCompletionTriggeredRef.current;
-      if (lessonCompletedFromThisTurn) {
-        return;
-      }
-      requestTutorTurnFollowup(text, acceptedItemIds, acceptedLessonItemIds);
-      // Award XP after the tutor reply is requested so progress state cannot suppress the response.
-      awardTurnXp(text, "");
       return;
     }
 
@@ -6512,96 +4819,6 @@ export default function Tutor({
     selectedTutorUnit,
     uiLang,
   );
-  const lessonCompletionRing = useMemo(() => {
-    const lesson = selectedTutorLesson;
-    if (!lesson) {
-      return {
-        percent: 0,
-        isComplete: false,
-        label: tutorCopy(uiLang, {
-          en: "Lesson progress",
-          es: "Progreso de la leccion",
-          pt: "Progresso da licao",
-          it: "Progresso della lezione",
-          fr: "Progression de la lecon",
-          ja: "レッスンの進捗",
-          hi: "पाठ प्रगति",
-          ar: "تقدّم الدرس",
-          zh: "课程进度",
-        }),
-      };
-    }
-
-    const status = tutorUserProgress.lessons?.[lesson.id]?.status;
-    if (status === SKILL_STATUS.COMPLETED) {
-      return {
-        percent: 100,
-        isComplete: true,
-        label: tutorCopy(uiLang, {
-          en: "Lesson complete",
-          es: "Leccion completada",
-          pt: "Licao completa",
-          it: "Lezione completata",
-          fr: "Lecon terminee",
-          ja: "レッスン完了",
-          hi: "पाठ पूरा हुआ",
-          ar: "الدرس اكتمل",
-          zh: "课程完成",
-        }),
-      };
-    }
-
-    if (shouldCompleteTutorStarterOnAgenda(lesson)) {
-      const total = TUTOR_STARTER_AGENDA_ITEMS.length;
-      const completed = TUTOR_STARTER_AGENDA_ITEMS.filter(
-        (item) => tutorStarterAgendaProgress[item.id],
-      ).length;
-      const percent = Math.round((completed / Math.max(1, total)) * 100);
-      return {
-        percent,
-        isComplete: percent >= 100,
-        label: `${completed}/${total} ${tutorCopy(uiLang, {
-          en: "steps",
-          es: "pasos",
-          pt: "passos",
-          it: "passi",
-          fr: "etapes",
-          ja: "ステップ",
-          hi: "कदम",
-          ar: "خطوات",
-          zh: "步",
-        })}`,
-      };
-    }
-
-    const required = Math.max(0, lesson.xpReward || 0);
-    const earned = Math.min(required, Math.max(0, tutorLessonEarnedXp || 0));
-    const percent = required > 0 ? Math.round((earned / required) * 100) : 100;
-    return {
-      percent,
-      isComplete: percent >= 100,
-      label:
-        required > 0
-          ? `${earned}/${required} XP`
-          : tutorCopy(uiLang, {
-              en: "Lesson complete",
-              es: "Leccion completada",
-              pt: "Licao completa",
-              it: "Lezione completata",
-              fr: "Lecon terminee",
-              ja: "レッスン完了",
-              hi: "पाठ पूरा हुआ",
-              ar: "الدرس اكتمل",
-              zh: "课程完成",
-            }),
-    };
-  }, [
-    selectedTutorLesson,
-    tutorLessonEarnedXp,
-    tutorStarterAgendaProgress,
-    tutorUserProgress.lessons,
-    uiLang,
-  ]);
   const isLessonAgendaLoading =
     isTutorPathLoading || (isTutorAgendaHydrating && !selectedTutorLesson);
   const showGentleInlineFeedback =
@@ -6644,37 +4861,29 @@ export default function Tutor({
                   fontWeight="medium"
                 >
                   {tutorCopy(uiLang, {
-                    en: "Lessons Progress",
-                    es: "Progreso de lecciones",
-                    pt: "Progresso das licoes",
-                    it: "Progresso delle lezioni",
-                    fr: "Progression des lecons",
-                    ja: "レッスンの進捗",
-                    hi: "पाठ प्रगति",
-                    ar: "تقدّم الدروس",
-                    zh: "课程进度",
+                    en: "Progress",
+                    es: "Progreso",
+                    pt: "Progresso",
+                    it: "Progresso",
+                    fr: "Progression",
+                    ja: "進捗",
+                    hi: "प्रगति",
+                    ar: "التقدّم",
+                    zh: "进度",
                   })}
                 </Button>
-                <HStack spacing={2} align="center">
-                  <TutorLessonProgressRing
-                    percent={lessonCompletionRing.percent}
-                    label={lessonCompletionRing.label}
-                    isComplete={lessonCompletionRing.isComplete}
-                    isLightTheme={isLightTheme}
-                  />
-                  <IconButton
-                    ref={chatLogButtonRef}
-                    icon={<FaRegCommentDots size={14} />}
-                    size="xs"
-                    variant="ghost"
-                    colorScheme="cyan"
-                    {...chatLogButtonHighlightProps}
-                    onClick={openTranscript}
-                    _hover={{ opacity: 1 }}
-                    isDisabled={!timeline.length}
-                    aria-label={uiText("ra_chat_log", "Chat log")}
-                  />
-                </HStack>
+                <IconButton
+                  ref={chatLogButtonRef}
+                  icon={<FaRegCommentDots size={14} />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="cyan"
+                  {...chatLogButtonHighlightProps}
+                  onClick={openTranscript}
+                  _hover={{ opacity: 1 }}
+                  isDisabled={!timeline.length}
+                  aria-label={uiText("ra_chat_log", "Chat log")}
+                />
               </HStack>
 
               {/* Lesson agenda */}
@@ -6791,6 +5000,9 @@ export default function Tutor({
               <Box
                 w="100%"
                 minH={{ base: "150px", md: "165px" }}
+                display="flex"
+                alignItems="stretch"
+                justifyContent="flex-start"
                 position="relative"
               >
                 <Box w="100%" position="relative" zIndex={1}>
@@ -6849,12 +5061,6 @@ export default function Tutor({
                     feedbackLang={resolvedSupportLang}
                   />
                 </Box>
-                {/*
-                <TutorMessageSprite
-                  spriteIndex={tutorSpriteIndex}
-                  isLightTheme={isLightTheme}
-                />
-                */}
               </Box>
             ) : null}
           </VStack>
@@ -6898,7 +5104,7 @@ export default function Tutor({
                     ? {
                         bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
                       }
-                  : undefined
+                    : undefined
               }
               color={
                 status === "connected"
@@ -7190,15 +5396,15 @@ export default function Tutor({
                     opacity={0.8}
                   >
                     {tutorCopy(uiLang, {
-                      en: "XP Earned",
-                      es: "XP ganado",
-                      pt: "XP ganho",
-                      it: "XP guadagnati",
-                      fr: "XP gagne",
-                      ja: "獲得XP",
-                      hi: "अर्जित XP",
-                      ar: "XP مكتسب",
-                      zh: "获得 XP",
+                      en: "XP Practiced",
+                      es: "XP practicado",
+                      pt: "XP praticado",
+                      it: "XP praticati",
+                      fr: "XP pratique",
+                      ja: "練習XP",
+                      hi: "अभ्यास XP",
+                      ar: "XP اتدرّب",
+                      zh: "练习 XP",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -7209,189 +5415,14 @@ export default function Tutor({
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <VStack spacing={3} width="100%">
-              <Button
-                size="lg"
-                width="100%"
-                bg="white"
-                color="purple.600"
-                _hover={{ bg: "rgba(255,255,255,0.92)" }}
-                onClick={closeTutorLessonCompleteModal}
-                fontWeight="bold"
-              >
-                {tutorCopy(uiLang, {
-                  en: "Continue",
-                  es: "Continuar",
-                  pt: "Continuar",
-                  it: "Continua",
-                  fr: "Continuer",
-                  ja: "続ける",
-                  hi: "जारी रखें",
-                  ar: "كمّل",
-                  zh: "继续",
-                })}
-              </Button>
-            </VStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      <Modal
-        isOpen={showTutorCompletedAgenda}
-        onClose={closeTutorCompletedAgendaModal}
-        isCentered
-        size="xl"
-        motionPreset="none"
-      >
-        <ModalOverlay
-          motionProps={nativeOverlayMotionProps}
-          bg="blackAlpha.700"
-          backdropFilter="blur(5px)"
-        />
-        <ModalContent
-          motionProps={nativeModalMotionProps}
-          mx={3}
-          my={{ base: 6, md: 10 }}
-          maxH={{ base: "calc(100dvh - 48px)", md: "calc(100dvh - 80px)" }}
-          overflow="hidden"
-          borderRadius="2xl"
-          border="1px solid"
-          borderColor={isLightTheme ? "rgba(120,94,61,0.18)" : "whiteAlpha.200"}
-          bg={
-            isLightTheme
-              ? "linear-gradient(180deg, rgba(255,251,245,0.98) 0%, rgba(248,239,226,0.98) 100%)"
-              : "linear-gradient(180deg, rgba(12,18,32,0.98) 0%, rgba(4,8,18,0.98) 100%)"
-          }
-          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
-          boxShadow={
-            isLightTheme
-              ? "0 24px 60px rgba(120,94,61,0.22)"
-              : "0 24px 70px rgba(0,0,0,0.45), 0 0 40px rgba(45,212,191,0.12)"
-          }
-        >
-          <ModalHeader px={{ base: 5, md: 8 }} pt={7} pb={2}>
-            <HStack justify="space-between" align="flex-start" gap={4}>
-              <VStack align="flex-start" spacing={2}>
-                <Heading size="lg" lineHeight="1.1">
-                  {tutorCopy(uiLang, {
-                    en: "Lesson Review",
-                    es: "Repaso de la leccion",
-                    pt: "Revisao da licao",
-                    it: "Ripasso della lezione",
-                    fr: "Revision de la lecon",
-                    de: "Lektionsrueckblick",
-                    ja: "レッスン復習",
-                    hi: "पाठ समीक्षा",
-                    ar: "مراجعة الدرس",
-                    zh: "课程回顾",
-                  })}
-                </Heading>
-                <Text
-                  fontSize="md"
-                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
-                  fontWeight="600"
-                >
-                  {completedTutorAgendaData?.title}
-                </Text>
-              </VStack>
-            </HStack>
-          </ModalHeader>
-          <ModalBody px={{ base: 5, md: 8 }} py={5} overflowY="auto">
-            <Box
-              p={{ base: 4, md: 5 }}
-              rounded="2xl"
-              bg={
-                isLightTheme
-                  ? "rgba(255,255,255,0.62)"
-                  : "rgba(15,23,42,0.68)"
-              }
-              border="1px solid"
-              borderColor={isLightTheme ? "rgba(120,94,61,0.14)" : "whiteAlpha.100"}
-            >
-              <VStack spacing={3} align="stretch">
-                {(completedTutorAgendaData?.items || []).map((agendaItem) => (
-                  <HStack
-                    key={agendaItem.id}
-                    align="flex-start"
-                    spacing={3}
-                    py={2}
-                    px={1}
-                    rounded="xl"
-                  >
-                    <Center
-                      flexShrink={0}
-                      w="22px"
-                      h="22px"
-                      rounded="full"
-                      bg={
-                        agendaItem.completed
-                          ? isLightTheme
-                            ? "teal.500"
-                            : "teal.400"
-                          : isLightTheme
-                          ? "gray.100"
-                          : "whiteAlpha.200"
-                      }
-                      color={
-                        agendaItem.completed
-                          ? "white"
-                          : isLightTheme
-                          ? "gray.500"
-                          : "gray.300"
-                      }
-                    >
-                      <RiCheckLine size={14} />
-                    </Center>
-                    <VStack align="stretch" spacing={1} flex={1} minW={0}>
-                      <Text
-                        fontSize="xs"
-                        color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-                        fontWeight="700"
-                        textTransform="capitalize"
-                      >
-                        {agendaItem.task}
-                      </Text>
-                      <Text
-                        fontSize={{ base: "md", md: "lg" }}
-                        fontWeight="900"
-                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                        {...getBidiTextProps(
-                          agendaItem.phrase,
-                          completedTutorAgendaData?.targetLang || targetLang,
-                        )}
-                      >
-                        {agendaItem.phrase}
-                      </Text>
-                      {agendaItem.meaning && agendaItem.meaning !== agendaItem.phrase && (
-                        <Text
-                          fontSize="xs"
-                          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
-                        >
-                          {agendaItem.meaning}
-                        </Text>
-                      )}
-                    </VStack>
-                  </HStack>
-                ))}
-              </VStack>
-            </Box>
-          </ModalBody>
-          <ModalFooter px={{ base: 5, md: 8 }} pb={7} pt={2}>
             <Button
-              width="100%"
               size="lg"
-              rounded="xl"
-              bg="teal.500"
-              color="white"
-              fontWeight="900"
-              boxShadow="0px 4px 0px teal"
-              _hover={{
-                bg: "teal.400",
-                transform: "translateY(1px)",
-                boxShadow: "0px 3px 0px teal",
-              }}
-              _active={{ transform: "translateY(4px)", boxShadow: "none" }}
-              onClick={closeTutorCompletedAgendaModal}
+              width="100%"
+              bg="white"
+              color="purple.600"
+              _hover={{ bg: "rgba(255,255,255,0.92)" }}
+              onClick={closeTutorLessonCompleteModal}
+              fontWeight="bold"
             >
               {tutorCopy(uiLang, {
                 en: "Continue",

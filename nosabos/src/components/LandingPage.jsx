@@ -23,9 +23,9 @@ import {
   FaVolumeUp,
   FaGamepad,
   FaMicrophone,
-  FaMoon,
-  FaSun,
 } from "react-icons/fa";
+import { LuSun } from "react-icons/lu";
+import { RiMoonClearFill } from "react-icons/ri";
 
 import {
   Menu,
@@ -1055,7 +1055,13 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       aria-label={label}
       title={label}
       onClick={() => onModeChange(nextMode)}
-      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
+      icon={
+        isDark ? (
+          <RiMoonClearFill size={18} color="#fffaf0" />
+        ) : (
+          <LuSun size={18} strokeWidth={2.35} />
+        )
+      }
       size="sm"
       minW="40px"
       h="40px"
@@ -1064,19 +1070,31 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       top="18px"
       right="20px"
       zIndex={120}
-      bg={isLightTheme ? "transparent" : "var(--app-surface-elevated)"}
-      color={isLightTheme ? "#33291f" : "var(--app-text-primary)"}
+      bg={
+        isLightTheme
+          ? "linear-gradient(135deg, #fff7d6 0%, #fed7aa 100%)"
+          : "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%)"
+      }
+      color={isLightTheme ? "#b45309" : "#bfdbfe"}
       border="1px solid"
       borderColor={
-        isLightTheme ? "rgba(77, 58, 36, 0.34)" : "var(--app-border)"
+        isLightTheme ? "rgba(245, 158, 11, 0.36)" : "rgba(147, 197, 253, 0.32)"
       }
-      boxShadow={isLightTheme ? "none" : "var(--app-shadow-soft)"}
+      boxShadow={
+        isLightTheme
+          ? "0 10px 22px rgba(245, 158, 11, 0.18)"
+          : "0 12px 28px rgba(15, 23, 42, 0.32)"
+      }
       backdropFilter="blur(20px)"
       _hover={{
-        bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "var(--app-surface-muted)",
+        bg: isLightTheme
+          ? "linear-gradient(135deg, #ffedb5 0%, #fdba74 100%)"
+          : "linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.94) 100%)",
       }}
       _active={{
-        bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "var(--app-surface-muted)",
+        bg: isLightTheme
+          ? "linear-gradient(135deg, #fde68a 0%, #fb923c 100%)"
+          : "linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 0.98) 100%)",
       }}
     />
   );
