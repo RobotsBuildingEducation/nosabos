@@ -3085,7 +3085,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 400 && !subscriptionVerified,
+    () => subscriptionXp >= 250 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -4260,8 +4260,6 @@ export default function App({ onBootReady } = {}) {
     let cancelled = false;
     let timeoutId = null;
     let rafId = null;
-    let attempts = 0;
-
     const tryOpen = () => {
       if (cancelled) return;
 
@@ -4274,13 +4272,12 @@ export default function App({ onBootReady } = {}) {
       const modalStackStillClosing =
         activeModalContainers > 0 || activeModalOverlays > 0;
 
-      if (!modalStackStillClosing || attempts >= 12) {
+      if (!modalStackStillClosing) {
         setShowTutorialBitcoinModal(true);
         setPendingTutorialBitcoinModal(false);
         return;
       }
 
-      attempts += 1;
       timeoutId = window.setTimeout(tryOpen, 60);
     };
 
@@ -4334,8 +4331,6 @@ export default function App({ onBootReady } = {}) {
     let cancelled = false;
     let timeoutId = null;
     let rafId = null;
-    let attempts = 0;
-
     const tryOpen = () => {
       if (cancelled) return;
 
@@ -4348,13 +4343,12 @@ export default function App({ onBootReady } = {}) {
       const modalStackStillClosing =
         activeModalContainers > 0 || activeModalOverlays > 0;
 
-      if (!modalStackStillClosing || attempts >= 12) {
+      if (!modalStackStillClosing) {
         setGettingStartedOpen(true);
         setPendingInstallModalAfterTutorial(false);
         return;
       }
 
-      attempts += 1;
       timeoutId = window.setTimeout(tryOpen, 60);
     };
 

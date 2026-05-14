@@ -2592,11 +2592,14 @@ export default function SkillTree({
   // Calculate max unlocked proficiency level for conversations
   // Uses the highest unlocked level between skill tree and flashcards
   const maxProficiencyLevel = useMemo(() => {
-    const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-    const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
-    const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
+    const levelsOrder = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+    const lessonIndex = Math.max(0, levelsOrder.indexOf(currentLessonLevel));
+    const flashcardIndex = Math.max(
+      0,
+      levelsOrder.indexOf(currentFlashcardLevel),
+    );
     const maxIndex = Math.max(lessonIndex, flashcardIndex);
-    return levelsOrder[maxIndex] || "A1";
+    return levelsOrder[maxIndex] || "Pre-A1";
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";

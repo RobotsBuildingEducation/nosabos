@@ -65,9 +65,9 @@ import {
 import { getBidiTextProps, mergeBidiSx } from "../utils/bidiText";
 import { awardXp } from "../utils/utils";
 import {
-  completeLesson,
+  completeTutorLesson,
   getLanguageXp,
-  startLesson,
+  startTutorLesson,
 } from "../utils/progressTracking";
 import {
   SOFT_STOP_BUTTON_BG,
@@ -172,6 +172,15 @@ const PAPER_PANEL_SX = {
     mixBlendMode: "multiply",
     pointerEvents: "none",
   },
+  "& > *": {
+    position: "relative",
+    zIndex: 1,
+  },
+};
+const TUTOR_MESSAGE_PANEL_SX = {
+  position: "relative",
+  overflow: "hidden",
+  backgroundColor: "rgba(241, 228, 211, 0.98)",
   "& > *": {
     position: "relative",
     zIndex: 1,
@@ -532,17 +541,17 @@ function extractRealtimeItemText(item) {
 
 function getTutorStarterAgendaTitleText() {
   return {
-    en: "Learn basic introductions",
-    es: "Aprende introducciones básicas",
-    pt: "Aprenda apresentacoes basicas",
-    it: "Impara le presentazioni di base",
-    fr: "Apprends les presentations de base",
-    de: "Lerne einfache Vorstellungen",
-    ja: "基本的な自己紹介を学ぶ",
-    hi: "बुनियादी परिचय सीखें",
-    ar: "اتعلّم التعارف الأساسي",
-    zh: "学习基本介绍",
-    nl: "Leer eenvoudige kennismakingen",
+    en: "Tutorial - Basic Introductions",
+    es: "Tutorial - Introducciones básicas",
+    pt: "Tutorial - Apresentações básicas",
+    it: "Tutorial - Presentazioni di base",
+    fr: "Tutoriel - Présentations de base",
+    de: "Tutorial - Einfache Vorstellungen",
+    ja: "チュートリアル - 基本的な自己紹介",
+    hi: "ट्यूटोरियल - बुनियादी परिचय",
+    ar: "الشرح - التعارف الأساسي",
+    zh: "教程 - 基本介绍",
+    nl: "Tutorial - Eenvoudige kennismakingen",
   };
 }
 
@@ -697,9 +706,140 @@ function getTutorLessonAgendaSubtitle(lesson, unit, lang = "en") {
   );
 }
 
+function getTutorLessonFocusAgendaItems(lesson) {
+  const content = lesson?.content || {};
+  const focusPoints = [];
+  Object.values(content).forEach((block) => {
+    if (!block || typeof block !== "object") return;
+    if (!Array.isArray(block.focusPoints)) return;
+    block.focusPoints.forEach((point) => {
+      const phrase = String(point || "").trim();
+      if (!phrase) return;
+      focusPoints.push(phrase);
+    });
+  });
+
+  return compactUnique(focusPoints).map((phrase, index) => ({
+    id: `focus-${index}-${normalizeTutorAgendaSpeech(phrase).slice(0, 24)}`,
+    phrase,
+    label: phrase,
+  }));
+}
+
+function buildTutorCompletedAgendaData({
+  lesson,
+  unit,
+  targetLang = "es",
+  supportLang = "en",
+  starterProgress = {},
+  xpEarned = 0,
+  forceComplete = false,
+} = {}) {
+  const normalizedSupport = normalizeSupportLanguage(
+    supportLang,
+    DEFAULT_SUPPORT_LANGUAGE,
+  );
+  const isStarter = isTutorStarterAgendaLesson(lesson);
+  const items = isStarter
+    ? TUTOR_STARTER_AGENDA_ITEMS.map((item) => ({
+        id: item.id,
+        task: getTutorStarterItemSupportTask(item, normalizedSupport),
+        phrase: getTutorStarterItemModelPhrase(item, targetLang),
+        meaning: getTutorStarterItemSupportMeaning(item, normalizedSupport),
+        completed: forceComplete || !!starterProgress?.[item.id],
+      }))
+    : getTutorLessonFocusAgendaItems(lesson).map((item) => ({
+        id: item.id,
+        task: getTutorLessonAgendaTitle(lesson, unit, normalizedSupport),
+        phrase: item.phrase || item.label,
+        meaning: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
+        completed: forceComplete,
+      }));
+
+  const fallbackTitle = getTutorLessonAgendaTitle(
+    lesson,
+    unit,
+    normalizedSupport,
+  );
+  const normalizedItems = items.length
+    ? items
+    : [
+        {
+          id: "lesson-focus",
+          task: tutorCopy(normalizedSupport, {
+            en: "completed the lesson focus",
+            es: "completaste el enfoque de la leccion",
+            pt: "concluiu o foco da licao",
+            it: "hai completato il focus della lezione",
+            fr: "tu as termine l'objectif de la lecon",
+            de: "du hast den Lektionsfokus abgeschlossen",
+            ja: "レッスンの目標を完了しました",
+            hi: "आपने पाठ का लक्ष्य पूरा किया",
+            ar: "كملت هدف الدرس",
+            zh: "完成了课程重点",
+          }),
+          phrase: fallbackTitle,
+          meaning: getTutorLessonAgendaSubtitle(
+            lesson,
+            unit,
+            normalizedSupport,
+          ),
+          completed: true,
+        },
+      ];
+
+  const completedCount = normalizedItems.filter((item) => item.completed).length;
+  const level = unit?.cefrLevel || unit?.level || "Pre-A1";
+
+  return {
+    title: fallbackTitle,
+    subtitle: getTutorLessonAgendaSubtitle(lesson, unit, normalizedSupport),
+    unitTitle: getTutorDisplayText(unit?.title, normalizedSupport),
+    level,
+    levelLabel: TUTOR_LEVEL_INFO[level]?.label || level,
+    xpEarned,
+    targetLang,
+    supportLang: normalizedSupport,
+    items: normalizedItems,
+    completedCount,
+    totalCount: normalizedItems.length,
+  };
+}
+
 function getTutorLevelIndex(level) {
   const index = TUTOR_CEFR_LEVELS.indexOf(level);
   return index >= 0 ? index : TUTOR_CEFR_LEVELS.indexOf("A1");
+}
+
+function isTutorTestUnlockActive() {
+  const testNsec =
+    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
+  return (
+    testNsec ===
+    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv"
+  );
+}
+
+function getUnlockedTutorLevel(maxProficiencyLevel) {
+  return TUTOR_CEFR_LEVELS.includes(maxProficiencyLevel)
+    ? maxProficiencyLevel
+    : "Pre-A1";
+}
+
+function clampTutorLevelToUnlocked(level, maxProficiencyLevel) {
+  if (isTutorTestUnlockActive()) {
+    return TUTOR_CEFR_LEVELS.includes(level)
+      ? level
+      : getUnlockedTutorLevel(maxProficiencyLevel);
+  }
+
+  const unlockedLevel = getUnlockedTutorLevel(maxProficiencyLevel);
+  const levelToCheck = TUTOR_CEFR_LEVELS.includes(level)
+    ? level
+    : unlockedLevel;
+  return getTutorLevelIndex(levelToCheck) <= getTutorLevelIndex(unlockedLevel)
+    ? levelToCheck
+    : unlockedLevel;
 }
 
 function getTutorStorageLang(targetLang) {
@@ -786,6 +926,26 @@ function isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex) {
   );
 }
 
+function isTutorLessonUnlockedById(units, progressLessons, lessonId) {
+  for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
+    const unit = units[unitIndex];
+    for (
+      let lessonIndex = 0;
+      lessonIndex < (unit?.lessons?.length || 0);
+      lessonIndex += 1
+    ) {
+      if (unit.lessons[lessonIndex]?.id !== lessonId) continue;
+      return isTutorLessonUnlocked(
+        units,
+        progressLessons,
+        unitIndex,
+        lessonIndex,
+      );
+    }
+  }
+  return false;
+}
+
 function findLatestTutorUnlockedLesson(units, progressLessons) {
   for (let unitIndex = 0; unitIndex < (units || []).length; unitIndex += 1) {
     const unit = units[unitIndex];
@@ -804,6 +964,32 @@ function findLatestTutorUnlockedLesson(units, progressLessons) {
         isTutorLessonUnlocked(units, progressLessons, unitIndex, lessonIndex)
       ) {
         return { lesson, unit, status: SKILL_STATUS.AVAILABLE };
+      }
+    }
+  }
+  return null;
+}
+
+function findNextTutorLessonAfter(units, lessonId, progressLessons = {}) {
+  let foundCurrent = false;
+  for (const unit of units || []) {
+    for (const lesson of unit?.lessons || []) {
+      if (foundCurrent) {
+        const progress = progressLessons?.[lesson.id];
+        if (progress?.status !== SKILL_STATUS.COMPLETED) {
+          return {
+            lesson,
+            unit,
+            status:
+              progress?.status === SKILL_STATUS.IN_PROGRESS
+                ? SKILL_STATUS.IN_PROGRESS
+                : SKILL_STATUS.AVAILABLE,
+          };
+        }
+      }
+
+      if (lesson.id === lessonId) {
+        foundCurrent = true;
       }
     }
   }
@@ -1042,6 +1228,50 @@ function hexToRgba(hex, alpha = 1) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function hexToRgb(hex) {
+  if (!hex) return null;
+  let clean = String(hex).replace("#", "");
+  if (clean.length === 3) {
+    clean = clean
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+  if (clean.length !== 6) return null;
+
+  const int = Number.parseInt(clean, 16);
+  if (Number.isNaN(int)) return null;
+
+  return {
+    r: (int >> 16) & 255,
+    g: (int >> 8) & 255,
+    b: int & 255,
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  const toHex = (channel) =>
+    Math.max(0, Math.min(255, Math.round(channel)))
+      .toString(16)
+      .padStart(2, "0");
+
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+function mixHexColors(baseHex, mixHex, amount = 0.5) {
+  const base = hexToRgb(baseHex);
+  const mix = hexToRgb(mixHex);
+  if (!base || !mix) return baseHex;
+
+  const weight = Math.max(0, Math.min(1, amount));
+
+  return rgbToHex({
+    r: base.r + (mix.r - base.r) * weight,
+    g: base.g + (mix.g - base.g) * weight,
+    b: base.b + (mix.b - base.b) * weight,
+  });
+}
+
 function splitByDelimiters(text) {
   if (!text) return [];
   const raw = String(text)
@@ -1205,15 +1435,21 @@ function AlignedBubble({
   return (
     <Box
       ref={containerRef}
-      bg={isLightTheme ? APP_SURFACE_ELEVATED : "transparent"}
+      bg={isLightTheme ? "rgba(241, 228, 211, 0.98)" : "transparent"}
       p={3}
       rounded="2xl"
       border="1px solid"
-      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.06)"}
-      boxShadow={isLightTheme ? APP_SHADOW : "0 14px 28px rgba(0,0,0,0.35)"}
+      borderColor={
+        isLightTheme ? "rgba(142, 113, 79, 0.26)" : "rgba(255,255,255,0.06)"
+      }
+      boxShadow={
+        isLightTheme
+          ? "0 18px 38px rgba(120, 94, 61, 0.13), 0 1px 0 rgba(255,255,255,0.72) inset"
+          : "0 14px 28px rgba(0,0,0,0.35)"
+      }
       maxW="100%"
       borderBottomLeftRadius="0px"
-      sx={isLightTheme ? PAPER_PANEL_SX : MATRIX_PANEL_SX}
+      sx={isLightTheme ? TUTOR_MESSAGE_PANEL_SX : MATRIX_PANEL_SX}
       color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.950"}
     >
       <Box
@@ -1784,11 +2020,7 @@ function TutorPathLevelHeader({
   const previousLevel = TUTOR_CEFR_LEVELS[activeIndex - 1];
   const nextLevel = TUTOR_CEFR_LEVELS[activeIndex + 1];
   const levelInfo = TUTOR_LEVEL_INFO[activeLevel] || TUTOR_LEVEL_INFO.A1;
-  const testNsec =
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-  const isTestUnlocked =
-    testNsec ===
-    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+  const isTestUnlocked = isTutorTestUnlockActive();
   const nextIndex = nextLevel ? getTutorLevelIndex(nextLevel) : -1;
   const isNextUnlocked =
     isTestUnlocked ||
@@ -1912,11 +2144,72 @@ function TutorPathLevelHeader({
   );
 }
 
+function TutorLessonProgressRing({
+  percent = 0,
+  label = "",
+  isComplete = false,
+  isLightTheme = false,
+}) {
+  const safePercent = Math.max(0, Math.min(100, Math.round(percent || 0)));
+  const progressColor = isComplete ? "#34D399" : "#5EEAD4";
+  const trackColor = isLightTheme
+    ? "rgba(31,41,55,0.14)"
+    : "rgba(255,255,255,0.18)";
+  const innerBg = isLightTheme ? "rgba(255,255,255,0.92)" : "rgba(5,10,22,0.9)";
+  const iconColor = isLightTheme ? "#166534" : "#D1FAE5";
+
+  return (
+    <Box
+      role="progressbar"
+      aria-label={label || "Lesson progress"}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={safePercent}
+      title={label || `${safePercent}%`}
+      w="26px"
+      h="26px"
+      borderRadius="full"
+      display="grid"
+      placeItems="center"
+      flexShrink={0}
+      bg={`conic-gradient(${progressColor} ${safePercent}%, ${trackColor} 0)`}
+      boxShadow={
+        isComplete
+          ? `0 0 14px ${progressColor}55`
+          : isLightTheme
+            ? "0 1px 4px rgba(15,23,42,0.08)"
+            : "0 0 10px rgba(94,234,212,0.12)"
+      }
+      transition="background 180ms ease, box-shadow 180ms ease"
+    >
+      <Box
+        w="18px"
+        h="18px"
+        borderRadius="full"
+        bg={innerBg}
+        display="grid"
+        placeItems="center"
+      >
+        {isComplete ? (
+          <Box as={RiCheckLine} boxSize="13px" color={iconColor} />
+        ) : (
+          <Box
+            w="5px"
+            h="5px"
+            borderRadius="full"
+            bg={progressColor}
+            opacity={safePercent > 0 ? 0.95 : 0.45}
+          />
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 function TutorPathLessonNode({
   lesson,
   unit,
   status,
-  isSelected,
   earnedPercent = 0,
   supportLang,
   onSelect,
@@ -1933,17 +2226,56 @@ function TutorPathLessonNode({
       ? RiLockLine
       : RiBookOpenLine;
   const color = unit?.color || "#38BDF8";
-  const nodeBg = isLocked
-    ? isLightTheme
-      ? "linear(135deg, rgba(245,239,230,0.98), rgba(224,212,194,0.98))"
-      : "linear(to-br, gray.700, gray.800)"
-    : isCompleted
-      ? "linear(135deg, #FFD700, #FFA500, #FFD700)"
-      : `linear(135deg, ${color}dd, ${color})`;
   const ringPercent = Math.max(0, Math.min(100, earnedPercent));
   const ringRadius = 48;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringOffset = ringCircumference * (1 - ringPercent / 100);
+  const ringViewport = 106;
+  const ringCenter = ringViewport / 2;
+  const progressRingTrackColor = isLightTheme
+    ? "rgba(247, 199, 74, 0.46)"
+    : "rgba(224,170,44,0.34)";
+  const progressRingStrokeColor = isLightTheme ? "#F7C74A" : "#E0AA2C";
+  const shouldPastelizeNode =
+    isLightTheme && !isLocked && status !== SKILL_STATUS.COMPLETED;
+  const lightNodeColorStart = shouldPastelizeNode
+    ? mixHexColors(color, "#fffaf3", 0.26)
+    : color;
+  const lightNodeColorEnd = shouldPastelizeNode
+    ? mixHexColors(color, "#f2e6d4", 0.18)
+    : color;
+  const lightNodeGlowColor = shouldPastelizeNode
+    ? mixHexColors(color, "#fff8ef", 0.34)
+    : color;
+  const nodeBg = isLocked
+    ? isLightTheme
+      ? "linear(135deg, rgba(245, 239, 230, 0.98), rgba(224, 212, 194, 0.98))"
+      : "linear(to-br, gray.700, gray.800)"
+    : isCompleted
+      ? "linear(135deg, #FFD700, #FFA500, #FFD700)"
+      : shouldPastelizeNode
+        ? `linear(135deg, ${lightNodeColorStart}, ${lightNodeColorEnd})`
+        : `linear(135deg, ${color}dd, ${color})`;
+  const nodeShadow = isLocked
+    ? isLightTheme
+      ? "0 8px 0px rgba(168, 146, 119, 0.26), 0 0 0 1px rgba(168, 146, 119, 0.18)"
+      : "0 8px 0px rgba(0,0,0,0.4)"
+    : isCompleted
+      ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
+      : shouldPastelizeNode
+        ? `0 8px 0px ${hexToRgba(lightNodeColorEnd, 0.58)}, 0 0 0 1px ${hexToRgba(
+            lightNodeColorStart,
+            0.18,
+          )}`
+        : `0 8px 0px ${hexToRgba(color, 0.67)}`;
+  const nodeOpacity = isLocked ? (isLightTheme ? 0.92 : 0.4) : 1;
+  const iconColor = isLocked
+    ? isLightTheme
+      ? "#8B7A63"
+      : "gray"
+    : isLightTheme
+      ? "#fffaf3"
+      : "white";
   const title = getTutorDisplayText(lesson.title, supportLang);
 
   return (
@@ -1976,23 +2308,16 @@ function TutorPathLessonNode({
             w="90px"
             h="90px"
             borderRadius="full"
-            bg={isCompleted ? "#FFD700" : color}
+            bg={
+              isCompleted
+                ? "#FFD700"
+                : shouldPastelizeNode
+                  ? lightNodeGlowColor
+                  : color
+            }
             filter="blur(16px)"
-            opacity={isCompleted ? 0.58 : 0.34}
+            opacity={isCompleted ? 0.6 : shouldPastelizeNode ? 0.24 : 0.4}
             pointerEvents="none"
-          />
-        )}
-        {isSelected && (
-          <Box
-            position="absolute"
-            top="-10px"
-            left="-10px"
-            right="-10px"
-            bottom="-10px"
-            borderRadius="full"
-            border="3px solid"
-            borderColor="cyan.300"
-            boxShadow="0 0 22px rgba(34,211,238,0.42)"
           />
         )}
         <Box
@@ -2001,21 +2326,23 @@ function TutorPathLessonNode({
           borderRadius="full"
           bgGradient={nodeBg}
           border="4px solid"
-          borderColor={isSelected ? "cyan.200" : "transparent"}
+          borderColor={
+            isLocked && isLightTheme
+              ? "rgba(168, 146, 119, 0.16)"
+              : "transparent"
+          }
           display="flex"
           alignItems="center"
           justifyContent="center"
           position="relative"
-          boxShadow={
-            isLocked
-              ? isLightTheme
-                ? "0 8px 0px rgba(168,146,119,0.26)"
-                : "0 8px 0px rgba(0,0,0,0.4)"
-              : isCompleted
-                ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
-                : `0 8px 0px ${hexToRgba(color, 0.62)}`
-          }
-          opacity={isLocked ? (isLightTheme ? 0.9 : 0.42) : 1}
+          boxShadow={nodeShadow}
+          opacity={nodeOpacity}
+          transition="transform 0.15s ease, box-shadow 0.15s ease"
+          sx={{
+            "button:active &": {
+              boxShadow: "none",
+            },
+          }}
         >
           {isInProgress && (
             <Box
@@ -2025,45 +2352,124 @@ function TutorPathLessonNode({
               top="50%"
               left="50%"
               transform="translate(-50%, -50%)"
-              width="106px"
-              height="106px"
-              viewBox="0 0 106 106"
+              width={`${ringViewport}px`}
+              height={`${ringViewport}px`}
+              viewBox={`0 0 ${ringViewport} ${ringViewport}`}
             >
               <circle
-                cx="53"
-                cy="53"
+                cx={ringCenter}
+                cy={ringCenter}
                 r={ringRadius}
                 fill="none"
-                stroke={
-                  isLightTheme
-                    ? "rgba(247,199,74,0.46)"
-                    : "rgba(224,170,44,0.34)"
-                }
+                stroke={progressRingTrackColor}
                 strokeWidth="10"
               />
               <circle
-                cx="53"
-                cy="53"
+                cx={ringCenter}
+                cy={ringCenter}
                 r={ringRadius}
                 fill="none"
-                stroke={isLightTheme ? "#F7C74A" : "#E0AA2C"}
+                stroke={progressRingStrokeColor}
                 strokeWidth="10"
                 strokeLinecap="round"
                 strokeDasharray={ringCircumference}
                 strokeDashoffset={ringOffset}
-                transform="rotate(-90 53 53)"
+                transform={`rotate(-90 ${ringCenter} ${ringCenter})`}
+                style={{ transition: "stroke-dashoffset 0.4s ease" }}
               />
             </Box>
           )}
           <Icon
             size={36}
-            color={isLocked ? (isLightTheme ? "#8B7A63" : "gray") : "white"}
+            color={iconColor}
             style={{
-              filter: isLocked
-                ? "none"
-                : "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
+              filter: !isLocked
+                ? isLightTheme
+                  ? "drop-shadow(0 1px 2px rgba(118, 92, 60, 0.18))"
+                  : "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                : "none",
             }}
           />
+          {isCompleted && (
+            <>
+              <Box
+                pointerEvents="none"
+                position="absolute"
+                top="10%"
+                right="15%"
+                w="9px"
+                h="9px"
+                borderRadius="full"
+                bg="white"
+                boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
+                animation="sparkle 2.4s ease-in-out infinite"
+                sx={{
+                  "@keyframes sparkle": {
+                    "0%, 100%": {
+                      opacity: 0,
+                      transform: "scale(0.5) rotate(0deg)",
+                    },
+                    "50%": {
+                      opacity: 0.55,
+                      transform: "scale(0.6) rotate(15deg)",
+                      filter:
+                        "drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))",
+                    },
+                  },
+                }}
+              />
+              <Box
+                pointerEvents="none"
+                position="absolute"
+                bottom="15%"
+                left="10%"
+                w="7px"
+                h="7px"
+                borderRadius="full"
+                bg="white"
+                boxShadow="0 0 8px 2px rgba(255,255,255,0.6), 0 0 14px rgba(255,255,255,0.4)"
+                animation="sparkle 2.7s ease-in-out infinite 1.2s"
+                sx={{
+                  "@keyframes sparkle": {
+                    "0%, 100%": {
+                      opacity: 0,
+                      transform: "scale(0.4) rotate(0deg)",
+                    },
+                    "50%": {
+                      opacity: 0.9,
+                      transform: "scale(1.3) rotate(-10deg)",
+                      filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))",
+                    },
+                  },
+                }}
+              />
+              <Box
+                pointerEvents="none"
+                position="absolute"
+                top="45%"
+                left="60%"
+                w="5px"
+                h="5px"
+                borderRadius="full"
+                bg="white"
+                boxShadow="0 0 8px 2px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)"
+                animation="sparkle 2.2s ease-in-out infinite 0.6s"
+                sx={{
+                  "@keyframes sparkle": {
+                    "0%, 100%": {
+                      opacity: 0,
+                      transform: "scale(0.3) rotate(0deg)",
+                    },
+                    "50%": {
+                      opacity: 0.9,
+                      transform: "scale(1.1) rotate(8deg)",
+                      filter: "drop-shadow(0 0 7px rgba(255,255,255,0.8))",
+                    },
+                  },
+                }}
+              />
+            </>
+          )}
         </Box>
       </Box>
       <Text
@@ -2095,7 +2501,6 @@ function TutorPathUnit({
   visibleUnits,
   userProgress,
   supportLang,
-  selectedLessonId,
   getLessonStatus,
   getLessonEarnedPercent,
   onLessonSelect,
@@ -2246,7 +2651,6 @@ function TutorPathUnit({
                     unit={unit}
                     status={status}
                     supportLang={supportLang}
-                    isSelected={selectedLessonId === lesson.id}
                     earnedPercent={getLessonEarnedPercent(lesson, status)}
                     onSelect={() => onLessonSelect(lesson, unit, status)}
                   />
@@ -2269,11 +2673,13 @@ export default function Tutor({
   targetLang = "es",
   supportLang = "",
   pauseMs: initialPauseMs = 2000,
-  maxProficiencyLevel = "A1",
+  maxProficiencyLevel = "Pre-A1",
+  onFirstLessonComplete,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
+  const soundIsInitialized = useSoundSettings((s) => s.isInitialized);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
 
@@ -2396,14 +2802,14 @@ export default function Tutor({
 
   const tutorUserProgress = useMemo(() => {
     const progressLanguageKey = String(targetLang || "es").toLowerCase();
-    const languageLessons = user?.progress?.languageLessons;
-    const hasLanguageLessons =
-      languageLessons && typeof languageLessons === "object";
-    const lessonsForLanguage = hasLanguageLessons
-      ? languageLessons?.[progressLanguageKey] ||
-        languageLessons?.[targetLang] ||
+    const tutorLanguageLessons = user?.progress?.tutorLanguageLessons;
+    const hasTutorLanguageLessons =
+      tutorLanguageLessons && typeof tutorLanguageLessons === "object";
+    const lessonsForLanguage = hasTutorLanguageLessons
+      ? tutorLanguageLessons?.[progressLanguageKey] ||
+        tutorLanguageLessons?.[targetLang] ||
         {}
-      : user?.progress?.lessons || {};
+      : {};
 
     return {
       totalXp: xp,
@@ -2417,11 +2823,11 @@ export default function Tutor({
     onOpen: openTutorPath,
     onClose: closeTutorPath,
   } = useDisclosure();
-  const initialTutorLevel =
+  const initialTutorLevel = clampTutorLevelToUnlocked(
     readStoredTutorLevel(targetLang) ||
-    (TUTOR_CEFR_LEVELS.includes(maxProficiencyLevel)
-      ? maxProficiencyLevel
-      : "A1");
+      getUnlockedTutorLevel(maxProficiencyLevel),
+    maxProficiencyLevel,
+  );
   const [activeTutorLevel, setActiveTutorLevel] = useState(initialTutorLevel);
   const [tutorPathUnits, setTutorPathUnits] = useState([]);
   const [isTutorPathLoading, setIsTutorPathLoading] = useState(false);
@@ -2441,17 +2847,24 @@ export default function Tutor({
   const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
   const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
+  const [completedTutorAgendaData, setCompletedTutorAgendaData] =
+    useState(null);
+  const [showTutorCompletedAgenda, setShowTutorCompletedAgenda] =
+    useState(false);
   const tutorResumeAppliedRef = useRef("");
+  const pendingFirstLessonCompletionFlowRef = useRef(false);
+  const tutorFirstLessonCompleteNotifiedRef = useRef(false);
+  const lessonCompleteSoundKeyRef = useRef("");
 
   useEffect(() => {
     const storedLevel = readStoredTutorLevel(targetLang);
-    if (storedLevel) {
-      setActiveTutorLevel(storedLevel);
-      return;
-    }
-    if (TUTOR_CEFR_LEVELS.includes(maxProficiencyLevel)) {
-      setActiveTutorLevel(maxProficiencyLevel);
-    }
+    setActiveTutorLevel(
+      clampTutorLevelToUnlocked(
+        storedLevel ||
+          getUnlockedTutorLevel(maxProficiencyLevel),
+        maxProficiencyLevel,
+      ),
+    );
   }, [maxProficiencyLevel, targetLang]);
 
   useEffect(() => {
@@ -2464,17 +2877,62 @@ export default function Tutor({
   }, [tutorLessonEarnedXp]);
 
   useEffect(() => {
+    if (!showTutorLessonComplete) {
+      lessonCompleteSoundKeyRef.current = "";
+      return;
+    }
+
+    const soundKey =
+      completedTutorLessonData?.lessonId ||
+      completedTutorLessonData?.title ||
+      "tutor-lesson-complete";
+    if (lessonCompleteSoundKeyRef.current === soundKey) return;
+
+    if (soundIsInitialized) {
+      lessonCompleteSoundKeyRef.current = soundKey;
+      playSound("lessonComplete");
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+
+    const playAfterUserGesture = () => {
+      lessonCompleteSoundKeyRef.current = soundKey;
+      playSound("lessonComplete");
+    };
+
+    window.addEventListener("pointerdown", playAfterUserGesture, {
+      once: true,
+    });
+    window.addEventListener("keydown", playAfterUserGesture, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", playAfterUserGesture);
+      window.removeEventListener("keydown", playAfterUserGesture);
+    };
+  }, [
+    completedTutorLessonData?.lessonId,
+    completedTutorLessonData?.title,
+    playSound,
+    showTutorLessonComplete,
+    soundIsInitialized,
+  ]);
+
+  useEffect(() => {
     tutorStarterAgendaProgressRef.current = {};
     setTutorStarterAgendaProgress({});
   }, [selectedTutorLesson?.id, targetLang]);
 
   useEffect(() => {
-    const langKey = String(targetLang || "es").toLowerCase();
-    if (tutorPathLoadedLangRef.current === langKey && tutorPathUnits.length) {
-      return;
-    }
+    pendingFirstLessonCompletionFlowRef.current = false;
+    tutorFirstLessonCompleteNotifiedRef.current = false;
+  }, [currentNpub, targetLang]);
 
+  useEffect(() => {
+    const langKey = getTutorStorageLang(targetLang);
     let cancelled = false;
+    tutorPathLoadedLangRef.current = "";
+    setTutorPathUnits([]);
     setIsTutorPathLoading(true);
     loadMultiLevelLearningPath(targetLang, TUTOR_CEFR_LEVELS)
       .then((units) => {
@@ -2493,7 +2951,7 @@ export default function Tutor({
     return () => {
       cancelled = true;
     };
-  }, [targetLang, tutorPathUnits.length]);
+  }, [targetLang]);
 
   const visibleTutorUnits = useMemo(
     () => tutorPathUnits.filter((unit) => unit.cefrLevel === activeTutorLevel),
@@ -2545,7 +3003,24 @@ export default function Tutor({
   }, [isTutorAgendaHydrating]);
 
   useEffect(() => {
+    tutorResumeAppliedRef.current = "";
+    tutorInitialAgendaReadyRef.current = false;
+    selectedTutorLessonRef.current = null;
+    selectedTutorUnitRef.current = null;
+    tutorLessonEarnedXpRef.current = 0;
+    tutorLessonCompletionTriggeredRef.current = false;
+    tutorStarterAgendaProgressRef.current = {};
+    setIsTutorAgendaHydrating(true);
+    setSelectedTutorLesson(null);
+    setSelectedTutorUnit(null);
+    setTutorLessonEarnedXp(0);
+    setTutorStarterAgendaProgress({});
+  }, [targetLang]);
+
+  useEffect(() => {
     if (!tutorPathUnits.length) return;
+    const langKey = getTutorStorageLang(targetLang);
+    if (tutorPathLoadedLangRef.current !== langKey) return;
     const progressLessons = tutorUserProgress.lessons || {};
     const storedLevel = readStoredTutorLevel(targetLang);
     const storedLessonId = readStoredTutorLessonId(targetLang);
@@ -2553,8 +3028,18 @@ export default function Tutor({
     const storedLessonProgress = storedLesson
       ? progressLessons?.[storedLesson.lesson.id]
       : null;
+    const storedLessonIsUnlocked = storedLesson
+      ? isTutorLessonUnlockedById(
+          tutorPathUnits,
+          progressLessons,
+          storedLesson.lesson.id,
+        )
+      : false;
     const storedLessonIsUsable =
-      storedLesson && storedLessonProgress?.status !== SKILL_STATUS.COMPLETED;
+      storedLesson &&
+      storedLessonProgress?.status !== SKILL_STATUS.COMPLETED &&
+      (storedLessonProgress?.status === SKILL_STATUS.IN_PROGRESS ||
+        storedLessonIsUnlocked);
     const resumeLesson = storedLessonIsUsable
       ? {
           ...storedLesson,
@@ -2563,9 +3048,7 @@ export default function Tutor({
               ? SKILL_STATUS.IN_PROGRESS
               : SKILL_STATUS.AVAILABLE,
         }
-      : !storedLevel
-        ? findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons)
-        : null;
+      : findLatestTutorUnlockedLesson(tutorPathUnits, progressLessons);
 
     if (resumeLesson?.unit?.cefrLevel) {
       setActiveTutorLevel(resumeLesson.unit.cefrLevel);
@@ -2575,9 +3058,12 @@ export default function Tutor({
 
     let appliedResumeLesson = false;
 
-    if (resumeLesson && !selectedTutorLessonRef.current) {
-      const resumeKey = `${getTutorStorageLang(targetLang)}:${resumeLesson.lesson.id}`;
-      if (tutorResumeAppliedRef.current !== resumeKey) {
+    if (resumeLesson) {
+      const resumeKey = `${langKey}:${resumeLesson.lesson.id}`;
+      if (
+        tutorResumeAppliedRef.current !== resumeKey ||
+        selectedTutorLessonRef.current?.id !== resumeLesson.lesson.id
+      ) {
         tutorResumeAppliedRef.current = resumeKey;
 
         const lessonStartXp =
@@ -2702,8 +3188,10 @@ export default function Tutor({
 
   function handleTutorLevelChange(level) {
     if (!TUTOR_CEFR_LEVELS.includes(level)) return;
-    setActiveTutorLevel(level);
-    writeStoredTutorLevel(targetLang, level);
+    const nextLevel = clampTutorLevelToUnlocked(level, maxProficiencyLevel);
+    if (nextLevel !== level) return;
+    setActiveTutorLevel(nextLevel);
+    writeStoredTutorLevel(targetLang, nextLevel);
   }
 
   async function handleTutorLessonSelect(lesson, unit, status) {
@@ -2745,7 +3233,7 @@ export default function Tutor({
 
     if (currentNpub && !isCompleted) {
       try {
-        await startLesson(
+        await startTutorLesson(
           currentNpub,
           lesson.id,
           targetLangRef.current,
@@ -3442,7 +3930,8 @@ export default function Tutor({
     const codeSwitchingAudioInstruction =
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
-    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
+    const isAdvancedTutorLevel =
+      isTutorAdvancedConversationLevel(selectedLevel);
     const starterAgendaLesson = isTutorStarterAgendaLesson(
       selectedTutorLessonRef.current,
     );
@@ -3477,6 +3966,7 @@ export default function Tutor({
       ? [
           "TUTORING STYLE: Be an active tutor, not a passive chat partner.",
           `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
+          `Before asking the learner to say a ${targetLanguageName} phrase, briefly tell them what it means in ${supportLanguageName}.`,
           "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
           "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare replies like 'Hola. Bien.'",
           `Use fill-in-the-blank prompts, brief repetition, and simple choices. Example: 'Great. In ${targetLanguageName}, say: [model phrase]. Your turn.'`,
@@ -3524,6 +4014,7 @@ export default function Tutor({
           "STARTER INTRODUCTIONS LESSON: This first Tutor lesson has a fixed agenda.",
           `Required agenda in ${targetLanguageName}: ${getTutorStarterAgendaPromptText(tLang)}.`,
           "Teach and practice the items one at a time: hello, my name is, good morning, good afternoon, good night, and how are you.",
+          `Before each practice attempt, tell the learner the phrase meaning in ${supportLanguageName}.`,
           "For 'my name is', model a safe example with a fictional name or invite the learner to use any name; do not require personal details.",
           "Only the app-tracked acceptance state completes an agenda item. Do not advance when the learner says unrelated words, filler, or a different target phrase.",
           "After all agenda items have been practiced, combine or review the covered concepts until the lesson XP requirement is complete.",
@@ -3581,7 +4072,8 @@ export default function Tutor({
       maxProficiencyLevel ||
       "A1";
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
-    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
+    const isAdvancedTutorLevel =
+      isTutorAdvancedConversationLevel(selectedLevel);
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
     const agendaSubtitle = getTutorLessonAgendaSubtitle(
       lesson,
@@ -3653,6 +4145,9 @@ export default function Tutor({
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
     const phrase = item ? getTutorStarterItemModelPhrase(item, targetLang) : "";
     const task = item ? getTutorStarterItemSupportTask(item, supportCode) : "";
+    const meaning = item
+      ? getTutorStarterItemSupportMeaning(item, supportCode)
+      : "";
     const progress = tutorStarterAgendaProgressRef.current || {};
     const lesson = selectedTutorLessonRef.current;
     const requiredXp = Math.max(0, lesson?.xpReward || 0);
@@ -3724,18 +4219,24 @@ export default function Tutor({
       `Current agenda item: ${item.id}.`,
       `Current subject: ${task}.`,
       `Model phrase: "${phrase}".`,
-      currentPhrase
-        ? `When you say "${currentPhrase}", pronounce it correctly as ${targetLanguageName}.`
+      meaning ? `Meaning in ${supportLanguageName}: "${meaning}".` : "",
+      meaning
+        ? `Before asking the learner to say "${phrase}", briefly explain that it means "${meaning}" in ${supportLanguageName}.`
         : "",
-      completedItems ? `Already completed: ${completedItems}.` : "",
+      currentPhrase
+        ? `When you model "${currentPhrase}", pronounce it correctly as ${targetLanguageName}.`
+        : "",
+      completedItems
+        ? `Internal progress only, do not say this to the learner: completed items so far are ${completedItems}.`
+        : "",
       completedPhrases
         ? `Do not prompt these completed phrases again: ${completedPhrases}.`
         : "",
       acceptedItems
-        ? `The app accepted the learner's last attempt for: ${acceptedItems}. The latest transcript belongs to that completed step. Move forward now.`
+        ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it, then move to the current agenda item. Do not mention internal completion state to the learner.`
         : "",
       latestTranscript && !latestTurnWasAccepted && !isKickoff
-        ? `The app did NOT accept the latest transcript as the current phrase. Do not say "nice work", "great", or imply the learner got it right. Briefly correct in ${supportLanguageName}, then ask them to try exactly this ${targetLanguageName} phrase: "${currentPhrase}".`
+        ? `The app did NOT accept the latest transcript as the current phrase. Do not say "nice work", "great", or imply the learner got it right. Briefly correct in ${supportLanguageName}, remind them what "${currentPhrase}" means, then ask them to try exactly this ${targetLanguageName} phrase: "${currentPhrase}".`
         : "",
       latestTranscript
         ? `Latest learner transcript: "${latestTranscript}".`
@@ -3743,12 +4244,12 @@ export default function Tutor({
       isKickoff
         ? "Start the lesson and introduce only this first agenda item."
         : latestTurnWasAccepted
-          ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item."
+          ? "Briefly acknowledge the accepted attempt, then introduce only the current agenda item. Do not apologize and do not mention internal completion state."
           : "Briefly correct the learner, then keep practicing only the current agenda item.",
       currentPhrase
         ? `Your next practice prompt MUST be for the current model phrase: "${currentPhrase}".`
         : "",
-      "Never ask the learner to repeat an already completed agenda item.",
+      "Never ask the learner to repeat a completed agenda item, and never announce internal agenda state to the learner.",
       "Never say 'remember' followed by a completed phrase as the main practice prompt.",
       "Only app-accepted turns are progress. Do not treat unrelated words, random phrases, or a different target phrase as progress.",
       "Do not ask the learner to repeat for pronunciation, do not split syllables, and do not rate accent.",
@@ -3816,6 +4317,8 @@ export default function Tutor({
     );
     const targetLanguageName =
       getLanguagePromptName(tLang) || "the target language";
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the support language";
     const progress = tutorStarterAgendaProgressRef.current || {};
     const completedItems = TUTOR_STARTER_AGENDA_ITEMS.filter(
       (item) => progress[item.id],
@@ -3838,15 +4341,18 @@ export default function Tutor({
       nextItem?.examples?.en?.[0] ||
       nextItem?.label?.en ||
       "";
+    const nextMeaning = nextItem
+      ? getTutorStarterItemSupportMeaning(nextItem, supportCode)
+      : "";
 
     return [
       "APP-TRACKED STARTER AGENDA STATE:",
       latestTranscript
         ? `Latest learner transcript: "${latestTranscript}".`
         : "",
-      `Completed agenda items: ${completedText}.`,
+      `Internal progress only, do not say this to the learner: completed agenda items are ${completedText}.`,
       acceptedText
-        ? `The app has accepted the latest turn as completing: ${acceptedText}. Do not say it was close. Do not ask for those words again.`
+        ? `The app has accepted the latest turn as completing: ${acceptedText}. Say a brief positive acknowledgement, then move forward. Do not mention internal completion state. Do not ask for those words again.`
         : "",
       latestTranscript && !acceptedText
         ? "The app did not accept the latest turn. Do not advance the agenda, do not award praise, and keep the learner on the current phrase."
@@ -3855,9 +4361,13 @@ export default function Tutor({
         ? `Next agenda item: ${getTutorAgendaItemLabel(
             nextItem,
             supportCode,
-          )}. Model this ${targetLanguageName} phrase if useful: "${nextModel}".`
+          )}. Model this ${targetLanguageName} phrase if useful: "${nextModel}". Meaning in ${supportLanguageName}: "${nextMeaning}".`
         : "All agenda items are complete. Review or combine covered concepts until the lesson XP requirement is complete.",
       "Use the app-tracked agenda state as the source of truth. Do not evaluate accent, sound quality, or pronunciation. Only explicitly accepted agenda items are complete.",
+      nextItem
+        ? `Before asking the learner to repeat "${nextModel}", briefly explain that it means "${nextMeaning}" in ${supportLanguageName}.`
+        : "",
+      "Completed agenda state is internal bookkeeping. Do not mention it to the learner.",
     ]
       .filter(Boolean)
       .join(" ");
@@ -3887,7 +4397,8 @@ export default function Tutor({
       maxProficiencyLevel ||
       "A1";
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
-    const isAdvancedTutorLevel = isTutorAdvancedConversationLevel(selectedLevel);
+    const isAdvancedTutorLevel =
+      isTutorAdvancedConversationLevel(selectedLevel);
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -3909,6 +4420,7 @@ export default function Tutor({
       codeSwitchingAudioInstruction,
       userMessage ? `Latest learner transcript: "${userMessage}".` : "",
       `Keep teaching from the selected agenda: ${agendaTitle}.`,
+      "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the lesson completes.",
       isEarlyTutorLevel
         ? `Use ${supportLanguageName} for coaching, explanations, and questions. Use ${targetLanguageName} only for examples, model phrases, and practice prompts.`
         : isAdvancedTutorLevel
@@ -4280,8 +4792,21 @@ export default function Tutor({
     if (!npub) return;
 
     tutorLessonCompletionTriggeredRef.current = true;
+    const nextProgressLessons = {
+      ...(tutorUserProgress.lessons || {}),
+      [lesson.id]: {
+        ...(tutorUserProgress.lessons?.[lesson.id] || {}),
+        status: SKILL_STATUS.COMPLETED,
+      },
+    };
+    const nextTutorLesson = findNextTutorLessonAfter(
+      tutorPathUnits,
+      lesson.id,
+      nextProgressLessons,
+    );
+    await stop();
     try {
-      await completeLesson(
+      await completeTutorLesson(
         npub,
         lesson.id,
         lesson.xpReward || 1,
@@ -4293,6 +4818,58 @@ export default function Tutor({
         lessonId: lesson.id,
         unitTitle: unit?.title,
       });
+      if (isTutorStarterAgendaLesson(lesson)) {
+        pendingFirstLessonCompletionFlowRef.current = true;
+      }
+      setCompletedTutorAgendaData(
+        buildTutorCompletedAgendaData({
+          lesson,
+          unit,
+          targetLang: targetLangRef.current,
+          supportLang: resolvedSupportLang,
+          starterProgress: tutorStarterAgendaProgressRef.current,
+          xpEarned: lesson.xpReward || 0,
+          forceComplete: true,
+        }),
+      );
+      if (nextTutorLesson?.lesson) {
+        const nextProgress = nextProgressLessons[nextTutorLesson.lesson.id];
+        const nextEarned =
+          nextTutorLesson.status === SKILL_STATUS.IN_PROGRESS
+            ? Math.min(
+                nextTutorLesson.lesson.xpReward || 0,
+                Math.max(0, xp - (nextProgress?.lessonStartXp ?? xp)),
+              )
+            : 0;
+
+        setSelectedTutorLesson(nextTutorLesson.lesson);
+        setSelectedTutorUnit(nextTutorLesson.unit);
+        selectedTutorLessonRef.current = nextTutorLesson.lesson;
+        selectedTutorUnitRef.current = nextTutorLesson.unit;
+        tutorLessonEarnedXpRef.current = nextEarned;
+        setTutorLessonEarnedXp(nextEarned);
+        tutorLessonCompletionTriggeredRef.current = false;
+        tutorStarterAgendaProgressRef.current = {};
+        setTutorStarterAgendaProgress({});
+        setConversationSettings((prev) => ({
+          ...prev,
+          proficiencyLevel:
+            nextTutorLesson.unit?.cefrLevel || prev.proficiencyLevel,
+        }));
+        if (nextTutorLesson.unit?.cefrLevel) {
+          writeStoredTutorLevel(
+            targetLangRef.current,
+            nextTutorLesson.unit.cefrLevel,
+          );
+          setActiveTutorLevel(nextTutorLesson.unit.cefrLevel);
+        }
+        writeStoredTutorLessonId(
+          targetLangRef.current,
+          nextTutorLesson.lesson.id,
+        );
+      } else {
+        writeStoredTutorLessonId(targetLangRef.current, lesson.id);
+      }
       setShowTutorLessonComplete(true);
       logEvent(analytics, "tutor_lesson_completed", {
         lessonId: lesson.id,
@@ -4352,15 +4929,35 @@ export default function Tutor({
     );
     if (!agendaComplete) return [currentItem.id];
 
-    if ((tutorLessonEarnedXpRef.current || 0) >= (lesson.xpReward || 0)) {
-      void completeTutorLessonFromXp(lesson, unit);
-    }
+    void completeTutorLessonFromXp(lesson, unit);
     return [currentItem.id];
   }
 
   function closeTutorLessonCompleteModal() {
     setShowTutorLessonComplete(false);
     setCompletedTutorLessonData(null);
+
+    if (completedTutorAgendaData) {
+      setShowTutorCompletedAgenda(true);
+      return;
+    }
+
+    if (!pendingFirstLessonCompletionFlowRef.current) return;
+    pendingFirstLessonCompletionFlowRef.current = false;
+    if (tutorFirstLessonCompleteNotifiedRef.current) return;
+    tutorFirstLessonCompleteNotifiedRef.current = true;
+    onFirstLessonComplete?.();
+  }
+
+  function closeTutorCompletedAgendaModal() {
+    setShowTutorCompletedAgenda(false);
+    setCompletedTutorAgendaData(null);
+
+    if (!pendingFirstLessonCompletionFlowRef.current) return;
+    pendingFirstLessonCompletionFlowRef.current = false;
+    if (tutorFirstLessonCompleteNotifiedRef.current) return;
+    tutorFirstLessonCompleteNotifiedRef.current = true;
+    onFirstLessonComplete?.();
   }
 
   /* ---------------------------
@@ -4823,6 +5420,101 @@ export default function Tutor({
     isTutorPathLoading || (isTutorAgendaHydrating && !selectedTutorLesson);
   const showGentleInlineFeedback =
     inlineFeedbackKind === "incorrect" && !!inlineFeedback;
+  const selectedTutorLessonProgressStatus = selectedTutorLesson
+    ? tutorUserProgress.lessons?.[selectedTutorLesson.id]?.status ||
+      (tutorLessonCompletionTriggeredRef.current
+        ? SKILL_STATUS.COMPLETED
+        : SKILL_STATUS.IN_PROGRESS)
+    : SKILL_STATUS.AVAILABLE;
+  const lessonCompletionRing = useMemo(() => {
+    const lesson = selectedTutorLesson;
+    if (!lesson) {
+      return {
+        percent: 0,
+        isComplete: false,
+        label: tutorCopy(uiLang, {
+          en: "Lesson progress",
+          es: "Progreso de la leccion",
+          pt: "Progresso da licao",
+          it: "Progresso della lezione",
+          fr: "Progression de la lecon",
+          ja: "レッスンの進捗",
+          hi: "पाठ प्रगति",
+          ar: "تقدّم الدرس",
+          zh: "课程进度",
+        }),
+      };
+    }
+
+    if (selectedTutorLessonProgressStatus === SKILL_STATUS.COMPLETED) {
+      return {
+        percent: 100,
+        isComplete: true,
+        label: tutorCopy(uiLang, {
+          en: "Lesson complete",
+          es: "Leccion completada",
+          pt: "Licao completa",
+          it: "Lezione completata",
+          fr: "Lecon terminee",
+          ja: "レッスン完了",
+          hi: "पाठ पूरा हुआ",
+          ar: "الدرس اكتمل",
+          zh: "课程完成",
+        }),
+      };
+    }
+
+    if (isTutorStarterAgendaLesson(lesson)) {
+      const total = TUTOR_STARTER_AGENDA_ITEMS.length;
+      const completed = TUTOR_STARTER_AGENDA_ITEMS.filter(
+        (item) => tutorStarterAgendaProgress[item.id],
+      ).length;
+      const percent = Math.round((completed / Math.max(1, total)) * 100);
+      return {
+        percent,
+        isComplete: percent >= 100,
+        label: `${completed}/${total} ${tutorCopy(uiLang, {
+          en: "steps",
+          es: "pasos",
+          pt: "passos",
+          it: "passi",
+          fr: "etapes",
+          ja: "ステップ",
+          hi: "कदम",
+          ar: "خطوات",
+          zh: "步",
+        })}`,
+      };
+    }
+
+    const required = Math.max(0, lesson.xpReward || 0);
+    const earned = Math.min(required, Math.max(0, tutorLessonEarnedXp || 0));
+    const percent = required > 0 ? Math.round((earned / required) * 100) : 100;
+    return {
+      percent,
+      isComplete: percent >= 100,
+      label:
+        required > 0
+          ? `${earned}/${required} XP`
+          : tutorCopy(uiLang, {
+              en: "Lesson complete",
+              es: "Leccion completada",
+              pt: "Licao completa",
+              it: "Lezione completata",
+              fr: "Lecon terminee",
+              ja: "レッスン完了",
+              hi: "पाठ पूरा हुआ",
+              ar: "الدرس اكتمل",
+              zh: "课程完成",
+            }),
+    };
+  }, [
+    selectedTutorLesson,
+    selectedTutorLessonProgressStatus,
+    tutorLessonEarnedXp,
+    tutorStarterAgendaProgress,
+    uiLang,
+  ]);
 
   /* ---------------------------
      Render
@@ -4861,29 +5553,37 @@ export default function Tutor({
                   fontWeight="medium"
                 >
                   {tutorCopy(uiLang, {
-                    en: "Progress",
-                    es: "Progreso",
-                    pt: "Progresso",
-                    it: "Progresso",
-                    fr: "Progression",
-                    ja: "進捗",
-                    hi: "प्रगति",
-                    ar: "التقدّم",
-                    zh: "进度",
+                    en: "Lessons",
+                    es: "Lecciones",
+                    pt: "Lições",
+                    it: "Lezioni",
+                    fr: "Leçons",
+                    ja: "レッスン",
+                    hi: "पाठ",
+                    ar: "الدروس",
+                    zh: "课程",
                   })}
                 </Button>
-                <IconButton
-                  ref={chatLogButtonRef}
-                  icon={<FaRegCommentDots size={14} />}
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="cyan"
-                  {...chatLogButtonHighlightProps}
-                  onClick={openTranscript}
-                  _hover={{ opacity: 1 }}
-                  isDisabled={!timeline.length}
-                  aria-label={uiText("ra_chat_log", "Chat log")}
-                />
+                <HStack spacing={2}>
+                  <TutorLessonProgressRing
+                    percent={lessonCompletionRing.percent}
+                    label={lessonCompletionRing.label}
+                    isComplete={lessonCompletionRing.isComplete}
+                    isLightTheme={isLightTheme}
+                  />
+                  <IconButton
+                    ref={chatLogButtonRef}
+                    icon={<FaRegCommentDots size={14} />}
+                    size="xs"
+                    variant="ghost"
+                    colorScheme="cyan"
+                    {...chatLogButtonHighlightProps}
+                    onClick={openTranscript}
+                    _hover={{ opacity: 1 }}
+                    isDisabled={!timeline.length}
+                    aria-label={uiText("ra_chat_log", "Chat log")}
+                  />
+                </HStack>
               </HStack>
 
               {/* Lesson agenda */}
@@ -5220,7 +5920,7 @@ export default function Tutor({
             <VStack spacing={6} align="stretch" maxW="container.lg" mx="auto">
               <TutorPathLevelHeader
                 activeLevel={activeTutorLevel}
-                currentLevel={maxProficiencyLevel || "A1"}
+                currentLevel={getUnlockedTutorLevel(maxProficiencyLevel)}
                 levelProgress={activeTutorLevelProgress}
                 levelCompletionStatus={tutorLevelCompletionStatus}
                 supportLang={uiLang}
@@ -5257,7 +5957,10 @@ export default function Tutor({
                     <Badge colorScheme="cyan" flexShrink={0}>
                       {Math.min(
                         selectedTutorLesson.xpReward || 0,
-                        tutorLessonEarnedXp,
+                        selectedTutorLessonProgressStatus ===
+                          SKILL_STATUS.COMPLETED
+                          ? selectedTutorLesson.xpReward || 0
+                          : tutorLessonEarnedXp,
                       )}
                       /{selectedTutorLesson.xpReward || 0} XP
                     </Badge>
@@ -5294,7 +5997,6 @@ export default function Tutor({
                       visibleUnits={visibleTutorUnits}
                       userProgress={tutorUserProgress}
                       supportLang={uiLang}
-                      selectedLessonId={selectedTutorLesson?.id}
                       getLessonStatus={getTutorLessonStatus}
                       getLessonEarnedPercent={getTutorLessonEarnedPercent}
                       onLessonSelect={handleTutorLessonSelect}
@@ -5423,6 +6125,180 @@ export default function Tutor({
               _hover={{ bg: "rgba(255,255,255,0.92)" }}
               onClick={closeTutorLessonCompleteModal}
               fontWeight="bold"
+            >
+              {tutorCopy(uiLang, {
+                en: "Continue",
+                es: "Continuar",
+                pt: "Continuar",
+                it: "Continua",
+                fr: "Continuer",
+                ja: "続ける",
+                hi: "जारी रखें",
+                ar: "كمّل",
+                zh: "继续",
+              })}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={showTutorCompletedAgenda}
+        onClose={closeTutorCompletedAgendaModal}
+        isCentered
+        size="xl"
+        motionPreset="none"
+      >
+        <ModalOverlay
+          motionProps={nativeOverlayMotionProps}
+          bg="blackAlpha.700"
+          backdropFilter="blur(5px)"
+        />
+        <ModalContent
+          motionProps={nativeModalMotionProps}
+          mx={3}
+          my={{ base: 6, md: 10 }}
+          maxH={{ base: "calc(100dvh - 48px)", md: "calc(100dvh - 80px)" }}
+          overflow="hidden"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor={isLightTheme ? "rgba(120,94,61,0.18)" : "whiteAlpha.200"}
+          bg={
+            isLightTheme
+              ? "linear-gradient(180deg, rgba(255,251,245,0.98) 0%, rgba(248,239,226,0.98) 100%)"
+              : "linear-gradient(180deg, rgba(12,18,32,0.98) 0%, rgba(4,8,18,0.98) 100%)"
+          }
+          color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
+          boxShadow={
+            isLightTheme
+              ? "0 24px 60px rgba(120,94,61,0.22)"
+              : "0 24px 70px rgba(0,0,0,0.45), 0 0 40px rgba(45,212,191,0.12)"
+          }
+        >
+          <ModalHeader px={{ base: 5, md: 8 }} pt={7} pb={2}>
+            <VStack align="start" spacing={2}>
+              <Heading size="lg" lineHeight="1.1">
+                {tutorCopy(uiLang, {
+                  en: "Lesson Review",
+                  es: "Repaso de la leccion",
+                  pt: "Revisao da licao",
+                  it: "Ripasso della lezione",
+                  fr: "Revision de la lecon",
+                  de: "Lektionsrueckblick",
+                  ja: "レッスン復習",
+                  hi: "पाठ समीक्षा",
+                  ar: "مراجعة الدرس",
+                  zh: "课程回顾",
+                })}
+              </Heading>
+              <Text
+                fontSize="md"
+                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
+                fontWeight="600"
+              >
+                {completedTutorAgendaData?.title}
+              </Text>
+            </VStack>
+          </ModalHeader>
+          <ModalBody px={{ base: 5, md: 8 }} py={5} overflowY="auto">
+            <Box
+              p={{ base: 4, md: 5 }}
+              rounded="2xl"
+              bg={
+                isLightTheme
+                  ? "rgba(255,255,255,0.62)"
+                  : "rgba(15,23,42,0.68)"
+              }
+              border="1px solid"
+              borderColor={isLightTheme ? "rgba(120,94,61,0.14)" : "whiteAlpha.100"}
+            >
+              <VStack spacing={3} align="stretch">
+                {(completedTutorAgendaData?.items || []).map((agendaItem) => (
+                  <HStack
+                    key={agendaItem.id}
+                    align="flex-start"
+                    spacing={3}
+                    py={2}
+                    px={1}
+                    rounded="xl"
+                  >
+                    <Center
+                      flexShrink={0}
+                      w="22px"
+                      h="22px"
+                      rounded="full"
+                      bg={
+                        agendaItem.completed
+                          ? isLightTheme
+                            ? "teal.500"
+                            : "teal.400"
+                          : isLightTheme
+                            ? "gray.100"
+                            : "whiteAlpha.200"
+                      }
+                      color={
+                        agendaItem.completed
+                          ? "white"
+                          : isLightTheme
+                            ? "gray.500"
+                            : "gray.300"
+                      }
+                    >
+                      <RiCheckLine size={14} />
+                    </Center>
+                    <VStack align="stretch" spacing={1} flex={1} minW={0}>
+                      <Text
+                        fontSize="xs"
+                        color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                        fontWeight="700"
+                        textTransform="capitalize"
+                      >
+                        {agendaItem.task}
+                      </Text>
+                      <Text
+                        fontSize={{ base: "md", md: "lg" }}
+                        fontWeight="900"
+                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                        {...getBidiTextProps(
+                          agendaItem.phrase,
+                          completedTutorAgendaData?.targetLang || targetLang,
+                        )}
+                      >
+                        {agendaItem.phrase}
+                      </Text>
+                      {agendaItem.meaning &&
+                        agendaItem.meaning !== agendaItem.phrase && (
+                          <Text
+                            fontSize="xs"
+                            color={
+                              isLightTheme ? APP_TEXT_SECONDARY : "gray.300"
+                            }
+                          >
+                            {agendaItem.meaning}
+                          </Text>
+                        )}
+                    </VStack>
+                  </HStack>
+                ))}
+              </VStack>
+            </Box>
+          </ModalBody>
+          <ModalFooter px={{ base: 5, md: 8 }} pb={7} pt={2}>
+            <Button
+              width="100%"
+              size="lg"
+              rounded="xl"
+              bg="teal.500"
+              color="white"
+              fontWeight="900"
+              boxShadow="0px 4px 0px teal"
+              _hover={{
+                bg: "teal.400",
+                transform: "translateY(1px)",
+                boxShadow: "0px 3px 0px teal",
+              }}
+              _active={{ transform: "translateY(4px)", boxShadow: "none" }}
+              onClick={closeTutorCompletedAgendaModal}
             >
               {tutorCopy(uiLang, {
                 en: "Continue",
