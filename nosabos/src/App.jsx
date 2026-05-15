@@ -183,7 +183,6 @@ import {
 } from "./utils/gameReviewContext";
 import { FaCalendarAlt, FaCalendarCheck, FaKey } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
-import { HiVolumeUp } from "react-icons/hi";
 import { TbLanguage } from "react-icons/tb";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
@@ -727,7 +726,6 @@ function TopBar({
   onVolumeChange,
   onVolumeSave,
   playSound,
-  testSound,
   // 🆕 mobile detection prop
   isMobile,
   postNostrContent,
@@ -1881,7 +1879,7 @@ function TopBar({
                         </Text>
                         {soundEnabled && !isMobile && (
                           <HStack mt={3} spacing={3} align="center">
-                            <Box w="50%">
+                            <Box w="100%">
                               <HStack justify="space-between" mb={2}>
                                 <Text fontSize="sm">
                                   {t.sound_volume_label || "Volume"}
@@ -1912,14 +1910,6 @@ function TopBar({
                                 <SliderThumb boxSize={6} />
                               </Slider>
                             </Box>
-                            <Button
-                              leftIcon={<HiVolumeUp />}
-                              size="sm"
-                              variant="outline"
-                              onClick={() => playSound(testSound)}
-                            >
-                              {t.test_sound || "Test sound"}
-                            </Button>
                           </HStack>
                         )}
                       </Box>
@@ -6651,7 +6641,6 @@ export default function App({ onBootReady } = {}) {
           onVolumeChange={handleVolumeChange}
           onVolumeSave={handleVolumeSave}
           playSound={playSound}
-          testSound={submitActionSound}
           isMobile={isMobile}
           postNostrContent={postNostrContent}
           onSupportLangChange={onSupportLangChange}

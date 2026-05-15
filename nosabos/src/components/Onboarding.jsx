@@ -26,10 +26,8 @@ import {
   MenuList,
   MenuItemOption,
   MenuOptionGroup,
-  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import { HiVolumeUp } from "react-icons/hi";
 import submitActionSound from "../assets/submitaction.mp3";
 import selectSound from "../assets/select.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
@@ -122,7 +120,6 @@ export default function Onboarding({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useBreakpointValue({ base: true, md: false });
   const [step, setStep] = useState(0);
 
   const normalizedUserLang = normalizeSupportLanguage(
@@ -173,9 +170,9 @@ export default function Onboarding({
             ? "dark"
             : "light",
     };
-  }, [initialDraft, initialSupportLang, storedThemeMode, ui.DEFAULT_PERSONA]);
+  }, [initialDraft, initialSupportLang, storedThemeMode]);
 
-  const [level, setLevel] = useState(defaults.level);
+  const [level] = useState(defaults.level);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
   const [voice, setVoice] = useState(defaults.voice);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
@@ -184,6 +181,7 @@ export default function Onboarding({
   const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
   const [themeMode, setThemeMode] = useState(defaults.themeMode);
   const playSound = useSoundSettings((s) => s.playSound);
+  const setGlobalSoundEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setGlobalVolume = useSoundSettings((s) => s.setVolume);
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
@@ -196,6 +194,24 @@ export default function Onboarding({
   useEffect(() => {
     syncDocumentLanguage(supportLang);
   }, [supportLang]);
+
+  useEffect(() => {
+    setGlobalSoundEnabled(soundEnabled);
+  }, [setGlobalSoundEnabled, soundEnabled]);
+
+  useEffect(() => {
+    setGlobalVolume(soundVolume);
+  }, [setGlobalVolume, soundVolume]);
+
+  const playOnboardingSound = (sound) => {
+    if (!soundEnabled) return;
+    void playSound(sound);
+  };
+
+  const playOnboardingSliderTick = (value, min, max) => {
+    if (!soundEnabled) return;
+    void playSliderTick(value, min, max);
+  };
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
@@ -216,7 +232,7 @@ export default function Onboarding({
   );
 
   const handleSupportLanguageChange = (value) => {
-    playSound(selectSound);
+    playOnboardingSound(selectSound);
     const normalized = normalizeSupportLanguage(
       value,
       DEFAULT_SUPPORT_LANGUAGE,
@@ -256,7 +272,7 @@ export default function Onboarding({
     }
     setIsSaving(true);
     try {
-      playSound(submitActionSound);
+      playOnboardingSound(submitActionSound);
       const payload = {
         level,
         supportLang,
@@ -486,7 +502,7 @@ export default function Onboarding({
                             w="100%"
                             textAlign="left"
                             padding={5}
-                            onClick={() => playSound(selectSound)}
+                            onClick={() => playOnboardingSound(selectSound)}
                           >
                             <HStack spacing={2}>
                               {supportOption.flag}
@@ -580,7 +596,7 @@ export default function Onboarding({
                             textAlign="left"
                             title={ui.onboarding_practice_label_title}
                             padding={5}
-                            onClick={() => playSound(selectSound)}
+                            onClick={() => playOnboardingSound(selectSound)}
                           >
                             <HStack spacing={2}>
                               {selectedPracticeOption?.flag}
@@ -623,7 +639,7 @@ export default function Onboarding({
                               type="radio"
                               value={targetLang}
                               onChange={(value) => {
-                                playSound(selectSound);
+                                playOnboardingSound(selectSound);
                                 setTargetLang(
                                   normalizePracticeLanguage(
                                     value,
@@ -663,7 +679,7 @@ export default function Onboarding({
                         supportLang={supportLang}
                         onVoiceChange={setVoice}
                         onVoicePersonaChange={setVoicePersona}
-                        onSelectSound={() => playSound(selectSound)}
+                        onSelectSound={() => playOnboardingSound(selectSound)}
                         heading={ui.onboarding_section_voice_persona}
                         description={
                           ui.onboarding_voice_desc ||
@@ -691,7 +707,7 @@ export default function Onboarding({
                           value={pauseMs}
                           onChange={(val) => {
                             setPauseMs(val);
-                            playSliderTick(val, 200, 4000);
+                            playOnboardingSliderTick(val, 200, 4000);
                           }}
                         >
                           <SliderTrack bg="gray.700" h={3} borderRadius="full">
@@ -714,7 +730,11 @@ export default function Onboarding({
                           <Switch
                             id="onboarding-sound-effects-switch"
                             isChecked={soundEnabled}
-                            onChange={(e) => setSoundEnabled(e.target.checked)}
+                            onChange={(e) => {
+                              const nextSoundEnabled = e.target.checked;
+                              setSoundEnabled(nextSoundEnabled);
+                              setGlobalSoundEnabled(nextSoundEnabled);
+                            }}
                           />
                         </HStack>
                         <Text fontSize="xs" opacity={0.6} mt={2}>
@@ -750,7 +770,7 @@ export default function Onboarding({
                                 onChange={(val) => {
                                   setSoundVolume(val);
                                   setGlobalVolume(val);
-                                  playSliderTick(val, 0, 100);
+                                  playOnboardingSliderTick(val, 0, 100);
                                 }}
                               >
                                 <SliderTrack
@@ -763,15 +783,6 @@ export default function Onboarding({
                                 <SliderThumb boxSize={6} />
                               </Slider>
                             </Box>
-                            <Button
-                              leftIcon={<HiVolumeUp />}
-                              size="sm"
-                              variant="outline"
-                              onClick={() => playSound(submitActionSound)}
-                              mb={1}
-                            >
-                              {ui.test_sound || "Test sound"}
-                            </Button>
                           </HStack>
                         )}
                       </Box>
@@ -779,7 +790,7 @@ export default function Onboarding({
                       <ThemeModeField
                         value={themeMode}
                         onChange={(nextMode) => {
-                          playSound(selectSound);
+                          playOnboardingSound(selectSound);
                           setThemeMode(nextMode);
                         }}
                         t={ui}
@@ -807,7 +818,7 @@ export default function Onboarding({
                     size="lg"
                     variant="outline"
                     onClick={() => {
-                      playSound(selectSound);
+                      playOnboardingSound(selectSound);
                       setStep((s) => s - 1);
                     }}
                     w="100%"
@@ -830,7 +841,7 @@ export default function Onboarding({
                     size="lg"
                     colorScheme="teal"
                     onClick={() => {
-                      playSound(nextButtonSound);
+                      playOnboardingSound(nextButtonSound);
                       setStep((s) => s + 1);
                     }}
                     w="100%"
