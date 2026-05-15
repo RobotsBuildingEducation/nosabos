@@ -73,12 +73,11 @@ export const LANDING_PAGE_HI_STATIC = {
     "रीयल-टाइम उच्चारण कोचिंग जो सुनती है, सुधारती है और बोलने का आत्मविश्वास बढ़ाती है",
   scholarship_label: "योगदान",
   scholarship_title: "छात्रवृत्तियां बनाएं",
-  scholarship_title_accent: "Bitcoin के साथ",
+  scholarship_title_accent: "सीखने के साथ",
   scholarship_desc:
-    "ऐप में अपने Bitcoin वॉलेट को टॉप-अप करें ताकि सीखने के माध्यम से छात्रवृत्तियां बनाने में मदद मिल सके",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Robots Building Education का मिशन परिवर्तनकारी शिक्षा तकनीक बनाना है।",
   scholarship_note:
-    "ऐप में एक सामुदायिक पहचान चुनें ताकि आपका हर satoshi वास्तविक लोगों का समर्थन करे।",
+    "हम उपयोगकर्ताओं को एक छोटा वॉलेट बनाने का विकल्प देते हैं, जिससे ऐप में प्रगति करने पर हर बार प्राप्तकर्ताओं को Bitcoin भेजा जा सकता है।",
   faq_label: "प्रश्न",
   faq_title: "अक्सर पूछे जाने वाले प्रश्न",
   faq_q1: "जब मैं खाता बनाता हूँ तो क्या होता है?",

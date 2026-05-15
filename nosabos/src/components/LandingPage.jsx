@@ -90,7 +90,7 @@ const theme = {
     },
   },
   fonts: {
-    display: "'Playfair Display', Georgia, serif",
+    display: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     body: "'DM Sans', -apple-system, sans-serif",
     mono: "'JetBrains Mono', monospace",
   },
@@ -184,12 +184,11 @@ const translations = {
       "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
     scholarship_label: "GIVE BACK",
     scholarship_title: "Create Scholarships",
-    scholarship_title_accent: "with Bitcoin",
+    scholarship_title_accent: "With Learning",
     scholarship_desc:
-      "Top up your in-app Bitcoin wallet to help create scholarships through learning with",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "The mission of Robots Building Education is to create transformative education technology.",
     scholarship_note:
-      "Choose a community identity in the app so every satoshi you spend supports real people.",
+      "We let users opt-in to creating a small wallet that lets you send Bitcoin to recipients every time you make progress in the app.",
     faq_label: "QUESTIONS",
     faq_title: "Frequently Asked",
     faq_q1: "What happens when I create an account?",
@@ -318,12 +317,11 @@ const translations = {
       "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
     scholarship_label: "CONTRIBUYE",
     scholarship_title: "Crea Becas",
-    scholarship_title_accent: "con Bitcoin",
+    scholarship_title_accent: "Aprendiendo",
     scholarship_desc:
-      "Recarga tu billetera de Bitcoin en la app para ayudar a crear becas a través del aprendizaje con",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "La misión de Robots Building Education es crear tecnología educativa transformadora.",
     scholarship_note:
-      "Elige una identidad comunitaria para que cada satoshi que gastes apoye a personas reales.",
+      "Permitimos que los usuarios opten por crear una pequeña billetera que envía Bitcoin a destinatarios cada vez que progresan en la app.",
     faq_label: "PREGUNTAS",
     faq_title: "Preguntas Frecuentes",
     faq_q1: "¿Qué pasa cuando creo una cuenta?",
@@ -451,12 +449,11 @@ const translations = {
       "Coaching della pronuncia in tempo reale che ascolta, corregge e costruisce la tua fiducia nel parlare",
     scholarship_label: "DAI QUALCOSA IN CAMBIO",
     scholarship_title: "Crea Borse di Studio",
-    scholarship_title_accent: "con Bitcoin",
+    scholarship_title_accent: "con l'Apprendimento",
     scholarship_desc:
-      "Ricarica il tuo portafoglio Bitcoin nell'app per aiutare a creare borse di studio attraverso l'apprendimento con",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "La missione di Robots Building Education è creare tecnologia educativa trasformativa.",
     scholarship_note:
-      "Scegli un'identità comunitaria nell'app in modo che ogni satoshi che spendi supporti persone reali.",
+      "Permettiamo agli utenti di scegliere di creare un piccolo portafoglio che invia Bitcoin ai destinatari ogni volta che fanno progressi nell'app.",
     faq_label: "DOMANDE",
     faq_title: "Domande Frequenti",
     faq_q1: "Cosa succede quando creo un account?",
@@ -596,11 +593,11 @@ translations.fr = {
     "Coaching de prononciation en temps reel qui ecoute, corrige et renforce ta confiance a l'oral",
   scholarship_label: "REDONNER",
   scholarship_title: "Creer des Bourses",
-  scholarship_title_accent: "avec Bitcoin",
+  scholarship_title_accent: "en Apprenant",
   scholarship_desc:
-    "Recharge ton portefeuille Bitcoin dans l'app pour aider a creer des bourses grace a l'apprentissage avec",
+    "La mission de Robots Building Education est de creer une technologie educative transformative.",
   scholarship_note:
-    "Choisis une identite communautaire dans l'app afin que chaque satoshi depense soutienne de vraies personnes.",
+    "Nous permettons aux utilisateurs de choisir de creer un petit portefeuille qui envoie du Bitcoin a des beneficiaires chaque fois qu'ils progressent dans l'app.",
   faq_label: "QUESTIONS",
   faq_title: "Questions Frequentes",
   faq_q1: "Que se passe-t-il quand je cree un compte ?",
@@ -733,13 +730,12 @@ translations.ja = {
   value_private: "自分のキー",
   value_private_desc: "自分のアカウントキーでプロフィールと進捗に戻れます。",
   scholarship_label: "ミッション",
-  scholarship_title: "Bitcoinで",
+  scholarship_title: "学びで",
   scholarship_title_accent: "奨学金をつくる",
   scholarship_desc:
-    "アプリ内のBitcoinウォレットにチャージして、学びを通じた奨学金づくりを支援しましょう。",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Robots Building Educationのミッションは、人生を変える教育テクノロジーをつくることです。",
   scholarship_note:
-    "アプリでコミュニティアイデンティティを選ぶと、使うサトシが実際の人々の支援につながります。",
+    "ユーザーは小さなウォレットの作成を選択でき、アプリで進歩するたびに受取人へBitcoinを送れるようになります。",
   scholarship_cta: "詳しく見る",
   faq_label: "FAQ",
   faq_title: "よくある質問",
@@ -895,7 +891,7 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
 
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
     
     *, *::before, *::after {
       box-sizing: border-box;
@@ -1195,17 +1191,6 @@ const Button = ({
         </motion.span>
       ) : (
         children
-      )}
-      {variant === "primary" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)",
-            animation: "shimmer 2.5s infinite",
-          }}
-        />
       )}
     </motion.button>
   );
@@ -2259,26 +2244,17 @@ const LandingPage = ({ onAuthenticated }) => {
               lineHeight: 1.7,
             }}
           >
-            {copy.scholarship_desc}{" "}
-            <a
-              href="https://robotsbuildingeducation.com/learning"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: theme.colors.accent.primary,
-                textDecoration: "underline",
-              }}
-            >
-              {copy.scholarship_link}
-            </a>
+            {copy.scholarship_desc}
           </p>
 
           <p
             style={{
               fontFamily: theme.fonts.body,
-              fontSize: "1rem",
-              color: theme.colors.text.muted,
-              fontStyle: "italic",
+              fontSize: "1.05rem",
+              color: theme.colors.text.secondary,
+              maxWidth: "640px",
+              margin: "0 auto",
+              lineHeight: 1.7,
             }}
           >
             {copy.scholarship_note}

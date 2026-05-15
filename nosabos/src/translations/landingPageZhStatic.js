@@ -69,13 +69,12 @@ export const LANDING_PAGE_ZH_STATIC = {
   value_4:
     "实时发音教练会聆听、纠正，并建立开口说话的信心",
   scholarship_label: "回馈",
-  scholarship_title: "用 Bitcoin",
+  scholarship_title: "用学习",
   scholarship_title_accent: "创造奖学金",
   scholarship_desc:
-    "给应用内 Bitcoin 钱包充值，帮助通过学习创造奖学金",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Robots Building Education 的使命是创造具有变革力的教育技术。",
   scholarship_note:
-    "在应用中选择一个社区身份，让你的每一 satoshi 都支持真实的人。",
+    "我们让用户可以选择创建一个小钱包，在每次于应用中取得进展时向接收者发送 Bitcoin。",
   faq_label: "问题",
   faq_title: "常见问题",
   faq_q1: "创建账户后会发生什么？",

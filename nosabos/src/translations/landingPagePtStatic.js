@@ -73,12 +73,11 @@ export const LANDING_PAGE_PT_STATIC = {
     "Treinamento de pronúncia em tempo real que escuta, corrige e fortalece sua confiança para falar.",
   scholarship_label: "RETRIBUIR",
   scholarship_title: "Criar bolsas de estudo",
-  scholarship_title_accent: "com Bitcoin",
+  scholarship_title_accent: "com aprendizagem",
   scholarship_desc:
-    "Recarregue sua carteira de Bitcoin no app para ajudar a criar bolsas de estudo por meio da aprendizagem com",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "A missão da Robots Building Education é criar tecnologia educacional transformadora.",
   scholarship_note:
-    "Escolha uma identidade da comunidade no app para que cada satoshi gasto apoie pessoas reais.",
+    "Permitimos que usuários optem por criar uma pequena carteira que envia Bitcoin para destinatários toda vez que fazem progresso no app.",
   faq_label: "PERGUNTAS",
   faq_title: "Perguntas frequentes",
   faq_q1: "O que acontece quando eu crio uma conta?",

@@ -72,12 +72,11 @@ export const LANDING_PAGE_DE_STATIC = {
     "Echtzeit-Aussprachecoaching, das zuhört, korrigiert und dein Selbstvertrauen stärkt",
   scholarship_label: "ZURÜCKGEBEN",
   scholarship_title: "Stipendien schaffen",
-  scholarship_title_accent: "mit Bitcoin",
+  scholarship_title_accent: "durch Lernen",
   scholarship_desc:
-    "Lade deine Bitcoin-Wallet in der App auf, um durch Lernen Stipendien zu schaffen mit",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Die Mission von Robots Building Education ist es, transformative Bildungstechnologie zu schaffen.",
   scholarship_note:
-    "Wähle in der App eine Community-Identität, damit jeder Satoshi echte Menschen unterstützt.",
+    "Nutzer können sich dafür entscheiden, eine kleine Wallet zu erstellen, mit der bei jedem Fortschritt in der App Bitcoin an Empfänger gesendet wird.",
   faq_label: "FRAGEN",
   faq_title: "Häufig gefragt",
   faq_q1: "Was passiert, wenn ich ein Konto erstelle?",

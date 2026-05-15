@@ -73,12 +73,11 @@ export const LANDING_PAGE_AR_STATIC = {
     "تدريب نطق لحظي بيسمعك ويصححك ويبني ثقتك في الكلام",
   scholarship_label: "رد الجميل",
   scholarship_title: "اصنع منحًا",
-  scholarship_title_accent: "بـ بيتكوين",
+  scholarship_title_accent: "بالتعلّم",
   scholarship_desc:
-    "اشحن محفظة البيتكوين داخل التطبيق علشان تساعد في صناعة منح من خلال التعلم مع",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "مهمة Robots Building Education هي إنشاء تكنولوجيا تعليمية قادرة على إحداث تغيير حقيقي.",
   scholarship_note:
-    "اختار هوية مجتمعية داخل التطبيق علشان كل ساتوشي تصرفه يدعم ناس حقيقيين.",
+    "بنسمح للمستخدمين يختاروا إنشاء محفظة صغيرة ترسل Bitcoin للمستفيدين كل مرة يحققوا فيها تقدم داخل التطبيق.",
   faq_label: "الأسئلة",
   faq_title: "أسئلة متكررة",
   faq_q1: "إيه اللي بيحصل لما أعمل حساب؟",
