@@ -14,9 +14,12 @@ export const LANDING_PAGE_DE_STATIC = {
   features_label: "FUNKTIONEN",
   features_title: "Alles, was du brauchst, um",
   features_title_accent: "fließend zu werden",
-  feature_conversations: "Echtzeitgespräche",
+  feature_tutor: "Tutor",
+  feature_tutor_desc:
+    "Ein vollständiger Echtzeit-Tutor von Anfang bis Ende, der sich deinem Niveau anpasst und dir beim Lernen hilft.",
+  feature_conversations: "Anpassbare Gespräche",
   feature_conversations_desc:
-    "Immersive Dialoge, die sich deinem Niveau anpassen und dich beim Sprechen und Hören in Echtzeit coachen.",
+    "Wähle Szenario, Rolle, Schwierigkeit und Ziele, damit jede Sprechübung genau zu dem passt, was du üben willst.",
   feature_stories: "Interaktive Geschichten",
   feature_stories_desc:
     "Fesselnde Geschichten, die dich zum lauten Lesen, Zusammenfassen und Rollenspiel in deiner Zielsprache einladen.",
@@ -56,7 +59,7 @@ export const LANDING_PAGE_DE_STATIC = {
   feature_phonics: "Phonetik",
   feature_phonics_desc:
     "Übe Wörter und Laute im Alphabet-Bootcamp und baue Aussprache von Grund auf auf.",
-  value_label: "WARUM NO SABOS",
+  value_label: "Warum wir",
   value_title: "Lernen, das",
   value_title_accent: "wirklich funktioniert",
   value_1:
@@ -89,8 +92,8 @@ export const LANDING_PAGE_DE_STATIC = {
   faq_q4: "Kostet das etwas?",
   faq_a4:
     "Die wichtigsten Übungstools sind kostenlos. Einige fortgeschrittene Labs können Stipendien oder bezahlten Zugang erfordern.",
-  cta_final_title: "Bereit für deine",
-  cta_final_accent: "Sprachreise?",
+  cta_final_title: "Lass uns anfangen",
+  cta_final_accent: "",
   cta_final_subtitle:
     "Erstelle in Sekunden dein sicheres Profil, speichere deinen Schlüssel und öffne dir eine Welt des Sprachenlernens.",
   placeholder_name: "Dein Anzeigename",

@@ -15,9 +15,12 @@ export const LANDING_PAGE_AR_STATIC = {
   features_label: "القدرات",
   features_title: "كل اللي تحتاجه علشان",
   features_title_accent: "تكون طليق",
-  feature_conversations: "محادثات لحظية",
+  feature_tutor: "مدرّس",
+  feature_tutor_desc:
+    "مدرّس لحظي كامل من البداية للنهاية، بيتكيّف مع مستواك ويساعدك تتعلّم.",
+  feature_conversations: "محادثات قابلة للتخصيص",
   feature_conversations_desc:
-    "حوارات غامرة بتتكيّف مع مستواك وتساعدك في التحدث والاستماع لحظة بلحظة.",
+    "اختار السيناريو، الدور، مستوى الصعوبة، والأهداف علشان كل تدريب كلام يناسب اللي عايز تتمرن عليه.",
   feature_stories: "قصص تفاعلية",
   feature_stories_desc:
     "قصص مشوقة تخليك تقرأ بصوت عالي، تلخّص، وتمثّل أدوار بلغتك الهدف.",
@@ -57,7 +60,7 @@ export const LANDING_PAGE_AR_STATIC = {
   feature_phonics: "الأصوات",
   feature_phonics_desc:
     "اتدرّب على الأصوات والكلمات في وضع الأبجدية علشان تطوّر نطقك من البداية.",
-  value_label: "ليه نو سابوس",
+  value_label: "ليه إحنا",
   value_title: "تعلّم",
   value_title_accent: "فعلاً بينفع",
   value_1:
@@ -90,8 +93,8 @@ export const LANDING_PAGE_AR_STATIC = {
   faq_q4: "هل في تكلفة؟",
   faq_a4:
     "أدوات التدريب الأساسية مجانية. بعض المعامل المتقدمة ممكن تحتاج منحة أو وصول مدفوع.",
-  cta_final_title: "جاهز تبدأ",
-  cta_final_accent: "رحلتك اللغوية؟",
+  cta_final_title: "يلا نبدأ",
+  cta_final_accent: "",
   cta_final_subtitle:
     "أنشئ ملفك الآمن في ثواني، احفظ مفتاحك، وافتح عالم تعلم لغات كامل.",
   placeholder_name: "اسمك المعروض",

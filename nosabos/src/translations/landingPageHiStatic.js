@@ -15,9 +15,12 @@ export const LANDING_PAGE_HI_STATIC = {
   features_label: "क्षमताएं",
   features_title: "फ्लुएंट बनने के लिए",
   features_title_accent: "ज़रूरी सब कुछ",
-  feature_conversations: "रीयल-टाइम बातचीत",
+  feature_tutor: "ट्यूटर",
+  feature_tutor_desc:
+    "एक पूरा एंड-टू-एंड रीयल-टाइम ट्यूटर जो आपके स्तर के अनुसार बदलता है और सीखने में मदद करता है।",
+  feature_conversations: "कस्टम बातचीत",
   feature_conversations_desc:
-    "इमर्सिव संवाद जो आपके स्तर के अनुसार बदलते हैं और बोलने-सुनने में मार्गदर्शन करते हैं।",
+    "परिदृश्य, भूमिका, कठिनाई और लक्ष्य चुनें ताकि हर बोलने का सत्र वही अभ्यास कराए जो आप सीखना चाहते हैं।",
   feature_stories: "इंटरैक्टिव कहानियां",
   feature_stories_desc:
     "दिलचस्प कथाएं जो आपको ज़ोर से पढ़ने, सारांश देने और भूमिका निभाने के लिए प्रेरित करती हैं।",
@@ -57,7 +60,7 @@ export const LANDING_PAGE_HI_STATIC = {
   feature_phonics: "फ़ॉनिक्स",
   feature_phonics_desc:
     "हमारे Alphabet bootcamp मोड के साथ शब्दों और ध्वनियों का अभ्यास करें और उच्चारण की मजबूत नींव बनाएं।",
-  value_label: "क्यों NO SABOS",
+  value_label: "हम क्यों",
   value_title: "ऐसी सीख",
   value_title_accent: "जो सच में काम करे",
   value_1:
@@ -90,8 +93,8 @@ export const LANDING_PAGE_HI_STATIC = {
   faq_q4: "क्या इसकी कोई लागत है?",
   faq_a4:
     "मुख्य अभ्यास टूल्स निःशुल्क हैं। कुछ उन्नत लैब्स के लिए छात्रवृत्ति या भुगतान वाली पहुंच की ज़रूरत हो सकती है।",
-  cta_final_title: "क्या आप अपनी",
-  cta_final_accent: "भाषा यात्रा शुरू करने के लिए तैयार हैं?",
+  cta_final_title: "चलिए शुरू करें",
+  cta_final_accent: "",
   cta_final_subtitle:
     "कुछ ही सेकंड में अपना सुरक्षित प्रोफ़ाइल बनाएं, अपनी कुंजी सहेजें और भाषा सीखने की दुनिया खोलें।",
   placeholder_name: "आपका प्रदर्शित नाम",
