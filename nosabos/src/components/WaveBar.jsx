@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 
 const clampPct = (n) => Math.max(0, Math.min(100, Number(n) || 0));
 const MotionG = motion.g;
+export const WAVE_BAR_PROGRESS_START = "#43e97b";
+export const WAVE_BAR_PROGRESS_END = "#38f9d7";
 
 export const WaveBar = ({
   value,
   height = 15,
-  start = "#43e97b",
-  end = "#38f9d7",
+  start = WAVE_BAR_PROGRESS_START,
+  end = WAVE_BAR_PROGRESS_END,
   delay = 0,
   bg = "rgba(255,255,255,0.8)",
   border = "#ededed",

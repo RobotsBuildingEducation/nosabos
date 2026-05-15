@@ -154,8 +154,8 @@ Object.assign(TEXT_TRANSLATIONS, {
   "polite expressions": "Expressions polies",
   "practice greetings in real-life situations":
     "Pratique les salutations dans des situations reelles",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "Pratique l'oral avec des conversations en temps reel. Dis bonjour pour terminer cette activite.",
+  "practice basic introductions in a realtime tutoring session.":
+    "Pratique les presentations de base dans une seance de tutorat en temps reel.",
   "practice with interactive stories that say hello.":
     "Pratique avec des histoires interactives qui disent bonjour.",
   "primary colors": "Couleurs primaires",
@@ -195,8 +195,7 @@ Object.assign(TEXT_TRANSLATIONS, {
     "20 verbes du quotidien et demandes courtes pour agir",
   "20 words for time, transport, and finding your way":
     "20 mots pour le temps, les transports et l'orientation",
-  "a guided tour of all learning modules":
-    "Une visite guidee de tous les modules d'apprentissage",
+  "learn basic introductions": "Apprends les presentations de base",
   "abstract concepts": "Concepts abstraits",
   "academic writing": "Ecriture academique",
   "accent and usage": "Accent et usage",

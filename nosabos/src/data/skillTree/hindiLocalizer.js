@@ -173,8 +173,7 @@ const TEXT_TRANSLATIONS = {
     "रोज़मर्रा के 20 क्रिया शब्द और छोटे अनुरोध",
   "20 words for time, transport, and finding your way":
     "समय, यात्रा और रास्ता खोजने के लिए 20 शब्द",
-  "a guided tour of all learning modules":
-    "सभी सीखने वाले मॉड्यूल्स की मार्गदर्शित यात्रा",
+  "learn basic introductions": "बुनियादी परिचय सीखें",
   "add 20 words for names, family, and moving around":
     "नाम, परिवार और इधर-उधर जाने के लिए 20 शब्द जोड़ें",
   "basic greetings and farewells":
@@ -208,8 +207,8 @@ const TEXT_TRANSLATIONS = {
   "link vocabulary and grammar from the unit in a guided scenario.":
     "मार्गदर्शित परिस्थिति में इकाई की शब्दावली और व्याकरण को जोड़ें।",
   "practice in real situations": "वास्तविक स्थितियों में अभ्यास",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "रीयल-टाइम बातचीत से बोलने का अभ्यास करें। इस गतिविधि को पूरा करने के लिए नमस्ते कहें।",
+  "practice basic introductions in a realtime tutoring session.":
+    "रीयल-टाइम ट्यूटरिंग सत्र में बुनियादी परिचय का अभ्यास करें।",
   "practice with interactive stories that say hello.":
     "ऐसी इंटरैक्टिव कहानियों के साथ अभ्यास करें जिनमें नमस्ते कहा जाता है।",
   "round out 100 words with connectors, feelings, and quick questions":

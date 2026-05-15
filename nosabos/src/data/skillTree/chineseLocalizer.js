@@ -12,7 +12,7 @@ const TEXT_TRANSLATIONS = {
   "getting started": "开始使用",
   "learn how to use the app and explore all features":
     "学习如何使用应用并探索所有功能",
-  "a guided tour of all learning modules": "所有学习模块的引导导览",
+  "learn basic introductions": "学习基本介绍",
   "learn words for the people in your life": "学习生活中人物的词语",
   "learn the words for close family members": "学习亲近家庭成员的词语",
   "grandparents, babies, and extended family": "祖父母、婴儿和扩展家庭",
@@ -36,8 +36,8 @@ const TEXT_TRANSLATIONS = {
     "通过一段简单问候短文提升阅读能力。",
   "practice with interactive stories that say hello.":
     "通过包含问候的互动故事进行练习。",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "通过实时会话练习口语，说出问候即可完成活动。",
+  "practice basic introductions in a realtime tutoring session.":
+    "在实时辅导课程中练习基本介绍。",
   "first words": "最初的词语",
   "people & family": "人物与家庭",
   "my family": "我的家庭",

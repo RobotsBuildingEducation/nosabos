@@ -248,6 +248,7 @@ import {
 } from "../utils/modalMotion";
 
 const Conversations = lazy(() => import("./Conversations"));
+const Tutor = lazy(() => import("./Tutor"));
 const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
 
@@ -2448,6 +2449,8 @@ export default function SkillTree({
   onPathModeChange,
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
+  onTutorFirstLessonComplete,
+  onTutorDailyGoalCelebration,
   // Tutorial props
   isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
   initialUnits = null,
@@ -2518,6 +2521,8 @@ export default function SkillTree({
     pathMode === "path"
       ? lessonLevelCompletionStatus
       : flashcardLevelCompletionStatus;
+  const isConversationStyleMode =
+    pathMode === "conversations" || pathMode === "tutor";
 
   const levelsKey = Array.isArray(levels) ? levels.join("|") : "";
   const requestedUnitsKey = `${showMultipleLevels ? "multi" : "single"}:${targetLang}:${
@@ -2588,11 +2593,14 @@ export default function SkillTree({
   // Calculate max unlocked proficiency level for conversations
   // Uses the highest unlocked level between skill tree and flashcards
   const maxProficiencyLevel = useMemo(() => {
-    const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-    const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
-    const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
+    const levelsOrder = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
+    const lessonIndex = Math.max(0, levelsOrder.indexOf(currentLessonLevel));
+    const flashcardIndex = Math.max(
+      0,
+      levelsOrder.indexOf(currentFlashcardLevel),
+    );
     const maxIndex = Math.max(lessonIndex, flashcardIndex);
-    return levelsOrder[maxIndex] || "A1";
+    return levelsOrder[maxIndex] || "Pre-A1";
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";
@@ -2728,7 +2736,11 @@ export default function SkillTree({
   }, [visibleUnits, userProgress.lessons]);
 
   return (
-    <Box minH="100vh" position="relative" overflow="hidden">
+    <Box
+      minH={isConversationStyleMode ? undefined : "100vh"}
+      position="relative"
+      overflow={isConversationStyleMode ? "visible" : "hidden"}
+    >
       {/* Animated Background Gradients */}
       <Box
         position="absolute"
@@ -2787,14 +2799,14 @@ export default function SkillTree({
 
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
-        py={6}
-        pt={3}
+        py={isConversationStyleMode ? 0 : 6}
+        pt={isConversationStyleMode ? { base: 4, md: 3 } : 3}
         px={{ base: 3, sm: 4, md: 6 }}
         position="relative"
         zIndex={1}
       >
-        {/* CEFR Level Navigator - hidden in conversations mode */}
-        {effectiveOnLevelChange && pathMode !== "conversations" && (
+        {/* CEFR Level Navigator - hidden in conversation-style modes */}
+        {effectiveOnLevelChange && !isConversationStyleMode && (
           <CEFRLevelNavigator
             currentLevel={effectiveCurrentLevel}
             activeCEFRLevel={effectiveActiveLevel}
@@ -2805,8 +2817,8 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header - hidden in conversations mode */}
-        {pathMode !== "conversations" && (
+        {/* Minimal Progress Header - hidden in conversation-style modes */}
+        {!isConversationStyleMode && (
           <Box mb={4} display="flex" justifyContent={"center"}>
 
             <HStack
@@ -2934,7 +2946,7 @@ export default function SkillTree({
               />
             </Suspense>
           </Box>
-        ) : (
+        ) : deferredPathMode === "conversations" ? (
           <Box>
             <Suspense
               fallback={<PathModeFallback />}
@@ -2948,7 +2960,23 @@ export default function SkillTree({
               />
             </Suspense>
           </Box>
-        )}
+        ) : deferredPathMode === "tutor" ? (
+          <Box>
+            <Suspense
+              fallback={<PathModeFallback />}
+            >
+              <Tutor
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                onFirstLessonComplete={onTutorFirstLessonComplete}
+                onDailyGoalCelebration={onTutorDailyGoalCelebration}
+              />
+            </Suspense>
+          </Box>
+        ) : null}
 
         {/* Lesson Detail Modal */}
         <LessonDetailModal

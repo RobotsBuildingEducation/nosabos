@@ -36,8 +36,8 @@ const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const PORTUGUESE_SKILLTREE_EXACT = {
   [normalizeKey("Learn how to use the app and explore all features")]:
     "Aprenda a usar o aplicativo e explore todos os recursos",
-  [normalizeKey("A guided tour of all learning modules")]:
-    "Um tour guiado por todos os módulos de aprendizagem",
+  [normalizeKey("Learn basic introductions")]:
+    "Aprenda apresentações básicas",
   [normalizeKey("Getting Started")]: "Primeiros passos",
   [normalizeKey("Learn new words with interactive questions. Practice saying hello.")]:
     "Aprenda novas palavras com perguntas interativas. Pratique dizer olá.",
@@ -47,8 +47,8 @@ const PORTUGUESE_SKILLTREE_EXACT = {
     "Melhore suas habilidades de leitura com um texto simples de saudação.",
   [normalizeKey("Practice with interactive stories that say hello.")]:
     "Pratique com histórias interativas que dizem olá.",
-  [normalizeKey("Practice speaking with realtime conversations. Say hello to complete this activity.")]:
-    "Pratique a fala com conversas em tempo real. Diga olá para concluir esta atividade.",
+  [normalizeKey("Practice basic introductions in a realtime tutoring session.")]:
+    "Pratique apresentações básicas em uma sessão de tutoria em tempo real.",
   [normalizeKey("Finish the tutorial by playing a short game review.")]:
     "Conclua o tutorial jogando uma breve revisão em forma de jogo.",
   [normalizeKey("People & Family")]: "Pessoas e família",

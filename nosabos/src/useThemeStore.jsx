@@ -3,7 +3,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { database } from "./firebaseResources/firebaseResources";
 
 export const normalizeThemeMode = (mode) =>
-  mode === "light" ? "light" : "dark";
+  mode === "dark" ? "dark" : "light";
 
 const shades = [
   "50",
@@ -56,8 +56,10 @@ const getStoredThemeColor = () => {
 };
 
 const getStoredThemeMode = () => {
-  if (typeof window === "undefined") return "dark";
-  return normalizeThemeMode(localStorage.getItem("themeMode"));
+  if (typeof window === "undefined") return "light";
+  return localStorage.getItem("themeMode")
+    ? normalizeThemeMode(localStorage.getItem("themeMode"))
+    : "light";
 };
 
 export const useThemeStore = create((set) => ({

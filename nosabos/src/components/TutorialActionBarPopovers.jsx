@@ -22,12 +22,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
-import { PiPath, PiUsersBold } from "react-icons/pi";
 import { FiCompass } from "react-icons/fi";
-import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
+import { RiBook2Line, RiBookmarkLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { LuKey, LuKeyRound } from "react-icons/lu";
-import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useThemeStore } from "../useThemeStore";
 import { getLanguageDirection } from "../constants/languages";
@@ -145,18 +142,19 @@ const BUTTON_EXPLANATIONS = [
   {
     id: "mode",
     tutorialId: "mode",
-    icon: PiPath,
-    label: { en: "Learning Mode", es: "Modo de Aprendizaje", it: "Modalità di Apprendimento", fr: "Mode d'apprentissage", de: "Lernmodus", ja: "学習モード", hi: "सीखने का मोड", ar: "وضع التعلّم", zh: "学习模式" },
+    icon: RiBook2Line,
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje", pt: "Modo de aprendizagem", it: "Modalità di Apprendimento", fr: "Mode d'apprentissage", de: "Lernmodus", ja: "学習モード", hi: "सीखने का मोड", ar: "وضع التعلّم", zh: "学习模式" },
     description: {
-      en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
-      es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
-      it: "Passa tra percorso di apprendimento, schede di pratica e modalità di conversazione libera. L'icona cambia in base alla modalità attuale.",
-      fr: "Passe entre le parcours, les cartes de pratique et les modes de conversation libre. L'icone change selon le mode actuel.",
-      de: "Wechsle zwischen Lernpfad, Übungskarten und freier Unterhaltung. Das Symbol passt sich deinem aktuellen Modus an.",
-      ja: "学習パス、練習カード、自由会話モードを切り替えます。現在のモードに応じてアイコンが変わります。",
-      hi: "लर्निंग पाथ, अभ्यास कार्ड और मुक्त बातचीत मोड के बीच बदलें। आइकन आपके वर्तमान मोड के अनुसार बदलता है।",
-      ar: "بدّل بين مسار التعلّم وكروت التدريب وأوضاع المحادثة الحرة. الأيقونة بتتغيّر حسب وضعك الحالي.",
-      zh: "在学习路径、练习卡片和自由会话模式之间切换。图标会根据当前模式变化。",
+      en: "Switch between learning modes to practice and learn in different ways.",
+      es: "Cambia entre modos de aprendizaje para practicar y aprender de distintas maneras.",
+      pt: "Alterne entre modos de aprendizagem para praticar e aprender de formas diferentes.",
+      it: "Passa tra modalità di apprendimento per esercitarti e imparare in modi diversi.",
+      fr: "Passe entre les modes d'apprentissage pour pratiquer et apprendre de différentes façons.",
+      de: "Wechsle zwischen Lernmodi, um auf verschiedene Arten zu üben und zu lernen.",
+      ja: "学習モードを切り替えて、さまざまな方法で練習し学べます。",
+      hi: "अलग-अलग तरीकों से अभ्यास और सीखने के लिए सीखने के मोड बदलें।",
+      ar: "بدّل بين أوضاع التعلّم علشان تتدرّب وتتعلم بطرق مختلفة.",
+      zh: "切换学习模式，用不同方式练习和学习。",
     },
     position: 6,
   },

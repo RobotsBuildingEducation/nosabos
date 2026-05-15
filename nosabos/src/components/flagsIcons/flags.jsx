@@ -486,14 +486,14 @@ export const polishFlag = () => {
           d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
           fill="#F0F0F0"
         />
-        <path
-          d="M12 24c5.16 0 9.559-3.257 11.254-7.827H.747C2.443 20.743 6.841 24 12.001 24Z"
-          fill="#D80027"
-        />
+        <path d="M0 12h24v12H0z" fill="#D80027" />
       </g>
       <defs>
         <clipPath id="PL_svg__a">
-          <path fill="#fff" d="M0 0h24v24H0z" />
+          <path
+            fill="#fff"
+            d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          />
         </clipPath>
       </defs>
     </svg>

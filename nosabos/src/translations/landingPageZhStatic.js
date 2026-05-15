@@ -14,9 +14,12 @@ export const LANDING_PAGE_ZH_STATIC = {
   features_label: "功能",
   features_title: "成为流利使用者所需的",
   features_title_accent: "全部工具",
-  feature_conversations: "实时对话",
+  feature_tutor: "导师",
+  feature_tutor_desc:
+    "完整的端到端实时导师，会根据你的水平调整并帮助你学习。",
+  feature_conversations: "可自定义对话",
   feature_conversations_desc:
-    "沉浸式对话会根据你的水平调整，实时训练口语与听力。",
+    "选择场景、角色、难度和目标，让每次口语练习都符合你想练的内容。",
   feature_stories: "互动故事",
   feature_stories_desc:
     "引人入胜的故事，引导你朗读、总结并用目标语言角色扮演。",
@@ -54,7 +57,7 @@ export const LANDING_PAGE_ZH_STATIC = {
   feature_phonics: "语音基础",
   feature_phonics_desc:
     "用字母训练营练习单词和发音，从基础掌握准确发音。",
-  value_label: "为什么选择 NO SABOS",
+  value_label: "为什么选我们",
   value_title: "真正有效的",
   value_title_accent: "语言学习",
   value_1:
@@ -66,13 +69,12 @@ export const LANDING_PAGE_ZH_STATIC = {
   value_4:
     "实时发音教练会聆听、纠正，并建立开口说话的信心",
   scholarship_label: "回馈",
-  scholarship_title: "用 Bitcoin",
+  scholarship_title: "用学习",
   scholarship_title_accent: "创造奖学金",
   scholarship_desc:
-    "给应用内 Bitcoin 钱包充值，帮助通过学习创造奖学金",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Robots Building Education 的使命是创造具有变革力的教育技术。",
   scholarship_note:
-    "在应用中选择一个社区身份，让你的每一 satoshi 都支持真实的人。",
+    "我们让用户可以选择创建一个小钱包，在每次于应用中取得进展时向接收者发送 Bitcoin。",
   faq_label: "问题",
   faq_title: "常见问题",
   faq_q1: "创建账户后会发生什么？",
@@ -87,8 +89,8 @@ export const LANDING_PAGE_ZH_STATIC = {
   faq_q4: "需要付费吗？",
   faq_a4:
     "核心练习工具免费。部分高级实验室可能需要奖学金或付费访问。",
-  cta_final_title: "准备开始你的",
-  cta_final_accent: "语言旅程了吗？",
+  cta_final_title: "开始吧",
+  cta_final_accent: "",
   cta_final_subtitle:
     "几秒钟内创建安全资料、保存密钥，并开启语言学习世界。",
   placeholder_name: "你的显示名称",

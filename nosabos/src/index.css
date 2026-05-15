@@ -3,7 +3,6 @@ body {
   background-color: var(--app-page-bg) !important;
   color: var(--app-text-primary) !important;
   overflow-x: hidden;
-  scrollbar-gutter: stable;
   transition:
     background-color 220ms ease,
     color 220ms ease;

@@ -29,8 +29,7 @@ const TEXT_TRANSLATIONS = {
     "20 Alltagsverben und kurze Bitten, um Dinge zu erledigen",
   "20 words for time, transport, and finding your way":
     "20 Wörter für Zeit, Verkehr und Orientierung",
-  "a guided tour of all learning modules":
-    "Eine geführte Tour durch alle Lernmodule",
+  "learn basic introductions": "Lerne einfache Vorstellungen",
   "abstract concepts": "Abstrakte Konzepte",
   "academic writing": "Akademisches Schreiben",
   "accent and usage": "Akzent und Gebrauch",
@@ -307,8 +306,8 @@ const TEXT_TRANSLATIONS = {
   "polite expressions": "Höfliche Ausdrücke",
   "practice in real situations": "In echten Situationen üben",
   "practice numbers in everyday situations": "Zahlen im Alltag üben",
-  "practice speaking with realtime conversations. say hello to complete this activity.":
-    "Übe Sprechen mit Echtzeitgesprächen. Sage Hallo, um diese Aktivität abzuschließen.",
+  "practice basic introductions in a realtime tutoring session.":
+    "Übe einfache Vorstellungen in einer Echtzeit-Tutorsitzung.",
   "practice with interactive stories that say hello.":
     "Übe mit interaktiven Geschichten, die Hallo sagen.",
   "question words": "Fragewörter",

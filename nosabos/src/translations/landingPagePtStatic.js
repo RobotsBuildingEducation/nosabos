@@ -15,9 +15,12 @@ export const LANDING_PAGE_PT_STATIC = {
   features_label: "RECURSOS",
   features_title: "Tudo o que você precisa para",
   features_title_accent: "ganhar fluência",
-  feature_conversations: "Conversas em tempo real",
+  feature_tutor: "Tutor",
+  feature_tutor_desc:
+    "Um tutor completo em tempo real, de ponta a ponta, que se adapta ao seu nível e ajuda você a aprender.",
+  feature_conversations: "Conversas personalizáveis",
   feature_conversations_desc:
-    "Diálogos imersivos que se adaptam ao seu nível, guiando você na fala e na escuta em tempo real.",
+    "Escolha o cenário, o papel, a dificuldade e os objetivos para que cada sessão de fala combine com o que você quer praticar.",
   feature_stories: "Histórias interativas",
   feature_stories_desc:
     "Narrativas envolventes que convidam você a ler em voz alta, resumir e fazer roleplay no idioma que está praticando.",
@@ -57,7 +60,7 @@ export const LANDING_PAGE_PT_STATIC = {
   feature_phonics: "Fonética",
   feature_phonics_desc:
     "Pratique palavras e sons com o modo Alfabeto para construir a pronúncia desde a base.",
-  value_label: "POR QUE NO SABOS",
+  value_label: "Por que nós",
   value_title: "Aprendizagem que",
   value_title_accent: "funciona de verdade",
   value_1:
@@ -70,12 +73,11 @@ export const LANDING_PAGE_PT_STATIC = {
     "Treinamento de pronúncia em tempo real que escuta, corrige e fortalece sua confiança para falar.",
   scholarship_label: "RETRIBUIR",
   scholarship_title: "Criar bolsas de estudo",
-  scholarship_title_accent: "com Bitcoin",
+  scholarship_title_accent: "com aprendizagem",
   scholarship_desc:
-    "Recarregue sua carteira de Bitcoin no app para ajudar a criar bolsas de estudo por meio da aprendizagem com",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "A missão da Robots Building Education é criar tecnologia educacional transformadora.",
   scholarship_note:
-    "Escolha uma identidade da comunidade no app para que cada satoshi gasto apoie pessoas reais.",
+    "Permitimos que usuários optem por criar uma pequena carteira que envia Bitcoin para destinatários toda vez que fazem progresso no app.",
   faq_label: "PERGUNTAS",
   faq_title: "Perguntas frequentes",
   faq_q1: "O que acontece quando eu crio uma conta?",
@@ -90,8 +92,8 @@ export const LANDING_PAGE_PT_STATIC = {
   faq_q4: "Tem custo?",
   faq_a4:
     "As ferramentas principais são gratuitas. Alguns laboratórios mais avançados podem exigir bolsas de estudo ou acesso pago.",
-  cta_final_title: "Pronto para começar sua",
-  cta_final_accent: "jornada nos idiomas?",
+  cta_final_title: "Vamos começar",
+  cta_final_accent: "",
   cta_final_subtitle:
     "Crie seu perfil seguro em segundos, guarde sua chave e desbloqueie um mundo de aprendizagem de idiomas.",
   placeholder_name: "Seu nome de exibição",

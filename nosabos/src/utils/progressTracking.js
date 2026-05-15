@@ -23,8 +23,10 @@ export function initializeProgress() {
     totalXp: 0,
     languageXp: {},
     languageLessons: {},
+    tutorLanguageLessons: {},
     currentUnit: null,
     currentLesson: null,
+    currentTutorLesson: null,
     lessons: {}, // { lessonId: { status, completedAt, xpEarned, attempts } }
     units: {}, // { unitId: { completedLessons, totalLessons, status } }
     lastActiveAt: new Date().toISOString(),
@@ -81,12 +83,83 @@ export async function startLesson(
       lessonDocPromise = setDoc(
         lessonProgressRef,
         {
+          tutorAgendaProgress: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
       );
     } else {
       // Fresh start — record the baseline XP so progress can be restored later
+      lessonDocPromise = setDoc(
+        lessonProgressRef,
+        {
+          targetLang: languageKey,
+          lessonId,
+          status: SKILL_STATUS.IN_PROGRESS,
+          lessonStartXp: currentXp,
+          tutorAgendaProgress: deleteField(),
+          startedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
+  } catch (error) {
+    console.error("Error starting lesson:", error);
+    throw error;
+  }
+}
+
+/**
+ * Start a Tutor lesson without mutating Skill Tree lesson progress.
+ */
+export async function startTutorLesson(
+  npub,
+  lessonId,
+  targetLang = "es",
+  userProgress = null,
+  currentXp = 0,
+) {
+  if (!npub || !lessonId) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+  const userRef = doc(database, "users", npub);
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+
+  const existingLessonData =
+    userProgress?.tutorLanguageLessons?.[languageKey]?.[lessonId] ||
+    userProgress?.lessons?.[lessonId];
+  const existingStatus = existingLessonData?.status;
+
+  const isAlreadyCompleted = existingStatus === SKILL_STATUS.COMPLETED;
+  const isAlreadyInProgress = existingStatus === SKILL_STATUS.IN_PROGRESS;
+
+  try {
+    const updateData = {
+      "progress.currentTutorLesson": lessonId,
+      "progress.lastActiveAt": serverTimestamp(),
+    };
+
+    let lessonDocPromise;
+    if (isAlreadyCompleted) {
+      lessonDocPromise = Promise.resolve();
+    } else if (isAlreadyInProgress) {
+      lessonDocPromise = setDoc(
+        lessonProgressRef,
+        {
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    } else {
       lessonDocPromise = setDoc(
         lessonProgressRef,
         {
@@ -103,7 +176,115 @@ export async function startLesson(
 
     await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
   } catch (error) {
-    console.error("Error starting lesson:", error);
+    console.error("Error starting Tutor lesson:", error);
+    throw error;
+  }
+}
+
+/**
+ * Save Tutor's agenda checkpoint for a lesson.
+ * Tutor progress is intentionally separate from Skill Tree languageLessons.
+ */
+export async function saveTutorAgendaProgress(
+  npub,
+  lessonId,
+  targetLang = "es",
+  progress = {},
+) {
+  if (!npub || !lessonId) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+  const userRef = doc(database, "users", npub);
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+  const items = Object.entries(progress || {}).reduce((acc, [id, value]) => {
+    if (id && value === true) acc[id] = true;
+    return acc;
+  }, {});
+
+  try {
+    await Promise.all([
+      setDoc(
+        userRef,
+        {
+          progress: {
+            lastActiveAt: serverTimestamp(),
+          },
+        },
+        { merge: true },
+      ),
+      setDoc(
+        lessonProgressRef,
+        {
+          targetLang: languageKey,
+          lessonId,
+          tutorAgendaProgress: {
+            items,
+            updatedAt: serverTimestamp(),
+          },
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      ),
+    ]);
+  } catch (error) {
+    console.error("Error saving Tutor agenda progress:", error);
+    throw error;
+  }
+}
+
+/**
+ * Complete a Tutor lesson without mutating Skill Tree lesson progress.
+ */
+export async function completeTutorLesson(
+  npub,
+  lessonId,
+  xpReward,
+  targetLang = "es",
+) {
+  if (!npub || !lessonId || !xpReward) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+
+  const userRef = doc(database, "users", npub);
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+
+  try {
+    await Promise.all([
+      updateDoc(userRef, {
+        "progress.currentTutorLesson": null,
+        "progress.lastActiveAt": serverTimestamp(),
+      }),
+      setDoc(
+        lessonProgressRef,
+        {
+          targetLang: languageKey,
+          lessonId,
+          status: SKILL_STATUS.COMPLETED,
+          completedAt: serverTimestamp(),
+          xpEarned: xpReward,
+          lessonStartXp: deleteField(),
+          tutorAgendaProgress: deleteField(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      ),
+    ]);
+
+    return true;
+  } catch (error) {
+    console.error("Error completing Tutor lesson:", error);
     throw error;
   }
 }
@@ -381,6 +562,7 @@ export async function abandonLesson(npub, lessonId, targetLang = "es") {
           lessonId,
           status: SKILL_STATUS.AVAILABLE,
           lessonStartXp: deleteField(),
+          tutorAgendaProgress: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },

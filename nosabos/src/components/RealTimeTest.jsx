@@ -1512,8 +1512,8 @@ export default function RealTimeTest({
               voice: voiceName,
               turn_detection: buildTurnDetectionConfig(),
               input_audio_transcription: sttLang
-                ? { model: "whisper-1", language: sttLang }
-                : { model: "whisper-1" },
+                ? { model: "gpt-4o-mini-transcribe", language: sttLang }
+                : { model: "gpt-4o-mini-transcribe" },
               output_audio_format: "pcm16",
             },
           }),
@@ -2887,7 +2887,7 @@ Return ONLY JSON:
             modalities: ["audio", "text"],
             voice: voiceName,
             turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "whisper-1" },
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
             output_audio_format: "pcm16",
           },
         }),
@@ -2922,7 +2922,7 @@ Return ONLY JSON:
             voice: voiceName,
             modalities: ["audio", "text"],
             turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "whisper-1" },
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
             output_audio_format: "pcm16",
           },
         }),
@@ -2987,7 +2987,7 @@ Return ONLY JSON:
             modalities: ["audio", "text"],
             voice: voiceName,
             turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "whisper-1" },
+            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
             output_audio_format: "pcm16",
           },
         }),

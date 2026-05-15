@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Badge, Box, HStack, Text, VStack } from "@chakra-ui/react";
 import { FiHeart, FiTrendingDown, FiTrendingUp } from "react-icons/fi";
-import { WaveBar } from "./WaveBar";
+import {
+  WaveBar,
+  WAVE_BAR_PROGRESS_END,
+  WAVE_BAR_PROGRESS_START,
+} from "./WaveBar";
 import { useThemeStore } from "../useThemeStore";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
@@ -764,8 +768,6 @@ function DogCanvas({ stage, isLightTheme, isCelebration = false }) {
 export default function DailyGoalPetPanel({
   lang = "en",
   health = DAILY_GOAL_PET_DEFAULT_HEALTH,
-  lastOutcome = null,
-  lastDelta = null,
   variant = "setup",
   showPreview = true,
 }) {
@@ -886,8 +888,8 @@ export default function DailyGoalPetPanel({
                 <WaveBar
                   value={safeHealth}
                   height={14}
-                  start={stage.waveStart}
-                  end={stage.waveEnd}
+                  start={WAVE_BAR_PROGRESS_START}
+                  end={WAVE_BAR_PROGRESS_END}
                   bg={
                     isLightTheme
                       ? "rgba(255, 255, 255, 0.58)"

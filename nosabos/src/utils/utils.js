@@ -1,6 +1,7 @@
 // src/utils/xp.js
 import { doc, runTransaction, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
+import useUserStore from "../hooks/useUserStore";
 import {
   DAILY_GOAL_PET_HEALTH_GAIN,
   applyDailyGoalPetDelta,
@@ -9,13 +10,104 @@ import {
   hasDailyGoalResetExpired,
 } from "./dailyGoalPet";
 
+function getStoredLocalNpub() {
+  if (typeof window === "undefined") return "";
+  try {
+    return (window.localStorage.getItem("local_npub") || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+function getUserNpub(user = {}) {
+  return (
+    user?.id ||
+    user?.local_npub ||
+    getStoredLocalNpub() ||
+    ""
+  ).trim();
+}
+
+function syncAwardedXpToLocalStore({
+  npub,
+  delta,
+  targetLang,
+  dailyXp,
+  dailyGoalXp,
+  todayKey,
+  petHealth,
+}) {
+  try {
+    const store = useUserStore.getState?.();
+    if (!store?.patchUser) return;
+
+    const currentUser = store.user || {};
+    const currentNpub = getUserNpub(currentUser);
+    if (npub && currentNpub && npub !== currentNpub) return;
+
+    const patch = {};
+    const nextDailyXp = Number(dailyXp);
+    const nextDailyGoalXp = Number(dailyGoalXp);
+    const nextPetHealth = Number(petHealth);
+    const currentXp = Number(currentUser?.xp || 0);
+    const currentTodayXp = Number(currentUser?.dailyXpHistory?.[todayKey]);
+    const langKey =
+      typeof targetLang === "string" && targetLang.trim()
+        ? targetLang.trim().toLowerCase()
+        : "";
+    const syncedDailyXp =
+      todayKey && Number.isFinite(currentTodayXp)
+        ? Math.max(currentTodayXp, nextDailyXp)
+        : nextDailyXp;
+
+    if (Number.isFinite(currentXp)) patch.xp = currentXp + delta;
+    if (langKey) {
+      const currentProgress = currentUser.progress || {};
+      const currentProgressTotal = Number(currentProgress.totalXp || 0);
+      const currentLanguageXp = Number(
+        currentProgress.languageXp?.[langKey] || 0,
+      );
+      patch.progress = {
+        ...currentProgress,
+        totalXp: Number.isFinite(currentProgressTotal)
+          ? currentProgressTotal + delta
+          : delta,
+        languageXp: {
+          ...(currentProgress.languageXp || {}),
+          [langKey]: Number.isFinite(currentLanguageXp)
+            ? currentLanguageXp + delta
+            : delta,
+        },
+      };
+    }
+    if (Number.isFinite(syncedDailyXp)) patch.dailyXp = syncedDailyXp;
+    if (Number.isFinite(nextDailyGoalXp)) patch.dailyGoalXp = nextDailyGoalXp;
+    if (Number.isFinite(nextPetHealth)) patch.dailyGoalPetHealth = nextPetHealth;
+    if (todayKey && Number.isFinite(syncedDailyXp)) {
+      patch.dailyXpHistory = {
+        ...(currentUser.dailyXpHistory || {}),
+        [todayKey]: syncedDailyXp,
+      };
+    }
+
+    if (Object.keys(patch).length) store.patchUser(patch);
+  } catch (error) {
+    console.warn("Failed to sync awarded XP to local user store:", error);
+  }
+}
+
 export async function awardXp(npub, amount, targetLang = "es") {
-  if (!npub || !amount) return;
+  if (!npub || !amount) return null;
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
   let shouldCelebrateGoal = false;
   let celebrationPetHealth = null;
+  let awardedDailyXp = null;
+  let awardedDailyGoalXp = null;
+  let awardedTodayKey = "";
+  let awardedPetHealth = null;
+  let awardedLangKey = "";
 
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(ref);
@@ -26,6 +118,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
         : typeof data?.progress?.targetLang === "string"
         ? data.progress.targetLang
         : "es";
+    awardedLangKey = langKey;
     const existingProgress = data?.progress || {};
     const existingLangXp = existingProgress?.languageXp?.[langKey] || 0;
 
@@ -55,11 +148,15 @@ export async function awardXp(npub, amount, targetLang = "es") {
     };
 
     // Celebrate once per day upon reaching goal
-    const goal = data.dailyGoalXp || 0;
+    const parsedGoal = Number(
+      data.dailyGoalXp ?? data.progress?.dailyGoalXp ?? data.stats?.dailyGoalXp,
+    );
+    const goal = Number.isFinite(parsedGoal) ? parsedGoal : 0;
     const reached = goal > 0 && nextDaily >= goal && !currentHasCelebrated;
     const nextPetHealth = reached
       ? applyDailyGoalPetDelta(currentPetHealth, DAILY_GOAL_PET_HEALTH_GAIN)
       : currentPetHealth;
+    awardedPetHealth = nextPetHealth;
     if (reached) {
       shouldCelebrateGoal = true;
       celebrationPetHealth = nextPetHealth;
@@ -67,6 +164,9 @@ export async function awardXp(npub, amount, targetLang = "es") {
 
     // Format today's date as YYYY-MM-DD for calendar tracking
     const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    awardedDailyXp = nextDaily;
+    awardedDailyGoalXp = goal;
+    awardedTodayKey = todayKey;
     const existingDailyXpHistory =
       data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
         ? data.dailyXpHistory
@@ -100,10 +200,39 @@ export async function awardXp(npub, amount, targetLang = "es") {
     );
   });
 
+  syncAwardedXpToLocalStore({
+    npub,
+    delta,
+    targetLang: awardedLangKey,
+    dailyXp: awardedDailyXp,
+    dailyGoalXp: awardedDailyGoalXp,
+    todayKey: awardedTodayKey,
+    petHealth: awardedPetHealth,
+  });
+
+  const result = {
+    amount: delta,
+    npub,
+    dailyXp: awardedDailyXp,
+    dailyGoalXp: awardedDailyGoalXp,
+    todayKey: awardedTodayKey,
+    shouldCelebrateGoal,
+    petHealth: celebrationPetHealth ?? awardedPetHealth,
+    petDelta: shouldCelebrateGoal ? DAILY_GOAL_PET_HEALTH_GAIN : 0,
+  };
+
   // Optional UI pings
   if (typeof window !== "undefined") {
     window.dispatchEvent(
-      new CustomEvent("xp:awarded", { detail: { amount: delta } })
+      new CustomEvent("xp:awarded", {
+        detail: {
+          amount: result.amount,
+          npub: result.npub,
+          dailyXp: result.dailyXp,
+          dailyGoalXp: result.dailyGoalXp,
+          todayKey: result.todayKey,
+        },
+      })
     );
     if (shouldCelebrateGoal) {
       window.dispatchEvent(
@@ -116,4 +245,6 @@ export async function awardXp(npub, amount, targetLang = "es") {
       );
     }
   }
+
+  return result;
 }

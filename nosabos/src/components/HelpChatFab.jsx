@@ -1754,7 +1754,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 modalities: ["audio", "text"],
                 voice: voiceName,
                 turn_detection: buildRealtimeTurnDetection(),
-                input_audio_transcription: { model: "whisper-1" },
+                input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
                 output_audio_format: "pcm16",
               },
             }),

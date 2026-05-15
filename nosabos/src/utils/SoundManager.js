@@ -764,6 +764,40 @@ class SoundManager {
       synth.triggerAttackRelease("G5", "2n", now + 0.48);
     },
 
+    // Lesson completion - cute bubbly celebration with soft toy-like chimes
+    lessonComplete: () => {
+      const softChime = this.createDisposablePolySynth(
+        {
+          type: "sine",
+          attack: 0.012,
+          decay: 0.16,
+          sustain: 0.04,
+          release: 0.28,
+        },
+        VOL.SOFT,
+        1200,
+      );
+      const bubbles = this.createDisposablePolySynth(
+        {
+          type: "triangle",
+          attack: 0.004,
+          decay: 0.09,
+          sustain: 0,
+          release: 0.16,
+        },
+        VOL.NORMAL,
+        1200,
+      );
+
+      const now = Tone.now();
+      softChime.triggerAttackRelease(["E4", "G4"], "16n", now);
+      ["G4", "C5", "D5", "E5", "G5"].forEach((note, i) => {
+        bubbles.triggerAttackRelease(note, "32n", now + 0.04 + i * 0.07);
+      });
+      bubbles.triggerAttackRelease("A5", "32n", now + 0.35);
+      softChime.triggerAttackRelease(["C5", "E5", "G5"], "8n", now + 0.44);
+    },
+
     // Slider tick sound - for slider interaction feedback
     sliderTick: () => {
       const synth = this.getSynth({

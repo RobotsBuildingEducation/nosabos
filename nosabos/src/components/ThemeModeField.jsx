@@ -28,7 +28,7 @@ const OPTIONS = [
 ];
 
 export default function ThemeModeField({
-  value = "dark",
+  value = "light",
   onChange,
   t = {},
   compact = false,

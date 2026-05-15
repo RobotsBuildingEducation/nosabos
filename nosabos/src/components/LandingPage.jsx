@@ -17,15 +17,14 @@ import {
   FaStickyNote,
   FaUsers,
   FaCompass,
-  FaRobot,
   FaMap,
   FaBullseye,
   FaVolumeUp,
   FaGamepad,
   FaMicrophone,
-  FaMoon,
-  FaSun,
 } from "react-icons/fa";
+import { LuBookAudio, LuSun } from "react-icons/lu";
+import { RiMoonClearFill } from "react-icons/ri";
 
 import {
   Menu,
@@ -91,7 +90,7 @@ const theme = {
     },
   },
   fonts: {
-    display: "'Playfair Display', Georgia, serif",
+    display: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     body: "'DM Sans', -apple-system, sans-serif",
     mono: "'JetBrains Mono', monospace",
   },
@@ -102,6 +101,8 @@ const theme = {
 };
 
 const HERO_VOICE_ORB_STATES = ["idle", "listening", "speaking"];
+const COMPACT_SECTION_PADDING = "clamp(48px, 7vw, 88px) 24px";
+const COMPACT_HEADING_MARGIN = "clamp(32px, 5vw, 44px)";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TRANSLATIONS
@@ -124,9 +125,12 @@ const translations = {
     features_label: "CAPABILITIES",
     features_title: "Everything You Need to",
     features_title_accent: "Become Fluent",
-    feature_conversations: "Real-Time Conversations",
+    feature_tutor: "Tutor",
+    feature_tutor_desc:
+      "A complete end-to-end real-time tutor that adapts to your level and helps you learn.",
+    feature_conversations: "Customizable Conversations",
     feature_conversations_desc:
-      "Immersive dialogues that adapt to your level, coaching you through speaking and listening in real-time.",
+      "Choose the scenario, role, difficulty, and goals so every speaking session fits what you want to practice.",
     feature_stories: "Interactive Stories",
     feature_stories_desc:
       "Engaging narratives that invite you to read aloud, summarize, and role-play in your target language.",
@@ -167,7 +171,7 @@ const translations = {
     feature_phonics_desc:
       "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
 
-    value_label: "WHY NO SABOS",
+    value_label: "Why Us",
     value_title: "Learning That",
     value_title_accent: "Actually Works",
     value_1:
@@ -180,12 +184,11 @@ const translations = {
       "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
     scholarship_label: "GIVE BACK",
     scholarship_title: "Create Scholarships",
-    scholarship_title_accent: "with Bitcoin",
+    scholarship_title_accent: "With Learning",
     scholarship_desc:
-      "Top up your in-app Bitcoin wallet to help create scholarships through learning with",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "The mission of Robots Building Education is to create transformative education technology.",
     scholarship_note:
-      "Choose a community identity in the app so every satoshi you spend supports real people.",
+      "We let users opt-in to creating a small wallet that lets you send Bitcoin to recipients every time you make progress in the app.",
     faq_label: "QUESTIONS",
     faq_title: "Frequently Asked",
     faq_q1: "What happens when I create an account?",
@@ -200,8 +203,8 @@ const translations = {
     faq_q4: "Is there a cost?",
     faq_a4:
       "The core practice tools are free. Some advanced labs may require scholarships or paid access.",
-    cta_final_title: "Ready to Begin Your",
-    cta_final_accent: "Language Journey?",
+    cta_final_title: "Let's get started",
+    cta_final_accent: "",
     cta_final_subtitle:
       "Create your secure profile in seconds, save your key, and unlock a world of language learning.",
     placeholder_name: "Your display name",
@@ -254,9 +257,12 @@ const translations = {
     features_label: "CAPACIDADES",
     features_title: "Todo lo que Necesitas para",
     features_title_accent: "Ser Fluido",
-    feature_conversations: "Conversaciones en Tiempo Real",
+    feature_tutor: "Tutor",
+    feature_tutor_desc:
+      "Un tutor completo en tiempo real, de principio a fin, que se adapta a tu nivel y te ayuda a aprender.",
+    feature_conversations: "Conversaciones Personalizables",
     feature_conversations_desc:
-      "Diálogos inmersivos que se adaptan a tu nivel, guiándote en habla y escucha en tiempo real.",
+      "Elige el escenario, el rol, la dificultad y los objetivos para que cada sesión de habla se ajuste a lo que quieres practicar.",
     feature_stories: "Historias Interactivas",
     feature_stories_desc:
       "Narrativas envolventes que te invitan a leer en voz alta, resumir y actuar en tu idioma objetivo.",
@@ -298,7 +304,7 @@ const translations = {
     feature_phonics: "Fonética",
     feature_phonics_desc:
       "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
-    value_label: "POR QUÉ NO SABOS",
+    value_label: "Por qué nosotros",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
     value_1:
@@ -311,12 +317,11 @@ const translations = {
       "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
     scholarship_label: "CONTRIBUYE",
     scholarship_title: "Crea Becas",
-    scholarship_title_accent: "con Bitcoin",
+    scholarship_title_accent: "Aprendiendo",
     scholarship_desc:
-      "Recarga tu billetera de Bitcoin en la app para ayudar a crear becas a través del aprendizaje con",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "La misión de Robots Building Education es crear tecnología educativa transformadora.",
     scholarship_note:
-      "Elige una identidad comunitaria para que cada satoshi que gastes apoye a personas reales.",
+      "Permitimos que los usuarios opten por crear una pequeña billetera que envía Bitcoin a destinatarios cada vez que progresan en la app.",
     faq_label: "PREGUNTAS",
     faq_title: "Preguntas Frecuentes",
     faq_q1: "¿Qué pasa cuando creo una cuenta?",
@@ -331,8 +336,8 @@ const translations = {
     faq_q4: "¿Tiene costo?",
     faq_a4:
       "Las herramientas principales son gratuitas. Algunos laboratorios avanzados pueden requerir becas o acceso de pago.",
-    cta_final_title: "¿Listo para Comenzar tu",
-    cta_final_accent: "Viaje Lingüístico?",
+    cta_final_title: "Empecemos",
+    cta_final_accent: "",
     cta_final_subtitle:
       "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea un mundo de aprendizaje.",
     placeholder_name: "Tu nombre para mostrar",
@@ -386,9 +391,12 @@ const translations = {
     features_label: "FUNZIONALITÀ",
     features_title: "Tutto ciò che ti serve per",
     features_title_accent: "Diventare Fluente",
-    feature_conversations: "Conversazioni in Tempo Reale",
+    feature_tutor: "Tutor",
+    feature_tutor_desc:
+      "Un tutor completo in tempo reale, dall'inizio alla fine, che si adatta al tuo livello e ti aiuta a imparare.",
+    feature_conversations: "Conversazioni Personalizzabili",
     feature_conversations_desc:
-      "Dialoghi immersivi che si adattano al tuo livello, guidandoti nel parlato e nell'ascolto in tempo reale.",
+      "Scegli scenario, ruolo, difficoltà e obiettivi, così ogni sessione orale si adatta a ciò che vuoi praticare.",
     feature_stories: "Storie Interattive",
     feature_stories_desc:
       "Narrazioni coinvolgenti che ti invitano a leggere ad alta voce, riassumere e fare role-play nella tua lingua target.",
@@ -428,7 +436,7 @@ const translations = {
     feature_phonics: "Fonetica",
     feature_phonics_desc:
       "Pratica parole e suoni con la modalità Alfabeto per padroneggiare la pronuncia dalle basi.",
-    value_label: "PERCHÉ NO SABOS",
+    value_label: "Perché noi",
     value_title: "Apprendimento che",
     value_title_accent: "Funziona Davvero",
     value_1:
@@ -441,12 +449,11 @@ const translations = {
       "Coaching della pronuncia in tempo reale che ascolta, corregge e costruisce la tua fiducia nel parlare",
     scholarship_label: "DAI QUALCOSA IN CAMBIO",
     scholarship_title: "Crea Borse di Studio",
-    scholarship_title_accent: "con Bitcoin",
+    scholarship_title_accent: "con l'Apprendimento",
     scholarship_desc:
-      "Ricarica il tuo portafoglio Bitcoin nell'app per aiutare a creare borse di studio attraverso l'apprendimento con",
-    scholarship_link: "RobotsBuildingEducation.com",
+      "La missione di Robots Building Education è creare tecnologia educativa trasformativa.",
     scholarship_note:
-      "Scegli un'identità comunitaria nell'app in modo che ogni satoshi che spendi supporti persone reali.",
+      "Permettiamo agli utenti di scegliere di creare un piccolo portafoglio che invia Bitcoin ai destinatari ogni volta che fanno progressi nell'app.",
     faq_label: "DOMANDE",
     faq_title: "Domande Frequenti",
     faq_q1: "Cosa succede quando creo un account?",
@@ -461,8 +468,8 @@ const translations = {
     faq_q4: "Ha un costo?",
     faq_a4:
       "Gli strumenti principali sono gratuiti. Alcuni laboratori avanzati potrebbero richiedere borse di studio o accesso a pagamento.",
-    cta_final_title: "Pronto a Iniziare il tuo",
-    cta_final_accent: "Viaggio Linguistico?",
+    cta_final_title: "Iniziamo",
+    cta_final_accent: "",
     cta_final_subtitle:
       "Crea il tuo profilo sicuro in pochi secondi, salva la chiave e sblocca un mondo di apprendimento linguistico.",
     placeholder_name: "Il tuo nome visualizzato",
@@ -528,9 +535,12 @@ translations.fr = {
   features_label: "FONCTIONNALITES",
   features_title: "Tout ce qu'il faut pour",
   features_title_accent: "Devenir Fluide",
-  feature_conversations: "Conversations en Temps Reel",
+  feature_tutor: "Tuteur",
+  feature_tutor_desc:
+    "Un tuteur complet en temps reel, de bout en bout, qui s'adapte a ton niveau et t'aide a apprendre.",
+  feature_conversations: "Conversations Personnalisables",
   feature_conversations_desc:
-    "Des dialogues immersifs qui s'adaptent a ton niveau et t'accompagnent en expression orale et comprehension en temps reel.",
+    "Choisis le scenario, le role, la difficulte et les objectifs pour que chaque session orale corresponde a ce que tu veux pratiquer.",
   feature_stories: "Histoires Interactives",
   feature_stories_desc:
     "Des recits engageants qui t'invitent a lire a voix haute, resumer et jouer des roles dans ta langue cible.",
@@ -570,7 +580,7 @@ translations.fr = {
   feature_phonics: "Phonetique",
   feature_phonics_desc:
     "Pratique les sons et les mots avec le mode Alphabet pour maitriser la prononciation depuis les bases.",
-  value_label: "POURQUOI NO SABOS",
+  value_label: "Pourquoi nous",
   value_title: "Un apprentissage qui",
   value_title_accent: "Fonctionne Vraiment",
   value_1:
@@ -583,11 +593,11 @@ translations.fr = {
     "Coaching de prononciation en temps reel qui ecoute, corrige et renforce ta confiance a l'oral",
   scholarship_label: "REDONNER",
   scholarship_title: "Creer des Bourses",
-  scholarship_title_accent: "avec Bitcoin",
+  scholarship_title_accent: "en Apprenant",
   scholarship_desc:
-    "Recharge ton portefeuille Bitcoin dans l'app pour aider a creer des bourses grace a l'apprentissage avec",
+    "La mission de Robots Building Education est de creer une technologie educative transformative.",
   scholarship_note:
-    "Choisis une identite communautaire dans l'app afin que chaque satoshi depense soutienne de vraies personnes.",
+    "Nous permettons aux utilisateurs de choisir de creer un petit portefeuille qui envoie du Bitcoin a des beneficiaires chaque fois qu'ils progressent dans l'app.",
   faq_label: "QUESTIONS",
   faq_title: "Questions Frequentes",
   faq_q1: "Que se passe-t-il quand je cree un compte ?",
@@ -602,8 +612,8 @@ translations.fr = {
   faq_q4: "Est-ce payant ?",
   faq_a4:
     "Les outils principaux sont gratuits. Certains laboratoires avances peuvent demander une bourse ou un acces payant.",
-  cta_final_title: "Pret a commencer ton",
-  cta_final_accent: "Voyage Linguistique ?",
+  cta_final_title: "C'est parti",
+  cta_final_accent: "",
   cta_final_subtitle:
     "Cree ton profil securise en quelques secondes, sauvegarde ta cle et debloque un monde d'apprentissage linguistique.",
   placeholder_name: "Ton nom d'affichage",
@@ -657,9 +667,12 @@ translations.ja = {
   features_label: "機能",
   features_title: "流暢さに必要な",
   features_title_accent: "すべて",
-  feature_conversations: "リアルタイム会話",
+  feature_tutor: "チューター",
+  feature_tutor_desc:
+    "あなたのレベルに適応し、学習を支える完全なエンドツーエンドのリアルタイムチューターです。",
+  feature_conversations: "カスタマイズ会話",
   feature_conversations_desc:
-    "あなたのレベルに合わせた没入型の対話で、話す・聞く練習をリアルタイムにサポートします。",
+    "場面、役割、難易度、目標を選び、練習したい内容に合ったスピーキングセッションを作れます。",
   feature_stories: "インタラクティブストーリー",
   feature_stories_desc:
     "音読、要約、ロールプレイを通じて練習できる魅力的な物語です。",
@@ -699,7 +712,7 @@ translations.ja = {
   feature_phonics: "フォニックス",
   feature_phonics_desc:
     "アルファベット・ブートキャンプで単語と音を練習し、発音を基礎から身につけます。",
-  value_label: "学習のしくみ",
+  value_label: "選ばれる理由",
   value_title: "練習を",
   value_title_accent: "実際の成長へ",
   value_1:
@@ -717,13 +730,12 @@ translations.ja = {
   value_private: "自分のキー",
   value_private_desc: "自分のアカウントキーでプロフィールと進捗に戻れます。",
   scholarship_label: "ミッション",
-  scholarship_title: "Bitcoinで",
+  scholarship_title: "学びで",
   scholarship_title_accent: "奨学金をつくる",
   scholarship_desc:
-    "アプリ内のBitcoinウォレットにチャージして、学びを通じた奨学金づくりを支援しましょう。",
-  scholarship_link: "RobotsBuildingEducation.com",
+    "Robots Building Educationのミッションは、人生を変える教育テクノロジーをつくることです。",
   scholarship_note:
-    "アプリでコミュニティアイデンティティを選ぶと、使うサトシが実際の人々の支援につながります。",
+    "ユーザーは小さなウォレットの作成を選択でき、アプリで進歩するたびに受取人へBitcoinを送れるようになります。",
   scholarship_cta: "詳しく見る",
   faq_label: "FAQ",
   faq_title: "よくある質問",
@@ -739,8 +751,8 @@ translations.ja = {
   faq_q4: "料金はかかりますか？",
   faq_a4:
     "主要ツールは無料です。一部の高度なラボは奨学金または有料アクセスが必要な場合があります。",
-  cta_final_title: "言語学習の旅を",
-  cta_final_accent: "始めませんか？",
+  cta_final_title: "はじめましょう",
+  cta_final_accent: "",
   cta_final_subtitle:
     "数秒で安全なプロフィールを作り、キーを保存して、言語学習の世界を開きましょう。",
   placeholder_name: "表示名",
@@ -879,7 +891,7 @@ const LanguageMenu = ({ lang, setLang, playSound }) => {
 
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
     
     *, *::before, *::after {
       box-sizing: border-box;
@@ -1055,7 +1067,13 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       aria-label={label}
       title={label}
       onClick={() => onModeChange(nextMode)}
-      icon={isDark ? <FaMoon size={13} /> : <FaSun size={13} />}
+      icon={
+        isDark ? (
+          <RiMoonClearFill size={18} color="#fffaf0" />
+        ) : (
+          <LuSun size={18} strokeWidth={2.35} />
+        )
+      }
       size="sm"
       minW="40px"
       h="40px"
@@ -1064,19 +1082,31 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       top="18px"
       right="20px"
       zIndex={120}
-      bg={isLightTheme ? "transparent" : "var(--app-surface-elevated)"}
-      color={isLightTheme ? "#33291f" : "var(--app-text-primary)"}
+      bg={
+        isLightTheme
+          ? "linear-gradient(135deg, #fff7d6 0%, #fed7aa 100%)"
+          : "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%)"
+      }
+      color={isLightTheme ? "#b45309" : "#bfdbfe"}
       border="1px solid"
       borderColor={
-        isLightTheme ? "rgba(77, 58, 36, 0.34)" : "var(--app-border)"
+        isLightTheme ? "rgba(245, 158, 11, 0.36)" : "rgba(147, 197, 253, 0.32)"
       }
-      boxShadow={isLightTheme ? "none" : "var(--app-shadow-soft)"}
+      boxShadow={
+        isLightTheme
+          ? "0 10px 22px rgba(245, 158, 11, 0.18)"
+          : "0 12px 28px rgba(15, 23, 42, 0.32)"
+      }
       backdropFilter="blur(20px)"
       _hover={{
-        bg: isLightTheme ? "rgba(77, 58, 36, 0.08)" : "var(--app-surface-muted)",
+        bg: isLightTheme
+          ? "linear-gradient(135deg, #ffedb5 0%, #fdba74 100%)"
+          : "linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.94) 100%)",
       }}
       _active={{
-        bg: isLightTheme ? "rgba(77, 58, 36, 0.12)" : "var(--app-surface-muted)",
+        bg: isLightTheme
+          ? "linear-gradient(135deg, #fde68a 0%, #fb923c 100%)"
+          : "linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 0.98) 100%)",
       }}
     />
   );
@@ -1161,17 +1191,6 @@ const Button = ({
         </motion.span>
       ) : (
         children
-      )}
-      {variant === "primary" && (
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)",
-            animation: "shimmer 2.5s infinite",
-          }}
-        />
       )}
     </motion.button>
   );
@@ -1672,19 +1691,34 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const features = [
     {
-      icon: <FaGamepad />,
-      title: copy.feature_game_review,
-      desc: copy.feature_game_review_desc,
-    },
-    {
-      icon: <FaMicrophone />,
-      title: copy.feature_proficiency_test,
-      desc: copy.feature_proficiency_test_desc,
+      icon: <LuBookAudio />,
+      title: copy.feature_tutor,
+      desc: copy.feature_tutor_desc,
     },
     {
       icon: <FaComments />,
       title: copy.feature_conversations,
       desc: copy.feature_conversations_desc,
+    },
+    {
+      icon: <FaVolumeUp />,
+      title: copy.feature_phonics,
+      desc: copy.feature_phonics_desc,
+    },
+    {
+      icon: <MdSupportAgent />,
+      title: copy.feature_assistant,
+      desc: copy.feature_assistant_desc,
+    },
+    {
+      icon: <FaCompass />,
+      title: copy.feature_immersion,
+      desc: copy.feature_immersion_desc,
+    },
+    {
+      icon: <FaMicrophone />,
+      title: copy.feature_proficiency_test,
+      desc: copy.feature_proficiency_test_desc,
     },
     {
       icon: <FaBookOpen />,
@@ -1717,16 +1751,6 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_notes_desc,
     },
     {
-      icon: <FaCompass />,
-      title: copy.feature_immersion,
-      desc: copy.feature_immersion_desc,
-    },
-    {
-      icon: <MdSupportAgent />,
-      title: copy.feature_assistant,
-      desc: copy.feature_assistant_desc,
-    },
-    {
       icon: <FaMap />,
       title: copy.feature_skilltree,
       desc: copy.feature_skilltree_desc,
@@ -1737,9 +1761,9 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_goals_desc,
     },
     {
-      icon: <FaVolumeUp />,
-      title: copy.feature_phonics,
-      desc: copy.feature_phonics_desc,
+      icon: <FaGamepad />,
+      title: copy.feature_game_review,
+      desc: copy.feature_game_review_desc,
     },
   ];
 
@@ -1841,10 +1865,7 @@ const LandingPage = ({ onAuthenticated }) => {
             <br />
             <span
               style={{
-                background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
+                color: theme.colors.accent.primary,
               }}
             >
               {copy.hero_title_accent}
@@ -1917,7 +1938,7 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Languages Section */}
       <section
         style={{
-          padding: `${theme.spacing.section} 24px`,
+          padding: `${theme.spacing.section} 24px clamp(44px, 6vw, 72px)`,
           position: "relative",
           zIndex: 10,
         }}
@@ -2028,13 +2049,13 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Features Section */}
       <section
         style={{
-          padding: `${theme.spacing.section} 24px`,
+          padding: COMPACT_SECTION_PADDING,
           position: "relative",
           zIndex: 10,
         }}
       >
         <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "64px" }}>
+          <div style={{ textAlign: "center", marginBottom: COMPACT_HEADING_MARGIN }}>
             <SectionLabel>{copy.features_label}</SectionLabel>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -2078,13 +2099,13 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Value Props Section */}
       <section
         style={{
-          padding: `${theme.spacing.section} 24px`,
+          padding: COMPACT_SECTION_PADDING,
           position: "relative",
           zIndex: 10,
         }}
       >
         <div style={{ maxWidth: "900px", margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: "64px" }}>
+          <div style={{ textAlign: "center", marginBottom: COMPACT_HEADING_MARGIN }}>
             <SectionLabel>{copy.value_label}</SectionLabel>
             <motion.h2
               initial={{ opacity: 0, y: 30 }}
@@ -2131,7 +2152,7 @@ const LandingPage = ({ onAuthenticated }) => {
                     width: "48px",
                     height: "48px",
                     borderRadius: "12px",
-                    background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+                    background: theme.colors.accent.primary,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -2163,7 +2184,7 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Scholarship Section */}
       <section
         style={{
-          padding: "60px 24px",
+          padding: "clamp(36px, 6vw, 56px) 24px",
           position: "relative",
           zIndex: 10,
         }}
@@ -2176,7 +2197,6 @@ const LandingPage = ({ onAuthenticated }) => {
             maxWidth: "900px",
             margin: "0 auto",
             padding: "32px",
-            background: `linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%)`,
             borderRadius: "32px",
             border: `1px solid rgba(249, 115, 22, 0.2)`,
             textAlign: "center",
@@ -2224,26 +2244,17 @@ const LandingPage = ({ onAuthenticated }) => {
               lineHeight: 1.7,
             }}
           >
-            {copy.scholarship_desc}{" "}
-            <a
-              href="https://robotsbuildingeducation.com/learning"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                color: theme.colors.accent.primary,
-                textDecoration: "underline",
-              }}
-            >
-              {copy.scholarship_link}
-            </a>
+            {copy.scholarship_desc}
           </p>
 
           <p
             style={{
               fontFamily: theme.fonts.body,
-              fontSize: "1rem",
-              color: theme.colors.text.muted,
-              fontStyle: "italic",
+              fontSize: "1.05rem",
+              color: theme.colors.text.secondary,
+              maxWidth: "640px",
+              margin: "0 auto",
+              lineHeight: 1.7,
             }}
           >
             {copy.scholarship_note}
@@ -2294,7 +2305,7 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Final CTA */}
       <section
         style={{
-          padding: `${theme.spacing.section} 24px`,
+          padding: COMPACT_SECTION_PADDING,
           position: "relative",
           zIndex: 10,
         }}
@@ -2307,7 +2318,7 @@ const LandingPage = ({ onAuthenticated }) => {
             maxWidth: "700px",
             margin: "0 auto",
             textAlign: "center",
-            padding: "80px 48px",
+            padding: "clamp(48px, 7vw, 64px) clamp(24px, 5vw, 48px)",
             background: theme.colors.bg.elevated,
             backdropFilter: "blur(40px)",
             borderRadius: "32px",
@@ -2340,10 +2351,14 @@ const LandingPage = ({ onAuthenticated }) => {
             }}
           >
             {copy.cta_final_title}
-            <br />
-            <span style={{ color: theme.colors.accent.primary }}>
-              {copy.cta_final_accent}
-            </span>
+            {copy.cta_final_accent ? (
+              <>
+                <br />
+                <span style={{ color: theme.colors.accent.primary }}>
+                  {copy.cta_final_accent}
+                </span>
+              </>
+            ) : null}
           </h2>
 
           <p
