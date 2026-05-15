@@ -6597,6 +6597,12 @@ export default function App({ onBootReady } = {}) {
       (activeLesson?.isTutorial &&
         currentTab === "game" &&
         !!tutorialGameInitialScenario));
+  const isVoiceSurfaceMode =
+    viewMode === "skillTree" &&
+    (pathMode === "conversations" || pathMode === "tutor");
+  const skillTreeSceneBottomPadding = isVoiceSurfaceMode
+    ? 0
+    : { base: 32, md: 24 };
 
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
@@ -6734,7 +6740,7 @@ export default function App({ onBootReady } = {}) {
 
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
-        <Box pb={{ base: 32, md: 24 }} w="100%">
+        <Box pb={skillTreeSceneBottomPadding} w="100%">
           {showAlphabetBootcamp ? (
             <AlphabetBootcamp
               appLanguage={appLanguage}
@@ -7648,28 +7654,12 @@ function BottomActionBar({
     "yua",
   ];
   const PATH_MODES = [
-    ...(ALPHABET_LANGS.includes(targetLang)
-      ? [
-          {
-            id: "alphabet",
-            label:
-              t?.app_mode_alphabet ||
-              uiCopy(appLanguage, {
-                en: "Alphabet",
-                es: "Alfabeto",
-                it: "Alfabeto",
-                ja: "文字",
-              }),
-            icon: LuLanguages,
-          },
-        ]
-      : []),
     {
       id: "path",
       label:
         t?.app_mode_path ||
         uiCopy(appLanguage, {
-          en: "Path",
+          en: "Lessons",
           es: "Ruta",
           it: "Percorso",
           ja: "学習パス",
@@ -7688,6 +7678,28 @@ function BottomActionBar({
         }),
       icon: PiCardsBold,
     },
+    ...(ALPHABET_LANGS.includes(targetLang)
+      ? [
+          {
+            id: "alphabet",
+            label:
+              t?.app_mode_phonics ||
+              uiCopy(appLanguage, {
+                en: "Phonics",
+                es: "Fonética",
+                pt: "Fonética",
+                it: "Fonetica",
+                fr: "Phonétique",
+                de: "Phonetik",
+                ja: "フォニックス",
+                hi: "ध्वनिकी",
+                ar: "الصوتيات",
+                zh: "自然拼读",
+              }),
+            icon: LuLanguages,
+          },
+        ]
+      : []),
     {
       id: "conversations",
       label:
@@ -8167,10 +8179,29 @@ function BottomActionBar({
                   rounded="xl"
                   flexShrink={0}
                   onClick={() => playSound?.(modeSwitcherSound)}
-                  // bg="rgba(0, 98, 189, 0.6)"
-                  colorScheme="teal"
-                  // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
+                  bg={isLightTheme ? "#38b2ac" : undefined}
+                  colorScheme={isLightTheme ? undefined : "teal"}
+                  boxShadow={
+                    isLightTheme ? "0 4px 0 #237f7a" : undefined
+                  }
                   color="white"
+                  _hover={
+                    isLightTheme
+                      ? {
+                          bg: "#44c7bf",
+                          boxShadow: "0 4px 0 #237f7a",
+                        }
+                      : undefined
+                  }
+                  _active={
+                    isLightTheme
+                      ? {
+                          bg: "#319795",
+                          boxShadow: "none",
+                          transform: "translateY(4px)",
+                        }
+                      : undefined
+                  }
                 />
                 <Portal>
                   <MenuList

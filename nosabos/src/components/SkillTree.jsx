@@ -2736,7 +2736,11 @@ export default function SkillTree({
   }, [visibleUnits, userProgress.lessons]);
 
   return (
-    <Box minH="100vh" position="relative" overflow="hidden">
+    <Box
+      minH={isConversationStyleMode ? undefined : "100vh"}
+      position="relative"
+      overflow="hidden"
+    >
       {/* Animated Background Gradients */}
       <Box
         position="absolute"
@@ -2795,8 +2799,8 @@ export default function SkillTree({
 
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
-        py={6}
-        pt={3}
+        py={isConversationStyleMode ? 0 : 6}
+        pt={isConversationStyleMode ? 0 : 3}
         px={{ base: 3, sm: 4, md: 6 }}
         position="relative"
         zIndex={1}

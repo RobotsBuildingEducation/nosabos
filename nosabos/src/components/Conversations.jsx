@@ -30,6 +30,7 @@ import {
   Spinner,
   WrapItem,
   useDisclosure,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { layoutWithLines, prepareWithSegments } from "@chenglou/pretext";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
@@ -1008,6 +1009,11 @@ export default function Conversations({
   const playSound = useSoundSettings((s) => s.playSound);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const voiceOrbSize =
+    useBreakpointValue({ base: 64, sm: 70, md: 75 }, { ssr: false }) || 64;
+  const voiceOrbWrapWidth =
+    useBreakpointValue({ base: "112px", md: "132px" }, { ssr: false }) ||
+    "112px";
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -2863,7 +2869,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   --------------------------- */
   return (
     <>
-      <Box minH="100vh" color="gray.100" position="relative" pb="120px">
+      <Box color="gray.100" position="relative" pb="120px">
         {/* Header area: robot separated from goal card */}
         <VStack px={4} mt={0} spacing={1} align="center">
           <Box
@@ -3085,7 +3091,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
           <VStack spacing={0.5} align="center">
             <Box
-              width="132px"
+              width={voiceOrbWrapWidth}
               opacity={0.95}
               flexShrink={0}
               position="relative"
@@ -3100,6 +3106,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                   <VoiceOrb
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
+                    size={voiceOrbSize}
                   />
                 </Box>
               )}
@@ -3107,6 +3114,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
                 <VoiceOrb
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
+                  size={voiceOrbSize}
                 />
               </Box>
             </Box>

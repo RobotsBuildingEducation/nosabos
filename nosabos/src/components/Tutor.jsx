@@ -3158,6 +3158,11 @@ export default function Tutor({
   const soundIsInitialized = useSoundSettings((s) => s.isInitialized);
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const voiceOrbSize =
+    useBreakpointValue({ base: 64, sm: 70, md: 75 }, { ssr: false }) || 64;
+  const voiceOrbWrapWidth =
+    useBreakpointValue({ base: "112px", md: "132px" }, { ssr: false }) ||
+    "112px";
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -6638,7 +6643,7 @@ export default function Tutor({
   --------------------------- */
   return (
     <>
-      <Box minH="100vh" color="gray.100" position="relative" pb="120px">
+      <Box color="gray.100" position="relative" pb="120px">
         {/* Header area: lesson agenda separated from robot */}
         <VStack px={4} mt={0} spacing={1} align="center">
           <Box
@@ -6774,7 +6779,7 @@ export default function Tutor({
 
           <VStack spacing={0.5} align="center">
             <Box
-              width="132px"
+              width={voiceOrbWrapWidth}
               opacity={0.95}
               flexShrink={0}
               position="relative"
@@ -6789,6 +6794,7 @@ export default function Tutor({
                   <VoiceOrb
                     state={previousOrbState}
                     theme={isLightTheme ? "light" : "dark"}
+                    size={voiceOrbSize}
                   />
                 </Box>
               )}
@@ -6796,6 +6802,7 @@ export default function Tutor({
                 <VoiceOrb
                   state={displayOrbState}
                   theme={isLightTheme ? "light" : "dark"}
+                  size={voiceOrbSize}
                 />
               </Box>
             </Box>

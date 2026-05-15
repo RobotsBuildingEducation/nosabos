@@ -193,7 +193,8 @@ export const TRANSLATION_DE_STATIC = {
 
   app_mode_menu: "Menü",
   app_mode_alphabet: "Alphabet",
-  app_mode_path: "Pfad",
+  app_mode_phonics: "Phonetik",
+  app_mode_path: "Lektionen",
   app_mode_cards: "Karten",
   app_mode_conversation: "Gespräch",
   app_mode_tutor: "Tutor",
@@ -802,7 +803,7 @@ export const TRANSLATION_DE_STATIC = {
   stories_finish: "Fertig",
   stories_sentence_success_title: "Satz geschafft!",
   stories_sentence_success_score: "Punktzahl {score}%",
-  path_switcher_path: "Pfad",
+  path_switcher_path: "Lektionen",
   path_switcher_conversations: "Gespräche",
   real_world_tasks_title: "Immersionsübung",
   bitcoin_modal_title: "Bitcoin-Wallet",
