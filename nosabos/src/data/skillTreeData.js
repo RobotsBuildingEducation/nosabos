@@ -83,35 +83,42 @@ const baseLearningPath = withLocalizedSkillTreeText({
             es: "Aprende introducciones básicas",
           },
           xpRequired: 0,
-          xpReward: 50,
+          xpReward: 1,
           isTutorial: true,
-          modes: ["vocabulary", "grammar", "reading", "stories", "realtime", "game"],
+          modes: [
+            "vocabulary",
+            "grammar",
+            "reading",
+            "stories",
+            "realtime",
+            "game",
+          ],
           content: {
             vocabulary: {
-            topic: "tutorial",
-            focusPoints: [
-              "hello",
-              "my name is",
-              "good morning",
-              "good afternoon",
-              "good night",
-              "how are you",
-            ],
-            tutorialDescription: {
-              en: "Learn first introduction phrases with interactive questions.",
-              es: "Aprende tus primeras frases de introducción con preguntas interactivas.",
+              topic: "tutorial",
+              focusPoints: [
+                "hello",
+                "my name is",
+                "good morning",
+                "good afternoon",
+                "good night",
+                "how are you",
+              ],
+              tutorialDescription: {
+                en: "Learn first introduction phrases with interactive questions.",
+                es: "Aprende tus primeras frases de introducción con preguntas interactivas.",
               },
             },
             grammar: {
-            topic: "tutorial",
-            focusPoints: [
-              "basic introduction patterns",
-              "time-based greetings",
-              "simple wellbeing questions",
-            ],
-            tutorialDescription: {
-              en: "Practice simple patterns for introductions and greetings.",
-              es: "Practica patrones simples para introducciones y saludos.",
+              topic: "tutorial",
+              focusPoints: [
+                "basic introduction patterns",
+                "time-based greetings",
+                "simple wellbeing questions",
+              ],
+              tutorialDescription: {
+                en: "Practice simple patterns for introductions and greetings.",
+                es: "Practica patrones simples para introducciones y saludos.",
               },
             },
             reading: {
@@ -131,44 +138,44 @@ const baseLearningPath = withLocalizedSkillTreeText({
               },
             },
             realtime: {
-            topic: "tutorial",
-            scenario: "Learn basic introductions",
-            prompt:
-              "Practice hello, my name is, good morning, good afternoon, good night, and how are you",
-            successCriteria:
-              "The learner makes understandable attempts at hello, my name is, good morning, good afternoon, good night, and how are you.",
-            successCriteria_es:
-              'El estudiante intenta de forma comprensible decir "hola", "me llamo", "buenos días", "buenas tardes", "buenas noches" y "¿cómo estás?".',
-            successCriteria_pt:
-              'O aluno tenta de forma compreensível dizer "olá", "meu nome é", "bom dia", "boa tarde", "boa noite" e "como você está?".',
-            successCriteria_fr:
-              'L\'apprenant essaie de dire de façon compréhensible "bonjour", "je m\'appelle", "bonjour", "bon après-midi", "bonne nuit" et "comment ça va ?".',
-            successCriteria_it:
-              'L\'apprendente prova in modo comprensibile a dire "ciao", "mi chiamo", "buongiorno", "buon pomeriggio", "buonanotte" e "come stai?".',
-            successCriteria_nl:
-              'De leerling probeert begrijpelijk "hallo", "mijn naam is", "goedemorgen", "goedemiddag", "goedenacht" en "hoe gaat het?" te zeggen.',
-            successCriteria_nah:
-              "The learner makes understandable attempts at the basic introduction agenda.",
-            successCriteria_ja:
-              "The learner makes understandable attempts at the basic introduction agenda.",
+              topic: "tutorial",
+              scenario: "Learn basic introductions",
+              prompt:
+                "Practice hello, my name is, good morning, good afternoon, good night, and how are you",
+              successCriteria:
+                "The learner makes understandable attempts at hello, my name is, good morning, good afternoon, good night, and how are you.",
+              successCriteria_es:
+                'El estudiante intenta de forma comprensible decir "hola", "me llamo", "buenos días", "buenas tardes", "buenas noches" y "¿cómo estás?".',
+              successCriteria_pt:
+                'O aluno tenta de forma compreensível dizer "olá", "meu nome é", "bom dia", "boa tarde", "boa noite" e "como você está?".',
+              successCriteria_fr:
+                'L\'apprenant essaie de dire de façon compréhensible "bonjour", "je m\'appelle", "bonjour", "bon après-midi", "bonne nuit" et "comment ça va ?".',
+              successCriteria_it:
+                'L\'apprendente prova in modo comprensibile a dire "ciao", "mi chiamo", "buongiorno", "buon pomeriggio", "buonanotte" e "come stai?".',
+              successCriteria_nl:
+                'De leerling probeert begrijpelijk "hallo", "mijn naam is", "goedemorgen", "goedemiddag", "goedenacht" en "hoe gaat het?" te zeggen.',
+              successCriteria_nah:
+                "The learner makes understandable attempts at the basic introduction agenda.",
+              successCriteria_ja:
+                "The learner makes understandable attempts at the basic introduction agenda.",
               tutorialDescription: {
-              en: "Practice basic introductions in a realtime tutoring session.",
-              es: "Practica introducciones básicas en una sesión de tutoría en tiempo real.",
+                en: "Practice basic introductions in a realtime tutoring session.",
+                es: "Practica introducciones básicas en una sesión de tutoría en tiempo real.",
               },
             },
             game: {
               topic: "tutorial",
-            unitTitle: "Getting Started",
-            sceneId: "tutorialPlaza",
-            xpReward: 30,
-            focusPoints: [
-              "hello",
-              "my name is",
-              "good morning",
-              "good afternoon",
-              "good night",
-              "how are you",
-            ],
+              unitTitle: "Getting Started",
+              sceneId: "tutorialPlaza",
+              xpReward: 30,
+              focusPoints: [
+                "hello",
+                "my name is",
+                "good morning",
+                "good afternoon",
+                "good night",
+                "how are you",
+              ],
               tutorialDescription: {
                 en: "Finish the tutorial by playing a short game review.",
                 es: "Termina el tutorial jugando un breve repaso en modo juego.",
@@ -10235,12 +10242,13 @@ const baseLearningPath = withLocalizedSkillTreeText({
 
 const LESSON_XP_RANGE = { min: 55, max: 80 };
 const LESSON_XP_STEP = 5;
+const STARTER_LESSON_XP_REQUIRED = 50;
+const STARTER_LESSON_IDS = new Set(["lesson-tutorial-1", "lesson-tutorial-a1"]);
 
 /**
- * Assign a deterministic pseudo-random XP reward to each lesson so that every
- * lesson requires between 55–80 XP to complete in increments of 5. The hash
- * keeps rewards stable across sessions while still varying the distribution
- * across lessons.
+ * Assign a deterministic pseudo-random XP reward to each regular lesson so
+ * that it requires between 55-80 XP to complete in increments of 5. Starter
+ * Tutor lessons are intentionally shorter at 50 XP.
  */
 function applyLessonXPSchedule(lessons) {
   return lessons.map((lesson) => ({
@@ -10251,6 +10259,8 @@ function applyLessonXPSchedule(lessons) {
 
 function getLessonXpReward(lessonId = "") {
   const normalized = lessonId || "lesson";
+  if (STARTER_LESSON_IDS.has(normalized)) return STARTER_LESSON_XP_REQUIRED;
+
   let hash = 0;
 
   for (let i = 0; i < normalized.length; i++) {
@@ -10801,7 +10811,9 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     };
 
     // Create variations for focus points
-    const variations = [withGoalUiLocalizations(baseGoal, topicLabel, firstFocus)];
+    const variations = [
+      withGoalUiLocalizations(baseGoal, topicLabel, firstFocus),
+    ];
     allFocus.slice(1, 3).forEach((focus) => {
       variations.push(
         withGoalUiLocalizations(
@@ -10892,7 +10904,8 @@ function withGoalUiLocalizations(goal, topicLabel, focus) {
   return {
     ...goal,
     scenario_es:
-      goal.scenario_es || translateGoalTextToEs(goal.scenario, topicLabel, focus),
+      goal.scenario_es ||
+      translateGoalTextToEs(goal.scenario, topicLabel, focus),
     scenario_hi: goal.scenario_hi || translateGoalTextToHi(goal.scenario),
     successCriteria_es:
       goal.successCriteria_es ||

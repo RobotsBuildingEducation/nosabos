@@ -659,6 +659,32 @@ const INSTANT_EXIT_MOTION_PROPS = {
 /* -------------------------------------------------------------------------------------------------
    Top Bar
 --------------------------------------------------------------------------------------------------*/
+function getTodayDailyXpFromHistory(history = {}) {
+  const todayKey = getLocalDayKey(new Date());
+  if (!todayKey || !history || typeof history !== "object") return 0;
+  const todayXp = Number(history[todayKey]);
+  return Number.isFinite(todayXp) ? todayXp : 0;
+}
+
+function getEffectiveDailyXpToday(data = {}) {
+  const rawXp = data?.dailyXp ?? data?.stats?.dailyXp ?? data?.progress?.dailyXp;
+  const parsedXp = Number(rawXp);
+  const directXp = Number.isFinite(parsedXp) ? parsedXp : 0;
+  const historyXp = getTodayDailyXpFromHistory(data?.dailyXpHistory);
+  return Math.max(directXp, historyXp);
+}
+
+function getEffectiveDailyGoalXp(data = {}, fallback = 100) {
+  const rawGoal =
+    data?.dailyGoalXp ?? data?.progress?.dailyGoalXp ?? data?.stats?.dailyGoalXp;
+  const parsedGoal = Number(rawGoal);
+  if (Number.isFinite(parsedGoal) && parsedGoal > 0) return parsedGoal;
+  const parsedFallback = Number(fallback);
+  return Number.isFinite(parsedFallback) && parsedFallback > 0
+    ? parsedFallback
+    : 0;
+}
+
 function TopBar({
   appLanguage,
   user,
@@ -990,8 +1016,7 @@ function TopBar({
     const ref = doc(database, "users", activeNpub);
     const unsub = onSnapshot(ref, async (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      const goal = Number(data?.dailyGoalXp || 0);
-      let dxp = Number(data?.dailyXp || 0);
+      const goal = getEffectiveDailyGoalXp(data);
       let resetISO = data?.dailyResetAt || null;
       const completedDates = Array.isArray(data?.completedGoalDates)
         ? data.completedGoalDates
@@ -1000,6 +1025,10 @@ function TopBar({
         data?.dailyXpHistory && typeof data.dailyXpHistory === "object"
           ? data.dailyXpHistory
           : {};
+      let dxp = getEffectiveDailyXpToday({
+        ...data,
+        dailyXpHistory: xpHistory,
+      });
 
       const expired = hasDailyGoalResetExpired(resetISO);
       if (expired && goal > 0) {
@@ -1021,7 +1050,7 @@ function TopBar({
         } catch (error) {
           console.warn("Failed to apply daily goal reset:", error);
         }
-        dxp = 0;
+        dxp = getTodayDailyXpFromHistory(xpHistory);
         resetISO = data?.dailyResetAt || resetISO;
       }
 
@@ -1040,16 +1069,58 @@ function TopBar({
   // the progress bar immediately without waiting for the Firestore
   // onSnapshot round-trip.
   useEffect(() => {
-    const dxp = Number(user?.dailyXp);
-    if (Number.isFinite(dxp)) setDailyXp(dxp);
-    const goal = Number(user?.dailyGoalXp);
+    setDailyXp(getEffectiveDailyXpToday(user || {}));
+    const goal = getEffectiveDailyGoalXp(user || {});
     if (Number.isFinite(goal)) setDailyGoalXp(goal);
-  }, [user?.dailyXp, user?.dailyGoalXp]);
+  }, [
+    user?.dailyXp,
+    user?.dailyGoalXp,
+    user?.dailyXpHistory,
+    user?.progress?.dailyGoalXp,
+    user?.progress?.dailyXp,
+    user?.stats?.dailyGoalXp,
+    user?.stats?.dailyXp,
+  ]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleLocalDailyXpAwarded = (event) => {
+      const detail = event?.detail || {};
+      const eventNpub = typeof detail.npub === "string" ? detail.npub : "";
+      if (eventNpub && activeNpub && eventNpub !== activeNpub) return;
+
+      const nextDailyXp = Number(detail.dailyXp);
+      const amount = Number(detail.amount);
+      const nextGoal = Number(detail.dailyGoalXp);
+
+      if (Number.isFinite(nextDailyXp)) {
+        setDailyXp((prev) => Math.max(Number(prev) || 0, nextDailyXp));
+      } else if (Number.isFinite(amount) && amount > 0) {
+        setDailyXp((prev) => (Number(prev) || 0) + amount);
+      }
+
+      if (Number.isFinite(nextGoal)) {
+        setDailyGoalXp(nextGoal);
+      }
+    };
+
+    window.addEventListener(
+      "daily-goal:localXpAwarded",
+      handleLocalDailyXpAwarded,
+    );
+    return () =>
+      window.removeEventListener(
+        "daily-goal:localXpAwarded",
+        handleLocalDailyXpAwarded,
+      );
+  }, [activeNpub]);
 
   const dailyPct =
     dailyGoalXp > 0
       ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
+  const dailyBarPct =
+    dailyPct > 0 && dailyPct < 6 ? 6 : dailyPct;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
 
   const cefrTimestamp =
@@ -1141,7 +1212,7 @@ function TopBar({
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
               <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
-                <WaveBar value={dailyPct} />
+                <WaveBar value={dailyBarPct} />
               </Box>
             </HStack>
 
@@ -2035,20 +2106,11 @@ export default function App({ onBootReady } = {}) {
   }, [resolvedSupportLang, user?.appLanguage, user?.local_npub]);
 
   const dailyGoalTarget = useMemo(() => {
-    const rawGoal =
-      user?.dailyGoalXp ??
-      user?.progress?.dailyGoalXp ??
-      user?.stats?.dailyGoalXp ??
-      0;
-    const parsed = Number(rawGoal);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return getEffectiveDailyGoalXp(user || {});
   }, [user]);
 
   const dailyXpToday = useMemo(() => {
-    const rawXp =
-      user?.dailyXp ?? user?.stats?.dailyXp ?? user?.progress?.dailyXp ?? 0;
-    const parsed = Number(rawXp);
-    return Number.isFinite(parsed) ? parsed : 0;
+    return getEffectiveDailyXpToday(user || {});
   }, [user]);
 
   const dailyGoalCompletedDates = useMemo(
@@ -2804,6 +2866,27 @@ export default function App({ onBootReady } = {}) {
   const celebrationPetDelta =
     dailyGoalCelebrationPet?.delta ?? DAILY_GOAL_PET_HEALTH_GAIN;
   const dailyGoalModalJustOpenedRef = useRef(false);
+  const deferDailyGoalCelebrationRef = useRef(false);
+  const pendingDailyGoalCelebrationRef = useRef(null);
+  const openDailyGoalCelebration = useCallback((detail = {}) => {
+    setCelebrateOpen(true);
+    setDailyGoalCelebrationPet({
+      health: detail?.petHealth ?? detail?.health ?? null,
+      delta:
+        detail?.petDelta ??
+        detail?.delta ??
+        DAILY_GOAL_PET_HEALTH_GAIN,
+    });
+    dailyGoalModalJustOpenedRef.current = true;
+  }, []);
+  const openPendingDailyGoalCelebration = useCallback(() => {
+    deferDailyGoalCelebrationRef.current = false;
+    const pending = pendingDailyGoalCelebrationRef.current;
+    if (!pending) return false;
+    pendingDailyGoalCelebrationRef.current = null;
+    openDailyGoalCelebration(pending);
+    return true;
+  }, [openDailyGoalCelebration]);
   const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
     useState(false);
   const [shouldShowProficiencyAfterTimer, setShouldShowProficiencyAfterTimer] =
@@ -3256,17 +3339,74 @@ export default function App({ onBootReady } = {}) {
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
-    const onHit = (event) => {
-      setCelebrateOpen(true);
-      setDailyGoalCelebrationPet({
-        health: event?.detail?.petHealth ?? null,
-        delta: event?.detail?.petDelta ?? DAILY_GOAL_PET_HEALTH_GAIN,
-      });
-      dailyGoalModalJustOpenedRef.current = true;
+    const queueOrOpenDailyGoalCelebration = (event) => {
+      const detail = event?.detail || {};
+      if (deferDailyGoalCelebrationRef.current) {
+        pendingDailyGoalCelebrationRef.current = detail;
+        return;
+      }
+      openDailyGoalCelebration(detail);
     };
-    window.addEventListener("daily:goalAchieved", onHit);
-    return () => window.removeEventListener("daily:goalAchieved", onHit);
-  }, []);
+    window.addEventListener(
+      "daily:goalAchieved",
+      queueOrOpenDailyGoalCelebration,
+    );
+    window.addEventListener(
+      "daily-goal:queueCelebration",
+      queueOrOpenDailyGoalCelebration,
+    );
+    return () => {
+      window.removeEventListener(
+        "daily:goalAchieved",
+        queueOrOpenDailyGoalCelebration,
+      );
+      window.removeEventListener(
+        "daily-goal:queueCelebration",
+        queueOrOpenDailyGoalCelebration,
+      );
+    };
+  }, [openDailyGoalCelebration]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleSequenceStart = () => {
+      deferDailyGoalCelebrationRef.current = true;
+    };
+    const handleReleaseQueuedCelebration = (event) => {
+      let opened = openPendingDailyGoalCelebration() || celebrateOpen;
+      const fallbackDetail = event?.detail?.celebration;
+      if (
+        !opened &&
+        fallbackDetail &&
+        typeof fallbackDetail === "object"
+      ) {
+        deferDailyGoalCelebrationRef.current = false;
+        openDailyGoalCelebration(fallbackDetail);
+        opened = true;
+      }
+      if (event?.detail && typeof event.detail === "object") {
+        event.detail.handled = opened;
+      }
+    };
+    window.addEventListener(
+      "lesson-completion:sequence-start",
+      handleSequenceStart,
+    );
+    window.addEventListener(
+      "daily-goal:releaseQueuedCelebration",
+      handleReleaseQueuedCelebration,
+    );
+    return () => {
+      window.removeEventListener(
+        "lesson-completion:sequence-start",
+        handleSequenceStart,
+      );
+      window.removeEventListener(
+        "daily-goal:releaseQueuedCelebration",
+        handleReleaseQueuedCelebration,
+      );
+    };
+  }, [celebrateOpen, openDailyGoalCelebration, openPendingDailyGoalCelebration]);
 
   const handleSubmitPasscode = useCallback(
     async (input, setLocalError) => {
@@ -4031,6 +4171,7 @@ export default function App({ onBootReady } = {}) {
         );
 
         // awardXp handles all XP awarding with proper daily goal checking and celebration events
+        deferDailyGoalCelebrationRef.current = true;
         await awardXp(npub, activeLesson.xpReward, lessonLang);
 
         const fresh = await loadUserObjectFromDB(database, npub);
@@ -4055,10 +4196,7 @@ export default function App({ onBootReady } = {}) {
         }
 
         setTimeout(() => {
-          if (
-            pendingLessonCompletionRef.current &&
-            !dailyGoalModalJustOpenedRef.current
-          ) {
+          if (pendingLessonCompletionRef.current) {
             setShowCompletionModal(true);
             pendingLessonCompletionRef.current = null;
           }
@@ -4175,6 +4313,8 @@ export default function App({ onBootReady } = {}) {
     setShowCompletionModal(false);
     setCompletedLessonData(null);
 
+    const openedDailyGoalCelebration = openPendingDailyGoalCelebration();
+
     if (pendingTutorialBitcoinModalRef.current) {
       // Queue the Bitcoin modal and let the effect below wait until the
       // previous Chakra modal overlay is fully gone before opening it.
@@ -4182,9 +4322,11 @@ export default function App({ onBootReady } = {}) {
       pendingTutorialBitcoinModalRef.current = false;
     }
 
+    if (openedDailyGoalCelebration) return;
+
     // Return to skill tree
     handleReturnToSkillTree();
-  }, [handleReturnToSkillTree]);
+  }, [handleReturnToSkillTree, openPendingDailyGoalCelebration]);
 
   const handleCloseTutorialBitcoinModal = useCallback(() => {
     setShowTutorialBitcoinModal(false);
@@ -4206,6 +4348,38 @@ export default function App({ onBootReady } = {}) {
 
     setPendingTutorialBitcoinModal(true);
   }, [user?.gettingStartedModalShown, user?.tutorialBitcoinModalShown]);
+
+  const handleTutorDailyGoalCelebration = useCallback(
+    (detail = {}) => {
+      pendingDailyGoalCelebrationRef.current = null;
+      deferDailyGoalCelebrationRef.current = false;
+      const openCelebration = () => openDailyGoalCelebration(detail);
+
+      if (typeof window === "undefined" || typeof document === "undefined") {
+        openCelebration();
+        return true;
+      }
+
+      let cancelled = false;
+      const tryOpen = () => {
+        if (cancelled) return;
+        const activeModalStack = document.querySelectorAll(
+          ".chakra-modal__content-container, .chakra-modal__overlay",
+        ).length;
+        if (!activeModalStack) {
+          openCelebration();
+          return;
+        }
+        window.setTimeout(tryOpen, 60);
+      };
+
+      window.requestAnimationFrame(() => {
+        window.setTimeout(tryOpen, 0);
+      });
+      return true;
+    },
+    [openDailyGoalCelebration],
+  );
 
   // Handle closing the proficiency completion modal and navigating to next level
   const handleCloseProficiencyCompletionModal = useCallback(() => {
@@ -4234,6 +4408,10 @@ export default function App({ onBootReady } = {}) {
     setCelebrateOpen(false);
     setDailyGoalCelebrationPet(null);
     dailyGoalModalJustOpenedRef.current = false;
+    deferDailyGoalCelebrationRef.current = false;
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("daily-goal:celebration-closed"));
+    }
 
     // Show pending lesson completion modal if it exists
     if (pendingLessonCompletionRef.current) {
@@ -4899,7 +5077,29 @@ export default function App({ onBootReady } = {}) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const handleLocalXpAward = () => {
+    const handleLocalXpAward = (event) => {
+      const detail = event?.detail || {};
+      const eventNpub = typeof detail.npub === "string" ? detail.npub : "";
+      if (eventNpub && activeNpub && eventNpub !== activeNpub) return;
+
+      const nextDailyXp = Number(detail.dailyXp);
+      const nextDailyGoalXp = Number(detail.dailyGoalXp);
+      const todayKey =
+        typeof detail.todayKey === "string" ? detail.todayKey : "";
+      const dailyPatch = {};
+      if (Number.isFinite(nextDailyXp)) dailyPatch.dailyXp = nextDailyXp;
+      if (Number.isFinite(nextDailyGoalXp)) {
+        dailyPatch.dailyGoalXp = nextDailyGoalXp;
+      }
+      if (todayKey && Number.isFinite(nextDailyXp)) {
+        const latestUser = useUserStore.getState()?.user || {};
+        dailyPatch.dailyXpHistory = {
+          ...(latestUser.dailyXpHistory || {}),
+          [todayKey]: nextDailyXp,
+        };
+      }
+      if (Object.keys(dailyPatch).length) patchUser?.(dailyPatch);
+
       console.log("hasSpendableBalance", hasSpendableBalance);
       if (!hasSpendableBalance) return;
       const mark = Date.now();
@@ -4917,7 +5117,13 @@ export default function App({ onBootReady } = {}) {
     };
     window.addEventListener("xp:awarded", handleLocalXpAward);
     return () => window.removeEventListener("xp:awarded", handleLocalXpAward);
-  }, [hasSpendableBalance, sendOneSatToNpub, user?.identity]);
+  }, [
+    activeNpub,
+    hasSpendableBalance,
+    patchUser,
+    sendOneSatToNpub,
+    user?.identity,
+  ]);
 
   useEffect(() => {
     if (!activeNpub) return;
@@ -6585,6 +6791,7 @@ export default function App({ onBootReady } = {}) {
               initialUnits={skillTreeInitialUnits.units}
               initialUnitsKey={skillTreeInitialUnits.key || ""}
               onTutorFirstLessonComplete={handleTutorFirstLessonComplete}
+              onTutorDailyGoalCelebration={handleTutorDailyGoalCelebration}
               // Tutorial props
               isTutorialComplete={hasCompletedSkillTreeTutorial}
             />

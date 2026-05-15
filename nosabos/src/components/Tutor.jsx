@@ -67,6 +67,7 @@ import { awardXp } from "../utils/utils";
 import {
   completeTutorLesson,
   getLanguageXp,
+  saveTutorAgendaProgress,
   startTutorLesson,
 } from "../utils/progressTracking";
 import {
@@ -74,7 +75,12 @@ import {
   SOFT_STOP_BUTTON_GLOW,
   SOFT_STOP_BUTTON_HOVER_BG,
 } from "../utils/softStopButton";
-import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
+import {
+  DEFAULT_TTS_VOICE,
+  TTS_LANG_TAG,
+  getPreferredTTSVoice,
+  getTTSPlayer,
+} from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -259,6 +265,8 @@ const TUTOR_STARTER_LESSON_IDS = new Set([
   "lesson-tutorial-1",
   "lesson-tutorial-a1",
 ]);
+const TUTOR_STARTER_LESSON_XP_REQUIRED = 50;
+const TUTOR_TURN_XP_RANGE = { min: 3, max: 7 };
 const TUTOR_STARTER_AGENDA_ITEMS = [
   {
     id: "hello",
@@ -483,15 +491,29 @@ function getTutorLessonSubjects(lesson) {
   return compactUnique(subjects);
 }
 
-function buildTutorLessonContext(lesson, unit, lang = "en") {
+function buildTutorLessonContext(
+  lesson,
+  unit,
+  supportLang = "en",
+  targetLang = "es",
+) {
   if (!lesson) return null;
   const subjects = getTutorLessonSubjects(lesson);
-  const title = getTutorDisplayText(lesson.title, lang);
-  const description = getTutorDisplayText(lesson.description, lang);
-  const unitTitle = getTutorDisplayText(unit?.title, lang);
-  const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, lang);
-  const agendaSubtitle = getTutorLessonAgendaSubtitle(lesson, unit, lang);
+  const title = getTutorDisplayText(lesson.title, supportLang);
+  const description = getTutorDisplayText(lesson.description, supportLang);
+  const unitTitle = getTutorDisplayText(unit?.title, supportLang);
+  const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportLang);
+  const agendaSubtitle = getTutorLessonAgendaSubtitle(
+    lesson,
+    unit,
+    supportLang,
+  );
   const includeSourceDetails = !isTutorStarterAgendaLesson(lesson);
+  const targetLanguageName =
+    getLanguagePromptName(targetLang) || "the target language";
+  const supportLanguageName =
+    getLanguagePromptName(supportLang) || "the user's support language";
+  const targetBase = getBaseLanguageCode(targetLang || "es") || "es";
   return {
     level: unit?.cefrLevel || unit?.level || "",
     title,
@@ -501,15 +523,22 @@ function buildTutorLessonContext(lesson, unit, lang = "en") {
     agendaSubtitle,
     subjects,
     promptText: compactUnique([
-      includeSourceDetails && unitTitle ? `Unit: ${unitTitle}` : "",
-      agendaTitle ? `Agenda: ${agendaTitle}` : "",
-      agendaSubtitle ? `Focus: ${agendaSubtitle}` : "",
-      includeSourceDetails && title ? `Source lesson: ${title}` : "",
+      `Target language for learner practice: ${targetLanguageName}.`,
+      `Support/UI language for explanations: ${supportLanguageName}.`,
+      includeSourceDetails && unitTitle
+        ? `Support-language unit label: ${unitTitle}`
+        : "",
+      agendaTitle ? `Support-language lesson label: ${agendaTitle}` : "",
+      agendaSubtitle ? `Lesson concept/focus: ${agendaSubtitle}` : "",
+      includeSourceDetails && title ? `Source lesson label: ${title}` : "",
       includeSourceDetails && description
-        ? `Source description: ${description}`
+        ? `Source lesson description: ${description}`
         : "",
       includeSourceDetails && subjects.length
-        ? `Subjects: ${subjects.join(" | ")}`
+        ? `Stored source concepts: ${subjects.join(" | ")}`
+        : "",
+      includeSourceDetails && targetBase !== "es"
+        ? `If any stored concept is written as Spanish, translate or adapt that concept into ${targetLanguageName}; never use the Spanish source wording as the learner's practice phrase.`
         : "",
     ]).join("\n"),
   };
@@ -528,6 +557,96 @@ function buildTutorCodeSwitchingAudioInstruction(targetLanguageName = "") {
   ]
     .filter(Boolean)
     .join(" ");
+}
+
+const SPANISH_SOURCE_TOKENS = new Set([
+  "buen",
+  "buena",
+  "buenas",
+  "buenos",
+  "como",
+  "dias",
+  "el",
+  "estas",
+  "familia",
+  "hermana",
+  "hermano",
+  "hola",
+  "la",
+  "las",
+  "llama",
+  "llamo",
+  "los",
+  "madre",
+  "mama",
+  "mi",
+  "mis",
+  "noches",
+  "padre",
+  "papa",
+  "se",
+  "tardes",
+]);
+
+function isLikelySpanishSourcePhrase(text = "") {
+  const normalized = normalizeTutorAgendaSpeech(text);
+  if (!normalized) return false;
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+  return tokens.some((token) => SPANISH_SOURCE_TOKENS.has(token));
+}
+
+function isTutorPracticePhraseAllowedForTarget(phrase, targetLang = "es") {
+  const targetBase = getBaseLanguageCode(targetLang || "es") || "es";
+  if (targetBase === "es") return true;
+  return !isLikelySpanishSourcePhrase(phrase);
+}
+
+function buildTutorTargetLanguageBoundaryInstruction({
+  targetLang = "es",
+  supportLang = "en",
+  targetLanguageName = "the target language",
+  supportLanguageName = "the user's support language",
+} = {}) {
+  const targetBase = getBaseLanguageCode(targetLang || "es") || "es";
+  const supportBase = getBaseLanguageCode(supportLang || "") || "";
+  const supportBoundary =
+    supportBase && supportBase !== targetBase
+      ? `${supportLanguageName} is only for coaching, meanings, and UI labels.`
+      : "";
+
+  return [
+    `LANGUAGE BOUNDARY: The learner is practicing ${targetLanguageName}.`,
+    supportBoundary,
+    `Every model phrase, repeat prompt, fill-in-the-blank, example sentence, and answer you ask the learner to say must be in ${targetLanguageName}.`,
+    targetBase !== "es"
+      ? `Some stored lesson labels and focus points are Spanish source curriculum. Treat Spanish phrases like "mi padre", "mi mama", "hola", or "me llamo" as concepts to convert into ${targetLanguageName}; do not ask the learner to practice Spanish.`
+      : "",
+    `If a previous message accidentally used a non-${targetLanguageName} practice phrase, correct course immediately and continue in ${targetLanguageName}.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function buildTutorTeacherTalkLanguageInstruction({
+  targetLang = "es",
+  supportLang = "en",
+  targetLanguageName = "the target language",
+  supportLanguageName = "the user's support language",
+  isEarlyTutorLevel = false,
+} = {}) {
+  const targetBase = getBaseLanguageCode(targetLang || "es") || "es";
+  const supportBase = getBaseLanguageCode(supportLang || "") || "";
+  if (!isEarlyTutorLevel || !supportBase || supportBase === targetBase) {
+    return "";
+  }
+
+  return [
+    `BEGINNER TEACHER-TALK RULE: The learner is at A0/A1, so all tutoring language must be in ${supportLanguageName}.`,
+    `Use ${targetLanguageName} only for the exact word, phrase, sentence, or fill-in text the learner should say.`,
+    `Corrections, encouragement, transitions, explanations, meanings, and instructions must be in ${supportLanguageName}, not ${targetLanguageName}.`,
+    `Do not say teacher-talk phrases like "Good try", "Let's slow it down", "Listen again", or "Now you try" in ${targetLanguageName}; express that teacher talk in ${supportLanguageName}.`,
+    `Do not split ${targetLanguageName} words into syllables unless the learner explicitly asks for pronunciation help.`,
+  ].join(" ");
 }
 
 function extractRealtimeItemText(item) {
@@ -558,6 +677,13 @@ function getTutorStarterAgendaTitleText() {
 function isTutorStarterAgendaLesson(lesson) {
   const id = String(lesson?.id || "");
   return TUTOR_STARTER_LESSON_IDS.has(id);
+}
+
+function getTutorLessonXpRequired(lesson) {
+  const required = isTutorStarterAgendaLesson(lesson)
+    ? TUTOR_STARTER_LESSON_XP_REQUIRED
+    : lesson?.xpReward;
+  return Math.max(0, Number(required) || 0);
 }
 
 function getTutorStarterAgendaSummary(lang = "en") {
@@ -634,6 +760,128 @@ function getTutorStarterAgendaMatches(text, targetLang = "es") {
       return normalizedExample && normalizedText.includes(normalizedExample);
     });
   }).map((item) => item.id);
+}
+
+function getLatestTutorAssistantText(messages = []) {
+  if (!Array.isArray(messages)) return "";
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") continue;
+    const text = getTutorMessageVisibleText(message);
+    if (text) return text;
+  }
+  return "";
+}
+
+function extractQuotedTutorPhrases(text = "") {
+  const phrases = [];
+  const source = String(text || "");
+  const quotePattern = /["“”]([^"“”]{1,140})["“”]/g;
+  let match;
+  while ((match = quotePattern.exec(source))) {
+    const phrase = String(match[1] || "").trim();
+    if (phrase) phrases.push({ phrase, index: match.index });
+  }
+  return phrases;
+}
+
+function extractPromptedTutorPhrases(text = "") {
+  const source = String(text || "");
+  const quoted = extractQuotedTutorPhrases(source);
+  if (!quoted.length) return [];
+
+  const hasFutureCue = (index) => {
+    const before = source.slice(Math.max(0, index - 140), index);
+    const sentenceStart = Math.max(
+      before.lastIndexOf("."),
+      before.lastIndexOf("?"),
+      before.lastIndexOf("!"),
+      before.lastIndexOf("\n"),
+    );
+    const currentClause = before.slice(sentenceStart + 1);
+    return /\b(?:after|later|next|then|luego|despues|después|pronto|seguimos|practicaremos)\b/i.test(
+      currentClause,
+    );
+  };
+
+  const directCuePattern =
+    /\b(?:say|saying|repeat|try|answer|respond|tell me|now|your turn|practice|pronounce|ahora|tu turno|tú turno|practica|practicar|di|decir|diga|intenta|repite|responde|contesta|dime|dizer|repita|responda|rispondi|ripeti|dis|dire|repete|répète|réponds|dites)\b/i;
+  const modelCuePattern =
+    /\b(?:model|modelo|listen|escucha|we say|decimos|se dice)\b/i;
+  const prompted = quoted
+    .filter(({ index }) => {
+      if (hasFutureCue(index)) return false;
+      const before = source.slice(Math.max(0, index - 140), index);
+      return directCuePattern.test(before);
+    })
+    .map(({ phrase }) => phrase);
+
+  if (prompted.length) return compactUnique(prompted);
+
+  const modeled = quoted
+    .filter(({ index }) => {
+      if (hasFutureCue(index)) return false;
+      const before = source.slice(Math.max(0, index - 140), index);
+      return modelCuePattern.test(before);
+    })
+    .map(({ phrase }) => phrase);
+
+  return compactUnique(modeled.slice(-1));
+}
+
+function tutorPhraseMatchesTranscript(phrase, transcript) {
+  const normalizedPhrase = normalizeTutorAgendaSpeech(phrase);
+  const normalizedTranscript = normalizeTutorAgendaSpeech(transcript);
+  if (!normalizedPhrase || !normalizedTranscript) return false;
+
+  if (normalizedTranscript.includes(normalizedPhrase)) return true;
+
+  const phraseTokens = normalizedPhrase.split(/\s+/).filter(Boolean);
+  if (phraseTokens.length <= 1) {
+    const escapedToken = phraseTokens[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|\\s)${escapedToken}($|\\s)`).test(
+      normalizedTranscript,
+    );
+  }
+
+  const transcriptTokens = normalizedTranscript.split(/\s+/).filter(Boolean);
+  const matched = phraseTokens.filter((token) =>
+    transcriptTokens.includes(token),
+  ).length;
+  return phraseTokens.length >= 4 && matched >= phraseTokens.length - 1;
+}
+
+function hasPrematureTutorCompletionText(text = "") {
+  const normalized = normalizeTutorAgendaSpeech(text);
+  if (!normalized) return false;
+  return [
+    /\b(completed|finished|done with|wrapped up|complete)\b.*\b(lesson|today)\b/i,
+    /\b(lesson|today)\b.*\b(completed|finished|done|complete)\b/i,
+    /\b(that'?s all|all done|we'?re done|you'?re done|see you|goodbye|bye for now)\b/i,
+    /\bhas completado\b.*\b(leccion|lesson)\b/i,
+    /\bhas completado\b.*\b(practica|hoy|todo|toda)\b/i,
+    /\bcompletaste\b.*\b(leccion|lesson)\b/i,
+    /\bcompletaste\b.*\b(practica|hoy|todo|toda)\b/i,
+    /\bleccion\b.*\b(completada|terminada|completa)\b/i,
+    /\b(practica|sesion|hoy)\b.*\b(completada|terminada|completa|terminamos|acabamos)\b/i,
+    /\b(lo lograste|lo hiciste muy bien)\b.*\b(completado|completaste|terminamos|listo|practica de hoy)\b/i,
+    /\b(ya terminamos|hemos terminado|eso es todo por hoy)\b/i,
+    /\b(nos vemos|hasta pronto|hasta luego|sigue practicando)\b/i,
+  ].some((pattern) => pattern.test(normalized));
+}
+
+function normalizeTutorStarterAgendaProgress(progress = {}) {
+  const allowedIds = new Set(TUTOR_STARTER_AGENDA_ITEMS.map((item) => item.id));
+  return Object.entries(progress || {}).reduce((acc, [id, value]) => {
+    if (allowedIds.has(id) && value === true) acc[id] = true;
+    return acc;
+  }, {});
+}
+
+function getSavedTutorStarterAgendaProgress(lessonProgress) {
+  return normalizeTutorStarterAgendaProgress(
+    lessonProgress?.tutorAgendaProgress?.items,
+  );
 }
 
 function getNextTutorStarterAgendaItem(progress = {}) {
@@ -788,7 +1036,9 @@ function buildTutorCompletedAgendaData({
         },
       ];
 
-  const completedCount = normalizedItems.filter((item) => item.completed).length;
+  const completedCount = normalizedItems.filter(
+    (item) => item.completed,
+  ).length;
   const level = unit?.cefrLevel || unit?.level || "Pre-A1";
 
   return {
@@ -852,6 +1102,13 @@ function getTutorPathLevelStorageKey(targetLang) {
 
 function getTutorPathLessonStorageKey(targetLang) {
   return `tutorPathLesson:${getTutorStorageLang(targetLang)}`;
+}
+
+function getTutorMessagesStorageKey(npub, targetLang, lessonId) {
+  if (!lessonId) return "";
+  const safeUser = encodeURIComponent(String(npub || "anonymous"));
+  const safeLesson = encodeURIComponent(String(lessonId));
+  return `tutorMessages:v1:${safeUser}:${getTutorStorageLang(targetLang)}:${safeLesson}`;
 }
 
 function readStoredTutorLevel(targetLang) {
@@ -994,6 +1251,95 @@ function findNextTutorLessonAfter(units, lessonId, progressLessons = {}) {
     }
   }
   return null;
+}
+
+function getTutorMessageVisibleText(message) {
+  return `${message?.textFinal || ""}${message?.textStream || ""}`.trim();
+}
+
+function hasVisibleTutorMessages(messages = []) {
+  return Array.isArray(messages) && messages.some(getTutorMessageVisibleText);
+}
+
+function buildRecentTutorConversationContext(messages = [], limit = 4) {
+  const visibleMessages = Array.isArray(messages)
+    ? messages.filter(getTutorMessageVisibleText)
+    : [];
+  return visibleMessages
+    .slice(-limit)
+    .map((message) => {
+      const speaker = message.role === "user" ? "Learner" : "Tutor";
+      return `${speaker}: "${getTutorMessageVisibleText(message)}"`;
+    })
+    .join("\n");
+}
+
+function sanitizeTutorMessageForStorage(message) {
+  const textFinal = `${message?.textFinal || ""} ${
+    message?.textStream || ""
+  }`.trim();
+  if (!textFinal) return null;
+
+  return {
+    id: String(message?.id || `stored-${Date.now()}`),
+    role: message?.role === "user" ? "user" : "assistant",
+    lang: String(message?.lang || ""),
+    textFinal,
+    textStream: "",
+    translation: String(message?.translation || ""),
+    translationLang: String(message?.translationLang || ""),
+    pairs: Array.isArray(message?.pairs)
+      ? message.pairs
+          .slice(0, 12)
+          .map((pair) => ({
+            lhs: String(pair?.lhs || ""),
+            rhs: String(pair?.rhs || ""),
+          }))
+          .filter((pair) => pair.lhs && pair.rhs)
+      : [],
+    done: true,
+    hasAudio: false,
+    ts: Number.isFinite(Number(message?.ts)) ? Number(message.ts) : Date.now(),
+  };
+}
+
+function normalizeStoredTutorMessages(messages = []) {
+  if (!Array.isArray(messages)) return [];
+  return messages
+    .map(sanitizeTutorMessageForStorage)
+    .filter(Boolean)
+    .slice(-20);
+}
+
+function readStoredTutorMessages(storageKey) {
+  if (typeof window === "undefined" || !storageKey) return [];
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return normalizeStoredTutorMessages(parsed?.messages || parsed);
+  } catch {
+    return [];
+  }
+}
+
+function writeStoredTutorMessages(storageKey, messages) {
+  if (typeof window === "undefined" || !storageKey) return;
+  try {
+    const normalizedMessages = normalizeStoredTutorMessages(messages);
+    if (!normalizedMessages.length) {
+      window.localStorage.removeItem(storageKey);
+      return;
+    }
+    window.localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        version: 1,
+        updatedAt: Date.now(),
+        messages: normalizedMessages,
+      }),
+    );
+  } catch {}
 }
 
 const isoNow = () => {
@@ -1142,6 +1488,136 @@ function strongNpub(user) {
     localStorage.getItem("local_npub") ||
     ""
   ).trim();
+}
+
+function getTutorTodayKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(
+    2,
+    "0",
+  )}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function dispatchTutorDailyGoalXpUpdate(detail) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent("daily-goal:localXpAwarded", { detail }),
+  );
+}
+
+function getTutorStoreUserDocId(user = {}) {
+  return (
+    user?.id ||
+    user?.local_npub ||
+    (typeof window !== "undefined"
+      ? window.localStorage.getItem("local_npub")
+      : "") ||
+    ""
+  ).trim();
+}
+
+function applyTutorDailyGoalXpOptimistic(npub, amount) {
+  try {
+    const store = useUserStore.getState?.();
+    const currentUser = store?.user || {};
+    const currentDocId = getTutorStoreUserDocId(currentUser);
+    if (npub && currentDocId && npub !== currentDocId) return null;
+
+    const todayKey = getTutorTodayKey();
+    const currentDailyXp = Math.max(
+      Number(currentUser.dailyXp) || 0,
+      Number(currentUser.dailyXpHistory?.[todayKey]) || 0,
+    );
+    const nextDailyXp = currentDailyXp + amount;
+    const dailyGoalXp = Number(
+      currentUser.dailyGoalXp ??
+        currentUser.progress?.dailyGoalXp ??
+        currentUser.stats?.dailyGoalXp,
+    );
+    const patch = {
+      dailyXp: nextDailyXp,
+      dailyXpHistory: {
+        ...(currentUser.dailyXpHistory || {}),
+        [todayKey]: nextDailyXp,
+      },
+    };
+    const detail = {
+      npub,
+      amount,
+      dailyXp: nextDailyXp,
+      todayKey,
+    };
+
+    if (Number.isFinite(dailyGoalXp)) {
+      patch.dailyGoalXp = dailyGoalXp;
+      detail.dailyGoalXp = dailyGoalXp;
+    }
+
+    const reachedDailyGoal =
+      Number.isFinite(dailyGoalXp) &&
+      dailyGoalXp > 0 &&
+      currentDailyXp < dailyGoalXp &&
+      nextDailyXp >= dailyGoalXp;
+
+    store?.patchUser?.(patch);
+
+    dispatchTutorDailyGoalXpUpdate(detail);
+    return {
+      ...detail,
+      previousDailyXp: currentDailyXp,
+      reachedDailyGoal,
+    };
+  } catch (error) {
+    console.warn("Failed to apply Tutor daily XP locally:", error);
+    return null;
+  }
+}
+
+async function syncTutorDailyGoalXpFromFirestore(npub) {
+  if (!npub) return;
+  try {
+    const snap = await getDoc(doc(database, "users", npub));
+    if (!snap.exists()) return;
+
+    const data = snap.data() || {};
+    const todayKey = getTutorTodayKey();
+    const dailyXp = Number(data.dailyXp);
+    const dailyGoalXp = Number(data.dailyGoalXp);
+    const currentUser = useUserStore.getState?.()?.user || {};
+    const currentTodayXp = Number(currentUser.dailyXpHistory?.[todayKey]);
+    const syncedDailyXp =
+      todayKey && Number.isFinite(currentTodayXp)
+        ? Math.max(currentTodayXp, dailyXp)
+        : dailyXp;
+    const patch = {};
+
+    if (Number.isFinite(syncedDailyXp)) patch.dailyXp = syncedDailyXp;
+    if (Number.isFinite(dailyGoalXp)) patch.dailyGoalXp = dailyGoalXp;
+    if (data.dailyXpHistory && typeof data.dailyXpHistory === "object") {
+      patch.dailyXpHistory = {
+        ...data.dailyXpHistory,
+        ...(Number.isFinite(syncedDailyXp)
+          ? { [todayKey]: syncedDailyXp }
+          : {}),
+      };
+    }
+    if (typeof data.dailyGoalPetHealth === "number") {
+      patch.dailyGoalPetHealth = data.dailyGoalPetHealth;
+    }
+
+    if (Object.keys(patch).length) {
+      useUserStore.getState?.()?.patchUser?.(patch);
+    }
+
+    dispatchTutorDailyGoalXpUpdate({
+      npub,
+      amount: 0,
+      dailyXp: syncedDailyXp,
+      dailyGoalXp,
+      todayKey,
+    });
+  } catch (error) {
+    console.warn("Failed to sync Tutor daily XP from Firestore:", error);
+  }
 }
 
 async function ensureUserDoc(npub, defaults = {}) {
@@ -2412,8 +2888,7 @@ function TutorPathLessonNode({
                     "50%": {
                       opacity: 0.55,
                       transform: "scale(0.6) rotate(15deg)",
-                      filter:
-                        "drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))",
+                      filter: "drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))",
                     },
                   },
                 }}
@@ -2675,6 +3150,7 @@ export default function Tutor({
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
+  onDailyGoalCelebration,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -2713,7 +3189,11 @@ export default function Tutor({
   const recTailRef = useRef(new Map());
   const replayRidSetRef = useRef(new Set());
   const ignoredRidSetRef = useRef(new Set());
+  const prematureCompletionRidSetRef = useRef(new Set());
+  const pendingStarterReviewCorrectionRef = useRef(false);
   const replayAudioRef = useRef(null);
+  const replayAudioUrlRef = useRef("");
+  const replayCleanupRef = useRef(null);
   const guardrailItemIdsRef = useRef([]);
   const pendingGuardrailTextRef = useRef("");
   const tutorKickoffSentRef = useRef(false);
@@ -2854,14 +3334,16 @@ export default function Tutor({
   const tutorResumeAppliedRef = useRef("");
   const pendingFirstLessonCompletionFlowRef = useRef(false);
   const tutorFirstLessonCompleteNotifiedRef = useRef(false);
+  const pendingTutorAgendaAfterDailyGoalRef = useRef(false);
+  const pendingTutorFirstLessonNotifyAfterDailyGoalRef = useRef(false);
+  const pendingTutorDailyGoalCelebrationRef = useRef(null);
   const lessonCompleteSoundKeyRef = useRef("");
 
   useEffect(() => {
     const storedLevel = readStoredTutorLevel(targetLang);
     setActiveTutorLevel(
       clampTutorLevelToUnlocked(
-        storedLevel ||
-          getUnlockedTutorLevel(maxProficiencyLevel),
+        storedLevel || getUnlockedTutorLevel(maxProficiencyLevel),
         maxProficiencyLevel,
       ),
     );
@@ -2919,14 +3401,43 @@ export default function Tutor({
   ]);
 
   useEffect(() => {
-    tutorStarterAgendaProgressRef.current = {};
-    setTutorStarterAgendaProgress({});
+    if (!isTutorStarterAgendaLesson(selectedTutorLessonRef.current)) {
+      tutorStarterAgendaProgressRef.current = {};
+      setTutorStarterAgendaProgress({});
+    }
   }, [selectedTutorLesson?.id, targetLang]);
 
   useEffect(() => {
     pendingFirstLessonCompletionFlowRef.current = false;
     tutorFirstLessonCompleteNotifiedRef.current = false;
+    pendingTutorAgendaAfterDailyGoalRef.current = false;
+    pendingTutorFirstLessonNotifyAfterDailyGoalRef.current = false;
+    pendingTutorDailyGoalCelebrationRef.current = null;
   }, [currentNpub, targetLang]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleDailyGoalCelebrationClosed = () => {
+      if (pendingTutorAgendaAfterDailyGoalRef.current) {
+        pendingTutorAgendaAfterDailyGoalRef.current = false;
+        setShowTutorCompletedAgenda(true);
+        return;
+      }
+      if (pendingTutorFirstLessonNotifyAfterDailyGoalRef.current) {
+        pendingTutorFirstLessonNotifyAfterDailyGoalRef.current = false;
+        notifyTutorFirstLessonCompleteOnce();
+      }
+    };
+    window.addEventListener(
+      "daily-goal:celebration-closed",
+      handleDailyGoalCelebrationClosed,
+    );
+    return () =>
+      window.removeEventListener(
+        "daily-goal:celebration-closed",
+        handleDailyGoalCelebrationClosed,
+      );
+  }, [onFirstLessonComplete]);
 
   useEffect(() => {
     const langKey = getTutorStorageLang(targetLang);
@@ -3023,7 +3534,12 @@ export default function Tutor({
     if (tutorPathLoadedLangRef.current !== langKey) return;
     const progressLessons = tutorUserProgress.lessons || {};
     const storedLevel = readStoredTutorLevel(targetLang);
-    const storedLessonId = readStoredTutorLessonId(targetLang);
+    const currentTutorLessonId =
+      typeof user?.progress?.currentTutorLesson === "string"
+        ? user.progress.currentTutorLesson
+        : "";
+    const storedLessonId =
+      currentTutorLessonId || readStoredTutorLessonId(targetLang);
     const storedLesson = findTutorLessonById(tutorPathUnits, storedLessonId);
     const storedLessonProgress = storedLesson
       ? progressLessons?.[storedLesson.lesson.id]
@@ -3071,10 +3587,18 @@ export default function Tutor({
         const earned =
           resumeLesson.status === SKILL_STATUS.IN_PROGRESS
             ? Math.min(
-                resumeLesson.lesson.xpReward || 0,
+                getTutorLessonXpRequired(resumeLesson.lesson),
                 Math.max(0, xp - lessonStartXp),
               )
             : 0;
+
+        const savedStarterProgress = isTutorStarterAgendaLesson(
+          resumeLesson.lesson,
+        )
+          ? getSavedTutorStarterAgendaProgress(
+              progressLessons?.[resumeLesson.lesson.id],
+            )
+          : {};
 
         setSelectedTutorLesson(resumeLesson.lesson);
         setSelectedTutorUnit(resumeLesson.unit);
@@ -3082,6 +3606,8 @@ export default function Tutor({
         selectedTutorUnitRef.current = resumeLesson.unit;
         setTutorLessonEarnedXp(earned);
         tutorLessonEarnedXpRef.current = earned;
+        setTutorStarterAgendaProgress(savedStarterProgress);
+        tutorStarterAgendaProgressRef.current = savedStarterProgress;
         tutorLessonCompletionTriggeredRef.current = false;
         setConversationSettings((prev) => ({
           ...prev,
@@ -3101,7 +3627,13 @@ export default function Tutor({
     if (!appliedResumeLesson) {
       setIsTutorAgendaHydrating(false);
     }
-  }, [targetLang, tutorPathUnits, tutorUserProgress.lessons, xp]);
+  }, [
+    targetLang,
+    tutorPathUnits,
+    tutorUserProgress.lessons,
+    user?.progress?.currentTutorLesson,
+    xp,
+  ]);
 
   // Inline coaching feedback for incomplete attempts
   const [inlineFeedback] = useState("");
@@ -3148,36 +3680,25 @@ export default function Tutor({
     if (status === SKILL_STATUS.COMPLETED) return 100;
     if (status !== SKILL_STATUS.IN_PROGRESS) return 0;
 
-    if (
-      isTutorStarterAgendaLesson(lesson) &&
-      selectedTutorLesson?.id === lesson.id
-    ) {
-      const completedItems = TUTOR_STARTER_AGENDA_ITEMS.filter(
-        (item) => tutorStarterAgendaProgress[item.id],
-      ).length;
-      return Math.round(
-        (completedItems / Math.max(1, TUTOR_STARTER_AGENDA_ITEMS.length)) * 100,
-      );
-    }
-
     if (selectedTutorLesson?.id === lesson.id) {
+      const required = getTutorLessonXpRequired(lesson);
       return Math.round(
-        (Math.max(0, tutorLessonEarnedXp) / Math.max(1, lesson.xpReward || 1)) *
-          100,
+        (Math.max(0, tutorLessonEarnedXp) / Math.max(1, required || 1)) * 100,
       );
     }
 
     const lessonStartXp = tutorUserProgress.lessons?.[lesson.id]?.lessonStartXp;
+    const required = getTutorLessonXpRequired(lesson);
     if (
       typeof lessonStartXp !== "number" ||
       typeof tutorUserProgress.totalXp !== "number" ||
-      !lesson.xpReward
+      !required
     ) {
       return 0;
     }
     return Math.round(
       (Math.max(0, tutorUserProgress.totalXp - lessonStartXp) /
-        Math.max(1, lesson.xpReward)) *
+        Math.max(1, required)) *
         100,
     );
   }
@@ -3206,19 +3727,26 @@ export default function Tutor({
     const earned =
       status === SKILL_STATUS.IN_PROGRESS || isCompleted
         ? Math.min(
-            lesson.xpReward || 0,
+            getTutorLessonXpRequired(lesson),
             Math.max(0, xp - (lessonProgress?.lessonStartXp ?? xp)),
           )
         : 0;
+    const savedStarterProgress = isTutorStarterAgendaLesson(lesson)
+      ? getSavedTutorStarterAgendaProgress(lessonProgress)
+      : {};
 
     setSelectedTutorLesson(lesson);
     setSelectedTutorUnit(unit);
     selectedTutorLessonRef.current = lesson;
     selectedTutorUnitRef.current = unit;
     tutorLessonEarnedXpRef.current = isCompleted
-      ? lesson.xpReward || 0
+      ? getTutorLessonXpRequired(lesson)
       : earned;
-    setTutorLessonEarnedXp(isCompleted ? lesson.xpReward || 0 : earned);
+    setTutorLessonEarnedXp(
+      isCompleted ? getTutorLessonXpRequired(lesson) : earned,
+    );
+    tutorStarterAgendaProgressRef.current = savedStarterProgress;
+    setTutorStarterAgendaProgress(savedStarterProgress);
     tutorLessonCompletionTriggeredRef.current = isCompleted;
     setConversationSettings((prev) => ({
       ...prev,
@@ -3248,15 +3776,84 @@ export default function Tutor({
     setTimeout(() => applyLanguagePolicyNow(), 80);
   }
 
+  async function ensureSelectedTutorLessonStarted() {
+    const lesson = selectedTutorLessonRef.current;
+    if (!currentNpub || !lesson) return;
+
+    const existingStatus = tutorUserProgress.lessons?.[lesson.id]?.status;
+    if (
+      existingStatus === SKILL_STATUS.IN_PROGRESS ||
+      existingStatus === SKILL_STATUS.COMPLETED
+    ) {
+      return;
+    }
+
+    try {
+      await startTutorLesson(
+        currentNpub,
+        lesson.id,
+        targetLangRef.current,
+        tutorUserProgress,
+        xp,
+      );
+    } catch (error) {
+      console.error("Failed to start Tutor lesson:", error);
+    }
+  }
+
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
 
   // Messages
   const [messages, setMessages] = useState([]);
   const messagesRef = useRef([]);
+  const tutorMessagesStorageKeyRef = useRef("");
+  const tutorMessagesHydratedKeyRef = useRef("");
+  const tutorMessagesRestoringRef = useRef(false);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  useEffect(() => {
+    const storageKey = getTutorMessagesStorageKey(
+      currentNpub,
+      targetLang,
+      selectedTutorLesson?.id,
+    );
+    tutorMessagesStorageKeyRef.current = storageKey;
+    if (!storageKey || tutorMessagesHydratedKeyRef.current === storageKey) {
+      return;
+    }
+
+    const storedMessages = readStoredTutorMessages(storageKey);
+    tutorMessagesHydratedKeyRef.current = storageKey;
+    tutorMessagesRestoringRef.current = true;
+    messagesRef.current = storedMessages;
+    setMessages(storedMessages);
+  }, [currentNpub, selectedTutorLesson?.id, targetLang]);
+
+  useEffect(() => {
+    const storageKey = tutorMessagesStorageKeyRef.current;
+    if (!storageKey || tutorMessagesHydratedKeyRef.current !== storageKey) {
+      return;
+    }
+    if (tutorMessagesRestoringRef.current) {
+      tutorMessagesRestoringRef.current = false;
+      return;
+    }
+    writeStoredTutorMessages(storageKey, messages);
+  }, [messages]);
+
+  function hasVisibleTutorConversation() {
+    return hasVisibleTutorMessages(messagesRef.current);
+  }
+
+  function buildRecentOnScreenContextInstruction() {
+    const context = buildRecentTutorConversationContext(messagesRef.current);
+    return context
+      ? `RECENT ON-SCREEN CONTEXT FROM THIS TUTOR SESSION:\n${context}\nUse this only to interpret the learner's next response after a reconnect.`
+      : "";
+  }
 
   // Stream buffers
   const streamBuffersRef = useRef(new Map());
@@ -3511,10 +4108,16 @@ export default function Tutor({
   --------------------------- */
   function stopReplayAudio() {
     try {
+      replayCleanupRef.current?.();
+      replayCleanupRef.current = null;
       if (replayAudioRef.current) {
         replayAudioRef.current.pause();
         replayAudioRef.current.src = "";
         replayAudioRef.current = null;
+      }
+      if (replayAudioUrlRef.current) {
+        URL.revokeObjectURL(replayAudioUrlRef.current);
+        replayAudioUrlRef.current = "";
       }
     } catch {}
   }
@@ -3529,22 +4132,60 @@ export default function Tutor({
     setReplayingId(mid);
     try {
       const cached = await idbGetClip(mid);
-      if (!cached?.blob) {
+      if (cached?.blob) {
+        const url = URL.createObjectURL(cached.blob);
+        replayAudioUrlRef.current = url;
+        const audio = new Audio(url);
+        replayAudioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          replayAudioUrlRef.current = "";
+          setReplayingId(null);
+        };
+        audio.onerror = () => {
+          URL.revokeObjectURL(url);
+          replayAudioUrlRef.current = "";
+          setReplayingId(null);
+        };
+        await audio.play();
+        return;
+      }
+
+      const message = messagesRef.current.find((item) => item.id === mid);
+      const text = getTutorMessageVisibleText(message);
+      if (!text || message?.role !== "assistant") {
         setReplayingId(null);
         return;
       }
-      const url = URL.createObjectURL(cached.blob);
-      const audio = new Audio(url);
-      replayAudioRef.current = audio;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
+
+      const langCode =
+        getBaseLanguageCode(message.lang || targetLangRef.current) ||
+        getBaseLanguageCode(targetLangRef.current) ||
+        "es";
+      const player = await getTTSPlayer({
+        text,
+        voice: getPreferredTTSVoice(voiceRef.current),
+        langTag: TTS_LANG_TAG[langCode] || TTS_LANG_TAG.es,
+      });
+
+      let cleanedUp = false;
+      const cleanup = () => {
+        if (cleanedUp) return;
+        cleanedUp = true;
+        player.cleanup?.();
+        replayCleanupRef.current = null;
+        if (replayAudioRef.current === player.audio) {
+          replayAudioRef.current = null;
+        }
         setReplayingId(null);
       };
-      audio.onerror = () => {
-        URL.revokeObjectURL(url);
-        setReplayingId(null);
-      };
-      await audio.play();
+      replayAudioRef.current = player.audio;
+      replayCleanupRef.current = cleanup;
+      player.audio.onended = cleanup;
+      player.audio.onerror = cleanup;
+      await player.ready;
+      await player.audio.play();
+      player.finalize?.finally(cleanup);
     } catch {
       setReplayingId(null);
     }
@@ -3725,12 +4366,13 @@ export default function Tutor({
     playSound(submitActionSound);
     clearAutoStopTimer();
     clearTutorKickoffTimer();
-    tutorKickoffSentRef.current = false;
+    tutorKickoffSentRef.current = hasVisibleTutorConversation();
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
     setMood("thoughtful");
     try {
+      await ensureSelectedTutorLessonStarted();
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
       assistantInputLockedRef.current = false;
@@ -3881,6 +4523,8 @@ export default function Tutor({
     recTailRef.current.clear();
     replayRidSetRef.current.clear();
     ignoredRidSetRef.current.clear();
+    prematureCompletionRidSetRef.current.clear();
+    pendingStarterReviewCorrectionRef.current = false;
     guardrailItemIdsRef.current = [];
     pendingGuardrailTextRef.current = "";
 
@@ -3912,6 +4556,7 @@ export default function Tutor({
       selectedTutorLessonRef.current,
       selectedTutorUnitRef.current,
       resolvedSupportLang,
+      tLang,
     );
     const selectedLevel =
       tutorLessonDetails?.level ||
@@ -3929,9 +4574,24 @@ export default function Tutor({
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const targetLanguageBoundaryInstruction =
+      buildTutorTargetLanguageBoundaryInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+      });
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
     const isAdvancedTutorLevel =
       isTutorAdvancedConversationLevel(selectedLevel);
+    const teacherTalkLanguageInstruction =
+      buildTutorTeacherTalkLanguageInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+        isEarlyTutorLevel,
+      });
     const starterAgendaLesson = isTutorStarterAgendaLesson(
       selectedTutorLessonRef.current,
     );
@@ -3941,7 +4601,7 @@ export default function Tutor({
         return `LOCALIZED TUTOR MODE: The support language and target language are both ${targetLanguageName}. Teach in level-appropriate ${targetLanguageName}.`;
       }
       if (isEarlyTutorLevel) {
-        return `BEGINNER BILINGUAL MODE: Use ${supportLanguageName} for brief narration, explanations, encouragement, transitions, and questions. Use ${targetLanguageName} for exact model phrases, examples, and learner practice prompts.`;
+        return `BEGINNER BILINGUAL MODE: Use ${supportLanguageName} for ALL teacher talk: narration, explanations, encouragement, corrections, transitions, and questions. Use ${targetLanguageName} only for exact model phrases, examples, and the learner's practice text.`;
       }
       if (isAdvancedTutorLevel) {
         return `ADVANCED IMMERSION MODE: Conduct the tutoring session almost entirely in ${targetLanguageName}. Use ${supportLanguageName} only if the learner explicitly asks for clarification or is clearly stuck.`;
@@ -3951,10 +4611,9 @@ export default function Tutor({
 
     // Proficiency level guidance
     const levelGuidance = {
-      "Pre-A1":
-        "CRITICAL: User is at foundations level (Pre-A1). Treat them as an adult beginner. Teach one tiny step at a time. Use ONLY the most basic target-language words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Model 1-3 word target phrases, then ask the learner to try or complete them once. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
-      A1: "CRITICAL: User is a complete beginner (A1). Treat them as an adult beginner. Use ONLY very simple target-language vocabulary (greetings, numbers, colors, family). Model short 3-5 word target phrases in present tense, then guide the learner to produce one phrase. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
-      A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
+      "Pre-A1": `CRITICAL: User is at foundations level (Pre-A1). Treat them as an adult beginner. Teach one tiny step at a time. Use ONLY the most basic ${targetLanguageName} words, such as greetings, goodbye, yes/no, thank you, numbers 1-10, and basic colors. Model 1-3 word ${targetLanguageName} phrases, then ask the learner to try or complete them once.`,
+      A1: `CRITICAL: User is a complete beginner (A1). Treat them as an adult beginner. Use ONLY very simple ${targetLanguageName} vocabulary, such as greetings, numbers, colors, and family. Model short 3-5 word ${targetLanguageName} phrases in present tense, then guide the learner to produce one phrase.`,
+      A2: `CRITICAL: User is elementary level (A2). Use simple everyday ${targetLanguageName} vocabulary, such as food, shopping, and directions. Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar.`,
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
       B2: "CRITICAL: User is upper intermediate (B2). Use more complex vocabulary and abstract concepts. Can use longer sentences with subordinate clauses. Can use subjunctive mood occasionally. Can discuss hypotheticals.",
       C1: "CRITICAL: User is advanced (C1). Use sophisticated vocabulary and nuanced expressions. Use complex sentence structures with multiple clauses. Use idiomatic expressions. Can handle abstract and specialized topics.",
@@ -3968,8 +4627,8 @@ export default function Tutor({
           `For each reply, use this rhythm: brief ${supportLanguageName} guidance, one exact ${targetLanguageName} model phrase, then ask the learner to try, choose, or complete that phrase once.`,
           `Before asking the learner to say a ${targetLanguageName} phrase, briefly tell them what it means in ${supportLanguageName}.`,
           "When the learner answers, accept it only when it matches the requested target-language phrase or clearly expresses the requested meaning. If the words are unrelated or clearly wrong, correct briefly and keep the learner on that same tiny step.",
-          "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare replies like 'Hola. Bien.'",
-          `Use fill-in-the-blank prompts, brief repetition, and simple choices. Example: 'Great. In ${targetLanguageName}, say: [model phrase]. Your turn.'`,
+          "Do not repeat a phrase after it has been accepted. If the learner misses the phrase, keep the same agenda item but make the prompt simpler. Avoid bare two-word acknowledgements that do not teach the next step.",
+          `Use fill-in-the-blank prompts, brief repetition, and simple choices. The surrounding instruction must be in ${supportLanguageName}; only the model phrase itself is in ${targetLanguageName}.`,
           "Allow support-language questions and answer them briefly, then guide the learner back to producing the target-language phrase.",
         ].join(" ")
       : selectedLevel === "A2" || selectedLevel === "B1"
@@ -4017,7 +4676,8 @@ export default function Tutor({
           `Before each practice attempt, tell the learner the phrase meaning in ${supportLanguageName}.`,
           "For 'my name is', model a safe example with a fictional name or invite the learner to use any name; do not require personal details.",
           "Only the app-tracked acceptance state completes an agenda item. Do not advance when the learner says unrelated words, filler, or a different target phrase.",
-          "After all agenda items have been practiced, combine or review the covered concepts until the lesson XP requirement is complete.",
+          "After all agenda items have been practiced, keep combining or reviewing the covered concepts until the app itself transitions away.",
+          "Never make closing remarks or tell the learner they are finished; the app owns that transition.",
           buildTutorStarterProgressInstructions(),
         ].join(" ")
       : "";
@@ -4029,6 +4689,8 @@ export default function Tutor({
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
       strict,
+      targetLanguageBoundaryInstruction,
+      teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       proficiencyHint,
       customSubjectsContext,
@@ -4063,6 +4725,13 @@ export default function Tutor({
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const targetLanguageBoundaryInstruction =
+      buildTutorTargetLanguageBoundaryInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+      });
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
     const selectedLevel =
@@ -4074,6 +4743,14 @@ export default function Tutor({
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
     const isAdvancedTutorLevel =
       isTutorAdvancedConversationLevel(selectedLevel);
+    const teacherTalkLanguageInstruction =
+      buildTutorTeacherTalkLanguageInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+        isEarlyTutorLevel,
+      });
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
     const agendaSubtitle = getTutorLessonAgendaSubtitle(
       lesson,
@@ -4096,10 +4773,12 @@ export default function Tutor({
 
     return [
       "Kick off the Tutor lesson now. Do not wait for the learner to speak first.",
+      targetLanguageBoundaryInstruction,
+      teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       `Use the selected lesson agenda: ${agendaTitle}${
         agendaSubtitle ? ` - ${agendaSubtitle}` : ""
-      }.`,
+      }. Treat this as the lesson topic/concept, not permission to practice non-${targetLanguageName} phrases.`,
       isEarlyTutorLevel
         ? `Briefly orient the learner in ${supportLanguageName}, model one useful ${targetLanguageName} phrase, then ask for one tiny practice attempt.`
         : isAdvancedTutorLevel
@@ -4143,6 +4822,21 @@ export default function Tutor({
       getLanguagePromptName(targetLang) || "the target language";
     const codeSwitchingAudioInstruction =
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const targetLanguageBoundaryInstruction =
+      buildTutorTargetLanguageBoundaryInstruction({
+        targetLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+      });
+    const teacherTalkLanguageInstruction =
+      buildTutorTeacherTalkLanguageInstruction({
+        targetLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+        isEarlyTutorLevel: true,
+      });
     const phrase = item ? getTutorStarterItemModelPhrase(item, targetLang) : "";
     const task = item ? getTutorStarterItemSupportTask(item, supportCode) : "";
     const meaning = item
@@ -4150,7 +4844,7 @@ export default function Tutor({
       : "";
     const progress = tutorStarterAgendaProgressRef.current || {};
     const lesson = selectedTutorLessonRef.current;
-    const requiredXp = Math.max(0, lesson?.xpReward || 0);
+    const requiredXp = getTutorLessonXpRequired(lesson);
     const earnedXp = Math.max(0, tutorLessonEarnedXpRef.current || 0);
     const remainingXp = Math.max(0, requiredXp - earnedXp);
     const completedItems = TUTOR_STARTER_AGENDA_ITEMS.filter(
@@ -4183,23 +4877,35 @@ export default function Tutor({
       )
       .filter(Boolean)
       .join(", ");
+    const recentOnScreenContext = buildRecentOnScreenContextInstruction();
 
     if (!item) {
       return [
         "You are the realtime voice tutor for this Tutor lesson.",
+        targetLanguageBoundaryInstruction,
+        teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
-        "The lesson agenda is complete. Keep practicing by reviewing or combining only the concepts already covered.",
+        recentOnScreenContext,
+        "All required agenda items have been introduced, but the lesson is NOT complete until the app transitions. Keep practicing by reviewing or combining only the concepts already covered.",
         `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for model phrases.`,
         supportCode === targetLang
           ? ""
           : `Do not answer entirely in ${targetLanguageName}; keep teacher talk in ${supportLanguageName}.`,
         `Covered concepts: ${completedItems || getTutorStarterAgendaSummary(supportCode)}.`,
         `Allowed model phrases: ${reviewPhrases}.`,
-        `XP remaining before lesson completion: ${remainingXp}.`,
+        `App-tracked lesson XP after the latest accepted turn: ${earnedXp}/${requiredXp}.`,
+        `Internal only, do not say this to the learner: ${remainingXp} XP of review practice remains before the app auto-advances.`,
+        remainingXp > 0
+          ? "REVIEW LOOP ACTIVE: acknowledge the learner briefly, then ask one natural review/combo practice task using only the covered concepts. There is no fixed number of review turns; continue this loop until the app itself ends the session."
+          : "If this instruction is reached after the app has enough XP, do not make a closing announcement; ask one tiny practice prompt and let the app handle the transition.",
+        remainingXp > 0
+          ? `CRITICAL: ${remainingXp} XP is still required. Do not say the lesson, practice, or today's work is complete. Do not say goodbye, "nos vemos", "hasta pronto", or any closing phrase. Ask the next review task instead.`
+          : "",
         latestTranscript
           ? `Latest learner transcript: "${latestTranscript}".`
           : "",
-        "Ask for one small review task or one simple combination of learned concepts.",
+        "Do not mention XP, internal progress, finishing, being done, goodbye, or seeing the learner later.",
+        "Ask for one small review task or one simple combination of learned concepts in natural tutor language.",
         "Do not introduce new subjects, advanced vocabulary, or open-ended free conversation.",
         "Do not mention pronunciation, accents, or sound quality. Do not ask the learner to repeat for pronunciation.",
         "Keep it natural and concise: 1-2 short sentences.",
@@ -4210,7 +4916,10 @@ export default function Tutor({
 
     return [
       "You are the realtime voice tutor for this Tutor lesson.",
+      targetLanguageBoundaryInstruction,
+      teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
+      recentOnScreenContext,
       "The app controls the agenda. Your job is to tutor the current agenda item naturally.",
       `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for the phrase the learner should try.`,
       supportCode === targetLang
@@ -4233,7 +4942,7 @@ export default function Tutor({
         ? `Do not prompt these completed phrases again: ${completedPhrases}.`
         : "",
       acceptedItems
-        ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it, then move to the current agenda item. Do not mention internal completion state to the learner.`
+        ? `The app accepted the learner's last attempt for: ${acceptedItems}. Briefly praise it in ${supportLanguageName}, then move to the current agenda item. Do not mention internal completion state to the learner.`
         : "",
       latestTranscript && !latestTurnWasAccepted && !isKickoff
         ? `The app did NOT accept the latest transcript as the current phrase. Do not say "nice work", "great", or imply the learner got it right. Briefly correct in ${supportLanguageName}, remind them what "${currentPhrase}" means, then ask them to try exactly this ${targetLanguageName} phrase: "${currentPhrase}".`
@@ -4344,6 +5053,9 @@ export default function Tutor({
     const nextMeaning = nextItem
       ? getTutorStarterItemSupportMeaning(nextItem, supportCode)
       : "";
+    const requiredXp = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, tutorLessonEarnedXpRef.current || 0);
+    const remainingXp = Math.max(0, requiredXp - earnedXp);
 
     return [
       "APP-TRACKED STARTER AGENDA STATE:",
@@ -4362,8 +5074,12 @@ export default function Tutor({
             nextItem,
             supportCode,
           )}. Model this ${targetLanguageName} phrase if useful: "${nextModel}". Meaning in ${supportLanguageName}: "${nextMeaning}".`
-        : "All agenda items are complete. Review or combine covered concepts until the lesson XP requirement is complete.",
+        : `All agenda items have been covered. Internal only, do not say this to the learner: app-tracked XP is ${earnedXp}/${requiredXp}, with ${remainingXp} XP of review practice remaining. Continue with natural review or combination practice using only covered concepts until the app ends the session.`,
       "Use the app-tracked agenda state as the source of truth. Do not evaluate accent, sound quality, or pronunciation. Only explicitly accepted agenda items are complete.",
+      "Do not mention XP, internal progress, finishing, being done, goodbye, or seeing the learner later. The app UI handles the transition.",
+      remainingXp > 0
+        ? `Internal only: ${remainingXp} XP remains. Do not say the lesson, practice, or today is complete. Do not say goodbye or "nos vemos"; continue with one more review prompt.`
+        : "",
       nextItem
         ? `Before asking the learner to repeat "${nextModel}", briefly explain that it means "${nextMeaning}" in ${supportLanguageName}.`
         : "",
@@ -4390,6 +5106,13 @@ export default function Tutor({
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
       buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+    const targetLanguageBoundaryInstruction =
+      buildTutorTargetLanguageBoundaryInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+      });
     const selectedLevel =
       unit?.cefrLevel ||
       unit?.level ||
@@ -4399,10 +5122,20 @@ export default function Tutor({
     const isEarlyTutorLevel = isTutorEarlyLevel(selectedLevel);
     const isAdvancedTutorLevel =
       isTutorAdvancedConversationLevel(selectedLevel);
+    const teacherTalkLanguageInstruction =
+      buildTutorTeacherTalkLanguageInstruction({
+        targetLang: tLang,
+        supportLang: supportCode,
+        targetLanguageName,
+        supportLanguageName,
+        isEarlyTutorLevel,
+      });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
         "Respond to the learner's latest turn as their tutor.",
+        targetLanguageBoundaryInstruction,
+        teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
         buildTutorStarterProgressInstructions(userMessage, acceptedItemIds),
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
@@ -4417,10 +5150,13 @@ export default function Tutor({
     const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
     return [
       "Respond to the learner's latest turn as their tutor.",
+      targetLanguageBoundaryInstruction,
+      teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       userMessage ? `Latest learner transcript: "${userMessage}".` : "",
-      `Keep teaching from the selected agenda: ${agendaTitle}.`,
-      "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the lesson completes.",
+      buildRecentOnScreenContextInstruction(),
+      `Keep teaching from the selected agenda topic: ${agendaTitle}. Convert any non-${targetLanguageName} source wording into ${targetLanguageName} before modeling it.`,
+      "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the app transitions away.",
       isEarlyTutorLevel
         ? `Use ${supportLanguageName} for coaching, explanations, and questions. Use ${targetLanguageName} only for examples, model phrases, and practice prompts.`
         : isAdvancedTutorLevel
@@ -4584,6 +5320,14 @@ export default function Tutor({
     if (tutorKickoffSentRef.current) return;
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
+    if (hasVisibleTutorConversation()) {
+      tutorKickoffSentRef.current = true;
+      setAssistantInputLocked(false);
+      setUiState(status === "connected" ? "listening" : "idle");
+      setMood("neutral");
+      if (aliveRef.current) scheduleAutoStop();
+      return;
+    }
     if (
       !selectedTutorLessonRef.current &&
       (isTutorPathLoadingRef.current || isTutorAgendaHydratingRef.current)
@@ -4592,6 +5336,7 @@ export default function Tutor({
       return;
     }
 
+    void ensureSelectedTutorLessonStarted();
     tutorKickoffSentRef.current = true;
     clearAutoStopTimer();
 
@@ -4601,9 +5346,9 @@ export default function Tutor({
         DEFAULT_SUPPORT_LANGUAGE,
       );
       const tLang = targetLangRef.current || targetLang || "es";
-      const nextItem =
-        getNextTutorStarterAgendaItem(tutorStarterAgendaProgressRef.current) ||
-        TUTOR_STARTER_AGENDA_ITEMS[0];
+      const nextItem = getNextTutorStarterAgendaItem(
+        tutorStarterAgendaProgressRef.current,
+      );
       requestRealtimeTutorAgendaResponse({
         item: nextItem,
         isKickoff: true,
@@ -4771,8 +5516,165 @@ export default function Tutor({
     }
   }
 
+  function shouldKeepStarterReviewSessionOpen() {
+    const lesson = selectedTutorLessonRef.current;
+    if (!isTutorStarterAgendaLesson(lesson)) return false;
+    if (tutorLessonCompletionTriggeredRef.current) return false;
+    if (!isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)) {
+      return false;
+    }
+
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    return xpRequired > 0 && earnedXp < xpRequired;
+  }
+
+  function isStarterReviewXpIncomplete() {
+    const lesson = selectedTutorLessonRef.current;
+    if (!isTutorStarterAgendaLesson(lesson)) return false;
+    if (tutorLessonCompletionTriggeredRef.current) return false;
+
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    return xpRequired > 0 && earnedXp < xpRequired;
+  }
+
+  function getPendingAssistantOutputText(mid, pendingText = "") {
+    if (!mid) return String(pendingText || "");
+    const message = messagesRef.current.find((item) => item.id === mid);
+    return [
+      message?.textFinal || "",
+      message?.textStream || "",
+      streamBuffersRef.current.get(mid) || "",
+      pendingText || "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  function dispatchTutorCompletionSequenceStart() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("lesson-completion:sequence-start"));
+  }
+
+  function getTutorDailyGoalCelebrationDetail(awardResult, source) {
+    if (!awardResult?.shouldCelebrateGoal) return null;
+    return {
+      petHealth: awardResult.petHealth ?? null,
+      petDelta: awardResult.petDelta,
+      source,
+    };
+  }
+
+  function getTutorLocalDailyGoalCelebrationDetail(update, source) {
+    if (!update?.reachedDailyGoal) return null;
+    return {
+      petHealth: null,
+      source,
+      dailyXp: update.dailyXp,
+      dailyGoalXp: update.dailyGoalXp,
+      todayKey: update.todayKey,
+    };
+  }
+
+  function queueTutorDailyGoalCelebration(detail) {
+    if (!detail || typeof window === "undefined") return;
+    window.dispatchEvent(
+      new CustomEvent("daily-goal:queueCelebration", { detail }),
+    );
+  }
+
+  function rememberTutorDailyGoalCelebration(awardResult, source) {
+    const detail = getTutorDailyGoalCelebrationDetail(awardResult, source);
+    if (!detail) return;
+    pendingTutorDailyGoalCelebrationRef.current = detail;
+    queueTutorDailyGoalCelebration(detail);
+  }
+
+  function rememberTutorLocalDailyGoalCelebration(update, source) {
+    const detail = getTutorLocalDailyGoalCelebrationDetail(update, source);
+    if (!detail) return;
+    pendingTutorDailyGoalCelebrationRef.current = detail;
+    queueTutorDailyGoalCelebration(detail);
+  }
+
+  function releaseQueuedDailyGoalCelebration(celebration = null) {
+    if (typeof window === "undefined") return false;
+    const detail = { handled: false };
+    if (celebration) detail.celebration = celebration;
+    window.dispatchEvent(
+      new CustomEvent("daily-goal:releaseQueuedCelebration", { detail }),
+    );
+    return detail.handled === true;
+  }
+
+  function releaseTutorDailyGoalCelebration() {
+    const directCelebration = pendingTutorDailyGoalCelebrationRef.current;
+    if (directCelebration && typeof onDailyGoalCelebration === "function") {
+      const opened = onDailyGoalCelebration(directCelebration) !== false;
+      if (opened) {
+        pendingTutorDailyGoalCelebrationRef.current = null;
+        return true;
+      }
+    }
+
+    const opened = releaseQueuedDailyGoalCelebration(
+      pendingTutorDailyGoalCelebrationRef.current,
+    );
+    if (opened) pendingTutorDailyGoalCelebrationRef.current = null;
+    return opened;
+  }
+
+  function cancelPrematureStarterCompletionResponse(rid, mid) {
+    if (!rid || prematureCompletionRidSetRef.current.has(rid)) return;
+    prematureCompletionRidSetRef.current.add(rid);
+    pendingStarterReviewCorrectionRef.current = true;
+    if (mid) {
+      streamBuffersRef.current.set(mid, "");
+      updateMessage(mid, (message) => ({
+        ...message,
+        textFinal: "",
+        textStream: "",
+        done: true,
+      }));
+    }
+    try {
+      dcRef.current?.send(JSON.stringify({ type: "response.cancel" }));
+    } catch {}
+  }
+
+  function recoverFromCompletedPrematureStarterResponse(rid, mid) {
+    if (!mid || !isStarterReviewXpIncomplete()) return false;
+    const fullText = getPendingAssistantOutputText(mid);
+    if (!hasPrematureTutorCompletionText(fullText)) return false;
+
+    streamBuffersRef.current.set(mid, "");
+    updateMessage(mid, (message) => ({
+      ...message,
+      textFinal: "",
+      textStream: "",
+      done: true,
+    }));
+    pendingStarterReviewCorrectionRef.current = false;
+    if (rid) prematureCompletionRidSetRef.current.delete(rid);
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    requestRealtimeTutorAgendaResponse({
+      item: getNextTutorStarterAgendaItem(
+        tutorStarterAgendaProgressRef.current,
+      ),
+      supportLang: supportCode,
+      targetLang: targetLangRef.current || targetLang || "es",
+      kind: "tutor_review_retry",
+    });
+    return true;
+  }
+
   function scheduleAutoStop() {
     clearAutoStopTimer();
+    if (shouldKeepStarterReviewSessionOpen()) return;
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
       stop();
@@ -4786,12 +5688,19 @@ export default function Tutor({
     }
   }
 
-  async function completeTutorLessonFromXp(lesson, unit) {
+  async function completeTutorLessonFromXp(
+    lesson,
+    unit,
+    awardPromises = [],
+    localDailyGoalUpdates = [],
+  ) {
     if (!lesson || tutorLessonCompletionTriggeredRef.current) return;
     const npub = currentNpub;
     if (!npub) return;
+    const xpRequired = getTutorLessonXpRequired(lesson);
 
     tutorLessonCompletionTriggeredRef.current = true;
+    dispatchTutorCompletionSequenceStart();
     const nextProgressLessons = {
       ...(tutorUserProgress.lessons || {}),
       [lesson.id]: {
@@ -4806,15 +5715,53 @@ export default function Tutor({
     );
     await stop();
     try {
+      const settledAwards = await Promise.allSettled(
+        awardPromises.filter(Boolean),
+      );
+      settledAwards.forEach((settled) => {
+        if (settled.status === "fulfilled") {
+          rememberTutorDailyGoalCelebration(
+            settled.value,
+            "tutor_lesson_final_turn",
+          );
+        }
+      });
+      localDailyGoalUpdates.forEach((update) => {
+        rememberTutorLocalDailyGoalCelebration(
+          update,
+          "tutor_lesson_final_turn_local",
+        );
+      });
       await completeTutorLesson(
         npub,
         lesson.id,
-        lesson.xpReward || 1,
+        xpRequired || 1,
         targetLangRef.current,
       );
+      if (xpRequired > 0) {
+        setXp((v) => v + xpRequired);
+        const lessonDailyGoalUpdate = applyTutorDailyGoalXpOptimistic(
+          npub,
+          xpRequired,
+        );
+        const lessonAwardResult = await awardXp(
+          npub,
+          xpRequired,
+          targetLangRef.current,
+        );
+        rememberTutorDailyGoalCelebration(
+          lessonAwardResult,
+          "tutor_lesson_completion_bonus",
+        );
+        rememberTutorLocalDailyGoalCelebration(
+          lessonDailyGoalUpdate,
+          "tutor_lesson_completion_bonus_local",
+        );
+        await syncTutorDailyGoalXpFromFirestore(npub);
+      }
       setCompletedTutorLessonData({
         title: lesson.title,
-        xpEarned: lesson.xpReward || 0,
+        xpEarned: xpRequired,
         lessonId: lesson.id,
         unitTitle: unit?.title,
       });
@@ -4828,7 +5775,7 @@ export default function Tutor({
           targetLang: targetLangRef.current,
           supportLang: resolvedSupportLang,
           starterProgress: tutorStarterAgendaProgressRef.current,
-          xpEarned: lesson.xpReward || 0,
+          xpEarned: xpRequired,
           forceComplete: true,
         }),
       );
@@ -4837,7 +5784,7 @@ export default function Tutor({
         const nextEarned =
           nextTutorLesson.status === SKILL_STATUS.IN_PROGRESS
             ? Math.min(
-                nextTutorLesson.lesson.xpReward || 0,
+                getTutorLessonXpRequired(nextTutorLesson.lesson),
                 Math.max(0, xp - (nextProgress?.lessonStartXp ?? xp)),
               )
             : 0;
@@ -4873,22 +5820,28 @@ export default function Tutor({
       setShowTutorLessonComplete(true);
       logEvent(analytics, "tutor_lesson_completed", {
         lessonId: lesson.id,
-        xpRequired: lesson.xpReward || 0,
+        xpRequired,
       });
     } catch (error) {
       console.error("Failed to complete Tutor lesson:", error);
       tutorLessonCompletionTriggeredRef.current = false;
+      releaseQueuedDailyGoalCelebration();
     }
   }
 
-  function trackTutorLessonXp(xpGain) {
+  function trackTutorLessonXp(
+    xpGain,
+    awardPromise = null,
+    localDailyGoalUpdate = null,
+  ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
-    if (!lesson || tutorLessonCompletionTriggeredRef.current) return;
-    if (!lesson.xpReward || lesson.xpReward <= 0) return;
+    if (!lesson || tutorLessonCompletionTriggeredRef.current) return false;
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    if (xpRequired <= 0) return false;
 
     const nextEarned = Math.min(
-      lesson.xpReward,
+      xpRequired,
       Math.max(0, tutorLessonEarnedXpRef.current + xpGain),
     );
     tutorLessonEarnedXpRef.current = nextEarned;
@@ -4897,14 +5850,35 @@ export default function Tutor({
     const canCompleteLesson =
       !isTutorStarterAgendaLesson(lesson) ||
       isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
-    if (nextEarned >= lesson.xpReward && canCompleteLesson) {
-      void completeTutorLessonFromXp(lesson, unit);
+    if (nextEarned >= xpRequired && canCompleteLesson) {
+      dispatchTutorCompletionSequenceStart();
+      void completeTutorLessonFromXp(
+        lesson,
+        unit,
+        awardPromise ? [awardPromise] : [],
+        localDailyGoalUpdate ? [localDailyGoalUpdate] : [],
+      );
+      return true;
     }
+
+    return false;
+  }
+
+  function persistTutorStarterAgendaProgress(lesson, progress) {
+    const npub = currentNpub;
+    if (!npub || !lesson?.id) return;
+    void saveTutorAgendaProgress(
+      npub,
+      lesson.id,
+      targetLangRef.current,
+      normalizeTutorStarterAgendaProgress(progress),
+    ).catch((error) => {
+      console.error("Failed to save Tutor agenda progress:", error);
+    });
   }
 
   function trackTutorStarterAgendaProgress(userMessage) {
     const lesson = selectedTutorLessonRef.current;
-    const unit = selectedTutorUnitRef.current;
     if (!isTutorStarterAgendaLesson(lesson)) return [];
     if (tutorLessonCompletionTriggeredRef.current) return [];
 
@@ -4921,16 +5895,69 @@ export default function Tutor({
 
     const nextProgress = { ...tutorStarterAgendaProgressRef.current };
     nextProgress[currentItem.id] = true;
-    tutorStarterAgendaProgressRef.current = nextProgress;
-    setTutorStarterAgendaProgress(nextProgress);
+    const normalizedNextProgress =
+      normalizeTutorStarterAgendaProgress(nextProgress);
+    tutorStarterAgendaProgressRef.current = normalizedNextProgress;
+    setTutorStarterAgendaProgress(normalizedNextProgress);
 
-    const agendaComplete = TUTOR_STARTER_AGENDA_ITEMS.every(
-      (item) => nextProgress[item.id],
-    );
-    if (!agendaComplete) return [currentItem.id];
-
-    void completeTutorLessonFromXp(lesson, unit);
+    persistTutorStarterAgendaProgress(lesson, normalizedNextProgress);
     return [currentItem.id];
+  }
+
+  function getRegularTutorAcceptedPhrases() {
+    const lesson = selectedTutorLessonRef.current;
+    if (!lesson || isTutorStarterAgendaLesson(lesson)) return [];
+    const currentTargetLang = targetLangRef.current || targetLang || "es";
+    const targetBase = getBaseLanguageCode(currentTargetLang || "es") || "es";
+
+    const promptedPhrases = extractPromptedTutorPhrases(
+      getLatestTutorAssistantText(messagesRef.current),
+    ).filter((phrase) =>
+      isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
+    );
+    if (promptedPhrases.length) return promptedPhrases;
+
+    if (targetBase !== "es") return [];
+
+    return getTutorLessonFocusAgendaItems(lesson)
+      .map((item) => item.phrase || item.label)
+      .filter((phrase) =>
+        isTutorPracticePhraseAllowedForTarget(phrase, currentTargetLang),
+      );
+  }
+
+  function isRegularTutorTurnAccepted(userMessage) {
+    const acceptedPhrases = getRegularTutorAcceptedPhrases();
+    if (!acceptedPhrases.length) return false;
+    return acceptedPhrases.some((phrase) =>
+      tutorPhraseMatchesTranscript(phrase, userMessage),
+    );
+  }
+
+  function notifyTutorFirstLessonCompleteOnce() {
+    if (!pendingFirstLessonCompletionFlowRef.current) return;
+    pendingFirstLessonCompletionFlowRef.current = false;
+    if (tutorFirstLessonCompleteNotifiedRef.current) return;
+    tutorFirstLessonCompleteNotifiedRef.current = true;
+    onFirstLessonComplete?.();
+  }
+
+  function releaseTutorDailyGoalOrNotifyFirstLesson() {
+    const finishSequence = () => {
+      if (releaseTutorDailyGoalCelebration()) {
+        pendingTutorFirstLessonNotifyAfterDailyGoalRef.current = true;
+        return;
+      }
+
+      notifyTutorFirstLessonCompleteOnce();
+    };
+
+    if (typeof window === "undefined") {
+      finishSequence();
+      return;
+    }
+
+    window.setTimeout(finishSequence, 0);
   }
 
   function closeTutorLessonCompleteModal() {
@@ -4942,41 +5969,55 @@ export default function Tutor({
       return;
     }
 
-    if (!pendingFirstLessonCompletionFlowRef.current) return;
-    pendingFirstLessonCompletionFlowRef.current = false;
-    if (tutorFirstLessonCompleteNotifiedRef.current) return;
-    tutorFirstLessonCompleteNotifiedRef.current = true;
-    onFirstLessonComplete?.();
+    releaseTutorDailyGoalOrNotifyFirstLesson();
   }
 
   function closeTutorCompletedAgendaModal() {
     setShowTutorCompletedAgenda(false);
     setCompletedTutorAgendaData(null);
 
-    if (!pendingFirstLessonCompletionFlowRef.current) return;
-    pendingFirstLessonCompletionFlowRef.current = false;
-    if (tutorFirstLessonCompleteNotifiedRef.current) return;
-    tutorFirstLessonCompleteNotifiedRef.current = true;
-    onFirstLessonComplete?.();
+    releaseTutorDailyGoalOrNotifyFirstLesson();
   }
 
   /* ---------------------------
-     Award XP per turn (1-3 XP)
+     Award XP per turn (3-7 XP)
   --------------------------- */
-  async function awardTurnXp(userMessage = "", aiResponse = "") {
+  function awardTurnXp() {
     const npub = currentNpub;
-    if (!npub) return;
+    if (!npub) {
+      return { xpGain: 0, lessonCompletionTriggered: false };
+    }
 
-    // Award 1-3 XP randomly per turn
-    const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
+    const xpGain =
+      Math.floor(
+        Math.random() * (TUTOR_TURN_XP_RANGE.max - TUTOR_TURN_XP_RANGE.min + 1),
+      ) + TUTOR_TURN_XP_RANGE.min;
 
     setXp((v) => v + xpGain);
-    trackTutorLessonXp(xpGain);
+    const dailyGoalUpdate = applyTutorDailyGoalXpOptimistic(npub, xpGain);
 
-    try {
-      await awardXp(npub, xpGain, targetLangRef.current);
-      logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
-    } catch {}
+    const awardPromise = (async () => {
+      try {
+        const awardResult = await awardXp(npub, xpGain, targetLangRef.current);
+        await syncTutorDailyGoalXpFromFirestore(npub);
+        logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
+        return awardResult;
+      } catch (error) {
+        console.error("Failed to award Tutor turn XP:", error);
+        return null;
+      }
+    })();
+
+    const lessonCompletionTriggered = trackTutorLessonXp(
+      xpGain,
+      awardPromise,
+      dailyGoalUpdate,
+    );
+    if (!lessonCompletionTriggered) {
+      void awardPromise;
+    }
+
+    return { xpGain, lessonCompletionTriggered };
   }
 
   /* ---------------------------
@@ -4995,7 +6036,15 @@ export default function Tutor({
     if (t === "session.updated") {
       tutorSessionReadyRef.current = true;
       if (aliveRef.current && !tutorKickoffSentRef.current) {
-        scheduleTutorLessonKickoff(80);
+        if (hasVisibleTutorConversation()) {
+          tutorKickoffSentRef.current = true;
+          setAssistantInputLocked(false);
+          setUiState(status === "connected" ? "listening" : "idle");
+          setMood("neutral");
+          scheduleAutoStop();
+        } else {
+          scheduleTutorLessonKickoff(80);
+        }
       }
       return;
     }
@@ -5046,6 +6095,38 @@ export default function Tutor({
           setUiState(status === "connected" ? "listening" : "idle");
           setMood("neutral");
           if (aliveRef.current) scheduleAutoStop();
+        }
+      }
+      return;
+    }
+
+    if (rid && prematureCompletionRidSetRef.current.has(rid)) {
+      if (
+        t === "response.completed" ||
+        t === "response.done" ||
+        t === "response.canceled"
+      ) {
+        prematureCompletionRidSetRef.current.delete(rid);
+        if (
+          pendingStarterReviewCorrectionRef.current &&
+          isStarterReviewXpIncomplete()
+        ) {
+          pendingStarterReviewCorrectionRef.current = false;
+          const supportCode = normalizeSupportLanguage(
+            supportLangRef.current || resolvedSupportLang,
+            DEFAULT_SUPPORT_LANGUAGE,
+          );
+          requestRealtimeTutorAgendaResponse({
+            item: getNextTutorStarterAgendaItem(
+              tutorStarterAgendaProgressRef.current,
+            ),
+            supportLang: supportCode,
+            targetLang: targetLangRef.current || targetLang || "es",
+            kind: "tutor_review_retry",
+          });
+        } else {
+          pendingStarterReviewCorrectionRef.current = false;
+          finishAssistantOutput();
         }
       }
       return;
@@ -5132,20 +6213,29 @@ export default function Tutor({
         });
         turnCountRef.current += 1;
         const acceptedItemIds = trackTutorStarterAgendaProgress(text);
-        requestTutorTurnFollowup(text, acceptedItemIds);
         const currentLesson = selectedTutorLessonRef.current;
         const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
-        const starterReviewMatched =
+        const starterAgendaComplete =
           isStarterLesson &&
-          isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current) &&
+          isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+        const starterReviewAccepted =
+          starterAgendaComplete &&
           getTutorStarterAgendaMatches(text, targetLangRef.current).length > 0;
+        const regularTurnAccepted =
+          !isStarterLesson && isRegularTutorTurnAccepted(text);
         const canAwardXpForTurn =
-          !isStarterLesson ||
+          regularTurnAccepted ||
           acceptedItemIds.length > 0 ||
-          starterReviewMatched;
-        // Award XP after the tutor reply is requested so progress state cannot suppress the response.
+          starterReviewAccepted;
+        let lessonCompletionTriggered = false;
         if (canAwardXpForTurn) {
-          awardTurnXp(text, "");
+          lessonCompletionTriggered =
+            awardTurnXp()?.lessonCompletionTriggered || false;
+        }
+        // Build the next prompt after local XP updates so the tutor never
+        // guesses at completion from stale progress.
+        if (!lessonCompletionTriggered) {
+          requestTutorTurnFollowup(text, acceptedItemIds);
         }
       }
       return;
@@ -5183,7 +6273,17 @@ export default function Tutor({
     ) {
       const mid = ensureMessageForResponse(rid);
       const prev = streamBuffersRef.current.get(mid) || "";
-      streamBuffersRef.current.set(mid, prev + data.delta);
+      const nextText = prev + data.delta;
+      if (
+        isStarterReviewXpIncomplete() &&
+        hasPrematureTutorCompletionText(
+          getPendingAssistantOutputText(mid, data.delta),
+        )
+      ) {
+        cancelPrematureStarterCompletionResponse(rid, mid);
+        return;
+      }
+      streamBuffersRef.current.set(mid, nextText);
       scheduleStreamFlush();
       return;
     }
@@ -5196,6 +6296,15 @@ export default function Tutor({
     ) {
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
+      if (
+        isStarterReviewXpIncomplete() &&
+        hasPrematureTutorCompletionText(
+          getPendingAssistantOutputText(mid, `${buf} ${data.text}`),
+        )
+      ) {
+        cancelPrematureStarterCompletionResponse(rid, mid);
+        return;
+      }
       if (buf) {
         streamBuffersRef.current.set(mid, "");
         updateMessage(mid, (m) => ({
@@ -5243,8 +6352,37 @@ export default function Tutor({
       });
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
+        if (recoverFromCompletedPrematureStarterResponse(rid, mid)) {
+          stopRecorderAfterTail(rid);
+          isIdleRef.current = true;
+          idleWaitersRef.current.splice(0).forEach((fn) => {
+            try {
+              fn();
+            } catch {}
+          });
+          respToMsg.current.delete(rid);
+          return;
+        }
         const buf = streamBuffersRef.current.get(mid) || "";
         if (buf) {
+          if (
+            isStarterReviewXpIncomplete() &&
+            hasPrematureTutorCompletionText(
+              getPendingAssistantOutputText(mid, buf),
+            )
+          ) {
+            if (recoverFromCompletedPrematureStarterResponse(rid, mid)) {
+              stopRecorderAfterTail(rid);
+              isIdleRef.current = true;
+              idleWaitersRef.current.splice(0).forEach((fn) => {
+                try {
+                  fn();
+                } catch {}
+              });
+              respToMsg.current.delete(rid);
+              return;
+            }
+          }
           streamBuffersRef.current.set(mid, "");
           updateMessage(mid, (m) => ({
             ...m,
@@ -5464,35 +6602,15 @@ export default function Tutor({
       };
     }
 
-    if (isTutorStarterAgendaLesson(lesson)) {
-      const total = TUTOR_STARTER_AGENDA_ITEMS.length;
-      const completed = TUTOR_STARTER_AGENDA_ITEMS.filter(
-        (item) => tutorStarterAgendaProgress[item.id],
-      ).length;
-      const percent = Math.round((completed / Math.max(1, total)) * 100);
-      return {
-        percent,
-        isComplete: percent >= 100,
-        label: `${completed}/${total} ${tutorCopy(uiLang, {
-          en: "steps",
-          es: "pasos",
-          pt: "passos",
-          it: "passi",
-          fr: "etapes",
-          ja: "ステップ",
-          hi: "कदम",
-          ar: "خطوات",
-          zh: "步",
-        })}`,
-      };
-    }
-
-    const required = Math.max(0, lesson.xpReward || 0);
+    const required = getTutorLessonXpRequired(lesson);
     const earned = Math.min(required, Math.max(0, tutorLessonEarnedXp || 0));
     const percent = required > 0 ? Math.round((earned / required) * 100) : 100;
+    const starterAgendaComplete =
+      !isTutorStarterAgendaLesson(lesson) ||
+      isTutorStarterAgendaComplete(tutorStarterAgendaProgress);
     return {
       percent,
-      isComplete: percent >= 100,
+      isComplete: percent >= 100 && starterAgendaComplete,
       label:
         required > 0
           ? `${earned}/${required} XP`
@@ -5515,7 +6633,6 @@ export default function Tutor({
     tutorStarterAgendaProgress,
     uiLang,
   ]);
-
   /* ---------------------------
      Render
   --------------------------- */
@@ -5749,8 +6866,7 @@ export default function Tutor({
                       handleManualTranslate(latestAssistantMessage.id)
                     }
                     canReplay={
-                      !!latestAssistantMessage.hasAudio ||
-                      audioCacheIndexRef.current.has(latestAssistantMessage.id)
+                      !!getTutorMessageVisibleText(latestAssistantMessage)
                     }
                     onReplay={() => playSavedClip(latestAssistantMessage.id)}
                     isReplaying={replayingId === latestAssistantMessage.id}
@@ -5956,13 +7072,13 @@ export default function Tutor({
                     </VStack>
                     <Badge colorScheme="cyan" flexShrink={0}>
                       {Math.min(
-                        selectedTutorLesson.xpReward || 0,
+                        getTutorLessonXpRequired(selectedTutorLesson),
                         selectedTutorLessonProgressStatus ===
                           SKILL_STATUS.COMPLETED
-                          ? selectedTutorLesson.xpReward || 0
+                          ? getTutorLessonXpRequired(selectedTutorLesson)
                           : tutorLessonEarnedXp,
                       )}
-                      /{selectedTutorLesson.xpReward || 0} XP
+                      /{getTutorLessonXpRequired(selectedTutorLesson)} XP
                     </Badge>
                   </HStack>
                 </Box>
@@ -6205,12 +7321,12 @@ export default function Tutor({
               p={{ base: 4, md: 5 }}
               rounded="2xl"
               bg={
-                isLightTheme
-                  ? "rgba(255,255,255,0.62)"
-                  : "rgba(15,23,42,0.68)"
+                isLightTheme ? "rgba(255,255,255,0.62)" : "rgba(15,23,42,0.68)"
               }
               border="1px solid"
-              borderColor={isLightTheme ? "rgba(120,94,61,0.14)" : "whiteAlpha.100"}
+              borderColor={
+                isLightTheme ? "rgba(120,94,61,0.14)" : "whiteAlpha.100"
+              }
             >
               <VStack spacing={3} align="stretch">
                 {(completedTutorAgendaData?.items || []).map((agendaItem) => (
@@ -6377,9 +7493,7 @@ export default function Tutor({
                       isTranslating={translatingMessageId === m.id}
                       canTranslate={showTranslations}
                       onTranslate={() => handleManualTranslate(m.id)}
-                      canReplay={
-                        !!m.hasAudio || audioCacheIndexRef.current.has(m.id)
-                      }
+                      canReplay={!!getTutorMessageVisibleText(m)}
                       onReplay={() => playSavedClip(m.id)}
                       isReplaying={replayingId === m.id}
                       replayLabel={uiText("ra_btn_replay", "Replay")}

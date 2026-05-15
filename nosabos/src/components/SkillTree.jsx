@@ -2450,6 +2450,7 @@ export default function SkillTree({
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
   onTutorFirstLessonComplete,
+  onTutorDailyGoalCelebration,
   // Tutorial props
   isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
   initialUnits = null,
@@ -2967,6 +2968,7 @@ export default function SkillTree({
                 pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
+                onDailyGoalCelebration={onTutorDailyGoalCelebration}
               />
             </Suspense>
           </Box>
