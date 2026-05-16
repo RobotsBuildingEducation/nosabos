@@ -108,7 +108,8 @@ export const TRANSLATION_DE_STATIC = {
   onboarding_voice_persona_label: "Coach-Persona",
   onboarding_voice_persona_placeholder:
     "z. B. freundlich, klar und motivierend",
-  onboarding_persona_default_example: "Ein freundlicher und hilfreicher Assistent",
+  onboarding_persona_default_example:
+    "Ein freundlicher und hilfreicher Assistent",
   DEFAULT_PERSONA: "Ein freundlicher und hilfreicher Assistent",
   onboarding_vad_label: "Pause bei Sprachaktivität",
   onboarding_vad_hint:
@@ -182,9 +183,9 @@ export const TRANSLATION_DE_STATIC = {
   onboarding_challenge_label_en: "Englisch",
   onboarding_challenge_label_es: "Spanisch",
   onboarding_persona_input_placeholder: "Freundlich, klar und motivierend",
-  onboarding_persona_help_text:
-    "Beschreibe kurz, wie dein Coach klingen soll.",
-  onboarding_vad_title: "Wie lange vor der Antwort auf deine Sprache gewartet wird",
+  onboarding_persona_help_text: "Beschreibe kurz, wie dein Coach klingen soll.",
+  onboarding_vad_title:
+    "Wie lange vor der Antwort auf deine Sprache gewartet wird",
   onboarding_vad_explanation:
     "Lege fest, wie lange die App wartet, bevor sie deine Antwort als beendet betrachtet.",
   onboarding_bitcoin_optional_title: "Bitcoin-Wallet optional",
@@ -223,7 +224,8 @@ export const TRANSLATION_DE_STATIC = {
   app_copy_id: "ID kopieren",
   app_your_id: "Deine ID",
   app_secret_key: "Geheimer Schlüssel",
-  app_secret_note: "Bewahre diesen Schlüssel sicher auf. Wir können ihn nicht wiederherstellen.",
+  app_secret_note:
+    "Bewahre diesen Schlüssel sicher auf. Wir können ihn nicht wiederherstellen.",
   app_secret_placeholder: "nsec...",
   app_id_placeholder: "npub...",
   app_nsec_placeholder: "nsec-Schlüssel einfügen",
@@ -233,7 +235,8 @@ export const TRANSLATION_DE_STATIC = {
   app_switch_account: "Konto wechseln",
   app_switch: "Wechseln",
   app_switching: "Wechselt...",
-  app_switch_note: "Füge einen nsec-Schlüssel ein, um zu einem anderen Konto zu wechseln.",
+  app_switch_note:
+    "Füge einen nsec-Schlüssel ein, um zu einem anderen Konto zu wechseln.",
   account_final_step_title: "Letzter Schritt",
   account_final_step_description:
     "Kopiere deinen geheimen Schlüssel, damit du dich später wieder anmelden kannst.",
@@ -336,7 +339,8 @@ export const TRANSLATION_DE_STATIC = {
     "Ziehe oder wähle jede richtige Antwort in die passende Lücke.",
   practice_drag_blank_label: "Lücke {index}",
   practice_next_ready: "Sehr gut! Mach mit der Serie weiter.",
-  practice_try_again_hint: "Lies die Aufgabe noch einmal und versuche es erneut.",
+  practice_try_again_hint:
+    "Lies die Aufgabe noch einmal und versuche es erneut.",
   quiz_correct: "Richtig",
   quiz_try_again: "Erneut versuchen",
   quiz_checked: "Geprüft",
@@ -396,7 +400,8 @@ export const TRANSLATION_DE_STATIC = {
   vocab_create_note_error: "Notiz konnte nicht erstellt werden",
   vocab_recording_failed: "Aufnahme fehlgeschlagen",
   vocab_recording_failed_desc: "Bitte versuche es erneut.",
-  vocab_eval_error_mic_desc: "Prüfe die Mikrofonberechtigungen und versuche es erneut.",
+  vocab_eval_error_mic_desc:
+    "Prüfe die Mikrofonberechtigungen und versuche es erneut.",
   vocab_create_note: "Notiz erstellen",
   vocab_note_saved: "Notiz gespeichert!",
   vocab_lesson_progress: "Lektionsfortschritt",
@@ -528,7 +533,8 @@ export const TRANSLATION_DE_STATIC = {
     "Nutze im freien Modus die Schaltfläche Verbinden, um Gespräche zu üben.",
   ra_toast_translation_failed_title: "Übersetzung fehlgeschlagen",
   ra_toast_no_audio_replay: "Kein Audio zum Wiedergeben verfügbar.",
-  ra_auto_stop_desc: "Die Sitzung wurde nach 15 Sekunden automatisch geschlossen.",
+  ra_auto_stop_desc:
+    "Die Sitzung wurde nach 15 Sekunden automatisch geschlossen.",
   ra_delete_confirm:
     "Alle gespeicherten Gesprächsbeiträge für dieses Konto löschen? Das kann nicht rückgängig gemacht werden.",
   ra_toast_no_account_title: "Kein Konto",
@@ -590,8 +596,7 @@ export const TRANSLATION_DE_STATIC = {
   story_generating_role_sub: "Einen Moment...",
   story_finish_role: "Rollenspiel beenden",
   story_skip_unavailable_title: "Nicht verfügbar",
-  story_skip_unavailable_desc:
-    "Du kannst nur im Lektionsmodus überspringen.",
+  story_skip_unavailable_desc: "Du kannst nur im Lektionsmodus überspringen.",
   story_roleplay_completed: "Rollenspiel abgeschlossen!",
   story_sentences: "Sätze",
   repeat_hear_heading: "Tippe, was du hörst",
@@ -601,8 +606,7 @@ export const TRANSLATION_DE_STATIC = {
     "Tippe auf die Wörter, um deine Antwort zu bilden",
 
   flashcard_session_title: "Kartenfluss",
-  flashcard_session_subtitle:
-    "Erst fällige Wiederholungen, dann neue Karten.",
+  flashcard_session_subtitle: "Erst fällige Wiederholungen, dann neue Karten.",
   flashcard_reviews_due: "Fällige Wiederholungen",
   flashcard_new_queue: "Neue Karten",
   flashcard_mastered_cards: "Gelernte Karten",
@@ -631,7 +635,8 @@ export const TRANSLATION_DE_STATIC = {
   flashcard_weak_reason_lapses: "Zu viele Aussetzer",
   flashcard_weak_reason_slipping: "Rutscht noch weg",
   flashcard_weak_reason_mastery: "Meisterschaft stärken",
-  flashcard_session_loading: "Deine Wiederholungswarteschlange wird vorbereitet...",
+  flashcard_session_loading:
+    "Deine Wiederholungswarteschlange wird vorbereitet...",
   flashcard_due_subtitle:
     "Diese Karten sind bereit zur Wiederholung. Erledige sie zuerst, um dein Gedächtnis zu stärken.",
   flashcard_mastery_stage: "Stufe {stage}",
@@ -649,7 +654,8 @@ export const TRANSLATION_DE_STATIC = {
   flashcard_button_again: "Brauche Hilfe",
   flashcard_button_again_help: "Ich brauche noch Hilfe, mich zu erinnern.",
   flashcard_button_hard: "Noch am Lernen",
-  flashcard_button_hard_help: "Ich wusste es teilweise, aber noch nicht sicher.",
+  flashcard_button_hard_help:
+    "Ich wusste es teilweise, aber noch nicht sicher.",
   flashcard_button_good: "Ich weiß es",
   flashcard_button_good_help: "Ich wusste die Antwort mit kurzem Nachdenken.",
   flashcard_button_easy: "Gemeistert",
@@ -741,8 +747,7 @@ export const TRANSLATION_DE_STATIC = {
   proficiency_modal_skip_note:
     "Wenn du überspringst, beginnst du auf Anfängerniveau.",
   proficiency_test_title: "Einstufungstest",
-  proficiency_test_intro:
-    "Sprich natürlich — wir schätzen dein Niveau ein",
+  proficiency_test_intro: "Sprich natürlich — wir schätzen dein Niveau ein",
   proficiency_test_evaluating: "Wird bewertet",
   proficiency_test_analyzing:
     "Dein Gespräch wird analysiert, um dein Niveau zu bestimmen...",
