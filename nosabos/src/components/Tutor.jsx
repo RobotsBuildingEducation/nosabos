@@ -23,6 +23,7 @@ import {
   ModalHeader,
   ModalOverlay,
   Text,
+  Portal,
   VStack,
   Wrap,
   Spinner,
@@ -2433,6 +2434,55 @@ function uiStateLabel(uiState, uiLang) {
   return "";
 }
 
+function TutorViewportEdgeGlow({ state = "idle", isLightTheme = false }) {
+  const isSpeaking = state === "speaking";
+  const isThinking = state === "thinking";
+  const isActive = isSpeaking || isThinking;
+  const opacity = isActive ? 1 : 0;
+  const animationDuration = isSpeaking || isThinking ? "2.35s" : "3.4s";
+  const restingShadow = isLightTheme
+    ? "inset 0 0 7px rgba(14, 165, 233, 0.34), inset 0 0 15px rgba(45, 212, 191, 0.22), inset 0 0 26px rgba(134, 239, 172, 0.12)"
+    : "inset 0 0 8px rgba(34, 211, 238, 0.4), inset 0 0 18px rgba(45, 212, 191, 0.26), inset 0 0 30px rgba(134, 239, 172, 0.14)";
+  const activeShadow = isLightTheme
+    ? "inset 0 0 11px rgba(14, 165, 233, 0.5), inset 0 0 24px rgba(45, 212, 191, 0.34), inset 0 0 42px rgba(134, 239, 172, 0.18)"
+    : "inset 0 0 12px rgba(34, 211, 238, 0.56), inset 0 0 27px rgba(45, 212, 191, 0.38), inset 0 0 46px rgba(134, 239, 172, 0.2)";
+
+  return (
+    <Portal>
+      <Box
+        aria-hidden="true"
+        pointerEvents="none"
+        position="fixed"
+        inset={0}
+        zIndex={1399}
+        opacity={opacity}
+        transition="opacity 460ms ease"
+        sx={{
+          "--edge-breathe": animationDuration,
+          "@keyframes tutorEdgeBreathe": {
+            "0%, 100%": {
+              filter: "saturate(1.24) brightness(1.08)",
+              boxShadow: restingShadow,
+            },
+            "50%": {
+              filter: "saturate(1.68) brightness(1.36)",
+              boxShadow: activeShadow,
+            },
+          },
+          "@media (prefers-reduced-motion: reduce)": {
+            "&, &::before, &::after": {
+              animation: "none",
+            },
+          },
+          animation:
+            "tutorEdgeBreathe var(--edge-breathe) ease-in-out infinite",
+          boxShadow: restingShadow,
+        }}
+      />
+    </Portal>
+  );
+}
+
 /* ---------------------------
    IndexedDB audio cache (per message)
 --------------------------- */
@@ -3917,6 +3967,7 @@ export default function Tutor({
     status === "connected" && uiState !== "speaking" && uiState !== "thinking"
       ? "listening"
       : uiState;
+  const edgeGlowState = status === "connected" ? liveUiState : "idle";
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
@@ -4374,7 +4425,7 @@ export default function Tutor({
     tutorKickoffSentRef.current = hasVisibleTutorConversation();
     setErr("");
     setStatus("connecting");
-    setUiState("thinking");
+    setUiState("idle");
     setMood("thoughtful");
     try {
       await ensureSelectedTutorLessonStarted();
@@ -5012,8 +5063,7 @@ export default function Tutor({
         }),
       );
     } catch {
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
+      resumeListeningWithAutoStop();
     }
   }
 
@@ -5229,14 +5279,18 @@ export default function Tutor({
     }
   }
 
+  function resumeListeningWithAutoStop() {
+    setAssistantInputLocked(false);
+    setUiState(aliveRef.current ? "listening" : "idle");
+    setMood("neutral");
+    if (aliveRef.current) scheduleAutoStop();
+  }
+
   function finishAssistantOutput() {
     clearAssistantUnlockTimer();
     assistantSpeakingRef.current = false;
     enableVAD();
-    setAssistantInputLocked(false);
-    setUiState(status === "connected" ? "listening" : "idle");
-    setMood("neutral");
-    if (aliveRef.current) scheduleAutoStop();
+    resumeListeningWithAutoStop();
   }
 
   function scheduleAssistantUnlockAfterQuiet() {
@@ -5387,8 +5441,7 @@ export default function Tutor({
       });
     } catch (error) {
       tutorKickoffSentRef.current = false;
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
+      resumeListeningWithAutoStop();
     }
   }
 
@@ -5440,8 +5493,7 @@ export default function Tutor({
         }),
       );
     } catch {
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
+      resumeListeningWithAutoStop();
     }
   }
 
@@ -5519,19 +5571,6 @@ export default function Tutor({
       clearTimeout(autoStopTimerRef.current);
       autoStopTimerRef.current = null;
     }
-  }
-
-  function shouldKeepStarterReviewSessionOpen() {
-    const lesson = selectedTutorLessonRef.current;
-    if (!isTutorStarterAgendaLesson(lesson)) return false;
-    if (tutorLessonCompletionTriggeredRef.current) return false;
-    if (!isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)) {
-      return false;
-    }
-
-    const xpRequired = getTutorLessonXpRequired(lesson);
-    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
-    return xpRequired > 0 && earnedXp < xpRequired;
   }
 
   function isStarterReviewXpIncomplete() {
@@ -5679,7 +5718,6 @@ export default function Tutor({
 
   function scheduleAutoStop() {
     clearAutoStopTimer();
-    if (shouldKeepStarterReviewSessionOpen()) return;
     autoStopTimerRef.current = setTimeout(() => {
       if (!aliveRef.current) return;
       stop();
@@ -6191,57 +6229,60 @@ export default function Tutor({
       if (assistantSpeakingRef.current) {
         return;
       }
-      if (text) {
-        const now = Date.now();
-        if (
-          text === lastTranscriptRef.current.text &&
-          now - lastTranscriptRef.current.ts < 2000
-        ) {
-          return;
-        }
-        lastTranscriptRef.current = { text, ts: now };
-        // Use timestamp BEFORE the AI response started so user message appears first
-        const userTs = responseStartTimeRef.current
-          ? responseStartTimeRef.current - 1
-          : now;
-        pushMessage({
-          id: uid(),
-          role: "user",
-          lang: "en",
-          textFinal: text,
-          textStream: "",
-          translation: "",
-          translationLang: "",
-          pairs: [],
-          done: true,
-          ts: userTs,
-        });
-        turnCountRef.current += 1;
-        const acceptedItemIds = trackTutorStarterAgendaProgress(text);
-        const currentLesson = selectedTutorLessonRef.current;
-        const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
-        const starterAgendaComplete =
-          isStarterLesson &&
-          isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
-        const starterReviewAccepted =
-          starterAgendaComplete &&
-          getTutorStarterAgendaMatches(text, targetLangRef.current).length > 0;
-        const regularTurnAccepted =
-          !isStarterLesson && isRegularTutorTurnAccepted(text);
-        const canAwardXpForTurn =
-          regularTurnAccepted ||
-          acceptedItemIds.length > 0 ||
-          starterReviewAccepted;
-        let lessonCompletionTriggered = false;
-        if (canAwardXpForTurn) {
-          lessonCompletionTriggered =
-            awardTurnXp()?.lessonCompletionTriggered || false;
-        }
-        // Build the next prompt after local XP updates so the tutor never
-        // guesses at completion from stale progress.
-        if (!lessonCompletionTriggered) {
-          requestTutorTurnFollowup(text, acceptedItemIds);
-        }
+      if (!text) {
+        resumeListeningWithAutoStop();
+        return;
+      }
+      const now = Date.now();
+      if (
+        text === lastTranscriptRef.current.text &&
+        now - lastTranscriptRef.current.ts < 2000
+      ) {
+        resumeListeningWithAutoStop();
+        return;
+      }
+      lastTranscriptRef.current = { text, ts: now };
+      // Use timestamp BEFORE the AI response started so user message appears first
+      const userTs = responseStartTimeRef.current
+        ? responseStartTimeRef.current - 1
+        : now;
+      pushMessage({
+        id: uid(),
+        role: "user",
+        lang: "en",
+        textFinal: text,
+        textStream: "",
+        translation: "",
+        translationLang: "",
+        pairs: [],
+        done: true,
+        ts: userTs,
+      });
+      turnCountRef.current += 1;
+      const acceptedItemIds = trackTutorStarterAgendaProgress(text);
+      const currentLesson = selectedTutorLessonRef.current;
+      const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
+      const starterAgendaComplete =
+        isStarterLesson &&
+        isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+      const starterReviewAccepted =
+        starterAgendaComplete &&
+        getTutorStarterAgendaMatches(text, targetLangRef.current).length > 0;
+      const regularTurnAccepted =
+        !isStarterLesson && isRegularTutorTurnAccepted(text);
+      const canAwardXpForTurn =
+        regularTurnAccepted ||
+        acceptedItemIds.length > 0 ||
+        starterReviewAccepted;
+      let lessonCompletionTriggered = false;
+      if (canAwardXpForTurn) {
+        lessonCompletionTriggered =
+          awardTurnXp()?.lessonCompletionTriggered || false;
+      }
+      // Build the next prompt after local XP updates so the tutor never
+      // guesses at completion from stale progress.
+      if (!lessonCompletionTriggered) {
+        requestTutorTurnFollowup(text, acceptedItemIds);
       }
       return;
     }
@@ -6251,9 +6292,7 @@ export default function Tutor({
       t === "input_audio_transcription.failed"
     ) {
       pendingUserAudioCommitRef.current = false;
-      setAssistantInputLocked(false);
-      setUiState(status === "connected" ? "listening" : "idle");
-      setMood("neutral");
+      resumeListeningWithAutoStop();
       return;
     }
 
@@ -6643,6 +6682,10 @@ export default function Tutor({
   --------------------------- */
   return (
     <>
+      <TutorViewportEdgeGlow
+        state={edgeGlowState}
+        isLightTheme={isLightTheme}
+      />
       <Box color="gray.100" position="relative" pb="120px">
         {/* Header area: lesson agenda separated from robot */}
         <VStack px={4} mt={0} spacing={1} align="center">
