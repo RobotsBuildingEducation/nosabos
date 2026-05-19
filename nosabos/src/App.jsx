@@ -218,7 +218,11 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "./utils/modalMotion";
-import { normalizeTTSVoice } from "./utils/tts";
+import {
+  GEMINI_LIVE_VOICE_OPTIONS,
+  getGeminiLiveVoiceOption,
+  normalizeGeminiLiveVoice,
+} from "./utils/geminiLiveVoices";
 
 const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
 
@@ -666,7 +670,8 @@ function getTodayDailyXpFromHistory(history = {}) {
 }
 
 function getEffectiveDailyXpToday(data = {}) {
-  const rawXp = data?.dailyXp ?? data?.stats?.dailyXp ?? data?.progress?.dailyXp;
+  const rawXp =
+    data?.dailyXp ?? data?.stats?.dailyXp ?? data?.progress?.dailyXp;
   const parsedXp = Number(rawXp);
   const directXp = Number.isFinite(parsedXp) ? parsedXp : 0;
   const historyXp = getTodayDailyXpFromHistory(data?.dailyXpHistory);
@@ -675,7 +680,9 @@ function getEffectiveDailyXpToday(data = {}) {
 
 function getEffectiveDailyGoalXp(data = {}, fallback = 100) {
   const rawGoal =
-    data?.dailyGoalXp ?? data?.progress?.dailyGoalXp ?? data?.stats?.dailyGoalXp;
+    data?.dailyGoalXp ??
+    data?.progress?.dailyGoalXp ??
+    data?.stats?.dailyGoalXp;
   const parsedGoal = Number(rawGoal);
   if (Number.isFinite(parsedGoal) && parsedGoal > 0) return parsedGoal;
   const parsedFallback = Number(fallback);
@@ -751,10 +758,15 @@ function TopBar({
   const [supportLang, setSupportLang] = useState(
     normalizeSupportLanguage(p.supportLang, DEFAULT_SUPPORT_LANGUAGE),
   );
-  const [voice, setVoice] = useState(normalizeTTSVoice(p.voice));
+  const [tutorVoice, setTutorVoice] = useState(
+    normalizeGeminiLiveVoice(p.tutorVoice || p.voice),
+  );
   const defaultPersonaSupportLang = p.supportLang || supportLang || appLanguage;
   const defaultPersona =
-    personaForSupportLanguage(p.voicePersona, defaultPersonaSupportLang) ??
+    personaForSupportLanguage(
+      p.tutorVoicePersona ?? p.voicePersona,
+      defaultPersonaSupportLang,
+    ) ??
     personaDefaultFor(defaultPersonaSupportLang) ??
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
@@ -869,11 +881,14 @@ function TopBar({
     if (!pendingLangRef.current || incomingLang === pendingLangRef.current) {
       setSupportLang(incomingLang);
     }
-    setVoice(normalizeTTSVoice(q.voice));
+    setTutorVoice(normalizeGeminiLiveVoice(q.tutorVoice || q.voice));
     const draftSupportLang =
       pendingLangRef.current || incomingLang || supportLang || appLanguage;
     const nextVoicePersona =
-      personaForSupportLanguage(q.voicePersona, draftSupportLang) ??
+      personaForSupportLanguage(
+        q.tutorVoicePersona ?? q.voicePersona,
+        draftSupportLang,
+      ) ??
       personaDefaultFor(draftSupportLang) ??
       translations.en.onboarding_persona_default_example;
     setVoicePersona(preferTextDraft("voicePersona", nextVoicePersona));
@@ -900,7 +915,7 @@ function TopBar({
       current !== localizedDefault
     ) {
       setVoicePersona(localizedDefault);
-      persistSettings({ voicePersona: localizedDefault });
+      persistSettings({ tutorVoicePersona: localizedDefault });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLanguage, supportLang]);
@@ -943,17 +958,26 @@ function TopBar({
     [persistSettings],
   );
 
-  // Debounced persist for text inputs (voicePersona, helpRequest)
+  // Debounced persist for text inputs (tutorVoicePersona, helpRequest)
   const debounceRef = useRef(null);
   const debouncedPersist = useCallback(
     (partial, delay = 400) => {
       clearTimeout(debounceRef.current);
-      const textKeys = ["voicePersona", "helpRequest"].filter((key) =>
-        Object.prototype.hasOwnProperty.call(partial, key),
-      );
+      const textDrafts = [];
+      if (Object.prototype.hasOwnProperty.call(partial, "tutorVoicePersona")) {
+        textDrafts.push({
+          key: "voicePersona",
+          value: partial.tutorVoicePersona,
+        });
+      }
+      if (Object.prototype.hasOwnProperty.call(partial, "helpRequest")) {
+        textDrafts.push({ key: "helpRequest", value: partial.helpRequest });
+      }
       debounceRef.current = setTimeout(() => {
         void persistSettings(partial).finally(() => {
-          textKeys.forEach((key) => releaseTextDraftSoon(key, partial[key]));
+          textDrafts.forEach(({ key, value }) =>
+            releaseTextDraftSoon(key, value),
+          );
         });
       }, delay);
     },
@@ -1117,8 +1141,7 @@ function TopBar({
     dailyGoalXp > 0
       ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
-  const dailyBarPct =
-    dailyPct > 0 && dailyPct < 6 ? 6 : dailyPct;
+  const dailyBarPct = dailyPct > 0 && dailyPct < 6 ? 6 : dailyPct;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
 
   const cefrTimestamp =
@@ -1599,7 +1622,7 @@ function TopBar({
                                   persistSettingsAfterPaint({
                                     supportLang: normalized,
                                     ...(shouldLocalizePersona && nextPersona
-                                      ? { voicePersona: nextPersona }
+                                      ? { tutorVoicePersona: nextPersona }
                                       : {}),
                                   });
                                 }}
@@ -1761,37 +1784,42 @@ function TopBar({
 
                       <VoicePreferenceField
                         t={t}
-                        voice={voice}
+                        voice={tutorVoice}
                         voicePersona={voicePersona}
                         targetLang={targetLang}
                         supportLang={supportLang}
+                        voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
+                        normalizeVoice={normalizeGeminiLiveVoice}
+                        getVoiceOption={getGeminiLiveVoiceOption}
+                        previewProvider="gemini-live"
                         onVoiceChange={(nextVoice, nextPersona) => {
-                          const normalized = normalizeTTSVoice(nextVoice);
+                          const normalized =
+                            normalizeGeminiLiveVoice(nextVoice);
                           const persona = String(
                             nextPersona ?? voicePersona ?? "",
                           ).slice(0, 240);
-                          setVoice(normalized);
+                          setTutorVoice(normalized);
                           setVoicePersona(persona);
                           rememberTextDraft("voicePersona", persona);
                           persistSettingsAfterPaint({
-                            voice: normalized,
-                            voicePersona: persona,
+                            tutorVoice: normalized,
+                            tutorVoicePersona: persona,
                           });
                         }}
                         onVoicePersonaChange={(next) => {
                           setVoicePersona(next);
                           rememberTextDraft("voicePersona", next);
-                          debouncedPersist({ voicePersona: next });
+                          debouncedPersist({ tutorVoicePersona: next });
                         }}
                         onSelectSound={() => playSound(selectSound)}
                         menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
                         heading={
                           t.onboarding_section_voice_persona ||
-                          "Voice & Personality"
+                          "Tutor Voice & Personality"
                         }
                         description={
                           t.onboarding_voice_desc ||
-                          "Choose the voice and style for your coach."
+                          "Choose the voice and style for your tutor."
                         }
                         personaPlaceholder={
                           (t.ra_persona_placeholder &&
@@ -2217,8 +2245,11 @@ export default function App({ onBootReady } = {}) {
         if (user) {
           const currentProgress = user.progress || {};
           const nextVoicePersona = personaForSupportLanguage(
-            currentProgress.voicePersona,
+            currentProgress.tutorVoicePersona ?? currentProgress.voicePersona,
             normalized,
+          );
+          const shouldLocalizeTutorPersona = isDefaultPersonaValue(
+            currentProgress.tutorVoicePersona ?? currentProgress.voicePersona,
           );
           setUser?.({
             ...user,
@@ -2226,9 +2257,8 @@ export default function App({ onBootReady } = {}) {
             progress: {
               ...currentProgress,
               supportLang: normalized,
-              ...(isDefaultPersonaValue(currentProgress.voicePersona) &&
-              nextVoicePersona
-                ? { voicePersona: nextVoicePersona }
+              ...(shouldLocalizeTutorPersona && nextVoicePersona
+                ? { tutorVoicePersona: nextVoicePersona }
                 : {}),
             },
           });
@@ -2696,7 +2726,8 @@ export default function App({ onBootReady } = {}) {
     level: "Pre-A1",
     supportLang: appLanguage, // Use detected/selected app language
     voice: "marin",
-    voicePersona:
+    tutorVoice: normalizeGeminiLiveVoice(),
+    tutorVoicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
       translations?.en?.onboarding_persona_default_example ||
       "",
@@ -2862,10 +2893,7 @@ export default function App({ onBootReady } = {}) {
     setCelebrateOpen(true);
     setDailyGoalCelebrationPet({
       health: detail?.petHealth ?? detail?.health ?? null,
-      delta:
-        detail?.petDelta ??
-        detail?.delta ??
-        DAILY_GOAL_PET_HEALTH_GAIN,
+      delta: detail?.petDelta ?? detail?.delta ?? DAILY_GOAL_PET_HEALTH_GAIN,
     });
     dailyGoalModalJustOpenedRef.current = true;
   }, []);
@@ -3158,7 +3186,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 250 && !subscriptionVerified,
+    () => subscriptionXp >= 600 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -3365,11 +3393,7 @@ export default function App({ onBootReady } = {}) {
     const handleReleaseQueuedCelebration = (event) => {
       let opened = openPendingDailyGoalCelebration() || celebrateOpen;
       const fallbackDetail = event?.detail?.celebration;
-      if (
-        !opened &&
-        fallbackDetail &&
-        typeof fallbackDetail === "object"
-      ) {
+      if (!opened && fallbackDetail && typeof fallbackDetail === "object") {
         deferDailyGoalCelebrationRef.current = false;
         openDailyGoalCelebration(fallbackDetail);
         opened = true;
@@ -3396,7 +3420,11 @@ export default function App({ onBootReady } = {}) {
         handleReleaseQueuedCelebration,
       );
     };
-  }, [celebrateOpen, openDailyGoalCelebration, openPendingDailyGoalCelebration]);
+  }, [
+    celebrateOpen,
+    openDailyGoalCelebration,
+    openPendingDailyGoalCelebration,
+  ]);
 
   const handleSubmitPasscode = useCallback(
     async (input, setLocalError) => {
@@ -3627,7 +3655,9 @@ export default function App({ onBootReady } = {}) {
       level: "Pre-A1",
       supportLang: "en",
       voice: "marin",
-      voicePersona: translations?.en?.onboarding_persona_default_example || "",
+      tutorVoice: normalizeGeminiLiveVoice(),
+      tutorVoicePersona:
+        translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
       showTranslations: true,
       pauseMs: 1200,
@@ -3640,7 +3670,10 @@ export default function App({ onBootReady } = {}) {
     );
     const nextVoicePersona =
       personaForSupportLanguage(
-        partial.voicePersona ?? prev.voicePersona,
+        partial.tutorVoicePersona ??
+          partial.voicePersona ??
+          prev.tutorVoicePersona ??
+          prev.voicePersona,
         nextSupportLang,
       ) ?? "";
 
@@ -3648,8 +3681,10 @@ export default function App({ onBootReady } = {}) {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: nextSupportLang,
-      voice: normalizeTTSVoice(partial.voice ?? prev.voice),
-      voicePersona: nextVoicePersona.slice(0, 240),
+      tutorVoice: normalizeGeminiLiveVoice(
+        partial.tutorVoice ?? prev.tutorVoice ?? prev.voice,
+      ),
+      tutorVoicePersona: nextVoicePersona.slice(0, 240),
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? prev.targetLang,
         DEFAULT_TARGET_LANGUAGE,
@@ -3779,16 +3814,19 @@ export default function App({ onBootReady } = {}) {
         DEFAULT_SUPPORT_LANGUAGE,
       );
       const incomingPersona = safe(
-        payload.voicePersona,
+        payload.tutorVoicePersona ?? payload.voicePersona,
         personaDefaultFor(normalizedSupportLang),
       );
 
-      // Simplified onboarding - only language settings, voice persona, and pause
+      // Simplified onboarding - language settings, Tutor persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
         supportLang: normalizedSupportLang,
-        voice: normalizeTTSVoice(payload.voice),
-        voicePersona:
+        voice: "marin",
+        tutorVoice: normalizeGeminiLiveVoice(
+          payload.tutorVoice ?? payload.voice,
+        ),
+        tutorVoicePersona:
           personaForSupportLanguage(incomingPersona, normalizedSupportLang) ??
           personaDefaultFor(normalizedSupportLang),
         targetLang: normalizePracticeLanguage(
@@ -4351,12 +4389,24 @@ export default function App({ onBootReady } = {}) {
       }
 
       let cancelled = false;
+      let opened = false;
+      const startedAt = Date.now();
       const tryOpen = () => {
-        if (cancelled) return;
-        const activeModalStack = document.querySelectorAll(
-          ".chakra-modal__content-container, .chakra-modal__overlay",
-        ).length;
-        if (!activeModalStack) {
+        if (cancelled || opened) return;
+        const activeModalStack = Array.from(
+          document.querySelectorAll(
+            ".chakra-modal__content-container, .chakra-modal__overlay",
+          ),
+        ).filter((element) => {
+          const style = window.getComputedStyle(element);
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            element.getAttribute("aria-hidden") !== "true"
+          );
+        }).length;
+        if (!activeModalStack || Date.now() - startedAt > 900) {
+          opened = true;
           openCelebration();
           return;
         }
@@ -5453,8 +5503,6 @@ export default function App({ onBootReady } = {}) {
               activeNsec={activeNsec}
               level={user?.progress?.level}
               supportLang={user?.progress?.supportLang}
-              voice={user?.progress?.voice}
-              voicePersona={user?.progress?.voicePersona}
               targetLang={user?.progress?.targetLang}
               showTranslations={user?.progress?.showTranslations}
               pauseMs={user?.progress?.pauseMs}
@@ -6857,8 +6905,6 @@ export default function App({ onBootReady } = {}) {
                           activeNsec={activeNsec}
                           level={user?.progress?.level}
                           supportLang={resolvedSupportLang}
-                          voice={user?.progress?.voice}
-                          voicePersona={user?.progress?.voicePersona}
                           targetLang={user?.progress?.targetLang}
                           showTranslations={user?.progress?.showTranslations}
                           pauseMs={user?.progress?.pauseMs}
@@ -8181,9 +8227,7 @@ function BottomActionBar({
                   onClick={() => playSound?.(modeSwitcherSound)}
                   bg={isLightTheme ? "#38b2ac" : undefined}
                   colorScheme={isLightTheme ? undefined : "teal"}
-                  boxShadow={
-                    isLightTheme ? "0 4px 0 #237f7a" : undefined
-                  }
+                  boxShadow={isLightTheme ? "0 4px 0 #237f7a" : undefined}
                   color="white"
                   _hover={
                     isLightTheme

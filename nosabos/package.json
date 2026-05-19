@@ -27,7 +27,7 @@
     "@wagmi/chains": "^1.8.0",
     "bech32": "^2.0.0",
     "buffer": "^6.0.3",
-    "firebase": "^12.1.0",
+    "firebase": "^12.13.0",
     "framer-motion": "^12.23.12",
     "i": "^0.3.7",
     "lucide-react": "^0.544.0",

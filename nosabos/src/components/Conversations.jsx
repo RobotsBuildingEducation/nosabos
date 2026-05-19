@@ -1065,13 +1065,7 @@ export default function Conversations({
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs
-  const [voice, setVoice] = useState(
-    getPreferredTTSVoice(user?.progress?.voice),
-  );
-  const [voicePersona, setVoicePersona] = useState(
-    user?.progress?.voicePersona ||
-      translations.en.onboarding_persona_default_example,
-  );
+  const [voice] = useState(() => getPreferredTTSVoice());
   const [showTranslations, setShowTranslations] = useState(
     user?.progress?.showTranslations !== false,
   );
@@ -1108,7 +1102,6 @@ export default function Conversations({
 
   // Live refs
   const voiceRef = useRef(voice);
-  const voicePersonaRef = useRef(voicePersona);
   const targetLangRef = useRef(targetLang);
   const supportLangRef = useRef(supportLang);
   const pauseMsRef = useRef(pauseMs);
@@ -1117,9 +1110,6 @@ export default function Conversations({
   useEffect(() => {
     voiceRef.current = voice;
   }, [voice]);
-  useEffect(() => {
-    voicePersonaRef.current = voicePersona;
-  }, [voicePersona]);
   useEffect(() => {
     targetLangRef.current = targetLang;
   }, [targetLang]);
@@ -1728,10 +1718,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
-          if (data.progress?.voice)
-            setVoice(getPreferredTTSVoice(data.progress.voice));
-          if (data.progress?.voicePersona)
-            setVoicePersona(data.progress.voicePersona);
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
@@ -1979,7 +1965,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
-    const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const tLang = targetLangRef.current;
     const currentSettings = conversationSettingsRef.current;
     const selectedLevel =
@@ -2066,7 +2051,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       customSubjectsContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
-      `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
       "Ask follow-up questions to keep the conversation flowing.",
     ]

@@ -1,0 +1,801 @@
+import {
+  getAI,
+  getLiveGenerativeModel,
+  GoogleAIBackend,
+  ResponseModality,
+  VertexAIBackend,
+} from "firebase/ai";
+import { app } from "../firebaseResources/firebaseResources";
+import {
+  DEFAULT_GEMINI_LIVE_VOICE,
+  normalizeGeminiLiveVoice,
+} from "./geminiLiveVoices";
+
+const GEMINI_LIVE_PROVIDER =
+  import.meta.env.VITE_GEMINI_LIVE_PROVIDER || "vertex";
+const GEMINI_LIVE_USES_VERTEX = GEMINI_LIVE_PROVIDER !== "google-ai";
+const GEMINI_LIVE_LOCATION =
+  import.meta.env.VITE_GEMINI_LIVE_LOCATION || "us-central1";
+
+export const DEFAULT_GEMINI_LIVE_MODEL = GEMINI_LIVE_USES_VERTEX
+  ? "gemini-live-2.5-flash-native-audio"
+  : "gemini-2.5-flash-native-audio-preview-12-2025";
+
+const GEMINI_LIVE_MODEL =
+  (import.meta.env.VITE_TUTOR_GEMINI_LIVE_MODEL ||
+    import.meta.env.VITE_GEMINI_LIVE_MODEL ||
+    DEFAULT_GEMINI_LIVE_MODEL) + "";
+
+const INPUT_SAMPLE_RATE = 16000;
+const OUTPUT_SAMPLE_RATE = 24000;
+
+const AUDIO_WORKLET_NAME = "nosabos-gemini-live-audio";
+const AUDIO_WORKLET_SOURCE = `
+class NosabosGeminiLiveAudio extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this.targetSampleRate = options.processorOptions.targetSampleRate || 16000;
+    this.inputSampleRate = sampleRate;
+  }
+
+  process(inputs) {
+    const input = inputs[0];
+    if (!input || !input[0] || !input[0].length) return true;
+    const pcm = input[0];
+    const outLength = Math.max(1, Math.round(pcm.length * this.targetSampleRate / this.inputSampleRate));
+    const resampled = new Float32Array(outLength);
+    const ratio = pcm.length / outLength;
+    for (let i = 0; i < outLength; i += 1) {
+      resampled[i] = pcm[Math.min(pcm.length - 1, Math.floor(i * ratio))] || 0;
+    }
+    const int16 = new Int16Array(outLength);
+    for (let i = 0; i < outLength; i += 1) {
+      const sample = Math.max(-1, Math.min(1, resampled[i]));
+      int16[i] = sample < 0 ? sample * 32768 : sample * 32767;
+    }
+    this.port.postMessage(int16.buffer, [int16.buffer]);
+    return true;
+  }
+}
+
+registerProcessor("${AUDIO_WORKLET_NAME}", NosabosGeminiLiveAudio);
+`;
+
+function uid() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function toBase64(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+function fromBase64(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
+
+function buildLiveGenerationConfig({
+  includeTranscriptions = true,
+  voice = DEFAULT_GEMINI_LIVE_VOICE,
+  includeSpeechConfig = true,
+} = {}) {
+  const generationConfig = {
+    responseModalities: [ResponseModality.AUDIO],
+  };
+
+  if (includeSpeechConfig) {
+    generationConfig.speechConfig = {
+      voiceConfig: {
+        prebuiltVoiceConfig: {
+          voiceName: normalizeGeminiLiveVoice(voice),
+        },
+      },
+    };
+  }
+
+  if (includeTranscriptions) {
+    generationConfig.inputAudioTranscription = {};
+    generationConfig.outputAudioTranscription = {};
+  }
+
+  return generationConfig;
+}
+
+function serverContentFromMessage(message) {
+  return (
+    message?.serverContent ||
+    (message?.type === "serverContent" ? message : null)
+  );
+}
+
+function textFromModelTurn(modelTurn) {
+  const parts = Array.isArray(modelTurn?.parts) ? modelTurn.parts : [];
+  return parts
+    .map((part) => (typeof part?.text === "string" ? part.text : ""))
+    .filter(Boolean)
+    .join(" ");
+}
+
+function audioPartsFromModelTurn(modelTurn) {
+  const parts = Array.isArray(modelTurn?.parts) ? modelTurn.parts : [];
+  return parts
+    .map((part) => part?.inlineData)
+    .filter((inlineData) => inlineData?.data && /^audio\//i.test(inlineData?.mimeType || ""));
+}
+
+function getGeminiLiveAI() {
+  return getAI(app, {
+    backend: GEMINI_LIVE_USES_VERTEX
+      ? new VertexAIBackend(GEMINI_LIVE_LOCATION)
+      : new GoogleAIBackend(),
+  });
+}
+
+async function connectLiveSession({
+  voice = DEFAULT_GEMINI_LIVE_VOICE,
+  includeTranscriptions = true,
+} = {}) {
+  const ai = getGeminiLiveAI();
+  const configs = [
+    buildLiveGenerationConfig({
+      includeTranscriptions,
+      includeSpeechConfig: true,
+      voice,
+    }),
+    buildLiveGenerationConfig({
+      includeTranscriptions: false,
+      includeSpeechConfig: true,
+      voice,
+    }),
+    buildLiveGenerationConfig({
+      includeTranscriptions,
+      includeSpeechConfig: false,
+      voice,
+    }),
+    buildLiveGenerationConfig({
+      includeTranscriptions: false,
+      includeSpeechConfig: false,
+      voice,
+    }),
+  ];
+  let firstError = null;
+
+  for (const generationConfig of configs) {
+    try {
+      const liveModel = getLiveGenerativeModel(ai, {
+        model: GEMINI_LIVE_MODEL,
+        generationConfig,
+      });
+      return await liveModel.connect();
+    } catch (error) {
+      firstError ||= error;
+    }
+  }
+
+  throw firstError || new Error("Could not connect to Gemini Live.");
+}
+
+function schedulePcmAudio({
+  audioContext,
+  destination,
+  scheduledSources,
+  nextStartTime,
+  base64Audio,
+}) {
+  const bytes = fromBase64(base64Audio);
+  const samples = new Int16Array(bytes);
+  const buffer = audioContext.createBuffer(
+    1,
+    samples.length,
+    OUTPUT_SAMPLE_RATE,
+  );
+  const channel = buffer.getChannelData(0);
+  for (let i = 0; i < samples.length; i += 1) {
+    channel[i] = samples[i] / 32768;
+  }
+  const source = audioContext.createBufferSource();
+  source.buffer = buffer;
+  source.connect(destination);
+  scheduledSources.add(source);
+  source.onended = () => scheduledSources.delete(source);
+  const startTime = Math.max(audioContext.currentTime + 0.02, nextStartTime);
+  source.start(startTime);
+  return startTime + buffer.duration;
+}
+
+function waitForAudioSchedule(audioContext, nextStartTime) {
+  const delayMs = Math.max(0, (nextStartTime - audioContext.currentTime) * 1000);
+  return new Promise((resolve) => setTimeout(resolve, delayMs + 120));
+}
+
+export async function createGeminiLiveVoicePreviewPlayer({
+  text = "",
+  voice = DEFAULT_GEMINI_LIVE_VOICE,
+  personality = "",
+  language = "en",
+} = {}) {
+  if (typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") {
+    throw new Error("Web Audio is not supported in this browser.");
+  }
+
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const audioContext = new Ctx();
+  if (audioContext.state === "suspended") await audioContext.resume();
+
+  const destination = audioContext.createMediaStreamDestination();
+  const audio = new Audio();
+  audio.srcObject = destination.stream;
+  audio.autoplay = true;
+  audio.playsInline = true;
+  audio.muted = false;
+  audio.volume = 1;
+
+  const session = await connectLiveSession({
+    voice: normalizeGeminiLiveVoice(voice),
+    includeTranscriptions: false,
+  });
+  const scheduledSources = new Set();
+  let nextStartTime = audioContext.currentTime + 0.02;
+  let cleanedUp = false;
+  let readyResolved = false;
+  let resolveReady;
+  let rejectReady;
+  let resolveFinalize;
+  let rejectFinalize;
+
+  const ready = new Promise((resolve, reject) => {
+    resolveReady = resolve;
+    rejectReady = reject;
+  });
+  const finalize = new Promise((resolve, reject) => {
+    resolveFinalize = resolve;
+    rejectFinalize = reject;
+  });
+
+  const cleanup = async () => {
+    if (cleanedUp) return;
+    cleanedUp = true;
+    for (const source of scheduledSources) {
+      try {
+        source.stop(0);
+      } catch {
+        // The preview source may already have ended.
+      }
+    }
+    scheduledSources.clear();
+    try {
+      await session?.close?.();
+    } catch {
+      // The preview socket may already be closed.
+    }
+    try {
+      await audioContext.close?.();
+    } catch {
+      // The preview context may already be closed.
+    }
+  };
+
+  const previewPrompt = [
+    personality
+      ? `Use this tutor personality and style: ${String(personality).slice(0, 240)}.`
+      : "Use a friendly, encouraging tutor style.",
+    `Speak in ${language}.`,
+    `Say only this short voice preview, without adding extra words: ${text || "Hi, I am ready to practice with you."}`,
+  ].join(" ");
+
+  (async () => {
+    try {
+      await session.send(previewPrompt, true);
+      for await (const message of session.receive()) {
+        if (cleanedUp) break;
+        const serverContent = serverContentFromMessage(message);
+        if (!serverContent) continue;
+        for (const inlineData of audioPartsFromModelTurn(serverContent.modelTurn)) {
+          nextStartTime = schedulePcmAudio({
+            audioContext,
+            destination,
+            scheduledSources,
+            nextStartTime,
+            base64Audio: inlineData.data,
+          });
+          if (!readyResolved) {
+            readyResolved = true;
+            resolveReady?.();
+          }
+        }
+        if (serverContent.turnComplete) break;
+      }
+      if (!readyResolved) {
+        readyResolved = true;
+        resolveReady?.();
+      }
+      await waitForAudioSchedule(audioContext, nextStartTime);
+      resolveFinalize?.();
+    } catch (error) {
+      if (!readyResolved) rejectReady?.(error);
+      rejectFinalize?.(error);
+    } finally {
+      await cleanup();
+    }
+  })();
+
+  return { audio, ready, finalize, cleanup };
+}
+
+export async function createGeminiLiveRealtimeBridge({
+  audioElement = null,
+  initialInstructions = "",
+  voice = DEFAULT_GEMINI_LIVE_VOICE,
+  onEvent,
+  onAudioGraph,
+  onError,
+} = {}) {
+  const bridge = new GeminiLiveRealtimeBridge({
+    audioElement,
+    initialInstructions,
+    voice,
+    onEvent,
+    onAudioGraph,
+    onError,
+  });
+  await bridge.connect();
+  return bridge;
+}
+
+class GeminiLiveRealtimeBridge {
+  constructor({
+    audioElement,
+    initialInstructions,
+    voice,
+    onEvent,
+    onAudioGraph,
+    onError,
+  }) {
+    this.audioElement = audioElement;
+    this.instructions = initialInstructions || "";
+    this.voice = normalizeGeminiLiveVoice(voice);
+    this.onEvent = onEvent;
+    this.onAudioGraph = onAudioGraph;
+    this.onError = onError;
+    this.readyState = "connecting";
+    this.session = null;
+    this.audioContext = null;
+    this.mediaStream = null;
+    this.workletNode = null;
+    this.micSource = null;
+    this.playbackDestination = null;
+    this.playbackAnalyser = null;
+    this.playbackFloatBuffer = null;
+    this.receiveLoopPromise = null;
+    this.closed = false;
+    this.pendingResponses = [];
+    this.pendingManualResponses = [];
+    this.activeResponse = null;
+    this.scheduledSources = new Set();
+    this.nextStartTime = 0;
+    this.inputTranscript = "";
+    this.suppressAutoTurn = false;
+  }
+
+  async connect() {
+    if (typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") {
+      throw new Error("Web Audio is not supported in this browser.");
+    }
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Microphone access is not supported in this browser.");
+    }
+
+    this.session = await this.connectLiveSession();
+    await this.setupAudio();
+    this.readyState = "open";
+    this.emit({ type: "session.updated" });
+    this.receiveLoopPromise = this.receiveLoop();
+  }
+
+  async connectLiveSession() {
+    return connectLiveSession({
+      voice: this.voice,
+      includeTranscriptions: true,
+    });
+  }
+
+  async setupAudio() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    if (ctx.state === "suspended") await ctx.resume();
+    this.audioContext = ctx;
+    this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
+    });
+
+    const workletBlob = new Blob([AUDIO_WORKLET_SOURCE], {
+      type: "application/javascript",
+    });
+    const workletUrl = URL.createObjectURL(workletBlob);
+    try {
+      await ctx.audioWorklet.addModule(workletUrl);
+    } finally {
+      URL.revokeObjectURL(workletUrl);
+    }
+
+    this.micSource = ctx.createMediaStreamSource(this.mediaStream);
+    this.workletNode = new AudioWorkletNode(ctx, AUDIO_WORKLET_NAME, {
+      processorOptions: { targetSampleRate: INPUT_SAMPLE_RATE },
+    });
+    this.workletNode.port.onmessage = (event) => {
+      if (this.closed || this.readyState !== "open") return;
+      const buffer = event.data;
+      if (!buffer?.byteLength) return;
+      this.session
+        ?.sendAudioRealtime({
+          mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
+          data: toBase64(buffer),
+        })
+        .catch((error) => this.handleError(error));
+    };
+    this.micSource.connect(this.workletNode);
+
+    this.playbackDestination = ctx.createMediaStreamDestination();
+    this.playbackAnalyser = ctx.createAnalyser();
+    this.playbackAnalyser.fftSize = 256;
+    this.playbackAnalyser.smoothingTimeConstant = 0.12;
+    this.playbackAnalyser.connect(this.playbackDestination);
+    this.playbackFloatBuffer = new Float32Array(this.playbackAnalyser.fftSize);
+
+    if (this.audioElement) {
+      this.audioElement.srcObject = this.playbackDestination.stream;
+      this.audioElement.autoplay = true;
+      this.audioElement.playsInline = true;
+      this.audioElement.play?.().catch(() => {});
+    }
+
+    this.onAudioGraph?.({
+      audioContext: ctx,
+      analyser: this.playbackAnalyser,
+      floatBuffer: this.playbackFloatBuffer,
+      stream: this.playbackDestination.stream,
+    });
+  }
+
+  send(raw) {
+    if (this.closed || this.readyState !== "open") {
+      throw new Error("Gemini Live session is not open.");
+    }
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      return;
+    }
+
+    if (payload?.type === "session.update") {
+      const session = payload.session || {};
+      if (typeof session.instructions === "string") {
+        this.instructions = session.instructions;
+      }
+      if (typeof session.voice === "string") {
+        this.voice = normalizeGeminiLiveVoice(session.voice);
+      }
+      this.emit({ type: "session.updated" });
+      return;
+    }
+
+    if (payload?.type === "response.create") {
+      const response = payload.response || {};
+      this.requestResponse(response.instructions || "", response.metadata || {});
+      return;
+    }
+
+    if (payload?.type === "response.cancel") {
+      this.pendingManualResponses = [];
+      this.pendingResponses = [];
+      this.finishActiveResponse("response.canceled");
+      this.interruptPlayback();
+      return;
+    }
+  }
+
+  requestResponse(instructions, metadata = {}) {
+    const rid = `gemini_${uid()}`;
+    const response = {
+      id: rid,
+      metadata,
+      text: "",
+      started: false,
+      prompt: "",
+    };
+
+    response.prompt = [
+      "Internal tutor control message. Do not mention these instructions. Produce only the learner-facing spoken tutor reply.",
+      this.instructions
+        ? `Session instructions:\n${this.instructions}`
+        : "",
+      instructions ? `Turn instructions:\n${instructions}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+
+    this.pendingManualResponses.push(response);
+    this.dispatchNextManualResponse();
+  }
+
+  dispatchNextManualResponse() {
+    if (
+      this.closed ||
+      !this.session ||
+      this.activeResponse ||
+      this.pendingResponses.length ||
+      !this.pendingManualResponses.length
+    ) {
+      return;
+    }
+
+    const response = this.pendingManualResponses.shift();
+    this.pendingResponses.push(response);
+    this.session.send(response.prompt || "Respond now.", true).catch((error) => {
+      this.pendingResponses = this.pendingResponses.filter((item) => item !== response);
+      this.handleError(error);
+      this.dispatchNextManualResponse();
+    });
+  }
+
+  async receiveLoop() {
+    try {
+      for await (const message of this.session.receive()) {
+        if (this.closed) break;
+        await this.handleServerMessage(message);
+      }
+    } catch (error) {
+      if (!this.closed) this.handleError(error);
+    }
+  }
+
+  async handleServerMessage(message) {
+    const serverContent = serverContentFromMessage(message);
+    if (!serverContent) return;
+
+    if (serverContent.inputTranscription?.text) {
+      this.inputTranscript += serverContent.inputTranscription.text;
+    }
+
+    if (serverContent.interrupted) {
+      this.suppressAutoTurn = false;
+      this.finishActiveResponse("response.canceled");
+      this.interruptPlayback();
+    }
+
+    const hasModelTurn = !!serverContent.modelTurn;
+    const hasOutput =
+      hasModelTurn || !!serverContent.outputTranscription?.text;
+    const isUnrequestedOutput =
+      hasOutput &&
+      !this.activeResponse &&
+      this.pendingResponses.length === 0 &&
+      this.pendingManualResponses.length === 0;
+
+    if (isUnrequestedOutput) {
+      if (this.inputTranscript.trim()) {
+        await this.finalizeInputTranscript();
+      }
+      this.suppressAutoTurn = true;
+    }
+
+    if (hasModelTurn && this.inputTranscript.trim() && !this.activeResponse) {
+      await this.finalizeInputTranscript();
+      this.suppressAutoTurn = true;
+    }
+
+    if (this.suppressAutoTurn) {
+      if (serverContent.turnComplete || serverContent.interrupted) {
+        this.suppressAutoTurn = false;
+      }
+      return;
+    }
+
+    if (hasModelTurn || serverContent.outputTranscription?.text) {
+      this.ensureActiveResponse();
+    }
+
+    if (this.activeResponse && serverContent.outputTranscription?.text) {
+      this.activeResponse.text += serverContent.outputTranscription.text;
+      this.emit({
+        type: "response.audio_transcript.delta",
+        response_id: this.activeResponse.id,
+        delta: serverContent.outputTranscription.text,
+      });
+    }
+
+    const modelText = textFromModelTurn(serverContent.modelTurn);
+    if (this.activeResponse && modelText) {
+      this.activeResponse.text += modelText;
+      this.emit({
+        type: "response.text.delta",
+        response_id: this.activeResponse.id,
+        delta: modelText,
+      });
+    }
+
+    for (const inlineData of audioPartsFromModelTurn(serverContent.modelTurn)) {
+      this.playAudio(inlineData.data);
+    }
+
+    if (serverContent.turnComplete && this.activeResponse) {
+      this.emit({
+        type: "response.output_audio.done",
+        response_id: this.activeResponse.id,
+      });
+      this.finishActiveResponse("response.done");
+    }
+
+    if (serverContent.turnComplete && this.inputTranscript.trim()) {
+      await this.finalizeInputTranscript();
+    }
+  }
+
+  ensureActiveResponse() {
+    if (this.activeResponse) return this.activeResponse;
+    this.activeResponse =
+      this.pendingResponses.shift() || {
+        id: `gemini_${uid()}`,
+        metadata: {},
+        text: "",
+        started: false,
+      };
+    if (!this.activeResponse.started) {
+      this.activeResponse.started = true;
+      this.emit({
+        type: "response.created",
+        response: {
+          id: this.activeResponse.id,
+          metadata: this.activeResponse.metadata || {},
+        },
+      });
+    }
+    return this.activeResponse;
+  }
+
+  async finalizeInputTranscript() {
+    const transcript = this.inputTranscript.replace(/\s+/g, " ").trim();
+    this.inputTranscript = "";
+    if (!transcript) return;
+    await this.emit({ type: "input_audio_buffer.speech_stopped" });
+    await this.emit({ type: "input_audio_buffer.committed" });
+    await this.emit({
+      type: "conversation.item.input_audio_transcription.completed",
+      transcript,
+    });
+  }
+
+  playAudio(base64Audio) {
+    if (!base64Audio || !this.audioContext || !this.playbackAnalyser) return;
+    try {
+      const bytes = fromBase64(base64Audio);
+      const samples = new Int16Array(bytes);
+      const buffer = this.audioContext.createBuffer(
+        1,
+        samples.length,
+        OUTPUT_SAMPLE_RATE,
+      );
+      const channel = buffer.getChannelData(0);
+      for (let i = 0; i < samples.length; i += 1) {
+        channel[i] = samples[i] / 32768;
+      }
+      const source = this.audioContext.createBufferSource();
+      source.buffer = buffer;
+      source.connect(this.playbackAnalyser);
+      source.onended = () => this.scheduledSources.delete(source);
+      this.scheduledSources.add(source);
+      this.nextStartTime = Math.max(
+        this.audioContext.currentTime + 0.02,
+        this.nextStartTime,
+      );
+      source.start(this.nextStartTime);
+      this.nextStartTime += buffer.duration;
+      this.audioElement?.play?.().catch(() => {
+        // Browser autoplay policies can reject this even after a user gesture.
+      });
+    } catch (error) {
+      this.handleError(error);
+    }
+  }
+
+  interruptPlayback() {
+    for (const source of this.scheduledSources) {
+      try {
+        source.stop(0);
+      } catch {
+        // The source may already have ended.
+      }
+    }
+    this.scheduledSources.clear();
+    if (this.audioContext) {
+      this.nextStartTime = this.audioContext.currentTime;
+    }
+  }
+
+  finishActiveResponse(type = "response.done") {
+    if (!this.activeResponse) return;
+    const response = this.activeResponse;
+    this.emit({
+      type,
+      response_id: response.id,
+      response: { id: response.id, metadata: response.metadata || {} },
+    });
+    this.activeResponse = null;
+    this.dispatchNextManualResponse();
+  }
+
+  getSenders() {
+    return [];
+  }
+
+  getReceivers() {
+    return [];
+  }
+
+  async close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.readyState = "closed";
+    this.interruptPlayback();
+    try {
+      this.workletNode?.port && (this.workletNode.port.onmessage = null);
+      this.workletNode?.disconnect();
+    } catch {
+      // Audio graph cleanup is best-effort.
+    }
+    try {
+      this.micSource?.disconnect();
+    } catch {
+      // Audio graph cleanup is best-effort.
+    }
+    try {
+      this.playbackAnalyser?.disconnect();
+    } catch {
+      // Audio graph cleanup is best-effort.
+    }
+    try {
+      this.mediaStream?.getTracks?.().forEach((track) => track.stop());
+    } catch {
+      // Media tracks may already be stopped by the Tutor cleanup.
+    }
+    try {
+      await this.session?.close();
+    } catch {
+      // The WebSocket may already be closed by the server.
+    }
+    try {
+      await this.audioContext?.close?.();
+    } catch {
+      // The context may already be closed by the Tutor cleanup.
+    }
+  }
+
+  handleError(error) {
+    const message = error?.message || String(error);
+    this.onError?.(message);
+    this.emit({
+      type: "error",
+      error: { message },
+    });
+  }
+
+  async emit(event) {
+    if (!this.onEvent) return;
+    await this.onEvent({ data: JSON.stringify(event) });
+  }
+}

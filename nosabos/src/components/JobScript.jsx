@@ -281,7 +281,7 @@ function useSharedProgress() {
           p.supportLang,
           DEFAULT_SUPPORT_LANGUAGE,
         ),
-        voice: getPreferredTTSVoice(p.voice),
+        voice: getPreferredTTSVoice(),
       });
     });
     return () => unsub();
@@ -1623,7 +1623,7 @@ export default function JobScript({
       const player = await getTTSPlayer({
         text,
         langTag,
-        voice: getPreferredTTSVoice(progress.voice),
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;

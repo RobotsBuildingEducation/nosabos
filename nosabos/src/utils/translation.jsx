@@ -236,9 +236,9 @@ export const translations = {
     onboarding_practice_language_desc:
       "The language you want to learn and practice",
     onboarding_section_difficulty_support: "Difficulty & Language Support",
-    onboarding_section_voice_persona: "Voice & Personality",
-    onboarding_voice_title: "Voice",
-    onboarding_voice_desc: "Choose the voice and style for your coach.",
+    onboarding_section_voice_persona: "Tutor Voice & Personality",
+    onboarding_voice_title: "Tutor voice",
+    onboarding_voice_desc: "Choose the voice and style for your tutor.",
     onboarding_vad_title: "How long to wait to respond to your speech",
     onboarding_vad_explanation:
       "Voice features will pause before accepting your answer. This gives you time to finish speaking before your voice assistant responds",

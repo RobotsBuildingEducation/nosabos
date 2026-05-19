@@ -1226,7 +1226,7 @@ export default function Vocabulary({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  // Voice follows the saved voice preference through getPreferredTTSVoice().
+  // GPT realtime-mini TTS picks a random default voice once.
 
   const recentCorrectRef = useRef([]);
 

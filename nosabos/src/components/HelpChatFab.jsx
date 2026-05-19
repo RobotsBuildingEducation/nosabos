@@ -337,7 +337,7 @@ const HelpChatFab = forwardRef(
     );
 
     const ui = translations[uiLang] || translations.en;
-    const selectedVoice = getPreferredTTSVoice(progress?.voice);
+    const selectedVoice = useMemo(() => getPreferredTTSVoice(), []);
     const helpUi = useMemo(
       () => ({
         noMessagesTitle: supportCopy(
@@ -951,7 +951,6 @@ const HelpChatFab = forwardRef(
 
       const targetLang = normalizePracticeLanguage(progress?.targetLang, "es"); // practice language
       const primaryLang = supportLang; // replies must follow the learner's support language
-      const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
       const showTranslations =
         typeof progress?.showTranslations === "boolean"
@@ -1114,7 +1113,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           targetLang,
         )}; their support/UI language is ${nameForLanguage(primaryLang)}.`,
         levelHint,
-        persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
         morphemeMode
@@ -1411,7 +1409,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         progress?.supportLang,
         DEFAULT_SUPPORT_LANGUAGE,
       );
-      const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
 
       const nameFor = (code) =>
@@ -1446,7 +1443,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         `The learner is practicing ${nameFor(targetLang)}.`,
         `Their native/support language is ${nameFor(supportLang)}.`,
         `Level: ${lvl}. ${levelHint}`,
-        persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         "Keep responses brief (under 30 seconds of speech).",
         "Be encouraging and helpful. Correct mistakes gently.",

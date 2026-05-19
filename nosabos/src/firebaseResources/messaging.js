@@ -1,5 +1,5 @@
 import { getMessaging, isSupported } from "firebase/messaging";
-import { app } from "./firebaseApp";
+import { app } from "./firebaseResources";
 
 let messagingPromise;
 
