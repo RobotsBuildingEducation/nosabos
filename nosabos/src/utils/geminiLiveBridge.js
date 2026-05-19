@@ -28,6 +28,22 @@ const GEMINI_LIVE_MODEL =
 
 const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
+// Cost guardrails: Gemini Live bills audio input/output and accumulated session
+// context. Keep these defaults conservative so Tutor stays realtime without
+// streaming silence or growing one expensive session forever.
+const INPUT_SILENCE_RMS_THRESHOLD = Number(
+  import.meta.env.VITE_GEMINI_LIVE_INPUT_RMS_THRESHOLD || 0.006,
+);
+const INPUT_PREROLL_MS = Number(
+  import.meta.env.VITE_GEMINI_LIVE_INPUT_PREROLL_MS || 360,
+);
+const INPUT_SPEECH_HOLD_MS = Number(
+  import.meta.env.VITE_GEMINI_LIVE_INPUT_SPEECH_HOLD_MS || 2200,
+);
+const SESSION_RESPONSE_LIMIT = Math.max(
+  1,
+  Number(import.meta.env.VITE_GEMINI_LIVE_SESSION_RESPONSE_LIMIT || 4),
+);
 
 const AUDIO_WORKLET_NAME = "nosabos-gemini-live-audio";
 const AUDIO_WORKLET_SOURCE = `
@@ -82,6 +98,21 @@ function fromBase64(base64) {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes.buffer;
+}
+
+function getPcm16Rms(arrayBuffer) {
+  const samples = new Int16Array(arrayBuffer);
+  if (!samples.length) return 0;
+  let sum = 0;
+  for (let i = 0; i < samples.length; i += 1) {
+    const normalized = samples[i] / 32768;
+    sum += normalized * normalized;
+  }
+  return Math.sqrt(sum / samples.length);
+}
+
+function getPcm16DurationMs(arrayBuffer) {
+  return (new Int16Array(arrayBuffer).length / INPUT_SAMPLE_RATE) * 1000;
 }
 
 function buildLiveGenerationConfig({
@@ -385,6 +416,13 @@ class GeminiLiveRealtimeBridge {
     this.nextStartTime = 0;
     this.inputTranscript = "";
     this.suppressAutoTurn = false;
+    this.inputAudioEnabled = true;
+    this.inputSpeechActiveUntil = 0;
+    this.inputPrerollBuffers = [];
+    this.inputPrerollDurationMs = 0;
+    this.completedResponsesSinceReset = 0;
+    this.resettingSession = false;
+    this.fullInstructionPromptsRemaining = 1;
   }
 
   async connect() {
@@ -440,12 +478,9 @@ class GeminiLiveRealtimeBridge {
       if (this.closed || this.readyState !== "open") return;
       const buffer = event.data;
       if (!buffer?.byteLength) return;
-      this.session
-        ?.sendAudioRealtime({
-          mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
-          data: toBase64(buffer),
-        })
-        .catch((error) => this.handleError(error));
+      // Do not send raw worklet buffers directly. This path enforces the
+      // cost gate so muted/thinking/silent time does not become billable audio.
+      this.handleInputAudioBuffer(buffer);
     };
     this.micSource.connect(this.workletNode);
 
@@ -490,7 +525,15 @@ class GeminiLiveRealtimeBridge {
       if (typeof session.voice === "string") {
         this.voice = normalizeGeminiLiveVoice(session.voice);
       }
+      if (Object.prototype.hasOwnProperty.call(session, "turn_detection")) {
+        this.setInputAudioEnabled(!!session.turn_detection);
+      }
       this.emit({ type: "session.updated" });
+      return;
+    }
+
+    if (payload?.type === "input_audio_buffer.clear") {
+      this.inputTranscript = "";
       return;
     }
 
@@ -519,10 +562,18 @@ class GeminiLiveRealtimeBridge {
       prompt: "",
     };
 
+    // Repeating the full tutor policy every turn grows Live context cost.
+    // Refresh it only on a fresh session, then send compact turn instructions.
+    const includeFullInstructions = this.fullInstructionPromptsRemaining > 0;
+    if (includeFullInstructions) this.fullInstructionPromptsRemaining -= 1;
+
     response.prompt = [
       "Internal tutor control message. Do not mention these instructions. Produce only the learner-facing spoken tutor reply.",
-      this.instructions
+      includeFullInstructions && this.instructions
         ? `Session instructions:\n${this.instructions}`
+        : "",
+      !includeFullInstructions
+        ? "Continue following the previously supplied Tutor session rules. Prioritize the current turn instructions below."
         : "",
       instructions ? `Turn instructions:\n${instructions}` : "",
     ]
@@ -537,7 +588,9 @@ class GeminiLiveRealtimeBridge {
     if (
       this.closed ||
       !this.session ||
+      this.resettingSession ||
       this.activeResponse ||
+      this.suppressAutoTurn ||
       this.pendingResponses.length ||
       !this.pendingManualResponses.length
     ) {
@@ -546,6 +599,7 @@ class GeminiLiveRealtimeBridge {
 
     const response = this.pendingManualResponses.shift();
     this.pendingResponses.push(response);
+    this.setInputAudioEnabled(false);
     this.session.send(response.prompt || "Respond now.", true).catch((error) => {
       this.pendingResponses = this.pendingResponses.filter((item) => item !== response);
       this.handleError(error);
@@ -560,7 +614,7 @@ class GeminiLiveRealtimeBridge {
         await this.handleServerMessage(message);
       }
     } catch (error) {
-      if (!this.closed) this.handleError(error);
+      if (!this.closed && !this.resettingSession) this.handleError(error);
     }
   }
 
@@ -602,6 +656,7 @@ class GeminiLiveRealtimeBridge {
     if (this.suppressAutoTurn) {
       if (serverContent.turnComplete || serverContent.interrupted) {
         this.suppressAutoTurn = false;
+        this.dispatchNextManualResponse();
       }
       return;
     }
@@ -644,6 +699,88 @@ class GeminiLiveRealtimeBridge {
     if (serverContent.turnComplete && this.inputTranscript.trim()) {
       await this.finalizeInputTranscript();
     }
+  }
+
+  setInputAudioEnabled(enabled) {
+    // This is the billing gate, not only a UI mute. Disabled means no PCM
+    // audio is sent to Gemini Live.
+    this.inputAudioEnabled = !!enabled;
+    try {
+      this.mediaStream?.getAudioTracks?.().forEach((track) => {
+        track.enabled = !!enabled;
+      });
+    } catch {
+      // Track state is best-effort; the bridge-level gate below is authoritative.
+    }
+    if (!enabled) {
+      this.inputSpeechActiveUntil = 0;
+      this.inputPrerollBuffers = [];
+      this.inputPrerollDurationMs = 0;
+    }
+  }
+
+  handleInputAudioBuffer(buffer) {
+    if (
+      this.closed ||
+      this.readyState !== "open" ||
+      this.resettingSession ||
+      !this.inputAudioEnabled
+    ) {
+      return;
+    }
+
+    const rms = getPcm16Rms(buffer);
+    const now =
+      typeof performance !== "undefined" && performance.now
+        ? performance.now()
+        : Date.now();
+    const durationMs = getPcm16DurationMs(buffer);
+    const isSpeech = rms >= INPUT_SILENCE_RMS_THRESHOLD;
+
+    if (isSpeech) {
+      this.inputSpeechActiveUntil = now + INPUT_SPEECH_HOLD_MS;
+    }
+
+    if (now <= this.inputSpeechActiveUntil) {
+      if (this.inputPrerollBuffers.length) {
+        const preroll = this.inputPrerollBuffers;
+        this.inputPrerollBuffers = [];
+        this.inputPrerollDurationMs = 0;
+        for (const prerollBuffer of preroll) {
+          this.sendInputAudioBuffer(prerollBuffer);
+        }
+      }
+      this.sendInputAudioBuffer(buffer);
+      return;
+    }
+
+    this.inputPrerollBuffers.push(buffer);
+    this.inputPrerollDurationMs += durationMs;
+    while (
+      this.inputPrerollBuffers.length &&
+      this.inputPrerollDurationMs > INPUT_PREROLL_MS
+    ) {
+      const dropped = this.inputPrerollBuffers.shift();
+      this.inputPrerollDurationMs -= getPcm16DurationMs(dropped);
+    }
+  }
+
+  sendInputAudioBuffer(buffer) {
+    if (
+      this.closed ||
+      this.readyState !== "open" ||
+      this.resettingSession ||
+      !this.session ||
+      !buffer?.byteLength
+    ) {
+      return;
+    }
+    this.session
+      .sendAudioRealtime({
+        mimeType: `audio/pcm;rate=${INPUT_SAMPLE_RATE}`,
+        data: toBase64(buffer),
+      })
+      .catch((error) => this.handleError(error));
   }
 
   ensureActiveResponse() {
@@ -736,7 +873,56 @@ class GeminiLiveRealtimeBridge {
       response: { id: response.id, metadata: response.metadata || {} },
     });
     this.activeResponse = null;
+    if (type === "response.done") {
+      this.completedResponsesSinceReset += 1;
+      if (this.completedResponsesSinceReset >= SESSION_RESPONSE_LIMIT) {
+        this.resetLiveSessionSoon();
+      }
+    }
     this.dispatchNextManualResponse();
+  }
+
+  resetLiveSessionSoon() {
+    if (
+      this.closed ||
+      this.resettingSession ||
+      this.activeResponse ||
+      this.pendingResponses.length ||
+      this.pendingManualResponses.length
+    ) {
+      return;
+    }
+    this.resetLiveSession().catch((error) => this.handleError(error));
+  }
+
+  async resetLiveSession() {
+    if (this.closed || this.resettingSession) return;
+    // Live bills the accumulated session context on later turns, so reset
+    // periodically to bound multi-turn lesson cost.
+    this.resettingSession = true;
+    const previousInputEnabled = this.inputAudioEnabled;
+    this.setInputAudioEnabled(false);
+    const oldSession = this.session;
+    this.session = null;
+    this.suppressAutoTurn = false;
+    this.inputTranscript = "";
+    try {
+      await oldSession?.close?.();
+    } catch {
+      // The old socket may already be closed.
+    }
+    try {
+      if (this.closed) return;
+      this.session = await this.connectLiveSession();
+      this.completedResponsesSinceReset = 0;
+      this.fullInstructionPromptsRemaining = 1;
+      this.setInputAudioEnabled(previousInputEnabled);
+      this.receiveLoopPromise = this.receiveLoop();
+      this.resettingSession = false;
+      this.dispatchNextManualResponse();
+    } finally {
+      this.resettingSession = false;
+    }
   }
 
   getSenders() {

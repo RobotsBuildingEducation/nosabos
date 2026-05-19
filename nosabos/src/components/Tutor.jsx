@@ -50,7 +50,7 @@ import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import {
   database,
   analytics,
-  gradingModel,
+  gradingLiteModel,
 } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
@@ -3472,6 +3472,7 @@ export default function Tutor({
   );
   const tutorStarterAgendaProgressRef = useRef({});
   const tutorLessonCompletionTriggeredRef = useRef(false);
+  const pendingTutorLessonCompletionRef = useRef(false);
   const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
   const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
@@ -4764,11 +4765,13 @@ export default function Tutor({
             "Ask open-ended follow-ups, respond to the learner's ideas, and weave corrections into the conversation.",
             "Only pause for explicit teaching or support-language clarification when the learner asks or is clearly stuck.",
           ].join(" ");
+    // Tutor speech is the dominant Gemini Live cost, so these length limits are
+    // cost guardrails as much as UX tuning.
     const replyLengthInstruction = isEarlyTutorLevel
-      ? "Keep replies short but instructional: 1-3 compact sentences, usually under 45 words."
+      ? "Keep replies short but instructional: 1-2 compact sentences, usually under 28 words and under 12 seconds spoken."
       : isAdvancedTutorLevel
-        ? "Keep replies natural and conversational: usually 2-4 concise sentences, with one clear follow-up question."
-        : "Keep replies brief and target-language-first: 1-3 short sentences.";
+        ? "Keep replies natural and conversational: usually 1-3 concise sentences, with one clear follow-up question, under 16 seconds spoken."
+        : "Keep replies brief and target-language-first: 1-2 short sentences, under 12 seconds spoken.";
     const speechAcceptanceInstructions = isEarlyTutorLevel
       ? [
           "SPEECH ACCEPTANCE RULE: Sound quality is not the gate for progress.",
@@ -5073,7 +5076,7 @@ export default function Tutor({
         "Ask for one small review task or one simple combination of learned concepts in natural tutor language.",
         "Do not introduce new subjects, advanced vocabulary, or open-ended free conversation.",
         "Do not mention pronunciation, accents, or sound quality. Do not ask the learner to repeat for pronunciation.",
-        "Keep it natural and concise: 1-2 short sentences.",
+        "Keep it natural and concise: 1 short sentence, or 2 very short sentences only when needed.",
       ]
         .filter(Boolean)
         .join("\n");
@@ -5128,7 +5131,7 @@ export default function Tutor({
       "Only app-accepted turns are progress. Do not treat unrelated words, random phrases, or a different target phrase as progress.",
       "Do not ask the learner to repeat for pronunciation, do not split syllables, and do not rate accent.",
       "Do not drift into topics beyond the current agenda item.",
-      "Keep it natural and concise: 1-2 short sentences.",
+      "Keep it natural and concise: 1 short sentence, or 2 very short sentences only when needed.",
       `Response kind: ${kind}.`,
     ]
       .filter(Boolean)
@@ -5381,6 +5384,11 @@ export default function Tutor({
   }
 
   function setLocalMicEnabled(enabled) {
+    // Route mic state through the Gemini bridge so "muted" also means no
+    // billable input-audio stream.
+    try {
+      dcRef.current?.setInputAudioEnabled?.(enabled);
+    } catch {}
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
         track.enabled = enabled;
@@ -5792,10 +5800,10 @@ export default function Tutor({
 
   async function judgeTutorClosingAct(assistantText = "") {
     try {
-      if (!gradingModel) {
+      if (!gradingLiteModel) {
         return { closingAct: false, confidence: 0, reason: "" };
       }
-      const resp = await gradingModel.generateContent({
+      const resp = await gradingLiteModel.generateContent({
         contents: [
           {
             role: "user",
@@ -6101,6 +6109,7 @@ export default function Tutor({
     xpGain,
     awardPromise = null,
     localDailyGoalUpdate = null,
+    { deferCompletionUntilIdle = false } = {},
   ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -6129,13 +6138,25 @@ export default function Tutor({
       !isTutorStarterAgendaLesson(lesson) ||
       isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
     if (nextEarned >= xpRequired && canCompleteLesson) {
-      dispatchTutorCompletionSequenceStart();
-      void completeTutorLessonFromXp(
-        lesson,
-        unit,
-        awardPromise ? [awardPromise] : [],
-        localDailyGoalUpdate ? [localDailyGoalUpdate] : [],
-      );
+      if (pendingTutorLessonCompletionRef.current) return true;
+      pendingTutorLessonCompletionRef.current = true;
+      void (async () => {
+        try {
+          if (deferCompletionUntilIdle && !isIdleRef.current) {
+            await waitUntilIdle(45000);
+          }
+          if (tutorLessonCompletionTriggeredRef.current) return;
+          dispatchTutorCompletionSequenceStart();
+          await completeTutorLessonFromXp(
+            lesson,
+            unit,
+            awardPromise ? [awardPromise] : [],
+            localDailyGoalUpdate ? [localDailyGoalUpdate] : [],
+          );
+        } finally {
+          pendingTutorLessonCompletionRef.current = false;
+        }
+      })();
       return true;
     }
 
@@ -6326,14 +6347,14 @@ export default function Tutor({
     }
 
     try {
-      if (!gradingModel) {
+      if (!gradingLiteModel) {
         return {
           successful: false,
           confidence: 0,
           reason: "grading model unavailable",
         };
       }
-      const resp = await gradingModel.generateContent({
+      const resp = await gradingLiteModel.generateContent({
         contents: [
           {
             role: "user",
@@ -6362,6 +6383,112 @@ export default function Tutor({
       console.warn("Tutor XP success judge failed:", error);
       return { successful: false, confidence: 0, reason: "judge failed" };
     }
+  }
+
+  function getLocalTutorTurnSuccessfulForXp({
+    isStarterLesson = false,
+    starterCandidateItemIds = [],
+    exactStarterMatches = [],
+    regularTurnAccepted = false,
+    directPhraseAnswer = false,
+  } = {}) {
+    if (directPhraseAnswer) return true;
+    if (!isStarterLesson) return regularTurnAccepted;
+
+    const candidateIds = new Set(starterCandidateItemIds);
+    return exactStarterMatches.some((id) => candidateIds.has(id));
+  }
+
+  function couldPotentialTutorTurnCompleteLesson({
+    lesson = selectedTutorLessonRef.current,
+    isStarterLesson = isTutorStarterAgendaLesson(lesson),
+    starterCandidateItemIds = [],
+  } = {}) {
+    if (!lesson || tutorLessonCompletionTriggeredRef.current) return false;
+
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const remainingXp = xpRequired - earnedXp;
+    if (remainingXp <= 0 || remainingXp > TUTOR_TURN_XP_RANGE.max) {
+      return false;
+    }
+
+    if (!isStarterLesson) return true;
+    if (isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)) {
+      return true;
+    }
+
+    const potentialProgress = { ...tutorStarterAgendaProgressRef.current };
+    starterCandidateItemIds.forEach((id) => {
+      potentialProgress[id] = true;
+    });
+    return isTutorStarterAgendaComplete(potentialProgress);
+  }
+
+  function applySuccessfulTutorTurnProgress({
+    isStarterLesson = false,
+    starterCandidateItemIds = [],
+    successful = false,
+    deferCompletionUntilIdle = false,
+  } = {}) {
+    if (!successful) {
+      return { acceptedItemIds: [], lessonCompletionTriggered: false };
+    }
+
+    const acceptedItemIds =
+      isStarterLesson && starterCandidateItemIds.length
+        ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
+        : [];
+    const starterAgendaComplete =
+      isStarterLesson &&
+      isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+    const starterReviewAccepted =
+      isStarterLesson && starterAgendaComplete && !acceptedItemIds.length;
+    const canAwardXpForTurn =
+      (!isStarterLesson && successful) ||
+      acceptedItemIds.length > 0 ||
+      starterReviewAccepted;
+    let lessonCompletionTriggered = false;
+
+    if (canAwardXpForTurn) {
+      lessonCompletionTriggered =
+        awardTurnXp({ deferCompletionUntilIdle })?.lessonCompletionTriggered ||
+        false;
+    }
+
+    return { acceptedItemIds, lessonCompletionTriggered };
+  }
+
+  function validateTutorTurnForXpInBackground({
+    text = "",
+    lessonId = "",
+    starterCandidateItemIds = [],
+    exactStarterMatches = [],
+    regularTurnAccepted = false,
+    directPhraseAnswer = false,
+    regularAcceptedPhrases = [],
+  } = {}) {
+    void (async () => {
+      const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+        starterCandidateItemIds,
+        exactStarterMatches,
+        regularPhraseMatch: regularTurnAccepted,
+        directPhraseAnswer,
+        acceptedPhrases: regularAcceptedPhrases,
+      });
+      if (!turnSuccess.successful) return;
+      if (!aliveRef.current) return;
+      if (lessonId && selectedTutorLessonRef.current?.id !== lessonId) return;
+
+      applySuccessfulTutorTurnProgress({
+        isStarterLesson: isTutorStarterAgendaLesson(
+          selectedTutorLessonRef.current,
+        ),
+        starterCandidateItemIds,
+        successful: true,
+        deferCompletionUntilIdle: true,
+      });
+    })();
   }
 
   function notifyTutorFirstLessonCompleteOnce() {
@@ -6426,7 +6553,7 @@ export default function Tutor({
   /* ---------------------------
      Award XP per turn (3-7 XP)
   --------------------------- */
-  function awardTurnXp() {
+  function awardTurnXp({ deferCompletionUntilIdle = false } = {}) {
     const npub = currentNpub;
     if (!npub) {
       return { xpGain: 0, lessonCompletionTriggered: false };
@@ -6456,6 +6583,7 @@ export default function Tutor({
       xpGain,
       awardPromise,
       dailyGoalUpdate,
+      { deferCompletionUntilIdle },
     );
     if (!lessonCompletionTriggered) {
       void awardPromise;
@@ -6653,37 +6781,58 @@ export default function Tutor({
       const directPhraseAnswer = isStarterLesson
         ? anyTutorPhraseIsDirectAnswer(starterCandidatePhrases, text)
         : anyTutorPhraseIsDirectAnswer(regularAcceptedPhrases, text);
-      const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+      const localTurnSuccessful = getLocalTutorTurnSuccessfulForXp({
+        isStarterLesson,
         starterCandidateItemIds,
         exactStarterMatches,
-        regularPhraseMatch: regularTurnAccepted,
+        regularTurnAccepted,
         directPhraseAnswer,
-        acceptedPhrases: regularAcceptedPhrases,
       });
-      if (!aliveRef.current) return;
-      const acceptedItemIds =
-        turnSuccess.successful && starterCandidateItemIds.length
-          ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
-          : [];
-      const starterAgendaComplete =
-        isStarterLesson &&
-        isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
-      const starterReviewAccepted =
-        isStarterLesson &&
-        starterAgendaComplete &&
-        !acceptedItemIds.length &&
-        turnSuccess.successful;
-      const canAwardXpForTurn =
-        (!isStarterLesson && turnSuccess.successful) ||
-        acceptedItemIds.length > 0 ||
-        starterReviewAccepted;
-      let lessonCompletionTriggered = false;
-      if (canAwardXpForTurn) {
-        lessonCompletionTriggered =
-          awardTurnXp()?.lessonCompletionTriggered || false;
+      const shouldGateEndOfLesson =
+        !localTurnSuccessful &&
+        couldPotentialTutorTurnCompleteLesson({
+          lesson: currentLesson,
+          isStarterLesson,
+          starterCandidateItemIds,
+        });
+      let { acceptedItemIds, lessonCompletionTriggered } =
+        applySuccessfulTutorTurnProgress({
+          isStarterLesson,
+          starterCandidateItemIds,
+          successful: localTurnSuccessful,
+        });
+
+      if (shouldGateEndOfLesson) {
+        const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularPhraseMatch: regularTurnAccepted,
+          directPhraseAnswer,
+          acceptedPhrases: regularAcceptedPhrases,
+        });
+        if (!aliveRef.current) return;
+        if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
+        const progressResult = applySuccessfulTutorTurnProgress({
+          isStarterLesson,
+          starterCandidateItemIds,
+          successful: turnSuccess.successful,
+        });
+        acceptedItemIds = progressResult.acceptedItemIds;
+        lessonCompletionTriggered = progressResult.lessonCompletionTriggered;
+      } else if (!localTurnSuccessful) {
+        validateTutorTurnForXpInBackground({
+          text,
+          lessonId: currentLesson?.id || "",
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularTurnAccepted,
+          directPhraseAnswer,
+          regularAcceptedPhrases,
+        });
       }
-      // Build the next prompt after local XP updates so the tutor never
-      // guesses at completion from stale progress.
+
+      // Keep the voice loop hot: semantic grading may still update XP/progress
+      // behind the scenes, but the tutor response should not wait for it.
       if (!lessonCompletionTriggered) {
         requestTutorTurnFollowup(text, acceptedItemIds);
       }

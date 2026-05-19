@@ -2041,6 +2041,7 @@ export default function App({ onBootReady } = {}) {
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
+  const appLanguageSyncKeyRef = useRef("");
 
   const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
   const subscriptionPasscode = (
@@ -2115,13 +2116,21 @@ export default function App({ onBootReady } = {}) {
 
     if (persistedAppLanguage === desiredAppLanguage) return;
 
+    const syncKey = `${id}:${desiredAppLanguage}`;
+    if (appLanguageSyncKeyRef.current === syncKey) return;
+    appLanguageSyncKeyRef.current = syncKey;
+    patchUser?.({ appLanguage: desiredAppLanguage });
+
     updateDoc(doc(database, "users", id), {
       appLanguage: desiredAppLanguage,
       updatedAt: new Date().toISOString(),
     }).catch((error) => {
+      if (appLanguageSyncKeyRef.current === syncKey) {
+        appLanguageSyncKeyRef.current = "";
+      }
       console.warn("Failed to sync appLanguage from supportLang:", error);
     });
-  }, [resolvedSupportLang, user?.appLanguage, user?.local_npub]);
+  }, [patchUser, resolvedSupportLang, user?.appLanguage, user?.local_npub]);
 
   const dailyGoalTarget = useMemo(() => {
     return getEffectiveDailyGoalXp(user || {});
