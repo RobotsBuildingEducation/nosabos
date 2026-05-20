@@ -276,6 +276,98 @@ const TUTOR_TASK_VARIATIONS = [
   "Set up a tiny realistic scenario and ask for one short reply.",
   "Ask the learner to combine two already covered lesson concepts.",
 ];
+const TUTOR_SIGNATURE_EXPERIENCES = {
+  microMission: {
+    label: "Micro mission",
+    instruction:
+      "Give the next few turns a clear tiny goal, such as introduce yourself, order one item, get one detail, explain one problem, or defend one opinion. Keep it tied to the lesson agenda and celebrate the specific win when the learner completes the goal.",
+  },
+  askMeBack: {
+    label: "Ask-me-back",
+    instruction:
+      "After the learner answers a question, coach them to ask the same or a related question back. This trains conversation flow, not only answering.",
+  },
+  listeningCheckpoint: {
+    label: "Listening checkpoint",
+    instruction:
+      "Say one short target-language sentence or phrase, then ask the learner to prove they understood one detail. Use yes/no, either/or, or a tiny answer at lower levels.",
+  },
+  mistakeComeback: {
+    label: "Comeback moment",
+    instruction:
+      "Bring back a phrase, pattern, or meaning the learner recently missed, hesitated on, or needed help with. If there was no clear miss, use quick recall of an earlier lesson phrase. Make it feel like an easy redemption moment.",
+  },
+  conversationRepair: {
+    label: "Conversation repair",
+    instruction:
+      "Practice what to do when communication breaks: ask for repetition, ask what a word means, correct a misunderstanding, clarify a time/place/detail, or say you meant a different thing.",
+  },
+  informationGap: {
+    label: "Information gap",
+    instruction:
+      "Give the learner missing information they must ask for, such as time, place, price, name, reason, or preference. Let their question unlock the next reply.",
+  },
+  pushbackPractice: {
+    label: "Pushback practice",
+    instruction:
+      "Gently challenge the learner's answer once, then ask them to clarify, support, soften, or revise their point. Keep the challenge friendly and level-appropriate.",
+  },
+  polishMode: {
+    label: "Polish mode",
+    instruction:
+      "After the learner gives an understandable answer, ask for a more natural, polite, concise, professional, casual, or precise version. Focus on tone and style instead of basic correctness.",
+  },
+};
+const TUTOR_SIGNATURE_EXPERIENCE_POOLS = {
+  "Pre-A1": ["microMission", "listeningCheckpoint", "mistakeComeback"],
+  A1: [
+    "microMission",
+    "askMeBack",
+    "listeningCheckpoint",
+    "mistakeComeback",
+    "conversationRepair",
+  ],
+  A2: [
+    "microMission",
+    "conversationRepair",
+    "listeningCheckpoint",
+    "askMeBack",
+    "informationGap",
+    "mistakeComeback",
+  ],
+  B1: [
+    "microMission",
+    "informationGap",
+    "conversationRepair",
+    "askMeBack",
+    "mistakeComeback",
+    "pushbackPractice",
+  ],
+  B2: [
+    "microMission",
+    "conversationRepair",
+    "listeningCheckpoint",
+    "pushbackPractice",
+    "polishMode",
+    "informationGap",
+  ],
+  C1: [
+    "polishMode",
+    "pushbackPractice",
+    "conversationRepair",
+    "microMission",
+    "informationGap",
+    "listeningCheckpoint",
+  ],
+  C2: [
+    "polishMode",
+    "pushbackPractice",
+    "conversationRepair",
+    "microMission",
+    "informationGap",
+    "listeningCheckpoint",
+  ],
+};
 const TUTOR_STARTER_AGENDA_ITEMS = [
   {
     id: "hello",
@@ -727,6 +819,37 @@ function getTutorTaskVariationInstruction(turnCount = 0) {
     Math.abs(Number.isFinite(turnCount) ? turnCount : 0) %
     TUTOR_TASK_VARIATIONS.length;
   return `CURRENT TASK FORMAT: ${TUTOR_TASK_VARIATIONS[index]}`;
+}
+
+function getTutorSignatureExperienceInstruction({
+  selectedLevel = "A1",
+  turnCount = 0,
+  isKickoff = false,
+  isStarterLesson = false,
+} = {}) {
+  const level = TUTOR_CEFR_LEVELS.includes(selectedLevel)
+    ? selectedLevel
+    : "A1";
+  const pool =
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS[level] ||
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS.A1;
+  const turn = Math.abs(Number.isFinite(turnCount) ? turnCount : 0);
+  const preferredId = isKickoff ? "microMission" : pool[turn % pool.length];
+  const card =
+    TUTOR_SIGNATURE_EXPERIENCES[preferredId] ||
+    TUTOR_SIGNATURE_EXPERIENCES.microMission;
+
+  return [
+    "SIGNATURE EXPERIENCE LAYER: Keep the existing Tutor agenda and current task formats. Use this as a light overlay, not a replacement for the lesson.",
+    "Do not announce internal labels like 'signature experience' to the learner. You may naturally say 'tiny mission' when helpful.",
+    `CURRENT SIGNATURE EXPERIENCE: ${card.label}. ${card.instruction}`,
+    isStarterLesson
+      ? "For the starter introductions lesson, keep the fixed phrase agenda as the source of truth. Use the experience layer only to add listening checks, ask-me-back turns, or tiny missions around the current phrase."
+      : "",
+    "If the recent on-screen context shows an experience already in progress, continue or complete it before starting a new one.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function getStoredTutorLessonEarnedXp(lessonProgress, lesson) {
@@ -4829,6 +4952,12 @@ export default function Tutor({
       "Use direct, natural prompts and do not reuse the same request wording twice in a row.",
       getTutorTaskVariationInstruction(turnCountRef.current),
     ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isStarterLesson: starterAgendaLesson,
+      });
 
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
@@ -4846,6 +4975,7 @@ export default function Tutor({
       tutorPedagogyInstructions,
       speechAcceptanceInstructions,
       interactionVarietyInstruction,
+      signatureExperienceInstruction,
       replyLengthInstruction,
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
@@ -4920,6 +5050,13 @@ export default function Tutor({
       "Use a natural varied prompt, such as a tiny question, choice, blank, transformation, or scenario tied to the lesson.",
       getTutorTaskVariationInstruction(turnCountRef.current),
     ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isKickoff: true,
+        isStarterLesson: isTutorStarterAgendaLesson(lesson),
+      });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       const nextItem = getNextTutorStarterAgendaItem(
@@ -4941,6 +5078,7 @@ export default function Tutor({
       codeSwitchingAudioInstruction,
       noWrapInstruction,
       varietyInstruction,
+      signatureExperienceInstruction,
       `Use the selected lesson agenda: ${agendaTitle}${
         agendaSubtitle ? ` - ${agendaSubtitle}` : ""
       }. Treat this as the lesson topic/concept, not permission to practice non-${targetLanguageName} phrases.`,
@@ -5046,6 +5184,20 @@ export default function Tutor({
       .filter(Boolean)
       .join(", ");
     const recentOnScreenContext = buildRecentOnScreenContextInstruction();
+    const unit = selectedTutorUnitRef.current;
+    const selectedLevel =
+      unit?.cefrLevel ||
+      unit?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "Pre-A1";
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isKickoff,
+        isStarterLesson: true,
+      });
 
     if (!item) {
       return [
@@ -5054,6 +5206,7 @@ export default function Tutor({
         teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
         recentOnScreenContext,
+        signatureExperienceInstruction,
         "All required agenda items have been introduced, but the lesson is NOT complete until the app transitions. Keep practicing by reviewing or combining only the concepts already covered.",
         `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for model phrases.`,
         supportCode === targetLang
@@ -5088,6 +5241,7 @@ export default function Tutor({
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       recentOnScreenContext,
+      signatureExperienceInstruction,
       "The app controls the agenda. Your job is to tutor the current agenda item naturally.",
       `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for the phrase the learner should try.`,
       supportCode === targetLang
@@ -5323,6 +5477,12 @@ export default function Tutor({
       "Avoid using the same closing request wording twice in a row.",
       getTutorTaskVariationInstruction(turnCountRef.current),
     ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isStarterLesson: isTutorStarterAgendaLesson(lesson),
+      });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -5333,6 +5493,7 @@ export default function Tutor({
         buildTutorStarterProgressInstructions(userMessage, acceptedItemIds),
         noWrapInstruction,
         varietyInstruction,
+        signatureExperienceInstruction,
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
         acceptedItemIds.length
           ? "The latest app-tracked item is complete. Continue to the next agenda item."
@@ -5352,6 +5513,7 @@ export default function Tutor({
       buildRecentOnScreenContextInstruction(),
       noWrapInstruction,
       varietyInstruction,
+      signatureExperienceInstruction,
       `Keep teaching from the selected agenda topic: ${agendaTitle}. Convert any non-${targetLanguageName} source wording into ${targetLanguageName} before modeling it.`,
       "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the app transitions away.",
       isEarlyTutorLevel
@@ -6291,6 +6453,7 @@ export default function Tutor({
       "Classify the latest learner transcript semantically across any language or writing system. Do not use keyword matching.",
       "XP should be awarded only for a correct or successful learner attempt at the tutor's immediately previous practice/comprehension task.",
       "Successful means the learner answered the prompt, produced the requested target-language phrase, completed the requested transformation, chose/identified the correct meaning, or gave a relevant understandable response for an open conversational prompt.",
+      "Also count newer Tutor experiences when the learner completes the requested communicative move: asks the question back, asks for repetition or clarification, corrects a misunderstanding, supplies a missing detail in an information gap, identifies a listened detail, responds to friendly pushback, or improves tone/register/naturalness when asked.",
       "For fill-in-the-blank tasks, the learner may answer with only the missing word. Count it as successful if that word correctly completes the tutor's blank.",
       "Accent, speech quality, minor grammar mistakes, and transcription imperfections are not blockers when the intended answer is clear.",
       "Not successful: the learner asks how to say something, asks for help/explanation/translation, says they do not know, refuses, gives only filler, gives random/unrelated words, repeats support-language instructions, quotes/mentions the answer inside a question, or answers a different task.",

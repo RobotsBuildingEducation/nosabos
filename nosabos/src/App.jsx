@@ -3195,7 +3195,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 600 && !subscriptionVerified,
+    () => subscriptionXp >= 300 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
