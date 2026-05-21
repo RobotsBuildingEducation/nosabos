@@ -1276,6 +1276,40 @@ export default function RealTimeTest({
       prefix_padding_ms: 120,
     };
   }
+  function buildRealtimeAudioSession({
+    instructions,
+    voice,
+    turnDetection,
+    transcription = false,
+    transcriptionLanguage,
+  } = {}) {
+    const input = { turn_detection: turnDetection };
+    if (transcription) {
+      input.transcription = {
+        model: "gpt-4o-mini-transcribe",
+        ...(transcriptionLanguage ? { language: transcriptionLanguage } : {}),
+      };
+    }
+
+    const output = { format: { type: "audio/pcm", rate: 24000 } };
+    if (voice) output.voice = voice;
+
+    const session = {
+      type: "realtime",
+      output_modalities: ["audio"],
+      audio: { input, output },
+    };
+    if (instructions) session.instructions = instructions;
+    return session;
+  }
+  function buildRealtimeVadSession(turnDetection) {
+    return {
+      type: "realtime",
+      audio: {
+        input: { turn_detection: turnDetection },
+      },
+    };
+  }
   function setLocalMicEnabled(enabled) {
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
@@ -1293,7 +1327,7 @@ export default function RealTimeTest({
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildTurnDetectionConfig() },
+            session: buildRealtimeVadSession(buildTurnDetectionConfig()),
           }),
         );
       }
@@ -1324,7 +1358,7 @@ export default function RealTimeTest({
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: { turn_detection: null },
+          session: buildRealtimeVadSession(null),
         }),
       );
     } catch {}
@@ -1346,15 +1380,13 @@ export default function RealTimeTest({
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
-          },
+          session: buildRealtimeVadSession({
+            type: "server_vad",
+            silence_duration_ms: pauseMsRef.current || 2000,
+            threshold: 0.35,
+            prefix_padding_ms: 120,
+            interrupt_response: false,
+          }),
         }),
       );
     } catch {}
@@ -1486,16 +1518,13 @@ export default function RealTimeTest({
         dc.send(
           JSON.stringify({
             type: "session.update",
-            session: {
+            session: buildRealtimeAudioSession({
               instructions,
-              modalities: ["audio", "text"],
               voice: voiceName,
-              turn_detection: buildTurnDetectionConfig(),
-              input_audio_transcription: sttLang
-                ? { model: "gpt-4o-mini-transcribe", language: sttLang }
-                : { model: "gpt-4o-mini-transcribe" },
-              output_audio_format: "pcm16",
-            },
+              turnDetection: buildTurnDetectionConfig(),
+              transcription: true,
+              transcriptionLanguage: sttLang,
+            }),
           }),
         );
 
@@ -1553,7 +1582,7 @@ export default function RealTimeTest({
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: buildRealtimeVadSession(null),
           }),
         );
       }
@@ -2858,14 +2887,12 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2894,13 +2921,11 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             voice: voiceName,
-            modalities: ["audio", "text"],
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2939,7 +2964,7 @@ Return ONLY JSON:
           JSON.stringify({
             type: "response.create",
             response: {
-              modalities: ["audio", "text"],
+              output_modalities: ["audio"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
               metadata: { kind: "voice_probe" },
@@ -2958,14 +2983,12 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -3086,6 +3109,22 @@ Return ONLY JSON:
       .trim();
   }
 
+  function extractResponseOutputText(response) {
+    const output = Array.isArray(response?.output) ? response.output : [];
+    return output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) =>
+        typeof part?.transcript === "string"
+          ? part.transcript
+          : typeof part?.text === "string"
+            ? part.text
+            : "",
+      )
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -3121,11 +3160,11 @@ Return ONLY JSON:
       return;
     }
 
-    if (
-      t === "response.output_audio.done" ||
-      t === "output_audio.done" ||
-      t === "output_audio_buffer.stopped"
-    ) {
+    if (t === "response.output_audio.done" || t === "output_audio.done") {
+      return;
+    }
+
+    if (t === "output_audio_buffer.stopped") {
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(aliveRef.current ? "listening" : "idle");
@@ -3137,6 +3176,7 @@ Return ONLY JSON:
     if (t === "response.created") {
       isIdleRef.current = false;
       clearAutoStopTimer();
+      disableVAD();
       setAssistantInputLocked(true);
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
@@ -3158,9 +3198,9 @@ Return ONLY JSON:
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
         t === "input_audio_transcription.completed") &&
-      data?.transcript
+      (data?.transcript || data?.text)
     ) {
-      const text = (data.transcript || "").trim();
+      const text = (data.transcript || data.text || "").trim();
       if (text) {
         const now = Date.now();
         if (
@@ -3210,6 +3250,7 @@ Return ONLY JSON:
 
     if (
       (t === "response.audio_transcript.delta" ||
+        t === "response.output_audio_transcript.delta" ||
         t === "response.output_text.delta" ||
         t === "response.text.delta") &&
       typeof data?.delta === "string"
@@ -3223,10 +3264,12 @@ Return ONLY JSON:
 
     if (
       (t === "response.audio_transcript.done" ||
+        t === "response.output_audio_transcript.done" ||
         t === "response.output_text.done" ||
         t === "response.text.done") &&
-      typeof data?.text === "string"
+      typeof (data?.transcript || data?.text) === "string"
     ) {
+      const finalText = data.transcript || data.text || "";
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
@@ -3238,7 +3281,7 @@ Return ONLY JSON:
       }
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: ((m.textFinal || "").trim() + " " + finalText).trim(),
         textStream: "",
       }));
       return;
@@ -3267,6 +3310,16 @@ Return ONLY JSON:
             textStream: "",
             textFinal: ((m.textFinal || "") + " " + buf).trim(),
           }));
+        }
+        const finalResponseText = extractResponseOutputText(data?.response);
+        if (finalResponseText) {
+          updateMessage(mid, (m) => {
+            const existingText = `${m.textFinal || ""} ${m.textStream || ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+            if (existingText) return m;
+            return { ...m, textFinal: finalResponseText, textStream: "" };
+          });
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         logEvent(analytics, "handleTurn", { action: "turn_completed" });

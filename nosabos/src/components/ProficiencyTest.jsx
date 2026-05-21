@@ -1163,6 +1163,44 @@ export default function ProficiencyTest() {
     };
   }
 
+  function buildRealtimeAudioSession({
+    instructions,
+    voice,
+    turnDetection,
+    transcription = false,
+    transcriptionLanguage,
+    transcriptionPrompt,
+  } = {}) {
+    const input = { turn_detection: turnDetection };
+    if (transcription) {
+      input.transcription = {
+        model: "gpt-4o-mini-transcribe",
+        ...(transcriptionLanguage ? { language: transcriptionLanguage } : {}),
+        ...(transcriptionPrompt ? { prompt: transcriptionPrompt } : {}),
+      };
+    }
+
+    const output = { format: { type: "audio/pcm", rate: 24000 } };
+    if (voice) output.voice = voice;
+
+    const session = {
+      type: "realtime",
+      output_modalities: ["audio"],
+      audio: { input, output },
+    };
+    if (instructions) session.instructions = instructions;
+    return session;
+  }
+
+  function buildRealtimeVadSession(turnDetection) {
+    return {
+      type: "realtime",
+      audio: {
+        input: { turn_detection: turnDetection },
+      },
+    };
+  }
+
   function setLocalMicEnabled(enabled) {
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
@@ -1181,7 +1219,7 @@ export default function ProficiencyTest() {
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildTurnDetectionConfig() },
+            session: buildRealtimeVadSession(buildTurnDetectionConfig()),
           }),
         );
       }
@@ -1276,6 +1314,22 @@ export default function ProficiencyTest() {
       .trim();
   }
 
+  function extractResponseOutputText(response) {
+    const output = Array.isArray(response?.output) ? response.output : [];
+    return output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) =>
+        typeof part?.transcript === "string"
+          ? part.transcript
+          : typeof part?.text === "string"
+            ? part.text
+            : "",
+      )
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
   /** Disable VAD and detach mic track so the user cannot interrupt AI speech. */
   function disableVAD() {
     if (pcRef.current) {
@@ -1291,7 +1345,7 @@ export default function ProficiencyTest() {
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: { turn_detection: null },
+          session: buildRealtimeVadSession(null),
         }),
       );
     } catch {}
@@ -1312,15 +1366,13 @@ export default function ProficiencyTest() {
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMs || 800,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
-          },
+          session: buildRealtimeVadSession({
+            type: "server_vad",
+            silence_duration_ms: pauseMs || 800,
+            threshold: 0.35,
+            prefix_padding_ms: 120,
+            interrupt_response: false,
+          }),
         }),
       );
     } catch {}
@@ -1369,11 +1421,11 @@ export default function ProficiencyTest() {
 
     // --- Ported from RealTimeTest / Conversations (proven pattern) ---
 
-    if (
-      t === "response.output_audio.done" ||
-      t === "output_audio.done" ||
-      t === "output_audio_buffer.stopped"
-    ) {
+    if (t === "response.output_audio.done" || t === "output_audio.done") {
+      return;
+    }
+
+    if (t === "output_audio_buffer.stopped") {
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -1385,6 +1437,7 @@ export default function ProficiencyTest() {
     if (t === "response.created") {
       isIdleRef.current = false;
       clearAutoStopTimer();
+      disableVAD();
       setAssistantInputLocked(true);
       const mid = uid();
       respToMsg.current.set(rid, mid);
@@ -1396,9 +1449,9 @@ export default function ProficiencyTest() {
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
         t === "input_audio_transcription.completed") &&
-      data?.transcript
+      (data?.transcript || data?.text)
     ) {
-      const text = (data.transcript || "").trim();
+      const text = (data.transcript || data.text || "").trim();
       if (text) {
         const confidence = extractTranscriptConfidence(data);
         let turn = currentSpeechTurnRef.current;
@@ -1464,6 +1517,7 @@ export default function ProficiencyTest() {
 
     if (
       (t === "response.audio_transcript.delta" ||
+        t === "response.output_audio_transcript.delta" ||
         t === "response.output_text.delta" ||
         t === "response.text.delta") &&
       typeof data?.delta === "string"
@@ -1477,10 +1531,12 @@ export default function ProficiencyTest() {
 
     if (
       (t === "response.audio_transcript.done" ||
+        t === "response.output_audio_transcript.done" ||
         t === "response.output_text.done" ||
         t === "response.text.done") &&
-      typeof data?.text === "string"
+      typeof (data?.transcript || data?.text) === "string"
     ) {
+      const finalText = data.transcript || data.text || "";
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
@@ -1492,7 +1548,7 @@ export default function ProficiencyTest() {
       }
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: ((m.textFinal || "").trim() + " " + finalText).trim(),
         textStream: "",
       }));
       return;
@@ -1515,6 +1571,16 @@ export default function ProficiencyTest() {
             textStream: "",
             textFinal: ((m.textFinal || "") + " " + buf).trim(),
           }));
+        }
+        const finalResponseText = extractResponseOutputText(data?.response);
+        if (finalResponseText) {
+          updateMessage(mid, (m) => {
+            const existingText = `${m.textFinal || ""} ${m.textStream || ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+            if (existingText) return m;
+            return { ...m, textFinal: finalResponseText, textStream: "" };
+          });
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         respToMsg.current.delete(rid);
@@ -1582,6 +1648,7 @@ export default function ProficiencyTest() {
 
         setUiState("thinking");
         setMood("thinking");
+        disableVAD();
       }
       return;
     }
@@ -2014,19 +2081,15 @@ Return ONLY valid JSON:
         dc.send(
           JSON.stringify({
             type: "session.update",
-            session: {
+            session: buildRealtimeAudioSession({
               instructions,
-              modalities: ["audio", "text"],
               voice: voiceName,
-              turn_detection: buildTurnDetectionConfig(),
-              input_audio_transcription: {
-                model: "gpt-4o-mini-transcribe",
-                language: targetLanguageCode,
-                prompt:
-                  "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
-              },
-              output_audio_format: "pcm16",
-            },
+              turnDetection: buildTurnDetectionConfig(),
+              transcription: true,
+              transcriptionLanguage: targetLanguageCode,
+              transcriptionPrompt:
+                "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
+            }),
           }),
         );
 
@@ -2084,7 +2147,7 @@ Return ONLY valid JSON:
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: buildRealtimeVadSession(null),
           }),
         );
       }

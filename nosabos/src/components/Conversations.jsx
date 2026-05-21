@@ -1882,7 +1882,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: buildRealtimeVadSession(null),
           }),
         );
       }
@@ -2068,6 +2068,38 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     };
   }
 
+  function buildRealtimeAudioSession({
+    instructions,
+    voice,
+    turnDetection,
+    transcription = false,
+  } = {}) {
+    const input = { turn_detection: turnDetection };
+    if (transcription) {
+      input.transcription = { model: "gpt-4o-mini-transcribe" };
+    }
+
+    const output = { format: { type: "audio/pcm", rate: 24000 } };
+    if (voice) output.voice = voice;
+
+    const session = {
+      type: "realtime",
+      output_modalities: ["audio"],
+      audio: { input, output },
+    };
+    if (instructions) session.instructions = instructions;
+    return session;
+  }
+
+  function buildRealtimeVadSession(turnDetection) {
+    return {
+      type: "realtime",
+      audio: {
+        input: { turn_detection: turnDetection },
+      },
+    };
+  }
+
   function setLocalMicEnabled(enabled) {
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
@@ -2088,7 +2120,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildTurnDetectionConfig() },
+            session: buildRealtimeVadSession(buildTurnDetectionConfig()),
           }),
         );
       }
@@ -2106,14 +2138,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2134,7 +2164,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: { turn_detection: null },
+          session: buildRealtimeVadSession(null),
         }),
       );
     } catch {}
@@ -2155,15 +2185,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
-          },
+          session: buildRealtimeVadSession({
+            type: "server_vad",
+            silence_duration_ms: pauseMsRef.current || 2000,
+            threshold: 0.35,
+            prefix_padding_ms: 120,
+            interrupt_response: false,
+          }),
         }),
       );
     } catch {}
@@ -2513,6 +2541,22 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   /* ---------------------------
      Realtime event handler
   --------------------------- */
+  function extractResponseOutputText(response) {
+    const output = Array.isArray(response?.output) ? response.output : [];
+    return output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) =>
+        typeof part?.transcript === "string"
+          ? part.transcript
+          : typeof part?.text === "string"
+            ? part.text
+            : "",
+      )
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -2537,11 +2581,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
-    if (
-      t === "response.output_audio.done" ||
-      t === "output_audio.done" ||
-      t === "output_audio_buffer.stopped"
-    ) {
+    if (t === "response.output_audio.done" || t === "output_audio.done") {
+      return;
+    }
+
+    if (t === "output_audio_buffer.stopped") {
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -2577,9 +2621,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
         t === "input_audio_transcription.completed") &&
-      data?.transcript
+      (data?.transcript || data?.text)
     ) {
-      const text = (data.transcript || "").trim();
+      const text = (data.transcript || data.text || "").trim();
       if (text) {
         const now = Date.now();
         if (
@@ -2628,6 +2672,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (
       (t === "response.audio_transcript.delta" ||
+        t === "response.output_audio_transcript.delta" ||
         t === "response.output_text.delta" ||
         t === "response.text.delta") &&
       typeof data?.delta === "string"
@@ -2641,10 +2686,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (
       (t === "response.audio_transcript.done" ||
+        t === "response.output_audio_transcript.done" ||
         t === "response.output_text.done" ||
         t === "response.text.done") &&
-      typeof data?.text === "string"
+      typeof (data?.transcript || data?.text) === "string"
     ) {
+      const finalText = data.transcript || data.text || "";
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
@@ -2656,7 +2703,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       }
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: ((m.textFinal || "").trim() + " " + finalText).trim(),
         textStream: "",
       }));
       return;
@@ -2685,6 +2732,16 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
             textStream: "",
             textFinal: ((m.textFinal || "") + " " + buf).trim(),
           }));
+        }
+        const finalResponseText = extractResponseOutputText(data?.response);
+        if (finalResponseText) {
+          updateMessage(mid, (m) => {
+            const existingText = `${m.textFinal || ""} ${m.textStream || ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+            if (existingText) return m;
+            return { ...m, textFinal: finalResponseText, textStream: "" };
+          });
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         logEvent(analytics, "conversation_turn", {
