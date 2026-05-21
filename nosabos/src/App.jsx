@@ -739,6 +739,7 @@ function TopBar({
   postNostrContent,
   onSupportLangChange,
   pendingLangRef,
+  subscriptionVerified = false,
 }) {
   const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
@@ -1985,6 +1986,7 @@ function TopBar({
                       isIdentitySaving={isIdentitySaving}
                       postNostrContent={postNostrContent}
                       showHeader={false}
+                      showPatreonSupport={!subscriptionVerified}
                     />
                   </Box>
                 </TabPanel>
@@ -3196,7 +3198,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 300 && !subscriptionVerified,
+    () => subscriptionXp >= 0 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -6694,6 +6696,7 @@ export default function App({ onBootReady } = {}) {
           postNostrContent={postNostrContent}
           onSupportLangChange={onSupportLangChange}
           pendingLangRef={pendingLangRef}
+          subscriptionVerified={subscriptionVerified}
         />
       )}
 

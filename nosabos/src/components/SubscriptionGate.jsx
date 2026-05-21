@@ -551,13 +551,13 @@ export default function SubscriptionGate({
               </Box>
               <Button
                 type="button"
-                bgGradient="linear(to-r, teal.500, cyan.500)"
+                bg="teal.500"
                 color="white"
                 borderRadius="full"
                 px={6}
                 boxShadow="0px 4px 0px #0f766e"
                 _hover={{
-                  bgGradient: "linear(to-r, teal.400, cyan.400)",
+                  bg: "teal.400",
                   transform: "translateY(-1px)",
                 }}
                 _active={{
@@ -655,9 +655,16 @@ export default function SubscriptionGate({
                 />
               </InputGroup>
               {(error || localError) && (
-                <Alert status="error" bg="red.900" borderColor="red.700">
-                  <AlertIcon />
-                  <Text fontSize="sm">{invalidMessage}</Text>
+                <Alert
+                  status="error"
+                  bg="red.900"
+                  borderColor="red.700"
+                  color="white"
+                >
+                  <AlertIcon color="white" />
+                  <Text fontSize="sm" color="white">
+                    {invalidMessage}
+                  </Text>
                 </Alert>
               )}
               <Button
