@@ -6,11 +6,11 @@
   },
   "frame": {
     "version": "1",
-    "name": "No Sabos",
+    "name": "Piyali",
     "subtitle": "AI Language Learning.",
     "description": "An AI language tutor.",
     "iconUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1768118761/logos_512_x_512_px_4_azpy4h.png",
-    "homeUrl": "https://nosabos.app",
+    "homeUrl": "https://piyali.app",
     "splashImageUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1768118761/logos_512_x_512_px_4_azpy4h.png",
     "splashBackgroundColor": "#090b1c",
     "heroImageUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1768118761/logos_512_x_512_px_4_azpy4h.png",
@@ -18,6 +18,6 @@
     "screenshotUrls": [],
     "primaryCategory": "education",
     "tags": ["education", "coding", "ai", "bitcoin"],
-    "webhookUrl": "https://nosabos.app/api/webhook"
+    "webhookUrl": "https://piyali.app/api/webhook"
   }
 }

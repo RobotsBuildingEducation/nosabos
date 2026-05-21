@@ -97,7 +97,7 @@ export const LANDING_PAGE_AR_STATIC = {
   cta_final_subtitle:
     "أنشئ ملفك الآمن في ثواني، احفظ مفتاحك، وافتح عالم تعلم لغات كامل.",
   placeholder_name: "اسمك المعروض",
-  footer_brand: "No Sabos",
+  footer_brand: "Piyali",
   footer_tagline: "نجعل تعلم اللغات متاحًا للجميع.",
   signin_title: "أهلاً بعودتك",
   signin_subtitle:

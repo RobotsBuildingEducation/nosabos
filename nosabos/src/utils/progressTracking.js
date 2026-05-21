@@ -120,7 +120,6 @@ export async function startTutorLesson(
   lessonId,
   targetLang = "es",
   userProgress = null,
-  currentXp = 0,
 ) {
   if (!npub || !lessonId) return;
 
@@ -155,6 +154,7 @@ export async function startTutorLesson(
       lessonDocPromise = setDoc(
         lessonProgressRef,
         {
+          lessonStartXp: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
@@ -166,7 +166,8 @@ export async function startTutorLesson(
           targetLang: languageKey,
           lessonId,
           status: SKILL_STATUS.IN_PROGRESS,
-          lessonStartXp: currentXp,
+          earnedXp: 0,
+          lessonStartXp: deleteField(),
           startedAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         },
@@ -177,6 +178,46 @@ export async function startTutorLesson(
     await Promise.all([updateDoc(userRef, updateData), lessonDocPromise]);
   } catch (error) {
     console.error("Error starting Tutor lesson:", error);
+    throw error;
+  }
+}
+
+/**
+ * Save the app-tracked Tutor lesson XP counter.
+ * This is intentionally independent from the user's global/language XP.
+ */
+export async function saveTutorLessonEarnedXp(
+  npub,
+  lessonId,
+  targetLang = "es",
+  earnedXp = 0,
+) {
+  if (!npub || !lessonId) return;
+
+  const languageKey = (targetLang || "es").toLowerCase();
+  const lessonProgressRef = doc(
+    database,
+    "users",
+    npub,
+    "tutorLanguageLessons",
+    `${languageKey}_${lessonId}`,
+  );
+  const normalizedEarnedXp = Math.max(0, Number(earnedXp) || 0);
+
+  try {
+    await setDoc(
+      lessonProgressRef,
+      {
+        targetLang: languageKey,
+        lessonId,
+        earnedXp: normalizedEarnedXp,
+        lessonStartXp: deleteField(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  } catch (error) {
+    console.error("Error saving Tutor lesson XP:", error);
     throw error;
   }
 }
@@ -227,6 +268,7 @@ export async function saveTutorAgendaProgress(
             items,
             updatedAt: serverTimestamp(),
           },
+          lessonStartXp: deleteField(),
           updatedAt: serverTimestamp(),
         },
         { merge: true },
@@ -274,6 +316,7 @@ export async function completeTutorLesson(
           status: SKILL_STATUS.COMPLETED,
           completedAt: serverTimestamp(),
           xpEarned: xpReward,
+          earnedXp: xpReward,
           lessonStartXp: deleteField(),
           tutorAgendaProgress: deleteField(),
           updatedAt: serverTimestamp(),

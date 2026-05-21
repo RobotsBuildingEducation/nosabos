@@ -32,6 +32,7 @@ const CORS_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.DEPLOYED_URL,
+  process.env.NEW_DEPLOYED_URL,
 ];
 
 // Only permit the models you actually use with /proxyResponses

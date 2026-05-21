@@ -97,7 +97,7 @@ export const LANDING_PAGE_HI_STATIC = {
   cta_final_subtitle:
     "कुछ ही सेकंड में अपना सुरक्षित प्रोफ़ाइल बनाएं, अपनी कुंजी सहेजें और भाषा सीखने की दुनिया खोलें।",
   placeholder_name: "आपका प्रदर्शित नाम",
-  footer_brand: "No Sabos",
+  footer_brand: "Piyali",
   footer_tagline: "भाषा सीखना सबके लिए सुलभ बनाना।",
   signin_title: "वापसी पर स्वागत है",
   signin_subtitle:

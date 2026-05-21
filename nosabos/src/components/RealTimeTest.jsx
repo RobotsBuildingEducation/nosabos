@@ -782,9 +782,6 @@ export default function RealTimeTest({
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState(() => getPreferredTTSVoice());
-  const [voicePersona, setVoicePersona] = useState(
-    translations.en.onboarding_persona_default_example,
-  );
   const [targetLang, setTargetLang] = useState("es");
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
@@ -793,7 +790,6 @@ export default function RealTimeTest({
 
   // live refs
   const voiceRef = useRef(voice);
-  const voicePersonaRef = useRef(voicePersona);
   const levelRef = useRef(level);
   const supportLangRef = useRef(supportLang);
   const goalLocalizationBusyRef = useRef(false);
@@ -806,9 +802,6 @@ export default function RealTimeTest({
   useEffect(() => {
     voiceRef.current = voice;
   }, [voice]);
-  useEffect(() => {
-    voicePersonaRef.current = voicePersona;
-  }, [voicePersona]);
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
@@ -1159,7 +1152,6 @@ export default function RealTimeTest({
     if (!hydrated) return;
     scheduleProfileSave();
   }, [
-    voicePersona,
     supportLang,
     showTranslations,
     level,
@@ -1242,15 +1234,6 @@ export default function RealTimeTest({
       const v = normalizeSupport(p.supportLang);
       supportLangRef.current = v;
       setSupportLang(v);
-    }
-    if (p.voice) {
-      const nextVoice = getPreferredTTSVoice(p.voice);
-      voiceRef.current = nextVoice;
-      setVoice(nextVoice);
-    }
-    if (typeof p.voicePersona === "string") {
-      voicePersonaRef.current = p.voicePersona;
-      setVoicePersona(p.voicePersona);
     }
     if (p.targetLang) {
       const v = normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE);
@@ -1477,10 +1460,7 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        const voiceName = getPreferredTTSVoice(
-          savedPrefs?.voice,
-          voiceRef.current,
-        );
+        const voiceName = getPreferredTTSVoice(voiceRef.current);
         voiceRef.current = voiceName;
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
@@ -2736,9 +2716,6 @@ Return ONLY JSON:
      Language instructions
   --------------------------- */
   function buildLanguageInstructions(prefs) {
-    const persona = String(
-      (prefs?.voicePersona ?? voicePersonaRef.current ?? "").slice(0, 240),
-    );
     const focus = String(
       (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240),
     );
@@ -2828,7 +2805,6 @@ Return ONLY JSON:
       strict,
       "Keep replies very brief (≤25 words) and natural.",
       "IMPORTANT: Do NOT start the conversation. Wait for the user to speak first. Never greet or initiate - only respond to what the user says.",
-      `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       levelHint,
       focusLine,
       pronLine,
@@ -3454,8 +3430,6 @@ Return ONLY JSON:
               uiLang,
               DEFAULT_SUPPORT_LANGUAGE,
             ),
-            voice: voiceRef.current,
-            voicePersona: voicePersonaRef.current,
             targetLang: normalizePracticeLanguage(
               targetLangRef.current,
               DEFAULT_TARGET_LANGUAGE,
@@ -3491,8 +3465,6 @@ Return ONLY JSON:
         partial.supportLang ?? uiLang,
         DEFAULT_SUPPORT_LANGUAGE,
       ),
-      voice: getPreferredTTSVoice(partial.voice, voiceRef.current),
-      voicePersona: partial.voicePersona ?? voicePersonaRef.current,
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? targetLangRef.current,
         DEFAULT_TARGET_LANGUAGE,

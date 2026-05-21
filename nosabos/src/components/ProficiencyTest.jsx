@@ -990,8 +990,8 @@ export default function ProficiencyTest() {
     user?.progress?.supportLang || storedSupportLang,
     DEFAULT_SUPPORT_LANGUAGE,
   );
-  const voicePersona = user?.progress?.voicePersona || "";
-  const selectedVoice = getPreferredTTSVoice(user?.progress?.voice);
+  const voicePersona = "";
+  const selectedVoice = useMemo(() => getPreferredTTSVoice(), []);
   const pauseMs = user?.progress?.pauseMs || 800;
 
   const ui = translations[supportLang] || translations.en;

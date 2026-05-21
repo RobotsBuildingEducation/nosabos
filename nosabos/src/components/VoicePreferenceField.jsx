@@ -15,7 +15,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
-import { FaFemale, FaMale } from "react-icons/fa";
+import { FaFemale, FaMale, FaMicrophoneAlt } from "react-icons/fa";
 import {
   getTTSPlayer,
   getTTSVoiceOption,
@@ -26,6 +26,7 @@ import {
   TTS_VOICE_OPTIONS,
   warmRealtimeTTS,
 } from "../utils/tts";
+import { createGeminiLiveVoicePreviewPlayer } from "../utils/geminiLiveBridge";
 import {
   DEFAULT_SUPPORT_LANGUAGE,
   DEFAULT_TARGET_LANGUAGE,
@@ -176,8 +177,8 @@ const VOICE_PREVIEW_LINES = {
   },
 };
 
-function getVoicePreviewText(voiceValue, language) {
-  const normalizedVoice = normalizeTTSVoice(voiceValue);
+function getVoicePreviewText(voiceValue, language, normalizeVoice = normalizeTTSVoice) {
+  const normalizedVoice = normalizeVoice(voiceValue);
   const voiceLines = VOICE_PREVIEW_LINES[normalizedVoice];
   return (
     voiceLines?.[language] ||
@@ -193,7 +194,8 @@ function titleCaseVoice(value) {
 }
 
 function VoiceTypeIcon({ type, boxSize = 4 }) {
-  const Icon = type === "girl" ? FaFemale : FaMale;
+  const Icon =
+    type === "girl" ? FaFemale : type === "boy" ? FaMale : FaMicrophoneAlt;
   return (
     <Box
       as={Icon}
@@ -245,22 +247,33 @@ export default function VoicePreferenceField({
   heading,
   description,
   personaPlaceholder,
+  voiceOptions = TTS_VOICE_OPTIONS,
+  normalizeVoice = normalizeTTSVoice,
+  getVoiceOption = getTTSVoiceOption,
+  previewProvider = "openai-realtime",
+  voiceLabel,
+  personaLabel,
 }) {
   const toast = useToast();
   const [isTestingVoice, setIsTestingVoice] = useState(false);
   const previewPlayerRef = useRef(null);
   const previewRequestIdRef = useRef(0);
   const previewTimeoutRef = useRef(null);
+  const selectedVoiceOptionRef = useRef(null);
+  const voiceMenuListRef = useRef(null);
+  const voiceMenuScrollTimeoutRef = useRef(null);
   const personaDraftRef = useRef(voicePersona || "");
   const mountedRef = useRef(true);
 
-  const selectedVoice = useMemo(() => getTTSVoiceOption(voice), [voice]);
+  const selectedVoice = useMemo(() => getVoiceOption(voice), [getVoiceOption, voice]);
   const previewLanguage = useMemo(
     () => getPreviewLanguage(targetLang, supportLang),
     [supportLang, targetLang],
   );
-  const voiceLabel = t.settings_voice || t.onboarding_voice_title || "Voice";
-  const personaLabel =
+  const resolvedVoiceLabel =
+    voiceLabel || t.settings_voice || t.onboarding_voice_title || "Voice";
+  const resolvedPersonaLabel =
+    personaLabel ||
     t.ra_persona_label ||
     t.onboarding_voice_persona_label ||
     "Voice personality";
@@ -287,6 +300,40 @@ export default function VoicePreferenceField({
     previewTimeoutRef.current = null;
   }, []);
 
+  const clearVoiceMenuScrollTimeout = useCallback(() => {
+    if (!voiceMenuScrollTimeoutRef.current) return;
+    clearTimeout(voiceMenuScrollTimeoutRef.current);
+    voiceMenuScrollTimeoutRef.current = null;
+  }, []);
+
+  const scrollSelectedVoiceIntoView = useCallback(() => {
+    const menuList = voiceMenuListRef.current;
+    const selectedOption = selectedVoiceOptionRef.current;
+    if (!menuList || !selectedOption) return;
+
+    const menuRect = menuList.getBoundingClientRect();
+    const optionRect = selectedOption.getBoundingClientRect();
+    const targetScrollTop =
+      menuList.scrollTop +
+      optionRect.top -
+      menuRect.top -
+      menuList.clientHeight / 2 +
+      optionRect.height / 2;
+
+    menuList.scrollTop = Math.max(0, targetScrollTop);
+  }, []);
+
+  const scheduleSelectedVoiceScroll = useCallback(() => {
+    clearVoiceMenuScrollTimeout();
+    voiceMenuScrollTimeoutRef.current = setTimeout(() => {
+      scrollSelectedVoiceIntoView();
+      voiceMenuScrollTimeoutRef.current = setTimeout(() => {
+        voiceMenuScrollTimeoutRef.current = null;
+        scrollSelectedVoiceIntoView();
+      }, 80);
+    }, 0);
+  }, [clearVoiceMenuScrollTimeout, scrollSelectedVoiceIntoView]);
+
   const stopPreview = useCallback(() => {
     clearPreviewTimeout();
     const current = previewPlayerRef.current;
@@ -302,19 +349,25 @@ export default function VoicePreferenceField({
 
   useEffect(() => {
     mountedRef.current = true;
-    void warmRealtimeTTS();
+    if (previewProvider === "openai-realtime") {
+      void warmRealtimeTTS();
+    }
     return () => {
       mountedRef.current = false;
+      clearVoiceMenuScrollTimeout();
       stopPreview();
     };
-  }, [stopPreview]);
+  }, [clearVoiceMenuScrollTimeout, previewProvider, stopPreview]);
 
   const playVoicePreview = useCallback(async (voiceValue, personaValue) => {
     const requestId = previewRequestIdRef.current + 1;
     previewRequestIdRef.current = requestId;
-    const previewVoice = normalizeTTSVoice(voiceValue);
+    const previewVoice = normalizeVoice(voiceValue);
     const previewPersona = String(personaValue ?? personaDraftRef.current);
-    const warmAudioPromise = primeTTSAudio();
+    const warmAudioPromise =
+      previewProvider === "openai-realtime"
+        ? primeTTSAudio()
+        : Promise.resolve(null);
     stopPreview();
     setIsTestingVoice(true);
     previewTimeoutRef.current = setTimeout(() => {
@@ -326,13 +379,26 @@ export default function VoicePreferenceField({
       setIsTestingVoice(false);
     }, 9000);
     try {
-      const player = await getTTSPlayer({
-        text: getVoicePreviewText(previewVoice, previewLanguage),
-        voice: previewVoice,
-        personality: previewPersona,
-        langTag: TTS_LANG_TAG[previewLanguage] || TTS_LANG_TAG.es,
-        warmAudio: await warmAudioPromise.catch(() => null),
-      });
+      const previewText = getVoicePreviewText(
+        previewVoice,
+        previewLanguage,
+        normalizeVoice,
+      );
+      const player =
+        previewProvider === "gemini-live"
+          ? await createGeminiLiveVoicePreviewPlayer({
+              text: previewText,
+              voice: previewVoice,
+              personality: previewPersona,
+              language: TTS_LANG_TAG[previewLanguage] || previewLanguage,
+            })
+          : await getTTSPlayer({
+              text: previewText,
+              voice: previewVoice,
+              personality: previewPersona,
+              langTag: TTS_LANG_TAG[previewLanguage] || TTS_LANG_TAG.es,
+              warmAudio: await warmAudioPromise.catch(() => null),
+            });
       if (previewRequestIdRef.current !== requestId || !mountedRef.current) {
         player.cleanup?.();
         return;
@@ -364,6 +430,9 @@ export default function VoicePreferenceField({
       player.audio.addEventListener("ended", finish, { once: true });
       player.audio.addEventListener("error", finish, { once: true });
       void player.finalize?.finally(finish)?.catch(() => {});
+      if (previewProvider === "gemini-live") {
+        void player.audio.play().catch(() => {});
+      }
       await player.ready;
       markStarted();
       await player.audio.play();
@@ -387,6 +456,8 @@ export default function VoicePreferenceField({
     }
   }, [
     clearPreviewTimeout,
+    normalizeVoice,
+    previewProvider,
     previewLanguage,
     stopPreview,
     t,
@@ -395,22 +466,27 @@ export default function VoicePreferenceField({
 
   const handleVoiceSelect = useCallback(
     (value) => {
-      const nextVoice = normalizeTTSVoice(value);
+      const nextVoice = normalizeVoice(value);
       const nextPersona = String(personaDraftRef.current || "").slice(0, 240);
       onSelectSound?.();
-      void warmRealtimeTTS();
-      void primeTTSAudio();
+      if (previewProvider === "openai-realtime") {
+        void warmRealtimeTTS();
+        void primeTTSAudio();
+      }
       onVoiceChange?.(nextVoice, nextPersona);
       void playVoicePreview(nextVoice, nextPersona);
     },
-    [onSelectSound, onVoiceChange, playVoicePreview],
+    [normalizeVoice, onSelectSound, onVoiceChange, playVoicePreview, previewProvider],
   );
 
   const handleVoiceMenuOpen = useCallback(() => {
     onSelectSound?.();
-    void warmRealtimeTTS();
-    void primeTTSAudio();
-  }, [onSelectSound]);
+    if (previewProvider === "openai-realtime") {
+      void warmRealtimeTTS();
+      void primeTTSAudio();
+    }
+    scheduleSelectedVoiceScroll();
+  }, [onSelectSound, previewProvider, scheduleSelectedVoiceScroll]);
 
   const handlePersonaChange = useCallback(
     (event) => {
@@ -441,7 +517,7 @@ export default function VoicePreferenceField({
 
         <Box>
           <Text fontSize="xs" fontWeight="semibold" color="gray.400" mb={1}>
-            {voiceLabel}
+            {resolvedVoiceLabel}
           </Text>
           <Menu autoSelect={false} isLazy matchWidth onOpen={handleVoiceMenuOpen}>
             <MenuButton
@@ -470,6 +546,7 @@ export default function VoicePreferenceField({
               </HStack>
             </MenuButton>
             <MenuList
+              ref={voiceMenuListRef}
               borderColor="gray.700"
               bg="gray.900"
               minW="100%"
@@ -501,16 +578,17 @@ export default function VoicePreferenceField({
                 fontWeight="semibold"
                 color="gray.300"
               >
-                {voiceLabel}
+                {resolvedVoiceLabel}
               </Box>
               <MenuOptionGroup
                 type="radio"
                 value={selectedVoice.value}
               >
-                {TTS_VOICE_OPTIONS.map((option) => {
+                {voiceOptions.map((option) => {
                   const isSelected = option.value === selectedVoice.value;
                   return (
                     <MenuItemOption
+                      ref={isSelected ? selectedVoiceOptionRef : null}
                       key={option.value}
                       value={option.value}
                       px={4}
@@ -560,7 +638,7 @@ export default function VoicePreferenceField({
 
         <Box>
           <HStack justify="space-between" align="center" mb={2}>
-            <Text fontSize="sm">{personaLabel}</Text>
+            <Text fontSize="sm">{resolvedPersonaLabel}</Text>
           </HStack>
           <Textarea
             value={voicePersona || ""}

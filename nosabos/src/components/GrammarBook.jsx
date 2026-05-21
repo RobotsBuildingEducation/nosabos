@@ -1086,8 +1086,8 @@ export default function GrammarBook({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  // Voice follows the saved voice preference through getPreferredTTSVoice().
-  // voicePreference is kept for backwards compatibility but not used for selection.
+  // GPT realtime-mini TTS picks a random default voice once; voicePreference is
+  // kept for backwards compatibility but not used for selection.
 
   const recentCorrectRef = useRef([]);
 

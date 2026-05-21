@@ -52,6 +52,14 @@ const gradingModel = getGenerativeModel(vertexAI, {
   },
 });
 
+const gradingLiteModel = getGenerativeModel(vertexAI, {
+  model: "gemini-3.1-flash-lite-preview",
+  generationConfig: {
+    thinkingConfig: { thinkingBudget: 0 },
+    responseMimeType: "application/json",
+  },
+});
+
 const citizenshipAssistantModel = getGenerativeModel(vertexAI, {
   model: "gemini-3-flash-preview",
   generationConfig: {
@@ -67,5 +75,6 @@ export {
   analytics,
   simplemodel,
   gradingModel,
+  gradingLiteModel,
   citizenshipAssistantModel,
 };

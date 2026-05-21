@@ -71,10 +71,12 @@ export const TTS_VOICE_OPTIONS = [
 
 // Array version for random selection
 const TTS_VOICES_ARRAY = Array.from(SUPPORTED_TTS_VOICES);
+const RANDOM_DEFAULT_TTS_VOICE_KEY = "nosabos:realtime-mini-default-voice";
+let randomDefaultTTSVoice = null;
 
 /**
  * Returns a randomly selected voice from the available TTS voices.
- * This provides variety in voice playback for a more diverse experience.
+ * Use this only when a truly fresh random voice is needed.
  */
 export function getRandomVoice() {
   const index = Math.floor(Math.random() * TTS_VOICES_ARRAY.length);
@@ -126,23 +128,44 @@ export function normalizeTTSVoice(voice) {
   return sanitizeVoice(voice);
 }
 
-function getStoredTTSVoicePreference() {
-  if (typeof window === "undefined") return "";
+function getRandomDefaultTTSVoice() {
+  if (randomDefaultTTSVoice) return randomDefaultTTSVoice;
+
   try {
-    const raw = window.localStorage?.getItem("progress");
-    if (!raw) return "";
-    const parsed = JSON.parse(raw);
-    return SUPPORTED_TTS_VOICES.has(parsed?.voice) ? parsed.voice : "";
+    const storedVoice =
+      typeof window !== "undefined"
+        ? window.localStorage?.getItem(RANDOM_DEFAULT_TTS_VOICE_KEY)
+        : null;
+    if (SUPPORTED_TTS_VOICES.has(storedVoice)) {
+      randomDefaultTTSVoice = storedVoice;
+      return randomDefaultTTSVoice;
+    }
   } catch {
-    return "";
+    // Local storage may be blocked; fall back to an in-memory default.
   }
+
+  randomDefaultTTSVoice = getRandomVoice();
+
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage?.setItem(
+        RANDOM_DEFAULT_TTS_VOICE_KEY,
+        randomDefaultTTSVoice,
+      );
+    }
+  } catch {
+    // Cache stability is best-effort when storage is unavailable.
+  }
+
+  return randomDefaultTTSVoice;
 }
 
 export function getPreferredTTSVoice(...candidates) {
   for (const voice of candidates) {
     if (SUPPORTED_TTS_VOICES.has(voice)) return voice;
   }
-  return getStoredTTSVoicePreference() || DEFAULT_TTS_VOICE;
+  // Pick once so realtime-mini TTS can reuse cache entries across replays.
+  return getRandomDefaultTTSVoice();
 }
 
 export function getTTSVoiceOption(voice) {

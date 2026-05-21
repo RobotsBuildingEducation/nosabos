@@ -852,13 +852,6 @@ export default function DailyGoalModal({
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
             <Button
-              variant={"ghost"}
-              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              {...getActionPressProps("daily-goal-close", handleClose)}
-            >
-              {t?.daily_goal_close || t?.teams_drawer_close || t?.app_close || "Close"}
-            </Button>
-            <Button
               colorScheme={isLightTheme ? undefined : "teal"}
               bg={isLightTheme ? "#3f9f9b" : undefined}
               color={isLightTheme ? "white" : undefined}
