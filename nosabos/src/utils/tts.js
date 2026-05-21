@@ -892,6 +892,9 @@ async function getRealtimePlayer({
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (msg.type === "error") {
+        console.warn("Realtime TTS error:", msg.error?.message || msg.error);
+      }
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
@@ -913,13 +916,20 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
-            output_audio_format: "pcm16",
-            voice: sanitizedVoice,
+            type: "realtime",
+            output_modalities: ["audio"],
             instructions: personality
               ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities.`
               : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
-            turn_detection: null,
+            audio: {
+              input: {
+                turn_detection: null,
+              },
+              output: {
+                format: { type: "audio/pcm", rate: 24000 },
+                voice: sanitizedVoice,
+              },
+            },
           },
         }),
       );
@@ -943,7 +953,7 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
+            output_modalities: ["audio"],
           },
         }),
       );

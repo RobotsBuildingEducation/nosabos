@@ -103,6 +103,13 @@ function normalizeRealtimeModel(model) {
   return trimmed;
 }
 
+function buildRealtimeSessionConfig(model) {
+  return {
+    type: "realtime",
+    model: normalizeRealtimeModel(model),
+  };
+}
+
 // ======================================================
 // 1) Realtime SDP Exchange Proxy
 //    Frontend posts SDP offer here instead of OpenAI.
@@ -129,6 +136,7 @@ exports.exchangeRealtimeSDP = onRequest(
 
     let offerSDP = "";
     let model = normalizeRealtimeModel(req.query?.model);
+    let sessionConfig = null;
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {
@@ -137,22 +145,29 @@ exports.exchangeRealtimeSDP = onRequest(
       if (typeof body.model === "string" && body.model.trim()) {
         model = normalizeRealtimeModel(body.model);
       }
+      if (body.session && typeof body.session === "object") {
+        sessionConfig = {
+          ...body.session,
+          type: body.session.type || "realtime",
+          model: normalizeRealtimeModel(body.session.model || model),
+        };
+      }
     }
     if (!offerSDP) badRequest("Missing SDP offer.");
 
-    const url = `https://api.openai.com/v1/realtime?model=${encodeURIComponent(
-      model,
-    )}`;
+    const formData = new FormData();
+    formData.set("sdp", offerSDP);
+    formData.set(
+      "session",
+      JSON.stringify(sessionConfig || buildRealtimeSessionConfig(model)),
+    );
 
     let upstream;
     try {
-      upstream = await fetch(url, {
+      upstream = await fetch("https://api.openai.com/v1/realtime/calls", {
         method: "POST",
-        headers: {
-          ...authzHeader(),
-          "Content-Type": "application/sdp",
-        },
-        body: offerSDP,
+        headers: authzHeader(),
+        body: formData,
       });
     } catch (e) {
       functions.logger.error(
