@@ -94,7 +94,7 @@ export const LANDING_PAGE_ZH_STATIC = {
   cta_final_subtitle:
     "几秒钟内创建安全资料、保存密钥，并开启语言学习世界。",
   placeholder_name: "你的显示名称",
-  footer_brand: "No Sabos",
+  footer_brand: "Piyali",
   footer_tagline: "让语言学习人人可及。",
   signin_title: "欢迎回来",
   signin_subtitle: "粘贴你创建账户时保存的私密密钥。",

@@ -1,6 +1,6 @@
 # Intro
 
-The following provides configurations you must make to run your own version of https://nosabos.app
+The following provides configurations you must make to run your own version of https://piyali.app
 
 If you're unfamiliar with setting up firebase projects, use the following step-by-step guide to learn:
 

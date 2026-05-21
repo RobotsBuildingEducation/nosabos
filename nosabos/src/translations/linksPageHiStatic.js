@@ -21,7 +21,7 @@ export const LINKS_PAGE_HI_STATIC = {
   launchApp: "ऐप खोलें",
   subscribe: "सब्सक्राइब करें",
   buyApps: "ऐप्स खरीदें",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "आपका व्यक्तिगत भाषा शिक्षक। बुद्धिमान टूल्स की मदद से नई भाषाएं सीखें और खोजें।",
   rbeTitle: "Robots Building Education",

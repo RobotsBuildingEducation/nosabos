@@ -5086,8 +5086,8 @@ export default function App({ onBootReady } = {}) {
         ? `I'm ${goalPercent}% through today's ${goalTarget} XP goal (${earnedToday}/${goalTarget} XP)`
         : null;
       const content = hasDailyGoal
-        ? `${goalCopy} and now have ${totalXp} XP total on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`
-        : `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+        ? `${goalCopy} and now have ${totalXp} XP total on https://piyali.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`
+        : `I just reached ${totalXp} XP on https://piyali.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
       const hashtagTag = NOSTR_PROGRESS_HASHTAG.replace("#", "").toLowerCase();
       const tags = [
         ["t", hashtagTag],

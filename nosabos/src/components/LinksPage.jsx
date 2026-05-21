@@ -1130,13 +1130,13 @@ export default function LinksPage() {
 
   const citizenshipUrl = isLocalhost()
     ? "http://localhost:5173/citizenship"
-    : "https://nosabos.app/citizenship";
+    : "https://piyali.app/citizenship";
 
   const links = [
     {
       title: translations.noSabosTitle,
       description: translations.noSabosDescription,
-      href: "https://nosabos.app",
+      href: "https://piyali.app",
       analyticsName: "nosabos_app",
       visual: (
         <Box

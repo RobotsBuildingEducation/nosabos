@@ -21,7 +21,7 @@ export const LINKS_PAGE_PT_STATIC = {
   launchApp: "Abrir app",
   subscribe: "Assinar",
   buyApps: "Comprar apps",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "Seu tutor pessoal de idiomas. Aprenda e explore novos idiomas com ferramentas inteligentes para ajudar você a praticar.",
   rbeTitle: "Robots Building Education",

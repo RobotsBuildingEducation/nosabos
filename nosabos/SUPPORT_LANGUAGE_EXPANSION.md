@@ -1,6 +1,6 @@
 # Support Language Expansion
 
-This document is the authoritative catalog of every file, function, component, and data structure that must be touched to add a new **support / app UI language** (the language the app chrome, instructions, feedback, and LLM meta-prompts are rendered in) to Nosabos.
+This document is the authoritative catalog of every file, function, component, and data structure that must be touched to add a new **support / app UI language** (the language the app chrome, instructions, feedback, and LLM meta-prompts are rendered in) to Piyali.
 
 It is intentionally exhaustive so the same playbook can be reused for every future language. Italian (`it`) is the reference completed rollout, French (`fr`) is the first regression-hardening pass, and the current stable support/app-language set is `en`, `es`, `pt`, `it`, `fr`, `ja`, `hi`, `ar`, and `zh`. The patterns apply to any additional BCP-47 code (`de`, `el`, `pl`, `ga`, `yua`, …).
 
@@ -312,7 +312,7 @@ Do not treat account settings as localized just because `translations.<code>` ex
 
 **Language icon rendering note (mobile):** Do not wrap the flag SVG in a Chakra `<Text>` inside the `IconButton`'s `icon` prop. `Text` renders as `<p>`, which is invalid inside `<button>` and causes the icon to intermittently fail to paint on mobile WebKit. Wrap in `<Box as="span" display="inline-flex" …>` with an explicit 24×24 size and `"& svg": { width, height, display: "block" }` so the SVG always lays out.
 
-**Citizenship link-card note:** `/links` now includes a Mexico Citizenship card immediately above Patreon. It imports `src/components/CitizenshipIcon/CitizenshipIcon.jsx` and must keep `citizenshipTitle` / `citizenshipDescription` localized in every `linksPageTranslations` locale, including the split static locale files (`linksPagePtStatic.js`, `linksPageHiStatic.js`, `linksPageZhStatic.js`). The card URL is environment-aware: local/dev routes to `http://localhost:5173/citizenship`, production routes to `https://nosabos.app/citizenship`. If the dev port changes, update this card or make the local URL origin-relative before testing.
+**Citizenship link-card note:** `/links` now includes a Mexico Citizenship card immediately above Patreon. It imports `src/components/CitizenshipIcon/CitizenshipIcon.jsx` and must keep `citizenshipTitle` / `citizenshipDescription` localized in every `linksPageTranslations` locale, including the split static locale files (`linksPagePtStatic.js`, `linksPageHiStatic.js`, `linksPageZhStatic.js`). The card URL is environment-aware: local/dev routes to `http://localhost:5173/citizenship`, production routes to `https://piyali.app/citizenship`. If the dev port changes, update this card or make the local URL origin-relative before testing.
 
 ### 3.21k `src/components/CitizenshipGuide.jsx` + `/citizenship`
 

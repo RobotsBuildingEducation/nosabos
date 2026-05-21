@@ -96,7 +96,7 @@ export const LANDING_PAGE_DE_STATIC = {
   cta_final_subtitle:
     "Erstelle in Sekunden dein sicheres Profil, speichere deinen Schlüssel und öffne dir eine Welt des Sprachenlernens.",
   placeholder_name: "Dein Anzeigename",
-  footer_brand: "No Sabos",
+  footer_brand: "Piyali",
   footer_tagline: "Sprachenlernen für alle zugänglich machen.",
   signin_title: "Willkommen zurück",
   signin_subtitle:

@@ -12,13 +12,13 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 10000000,
       },
       manifest: {
-        name: "No Sabos",
-        short_name: "No Sabos",
+        name: "Piyali",
+        short_name: "Piyali",
         start_url: "./",
         display: "standalone",
         theme_color: "#000000",
         background_color: "#ffffff",
-        description: "PWA install handler package for No Sabos",
+        description: "PWA install handler package for Piyali",
         icons: [
           {
             src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1775284376/logos_512_x_512_px_6_qkqris.png",

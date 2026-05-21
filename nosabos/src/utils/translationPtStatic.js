@@ -477,7 +477,7 @@ export const TRANSLATION_PT_STATIC = {
   "bitcoin_modal_success": "Depósito recibido! recargando para actualizar tu saldo…",
   "bitcoin_modal_skip": "Omitir por enquanto",
   "bitcoin_modal_close": "Fechar",
-  "ra_title": "No Sabo — entrenador de {language}",
+  "ra_title": "Piyali — entrenador de {language}",
   "ra_label_you": "Tú",
   "ra_label_xp": "XP",
   "ra_label_level": "Nível",

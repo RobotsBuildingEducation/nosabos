@@ -487,7 +487,7 @@ export const TRANSLATION_DE_STATIC = {
   history_speech_breakdown: "Aufschlüsselung",
   history_speech_total_score: "Gesamtpunktzahl",
 
-  ra_title: "No Sabo — {language}-Lerncoach",
+  ra_title: "Piyali — {language}-Lerncoach",
   ra_label_you: "Du",
   ra_label_xp: "XP",
   ra_label_level: "Stufe",
@@ -879,7 +879,7 @@ export const TRANSLATION_DE_STATIC = {
   teams_create_missing_name: "Gib einen Teamnamen ein",
   teams_create_unknown_user: "Unbekannter Benutzer",
   teams_create_dm_template:
-    "Ich habe dich zu meinem Nosabos-Lernteam eingeladen.",
+    "Ich habe dich zu meinem Piyali-Lernteam eingeladen.",
   teams_view_my_teams: "Meine Teams",
   teams_view_loading: "Teams werden geladen...",
   teams_view_error: "Teams konnten nicht geladen werden.",
