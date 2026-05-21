@@ -83,8 +83,8 @@ const GERMAN_COPY = {
   "Enter a display name": "Anzeigenamen eingeben",
   "Display name updated": "Anzeigename aktualisiert",
   Error: "Fehler",
-  "Access more education apps and content":
-    "Erhalte Zugriff auf weitere Bildungs-Apps und Inhalte",
+  "Get full access to more education apps and content":
+    "Erhalte vollen Zugriff auf weitere Bildungs-Apps und Inhalte",
   "Create display name": "Anzeigenamen erstellen",
   "Saving…": "Wird gespeichert…",
   "Wallet not ready": "Wallet nicht bereit",

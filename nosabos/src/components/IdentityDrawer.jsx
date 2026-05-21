@@ -79,8 +79,8 @@ const HINDI_SUPPORT_COPY = {
   "Display name updated": "प्रदर्शित नाम अपडेट हो गया",
   Error: "त्रुटि",
   "Join us on Patreon": "Patreon पर हमारा साथ दें",
-  "Access more education apps and content":
-    "और अधिक शैक्षिक ऐप्स और सामग्री तक पहुंचें",
+  "Get full access to more education apps and content":
+    "और अधिक शैक्षिक ऐप्स और सामग्री तक पूर्ण पहुंच प्राप्त करें",
   Join: "जुड़ें",
   "Change display name": "प्रदर्शित नाम बदलें",
   "Create display name": "प्रदर्शित नाम बनाएं",
@@ -116,8 +116,8 @@ const ARABIC_SUPPORT_COPY = {
   "Display name updated": "اتحدّث اسم العرض",
   Error: "خطأ",
   "Join us on Patreon": "انضم لينا على Patreon",
-  "Access more education apps and content":
-    "افتح تطبيقات ومحتوى تعليمي أكتر",
+  "Get full access to more education apps and content":
+    "احصل على وصول كامل لتطبيقات ومحتوى تعليمي أكتر",
   Join: "انضم",
   "Change display name": "غيّر اسم العرض",
   "Create display name": "اعمل اسم عرض",
@@ -153,7 +153,8 @@ const CHINESE_SUPPORT_COPY = {
   "Display name updated": "显示名称已更新",
   Error: "错误",
   "Join us on Patreon": "在 Patreon 支持我们",
-  "Access more education apps and content": "解锁更多教育应用和内容",
+  "Get full access to more education apps and content":
+    "完整解锁更多教育应用和内容",
   Join: "加入",
   "Change display name": "更改显示名称",
   "Create display name": "创建显示名称",
@@ -241,6 +242,7 @@ export function IdentityPanel({
   postNostrContent,
   showHeader = true,
   showSignOutButton = true,
+  showPatreonSupport = true,
 }) {
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -564,66 +566,74 @@ export function IdentityPanel({
           </Button>
         </HStack>
 
-        {/* Patreon Support Link */}
-        <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
-          <HStack spacing={3} align="center">
-            <Box
-              p={2}
-              bg="black"
-              rounded="lg"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <SiPatreon size={20} color="white" />
-            </Box>
-            <VStack align="start" spacing={0} flex={1}>
-              <Text fontWeight="semibold" fontSize="sm">
-              {supportCopy(
-                  lang,
-                  "Join us on Patreon",
-                  "Apóyanos en Patreon",
-                  "Sostienici su Patreon",
-                  "Rejoins-nous sur Patreon",
-                  "Patreonで応援",
-                  "Apoie-nos no Patreon",
-                )}
-              </Text>
-              <Text fontSize="xs" color="gray.400">
+        {showPatreonSupport ? (
+          <Box
+            p={4}
+            bg="gray.800"
+            rounded="lg"
+            maxW="600px"
+            w="100%"
+            mx="auto"
+          >
+            <HStack spacing={3} align="center">
+              <Box
+                p={2}
+                bg="black"
+                rounded="lg"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <SiPatreon size={20} color="white" />
+              </Box>
+              <VStack align="start" spacing={0} flex={1}>
+                <Text fontWeight="semibold" fontSize="sm">
+                  {supportCopy(
+                    lang,
+                    "Join us on Patreon",
+                    "Apóyanos en Patreon",
+                    "Sostienici su Patreon",
+                    "Rejoins-nous sur Patreon",
+                    "Patreonで応援",
+                    "Apoie-nos no Patreon",
+                  )}
+                </Text>
+                <Text fontSize="xs" color="gray.400">
+                  {supportCopy(
+                    lang,
+                    "Get full access to more education apps and content",
+                    "Obtén acceso completo a más apps educativas y contenido",
+                    "Ottieni accesso completo a più app educative e contenuti",
+                    "Obtiens un accès complet à plus d'apps éducatives et de contenu",
+                    "さらに多くの教育アプリとコンテンツにフルアクセス",
+                    "Tenha acesso completo a mais apps educacionais e conteúdo",
+                  )}
+                </Text>
+              </VStack>
+              <Button
+                size="sm"
+                bg="black"
+                boxShadow="0px 0px 4px gray"
+                onClick={() =>
+                  window.open(
+                    "https://www.patreon.com/NotesAndOtherStuff",
+                    "_blank",
+                  )
+                }
+              >
                 {supportCopy(
                   lang,
-                  "Access more education apps and content",
-                  "Accede a más apps educativas y contenido",
-                  "Accedi a più app educative e contenuti",
-                  "Accede a plus d'apps educatives et de contenu",
-                  "さらに多くの教育アプリとコンテンツにアクセス",
-                  "Acesse mais apps educacionais e conteúdo",
+                  "Join",
+                  "Unirse",
+                  "Unisciti",
+                  "Rejoindre",
+                  "参加",
+                  "Entrar",
                 )}
-              </Text>
-            </VStack>
-            <Button
-              size="sm"
-              bg="black"
-              boxShadow="0px 0px 4px gray"
-              onClick={() =>
-                window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
-                  "_blank",
-                )
-              }
-            >
-              {supportCopy(
-                lang,
-                "Join",
-                "Unirse",
-                "Unisciti",
-                "Rejoindre",
-                "参加",
-                "Entrar",
-              )}
-            </Button>
-          </HStack>
-        </Box>
+              </Button>
+            </HStack>
+          </Box>
+        ) : null}
 
         {/* Display Name + Switch Account Accordions */}
         <Accordion

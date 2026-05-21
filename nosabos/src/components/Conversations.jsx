@@ -77,6 +77,7 @@ import {
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
   getRandomSkillTreeTopics,
   getRandomFallbackTopic,
@@ -1238,7 +1239,7 @@ export default function Conversations({
 
       const levelDescription =
         selectedLevel === "Pre-A1"
-          ? "foundations - use only the most basic words and single-word responses"
+          ? "foundations - use very basic vocabulary in natural memorized phrases"
           : selectedLevel === "A1"
             ? "absolute beginner - use very simple vocabulary and short sentences"
             : selectedLevel === "A2"
@@ -1267,6 +1268,7 @@ Generate ONE clear, specific conversation topic that:
 3. Can be either based on the curriculum topics above, the user's custom interests, OR a creative topic you think would be engaging
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
+6. For Pre-A1/A1, simple does not mean childish: prefer adult-realistic situations over kid-coded topics.
 
 Examples of good topics:
 - "Describe your morning routine" (A1)
@@ -2019,11 +2021,16 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
+    const preA1ExampleHint =
+      tLang === "es"
+        ? " Good shapes: 'Estoy bien. ¿Y tú?' 'Me llamo Ana.' 'Me gusta azul.' Bad shape: 'Bien. Muy bien. ¿Tú? ¿Bien?'"
+        : " Good shape: a short complete answer plus one simple follow-up. Bad shape: repeating the same basic word several times.";
+
     // Proficiency level guidance
     const levelGuidance = {
       "Pre-A1":
-        "CRITICAL: User is at foundations level (Pre-A1). Use ONLY the most basic words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Use 1-3 word phrases ONLY. Speak extremely slowly. Use single words when possible. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
-      A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
+        `CRITICAL: User is at foundations level (Pre-A1). Use ONLY very basic high-frequency language, but speak in natural memorized micro-sentences, not word fragments. Use one or two short complete phrases per turn, usually 3-8 words each. Present tense and formula chunks only. Speak slowly.${preA1ExampleHint}`,
+      A1: "CRITICAL: User is a beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Keep the register natural and adult. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
       A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
       B2: "CRITICAL: User is upper intermediate (B2). Use more complex vocabulary and abstract concepts. Can use longer sentences with subordinate clauses. Can use subjunctive mood occasionally. Can discuss hypotheticals.",
@@ -2032,10 +2039,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     };
 
     const proficiencyHint = levelGuidance[selectedLevel] || levelGuidance.A1;
+    const adultBeginnerTone = getAdultBeginnerToneRule(
+      selectedLevel,
+      "conversation",
+    );
 
     // Pronunciation practice instructions
     const pronunciationInstructions = practicePronunciation
-      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Praise good pronunciation."
+      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Acknowledge clear pronunciation briefly."
       : "";
 
     // Custom subjects context
@@ -2047,11 +2058,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
       proficiencyHint,
+      adultBeginnerTone,
       pronunciationInstructions,
       customSubjectsContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
-      "Be encouraging and help the learner practice speaking naturally.",
+      "Be supportive and help the learner practice speaking naturally.",
       "Ask follow-up questions to keep the conversation flowing.",
     ]
       .filter(Boolean)
@@ -2332,22 +2344,22 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         // Set positive feedback
         const defaultSuccess =
           sLang === "es"
-            ? "¡Bien hecho! Completaste la meta."
+            ? "Meta completada."
             : sLang === "pt"
-              ? "Muito bem! Você concluiu a meta."
+              ? "Meta concluída."
               : sLang === "ar"
-                ? "أحسنت! أنهيت الهدف."
-              : sLang === "it"
-                ? "Ben fatto! Hai completato l'obiettivo."
-                : sLang === "fr"
-                  ? "Bravo ! Tu as atteint l'objectif."
-                  : sLang === "de"
-                    ? "Gut gemacht! Du hast das Ziel erreicht."
-                  : sLang === "ja"
-                  ? "よくできました！目標を達成しました。"
-                  : sLang === "hi"
-                    ? "बहुत बढ़िया! आपने लक्ष्य पूरा कर लिया।"
-            : "Great job! You completed the goal!";
+                ? "اكتمل الهدف."
+                : sLang === "it"
+                  ? "Obiettivo completato."
+                  : sLang === "fr"
+                    ? "Objectif atteint."
+                    : sLang === "de"
+                      ? "Ziel erreicht."
+                      : sLang === "ja"
+                        ? "目標を達成しました。"
+                        : sLang === "hi"
+                          ? "लक्ष्य पूरा हुआ।"
+                          : "Goal complete.";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
         // Generate contextual next goal
@@ -2415,7 +2427,7 @@ Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
         selectedLevel === "Pre-A1"
-          ? "foundations - single words and basic phrases only"
+          ? "foundations - very basic vocabulary in natural memorized phrases"
           : selectedLevel === "A1"
             ? "beginner - simple tasks"
             : selectedLevel === "A2"
@@ -2430,6 +2442,7 @@ The goal should be appropriate for ${selectedLevel} level (${
       }).
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
+For Pre-A1/A1, simple does not mean childish: use adult-realistic goals and neutral adult wording.
 
 Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "de": "goal in German (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)", "zh": "goal in Mandarin Chinese (max 15 words)"}`;
 
