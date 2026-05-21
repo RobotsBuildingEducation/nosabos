@@ -181,6 +181,7 @@ import {
   buildGameReviewContext,
   inferCefrLevelFromLessonId,
 } from "./utils/gameReviewContext";
+import { LESSON_COUNTS, getLessonLevelFromId } from "./utils/cefrProgress";
 import { FaCalendarAlt, FaCalendarCheck, FaKey } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { TbLanguage } from "react-icons/tb";
@@ -5629,13 +5630,13 @@ export default function App({ onBootReady } = {}) {
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    "Pre-A1": { flashcards: 100, lessons: 33 }, // 1 tutorial (1) + 8 units (4 each) = 1 + 32
-    A1: { flashcards: 300, lessons: 110 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
-    A2: { flashcards: 250, lessons: 108 }, // 18 units × 6 lessons per unit
-    B1: { flashcards: 200, lessons: 90 }, // 15 units × 6 lessons per unit
-    B2: { flashcards: 150, lessons: 72 }, // 12 units × 6 lessons per unit
-    C1: { flashcards: 100, lessons: 60 }, // 10 units × 6 lessons per unit
-    C2: { flashcards: 50, lessons: 48 }, // 8 units × 6 lessons per unit
+    "Pre-A1": { flashcards: 100, lessons: LESSON_COUNTS["Pre-A1"] }, // 86 runtime lessons
+    A1: { flashcards: 300, lessons: LESSON_COUNTS.A1 }, // 14 units x 7 lessons
+    A2: { flashcards: 250, lessons: LESSON_COUNTS.A2 }, // 18 units x 7 lessons
+    B1: { flashcards: 200, lessons: LESSON_COUNTS.B1 }, // 15 units x 7 lessons
+    B2: { flashcards: 150, lessons: LESSON_COUNTS.B2 }, // 12 units x 7 lessons
+    C1: { flashcards: 100, lessons: LESSON_COUNTS.C1 }, // 10 units x 7 lessons
+    C2: { flashcards: 50, lessons: LESSON_COUNTS.C2 }, // 8 units x 7 lessons
   };
 
   const CEFR_LEVEL_INFO = {
@@ -5779,21 +5780,6 @@ export default function App({ onBootReady } = {}) {
         zh: "接近母语水平",
       },
     },
-  };
-
-  const getLessonLevelFromId = (lessonId = "") => {
-    // Pre-A1 lessons: "lesson-pre-a1-..." or tutorial "lesson-tutorial-..."
-    if (
-      lessonId.includes("lesson-pre-a1") ||
-      lessonId.includes("lesson-tutorial")
-    ) {
-      return "Pre-A1";
-    }
-
-    const match = lessonId.match(/lesson-([a-z]\d+)/i);
-    if (match) return match[1].toUpperCase();
-
-    return null;
   };
 
   // Calculate lesson mode completion status (independent from flashcards)

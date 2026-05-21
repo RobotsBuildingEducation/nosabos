@@ -34,10 +34,10 @@ export const CEFR_DESCRIPTIONS = {
   "PRE-A1": {
     name: "Pre-A1 Foundations",
     interaction: "Recognize and respond to ultra-common social phrases",
-    production: "Use memorized high-frequency words and short requests",
+    production: "Use memorized high-frequency social chunks and short requests",
     vocabulary: "100 most common words and phrases to start conversations",
     grammar: "Formula chunks only (I am, this is, where is?)",
-    sentenceComplexity: "Single words or 2-4 word memorized phrases",
+    sentenceComplexity: "Short complete memorized phrases, usually 3-6 words",
     readingLevel: "Individual words and micro phrases on signs and labels",
     listeningLevel: "Recognize familiar everyday phrases and key words",
     culturalContext: "Basic courtesy, greetings, and simple questions",

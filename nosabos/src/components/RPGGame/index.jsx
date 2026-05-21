@@ -81,6 +81,7 @@ import {
   normalizeSupportLanguage,
 } from "../../constants/languages";
 import { buildGameReviewContext } from "../../utils/gameReviewContext";
+import { getAdultBeginnerToneRule } from "../../utils/adultBeginnerTone";
 import {
   SOFT_STOP_BUTTON_SOLID_BG,
   SOFT_STOP_BUTTON_SOLID_HOVER_BG,
@@ -95,9 +96,9 @@ import {
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
 const GATHER_SPRITE_GRID = 16;
-const GAME_SPEECH_VAD_MS = 850;
-const GAME_SPEECH_STOP_DELAY_MS = 250;
-const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
+const GAME_SPEECH_VAD_MS = 1200;
+const GAME_SPEECH_STOP_DELAY_MS = 900;
+const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 600;
 const RPG_MUSIC_VOLUME = 0.02;
 const RPG_MUSIC_PREF_VERSION = 2;
 const OBJECT_SEARCH_TEST_COPY = {
@@ -182,7 +183,7 @@ const QUEST_LOG_COPY = {
     button: "Quest log",
     currentTask: "Current task",
     progress: (done, total) => `Progress: ${done}/${total}`,
-    complete: "Quest complete! Nice work.",
+    complete: "Quest complete.",
     defaultTask: "Keep exploring and talk to the next character.",
     startObjectSearch: (npcName, itemName) =>
       `Talk to ${npcName} to start the search for ${itemName}.`,
@@ -200,7 +201,7 @@ const QUEST_LOG_COPY = {
     button: "Registro de mision",
     currentTask: "Tarea actual",
     progress: (done, total) => `Progreso: ${done}/${total}`,
-    complete: "Mision completada. Buen trabajo.",
+    complete: "Mision completada.",
     defaultTask: "Sigue explorando y habla con el siguiente personaje.",
     startObjectSearch: (npcName, itemName) =>
       `Habla con ${npcName} para comenzar la busqueda de ${itemName}.`,
@@ -219,7 +220,7 @@ const QUEST_LOG_COPY = {
     button: "Diario missioni",
     currentTask: "Compito attuale",
     progress: (done, total) => `Progresso: ${done}/${total}`,
-    complete: "Missione completata! Ottimo lavoro.",
+    complete: "Missione completata.",
     defaultTask: "Continua ad esplorare e parla con il prossimo personaggio.",
     startObjectSearch: (npcName, itemName) =>
       `Parla con ${npcName} per iniziare la ricerca di ${itemName}.`,
@@ -237,7 +238,7 @@ const QUEST_LOG_COPY = {
     button: "Journal de quetes",
     currentTask: "Tache actuelle",
     progress: (done, total) => `Progres : ${done}/${total}`,
-    complete: "Quete terminee ! Beau travail.",
+    complete: "Quete terminee.",
     defaultTask: "Continue a explorer et parle au prochain personnage.",
     startObjectSearch: (npcName, itemName) =>
       `Parle a ${npcName} pour commencer la recherche de ${itemName}.`,
@@ -255,7 +256,7 @@ const QUEST_LOG_COPY = {
     button: "クエストログ",
     currentTask: "現在のタスク",
     progress: (done, total) => `進捗: ${done}/${total}`,
-    complete: "クエスト完了！よくできました。",
+    complete: "クエスト完了。",
     defaultTask: "探索を続けて、次のキャラクターに話しかけましょう。",
     startObjectSearch: (npcName, itemName) =>
       `${npcName}に話しかけて、${itemName}探しを始めましょう。`,
@@ -273,7 +274,7 @@ const QUEST_LOG_COPY = {
     button: "क्वेस्ट लॉग",
     currentTask: "वर्तमान कार्य",
     progress: (done, total) => `प्रगति: ${done}/${total}`,
-    complete: "क्वेस्ट पूरी हुई! बहुत बढ़िया।",
+    complete: "क्वेस्ट पूरी हुई।",
     defaultTask: "खोज जारी रखें और अगले पात्र से बात करें।",
     startObjectSearch: (npcName, itemName) =>
       `${itemName} की खोज शुरू करने के लिए ${npcName} से बात करें।`,
@@ -2799,8 +2800,8 @@ export default function RPGGame({
   const cefrDialogueRule = useMemo(() => {
     const rules = {
       "Pre-A1": {
-        es: "IMPORTANTE: Nivel Pre-A1. Usa SOLO palabras sueltas o frases de 1-3 palabras. Sin conjugaciones complejas. Vocabulario muy básico (hola, sí, no, gracias, por favor, números 1-10, colores básicos). NO uses subjuntivo, condicional ni frases largas.",
-        en: "IMPORTANT: Pre-A1 level. Use ONLY single words or 1-3 word phrases. No complex conjugations. Very basic vocabulary (hello, yes, no, thank you, please, numbers 1-10, basic colors). Do NOT use complex sentences.",
+        es: "IMPORTANTE: Nivel Pre-A1. Usa vocabulario muy básico, pero en frases naturales y completas, no palabras sueltas repetidas. Una o dos frases cortas por turno. Solo presente y fórmulas memorizadas. NO uses subjuntivo, condicional ni frases largas.",
+        en: "IMPORTANT: Pre-A1 level. Use very basic vocabulary, but in natural complete phrases, not repeated isolated words. One or two short phrases per turn. Formula chunks and present tense only. Do NOT use complex sentences.",
       },
       A1: {
         es: "IMPORTANTE: Nivel A1. Usa oraciones muy cortas y simples (máximo 5-8 palabras). Solo presente de indicativo. Vocabulario cotidiano básico. Frases como 'Me llamo...', '¿Dónde está...?', 'Quiero...'. NO uses subjuntivo, condicional, pasado complejo ni vocabulario avanzado.",
@@ -3196,6 +3197,10 @@ export default function RPGGame({
     () => cefrDialogueRule.en || cefrDialogueRule.es || "",
     [cefrDialogueRule],
   );
+  const adultBeginnerToneRule = useMemo(
+    () => getAdultBeginnerToneRule(cefrLevel, "rpg"),
+    [cefrLevel],
+  );
   const objectExamineCefrPromptRule = useMemo(() => {
     const rules = {
       "Pre-A1":
@@ -3247,7 +3252,7 @@ export default function RPGGame({
           ? "Tutorial rule: greetings, saying your name, and other ultra-basic polite expressions only."
           : "",
         ["Pre-A1", "A1"].includes(cefrLevel || "")
-          ? "Beginner rule: no dramatic missions, metaphors, abstract narration, or advanced sentence structures."
+          ? "Beginner rule: keep missions concrete and grounded. Simple stakes or mystery are fine, but avoid metaphors, abstract narration, or advanced sentence structures."
           : "",
       ]
         .filter(Boolean)
@@ -3294,6 +3299,7 @@ export default function RPGGame({
     (...sections) =>
       [
         cefrPromptRule,
+        adultBeginnerToneRule,
         strictTargetLanguageGuard,
         reviewPromptContext,
         buildCharacterRosterPrompt(),
@@ -3303,6 +3309,7 @@ export default function RPGGame({
         .join("\n"),
     [
       buildCharacterRosterPrompt,
+      adultBeginnerToneRule,
       cefrPromptRule,
       reviewPromptContext,
       strictTargetLanguageGuard,

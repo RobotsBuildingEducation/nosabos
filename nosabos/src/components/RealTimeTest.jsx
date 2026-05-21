@@ -66,6 +66,7 @@ import {
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
@@ -1735,7 +1736,7 @@ export default function RealTimeTest({
       successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
       successCriteria_ar: "المتعلم يقول أهلًا.",
       roleplayPrompt:
-        "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
+        "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with one natural short greeting phrase or sentence in a neutral adult tone.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
       attempts: 0,
       status: "active",
@@ -1808,6 +1809,7 @@ The goal must be:
 2. Written as a clear action (not "practice X" or "X conversation")
 3. Something that demonstrates understanding of ${topic}
 4. CONCISE: Maximum 10-15 words regardless of level. Higher levels use sophisticated vocabulary, NOT longer sentences.
+5. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
 
 The goal must be written entirely in ${goalLangName}. Do NOT output English unless the goal language is English.
 
@@ -2304,6 +2306,7 @@ Create a SPECIFIC, ACTIONABLE goal that:
 3. Demonstrates understanding of ${topic}
 4. Is DIFFERENT from any previous goals
 5. Is CONCISE: Maximum 10-15 words. For advanced levels, use sophisticated vocabulary instead of longer sentences.
+6. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
 
 Examples of good goals:
 - "Ask for directions to the nearest pharmacy"
@@ -2806,13 +2809,17 @@ Return ONLY JSON:
     }
 
     const levelHint = getCEFRPromptHint(currentCefrLevel);
+    const adultBeginnerTone = getAdultBeginnerToneRule(
+      currentCefrLevel,
+      "conversation",
+    );
 
     const focusLine = focus ? `Focus area: ${focus}.` : "";
     const pronLine = pronOn
       ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
     const tutorialLine = isTutorial
-      ? "Tutorial mode: ONLY use simple greetings (hello/hi/good morning/goodbye). Keep replies 1–4 words. Do not introduce other topics."
+      ? "Tutorial mode: ONLY use simple greetings (hello/hi/good morning/goodbye). Keep replies to one natural short greeting phrase or sentence. Do not introduce other topics. Keep the tone neutral, adult, and conversational."
       : "";
 
     // Build comprehensive goal guidance for the AI tutor
@@ -2835,6 +2842,7 @@ Return ONLY JSON:
       "Keep replies very brief (≤25 words) and natural.",
       "IMPORTANT: Do NOT start the conversation. Wait for the user to speak first. Never greet or initiate - only respond to what the user says.",
       levelHint,
+      adultBeginnerTone,
       focusLine,
       pronLine,
       tutorialLine,

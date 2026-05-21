@@ -37,7 +37,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "Copied {code}",
     discountCodeFallback: "Discount code:",
     appsOnlyTitle: "Apps only",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Pay once for apps only",
     appsOnlyCta: "Pay once",
     annualTitle: "Annual",
@@ -72,7 +72,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} copiado",
     discountCodeFallback: "Código de descuento:",
     appsOnlyTitle: "Solo apps",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Pago único solo por las apps",
     appsOnlyCta: "Pagar una vez",
     annualTitle: "Anual",
@@ -94,8 +94,7 @@ const SUBSCRIBE_COPY = {
   },
   pt: {
     title: "Obrigado por testar meu app!",
-    subtitle:
-      "Digite o código de membro para desbloquear o restante do app",
+    subtitle: "Digite o código de membro para desbloquear o restante do app",
     benefitsHeading: "Ao se tornar membro, você recebe",
     benefitLanguageApps:
       "Acesso completo ao app de aprendizagem de idiomas e a um app de educação em programação",
@@ -107,7 +106,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} copiado",
     discountCodeFallback: "Código de desconto:",
     appsOnlyTitle: "Somente apps",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Pague uma vez somente pelos apps",
     appsOnlyCta: "Pagar uma vez",
     annualTitle: "Anual",
@@ -129,8 +128,7 @@ const SUBSCRIBE_COPY = {
   },
   it: {
     title: "Grazie per aver provato la mia app!",
-    subtitle:
-      "Inserisci il codice membro per sbloccare il resto dell'app",
+    subtitle: "Inserisci il codice membro per sbloccare il resto dell'app",
     benefitsHeading: "Diventando membro ottieni",
     benefitLanguageApps:
       "Accesso completo all'app per imparare le lingue e a un'app di educazione alla programmazione",
@@ -142,7 +140,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} copiato",
     discountCodeFallback: "Codice sconto:",
     appsOnlyTitle: "Solo app",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Paga una volta solo per le app",
     appsOnlyCta: "Paga una volta",
     annualTitle: "Annuale",
@@ -164,8 +162,7 @@ const SUBSCRIBE_COPY = {
   },
   fr: {
     title: "Merci d'avoir essayé mon appli !",
-    subtitle:
-      "Entrez le code membre pour débloquer le reste de l'appli",
+    subtitle: "Entrez le code membre pour débloquer le reste de l'appli",
     benefitsHeading: "Devenir membre vous donne",
     benefitLanguageApps:
       "Un accès complet à l'appli d'apprentissage des langues et à une appli d'éducation au code",
@@ -177,7 +174,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} copié",
     discountCodeFallback: "Code promo :",
     appsOnlyTitle: "Apps seulement",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Payez une seule fois pour les apps",
     appsOnlyCta: "Payer une fois",
     annualTitle: "Annuel",
@@ -199,8 +196,7 @@ const SUBSCRIBE_COPY = {
   },
   de: {
     title: "Danke, dass du meine App ausprobierst!",
-    subtitle:
-      "Gib den Mitgliedscode ein, um den Rest der App freizuschalten",
+    subtitle: "Gib den Mitgliedscode ein, um den Rest der App freizuschalten",
     benefitsHeading: "Als Mitglied bekommst du",
     benefitLanguageApps:
       "Vollen Zugriff auf die Sprachlern-App und eine App zum Programmierenlernen",
@@ -212,7 +208,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} kopiert",
     discountCodeFallback: "Rabattcode:",
     appsOnlyTitle: "Nur Apps",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "Einmalig nur für die Apps zahlen",
     appsOnlyCta: "Einmal zahlen",
     annualTitle: "Jährlich",
@@ -246,7 +242,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code}をコピーしました",
     discountCodeFallback: "割引コード:",
     appsOnlyTitle: "アプリのみ",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "アプリのみを一度払いで購入",
     appsOnlyCta: "一度払い",
     annualTitle: "年額",
@@ -280,7 +276,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "{code} कॉपी हुआ",
     discountCodeFallback: "डिस्काउंट कोड:",
     appsOnlyTitle: "केवल ऐप्स",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "केवल ऐप्स के लिए एक बार भुगतान करें",
     appsOnlyCta: "एक बार भुगतान",
     annualTitle: "वार्षिक",
@@ -304,8 +300,7 @@ const SUBSCRIBE_COPY = {
     title: "شكرًا إنك جرّبت تطبيقي!",
     subtitle: "اكتب كود العضوية عشان تفتح باقي التطبيق",
     benefitsHeading: "لما تبقى عضو هتاخد",
-    benefitLanguageApps:
-      "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
+    benefitLanguageApps: "وصول كامل لتطبيق تعلّم اللغة وتطبيق تعليم البرمجة",
     benefitSubscriberContent:
       "مجموعة متزايدة من محتوى الأعضاء عن تعليم الأعمال والهندسة والاستثمار.",
     promoHeading: "خصم إضافي",
@@ -314,7 +309,7 @@ const SUBSCRIBE_COPY = {
     copiedDiscountCode: "تم نسخ {code}",
     discountCodeFallback: "كود الخصم:",
     appsOnlyTitle: "التطبيقات فقط",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "ادفع مرة واحدة للتطبيقات فقط",
     appsOnlyCta: "ادفع مرة واحدة",
     annualTitle: "سنوي",
@@ -339,15 +334,14 @@ const SUBSCRIBE_COPY = {
     subtitle: "输入会员通行码即可解锁应用的其余内容",
     benefitsHeading: "成为会员即可获得",
     benefitLanguageApps: "完整访问语言学习应用和编程教育应用",
-    benefitSubscriberContent:
-      "持续更新的会员内容，面向商业、工程和投资教育。",
+    benefitSubscriberContent: "持续更新的会员内容，面向商业、工程和投资教育。",
     promoHeading: "额外优惠折扣",
     promoBody: "首月或首年 60% 折扣。",
     copyDiscountCode: "复制折扣码",
     copiedDiscountCode: "已复制 {code}",
     discountCodeFallback: "折扣码：",
     appsOnlyTitle: "仅应用",
-    appsOnlyPrice: "$35",
+    appsOnlyPrice: "$60",
     appsOnlyDetail: "一次性购买应用",
     appsOnlyCta: "一次性购买",
     annualTitle: "年度",
@@ -529,7 +523,12 @@ export default function SubscriptionGate({
             <Text fontWeight="bold" mb={3}>
               {copy.benefitsHeading}
             </Text>
-            <Box as="ul" color={mutedText} pl={isRtl ? 0 : 5} pr={isRtl ? 5 : 0}>
+            <Box
+              as="ul"
+              color={mutedText}
+              pl={isRtl ? 0 : 5}
+              pr={isRtl ? 5 : 0}
+            >
               <Text as="li" mb={2}>
                 {copy.benefitLanguageApps}
               </Text>
@@ -537,19 +536,14 @@ export default function SubscriptionGate({
             </Box>
           </Box>
 
-          <Box
-            bg="transparent"
-            color={shellText}
-            borderRadius="18px"
-            p={4}
-          >
+          <Box bg="transparent" color={shellText} borderRadius="18px" p={4}>
             <HStack
               justify="space-between"
               align={{ base: "stretch", sm: "center" }}
               flexDirection={{ base: "column", sm: "row" }}
-            spacing={3}
-          >
-            <Box>
+              spacing={3}
+            >
+              <Box>
                 <Text fontWeight="black">{copy.promoHeading}</Text>
                 <Text fontSize="sm" color={mutedText}>
                   {copy.promoBody}

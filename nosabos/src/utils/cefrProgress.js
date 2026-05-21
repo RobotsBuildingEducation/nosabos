@@ -5,18 +5,45 @@
  * separately for skill tree lessons and flashcards
  */
 
-import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from '../data/flashcards/common';
+import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from '../data/flashcards/common.js';
 
-// Total lesson counts per CEFR level (based on actual data files)
+// Total user-facing lessons per CEFR level from the runtime learning path.
+// Includes core lessons, skill builders, integrated practice, game reviews, and quizzes.
 export const LESSON_COUNTS = {
-  "Pre-A1": 32,
-  A1: 77,
-  A2: 72,
-  B1: 60,
-  B2: 48,
-  C1: 40,
-  C2: 32,
+  "Pre-A1": 86,
+  A1: 98,
+  A2: 126,
+  B1: 105,
+  B2: 84,
+  C1: 70,
+  C2: 56,
 };
+
+/**
+ * Extract the CEFR level from user-facing lesson IDs.
+ * Handles both authored lessons (`lesson-a1-*`) and generated unit lessons
+ * (`unit-a1-*-skill-builder`, `unit-a1-*-integrated-practice`, `unit-a1-*-game`).
+ * The first A1 number units are staged under Pre-A1 in the runtime path.
+ */
+export function getLessonLevelFromId(lessonId = "") {
+  const id = String(lessonId || "").toLowerCase();
+  if (!id) return null;
+
+  if (id.includes("lesson-tutorial") || id.includes("unit-tutorial-pre-a1")) {
+    return "Pre-A1";
+  }
+
+  if (/(?:lesson|unit)-pre-a1(?:-|$)/.test(id)) {
+    return "Pre-A1";
+  }
+
+  if (/(?:lesson|unit)-a1-(?:1|3|4)(?:-|$)/.test(id)) {
+    return "Pre-A1";
+  }
+
+  const match = id.match(/(?:lesson|unit)-(a1|a2|b1|b2|c1|c2)(?:-|$)/i);
+  return match ? match[1].toUpperCase() : null;
+}
 
 /**
  * Calculate completion percentage for lessons in a specific CEFR level
@@ -33,18 +60,8 @@ export function calculateLessonCompletion(userProgress, cefrLevel, targetLang = 
 
   if (totalLessonsInLevel === 0) return 0;
 
-  // Count completed lessons for this CEFR level
-  // Lesson IDs follow pattern: "lesson-a1-1", "lesson-pre-a1-1", etc.
-  const levelPrefix = cefrLevel.toLowerCase().replace('-', '-');
   const completedCount = Object.keys(lessons).filter(lessonId => {
-    // For Pre-A1, match "lesson-pre-a1-" pattern
-    // For others (A1, A2, etc.), match "lesson-a1-" but not "lesson-pre-a1-"
-    let isInLevel = false;
-    if (cefrLevel === "Pre-A1") {
-      isInLevel = lessonId.includes('-pre-a1-');
-    } else {
-      isInLevel = lessonId.includes(`-${levelPrefix}-`) && !lessonId.includes('-pre-');
-    }
+    const isInLevel = getLessonLevelFromId(lessonId) === cefrLevel;
     const isCompleted = lessons[lessonId]?.status === 'completed';
     return isInLevel && isCompleted;
   }).length;

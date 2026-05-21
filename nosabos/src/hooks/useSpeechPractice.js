@@ -30,11 +30,46 @@ const REALTIME_URL = import.meta.env?.VITE_REALTIME_URL
       REALTIME_MODEL
     )}`
   : "";
+const MIN_SPEECH_TURN_MS = 500;
+const TRANSCRIPT_GRACE_MS = 2500;
+const SESSION_UPDATE_EVENT_ID = "speech-practice-session-update";
 
 function makeError(code, message) {
   const err = new Error(message || code);
   err.code = code;
   return err;
+}
+
+function buildRealtimeSpeechSession({
+  targetLang,
+  timeoutMs,
+  vadSilenceDurationMs,
+}) {
+  const whisperLang = BCP47_TO_WHISPER[targetLang] || "es";
+
+  return {
+    type: "realtime",
+    output_modalities: ["text"],
+    instructions:
+      "Transcribe the user's speech exactly. Do not answer the user.",
+    audio: {
+      input: {
+        turn_detection: {
+          type: "server_vad",
+          silence_duration_ms:
+            vadSilenceDurationMs ?? Math.min(timeoutMs, 2000),
+          threshold: 0.35,
+          prefix_padding_ms: 120,
+          create_response: false,
+          interrupt_response: false,
+        },
+        transcription: {
+          model: "gpt-4o-mini-transcribe",
+          language: whisperLang,
+        },
+      },
+    },
+  };
 }
 
 export function useSpeechPractice({
@@ -171,6 +206,11 @@ export function useSpeechPractice({
     try {
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
+      const realtimeSession = buildRealtimeSpeechSession({
+        targetLang,
+        timeoutMs,
+        vadSilenceDurationMs,
+      });
 
       // Add transceiver for receiving audio (required by the Realtime API)
       pc.addTransceiver("audio", { direction: "recvonly" });
@@ -186,6 +226,7 @@ export function useSpeechPractice({
 
       let hasDetectedSpeech = false;
       let waitingForTurnEnd = false;
+      let speechStartedAt = 0;
 
       const scheduleFinish = (
         preferredDelayMs,
@@ -198,7 +239,7 @@ export function useSpeechPractice({
         const transcriptReady = !!transcriptRef.current.trim();
         const delayMs =
           waitForTranscript && !transcriptReady
-            ? Math.max(preferredDelayMs, 900)
+            ? Math.max(preferredDelayMs, TRANSCRIPT_GRACE_MS)
             : preferredDelayMs;
 
         evalRef.current.silenceTimeoutId = setTimeout(() => {
@@ -232,28 +273,14 @@ export function useSpeechPractice({
       };
 
       dc.onopen = () => {
-        // Configure session for transcription mode
-        const whisperLang = BCP47_TO_WHISPER[targetLang] || "es";
-
+        // Keep this update in sync with the initial call session. Some deployed
+        // SDP proxies only apply defaults at call creation, so the data channel
+        // update is still useful as a compatibility belt-and-suspenders.
         dc.send(
           JSON.stringify({
             type: "session.update",
-            session: {
-              instructions:
-                "Listen and transcribe the user's speech. Do not respond verbally.",
-              modalities: ["audio", "text"], // Need audio to process incoming speech
-              turn_detection: {
-                type: "server_vad",
-                silence_duration_ms:
-                  vadSilenceDurationMs ?? Math.min(timeoutMs, 2000), // End after silence
-                threshold: 0.35,
-                prefix_padding_ms: 120,
-              },
-              input_audio_transcription: {
-                model: "gpt-4o-mini-transcribe",
-                language: whisperLang,
-              },
-            },
+            event_id: SESSION_UPDATE_EVENT_ID,
+            session: realtimeSession,
           })
         );
       };
@@ -295,6 +322,7 @@ export function useSpeechPractice({
           if (msgType === "input_audio_buffer.speech_started") {
             hasDetectedSpeech = true;
             waitingForTurnEnd = false;
+            speechStartedAt = Date.now();
             if (evalRef.current.silenceTimeoutId) {
               clearTimeout(evalRef.current.silenceTimeoutId);
               evalRef.current.silenceTimeoutId = null;
@@ -303,6 +331,19 @@ export function useSpeechPractice({
 
           // Handle speech stopped - server detected end of speech
           if (msgType === "input_audio_buffer.speech_stopped") {
+            const speechDurationMs = speechStartedAt
+              ? Date.now() - speechStartedAt
+              : MIN_SPEECH_TURN_MS;
+            speechStartedAt = 0;
+            if (
+              speechDurationMs < MIN_SPEECH_TURN_MS &&
+              !transcriptRef.current.trim()
+            ) {
+              hasDetectedSpeech = false;
+              waitingForTurnEnd = false;
+              return;
+            }
+
             if (hasDetectedSpeech) {
               waitingForTurnEnd = true;
               // Give Whisper a moment to deliver the final transcript, then finish quickly.
@@ -310,15 +351,29 @@ export function useSpeechPractice({
             }
           }
 
-          // Handle response done (AI finished - means user turn is complete)
-          if (msgType === "response.done") {
+          // In transcription mode, response.done can fire before the user has
+          // said anything. Only let it speed up completion after we already
+          // have a transcript.
+          if (
+            msgType === "response.done" &&
+            transcriptRef.current.trim()
+          ) {
             waitingForTurnEnd = true;
-            scheduleFinish(responseDoneDelayMs, { waitForTranscript: true });
+            scheduleFinish(responseDoneDelayMs);
           }
 
           // Handle errors
           if (msgType === "error") {
             console.error("Realtime API error:", msg.error);
+            const erroredEventId = msg?.error?.event_id || msg?.event_id || "";
+            if (
+              erroredEventId === SESSION_UPDATE_EVENT_ID &&
+              !hasDetectedSpeech &&
+              !transcriptRef.current.trim()
+            ) {
+              return;
+            }
+
             // Don't fail completely on errors, just report what we have
             if (hasDetectedSpeech) {
               finishRecording();
@@ -332,6 +387,30 @@ export function useSpeechPractice({
                 audioMetrics: null,
                 method: "realtime-whisper",
                 error: new Error(msg.error?.message || "Realtime API error"),
+              });
+            }
+          }
+
+          if (
+            msgType ===
+              "conversation.item.input_audio_transcription.failed" ||
+            msgType === "input_audio_transcription.failed"
+          ) {
+            const message =
+              msg?.error?.message ||
+              msg?.error?.code ||
+              "Realtime transcription failed";
+            console.error("Realtime transcription failed:", message);
+            if (!transcriptRef.current.trim()) {
+              evalRef.current.speechDone = false;
+              cleanup();
+              onResult?.({
+                evaluation: null,
+                recognizedText: "",
+                confidence: 0,
+                audioMetrics: null,
+                method: "realtime-whisper",
+                error: new Error(message),
               });
             }
           }
@@ -365,14 +444,36 @@ export function useSpeechPractice({
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      const resp = await fetch(REALTIME_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: offer.sdp,
-      });
+      let resp = null;
+      let jsonExchangeError = null;
+      try {
+        resp = await fetch(REALTIME_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sdp: offer.sdp,
+            model: REALTIME_MODEL,
+            session: realtimeSession,
+          }),
+        });
+      } catch (err) {
+        jsonExchangeError = err;
+      }
+
+      if (!resp || (!resp.ok && [400, 415].includes(resp.status))) {
+        resp = await fetch(REALTIME_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/sdp" },
+          body: offer.sdp,
+        });
+      }
 
       if (!resp.ok) {
-        throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+        throw new Error(
+          `SDP exchange failed: HTTP ${resp.status}${
+            jsonExchangeError ? ` (${jsonExchangeError.message})` : ""
+          }`
+        );
       }
 
       const answerSdp = await resp.text();
