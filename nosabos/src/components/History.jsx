@@ -42,6 +42,7 @@ import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
+  appCheckFetch,
   database,
   simplemodel,
   gradingModel,
@@ -148,7 +149,7 @@ const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 
 async function callResponses({ model, input }) {
   try {
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

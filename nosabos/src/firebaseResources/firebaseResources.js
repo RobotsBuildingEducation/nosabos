@@ -1,4 +1,9 @@
 import { initializeApp } from "firebase/app";
+import {
+  getToken,
+  initializeAppCheck,
+  ReCaptchaV3Provider,
+} from "firebase/app-check";
 import { getAnalytics } from "firebase/analytics";
 
 import { getFirestore } from "firebase/firestore";
@@ -16,6 +21,36 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
+
+if (window.location.hostname === "localhost") {
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
+
+export const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
+  isTokenAutoRefreshEnabled: true,
+});
+
+export async function getAppCheckHeaders() {
+  try {
+    const { token } = await getToken(appCheck, false);
+    return token ? { "X-Firebase-AppCheck": token } : {};
+  } catch (error) {
+    console.warn("Failed to get Firebase App Check token:", error);
+    return {};
+  }
+}
+
+export async function appCheckFetch(input, init = {}) {
+  const appCheckHeaders = await getAppCheckHeaders();
+  const headers = new Headers(init.headers || {});
+
+  Object.entries(appCheckHeaders).forEach(([key, value]) => {
+    headers.set(key, value);
+  });
+
+  return fetch(input, { ...init, headers });
+}
 
 const database = getFirestore(app);
 const analytics = getAnalytics(app);

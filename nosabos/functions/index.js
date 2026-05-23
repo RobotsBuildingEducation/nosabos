@@ -39,8 +39,8 @@ const CORS_ORIGINS = [
 const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
 const DEFAULT_REALTIME_MODEL = "gpt-realtime-mini";
 
-// Optionally require Firebase App Check (set true after client wiring)
-const REQUIRE_APPCHECK = false;
+// Enable after the web client is deployed with App Check initialized.
+const REQUIRE_APPCHECK = process.env.REQUIRE_APPCHECK === "true";
 
 // ===== Small CORS helper =====
 function applyCors(req, res) {
@@ -61,25 +61,25 @@ function applyCors(req, res) {
   return false;
 }
 
-// ===== App Check (optional but recommended) =====
-// async function verifyAppCheck(req) {
-//   if (!REQUIRE_APPCHECK) return;
-//   const token = req.header("X-Firebase-AppCheck");
-//   if (!token) {
-//     throw new functions.https.HttpsError(
-//       "unauthenticated",
-//       "Missing App Check token."
-//     );
-//   }
-//   try {
-//     await admin.appCheck().verifyToken(token);
-//   } catch (e) {
-//     throw new functions.https.HttpsError(
-//       "permission-denied",
-//       "Invalid App Check token."
-//     );
-//   }
-// }
+// ===== App Check for onRequest endpoints =====
+async function verifyAppCheck(req, res) {
+  if (!REQUIRE_APPCHECK) return true;
+
+  const token = req.header("X-Firebase-AppCheck");
+  if (!token) {
+    res.status(401).json({ error: "Missing App Check token." });
+    return false;
+  }
+
+  try {
+    await admin.appCheck().verifyToken(token);
+    return true;
+  } catch (error) {
+    functions.logger.warn("Invalid App Check token", error?.message || error);
+    res.status(401).json({ error: "Invalid App Check token." });
+    return false;
+  }
+}
 
 // ===== Helpers =====
 function validateApiKey() {
@@ -129,7 +129,7 @@ exports.exchangeRealtimeSDP = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
-    // await verifyAppCheck(req);
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Accept raw SDP (Content-Type: application/sdp) or JSON { sdp, model }
     const contentType = (req.headers["content-type"] || "").toLowerCase();
@@ -212,7 +212,7 @@ exports.proxyResponses = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
-    // await verifyAppCheck(req);
+    if (!(await verifyAppCheck(req, res))) return;
 
     const body = req.body || {};
     const model = (body.model || "").toString();
@@ -273,6 +273,7 @@ exports.proxyTTS = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();
@@ -304,6 +305,7 @@ exports.generateStory = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();
@@ -501,6 +503,7 @@ exports.handleRealtimeStory = onRequest(
   async (req, res) => {
     if (applyCors(req, res)) return;
     if (req.method !== "GET") return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();

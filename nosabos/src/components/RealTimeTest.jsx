@@ -35,6 +35,7 @@ import {
   increment,
 } from "firebase/firestore";
 import {
+  appCheckFetch,
   database,
   analytics,
   simplemodel,
@@ -1548,7 +1549,7 @@ export default function RealTimeTest({
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
+      const resp = await appCheckFetch(REALTIME_URL, {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,
@@ -1817,7 +1818,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[5-15 word specific task - be concise even for advanced levels]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -2507,7 +2508,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     const prompt = `${buildSimpleTranslationPrompt(target)}\n${trimmed}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2690,7 +2691,7 @@ Return ONLY JSON:
     };
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3418,7 +3419,7 @@ Return ONLY JSON:
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

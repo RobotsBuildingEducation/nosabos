@@ -48,6 +48,7 @@ import {
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import {
+  appCheckFetch,
   database,
   analytics,
   gradingLiteModel,
@@ -7223,7 +7224,7 @@ export default function Tutor({
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -34,7 +34,11 @@ import { FaRegCommentDots, FaStop } from "react-icons/fa";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { database, gradingModel } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  database,
+  gradingModel,
+} from "../firebaseResources/firebaseResources";
 
 import useUserStore from "../hooks/useUserStore";
 import useBottomDrawerSwipeDismiss from "../hooks/useBottomDrawerSwipeDismiss";
@@ -2110,7 +2114,7 @@ Return ONLY valid JSON:
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
+      const resp = await appCheckFetch(REALTIME_URL, {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,

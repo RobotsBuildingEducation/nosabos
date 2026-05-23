@@ -1,3 +1,5 @@
+import { appCheckFetch } from "../firebaseResources/firebaseResources";
+
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
 const REALTIME_URL =
@@ -206,7 +208,7 @@ export function warmRealtimeTTS({ force = false } = {}) {
   }
 
   lastRealtimeWarmupAt = now;
-  realtimeWarmupPromise = fetch(REALTIME_URL, {
+  realtimeWarmupPromise = appCheckFetch(REALTIME_URL, {
     method: "OPTIONS",
     mode: "cors",
     cache: "no-store",
@@ -964,7 +966,7 @@ async function getRealtimePlayer({
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  const resp = await fetch(REALTIME_URL, {
+  const resp = await appCheckFetch(REALTIME_URL, {
     method: "POST",
     headers: { "Content-Type": "application/sdp" },
     body: offer.sdp,

@@ -82,7 +82,10 @@ const LANG_COLORS = {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { FiSend } from "react-icons/fi";
@@ -1761,7 +1764,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        const resp = await fetch(REALTIME_URL, {
+        const resp = await appCheckFetch(REALTIME_URL, {
           method: "POST",
           headers: { "Content-Type": "application/sdp" },
           body: offer.sdp,

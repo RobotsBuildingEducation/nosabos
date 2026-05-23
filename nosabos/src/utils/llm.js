@@ -1,6 +1,9 @@
 // src/utils/llm.js
 
-import { simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const DEFAULT_RESPONSES_MODEL = "gpt-5-nano";
@@ -45,7 +48,7 @@ export async function callResponses({
   }
 
   try {
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

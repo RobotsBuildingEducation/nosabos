@@ -43,11 +43,13 @@ Node version 20+ is required.
 2. `VITE_PATREON_PASSCODE=your_patreon_subscriber_passcode`
 3. `VITE_RESPONSES_URL=your_firebase_functions_base_url`
 4. `VITE_REALTIME_URL=your_firebase_function_exchangeRealtimeSDP_url`
+5. `VITE_RECAPTCHA_SITE_KEY=your_recaptcha_v3_site_key`
 
 ##### /functions/.env
 
 1. `OPENAI_API_KEY=your_openai_key`
 2. `DEPLOYED_URL=your_dns_website_url`
+3. `REQUIRE_APPCHECK=true` after the web client is deployed with App Check initialized.
 
 ### Configure
 

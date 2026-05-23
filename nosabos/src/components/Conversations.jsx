@@ -48,6 +48,7 @@ import ConversationAccountDrawer from "./ConversationAccountDrawer";
 
 import { doc, setDoc, getDoc, increment, updateDoc } from "firebase/firestore";
 import {
+  appCheckFetch,
   database,
   analytics,
   simplemodel,
@@ -1850,7 +1851,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
+      const resp = await appCheckFetch(REALTIME_URL, {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,
@@ -2316,7 +2317,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         input: prompt,
       };
 
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -2452,7 +2453,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         input: prompt,
       };
 
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -2856,7 +2857,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

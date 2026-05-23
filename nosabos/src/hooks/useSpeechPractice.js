@@ -2,6 +2,7 @@
 // Uses WebRTC + OpenAI Realtime API for cross-platform speech recognition
 // Works on in-app browsers (TikTok, Instagram, etc.) where Web Speech API is unavailable
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { appCheckFetch } from "../firebaseResources/firebaseResources";
 import { evaluateAttemptStrict } from "../utils/speechEvaluation";
 
 const BCP47_TO_WHISPER = {
@@ -447,7 +448,7 @@ export function useSpeechPractice({
       let resp = null;
       let jsonExchangeError = null;
       try {
-        resp = await fetch(REALTIME_URL, {
+        resp = await appCheckFetch(REALTIME_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -461,7 +462,7 @@ export function useSpeechPractice({
       }
 
       if (!resp || (!resp.ok && [400, 415].includes(resp.status))) {
-        resp = await fetch(REALTIME_URL, {
+        resp = await appCheckFetch(REALTIME_URL, {
           method: "POST",
           headers: { "Content-Type": "application/sdp" },
           body: offer.sdp,

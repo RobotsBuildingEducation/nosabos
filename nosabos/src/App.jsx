@@ -3198,7 +3198,7 @@ export default function App({ onBootReady } = {}) {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 0 && !subscriptionVerified,
+    () => subscriptionXp >= 300 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified],
   );
 
@@ -7871,12 +7871,15 @@ function BottomActionBar({
           borderRadius="24px"
           bg="var(--app-glass-bg)"
           backdropFilter="blur(8px)"
-          px={6}
+          aria-label={modeMenuLabel}
+          w="48px"
+          h="40px"
+          px={0}
           py={2}
           cursor="pointer"
           display="flex"
           alignItems="center"
-          gap={2}
+          justifyContent="center"
           borderWidth={notesIsDone || notesIsLoading ? "2px" : "1px"}
           borderColor={minimizedBorderColor}
           boxShadow={
@@ -7918,9 +7921,6 @@ function BottomActionBar({
           }}
         >
           <ChevronUpIcon boxSize={4} color="gray.300" />
-          <Box as="span" fontSize="xs" color="gray.400" fontWeight="medium">
-            {modeMenuLabel}
-          </Box>
         </Box>
       </Box>
     );
