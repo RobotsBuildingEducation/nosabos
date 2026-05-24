@@ -18,7 +18,8 @@ import {
   DrawerOverlay,
   Flex,
   HStack,
-  IconButton, Text,
+  IconButton,
+  Text,
   VStack,
 } from "@chakra-ui/react";
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
@@ -136,102 +137,102 @@ export default function NotesDrawer({
     lang === "ja"
       ? "マイメモ"
       : lang === "zh"
-      ? "我的笔记"
-      : lang === "ar"
-      ? "ملاحظاتي"
-      : lang === "fr"
-      ? "Mes notes"
-      : lang === "pt"
-      ? "Minhas notas"
-      : lang === "it"
-      ? "Le mie note"
-      : lang === "de"
-      ? "Meine Notizen"
-      : lang === "hi"
-      ? "मेरे नोट्स"
-      : lang === "es"
-      ? "Mis Notas"
-      : "My Notes";
+        ? "我的笔记"
+        : lang === "ar"
+          ? "ملاحظاتي"
+          : lang === "fr"
+            ? "Mes notes"
+            : lang === "pt"
+              ? "Minhas notas"
+              : lang === "it"
+                ? "Le mie note"
+                : lang === "de"
+                  ? "Meine Notizen"
+                  : lang === "hi"
+                    ? "मेरे नोट्स"
+                    : lang === "es"
+                      ? "Mis Notas"
+                      : "My Notes";
   const emptyMessage =
     lang === "ja"
       ? "まだメモがありません。フラッシュカード、語彙、文法を完了すると自動でメモが作成されます。"
       : lang === "zh"
-      ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
-      : lang === "fr"
-      ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
-      : lang === "pt"
-      ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
-      : lang === "it"
-      ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
-      : lang === "de"
-      ? "Noch keine Notizen. Schließe Karten, Wortschatz oder Grammatik ab, um automatisch Notizen zu erstellen."
-      : lang === "hi"
-      ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
-      : lang === "ar"
-      ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
-      : lang === "es"
-      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
-      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
+        ? "还没有笔记。完成闪卡、词汇或语法练习后会自动创建笔记。"
+        : lang === "fr"
+          ? "Aucune note pour l'instant. Termine des cartes, du vocabulaire ou de la grammaire pour creer des notes automatiquement."
+          : lang === "pt"
+            ? "Voce ainda nao tem notas. Conclua cartoes, vocabulario ou gramatica para criar notas automaticamente."
+            : lang === "it"
+              ? "Ancora nessuna nota. Completa schede, vocabolario o grammatica per creare note automaticamente."
+              : lang === "de"
+                ? "Noch keine Notizen. Schließe Karten, Wortschatz oder Grammatik ab, um automatisch Notizen zu erstellen."
+                : lang === "hi"
+                  ? "अभी आपके पास कोई नोट नहीं है। फ्लैशकार्ड, शब्दावली या व्याकरण पूरा करें ताकि नोट अपने आप बन सकें।"
+                  : lang === "ar"
+                    ? "لسه ماعندكش ملاحظات. كمّل البطاقات أو المفردات أو القواعد علشان تتعمل ملاحظات تلقائيًا."
+                    : lang === "es"
+                      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
+                      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
   const clearAllLabel =
     lang === "ja"
       ? "すべて削除"
       : lang === "zh"
-      ? "全部清除"
-      : lang === "fr"
-      ? "Tout effacer"
-      : lang === "pt"
-      ? "Limpar tudo"
-      : lang === "it"
-      ? "Cancella tutto"
-      : lang === "de"
-      ? "Alle löschen"
-      : lang === "hi"
-      ? "सब साफ़ करें"
-      : lang === "ar"
-      ? "امسح الكل"
-      : lang === "es"
-      ? "Borrar todo"
-      : "Clear all";
+        ? "全部清除"
+        : lang === "fr"
+          ? "Tout effacer"
+          : lang === "pt"
+            ? "Limpar tudo"
+            : lang === "it"
+              ? "Cancella tutto"
+              : lang === "de"
+                ? "Alle löschen"
+                : lang === "hi"
+                  ? "सब साफ़ करें"
+                  : lang === "ar"
+                    ? "امسح الكل"
+                    : lang === "es"
+                      ? "Borrar todo"
+                      : "Clear all";
   const lessonLabel =
     lang === "ja"
       ? "レッスン"
       : lang === "zh"
-      ? "课程"
-      : lang === "fr"
-      ? "Lecon"
-      : lang === "pt"
-      ? "Licao"
-      : lang === "it"
-      ? "Lezione"
-      : lang === "de"
-      ? "Lektion"
-      : lang === "hi"
-      ? "पाठ"
-      : lang === "ar"
-      ? "الدرس"
-      : lang === "es"
-      ? "Lección"
-      : "Lesson";
+        ? "课程"
+        : lang === "fr"
+          ? "Lecon"
+          : lang === "pt"
+            ? "Licao"
+            : lang === "it"
+              ? "Lezione"
+              : lang === "de"
+                ? "Lektion"
+                : lang === "hi"
+                  ? "पाठ"
+                  : lang === "ar"
+                    ? "الدرس"
+                    : lang === "es"
+                      ? "Lección"
+                      : "Lesson";
   const noNotesLabel =
     lang === "ja"
       ? "メモなし"
       : lang === "zh"
-      ? "没有笔记"
-      : lang === "fr"
-      ? "Aucune note"
-      : lang === "pt"
-      ? "Sem notas"
-      : lang === "it"
-      ? "Nessuna nota"
-      : lang === "de"
-      ? "Keine Notizen"
-      : lang === "hi"
-      ? "कोई नोट नहीं"
-      : lang === "ar"
-      ? "مفيش ملاحظات"
-      : lang === "es"
-      ? "Sin notas"
-      : "No notes";
+        ? "没有笔记"
+        : lang === "fr"
+          ? "Aucune note"
+          : lang === "pt"
+            ? "Sem notas"
+            : lang === "it"
+              ? "Nessuna nota"
+              : lang === "de"
+                ? "Keine Notizen"
+                : lang === "hi"
+                  ? "कोई नोट नहीं"
+                  : lang === "ar"
+                    ? "مفيش ملاحظات"
+                    : lang === "es"
+                      ? "Sin notas"
+                      : "No notes";
   const closeLabel =
     translations[lang]?.teams_drawer_close ||
     translations.en?.teams_drawer_close ||
@@ -240,22 +241,22 @@ export default function NotesDrawer({
     lang === "ja"
       ? "メモ"
       : lang === "zh"
-      ? "笔记"
-      : lang === "fr"
-      ? "Note"
-      : lang === "pt"
-      ? "Nota"
-      : lang === "it"
-      ? "Nota"
-      : lang === "de"
-      ? "Notiz"
-      : lang === "hi"
-      ? "नोट"
-      : lang === "ar"
-      ? "ملاحظة"
-      : lang === "es"
-      ? "Nota"
-      : "Note";
+        ? "笔记"
+        : lang === "fr"
+          ? "Note"
+          : lang === "pt"
+            ? "Nota"
+            : lang === "it"
+              ? "Nota"
+              : lang === "de"
+                ? "Notiz"
+                : lang === "hi"
+                  ? "नोट"
+                  : lang === "ar"
+                    ? "ملاحظة"
+                    : lang === "es"
+                      ? "Nota"
+                      : "Note";
   const formatNoteCountLabel = (count) => {
     const formattedCount = new Intl.NumberFormat(locale).format(count);
 
@@ -301,42 +302,42 @@ export default function NotesDrawer({
     lang === "ja"
       ? "聞く"
       : lang === "zh"
-      ? "聆听"
-      : lang === "fr"
-      ? "Ecouter"
-      : lang === "pt"
-      ? "Ouvir"
-      : lang === "it"
-      ? "Ascolta"
-      : lang === "de"
-      ? "Anhören"
-      : lang === "hi"
-      ? "सुनें"
-      : lang === "ar"
-      ? "اسمع"
-      : lang === "es"
-      ? "Escuchar"
-      : "Listen";
+        ? "聆听"
+        : lang === "fr"
+          ? "Ecouter"
+          : lang === "pt"
+            ? "Ouvir"
+            : lang === "it"
+              ? "Ascolta"
+              : lang === "de"
+                ? "Anhören"
+                : lang === "hi"
+                  ? "सुनें"
+                  : lang === "ar"
+                    ? "اسمع"
+                    : lang === "es"
+                      ? "Escuchar"
+                      : "Listen";
   const deleteNoteLabel =
     lang === "ja"
       ? "メモを削除"
       : lang === "zh"
-      ? "删除笔记"
-      : lang === "fr"
-      ? "Supprimer la note"
-      : lang === "pt"
-      ? "Excluir nota"
-      : lang === "it"
-      ? "Elimina nota"
-      : lang === "de"
-      ? "Notiz löschen"
-      : lang === "hi"
-      ? "नोट हटाएं"
-      : lang === "ar"
-      ? "احذف الملاحظة"
-      : lang === "es"
-      ? "Eliminar nota"
-      : "Delete note";
+        ? "删除笔记"
+        : lang === "fr"
+          ? "Supprimer la note"
+          : lang === "pt"
+            ? "Excluir nota"
+            : lang === "it"
+              ? "Elimina nota"
+              : lang === "de"
+                ? "Notiz löschen"
+                : lang === "hi"
+                  ? "नोट हटाएं"
+                  : lang === "ar"
+                    ? "احذف الملاحظة"
+                    : lang === "es"
+                      ? "Eliminar nota"
+                      : "Delete note";
   const noteUi = useMemo(
     () =>
       isLightTheme
@@ -562,16 +563,21 @@ export default function NotesDrawer({
               <IconButton
                 icon={
                   loadingTts === note.id ? (
-                    <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                    <VoiceOrb
+                      state={
+                        ["idle", "listening", "speaking"][
+                          Math.floor(Math.random() * 3)
+                        ]
+                      }
+                      size={16}
+                    />
                   ) : playingNoteId === note.id ? (
                     <RiStopLine size={16} />
                   ) : (
                     <RiVolumeUpLine size={16} />
                   )
                 }
-                aria-label={
-                  listenLabel
-                }
+                aria-label={listenLabel}
                 size="sm"
                 variant="ghost"
                 colorScheme="blue"
@@ -583,9 +589,7 @@ export default function NotesDrawer({
               />
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
-                aria-label={
-                  deleteNoteLabel
-                }
+                aria-label={deleteNoteLabel}
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
@@ -600,12 +604,12 @@ export default function NotesDrawer({
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay
+      {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg={noteUi.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
-      />
+      /> */}
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeAnchoredDrawerMotionProps}
@@ -615,7 +619,9 @@ export default function NotesDrawer({
         color={noteUi.drawerText}
         borderTopRadius="24px"
         h="90vh"
-        borderTop={noteUi.drawerBorder ? `1px solid ${noteUi.drawerBorder}` : undefined}
+        borderTop={
+          noteUi.drawerBorder ? `1px solid ${noteUi.drawerBorder}` : undefined
+        }
         boxShadow={noteUi.shadow}
         sx={{
           "@supports (height: 100dvh)": {
@@ -630,7 +636,11 @@ export default function NotesDrawer({
           top={4}
           right={4}
         />
-        <DrawerHeader borderBottomWidth="1px" borderColor={noteUi.headerBorder} pr={12}>
+        <DrawerHeader
+          borderBottomWidth="1px"
+          borderColor={noteUi.headerBorder}
+          pr={12}
+        >
           <Box maxW="720px" mx="auto" w="100%">
             <HStack justify="space-between" align="center">
               <Text color={noteUi.primaryText} fontWeight="semibold">
@@ -657,97 +667,115 @@ export default function NotesDrawer({
 
         <DrawerBody overflowY="auto" flex="1" py={4}>
           <Box maxW="720px" mx="auto" w="100%">
-          {filteredNotes.length === 0 ? (
-            <Flex
-              direction="column"
-              align="center"
-              justify="center"
-              h="200px"
-              textAlign="center"
-            >
-              <Text color={noteUi.secondaryText} fontSize="sm" maxW="520px">
-                {emptyMessage}
-              </Text>
-            </Flex>
-          ) : (
-            <Accordion allowToggle>
-              {CEFR_LEVELS.map((level) => {
-                const levelNotes = notesByCefr[level];
-                const hasNotes = levelNotes.length > 0;
+            {filteredNotes.length === 0 ? (
+              <Flex
+                direction="column"
+                align="center"
+                justify="center"
+                h="200px"
+                textAlign="center"
+              >
+                <Text color={noteUi.secondaryText} fontSize="sm" maxW="520px">
+                  {emptyMessage}
+                </Text>
+              </Flex>
+            ) : (
+              <Accordion allowToggle>
+                {CEFR_LEVELS.map((level) => {
+                  const levelNotes = notesByCefr[level];
+                  const hasNotes = levelNotes.length > 0;
 
-                return (
-                  <AccordionItem
-                    key={level}
-                    border="none"
-                    mb={3}
-                    isDisabled={!hasNotes}
-                  >
-                    {({ isExpanded }) => (
-                      <>
-                        <AccordionButton
-                          py={3}
-                          px={4}
-                          bg={hasNotes ? noteUi.sectionBg : noteUi.notePanelBg}
-                          border="1px solid"
-                          borderColor={hasNotes ? noteUi.sectionBorder : noteUi.noteBorder}
-                          borderRadius="lg"
-                          borderBottomRadius={isExpanded ? 0 : "lg"}
-                          opacity={hasNotes ? 1 : noteUi.emptyOpacity}
-                          cursor={hasNotes ? "pointer" : "not-allowed"}
-                          _hover={{
-                            bg: hasNotes ? noteUi.sectionBgHover : noteUi.notePanelBg,
-                          }}
-                          _expanded={{ bg: noteUi.sectionBgExpanded }}
-                        >
-                          <HStack flex="1" spacing={3}>
-                            <Badge
-                              bg={CEFR_COLORS[level]}
-                              color={CEFR_TEXT_COLORS[level] || "white"}
-                              fontSize="sm"
-                              fontWeight="bold"
-                              px={3}
-                              py={1}
-                              borderRadius="md"
-                            >
-                              {level}
-                            </Badge>
-                            <Text
-                              fontSize="sm"
-                              color={hasNotes ? noteUi.primaryText : noteUi.mutedText}
-                              fontWeight="medium"
-                            >
-                              {hasNotes
-                                ? formatNoteCountLabel(levelNotes.length)
-                                : noNotesLabel}
-                            </Text>
-                          </HStack>
-                          {hasNotes && <AccordionIcon color={noteUi.icon} />}
-                        </AccordionButton>
-
-                        {hasNotes && (
-                          <AccordionPanel
-                            pb={4}
-                            px={2}
-                            pt={2}
-                            bg={noteUi.notePanelBg}
-                            borderBottomRadius="lg"
+                  return (
+                    <AccordionItem
+                      key={level}
+                      border="none"
+                      mb={3}
+                      isDisabled={!hasNotes}
+                    >
+                      {({ isExpanded }) => (
+                        <>
+                          <AccordionButton
+                            py={3}
+                            px={4}
+                            bg={
+                              hasNotes ? noteUi.sectionBg : noteUi.notePanelBg
+                            }
+                            border="1px solid"
+                            borderColor={
+                              hasNotes
+                                ? noteUi.sectionBorder
+                                : noteUi.noteBorder
+                            }
+                            borderRadius="lg"
+                            borderBottomRadius={isExpanded ? 0 : "lg"}
+                            opacity={hasNotes ? 1 : noteUi.emptyOpacity}
+                            cursor={hasNotes ? "pointer" : "not-allowed"}
+                            _hover={{
+                              bg: hasNotes
+                                ? noteUi.sectionBgHover
+                                : noteUi.notePanelBg,
+                            }}
+                            _expanded={{ bg: noteUi.sectionBgExpanded }}
                           >
-                            <Accordion allowMultiple>
-                              {levelNotes.map(renderNoteItem)}
-                            </Accordion>
-                          </AccordionPanel>
-                        )}
-                      </>
-                    )}
-                  </AccordionItem>
-                );
-              })}
-            </Accordion>
-          )}
+                            <HStack flex="1" spacing={3}>
+                              <Badge
+                                bg={CEFR_COLORS[level]}
+                                color={CEFR_TEXT_COLORS[level] || "white"}
+                                fontSize="sm"
+                                fontWeight="bold"
+                                px={3}
+                                py={1}
+                                borderRadius="md"
+                              >
+                                {level}
+                              </Badge>
+                              <Text
+                                fontSize="sm"
+                                color={
+                                  hasNotes
+                                    ? noteUi.primaryText
+                                    : noteUi.mutedText
+                                }
+                                fontWeight="medium"
+                              >
+                                {hasNotes
+                                  ? formatNoteCountLabel(levelNotes.length)
+                                  : noNotesLabel}
+                              </Text>
+                            </HStack>
+                            {hasNotes && <AccordionIcon color={noteUi.icon} />}
+                          </AccordionButton>
+
+                          {hasNotes && (
+                            <AccordionPanel
+                              pb={4}
+                              px={2}
+                              pt={2}
+                              bg={noteUi.notePanelBg}
+                              borderBottomRadius="lg"
+                            >
+                              <Accordion allowMultiple>
+                                {levelNotes.map(renderNoteItem)}
+                              </Accordion>
+                            </AccordionPanel>
+                          )}
+                        </>
+                      )}
+                    </AccordionItem>
+                  );
+                })}
+              </Accordion>
+            )}
           </Box>
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor={noteUi.headerBorder}>
-          <Box maxW="720px" mx="auto" w="100%" display="flex" justifyContent="flex-end">
+          <Box
+            maxW="720px"
+            mx="auto"
+            w="100%"
+            display="flex"
+            justifyContent="flex-end"
+          >
             <Button
               variant={"ghost"}
               color={noteUi.primaryText}

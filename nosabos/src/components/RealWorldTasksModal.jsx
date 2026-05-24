@@ -208,19 +208,27 @@ const ARABIC_SUPPORT_COPY = {
 
 const CHINESE_SUPPORT_COPY = {
   "Ready to refresh": "可以刷新",
-  "Could not generate tasks. Please try again.":
-    "无法生成任务。请再试一次。",
+  "Could not generate tasks. Please try again.": "无法生成任务。请再试一次。",
   "Failed to award reward": "无法发放奖励",
   "Immersion Practice": "沉浸练习",
-  "3 tasks to use your language outside the app":
-    "3 个在应用外使用语言的任务",
+  "3 tasks to use your language outside the app": "3 个在应用外使用语言的任务",
   "Next batch in": "下一批倒计时",
   "Creating tasks...": "正在创建任务...",
   "Try again": "再试一次",
   "No tasks yet.": "还没有任务。",
 };
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+function supportCopy(
+  lang,
+  en,
+  es,
+  it,
+  fr,
+  ja,
+  pt = null,
+  hi = null,
+  ar = null,
+) {
   if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
@@ -605,24 +613,24 @@ export default function RealWorldTasksModal({
             ? `+${REAL_WORLD_TASKS_REWARD_XP} XP प्राप्त करें`
             : lang === "ar"
               ? `استلم +${REAL_WORLD_TASKS_REWARD_XP} XP`
-            : lang === "zh"
-              ? `领取 +${REAL_WORLD_TASKS_REWARD_XP} XP`
-            : lang === "it"
-              ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
-              : lang === "de"
-                ? `+${REAL_WORLD_TASKS_REWARD_XP} XP abholen`
-              : lang === "es"
-                ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
-                : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
+              : lang === "zh"
+                ? `领取 +${REAL_WORLD_TASKS_REWARD_XP} XP`
+                : lang === "it"
+                  ? `Riscatta +${REAL_WORLD_TASKS_REWARD_XP} XP`
+                  : lang === "de"
+                    ? `+${REAL_WORLD_TASKS_REWARD_XP} XP abholen`
+                    : lang === "es"
+                      ? `Reclamar +${REAL_WORLD_TASKS_REWARD_XP} XP`
+                      : `Claim +${REAL_WORLD_TASKS_REWARD_XP} XP`;
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={handleClose}>
-      <DrawerOverlay
+      {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg={ui.overlay}
         backdropFilter={isLightTheme ? "blur(4px)" : undefined}
-      />
+      /> */}
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeAnchoredDrawerMotionProps}

@@ -1172,12 +1172,8 @@ function TopBar({
     cefrResult?.updatedAt &&
     new Date(cefrResult.updatedAt).toLocaleString(getSortLocale(appLanguage));
 
-  // iOS Safari freezes for 5-6s when these top-bar buttons fire heavy modal
-  // mount work synchronously in a pointerdown handler. The bottom action bar
-  // hit the same wall and was fixed by:
-  //   (a) using onClick only (no pointerdown),
-  //   (b) yielding a paint frame before the open via scheduleAfterNextPaint.
-  // We match that pattern here.
+  // The iOS freeze came from the heavy SkillTree mode surface underneath the
+  // overlay, not from the click sound itself. Keep the familiar feedback.
   const runTopBarAction = useCallback(
     (action) => {
       if (!action) return;
@@ -1186,7 +1182,7 @@ function TopBar({
       } catch (error) {
         console.warn("Failed to play top bar sound:", error);
       }
-      scheduleAfterNextPaint(() => action());
+      action();
     },
     [playSound],
   );
@@ -1317,11 +1313,6 @@ function TopBar({
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
-        <DrawerOverlay
-          {...settingsSwipeDismiss.overlayProps}
-          motionProps={nativeOverlayMotionProps}
-          bg="var(--app-overlay)"
-        />
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
           motionProps={nativeAnchoredDrawerMotionProps}
@@ -3044,8 +3035,7 @@ export default function App({ onBootReady } = {}) {
   // useModalStore, so the shared backdrop component and modal Gates combine
   // both sides themselves — this keeps App's render free of subscriptions
   // to the two store-backed booleans.
-  const appOnboardingChainOpen =
-    proficiencyTestOpen || gettingStartedOpen;
+  const appOnboardingChainOpen = proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -6748,7 +6738,7 @@ export default function App({ onBootReady } = {}) {
     : { base: 32, md: 24 };
 
   return (
-    <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
+    <Box minH="100dvh" bg="var(--app-page-bg)" color="gray.50" width="100%">
       <AnimatedBackground />
       {!isGameFullScreen && (
         <TopBar
@@ -6797,6 +6787,39 @@ export default function App({ onBootReady } = {}) {
           subscriptionVerified={subscriptionVerified}
         />
       )}
+
+      {/* Keep the top-bar modal subscribers high in the tree so opening them
+          does not make React walk the entire learning surface first. */}
+      <OnboardingChainBackdrop appChainOpen={appOnboardingChainOpen} />
+
+      <DailyGoalModalGate
+        appChainOpen={appOnboardingChainOpen}
+        onClose={handleDailyGoalClose}
+        onSaveGoal={handleDailyGoalSave}
+        npub={activeNpub}
+        lang={appLanguage}
+        defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
+        t={t}
+        petHealth={dailyGoalPetHealth}
+        petLastOutcome={user?.dailyGoalPetLastOutcome || null}
+        petLastDelta={user?.dailyGoalPetLastDelta ?? null}
+        completedGoalDates={dailyGoalCompletedDates}
+        dailyXpHistory={dailyGoalXpHistory}
+        currentDailyXp={dailyXpToday}
+        currentGoalXp={dailyGoalTarget}
+      />
+
+      <SessionTimerModalGate
+        appChainOpen={appOnboardingChainOpen}
+        onClose={handleTimerModalClose}
+        minutes={timerMinutes}
+        onMinutesChange={setTimerMinutes}
+        onStart={handleStartTimer}
+        isRunning={isTimerRunning}
+        helper={null}
+        t={t}
+        lang={appLanguage}
+      />
 
       {/* Teams/global feed modal temporarily hidden — replaced by Real-World Practice tasks.
       <TeamsDrawer
@@ -7136,40 +7159,6 @@ export default function App({ onBootReady } = {}) {
         onOpen={helpChatDisclosure.onOpen}
         onClose={helpChatDisclosure.onClose}
         showFloatingTrigger={false}
-      />
-
-      {/* Global onboarding-chain backdrop — subscribes to useModalStore
-          for daily/timer so flipping those does NOT re-render App. */}
-      <OnboardingChainBackdrop appChainOpen={appOnboardingChainOpen} />
-
-      {/* Daily Goal Setup — Gate subscribes to useModalStore for isOpen. */}
-      <DailyGoalModalGate
-        appChainOpen={appOnboardingChainOpen}
-        onClose={handleDailyGoalClose}
-        onSaveGoal={handleDailyGoalSave}
-        npub={activeNpub}
-        lang={appLanguage}
-        defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
-        t={t}
-        petHealth={dailyGoalPetHealth}
-        petLastOutcome={user?.dailyGoalPetLastOutcome || null}
-        petLastDelta={user?.dailyGoalPetLastDelta ?? null}
-        completedGoalDates={dailyGoalCompletedDates}
-        dailyXpHistory={dailyGoalXpHistory}
-        currentDailyXp={dailyXpToday}
-        currentGoalXp={dailyGoalTarget}
-      />
-
-      <SessionTimerModalGate
-        appChainOpen={appOnboardingChainOpen}
-        onClose={handleTimerModalClose}
-        minutes={timerMinutes}
-        onMinutesChange={setTimerMinutes}
-        onStart={handleStartTimer}
-        isRunning={isTimerRunning}
-        helper={null}
-        t={t}
-        lang={appLanguage}
       />
 
       <ProficiencyTestModalSharedBackdropWrapper
@@ -7710,16 +7699,12 @@ export default function App({ onBootReady } = {}) {
 }
 
 // ─── Modal Gates ──────────────────────────────────────────────────────────
-// These tiny wrappers subscribe to useModalStore so the four onboarding-
-// chain modals (and the shared blur backdrop behind them) can react to
-// dailyGoalOpen / timerModalOpen without re-rendering App. App passes
+// These tiny wrappers subscribe to useModalStore so the top-bar modals can
+// react to dailyGoalOpen / timerModalOpen without re-rendering App. App passes
 // stable props (data + callbacks); only the Gate re-renders on flag flip.
 
 function OnboardingChainBackdrop({ appChainOpen }) {
-  const storeChainOpen = useModalStore(
-    (s) => s.dailyGoalOpen || s.timerModalOpen,
-  );
-  if (!appChainOpen && !storeChainOpen) return null;
+  if (!appChainOpen) return null;
   return (
     <Portal>
       <Box
@@ -7737,7 +7722,6 @@ function OnboardingChainBackdrop({ appChainOpen }) {
 
 function DailyGoalModalGate({ appChainOpen, ...props }) {
   const isOpen = useModalStore((s) => s.dailyGoalOpen);
-  const timerOpen = useModalStore((s) => s.timerModalOpen);
   // Lazy-mount: don't put the heavy modal subtree in the React tree until
   // the first open. Once mounted it stays mounted (so subsequent opens just
   // flip isOpen). This matched the perf pattern of FlashcardPracticeGate,
@@ -7748,7 +7732,7 @@ function DailyGoalModalGate({ appChainOpen, ...props }) {
   return (
     <DailyGoalModal
       isOpen={isOpen}
-      useSharedBackdrop={isOpen || timerOpen || appChainOpen}
+      useSharedBackdrop={appChainOpen}
       {...props}
     />
   );
@@ -7756,14 +7740,13 @@ function DailyGoalModalGate({ appChainOpen, ...props }) {
 
 function SessionTimerModalGate({ appChainOpen, ...props }) {
   const isOpen = useModalStore((s) => s.timerModalOpen);
-  const dailyOpen = useModalStore((s) => s.dailyGoalOpen);
   const hasEverOpened = useRef(false);
   if (isOpen) hasEverOpened.current = true;
   if (!hasEverOpened.current) return null;
   return (
     <SessionTimerModal
       isOpen={isOpen}
-      useSharedBackdrop={isOpen || dailyOpen || appChainOpen}
+      useSharedBackdrop={appChainOpen}
       {...props}
     />
   );
@@ -7774,13 +7757,10 @@ function ProficiencyTestModalSharedBackdropWrapper({
   appChainOpen,
   ...props
 }) {
-  const storeChainOpen = useModalStore(
-    (s) => s.dailyGoalOpen || s.timerModalOpen,
-  );
   return (
     <ProficiencyTestModal
       isOpen={isOpen}
-      useSharedBackdrop={isOpen || appChainOpen || storeChainOpen}
+      useSharedBackdrop={isOpen || appChainOpen}
       {...props}
     />
   );
@@ -7791,13 +7771,10 @@ function GettingStartedModalSharedBackdropWrapper({
   appChainOpen,
   ...props
 }) {
-  const storeChainOpen = useModalStore(
-    (s) => s.dailyGoalOpen || s.timerModalOpen,
-  );
   return (
     <GettingStartedModal
       isOpen={isOpen}
-      useSharedBackdrop={isOpen || appChainOpen || storeChainOpen}
+      useSharedBackdrop={isOpen || appChainOpen}
       {...props}
     />
   );

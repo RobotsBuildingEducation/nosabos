@@ -2145,11 +2145,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
         {/* Help chat bottom drawer */}
         <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
-          <DrawerOverlay
+          {/* <DrawerOverlay
             {...chatSwipeDismiss.overlayProps}
             motionProps={nativeOverlayMotionProps}
             bg="blackAlpha.600"
-          />
+          /> */}
           <DrawerContent
             {...chatSwipeDismiss.drawerContentProps}
             motionProps={nativeAnchoredDrawerMotionProps}
@@ -2671,7 +2671,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             placement="left"
             onClose={drawerDisclosure.onClose}
           >
-            <DrawerOverlay motionProps={nativeOverlayMotionProps} />
+            {/* <DrawerOverlay motionProps={nativeOverlayMotionProps} /> */}
             <DrawerContent
               motionProps={nativeAnchoredDrawerMotionProps}
               bg="gray.900"

@@ -164,7 +164,7 @@ body {
 .app-shell {
   min-height: 100vh; /* fallback */
   min-height: 100dvh; /* real fix for mobile browser UI */
-  background: #0b0b0b;
+  background: var(--app-page-bg);
   padding-bottom: env(safe-area-inset-bottom);
   box-sizing: border-box;
 }

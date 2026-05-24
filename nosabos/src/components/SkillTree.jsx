@@ -324,6 +324,18 @@ const normalizeKeepAlivePathMode = (mode) =>
 const isKeepAliveModeVisible = (pathMode, mode) =>
   normalizeKeepAlivePathMode(pathMode) === mode;
 
+function detectTouchWebKit() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return isIOS && /WebKit/i.test(ua);
+}
+
+const SHOULD_KEEP_ALIVE_MODES = !detectTouchWebKit();
+const SHOULD_RENDER_DECORATIVE_FILTERS = !detectTouchWebKit();
+
 const mixHexColors = (baseHex, mixHex, amount = 0.5) => {
   const base = hexToRgb(baseHex);
   const mix = hexToRgb(mixHex);
@@ -2603,6 +2615,8 @@ export default function SkillTree({
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";
+  const shouldKeepAliveModes = SHOULD_KEEP_ALIVE_MODES;
+  const shouldRenderDecorativeFilters = SHOULD_RENDER_DECORATIVE_FILTERS;
 
   const handleLessonClick = useCallback((lesson, unit, status) => {
     if (
@@ -2796,60 +2810,64 @@ export default function SkillTree({
       overflow={isConversationStyleMode ? "visible" : "hidden"}
     >
       {/* Animated Background Gradients */}
-      <Box
-        position="absolute"
-        top="-20%"
-        left="-10%"
-        w="600px"
-        h="600px"
-        bgGradient="radial(circle, teal.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.15}
-        animation="float 20s ease-in-out infinite"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(50px, -30px) scale(1.1)" },
-            "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
-          },
-        }}
-      />
-      <Box
-        position="absolute"
-        top="30%"
-        right="-10%"
-        w="500px"
-        h="500px"
-        bgGradient="radial(circle, purple.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.12}
-        animation="float 25s ease-in-out infinite 5s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
-            "66%": { transform: "translate(40px, -40px) scale(0.9)" },
-          },
-        }}
-      />
-      <Box
-        position="absolute"
-        bottom="10%"
-        left="20%"
-        w="400px"
-        h="400px"
-        bgGradient="radial(circle, blue.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.1}
-        animation="float 30s ease-in-out infinite 10s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(30px, -50px) scale(1.2)" },
-            "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
-          },
-        }}
-      />
+      {shouldRenderDecorativeFilters && (
+        <>
+          <Box
+            position="absolute"
+            top="-20%"
+            left="-10%"
+            w="600px"
+            h="600px"
+            bgGradient="radial(circle, teal.500, transparent 70%)"
+            filter="blur(80px)"
+            opacity={0.15}
+            animation="float 20s ease-in-out infinite"
+            sx={{
+              "@keyframes float": {
+                "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                "33%": { transform: "translate(50px, -30px) scale(1.1)" },
+                "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
+              },
+            }}
+          />
+          <Box
+            position="absolute"
+            top="30%"
+            right="-10%"
+            w="500px"
+            h="500px"
+            bgGradient="radial(circle, purple.500, transparent 70%)"
+            filter="blur(80px)"
+            opacity={0.12}
+            animation="float 25s ease-in-out infinite 5s"
+            sx={{
+              "@keyframes float": {
+                "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
+                "66%": { transform: "translate(40px, -40px) scale(0.9)" },
+              },
+            }}
+          />
+          <Box
+            position="absolute"
+            bottom="10%"
+            left="20%"
+            w="400px"
+            h="400px"
+            bgGradient="radial(circle, blue.500, transparent 70%)"
+            filter="blur(80px)"
+            opacity={0.1}
+            animation="float 30s ease-in-out infinite 10s"
+            sx={{
+              "@keyframes float": {
+                "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+                "33%": { transform: "translate(30px, -50px) scale(1.2)" },
+                "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
+              },
+            }}
+          />
+        </>
+      )}
 
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
@@ -2945,58 +2963,101 @@ export default function SkillTree({
           </Box>
         )}
 
-        {/* Skill Tree Units, Flashcards, Conversations, and Tutor stay mounted. */}
-        <Box
-          display={isModeVisible("path") ? "block" : "none"}
-          aria-hidden={!isModeVisible("path")}
-        >
-          {pathModeContent}
-        </Box>
+        {/* Desktop keeps these modes mounted for fast switching. On iOS WebKit,
+            keeping the hidden tutor/flashcard/conversation surfaces alive makes
+            fixed top-bar overlays repaint the entire hidden tree. */}
+        {shouldKeepAliveModes ? (
+          <>
+            <Box
+              display={isModeVisible("path") ? "block" : "none"}
+              aria-hidden={!isModeVisible("path")}
+            >
+              {pathModeContent}
+            </Box>
 
-        <Box
-          display={isModeVisible("flashcards") ? "block" : "none"}
-          aria-hidden={!isModeVisible("flashcards")}
-        >
-          <KeepAliveFlashcardSkillTree
-            userProgress={userProgress}
-            onStartFlashcard={handleFlashcardComplete}
-            onRandomPractice={handleRandomPractice}
-            targetLang={targetLang}
-            supportLang={supportLang}
-            activeCEFRLevel={effectiveActiveLevel}
-            pauseMs={pauseMs}
-          />
-        </Box>
+            <Box
+              display={isModeVisible("flashcards") ? "block" : "none"}
+              aria-hidden={!isModeVisible("flashcards")}
+            >
+              <KeepAliveFlashcardSkillTree
+                userProgress={userProgress}
+                onStartFlashcard={handleFlashcardComplete}
+                onRandomPractice={handleRandomPractice}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            </Box>
 
-        <Box
-          display={isModeVisible("conversations") ? "block" : "none"}
-          aria-hidden={!isModeVisible("conversations")}
-        >
-          <KeepAliveConversations
-            activeNpub={activeNpub}
-            targetLang={targetLang}
-            supportLang={supportLang}
-            pauseMs={pauseMs}
-            maxProficiencyLevel={maxProficiencyLevel}
-            isActive={isModeVisible("conversations")}
-          />
-        </Box>
+            <Box
+              display={isModeVisible("conversations") ? "block" : "none"}
+              aria-hidden={!isModeVisible("conversations")}
+            >
+              <KeepAliveConversations
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                isActive={isModeVisible("conversations")}
+              />
+            </Box>
 
-        <Box
-          display={isModeVisible("tutor") ? "block" : "none"}
-          aria-hidden={!isModeVisible("tutor")}
-        >
-          <KeepAliveTutor
-            activeNpub={activeNpub}
-            targetLang={targetLang}
-            supportLang={supportLang}
-            pauseMs={pauseMs}
-            maxProficiencyLevel={maxProficiencyLevel}
-            onFirstLessonComplete={onTutorFirstLessonComplete}
-            onDailyGoalCelebration={onTutorDailyGoalCelebration}
-            isActive={isModeVisible("tutor")}
-          />
-        </Box>
+            <Box
+              display={isModeVisible("tutor") ? "block" : "none"}
+              aria-hidden={!isModeVisible("tutor")}
+            >
+              <KeepAliveTutor
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                onFirstLessonComplete={onTutorFirstLessonComplete}
+                onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                isActive={isModeVisible("tutor")}
+              />
+            </Box>
+          </>
+        ) : (
+          <>
+            {isModeVisible("path") && pathModeContent}
+            {isModeVisible("flashcards") && (
+              <KeepAliveFlashcardSkillTree
+                userProgress={userProgress}
+                onStartFlashcard={handleFlashcardComplete}
+                onRandomPractice={handleRandomPractice}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            )}
+            {isModeVisible("conversations") && (
+              <KeepAliveConversations
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                isActive
+              />
+            )}
+            {isModeVisible("tutor") && (
+              <KeepAliveTutor
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                onFirstLessonComplete={onTutorFirstLessonComplete}
+                onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                isActive
+              />
+            )}
+          </>
+        )}
 
         {/* Lesson Detail Modal — rendered via a Gate that subscribes to
             useModalStore for isOpen + lesson + unit, so toggling the modal

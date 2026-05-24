@@ -47,45 +47,45 @@ export default function ConversationAccountDrawer({
           title: "会话设置",
         }
       : lang === "ja"
-      ? {
-          title: "会話設定",
-        }
-      : lang === "fr"
-      ? {
-          title: "Parametres de conversation",
-        }
-      : lang === "pt"
-      ? {
-          title: "Configuracoes da conversa",
-        }
-      : lang === "it"
-      ? {
-          title: "Impostazioni conversazione",
-        }
-      : lang === "de"
-      ? {
-          title: "Gesprächseinstellungen",
-        }
-      : lang === "ar"
-      ? {
-          title: "إعدادات المحادثة",
-        }
-      : lang === "es"
-      ? {
-          title: "Configuración de conversación",
-        }
-      : {
-          title: "Conversation settings",
-        };
+        ? {
+            title: "会話設定",
+          }
+        : lang === "fr"
+          ? {
+              title: "Parametres de conversation",
+            }
+          : lang === "pt"
+            ? {
+                title: "Configuracoes da conversa",
+              }
+            : lang === "it"
+              ? {
+                  title: "Impostazioni conversazione",
+                }
+              : lang === "de"
+                ? {
+                    title: "Gesprächseinstellungen",
+                  }
+                : lang === "ar"
+                  ? {
+                      title: "إعدادات المحادثة",
+                    }
+                  : lang === "es"
+                    ? {
+                        title: "Configuración de conversación",
+                      }
+                    : {
+                        title: "Conversation settings",
+                      };
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay
+      {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
         backdropFilter="blur(4px)"
-      />
+      /> */}
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeDrawerMotionProps}

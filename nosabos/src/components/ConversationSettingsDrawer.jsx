@@ -308,8 +308,7 @@ function getConversationSettingsUi(lang) {
     de: {
       title: "Gesprächseinstellungen",
       proficiencyLabel: "Sprachniveau",
-      proficiencyHint:
-        "Lege den Schwierigkeitsgrad für Gesprächsthemen fest",
+      proficiencyHint: "Lege den Schwierigkeitsgrad für Gesprächsthemen fest",
       pronunciationLabel: "Aussprachetraining",
       pronunciationHint: "Die KI hilft dir, deine Aussprache zu verbessern",
       subjectLabel: "Eigene Themen",
@@ -329,8 +328,7 @@ function getConversationSettingsUi(lang) {
       subjectLabel: "カスタムトピック",
       subjectHint:
         "練習したいテーマを指定します（例: 医療用語、ビジネス、旅行）",
-      subjectPlaceholder:
-        "例: 私は医師で、患者との医療会話を練習したいです...",
+      subjectPlaceholder: "例: 私は医師で、患者との医療会話を練習したいです...",
       save: "保存",
       close: "閉じる",
     },
@@ -369,8 +367,7 @@ function getConversationSettingsUi(lang) {
       pronunciationLabel: "تدريب النطق",
       pronunciationHint: "الذكاء الاصطناعي هيساعدك تحسّن النطق",
       subjectLabel: "مواضيع مخصصة",
-      subjectHint:
-        "اكتب المواضيع اللي عايز تتدرّب عليها (مثال: طب، شغل، سفر)",
+      subjectHint: "اكتب المواضيع اللي عايز تتدرّب عليها (مثال: طب، شغل، سفر)",
       subjectPlaceholder:
         "مثال: أنا دكتور وعايز أتدرّب على محادثات طبية مع المرضى...",
       save: "حفظ",
@@ -383,10 +380,8 @@ function getConversationSettingsUi(lang) {
       pronunciationLabel: "发音练习",
       pronunciationHint: "AI 会帮助你提升单词发音",
       subjectLabel: "自定义主题",
-      subjectHint:
-        "定义你想练习的主题（例如：医疗术语、商务、旅行）",
-      subjectPlaceholder:
-        "例如：我是医生，想练习与患者进行医疗会话...",
+      subjectHint: "定义你想练习的主题（例如：医疗术语、商务、旅行）",
+      subjectPlaceholder: "例如：我是医生，想练习与患者进行医疗会话...",
       save: "保存",
       close: "关闭",
     },
@@ -490,7 +485,8 @@ export function ConversationSettingsPanel({
                   {currentLevel.name[lang] || currentLevel.name.en}
                 </Text>
                 <Text fontSize="xs" color="gray.400" noOfLines={1}>
-                  {currentLevel.description[lang] || currentLevel.description.en}
+                  {currentLevel.description[lang] ||
+                    currentLevel.description.en}
                 </Text>
               </Box>
             </HStack>
@@ -640,11 +636,11 @@ export default function ConversationSettingsDrawer({
       size="md"
       closeOnOverlayClick={false}
     >
-      <DrawerOverlay
+      {/* <DrawerOverlay
         motionProps={nativeOverlayMotionProps}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
         backdropFilter="blur(4px)"
-      />
+      /> */}
       <DrawerContent
         motionProps={nativeDrawerMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

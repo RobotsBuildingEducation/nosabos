@@ -2653,7 +2653,13 @@ function uiStateLabel(uiState, uiLang) {
   return "";
 }
 
-function TutorViewportEdgeGlow({ state = "idle", isLightTheme = false }) {
+function TutorViewportEdgeGlow({
+  enabled = true,
+  state = "idle",
+  isLightTheme = false,
+}) {
+  if (!enabled) return null;
+
   const isSpeaking = state === "speaking";
   const isThinking = state === "thinking";
   const isActive = isSpeaking || isThinking;
@@ -7379,6 +7385,7 @@ export default function Tutor({
   return (
     <>
       <TutorViewportEdgeGlow
+        enabled={isActive}
         state={edgeGlowState}
         isLightTheme={isLightTheme}
       />

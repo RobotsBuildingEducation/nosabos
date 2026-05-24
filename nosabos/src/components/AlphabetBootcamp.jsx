@@ -2229,6 +2229,14 @@ export default function AlphabetBootcamp({
       return;
     }
     let cancelled = false;
+    const fallbackTimer = setTimeout(() => {
+      if (cancelled) return;
+      setDeck((currentDeck) =>
+        currentDeck.length ? currentDeck : shuffleArray(alphabet),
+      );
+      setCollectedLetters((currentLetters) => currentLetters || []);
+      setIsInitialized(true);
+    }, 2500);
 
     const loadProgress = async () => {
       try {
@@ -2264,6 +2272,7 @@ export default function AlphabetBootcamp({
         });
 
         if (!cancelled) {
+          clearTimeout(fallbackTimer);
           setSavedPracticeWords(mapped);
           setSavedCorrectCounts(correctCounts);
 
@@ -2278,6 +2287,7 @@ export default function AlphabetBootcamp({
       } catch (error) {
         console.error("Failed to load alphabet progress:", error);
         if (!cancelled) {
+          clearTimeout(fallbackTimer);
           setSavedPracticeWords({});
           setSavedCorrectCounts({});
           // Fallback: all letters in deck
@@ -2292,6 +2302,7 @@ export default function AlphabetBootcamp({
 
     return () => {
       cancelled = true;
+      clearTimeout(fallbackTimer);
     };
   }, [npub, targetLang, alphabet]);
 
