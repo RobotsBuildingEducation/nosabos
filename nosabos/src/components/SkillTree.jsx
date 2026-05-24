@@ -26,7 +26,6 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
   Flex,
   useBreakpointValue,
 } from "@chakra-ui/react";
@@ -243,6 +242,7 @@ import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
 import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
@@ -2466,8 +2466,11 @@ export default function SkillTree({
   initialUnits = null,
   initialUnitsKey = "",
 }) {
-  const [selectedLesson, setSelectedLesson] = useState(null);
-  const [selectedUnit, setSelectedUnit] = useState(null);
+  // Lesson-detail modal state lives in useModalStore so clicking a lesson
+  // node does NOT re-render this 3,000-line SkillTree component before the
+  // modal can open. The modal subscribes via LessonDetailModalGate below.
+  const openLessonDetail = useModalStore((s) => s.openLessonDetail);
+  const closeLessonDetail = useModalStore((s) => s.closeLessonDetail);
 
   const isModeVisible = (mode) =>
     isKeepAliveModeVisible(pathMode, mode);
@@ -2477,8 +2480,6 @@ export default function SkillTree({
 
   // Ref for the latest unlocked lesson element
   const latestUnlockedRef = useRef(null);
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Scroll to latest unlocked lesson function
   const scrollToLatestUnlocked = useCallback(() => {
@@ -2609,21 +2610,30 @@ export default function SkillTree({
       status === SKILL_STATUS.IN_PROGRESS ||
       status === SKILL_STATUS.COMPLETED
     ) {
-      playSound(selectSound);
-      setSelectedLesson(lesson);
-      setSelectedUnit(unit);
-      onOpen();
+      // Flip the modal in the store first so the open animation can start
+      // on the next paint; fire the sound after so its sync portion (Tone.js
+      // synth scheduling + haptic) doesn't sit between tap and open.
+      openLessonDetail(lesson, unit);
+      void playSound(selectSound);
     }
-  }, [onOpen, playSound]);
+  }, [openLessonDetail, playSound]);
 
   const handleStartLesson = useCallback(async (lesson, preGeneratedScenario) => {
     playSound("lessonStart");
     if (onStartLesson) {
       const startResult = await onStartLesson(lesson, preGeneratedScenario);
+      if (startResult !== false) {
+        // Clear the modal payload in the store once the lesson view is
+        // taking over. Without this, the store still holds
+        // lessonDetailOpen=true with the previous lesson, so when the user
+        // returns to SkillTree (mode switch) the Gate re-mounts and the
+        // modal pops up unprompted.
+        closeLessonDetail();
+      }
       return startResult !== false;
     }
     return false;
-  }, [onStartLesson, playSound]);
+  }, [closeLessonDetail, onStartLesson, playSound]);
 
   // Separate handler for flashcard completion - doesn't trigger lesson logic
   const handleFlashcardComplete = useCallback((card) => {
@@ -2988,17 +2998,43 @@ export default function SkillTree({
           />
         </Box>
 
-        {/* Lesson Detail Modal */}
-        <LessonDetailModal
-          isOpen={isOpen}
-          onClose={onClose}
-          lesson={selectedLesson}
-          unit={selectedUnit}
+        {/* Lesson Detail Modal — rendered via a Gate that subscribes to
+            useModalStore for isOpen + lesson + unit, so toggling the modal
+            doesn't re-render the whole SkillTree component. */}
+        <LessonDetailModalGate
           onStartLesson={handleStartLesson}
           supportLang={supportLang}
           targetLang={targetLang}
         />
       </Container>
     </Box>
+  );
+}
+
+// Subscribes to useModalStore for isOpen + the selected lesson/unit payload.
+// Static props (onStartLesson, languages) come from SkillTree but the
+// modal's visibility flip stays inside this tiny wrapper.
+//
+// Lazy-mounts the modal subtree until first open — keeps the heavy
+// LessonDetailModal hooks/effects out of every SkillTree render until
+// they're actually needed.
+function LessonDetailModalGate({ onStartLesson, supportLang, targetLang }) {
+  const isOpen = useModalStore((s) => s.lessonDetailOpen);
+  const lesson = useModalStore((s) => s.selectedLesson);
+  const unit = useModalStore((s) => s.selectedUnit);
+  const onClose = useModalStore((s) => s.closeLessonDetail);
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return (
+    <LessonDetailModal
+      isOpen={isOpen}
+      onClose={onClose}
+      lesson={lesson}
+      unit={unit}
+      onStartLesson={onStartLesson}
+      supportLang={supportLang}
+      targetLang={targetLang}
+    />
   );
 }

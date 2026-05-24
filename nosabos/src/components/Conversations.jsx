@@ -84,6 +84,7 @@ import {
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
@@ -1084,20 +1085,18 @@ export default function Conversations({
   const conversationSubjectsDraftRef = useRef(null);
   const conversationSubjectsClearTimerRef = useRef(null);
 
-  // Settings drawer
-  const {
-    isOpen: isSettingsOpen,
-    onOpen: openSettings,
-    onClose: closeSettings,
-  } = useDisclosure();
+  // Settings drawer (open/close lives in useModalStore so the drawer can open
+  // without re-running this 3,400-line Conversations component).
+  const openSettings = useModalStore((s) => s.openConversationSettings);
+  const closeSettings = useModalStore((s) => s.closeConversationSettings);
   const {
     isOpen: isTranscriptOpen,
     onOpen: openTranscript,
     onClose: closeTranscript,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
-    playSound(selectSound);
     openSettings();
+    void playSound(selectSound);
   }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -3347,9 +3346,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
       <ArchiveTextAnimation animation={archiveAnimation} />
 
-      {/* Conversation + Account Drawer */}
-      <ConversationAccountDrawer
-        isOpen={isSettingsOpen}
+      {/* Conversation + Account Drawer
+          Rendered via a tiny Gate that subscribes to useModalStore so the
+          drawer's open/close flip doesn't re-render the whole Conversations
+          component. */}
+      <ConversationAccountDrawerGate
         onClose={handleSettingsClose}
         appLanguage={uiLang}
         settings={conversationSettings}
@@ -3434,4 +3435,20 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       </Modal>
     </>
   );
+}
+
+// Subscribes to useModalStore for the conversation-settings drawer's isOpen
+// flag so the flip doesn't re-render the surrounding Conversations component.
+// All other props (settings data, callbacks) are passed through from the
+// parent unchanged.
+//
+// Lazy-mounts the drawer until first open so the heavy ConversationSettingsPanel
+// subtree doesn't sit in the React tree on every Conversations render before
+// the user has ever tapped Settings.
+function ConversationAccountDrawerGate(props) {
+  const isOpen = useModalStore((s) => s.conversationSettingsOpen);
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return <ConversationAccountDrawer isOpen={isOpen} {...props} />;
 }

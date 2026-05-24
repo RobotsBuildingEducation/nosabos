@@ -112,6 +112,7 @@ import { database, simplemodel } from "./firebaseResources/firebaseResources";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import useUserStore from "./hooks/useUserStore";
+import useModalStore from "./hooks/useModalStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import * as Tone from "tone";
 import useSoundSettings from "./hooks/useSoundSettings";
@@ -1170,36 +1171,30 @@ function TopBar({
   const cefrTimestamp =
     cefrResult?.updatedAt &&
     new Date(cefrResult.updatedAt).toLocaleString(getSortLocale(appLanguage));
-  const recentTopBarPointerRef = useRef({ key: "", at: 0 });
 
+  // iOS Safari freezes for 5-6s when these top-bar buttons fire heavy modal
+  // mount work synchronously in a pointerdown handler. The bottom action bar
+  // hit the same wall and was fixed by:
+  //   (a) using onClick only (no pointerdown),
+  //   (b) yielding a paint frame before the open via scheduleAfterNextPaint.
+  // We match that pattern here.
   const runTopBarAction = useCallback(
     (action) => {
+      if (!action) return;
       try {
         void playSound?.(selectSound);
       } catch (error) {
         console.warn("Failed to play top bar sound:", error);
       }
-      action?.();
+      scheduleAfterNextPaint(() => action());
     },
     [playSound],
   );
 
   const getTopBarPressProps = useCallback(
-    (key, action) => ({
+    (_key, action) => ({
       touchAction: "manipulation",
-      onPointerDown: (event) => {
-        if (event.button !== 0) return;
-        recentTopBarPointerRef.current = { key, at: Date.now() };
-        runTopBarAction(action);
-      },
-      onClick: () => {
-        const recent = recentTopBarPointerRef.current;
-        if (recent.key === key && Date.now() - recent.at < 750) {
-          recentTopBarPointerRef.current = { key: "", at: 0 };
-          return;
-        }
-        runTopBarAction(action);
-      },
+      onClick: () => runTopBarAction(action),
     }),
     [runTopBarAction],
   );
@@ -2924,7 +2919,15 @@ export default function App({ onBootReady } = {}) {
      Daily goal modals (open logic)
      - Only open DailyGoalModal right after onboarding completes
   ----------------------------------- */
-  const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
+  // dailyGoalOpen lives in useModalStore so tapping the top-bar button
+  // doesn't re-render this huge App component before the modal can open.
+  // App reads the flag only via getState/subscribe in effects below — no
+  // hook subscription — so flipping it doesn't trigger an App re-render.
+  const setDailyGoalOpen = useCallback((value) => {
+    const m = useModalStore.getState();
+    if (value) m.openDailyGoal();
+    else m.closeDailyGoal();
+  }, []);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
   const [dailyGoalCelebrationPet, setDailyGoalCelebrationPet] = useState(null);
   const celebrationPetHealth =
@@ -3015,7 +3018,13 @@ export default function App({ onBootReady } = {}) {
      each 1-second tick. App and TopBar only re-render on structural changes
      (start, pause, reset, time-up).
   ----------------------------------- */
-  const [timerModalOpen, setTimerModalOpen] = useState(false);
+  // timerModalOpen lives in useModalStore (see dailyGoalOpen above for the
+  // reasoning). The shim below preserves the existing setX(true/false) API.
+  const setTimerModalOpen = useCallback((value) => {
+    const m = useModalStore.getState();
+    if (value) m.openTimerModal();
+    else m.closeTimerModal();
+  }, []);
   const [timerMinutes, setTimerMinutes] = useState("10");
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -3030,11 +3039,13 @@ export default function App({ onBootReady } = {}) {
     [activeNpub],
   );
   const isTimerRunning = timerActive && !timerPaused && hasTimer;
-  const isOnboardingChainModalOpen =
-    dailyGoalOpen ||
-    timerModalOpen ||
-    proficiencyTestOpen ||
-    gettingStartedOpen;
+  // App-owned half of the onboarding chain (proficiencyTestOpen +
+  // gettingStartedOpen still useState here). dailyGoal + timer live in
+  // useModalStore, so the shared backdrop component and modal Gates combine
+  // both sides themselves — this keeps App's render free of subscriptions
+  // to the two store-backed booleans.
+  const appOnboardingChainOpen =
+    proficiencyTestOpen || gettingStartedOpen;
 
   useEffect(() => {
     if (timeUpOpen) {
@@ -3044,22 +3055,29 @@ export default function App({ onBootReady } = {}) {
 
   // Show proficiency modal for returning users only when the user document
   // does NOT contain a proficiency decision flag yet.
+  //
+  // dailyGoalOpen/timerModalOpen aren't in the dep array because they live in
+  // useModalStore — instead we read them with getState() inside the check and
+  // subscribe to the store below to re-fire when they flip closed. This is
+  // what keeps a "open timer modal" tap from re-rendering App.
   useEffect(() => {
-    if (proficiencyCheckDoneRef.current) return;
-    if (isLoadingApp || !user || !activeNpub) return;
-    if (needsOnboarding) return;
-    if (
-      dailyGoalOpen ||
-      timerModalOpen ||
-      proficiencyTestOpen ||
-      shouldShowProficiencyAfterTimer
-    ) {
-      return;
-    }
-
     let cancelled = false;
 
     const checkProficiencyDecision = async () => {
+      if (cancelled) return;
+      if (proficiencyCheckDoneRef.current) return;
+      if (isLoadingApp || !user || !activeNpub) return;
+      if (needsOnboarding) return;
+      const m = useModalStore.getState();
+      if (
+        m.dailyGoalOpen ||
+        m.timerModalOpen ||
+        proficiencyTestOpen ||
+        shouldShowProficiencyAfterTimer
+      ) {
+        return;
+      }
+
       try {
         const snap = await getDoc(doc(database, "users", activeNpub));
         const data = snap.exists() ? snap.data() || {} : {};
@@ -3090,16 +3108,26 @@ export default function App({ onBootReady } = {}) {
 
     checkProficiencyDecision();
 
+    // Re-run when dailyGoalOpen or timerModalOpen change in the store.
+    // Using subscribe (not the hook) so this effect doesn't re-render App.
+    const unsubscribe = useModalStore.subscribe((state, prev) => {
+      if (
+        state.dailyGoalOpen !== prev.dailyGoalOpen ||
+        state.timerModalOpen !== prev.timerModalOpen
+      ) {
+        checkProficiencyDecision();
+      }
+    });
+
     return () => {
       cancelled = true;
+      unsubscribe();
     };
   }, [
     isLoadingApp,
     user,
     activeNpub,
     needsOnboarding,
-    dailyGoalOpen,
-    timerModalOpen,
     proficiencyTestOpen,
     shouldShowProficiencyAfterTimer,
   ]);
@@ -4213,6 +4241,11 @@ export default function App({ onBootReady } = {}) {
     setIsTutorialMode(false);
     setTutorialCompletedModules([]);
     setShowTutorialPopovers(false);
+    // Belt-and-suspenders: clear the lesson-detail modal payload from the
+    // store. If it's still flagged open (e.g. user got into a lesson via a
+    // path that didn't go through closeLessonDetail), the SkillTree re-mount
+    // would otherwise pop the modal back up.
+    useModalStore.getState().closeLessonDetail();
     if (typeof window !== "undefined") {
       localStorage.setItem("viewMode", "skillTree");
       localStorage.removeItem("activeLesson");
@@ -4564,37 +4597,15 @@ export default function App({ onBootReady } = {}) {
     showProficiencyCompletionModal,
   ]);
 
+  // dailyGoalOpen/timerModalOpen aren't in the dep array because they live in
+  // useModalStore — read with getState() inside the run, re-fired by the
+  // subscribe() below. This keeps App from re-rendering on a timer-modal tap.
   useEffect(() => {
-    if (!pendingInstallModalAfterTutorial) return;
-
-    if (user?.gettingStartedModalShown) {
-      setPendingInstallModalAfterTutorial(false);
-      return;
-    }
-
-    if (
-      showTutorialBitcoinModal ||
-      celebrateOpen ||
-      showCompletionModal ||
-      showProficiencyCompletionModal ||
-      dailyGoalOpen ||
-      timerModalOpen ||
-      proficiencyTestOpen ||
-      gettingStartedOpen
-    ) {
-      return;
-    }
-
-    if (typeof window === "undefined" || typeof document === "undefined") {
-      setGettingStartedOpen(true);
-      setPendingInstallModalAfterTutorial(false);
-      return;
-    }
-
     let cancelled = false;
     let timeoutId = null;
     let rafId = null;
-    const tryOpen = () => {
+
+    const tryOpenGettingStarted = () => {
       if (cancelled) return;
 
       const activeModalContainers = document.querySelectorAll(
@@ -4612,15 +4623,57 @@ export default function App({ onBootReady } = {}) {
         return;
       }
 
-      timeoutId = window.setTimeout(tryOpen, 60);
+      timeoutId = window.setTimeout(tryOpenGettingStarted, 60);
     };
 
-    rafId = window.requestAnimationFrame(() => {
-      timeoutId = window.setTimeout(tryOpen, 0);
+    const evaluate = () => {
+      if (cancelled) return;
+      if (!pendingInstallModalAfterTutorial) return;
+
+      if (user?.gettingStartedModalShown) {
+        setPendingInstallModalAfterTutorial(false);
+        return;
+      }
+
+      const m = useModalStore.getState();
+      if (
+        showTutorialBitcoinModal ||
+        celebrateOpen ||
+        showCompletionModal ||
+        showProficiencyCompletionModal ||
+        m.dailyGoalOpen ||
+        m.timerModalOpen ||
+        proficiencyTestOpen ||
+        gettingStartedOpen
+      ) {
+        return;
+      }
+
+      if (typeof window === "undefined" || typeof document === "undefined") {
+        setGettingStartedOpen(true);
+        setPendingInstallModalAfterTutorial(false);
+        return;
+      }
+
+      rafId = window.requestAnimationFrame(() => {
+        timeoutId = window.setTimeout(tryOpenGettingStarted, 0);
+      });
+    };
+
+    evaluate();
+
+    const unsubscribe = useModalStore.subscribe((state, prev) => {
+      if (
+        state.dailyGoalOpen !== prev.dailyGoalOpen ||
+        state.timerModalOpen !== prev.timerModalOpen
+      ) {
+        evaluate();
+      }
     });
 
     return () => {
       cancelled = true;
+      unsubscribe();
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
@@ -4630,14 +4683,12 @@ export default function App({ onBootReady } = {}) {
     };
   }, [
     celebrateOpen,
-    dailyGoalOpen,
     gettingStartedOpen,
     pendingInstallModalAfterTutorial,
     proficiencyTestOpen,
     showCompletionModal,
     showProficiencyCompletionModal,
     showTutorialBitcoinModal,
-    timerModalOpen,
     user?.gettingStartedModalShown,
   ]);
 
@@ -7087,23 +7138,13 @@ export default function App({ onBootReady } = {}) {
         showFloatingTrigger={false}
       />
 
-      {isOnboardingChainModalOpen ? (
-        <Portal>
-          <Box
-            aria-hidden="true"
-            position="fixed"
-            inset="0"
-            zIndex="1300"
-            pointerEvents="none"
-            bg="var(--app-overlay)"
-            backdropFilter="blur(4px)"
-          />
-        </Portal>
-      ) : null}
+      {/* Global onboarding-chain backdrop — subscribes to useModalStore
+          for daily/timer so flipping those does NOT re-render App. */}
+      <OnboardingChainBackdrop appChainOpen={appOnboardingChainOpen} />
 
-      {/* Daily Goal Setup — only opened right after onboarding completes */}
-      <DailyGoalModal
-        isOpen={dailyGoalOpen}
+      {/* Daily Goal Setup — Gate subscribes to useModalStore for isOpen. */}
+      <DailyGoalModalGate
+        appChainOpen={appOnboardingChainOpen}
         onClose={handleDailyGoalClose}
         onSaveGoal={handleDailyGoalSave}
         npub={activeNpub}
@@ -7117,11 +7158,10 @@ export default function App({ onBootReady } = {}) {
         dailyXpHistory={dailyGoalXpHistory}
         currentDailyXp={dailyXpToday}
         currentGoalXp={dailyGoalTarget}
-        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
-      <SessionTimerModal
-        isOpen={timerModalOpen}
+      <SessionTimerModalGate
+        appChainOpen={appOnboardingChainOpen}
         onClose={handleTimerModalClose}
         minutes={timerMinutes}
         onMinutesChange={setTimerMinutes}
@@ -7130,11 +7170,11 @@ export default function App({ onBootReady } = {}) {
         helper={null}
         t={t}
         lang={appLanguage}
-        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
-      <ProficiencyTestModal
+      <ProficiencyTestModalSharedBackdropWrapper
         isOpen={proficiencyTestOpen}
+        appChainOpen={appOnboardingChainOpen}
         onClose={handleProficiencySkip}
         onTakeTest={handleProficiencyTakeTest}
         lang={appLanguage}
@@ -7142,15 +7182,14 @@ export default function App({ onBootReady } = {}) {
           t[`language_${resolvedTargetLang}`] ||
           TARGET_LANGUAGE_LABELS[resolvedTargetLang]
         }
-        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
-      <GettingStartedModal
+      <GettingStartedModalSharedBackdropWrapper
         isOpen={gettingStartedOpen}
+        appChainOpen={appOnboardingChainOpen}
         onClose={handleGettingStartedSkip}
         secretKey={activeNsec}
         lang={appLanguage}
-        useSharedBackdrop={isOnboardingChainModalOpen}
       />
 
       <BitcoinSupportModal
@@ -7667,6 +7706,100 @@ export default function App({ onBootReady } = {}) {
         </ModalContent>
       </Modal>
     </Box>
+  );
+}
+
+// ─── Modal Gates ──────────────────────────────────────────────────────────
+// These tiny wrappers subscribe to useModalStore so the four onboarding-
+// chain modals (and the shared blur backdrop behind them) can react to
+// dailyGoalOpen / timerModalOpen without re-rendering App. App passes
+// stable props (data + callbacks); only the Gate re-renders on flag flip.
+
+function OnboardingChainBackdrop({ appChainOpen }) {
+  const storeChainOpen = useModalStore(
+    (s) => s.dailyGoalOpen || s.timerModalOpen,
+  );
+  if (!appChainOpen && !storeChainOpen) return null;
+  return (
+    <Portal>
+      <Box
+        aria-hidden="true"
+        position="fixed"
+        inset="0"
+        zIndex="1300"
+        pointerEvents="none"
+        bg="var(--app-overlay)"
+        backdropFilter="blur(4px)"
+      />
+    </Portal>
+  );
+}
+
+function DailyGoalModalGate({ appChainOpen, ...props }) {
+  const isOpen = useModalStore((s) => s.dailyGoalOpen);
+  const timerOpen = useModalStore((s) => s.timerModalOpen);
+  // Lazy-mount: don't put the heavy modal subtree in the React tree until
+  // the first open. Once mounted it stays mounted (so subsequent opens just
+  // flip isOpen). This matched the perf pattern of FlashcardPracticeGate,
+  // which the user reported as the only modal that "opens how I expect".
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return (
+    <DailyGoalModal
+      isOpen={isOpen}
+      useSharedBackdrop={isOpen || timerOpen || appChainOpen}
+      {...props}
+    />
+  );
+}
+
+function SessionTimerModalGate({ appChainOpen, ...props }) {
+  const isOpen = useModalStore((s) => s.timerModalOpen);
+  const dailyOpen = useModalStore((s) => s.dailyGoalOpen);
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return (
+    <SessionTimerModal
+      isOpen={isOpen}
+      useSharedBackdrop={isOpen || dailyOpen || appChainOpen}
+      {...props}
+    />
+  );
+}
+
+function ProficiencyTestModalSharedBackdropWrapper({
+  isOpen,
+  appChainOpen,
+  ...props
+}) {
+  const storeChainOpen = useModalStore(
+    (s) => s.dailyGoalOpen || s.timerModalOpen,
+  );
+  return (
+    <ProficiencyTestModal
+      isOpen={isOpen}
+      useSharedBackdrop={isOpen || appChainOpen || storeChainOpen}
+      {...props}
+    />
+  );
+}
+
+function GettingStartedModalSharedBackdropWrapper({
+  isOpen,
+  appChainOpen,
+  ...props
+}) {
+  const storeChainOpen = useModalStore(
+    (s) => s.dailyGoalOpen || s.timerModalOpen,
+  );
+  return (
+    <GettingStartedModal
+      isOpen={isOpen}
+      useSharedBackdrop={isOpen || appChainOpen || storeChainOpen}
+      {...props}
+    />
   );
 }
 
