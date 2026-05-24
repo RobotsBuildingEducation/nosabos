@@ -104,7 +104,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
-  nativeDrawerMotionProps,
+  nativeAnchoredDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
@@ -2148,7 +2148,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           />
           <DrawerContent
             {...chatSwipeDismiss.drawerContentProps}
-            motionProps={nativeDrawerMotionProps}
+            motionProps={nativeAnchoredDrawerMotionProps}
             bg="gray.900"
             color="gray.100"
             borderTopRadius="24px"
@@ -2669,7 +2669,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           >
             <DrawerOverlay motionProps={nativeOverlayMotionProps} />
             <DrawerContent
-              motionProps={nativeDrawerMotionProps}
+              motionProps={nativeAnchoredDrawerMotionProps}
               bg="gray.900"
               color="gray.100"
               maxW="280px"

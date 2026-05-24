@@ -11821,8 +11821,13 @@ export function getLearningPath(targetLang, level) {
     ? targetLang
     : DEFAULT_TARGET_LANG;
   const units = LEARNING_PATHS[lang]?.[level] || [];
-  // Return a deep clone to avoid mutation
-  return JSON.parse(JSON.stringify(units));
+  // Return a shallow array clone so consumers can iterate / filter freely
+  // without mutating the static source. We intentionally do NOT deep-clone:
+  // JSON.parse(JSON.stringify(units)) on the multi-level case was a 2-3s
+  // synchronous main-thread block on iOS Safari, which manifested as a
+  // frozen UI (including stuttering sounds) when switching modes. All
+  // current consumers treat the returned data as read-only.
+  return units.slice();
 }
 
 /**
@@ -11837,7 +11842,9 @@ export function getMultiLevelLearningPath(targetLang, levels = ["A1", "A2"]) {
   const allUnits = [];
   levels.forEach((level) => {
     const units = LEARNING_PATHS[lang]?.[level] || [];
-    // Add level metadata to each unit
+    // Spread each unit so cefrLevel can be added without mutating the source.
+    // Inner arrays (e.g. `lessons`) remain references to LEARNING_PATHS; all
+    // current consumers read them via .filter/.find/.map and never mutate.
     const unitsWithLevel = units.map((unit) => ({
       ...unit,
       cefrLevel: level,
@@ -11845,8 +11852,14 @@ export function getMultiLevelLearningPath(targetLang, levels = ["A1", "A2"]) {
     allUnits.push(...unitsWithLevel);
   });
 
-  // Return a deep clone to avoid mutation
-  return JSON.parse(JSON.stringify(allUnits));
+  // IMPORTANT: do not deep-clone here. The previous implementation used
+  // JSON.parse(JSON.stringify(allUnits)) "to avoid mutation", but for the
+  // Tutor mode (which loads all 7 CEFR levels) that serialize+parse pass
+  // synchronously blocks the iOS Safari main thread for 2-3 seconds — long
+  // enough that audio (Tone.js mode-switch chord) stutters and the mode
+  // swap visibly freezes. The shallow `.map({...unit})` above is sufficient
+  // protection given consumers never mutate the returned tree.
+  return allUnits;
 }
 
 /**

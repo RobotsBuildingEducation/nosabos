@@ -35,7 +35,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
-  nativeDrawerMotionProps,
+  nativeAnchoredDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
@@ -608,7 +608,7 @@ export default function NotesDrawer({
       />
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
-        motionProps={nativeDrawerMotionProps}
+        motionProps={nativeAnchoredDrawerMotionProps}
         display="flex"
         flexDirection="column"
         bg={noteUi.drawerBg}

@@ -2893,9 +2893,13 @@ export default function SkillTree({
 
         {/* Skill Tree Units, Flashcards, or Conversations */}
         {/* When pathMode changes, deferredPathMode lags by one frame.
-            Render nothing during that gap so the old view clears instantly
-            before the new heavy component mounts on the next frame. */}
-        {pathMode !== deferredPathMode ? null : deferredPathMode === "path" ? (
+            Show the loading orb during that gap so the user gets immediate
+            visual feedback that the mode switch is in progress, instead of
+            staring at a blank screen for 2-3s while the heavy mode component
+            mounts. */}
+        {pathMode !== deferredPathMode ? (
+          <PathModeFallback fill />
+        ) : deferredPathMode === "path" ? (
           <Box>
             {isLoadingUnits ? (
               <PathModeFallback />

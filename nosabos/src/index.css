@@ -337,6 +337,7 @@ button {
   color: inherit;
   cursor: pointer;
   transition: border-color 0.25s;
+  touch-action: manipulation;
 }
 button:hover {
   border-color: var(--app-border-strong);

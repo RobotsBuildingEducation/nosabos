@@ -215,7 +215,7 @@ import {
 import { syncDocumentLanguage } from "./utils/documentLanguage";
 import { getGermanCopy } from "./utils/germanCopy";
 import {
-  nativeDrawerMotionProps,
+  nativeAnchoredDrawerMotionProps,
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "./utils/modalMotion";
@@ -226,6 +226,83 @@ import {
 } from "./utils/geminiLiveVoices";
 
 const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
+
+// Lazy modes for the warmup-mount step below. These are the same modules
+// React.lazy()'d in SkillTree.jsx — Vite shares the chunk by resolved path.
+const WarmupTutor = lazy(() => import("./components/Tutor"));
+const WarmupConversations = lazy(() => import("./components/Conversations"));
+const WarmupFlashcards = lazy(() => import("./components/FlashcardSkillTree"));
+
+/**
+ * WarmupModes
+ *
+ * Mounts the heavy lazy mode components briefly in a hidden offscreen
+ * container during boot idle so JavaScriptCore (iOS Safari's JS engine) has
+ * a chance to JIT-compile their gigantic function bodies before the user
+ * actually taps a mode. Without this, the first mode switch on iOS freezes
+ * the main thread for 2-3s (visible as a stuck button-press animation and
+ * a humming/sustained Tone.js chord) while JSC interpreter-executes ~4000
+ * lines of hook calls in Tutor.jsx for the first time.
+ *
+ * Side effects to be aware of:
+ *  - Tutor has `useEffect(() => { window.scrollTo(0, 0) }, [])` which fires
+ *    on mount. We save/restore scroll position around the warmup window.
+ *  - Each mode reads from a few Firestore docs gated on `activeNpub`; we
+ *    pass `""` so those checks early-return.
+ *  - useEffect cleanups run on unmount so subscriptions tear down cleanly.
+ */
+function WarmupModes({ active }) {
+  if (!active) return null;
+  // Render in a hidden, non-interactive container far offscreen.
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        top: "-99999px",
+        left: "-99999px",
+        width: "1px",
+        height: "1px",
+        overflow: "hidden",
+        pointerEvents: "none",
+        visibility: "hidden",
+        contain: "strict",
+      }}
+    >
+      <Suspense fallback={null}>
+        <WarmupTutor
+          activeNpub=""
+          targetLang="es"
+          supportLang="en"
+          pauseMs={1000}
+          maxProficiencyLevel="A1"
+          onFirstLessonComplete={() => {}}
+          onDailyGoalCelebration={() => {}}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <WarmupConversations
+          activeNpub=""
+          targetLang="es"
+          supportLang="en"
+          pauseMs={1000}
+          maxProficiencyLevel="A1"
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <WarmupFlashcards
+          userProgress={{}}
+          onStartFlashcard={() => {}}
+          onRandomPractice={() => {}}
+          targetLang="es"
+          supportLang="en"
+          activeCEFRLevel="A1"
+          pauseMs={1000}
+        />
+      </Suspense>
+    </div>
+  );
+}
 
 /* ---------------------------
    Small helpers
@@ -749,6 +826,27 @@ function TopBar({
   const themeMode = useThemeStore((s) => s.themeMode);
   const syncThemeMode = useThemeStore((s) => s.syncThemeMode);
   const [settingsTabIndex, setSettingsTabIndex] = useState(0);
+  // Defer mounting the heavy settings body until after the open animation has
+  // started painting. On iOS Safari, mounting the full drawer tree in the same
+  // commit as the open transition blocks the first frame for several seconds.
+  const [settingsBodyReady, setSettingsBodyReady] = useState(false);
+  useEffect(() => {
+    if (!settingsOpen) {
+      setSettingsBodyReady(false);
+      return undefined;
+    }
+    // Two RAFs: first frame paints the (empty) drawer, second frame begins
+    // mounting children so the open animation actually shows.
+    let outer = 0;
+    let inner = 0;
+    outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setSettingsBodyReady(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      if (inner) cancelAnimationFrame(inner);
+    };
+  }, [settingsOpen]);
   const settingsSwipeDismiss = useBottomDrawerSwipeDismiss({
     isOpen: settingsOpen,
     onClose: closeSettings,
@@ -1308,7 +1406,7 @@ function TopBar({
         />
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
-          motionProps={nativeDrawerMotionProps}
+          motionProps={nativeAnchoredDrawerMotionProps}
           bg="gray.900"
           color="var(--app-text-primary)"
           borderTopRadius="24px"
@@ -1344,654 +1442,666 @@ function TopBar({
                 onClick={closeSettings}
               />
             </Flex>
-            <Tabs
-              index={settingsTabIndex}
-              onChange={setSettingsTabIndex}
-              variant="unstyled"
-              display="flex"
-              flexDirection="column"
-              flex={1}
-              minH={0}
-            >
-              <Box maxW="600px" mx="auto" w="100%">
-                <TabList
-                  mb={4}
-                  mt={2}
-                  gap={6}
-                  flexWrap="wrap"
-                  justifyContent="center"
-                >
-                  <Tab
-                    px={0}
-                    pt={1}
-                    pb={3}
-                    position="relative"
-                    fontWeight="semibold"
-                    color="var(--app-text-muted)"
-                    borderRadius="0"
-                    bg="transparent"
-                    border="none"
-                    boxShadow="none"
-                    outline="none"
-                    _active={{ bg: "transparent" }}
-                    _hover={{
-                      color: "var(--app-text-primary)",
-                      borderColor: "transparent",
-                    }}
-                    _focus={{
-                      boxShadow: "none",
-                      outline: "none",
-                      borderColor: "transparent",
-                    }}
-                    _focusVisible={{
-                      boxShadow: "none",
-                      outline: "none",
-                      borderColor: "transparent",
-                    }}
-                    sx={{
-                      "&:hover": { borderColor: "transparent" },
-                      "&:focus": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&:focus-visible": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&[data-focus]": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&[data-focus-visible]": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                    }}
-                    _after={{
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: "-1px",
-                      height: "3px",
-                      borderRadius: "full",
-                      bgGradient:
-                        "linear(to-r, cyan.300, blue.400, purple.400)",
-                      opacity: 0,
-                      transform: "scaleX(0.7)",
-                      transformOrigin: "center",
-                      transition: "all 0.2s ease",
-                    }}
-                    _selected={{
-                      color: "var(--app-text-primary)",
-                      _after: {
-                        opacity: 1,
-                        transform: "scaleX(1)",
-                      },
-                    }}
+            {settingsBodyReady ? (
+              <Tabs
+                index={settingsTabIndex}
+                onChange={setSettingsTabIndex}
+                variant="unstyled"
+                display="flex"
+                flexDirection="column"
+                flex={1}
+                minH={0}
+                isLazy
+                lazyBehavior="keepMounted"
+              >
+                <Box maxW="600px" mx="auto" w="100%">
+                  <TabList
+                    mb={4}
+                    mt={2}
+                    gap={6}
+                    flexWrap="wrap"
+                    justifyContent="center"
                   >
-                    {t.ra_settings_title || "Settings"}
-                  </Tab>
-                  <Tab
+                    <Tab
+                      px={0}
+                      pt={1}
+                      pb={3}
+                      position="relative"
+                      fontWeight="semibold"
+                      color="var(--app-text-muted)"
+                      borderRadius="0"
+                      bg="transparent"
+                      border="none"
+                      boxShadow="none"
+                      outline="none"
+                      _active={{ bg: "transparent" }}
+                      _hover={{
+                        color: "var(--app-text-primary)",
+                        borderColor: "transparent",
+                      }}
+                      _focus={{
+                        boxShadow: "none",
+                        outline: "none",
+                        borderColor: "transparent",
+                      }}
+                      _focusVisible={{
+                        boxShadow: "none",
+                        outline: "none",
+                        borderColor: "transparent",
+                      }}
+                      sx={{
+                        "&:hover": { borderColor: "transparent" },
+                        "&:focus": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&:focus-visible": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&[data-focus]": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&[data-focus-visible]": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                      }}
+                      _after={{
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        right: 0,
+                        bottom: "-1px",
+                        height: "3px",
+                        borderRadius: "full",
+                        bgGradient:
+                          "linear(to-r, cyan.300, blue.400, purple.400)",
+                        opacity: 0,
+                        transform: "scaleX(0.7)",
+                        transformOrigin: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      _selected={{
+                        color: "var(--app-text-primary)",
+                        _after: {
+                          opacity: 1,
+                          transform: "scaleX(1)",
+                        },
+                      }}
+                    >
+                      {t.ra_settings_title || "Settings"}
+                    </Tab>
+                    <Tab
+                      px={0}
+                      pt={1}
+                      pb={3}
+                      position="relative"
+                      fontWeight="semibold"
+                      color="var(--app-text-muted)"
+                      borderRadius="0"
+                      bg="transparent"
+                      border="none"
+                      boxShadow="none"
+                      outline="none"
+                      _active={{ bg: "transparent" }}
+                      _hover={{
+                        color: "var(--app-text-primary)",
+                        borderColor: "transparent",
+                      }}
+                      _focus={{
+                        boxShadow: "none",
+                        outline: "none",
+                        borderColor: "transparent",
+                      }}
+                      _focusVisible={{
+                        boxShadow: "none",
+                        outline: "none",
+                        borderColor: "transparent",
+                      }}
+                      sx={{
+                        "&:hover": { borderColor: "transparent" },
+                        "&:focus": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&:focus-visible": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&[data-focus]": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                        "&[data-focus-visible]": {
+                          outline: "none",
+                          boxShadow: "none",
+                          borderColor: "transparent",
+                        },
+                      }}
+                      _after={{
+                        content: '""',
+                        position: "absolute",
+                        left: 0,
+                        right: 0,
+                        bottom: "-1px",
+                        height: "3px",
+                        borderRadius: "full",
+                        bgGradient:
+                          "linear(to-r, cyan.300, blue.400, purple.400)",
+                        opacity: 0,
+                        transform: "scaleX(0.7)",
+                        transformOrigin: "center",
+                        transition: "all 0.2s ease",
+                      }}
+                      _selected={{
+                        color: "var(--app-text-primary)",
+                        _after: {
+                          opacity: 1,
+                          transform: "scaleX(1)",
+                        },
+                      }}
+                    >
+                      {t.app_account_title || "Account"}
+                    </Tab>
+                  </TabList>
+                </Box>
+                <TabPanels flex={1} minH={0}>
+                  <TabPanel
                     px={0}
-                    pt={1}
-                    pb={3}
-                    position="relative"
-                    fontWeight="semibold"
-                    color="var(--app-text-muted)"
-                    borderRadius="0"
-                    bg="transparent"
-                    border="none"
-                    boxShadow="none"
-                    outline="none"
-                    _active={{ bg: "transparent" }}
-                    _hover={{
-                      color: "var(--app-text-primary)",
-                      borderColor: "transparent",
-                    }}
-                    _focus={{
-                      boxShadow: "none",
-                      outline: "none",
-                      borderColor: "transparent",
-                    }}
-                    _focusVisible={{
-                      boxShadow: "none",
-                      outline: "none",
-                      borderColor: "transparent",
-                    }}
-                    sx={{
-                      "&:hover": { borderColor: "transparent" },
-                      "&:focus": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&:focus-visible": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&[data-focus]": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                      "&[data-focus-visible]": {
-                        outline: "none",
-                        boxShadow: "none",
-                        borderColor: "transparent",
-                      },
-                    }}
-                    _after={{
-                      content: '""',
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: "-1px",
-                      height: "3px",
-                      borderRadius: "full",
-                      bgGradient:
-                        "linear(to-r, cyan.300, blue.400, purple.400)",
-                      opacity: 0,
-                      transform: "scaleX(0.7)",
-                      transformOrigin: "center",
-                      transition: "all 0.2s ease",
-                    }}
-                    _selected={{
-                      color: "var(--app-text-primary)",
-                      _after: {
-                        opacity: 1,
-                        transform: "scaleX(1)",
-                      },
-                    }}
+                    pt={0}
+                    pb={0}
+                    display="flex"
+                    flexDirection="column"
+                    overflowY="auto"
+                    minH={0}
                   >
-                    {t.app_account_title || "Account"}
-                  </Tab>
-                </TabList>
-              </Box>
-              <TabPanels flex={1} minH={0}>
-                <TabPanel
-                  px={0}
-                  pt={0}
-                  pb={0}
-                  display="flex"
-                  flexDirection="column"
-                  overflowY="auto"
-                  minH={0}
-                >
-                  <Box maxW="600px" mx="auto" w="100%">
-                    <VStack align="stretch" spacing={3} pb={14}>
-                      <Wrap spacing={4}>
-                        <VStack align="flex-start" spacing={1}>
-                          <Text
-                            fontSize="xs"
-                            fontWeight="semibold"
-                            color="gray.400"
-                          >
-                            {translations[appLanguage]
-                              .onboarding_support_menu_label || "Support:"}
-                          </Text>
-                          <Menu
-                            autoSelect={false}
-                            isLazy
-                            onOpen={() => playSound(selectSound)}
-                          >
-                            <MenuButton
-                              as={Button}
-                              rightIcon={<ChevronDownIcon />}
-                              variant="outline"
-                              size="sm"
-                              borderColor="gray.700"
-                              bg="gray.800"
-                              _hover={{ bg: "gray.750" }}
-                              _active={{ bg: "gray.750" }}
-                              padding={5}
-                              onClick={() => playSound(selectSound)}
+                    <Box maxW="600px" mx="auto" w="100%">
+                      <VStack align="stretch" spacing={3} pb={14}>
+                        <Wrap spacing={4}>
+                          <VStack align="flex-start" spacing={1}>
+                            <Text
+                              fontSize="xs"
+                              fontWeight="semibold"
+                              color="gray.400"
                             >
-                              <HStack spacing={2}>
-                                {selectedSupportOption?.flag}
-                                <Text as="span">
-                                  {selectedSupportOption?.label}
-                                </Text>
-                              </HStack>
-                            </MenuButton>
-                            <MenuList
-                              borderColor="gray.700"
-                              bg="gray.900"
-                              maxH="300px"
-                              overflowY="auto"
-                              motionProps={INSTANT_EXIT_MOTION_PROPS}
-                              sx={{
-                                "&::-webkit-scrollbar": {
-                                  width: "8px",
-                                },
-                                "&::-webkit-scrollbar-track": {
-                                  bg: "gray.800",
-                                  borderRadius: "4px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                  bg: "gray.600",
-                                  borderRadius: "4px",
-                                },
-                                "&::-webkit-scrollbar-thumb:hover": {
-                                  bg: "gray.500",
-                                },
-                              }}
+                              {translations[appLanguage]
+                                .onboarding_support_menu_label || "Support:"}
+                            </Text>
+                            <Menu
+                              autoSelect={false}
+                              isLazy
+                              onOpen={() => playSound(selectSound)}
                             >
-                              <Box
-                                px={3}
-                                pt={2}
-                                pb={1}
-                                fontSize="xs"
-                                fontWeight="semibold"
-                                color="gray.400"
+                              <MenuButton
+                                as={Button}
+                                rightIcon={<ChevronDownIcon />}
+                                variant="outline"
+                                size="sm"
+                                borderColor="gray.700"
+                                bg="gray.800"
+                                _hover={{ bg: "gray.750" }}
+                                _active={{ bg: "gray.750" }}
+                                padding={5}
+                                onClick={() => playSound(selectSound)}
                               >
-                                {translations[appLanguage]
-                                  .onboarding_support_menu_label || "Support:"}
-                              </Box>
-                              <MenuOptionGroup
-                                type="radio"
-                                value={supportLang}
-                                onChange={(value) => {
-                                  const normalized = normalizeSupportLanguage(
-                                    value,
-                                    DEFAULT_SUPPORT_LANGUAGE,
-                                  );
-                                  playSound(selectSound);
-                                  const shouldLocalizePersona =
-                                    isDefaultPersonaValue(voicePersona);
-                                  const nextPersona = shouldLocalizePersona
-                                    ? personaForSupportLanguage(
-                                        voicePersona,
-                                        normalized,
-                                      )
-                                    : voicePersona;
-                                  if (
-                                    shouldLocalizePersona &&
-                                    nextPersona &&
-                                    nextPersona !== voicePersona
-                                  ) {
-                                    setVoicePersona(nextPersona);
-                                  }
-                                  onSupportLangChange?.(
-                                    normalized,
-                                    setSupportLang,
-                                  );
-                                  persistSettingsAfterPaint({
-                                    supportLang: normalized,
-                                    ...(shouldLocalizePersona && nextPersona
-                                      ? { tutorVoicePersona: nextPersona }
-                                      : {}),
-                                  });
+                                <HStack spacing={2}>
+                                  {selectedSupportOption?.flag}
+                                  <Text as="span">
+                                    {selectedSupportOption?.label}
+                                  </Text>
+                                </HStack>
+                              </MenuButton>
+                              <MenuList
+                                borderColor="gray.700"
+                                bg="gray.900"
+                                maxH="300px"
+                                overflowY="auto"
+                                motionProps={INSTANT_EXIT_MOTION_PROPS}
+                                sx={{
+                                  "&::-webkit-scrollbar": {
+                                    width: "8px",
+                                  },
+                                  "&::-webkit-scrollbar-track": {
+                                    bg: "gray.800",
+                                    borderRadius: "4px",
+                                  },
+                                  "&::-webkit-scrollbar-thumb": {
+                                    bg: "gray.600",
+                                    borderRadius: "4px",
+                                  },
+                                  "&::-webkit-scrollbar-thumb:hover": {
+                                    bg: "gray.500",
+                                  },
                                 }}
                               >
-                                {supportLanguageOptions.map((option) => (
-                                  <MenuItemOption
-                                    key={option.value}
-                                    value={option.value}
-                                    padding={5}
-                                    onPointerDown={() => playSound(selectSound)}
-                                  >
-                                    <HStack spacing={2}>
-                                      {option.flag}
-                                      <Text as="span">{option.label}</Text>
-                                    </HStack>
-                                  </MenuItemOption>
-                                ))}
-                              </MenuOptionGroup>
-                            </MenuList>
-                          </Menu>
-                        </VStack>
-
-                        <VStack align="flex-start" spacing={1}>
-                          <Text
-                            fontSize="xs"
-                            fontWeight="semibold"
-                            color="gray.400"
-                          >
-                            {translations[appLanguage]
-                              .onboarding_practice_menu_label || "Practice:"}
-                          </Text>
-                          <Menu
-                            autoSelect={false}
-                            isLazy
-                            onOpen={() => playSound(selectSound)}
-                          >
-                            <MenuButton
-                              as={Button}
-                              rightIcon={<ChevronDownIcon />}
-                              variant="outline"
-                              size="sm"
-                              borderColor="gray.700"
-                              bg="gray.800"
-                              _hover={{ bg: "gray.750" }}
-                              _active={{ bg: "gray.750" }}
-                              px={4}
-                              title={
-                                translations[appLanguage]
-                                  .onboarding_practice_label_title
-                              }
-                              padding={5}
-                              onClick={() => playSound(selectSound)}
-                            >
-                              <HStack spacing={2}>
-                                {selectedPracticeOption?.flag}
-                                <Text as="span">
-                                  {selectedPracticeOption?.label}
-                                </Text>
-                              </HStack>
-                            </MenuButton>
-                            <MenuList
-                              borderColor="gray.700"
-                              bg="gray.900"
-                              maxH="300px"
-                              overflowY="auto"
-                              motionProps={INSTANT_EXIT_MOTION_PROPS}
-                              sx={{
-                                "&::-webkit-scrollbar": {
-                                  width: "8px",
-                                },
-                                "&::-webkit-scrollbar-track": {
-                                  bg: "gray.800",
-                                  borderRadius: "4px",
-                                },
-                                "&::-webkit-scrollbar-thumb": {
-                                  bg: "gray.600",
-                                  borderRadius: "4px",
-                                },
-                                "&::-webkit-scrollbar-thumb:hover": {
-                                  bg: "gray.500",
-                                },
-                              }}
-                            >
-                              <Box
-                                px={3}
-                                pt={2}
-                                pb={1}
-                                fontSize="xs"
-                                fontWeight="semibold"
-                                color="gray.400"
-                              >
-                                {translations[appLanguage]
-                                  .onboarding_practice_menu_label ||
-                                  "Practice:"}
-                              </Box>
-                              <MenuOptionGroup
-                                type="radio"
-                                value={targetLang}
-                                onChange={(value) => {
-                                  playSound(selectSound);
-                                  setTargetLang(value);
-                                  persistSettingsAfterPaint({
-                                    targetLang: value,
-                                  });
-                                }}
-                              >
-                                {practiceLanguageOptions.map((option) => (
-                                  <MenuItemOption
-                                    key={option.value}
-                                    value={option.value}
-                                    padding={5}
-                                  >
-                                    <HStack spacing={2}>
-                                      {option.flag}
-                                      <Text as="span">{option.label}</Text>
-                                    </HStack>
-                                  </MenuItemOption>
-                                ))}
-                              </MenuOptionGroup>
-                            </MenuList>
-                          </Menu>
-                        </VStack>
-                      </Wrap>
-
-                      {!hasProficiencyDecisionForTargetLang && (
-                        <Button
-                          leftIcon={<LuBadgeCheck />}
-                          size="sm"
-                          variant="outline"
-                          borderColor={
-                            themeMode === "light" ? "cyan.700" : "cyan.600"
-                          }
-                          color={
-                            themeMode === "light" ? "cyan.800" : "cyan.200"
-                          }
-                          padding={6}
-                          _hover={{
-                            bg: themeMode === "light" ? "cyan.50" : "cyan.900",
-                          }}
-                          onClick={() => {
-                            closeSettings();
-                            navigate("/proficiency");
-                          }}
-                          mt={4}
-                        >
-                          {uiCopy(appLanguage, {
-                            en: "Start proficiency test",
-                            es: "Iniciar prueba de nivel",
-                            pt: "Iniciar teste de nível",
-                            it: "Inizia test di livello",
-                            fr: "Commencer le test de niveau",
-                            ja: "レベルテストを始める",
-                            hi: "प्रवीणता परीक्षण शुरू करें",
-                            ar: "ابدأ اختبار المستوى",
-                            zh: "开始水平测试",
-                          })}
-                        </Button>
-                      )}
-
-                      <VoicePreferenceField
-                        t={t}
-                        voice={tutorVoice}
-                        voicePersona={voicePersona}
-                        targetLang={targetLang}
-                        supportLang={supportLang}
-                        voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
-                        normalizeVoice={normalizeGeminiLiveVoice}
-                        getVoiceOption={getGeminiLiveVoiceOption}
-                        previewProvider="gemini-live"
-                        onVoiceChange={(nextVoice, nextPersona) => {
-                          const normalized =
-                            normalizeGeminiLiveVoice(nextVoice);
-                          const persona = String(
-                            nextPersona ?? voicePersona ?? "",
-                          ).slice(0, 240);
-                          setTutorVoice(normalized);
-                          setVoicePersona(persona);
-                          rememberTextDraft("voicePersona", persona);
-                          persistSettingsAfterPaint({
-                            tutorVoice: normalized,
-                            tutorVoicePersona: persona,
-                          });
-                        }}
-                        onVoicePersonaChange={(next) => {
-                          setVoicePersona(next);
-                          rememberTextDraft("voicePersona", next);
-                          debouncedPersist({ tutorVoicePersona: next });
-                        }}
-                        onSelectSound={() => playSound(selectSound)}
-                        menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
-                        heading={
-                          t.onboarding_section_voice_persona ||
-                          "Tutor Voice & Personality"
-                        }
-                        description={
-                          t.onboarding_voice_desc ||
-                          "Choose the voice and style for your tutor."
-                        }
-                        personaPlaceholder={
-                          (t.ra_persona_placeholder &&
-                            t.ra_persona_placeholder.replace(
-                              "{example}",
-                              translations[appLanguage]
-                                .onboarding_persona_default_example,
-                            )) ||
-                          `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
-                        }
-                      />
-
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <HStack justifyContent="space-between" mb={2}>
-                          <Text fontSize="sm">
-                            {t.ra_vad_label ||
-                              "How long to wait to respond to your speech"}
-                          </Text>
-                          <Text fontSize="sm" opacity={0.8}>
-                            {pauseSeconds} {vadSecondsLabel}
-                          </Text>
-                        </HStack>
-                        <Slider
-                          aria-label="pause-slider"
-                          min={200}
-                          max={4000}
-                          step={100}
-                          value={pauseMs}
-                          onChange={(val) => {
-                            setPauseMs(val);
-                            playSliderTick(val, 200, 4000);
-                          }}
-                          onChangeEnd={(value) =>
-                            persistSettings({ pauseMs: value })
-                          }
-                        >
-                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                            <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
-                          </SliderTrack>
-                          <SliderThumb boxSize={6} />
-                        </Slider>
-                      </Box>
-
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <HStack justifyContent="space-between">
-                          <Text fontSize="sm">
-                            {t.teams_feed_allow_label || "Allow posts"}
-                          </Text>
-                          <Switch
-                            id="settings-allow-posts-switch"
-                            isChecked={allowPosts}
-                            onChange={(e) =>
-                              onAllowPostsChange(e.target.checked)
-                            }
-                          />
-                        </HStack>
-                        <Text fontSize="xs" opacity={0.6} mt={2}>
-                          {allowPosts
-                            ? t.teams_feed_allow_enabled ||
-                              "Automatic community posts enabled."
-                            : t.teams_feed_allow_disabled ||
-                              "Automatic community posts disabled."}
-                        </Text>
-                      </Box>
-
-                      <Box bg="gray.800" p={3} rounded="md">
-                        <HStack justifyContent="space-between">
-                          <Text fontSize="sm">
-                            {t.sound_effects_label || "Sound effects"}
-                          </Text>
-                          <Switch
-                            id="settings-sound-effects-switch"
-                            isChecked={soundEnabled}
-                            onChange={(e) =>
-                              onSoundEnabledChange(e.target.checked)
-                            }
-                          />
-                        </HStack>
-                        <Text fontSize="xs" opacity={0.6} mt={2}>
-                          {soundEnabled
-                            ? t.sound_effects_enabled ||
-                              "Sound effects are enabled."
-                            : t.sound_effects_disabled ||
-                              "Sound effects are muted."}
-                        </Text>
-                        {soundEnabled && !isMobile && (
-                          <HStack mt={3} spacing={3} align="center">
-                            <Box w="100%">
-                              <HStack justify="space-between" mb={2}>
-                                <Text fontSize="sm">
-                                  {t.sound_volume_label || "Volume"}
-                                </Text>
-                                <Text fontSize="sm" opacity={0.8}>
-                                  {soundVolume}%
-                                </Text>
-                              </HStack>
-                              <Slider
-                                aria-label="sound-volume-slider"
-                                min={0}
-                                max={100}
-                                step={5}
-                                value={soundVolume}
-                                onChange={(val) => {
-                                  onVolumeChange(val);
-                                  playSliderTick(val, 0, 100);
-                                }}
-                                onChangeEnd={(val) => onVolumeSave(val)}
-                              >
-                                <SliderTrack
-                                  bg="gray.700"
-                                  h={3}
-                                  borderRadius="full"
+                                <Box
+                                  px={3}
+                                  pt={2}
+                                  pb={1}
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                  color="gray.400"
                                 >
-                                  <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
-                                </SliderTrack>
-                                <SliderThumb boxSize={6} />
-                              </Slider>
-                            </Box>
-                          </HStack>
-                        )}
-                      </Box>
+                                  {translations[appLanguage]
+                                    .onboarding_support_menu_label ||
+                                    "Support:"}
+                                </Box>
+                                <MenuOptionGroup
+                                  type="radio"
+                                  value={supportLang}
+                                  onChange={(value) => {
+                                    const normalized = normalizeSupportLanguage(
+                                      value,
+                                      DEFAULT_SUPPORT_LANGUAGE,
+                                    );
+                                    playSound(selectSound);
+                                    const shouldLocalizePersona =
+                                      isDefaultPersonaValue(voicePersona);
+                                    const nextPersona = shouldLocalizePersona
+                                      ? personaForSupportLanguage(
+                                          voicePersona,
+                                          normalized,
+                                        )
+                                      : voicePersona;
+                                    if (
+                                      shouldLocalizePersona &&
+                                      nextPersona &&
+                                      nextPersona !== voicePersona
+                                    ) {
+                                      setVoicePersona(nextPersona);
+                                    }
+                                    onSupportLangChange?.(
+                                      normalized,
+                                      setSupportLang,
+                                    );
+                                    persistSettingsAfterPaint({
+                                      supportLang: normalized,
+                                      ...(shouldLocalizePersona && nextPersona
+                                        ? { tutorVoicePersona: nextPersona }
+                                        : {}),
+                                    });
+                                  }}
+                                >
+                                  {supportLanguageOptions.map((option) => (
+                                    <MenuItemOption
+                                      key={option.value}
+                                      value={option.value}
+                                      padding={5}
+                                      onPointerDown={() =>
+                                        playSound(selectSound)
+                                      }
+                                    >
+                                      <HStack spacing={2}>
+                                        {option.flag}
+                                        <Text as="span">{option.label}</Text>
+                                      </HStack>
+                                    </MenuItemOption>
+                                  ))}
+                                </MenuOptionGroup>
+                              </MenuList>
+                            </Menu>
+                          </VStack>
 
-                      <ThemeModeField
-                        value={themeMode}
-                        compact={isMobile}
+                          <VStack align="flex-start" spacing={1}>
+                            <Text
+                              fontSize="xs"
+                              fontWeight="semibold"
+                              color="gray.400"
+                            >
+                              {translations[appLanguage]
+                                .onboarding_practice_menu_label || "Practice:"}
+                            </Text>
+                            <Menu
+                              autoSelect={false}
+                              isLazy
+                              onOpen={() => playSound(selectSound)}
+                            >
+                              <MenuButton
+                                as={Button}
+                                rightIcon={<ChevronDownIcon />}
+                                variant="outline"
+                                size="sm"
+                                borderColor="gray.700"
+                                bg="gray.800"
+                                _hover={{ bg: "gray.750" }}
+                                _active={{ bg: "gray.750" }}
+                                px={4}
+                                title={
+                                  translations[appLanguage]
+                                    .onboarding_practice_label_title
+                                }
+                                padding={5}
+                                onClick={() => playSound(selectSound)}
+                              >
+                                <HStack spacing={2}>
+                                  {selectedPracticeOption?.flag}
+                                  <Text as="span">
+                                    {selectedPracticeOption?.label}
+                                  </Text>
+                                </HStack>
+                              </MenuButton>
+                              <MenuList
+                                borderColor="gray.700"
+                                bg="gray.900"
+                                maxH="300px"
+                                overflowY="auto"
+                                motionProps={INSTANT_EXIT_MOTION_PROPS}
+                                sx={{
+                                  "&::-webkit-scrollbar": {
+                                    width: "8px",
+                                  },
+                                  "&::-webkit-scrollbar-track": {
+                                    bg: "gray.800",
+                                    borderRadius: "4px",
+                                  },
+                                  "&::-webkit-scrollbar-thumb": {
+                                    bg: "gray.600",
+                                    borderRadius: "4px",
+                                  },
+                                  "&::-webkit-scrollbar-thumb:hover": {
+                                    bg: "gray.500",
+                                  },
+                                }}
+                              >
+                                <Box
+                                  px={3}
+                                  pt={2}
+                                  pb={1}
+                                  fontSize="xs"
+                                  fontWeight="semibold"
+                                  color="gray.400"
+                                >
+                                  {translations[appLanguage]
+                                    .onboarding_practice_menu_label ||
+                                    "Practice:"}
+                                </Box>
+                                <MenuOptionGroup
+                                  type="radio"
+                                  value={targetLang}
+                                  onChange={(value) => {
+                                    playSound(selectSound);
+                                    setTargetLang(value);
+                                    persistSettingsAfterPaint({
+                                      targetLang: value,
+                                    });
+                                  }}
+                                >
+                                  {practiceLanguageOptions.map((option) => (
+                                    <MenuItemOption
+                                      key={option.value}
+                                      value={option.value}
+                                      padding={5}
+                                    >
+                                      <HStack spacing={2}>
+                                        {option.flag}
+                                        <Text as="span">{option.label}</Text>
+                                      </HStack>
+                                    </MenuItemOption>
+                                  ))}
+                                </MenuOptionGroup>
+                              </MenuList>
+                            </Menu>
+                          </VStack>
+                        </Wrap>
+
+                        {!hasProficiencyDecisionForTargetLang && (
+                          <Button
+                            leftIcon={<LuBadgeCheck />}
+                            size="sm"
+                            variant="outline"
+                            borderColor={
+                              themeMode === "light" ? "cyan.700" : "cyan.600"
+                            }
+                            color={
+                              themeMode === "light" ? "cyan.800" : "cyan.200"
+                            }
+                            padding={6}
+                            _hover={{
+                              bg:
+                                themeMode === "light" ? "cyan.50" : "cyan.900",
+                            }}
+                            onClick={() => {
+                              closeSettings();
+                              navigate("/proficiency");
+                            }}
+                            mt={4}
+                          >
+                            {uiCopy(appLanguage, {
+                              en: "Start proficiency test",
+                              es: "Iniciar prueba de nivel",
+                              pt: "Iniciar teste de nível",
+                              it: "Inizia test di livello",
+                              fr: "Commencer le test de niveau",
+                              ja: "レベルテストを始める",
+                              hi: "प्रवीणता परीक्षण शुरू करें",
+                              ar: "ابدأ اختبار المستوى",
+                              zh: "开始水平测试",
+                            })}
+                          </Button>
+                        )}
+
+                        <VoicePreferenceField
+                          t={t}
+                          voice={tutorVoice}
+                          voicePersona={voicePersona}
+                          targetLang={targetLang}
+                          supportLang={supportLang}
+                          voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
+                          normalizeVoice={normalizeGeminiLiveVoice}
+                          getVoiceOption={getGeminiLiveVoiceOption}
+                          previewProvider="gemini-live"
+                          onVoiceChange={(nextVoice, nextPersona) => {
+                            const normalized =
+                              normalizeGeminiLiveVoice(nextVoice);
+                            const persona = String(
+                              nextPersona ?? voicePersona ?? "",
+                            ).slice(0, 240);
+                            setTutorVoice(normalized);
+                            setVoicePersona(persona);
+                            rememberTextDraft("voicePersona", persona);
+                            persistSettingsAfterPaint({
+                              tutorVoice: normalized,
+                              tutorVoicePersona: persona,
+                            });
+                          }}
+                          onVoicePersonaChange={(next) => {
+                            setVoicePersona(next);
+                            rememberTextDraft("voicePersona", next);
+                            debouncedPersist({ tutorVoicePersona: next });
+                          }}
+                          onSelectSound={() => playSound(selectSound)}
+                          menuListMotionProps={INSTANT_EXIT_MOTION_PROPS}
+                          heading={
+                            t.onboarding_section_voice_persona ||
+                            "Tutor Voice & Personality"
+                          }
+                          description={
+                            t.onboarding_voice_desc ||
+                            "Choose the voice and style for your tutor."
+                          }
+                          personaPlaceholder={
+                            (t.ra_persona_placeholder &&
+                              t.ra_persona_placeholder.replace(
+                                "{example}",
+                                translations[appLanguage]
+                                  .onboarding_persona_default_example,
+                              )) ||
+                            `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
+                          }
+                        />
+
+                        <Box bg="gray.800" p={3} rounded="md">
+                          <HStack justifyContent="space-between" mb={2}>
+                            <Text fontSize="sm">
+                              {t.ra_vad_label ||
+                                "How long to wait to respond to your speech"}
+                            </Text>
+                            <Text fontSize="sm" opacity={0.8}>
+                              {pauseSeconds} {vadSecondsLabel}
+                            </Text>
+                          </HStack>
+                          <Slider
+                            aria-label="pause-slider"
+                            min={200}
+                            max={4000}
+                            step={100}
+                            value={pauseMs}
+                            onChange={(val) => {
+                              setPauseMs(val);
+                              playSliderTick(val, 200, 4000);
+                            }}
+                            onChangeEnd={(value) =>
+                              persistSettings({ pauseMs: value })
+                            }
+                          >
+                            <SliderTrack
+                              bg="gray.700"
+                              h={3}
+                              borderRadius="full"
+                            >
+                              <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
+                            </SliderTrack>
+                            <SliderThumb boxSize={6} />
+                          </Slider>
+                        </Box>
+
+                        <Box bg="gray.800" p={3} rounded="md">
+                          <HStack justifyContent="space-between">
+                            <Text fontSize="sm">
+                              {t.teams_feed_allow_label || "Allow posts"}
+                            </Text>
+                            <Switch
+                              id="settings-allow-posts-switch"
+                              isChecked={allowPosts}
+                              onChange={(e) =>
+                                onAllowPostsChange(e.target.checked)
+                              }
+                            />
+                          </HStack>
+                          <Text fontSize="xs" opacity={0.6} mt={2}>
+                            {allowPosts
+                              ? t.teams_feed_allow_enabled ||
+                                "Automatic community posts enabled."
+                              : t.teams_feed_allow_disabled ||
+                                "Automatic community posts disabled."}
+                          </Text>
+                        </Box>
+
+                        <Box bg="gray.800" p={3} rounded="md">
+                          <HStack justifyContent="space-between">
+                            <Text fontSize="sm">
+                              {t.sound_effects_label || "Sound effects"}
+                            </Text>
+                            <Switch
+                              id="settings-sound-effects-switch"
+                              isChecked={soundEnabled}
+                              onChange={(e) =>
+                                onSoundEnabledChange(e.target.checked)
+                              }
+                            />
+                          </HStack>
+                          <Text fontSize="xs" opacity={0.6} mt={2}>
+                            {soundEnabled
+                              ? t.sound_effects_enabled ||
+                                "Sound effects are enabled."
+                              : t.sound_effects_disabled ||
+                                "Sound effects are muted."}
+                          </Text>
+                          {soundEnabled && !isMobile && (
+                            <HStack mt={3} spacing={3} align="center">
+                              <Box w="100%">
+                                <HStack justify="space-between" mb={2}>
+                                  <Text fontSize="sm">
+                                    {t.sound_volume_label || "Volume"}
+                                  </Text>
+                                  <Text fontSize="sm" opacity={0.8}>
+                                    {soundVolume}%
+                                  </Text>
+                                </HStack>
+                                <Slider
+                                  aria-label="sound-volume-slider"
+                                  min={0}
+                                  max={100}
+                                  step={5}
+                                  value={soundVolume}
+                                  onChange={(val) => {
+                                    onVolumeChange(val);
+                                    playSliderTick(val, 0, 100);
+                                  }}
+                                  onChangeEnd={(val) => onVolumeSave(val)}
+                                >
+                                  <SliderTrack
+                                    bg="gray.700"
+                                    h={3}
+                                    borderRadius="full"
+                                  >
+                                    <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
+                                  </SliderTrack>
+                                  <SliderThumb boxSize={6} />
+                                </Slider>
+                              </Box>
+                            </HStack>
+                          )}
+                        </Box>
+
+                        <ThemeModeField
+                          value={themeMode}
+                          compact={isMobile}
+                          t={t}
+                          onChange={(nextMode) => {
+                            playSound(selectSound);
+                            syncThemeMode(nextMode);
+                            persistSettings({ themeMode: nextMode });
+                          }}
+                        />
+                      </VStack>
+                    </Box>
+                  </TabPanel>
+                  <TabPanel
+                    px={0}
+                    pt={0}
+                    pb={0}
+                    display="flex"
+                    flexDirection="column"
+                    overflowY="auto"
+                    minH={0}
+                  >
+                    <Box maxW="600px" mx="auto" w="100%">
+                      <IdentityPanel
+                        onClose={closeSettings}
                         t={t}
-                        onChange={(nextMode) => {
-                          playSound(selectSound);
-                          syncThemeMode(nextMode);
-                          persistSettings({ themeMode: nextMode });
-                        }}
+                        appLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        auth={auth}
+                        onSwitchedAccount={onSwitchedAccount}
+                        cefrResult={cefrResult}
+                        cefrLoading={cefrLoading}
+                        cefrError={cefrError}
+                        onRunCefrAnalysis={() =>
+                          onRunCefrAnalysis?.({ dailyGoalXp, dailyXp })
+                        }
+                        user={user}
+                        onSelectIdentity={onSelectIdentity}
+                        isIdentitySaving={isIdentitySaving}
+                        postNostrContent={postNostrContent}
+                        showHeader={false}
+                        showPatreonSupport={!subscriptionVerified}
                       />
-                    </VStack>
-                  </Box>
-                </TabPanel>
-                <TabPanel
-                  px={0}
-                  pt={0}
-                  pb={0}
-                  display="flex"
-                  flexDirection="column"
-                  overflowY="auto"
-                  minH={0}
-                >
-                  <Box maxW="600px" mx="auto" w="100%">
-                    <IdentityPanel
-                      onClose={closeSettings}
-                      t={t}
-                      appLanguage={appLanguage}
-                      activeNpub={activeNpub}
-                      activeNsec={activeNsec}
-                      auth={auth}
-                      onSwitchedAccount={onSwitchedAccount}
-                      cefrResult={cefrResult}
-                      cefrLoading={cefrLoading}
-                      cefrError={cefrError}
-                      onRunCefrAnalysis={() =>
-                        onRunCefrAnalysis?.({ dailyGoalXp, dailyXp })
-                      }
-                      user={user}
-                      onSelectIdentity={onSelectIdentity}
-                      isIdentitySaving={isIdentitySaving}
-                      postNostrContent={postNostrContent}
-                      showHeader={false}
-                      showPatreonSupport={!subscriptionVerified}
-                    />
-                  </Box>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
+                    </Box>
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            ) : null}
           </DrawerBody>
         </DrawerContent>
       </Drawer>
@@ -6558,6 +6668,103 @@ export default function App({ onBootReady } = {}) {
 
   const isBootLoading = isLoadingApp || !user || shouldHoldForInitialSkillTree;
 
+  // Warm-mount the heavy lazy modes after boot. See <WarmupModes> for why.
+  // Sequence: wait ~3s after boot (so path mode finishes loading and we don't
+  // compete with first-paint), activate warmup for ~1.5s (enough for React to
+  // commit and JSC to JIT-compile the function bodies), then deactivate.
+  // Total wall-clock impact on boot: about a 4.5s window during which the
+  // hidden container is mounted; user-visible impact: none, because the
+  // container is offscreen and pointer-events:none.
+  const [warmupActive, setWarmupActive] = useState(false);
+  useEffect(() => {
+    if (isBootLoading) return undefined;
+    if (typeof window === "undefined") return undefined;
+
+    // Only run this once per session.
+    if (warmupActive) return undefined;
+
+    let cancelled = false;
+    let mountTimer = 0;
+    let unmountTimer = 0;
+
+    mountTimer = window.setTimeout(() => {
+      if (cancelled) return;
+
+      // Capture scroll position RIGHT BEFORE activating warmup, so we can
+      // restore it after Tutor's `window.scrollTo(0,0)` mount effect fires.
+      // Capturing earlier (at boot) would miss scrolling the user did during
+      // the 3s wait.
+      const savedScrollY = window.scrollY;
+      const savedScrollX = window.scrollX;
+
+      setWarmupActive(true);
+
+      // Schedule unmount + scroll restore once JIT has had time to compile.
+      unmountTimer = window.setTimeout(() => {
+        if (cancelled) return;
+        setWarmupActive(false);
+        // Restore scroll on next frame so React has finished unmounting.
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          if (
+            window.scrollX !== savedScrollX ||
+            window.scrollY !== savedScrollY
+          ) {
+            window.scrollTo(savedScrollX, savedScrollY);
+          }
+        });
+      }, 1500);
+    }, 3000);
+
+    return () => {
+      cancelled = true;
+      if (mountTimer) window.clearTimeout(mountTimer);
+      if (unmountTimer) window.clearTimeout(unmountTimer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isBootLoading]);
+
+  // Prefetch lazy-loaded mode chunks during idle time after boot completes.
+  // Without this, the first time the user picks a new mode from the menu, the
+  // browser has to download that chunk over the network — visible as a 5+s
+  // hang on mobile. We warm them all here so the cache is ready when the
+  // mode menu actually fires its <Suspense> boundary.
+  useEffect(() => {
+    if (isBootLoading) return undefined;
+    if (typeof window === "undefined") return undefined;
+
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) return;
+      // Fire-and-forget; errors here are non-fatal (a real switch will retry).
+      const swallow = () => {};
+      import("./components/Conversations").catch(swallow);
+      import("./components/Tutor").catch(swallow);
+      import("./components/FlashcardSkillTree").catch(swallow);
+      import("./components/Stories").catch(swallow);
+      import("./components/GrammarBook").catch(swallow);
+      import("./components/Vocabulary").catch(swallow);
+      import("./components/History").catch(swallow);
+    };
+
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(warm, { timeout: 4000 });
+      return () => {
+        cancelled = true;
+        if (typeof window.cancelIdleCallback === "function") {
+          window.cancelIdleCallback(id);
+        }
+      };
+    }
+    // Safari (including iOS) lacks requestIdleCallback. Fall back to a
+    // setTimeout delay so we don't compete with initial render work.
+    const id = window.setTimeout(warm, 1500);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(id);
+    };
+  }, [isBootLoading]);
+
   useEffect(() => {
     if (hasCompletedInitialSkillTreeBoot) return;
     if (isLoadingApp || !user) return;
@@ -6652,6 +6859,7 @@ export default function App({ onBootReady } = {}) {
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
+      <WarmupModes active={warmupActive} />
       {!isGameFullScreen && (
         <TopBar
           appLanguage={appLanguage}
@@ -6758,9 +6966,16 @@ export default function App({ onBootReady } = {}) {
             if (viewMode !== "skillTree") {
               handleReturnToSkillTree();
             }
-            setPathMode(newMode);
-            // Always scroll to top when switching modes
+            // Always scroll to top when switching modes (immediate, not deferred)
             window.scrollTo({ top: 0, behavior: "instant" });
+            // Defer the heavy mode swap by one frame so the menu close and
+            // the loading orb (rendered by SkillTree while deferredPathMode
+            // catches up) paint first. Without this, the click handler's
+            // setState batches with Chakra's menu close, and the user sees
+            // no visual feedback for 2-3s while the new mode mounts.
+            requestAnimationFrame(() => {
+              setPathMode(newMode);
+            });
           }}
           onScrollToLatest={() => {
             // Trigger scroll when already in path mode
@@ -7864,6 +8079,7 @@ function BottomActionBar({
       >
         <Box
           as="button"
+          touchAction="manipulation"
           onClick={() => {
             playSound?.(selectSound);
             setIsMinimized(false);
@@ -7967,6 +8183,7 @@ function BottomActionBar({
               <Flex justify="center" mb={1}>
                 <Box
                   as="button"
+                  touchAction="manipulation"
                   onClick={() => {
                     playSound?.(selectSound);
                     setIsMinimized(true);
@@ -8063,6 +8280,7 @@ function BottomActionBar({
                 )}
                 <IconButton
                   data-tutorial-id="teams"
+                  touchAction="manipulation"
                   icon={<FiCompass size={16} />}
                   onClick={() => handleActionClick(onOpenTeams)}
                   aria-label={tasksLabel}
@@ -8126,6 +8344,7 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="settings"
+                touchAction="manipulation"
                 icon={<SettingsIcon boxSize="14px" />}
                 color="gray.100"
                 onClick={() => handleActionClick(onOpenSettings)}
@@ -8144,6 +8363,7 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="notes"
+                touchAction="manipulation"
                 icon={<RiBookmarkLine size={16} />}
                 aria-label={notesLabel}
                 onClick={() => handleActionClick(onOpenNotes)}
@@ -8188,6 +8408,7 @@ function BottomActionBar({
 
               <IconButton
                 data-tutorial-id="help"
+                touchAction="manipulation"
                 icon={<MdOutlineSupportAgent size={16} />}
                 onClick={() => handleActionClick(onOpenHelpChat)}
                 aria-label={helpChatLabel}
@@ -8216,6 +8437,7 @@ function BottomActionBar({
               <Menu placement="top-end">
                 <MenuButton
                   data-tutorial-id="mode"
+                  touchAction="manipulation"
                   as={IconButton}
                   icon={<CurrentModeIcon size={16} />}
                   aria-label={modeMenuLabel}
