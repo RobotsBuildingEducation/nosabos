@@ -3420,6 +3420,7 @@ export default function Tutor({
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
   onDailyGoalCelebration,
+  isActive = true,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -3438,8 +3439,9 @@ export default function Tutor({
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, []);
+  }, [isActive]);
 
   // Refs for realtime
   const audioRef = useRef(null);
@@ -4605,8 +4607,9 @@ export default function Tutor({
 
   // Scroll to top on mount
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [isActive]);
 
   /* ---------------------------
      Stream flushing

@@ -1,6 +1,7 @@
 import React, {
   Suspense,
   lazy,
+  memo,
   useState,
   useEffect,
   useMemo,
@@ -230,14 +231,17 @@ import {
 } from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
+import Conversations from "./Conversations";
 import {
   getAllLessonProgress,
   getAllFlashcardProgress,
 } from "../utils/cefrProgress";
+import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
+import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
@@ -247,10 +251,10 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
-const Conversations = lazy(() => import("./Conversations"));
-const Tutor = lazy(() => import("./Tutor"));
-const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
+const KeepAliveConversations = memo(Conversations);
+const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
+const KeepAliveTutor = memo(Tutor);
 
 const hexToRgb = (hex) => {
   if (typeof hex !== "string") return null;
@@ -313,6 +317,12 @@ function PathModeFallback({ fill = false }) {
     </Box>
   );
 }
+
+const KEEP_ALIVE_PATH_MODES = ["path", "flashcards", "conversations", "tutor"];
+const normalizeKeepAlivePathMode = (mode) =>
+  KEEP_ALIVE_PATH_MODES.includes(mode) ? mode : "path";
+const isKeepAliveModeVisible = (pathMode, mode) =>
+  normalizeKeepAlivePathMode(pathMode) === mode;
 
 const mixHexColors = (baseHex, mixHex, amount = 0.5) => {
   const base = hexToRgb(baseHex);
@@ -2459,20 +2469,8 @@ export default function SkillTree({
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
-  // Defer heavy mode content by one frame so the old view clears instantly
-  const [deferredPathMode, setDeferredPathMode] = useState(pathMode);
-  const prevPathModeRef = useRef(pathMode);
-  useEffect(() => {
-    if (prevPathModeRef.current !== pathMode) {
-      prevPathModeRef.current = pathMode;
-      // Defer the content switch by one frame so React can paint
-      // the cleared view before mounting the new heavy component
-      const frame = requestAnimationFrame(() => {
-        setDeferredPathMode(pathMode);
-      });
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [pathMode]);
+  const isModeVisible = (mode) =>
+    isKeepAliveModeVisible(pathMode, mode);
 
   // Sound settings
   const playSound = useSoundSettings((s) => s.playSound);
@@ -2605,7 +2603,7 @@ export default function SkillTree({
 
   const bgColor = "gray.950";
 
-  const handleLessonClick = (lesson, unit, status) => {
+  const handleLessonClick = useCallback((lesson, unit, status) => {
     if (
       status === SKILL_STATUS.AVAILABLE ||
       status === SKILL_STATUS.IN_PROGRESS ||
@@ -2616,31 +2614,31 @@ export default function SkillTree({
       setSelectedUnit(unit);
       onOpen();
     }
-  };
+  }, [onOpen, playSound]);
 
-  const handleStartLesson = async (lesson, preGeneratedScenario) => {
+  const handleStartLesson = useCallback(async (lesson, preGeneratedScenario) => {
     playSound("lessonStart");
     if (onStartLesson) {
       const startResult = await onStartLesson(lesson, preGeneratedScenario);
       return startResult !== false;
     }
     return false;
-  };
+  }, [onStartLesson, playSound]);
 
   // Separate handler for flashcard completion - doesn't trigger lesson logic
-  const handleFlashcardComplete = (card) => {
+  const handleFlashcardComplete = useCallback((card) => {
     // Call parent callback to award XP and update progress
     if (onCompleteFlashcard) {
       onCompleteFlashcard(card);
     }
-  };
+  }, [onCompleteFlashcard]);
 
   // Handler for random practice - awards XP and resets card to be practiced again
-  const handleRandomPractice = (card) => {
+  const handleRandomPractice = useCallback((card) => {
     if (onRandomPracticeFlashcard) {
       onRandomPracticeFlashcard(card);
     }
-  };
+  }, [onRandomPracticeFlashcard]);
 
   // Calculate overall progress
   const totalLessons = units.reduce(
@@ -2710,6 +2708,52 @@ export default function SkillTree({
     }
     return null;
   }, [visibleUnits, userProgress, isTutorialComplete]);
+
+  const pathModeContent = useMemo(() => {
+    if (isLoadingUnits) {
+      return <PathModeFallback />;
+    }
+
+    return (
+      <VStack spacing={8} align="stretch">
+        {visibleUnits.length > 0 ? (
+          visibleUnits.map((unit, index) => (
+            <UnitSection
+              key={unit.id}
+              unit={unit}
+              userProgress={userProgress}
+              onLessonClick={handleLessonClick}
+              index={index}
+              supportLang={supportLang}
+              hasNextUnit={index < visibleUnits.length - 1}
+              previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+              latestUnlockedLessonId={latestUnlockedLessonId}
+              latestUnlockedRef={latestUnlockedRef}
+              isTutorialComplete={isTutorialComplete}
+            />
+          ))
+        ) : (
+          <Box textAlign="center" py={12}>
+            <Text fontSize="lg" color="gray.400">
+              {getTranslation("skill_tree_no_path")}
+            </Text>
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              {getTranslation("skill_tree_check_back")}
+            </Text>
+          </Box>
+        )}
+      </VStack>
+    );
+  }, [
+    handleLessonClick,
+    isLoadingUnits,
+    isTutorialComplete,
+    latestUnlockedLessonId,
+    latestUnlockedRef,
+    supportLang,
+    userProgress,
+    visibleUnits,
+  ]);
 
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
@@ -2891,96 +2935,58 @@ export default function SkillTree({
           </Box>
         )}
 
-        {/* Skill Tree Units, Flashcards, or Conversations */}
-        {/* When pathMode changes, deferredPathMode lags by one frame.
-            Show the loading orb during that gap so the user gets immediate
-            visual feedback that the mode switch is in progress, instead of
-            staring at a blank screen for 2-3s while the heavy mode component
-            mounts. */}
-        {pathMode !== deferredPathMode ? (
-          <PathModeFallback fill />
-        ) : deferredPathMode === "path" ? (
-          <Box>
-            {isLoadingUnits ? (
-              <PathModeFallback />
-            ) : (
-              <VStack spacing={8} align="stretch">
-                {visibleUnits.length > 0 ? (
-                visibleUnits.map((unit, index) => (
-                  <UnitSection
-                    key={unit.id}
-                    unit={unit}
-                    userProgress={userProgress}
-                    onLessonClick={handleLessonClick}
-                    index={index}
-                    supportLang={supportLang}
-                    hasNextUnit={index < visibleUnits.length - 1}
-                    previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-                    latestUnlockedLessonId={latestUnlockedLessonId}
-                    latestUnlockedRef={latestUnlockedRef}
-                    isTutorialComplete={isTutorialComplete}
-                  />
-                ))
-                ) : (
-                  <Box textAlign="center" py={12}>
-                    <Text fontSize="lg" color="gray.400">
-                      {getTranslation("skill_tree_no_path")}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      {getTranslation("skill_tree_check_back")}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            )}
-          </Box>
-        ) : deferredPathMode === "flashcards" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
-            >
-              <FlashcardSkillTree
-                userProgress={userProgress}
-                onStartFlashcard={handleFlashcardComplete}
-                onRandomPractice={handleRandomPractice}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                activeCEFRLevel={effectiveActiveLevel}
-                pauseMs={pauseMs}
-              />
-            </Suspense>
-          </Box>
-        ) : deferredPathMode === "conversations" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
-            >
-              <Conversations
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-              />
-            </Suspense>
-          </Box>
-        ) : deferredPathMode === "tutor" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
-            >
-              <Tutor
-                activeNpub={activeNpub}
-                targetLang={targetLang}
-                supportLang={supportLang}
-                pauseMs={pauseMs}
-                maxProficiencyLevel={maxProficiencyLevel}
-                onFirstLessonComplete={onTutorFirstLessonComplete}
-                onDailyGoalCelebration={onTutorDailyGoalCelebration}
-              />
-            </Suspense>
-          </Box>
-        ) : null}
+        {/* Skill Tree Units, Flashcards, Conversations, and Tutor stay mounted. */}
+        <Box
+          display={isModeVisible("path") ? "block" : "none"}
+          aria-hidden={!isModeVisible("path")}
+        >
+          {pathModeContent}
+        </Box>
+
+        <Box
+          display={isModeVisible("flashcards") ? "block" : "none"}
+          aria-hidden={!isModeVisible("flashcards")}
+        >
+          <KeepAliveFlashcardSkillTree
+            userProgress={userProgress}
+            onStartFlashcard={handleFlashcardComplete}
+            onRandomPractice={handleRandomPractice}
+            targetLang={targetLang}
+            supportLang={supportLang}
+            activeCEFRLevel={effectiveActiveLevel}
+            pauseMs={pauseMs}
+          />
+        </Box>
+
+        <Box
+          display={isModeVisible("conversations") ? "block" : "none"}
+          aria-hidden={!isModeVisible("conversations")}
+        >
+          <KeepAliveConversations
+            activeNpub={activeNpub}
+            targetLang={targetLang}
+            supportLang={supportLang}
+            pauseMs={pauseMs}
+            maxProficiencyLevel={maxProficiencyLevel}
+            isActive={isModeVisible("conversations")}
+          />
+        </Box>
+
+        <Box
+          display={isModeVisible("tutor") ? "block" : "none"}
+          aria-hidden={!isModeVisible("tutor")}
+        >
+          <KeepAliveTutor
+            activeNpub={activeNpub}
+            targetLang={targetLang}
+            supportLang={supportLang}
+            pauseMs={pauseMs}
+            maxProficiencyLevel={maxProficiencyLevel}
+            onFirstLessonComplete={onTutorFirstLessonComplete}
+            onDailyGoalCelebration={onTutorDailyGoalCelebration}
+            isActive={isModeVisible("tutor")}
+          />
+        </Box>
 
         {/* Lesson Detail Modal */}
         <LessonDetailModal

@@ -15,12 +15,10 @@ function detectChromiumDesktop() {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent;
   // Must have Chrome in UA but NOT be iOS (CriOS) or Android mobile
-  const isChromium = /Chrome\//.test(ua) && !/Edg\//.test(ua) === false;
   const hasChrome = /Chrome\//.test(ua);
   const isIOS =
     /iPad|iPhone|iPod/.test(ua) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-  const isAndroid = /Android/.test(ua);
   const isMobile = /Mobi|Android/.test(ua) || isIOS;
   // Firefox doesn't support SVG filters in backdrop-filter either
   const isFirefox = /Firefox\//.test(ua);
@@ -43,23 +41,28 @@ export default function GlassContainer({
   zIndex,
   displacementScale,
   elasticity,
+  shadowIntensity,
+  allowLightModeGlass = false,
   fallbackBlur = "0px",
   fallbackBg = "var(--app-glass-bg)",
   ...rest
 }) {
   const themeMode = useThemeStore((s) => s.themeMode);
   const isLightTheme = themeMode === "light";
+  const shouldUseGlassEffects = !isLightTheme || allowLightModeGlass;
   const fallbackStyle = useMemo(
     () => ({
-      backdropFilter: isLightTheme ? "none" : `blur(${fallbackBlur})`,
-      WebkitBackdropFilter: isLightTheme ? "none" : `blur(${fallbackBlur})`,
+      backdropFilter: shouldUseGlassEffects ? `blur(${fallbackBlur})` : "none",
+      WebkitBackdropFilter: shouldUseGlassEffects
+        ? `blur(${fallbackBlur})`
+        : "none",
       background: fallbackBg,
-      boxShadow: isLightTheme ? "none" : undefined,
+      boxShadow: shouldUseGlassEffects ? undefined : "none",
     }),
-    [fallbackBlur, fallbackBg, isLightTheme],
+    [fallbackBlur, fallbackBg, shouldUseGlassEffects],
   );
 
-  if (supportsLiquidGlass && !isLightTheme) {
+  if (supportsLiquidGlass && shouldUseGlassEffects) {
     return (
       <LiquidGlass
         borderRadius={borderRadius}
@@ -70,6 +73,7 @@ export default function GlassContainer({
         zIndex={zIndex}
         displacementScale={displacementScale}
         elasticity={elasticity}
+        shadowIntensity={shadowIntensity}
         className={className}
       >
         {children}

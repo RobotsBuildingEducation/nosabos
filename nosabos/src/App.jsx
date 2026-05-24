@@ -188,7 +188,6 @@ import { TbLanguage } from "react-icons/tb";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
-import modeSwitcherSound from "./assets/modeswitcher.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
 import {
   DAILY_GOAL_PET_HEALTH_GAIN,
@@ -219,6 +218,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "./utils/modalMotion";
+import { scheduleAfterNextPaint } from "./utils/afterPaint";
 import {
   GEMINI_LIVE_VOICE_OPTIONS,
   getGeminiLiveVoiceOption,
@@ -226,83 +226,6 @@ import {
 } from "./utils/geminiLiveVoices";
 
 const RPGGame = lazy(() => import("./components/RPGGame/index.jsx"));
-
-// Lazy modes for the warmup-mount step below. These are the same modules
-// React.lazy()'d in SkillTree.jsx — Vite shares the chunk by resolved path.
-const WarmupTutor = lazy(() => import("./components/Tutor"));
-const WarmupConversations = lazy(() => import("./components/Conversations"));
-const WarmupFlashcards = lazy(() => import("./components/FlashcardSkillTree"));
-
-/**
- * WarmupModes
- *
- * Mounts the heavy lazy mode components briefly in a hidden offscreen
- * container during boot idle so JavaScriptCore (iOS Safari's JS engine) has
- * a chance to JIT-compile their gigantic function bodies before the user
- * actually taps a mode. Without this, the first mode switch on iOS freezes
- * the main thread for 2-3s (visible as a stuck button-press animation and
- * a humming/sustained Tone.js chord) while JSC interpreter-executes ~4000
- * lines of hook calls in Tutor.jsx for the first time.
- *
- * Side effects to be aware of:
- *  - Tutor has `useEffect(() => { window.scrollTo(0, 0) }, [])` which fires
- *    on mount. We save/restore scroll position around the warmup window.
- *  - Each mode reads from a few Firestore docs gated on `activeNpub`; we
- *    pass `""` so those checks early-return.
- *  - useEffect cleanups run on unmount so subscriptions tear down cleanly.
- */
-function WarmupModes({ active }) {
-  if (!active) return null;
-  // Render in a hidden, non-interactive container far offscreen.
-  return (
-    <div
-      aria-hidden="true"
-      style={{
-        position: "fixed",
-        top: "-99999px",
-        left: "-99999px",
-        width: "1px",
-        height: "1px",
-        overflow: "hidden",
-        pointerEvents: "none",
-        visibility: "hidden",
-        contain: "strict",
-      }}
-    >
-      <Suspense fallback={null}>
-        <WarmupTutor
-          activeNpub=""
-          targetLang="es"
-          supportLang="en"
-          pauseMs={1000}
-          maxProficiencyLevel="A1"
-          onFirstLessonComplete={() => {}}
-          onDailyGoalCelebration={() => {}}
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <WarmupConversations
-          activeNpub=""
-          targetLang="es"
-          supportLang="en"
-          pauseMs={1000}
-          maxProficiencyLevel="A1"
-        />
-      </Suspense>
-      <Suspense fallback={null}>
-        <WarmupFlashcards
-          userProgress={{}}
-          onStartFlashcard={() => {}}
-          onRandomPractice={() => {}}
-          targetLang="es"
-          supportLang="en"
-          activeCEFRLevel="A1"
-          pauseMs={1000}
-        />
-      </Suspense>
-    </div>
-  );
-}
 
 /* ---------------------------
    Small helpers
@@ -6647,10 +6570,24 @@ export default function App({ onBootReady } = {}) {
   ]);
 
   const handleBottomBarSettingsOpen = useCallback(() => {
-    // Yield one frame before opening to avoid coupling the tap with
-    // expensive work in the same event turn.
-    requestAnimationFrame(() => setSettingsOpen(true));
+    // Let the bottom-bar tap state paint before mounting the drawer.
+    scheduleAfterNextPaint(() => setSettingsOpen(true));
   }, []);
+
+  const handleBottomBarPathModeChange = useCallback(
+    (newMode) => {
+      if (viewMode !== "skillTree") {
+        handleReturnToSkillTree();
+      }
+
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "auto" });
+      }
+
+      setPathMode(newMode);
+    },
+    [handleReturnToSkillTree, viewMode],
+  );
 
   /* -----------------------------------
      Loading / Onboarding gates
@@ -6667,103 +6604,6 @@ export default function App({ onBootReady } = {}) {
     skillTreeInitialUnits.key !== skillTreeInitialUnitsKey;
 
   const isBootLoading = isLoadingApp || !user || shouldHoldForInitialSkillTree;
-
-  // Warm-mount the heavy lazy modes after boot. See <WarmupModes> for why.
-  // Sequence: wait ~3s after boot (so path mode finishes loading and we don't
-  // compete with first-paint), activate warmup for ~1.5s (enough for React to
-  // commit and JSC to JIT-compile the function bodies), then deactivate.
-  // Total wall-clock impact on boot: about a 4.5s window during which the
-  // hidden container is mounted; user-visible impact: none, because the
-  // container is offscreen and pointer-events:none.
-  const [warmupActive, setWarmupActive] = useState(false);
-  useEffect(() => {
-    if (isBootLoading) return undefined;
-    if (typeof window === "undefined") return undefined;
-
-    // Only run this once per session.
-    if (warmupActive) return undefined;
-
-    let cancelled = false;
-    let mountTimer = 0;
-    let unmountTimer = 0;
-
-    mountTimer = window.setTimeout(() => {
-      if (cancelled) return;
-
-      // Capture scroll position RIGHT BEFORE activating warmup, so we can
-      // restore it after Tutor's `window.scrollTo(0,0)` mount effect fires.
-      // Capturing earlier (at boot) would miss scrolling the user did during
-      // the 3s wait.
-      const savedScrollY = window.scrollY;
-      const savedScrollX = window.scrollX;
-
-      setWarmupActive(true);
-
-      // Schedule unmount + scroll restore once JIT has had time to compile.
-      unmountTimer = window.setTimeout(() => {
-        if (cancelled) return;
-        setWarmupActive(false);
-        // Restore scroll on next frame so React has finished unmounting.
-        requestAnimationFrame(() => {
-          if (cancelled) return;
-          if (
-            window.scrollX !== savedScrollX ||
-            window.scrollY !== savedScrollY
-          ) {
-            window.scrollTo(savedScrollX, savedScrollY);
-          }
-        });
-      }, 1500);
-    }, 3000);
-
-    return () => {
-      cancelled = true;
-      if (mountTimer) window.clearTimeout(mountTimer);
-      if (unmountTimer) window.clearTimeout(unmountTimer);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBootLoading]);
-
-  // Prefetch lazy-loaded mode chunks during idle time after boot completes.
-  // Without this, the first time the user picks a new mode from the menu, the
-  // browser has to download that chunk over the network — visible as a 5+s
-  // hang on mobile. We warm them all here so the cache is ready when the
-  // mode menu actually fires its <Suspense> boundary.
-  useEffect(() => {
-    if (isBootLoading) return undefined;
-    if (typeof window === "undefined") return undefined;
-
-    let cancelled = false;
-    const warm = () => {
-      if (cancelled) return;
-      // Fire-and-forget; errors here are non-fatal (a real switch will retry).
-      const swallow = () => {};
-      import("./components/Conversations").catch(swallow);
-      import("./components/Tutor").catch(swallow);
-      import("./components/FlashcardSkillTree").catch(swallow);
-      import("./components/Stories").catch(swallow);
-      import("./components/GrammarBook").catch(swallow);
-      import("./components/Vocabulary").catch(swallow);
-      import("./components/History").catch(swallow);
-    };
-
-    if (typeof window.requestIdleCallback === "function") {
-      const id = window.requestIdleCallback(warm, { timeout: 4000 });
-      return () => {
-        cancelled = true;
-        if (typeof window.cancelIdleCallback === "function") {
-          window.cancelIdleCallback(id);
-        }
-      };
-    }
-    // Safari (including iOS) lacks requestIdleCallback. Fall back to a
-    // setTimeout delay so we don't compete with initial render work.
-    const id = window.setTimeout(warm, 1500);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(id);
-    };
-  }, [isBootLoading]);
 
   useEffect(() => {
     if (hasCompletedInitialSkillTreeBoot) return;
@@ -6859,7 +6699,6 @@ export default function App({ onBootReady } = {}) {
   return (
     <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
-      <WarmupModes active={warmupActive} />
       {!isGameFullScreen && (
         <TopBar
           appLanguage={appLanguage}
@@ -6961,22 +6800,7 @@ export default function App({ onBootReady } = {}) {
           notesIsLoading={notesIsLoading}
           notesIsDone={notesIsDone}
           pathMode={pathMode}
-          onPathModeChange={(newMode) => {
-            // If in a lesson or other view, return to skill tree first
-            if (viewMode !== "skillTree") {
-              handleReturnToSkillTree();
-            }
-            // Always scroll to top when switching modes (immediate, not deferred)
-            window.scrollTo({ top: 0, behavior: "instant" });
-            // Defer the heavy mode swap by one frame so the menu close and
-            // the loading orb (rendered by SkillTree while deferredPathMode
-            // catches up) paint first. Without this, the click handler's
-            // setState batches with Chakra's menu close, and the user sees
-            // no visual feedback for 2-3s while the new mode mounts.
-            requestAnimationFrame(() => {
-              setPathMode(newMode);
-            });
-          }}
+          onPathModeChange={handleBottomBarPathModeChange}
           onScrollToLatest={() => {
             // Trigger scroll when already in path mode
             if (viewMode === "skillTree") {
@@ -8167,8 +7991,14 @@ function BottomActionBar({
           displacementScale={0.2}
           className="bottombar-glass"
           elasticity={0.9}
-          fallbackBlur="2px"
-          fallbackBg="var(--app-glass-bg-soft)"
+          shadowIntensity={isLightTheme ? 0.12 : 0.25}
+          allowLightModeGlass
+          fallbackBlur={isLightTheme ? "10px" : "2px"}
+          fallbackBg={
+            isLightTheme
+              ? "rgba(255, 252, 247, 0.58)"
+              : "var(--app-glass-bg-soft)"
+          }
         >
           <Box
             py={2}
@@ -8434,7 +8264,7 @@ function BottomActionBar({
               />
 
               {/* Path Mode Menu */}
-              <Menu placement="top-end">
+              <Menu placement="top-end" isLazy lazyBehavior="keepMounted">
                 <MenuButton
                   data-tutorial-id="mode"
                   touchAction="manipulation"
@@ -8444,7 +8274,7 @@ function BottomActionBar({
                   size="sm"
                   rounded="xl"
                   flexShrink={0}
-                  onClick={() => playSound?.(modeSwitcherSound)}
+                  onClick={() => playSound?.("modeSwitch")}
                   bg={isLightTheme ? "#38b2ac" : undefined}
                   colorScheme={isLightTheme ? undefined : "teal"}
                   boxShadow={isLightTheme ? "0 4px 0 #237f7a" : undefined}
@@ -8486,7 +8316,7 @@ function BottomActionBar({
                         <MenuItem
                           key={mode.id}
                           onClick={() => {
-                            playSound?.(modeSwitcherSound);
+                            playSound?.("modeSwitch");
                             // If clicking the already-selected mode, navigate back to skill tree (if in a lesson) or scroll
                             if (isSelected) {
                               if (viewMode !== "skillTree") {

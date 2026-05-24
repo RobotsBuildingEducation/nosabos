@@ -1005,6 +1005,7 @@ export default function Conversations({
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
+  isActive = true,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -1022,8 +1023,9 @@ export default function Conversations({
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, []);
+  }, [isActive]);
 
   // Refs for realtime
   const audioRef = useRef(null);
@@ -1771,8 +1773,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Scroll to top on mount
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [isActive]);
 
   /* ---------------------------
      Stream flushing
