@@ -1,6 +1,7 @@
 import React, {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import {
@@ -208,7 +209,7 @@ const translations = {
     cta_final_subtitle:
       "Create your secure profile in seconds, save your key, and unlock a world of language learning.",
     placeholder_name: "Your display name",
-    footer_brand: "No Sabos",
+    footer_brand: "Piyali",
     footer_tagline: "Making language learning accessible to everyone.",
     signin_title: "Welcome Back",
     signin_subtitle:
@@ -341,7 +342,7 @@ const translations = {
     cta_final_subtitle:
       "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea un mundo de aprendizaje.",
     placeholder_name: "Tu nombre para mostrar",
-    footer_brand: "No Sabos",
+    footer_brand: "Piyali",
     footer_tagline: "Haciendo el aprendizaje de idiomas accesible para todos.",
     signin_title: "Bienvenido de Nuevo",
     signin_subtitle:
@@ -473,7 +474,7 @@ const translations = {
     cta_final_subtitle:
       "Crea il tuo profilo sicuro in pochi secondi, salva la chiave e sblocca un mondo di apprendimento linguistico.",
     placeholder_name: "Il tuo nome visualizzato",
-    footer_brand: "No Sabos",
+    footer_brand: "Piyali",
     footer_tagline: "Rendere l'apprendimento delle lingue accessibile a tutti.",
     signin_title: "Bentornato",
     signin_subtitle:
@@ -756,7 +757,7 @@ translations.ja = {
   cta_final_subtitle:
     "数秒で安全なプロフィールを作り、キーを保存して、言語学習の世界を開きましょう。",
   placeholder_name: "表示名",
-  footer_brand: "No Sabos",
+  footer_brand: "Piyali",
   footer_tagline: "誰でも言語学習にアクセスできるように。",
   signin_title: "おかえりなさい",
   signin_subtitle: "アカウント作成時に保存したシークレットキーを貼り付けてください。",
@@ -921,6 +922,101 @@ const GlobalStyles = () => (
     input::placeholder {
       color: ${theme.colors.text.muted};
     }
+
+    .piyali-landing-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 120;
+      padding: 8px clamp(14px, 3vw, 28px);
+      background-color: rgba(254, 250, 241, 0);
+      background-image: none;
+      border: 0;
+      box-shadow: none;
+      transition: background-color 180ms ease;
+      pointer-events: none;
+    }
+
+    .piyali-landing-header.is-scrolled {
+      background-color: rgba(254, 250, 241, 1);
+    }
+
+    .piyali-landing-header-inner {
+      width: 100%;
+      min-height: 44px;
+      margin: 0 auto;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      pointer-events: auto;
+    }
+
+    .piyali-landing-brand {
+      border: 0;
+      background: transparent;
+      color: #2a2119;
+      cursor: default;
+      flex: 0 1 auto;
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: ${theme.fonts.display};
+      font-size: clamp(1.05rem, 3vw, 1.28rem);
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .piyali-landing-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .piyali-landing-nav-buttons {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    @media (max-width: 520px) {
+      .piyali-landing-header {
+        padding: 8px 10px;
+      }
+
+      .piyali-landing-header-inner {
+        min-height: 42px;
+        padding: 0;
+        gap: 8px;
+      }
+
+      .piyali-landing-actions {
+        gap: 6px;
+      }
+
+      .piyali-landing-actions button {
+        font-size: 0.78rem !important;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+      }
+
+      .piyali-landing-nav-buttons {
+        gap: 6px;
+      }
+    }
     
     @keyframes float {
       0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -961,7 +1057,7 @@ const FloatingElements = () => {
     { text: "Ciao", x: "10%", y: "70%", delay: 2 },
     { text: "Olá", x: "85%", y: "60%", delay: 0.5 },
     { text: "Hello", x: "25%", y: "85%", delay: 1.5 },
-    { text: "Pialli", x: "70%", y: "80%", delay: 2.5 },
+    { text: "Piyali", x: "70%", y: "80%", delay: 2.5, featured: true },
     { text: "Hallo", x: "50%", y: "12%", delay: 1.8 },
     { text: "Привет", x: "35%", y: "10%", delay: 2.2 },
     { text: "こんにちは", x: "60%", y: "30%", delay: 1.2 },
@@ -985,7 +1081,7 @@ const FloatingElements = () => {
           key={i}
           initial={{ opacity: 0, y: 20 }}
           animate={{
-            opacity: [0.1, 0.25, 0.1],
+            opacity: word.featured ? [0.16, 0.36, 0.16] : [0.1, 0.25, 0.1],
             y: [0, -30, 0],
           }}
           transition={{
@@ -1002,8 +1098,13 @@ const FloatingElements = () => {
             fontSize: "clamp(1.5rem, 3vw, 2.5rem)",
             fontWeight: 500,
             color: theme.colors.accent.primary,
-            opacity: 0.15,
-            textShadow: `0 0 40px ${theme.colors.accent.primary}`,
+            opacity: word.featured ? 0.24 : 0.15,
+            textShadow: word.featured
+              ? "0 0 18px rgba(20, 184, 166, 0.5), 0 0 42px rgba(14, 165, 233, 0.32), 0 10px 28px rgba(20, 184, 166, 0.22)"
+              : `0 0 40px ${theme.colors.accent.primary}`,
+            filter: word.featured
+              ? "drop-shadow(0 12px 22px rgba(20, 184, 166, 0.22))"
+              : "none",
           }}
         >
           {word.text}
@@ -1050,16 +1151,17 @@ const Logo = ({ size = 48 }) => (
         padding: 16,
       }}
     >
-      No Sabos
+      Piyali
     </span>
   </motion.div>
 );
 
-const ThemeModeToggle = ({ themeMode, onModeChange }) => {
+const ThemeModeToggle = ({ themeMode, onModeChange, fixed = true, compact = false }) => {
   const isDark = themeMode === "dark";
   const isLightTheme = !isDark;
   const nextMode = isDark ? "light" : "dark";
   const label = isDark ? "Switch to light mode" : "Switch to dark mode";
+  const iconSize = compact ? 15 : 18;
 
   return (
     <IconButton
@@ -1069,48 +1171,135 @@ const ThemeModeToggle = ({ themeMode, onModeChange }) => {
       onClick={() => onModeChange(nextMode)}
       icon={
         isDark ? (
-          <RiMoonClearFill size={18} color="#fffaf0" />
+          <RiMoonClearFill size={iconSize} color={compact ? "#2a2119" : "#fffaf0"} />
         ) : (
-          <LuSun size={18} strokeWidth={2.35} />
+          <LuSun size={iconSize} color={compact ? "#2a2119" : undefined} strokeWidth={2.35} />
         )
       }
       size="sm"
-      minW="40px"
-      h="40px"
+      minW={compact ? "34px" : "40px"}
+      h={compact ? "34px" : "40px"}
       rounded="full"
-      position="fixed"
-      top="18px"
-      right="20px"
-      zIndex={120}
+      {...(fixed
+        ? {
+            position: "fixed",
+            top: "18px",
+            right: "20px",
+            zIndex: 120,
+          }
+        : {})}
       bg={
-        isLightTheme
+        compact
+          ? "rgba(254, 250, 241, 0)"
+          : isLightTheme
           ? "linear-gradient(135deg, #fff7d6 0%, #fed7aa 100%)"
           : "linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(30, 41, 59, 0.92) 100%)"
       }
-      color={isLightTheme ? "#b45309" : "#bfdbfe"}
-      border="1px solid"
+      color={compact ? "#2a2119" : isLightTheme ? "#b45309" : "#bfdbfe"}
+      border={compact ? "0" : "1px solid"}
       borderColor={
-        isLightTheme ? "rgba(245, 158, 11, 0.36)" : "rgba(147, 197, 253, 0.32)"
+        compact
+          ? "transparent"
+          : isLightTheme
+          ? "rgba(245, 158, 11, 0.36)"
+          : "rgba(147, 197, 253, 0.32)"
       }
       boxShadow={
-        isLightTheme
+        compact
+          ? "none"
+          : isLightTheme
           ? "0 10px 22px rgba(245, 158, 11, 0.18)"
           : "0 12px 28px rgba(15, 23, 42, 0.32)"
       }
-      backdropFilter="blur(20px)"
+      backdropFilter={compact ? "none" : "blur(20px)"}
       _hover={{
-        bg: isLightTheme
+        bg: compact
+          ? "rgba(42, 33, 25, 0.08)"
+          : isLightTheme
           ? "linear-gradient(135deg, #ffedb5 0%, #fdba74 100%)"
           : "linear-gradient(135deg, rgba(30, 41, 59, 0.98) 0%, rgba(51, 65, 85, 0.94) 100%)",
       }}
       _active={{
-        bg: isLightTheme
+        bg: compact
+          ? "rgba(42, 33, 25, 0.14)"
+          : isLightTheme
           ? "linear-gradient(135deg, #fde68a 0%, #fb923c 100%)"
           : "linear-gradient(135deg, rgba(15, 23, 42, 1) 0%, rgba(30, 41, 59, 0.98) 100%)",
       }}
     />
   );
 };
+
+const LandingHeader = ({
+  themeMode,
+  onThemeModeChange,
+  onStartLearning,
+  onSignIn,
+  isCreating,
+  voiceOrbState,
+  showActions,
+  isScrolled,
+}) => (
+  <motion.header
+    className={`piyali-landing-header${isScrolled ? " is-scrolled" : ""}`}
+    initial={{ opacity: 0, y: -16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.35 }}
+  >
+    <div className="piyali-landing-header-inner">
+      <div className="piyali-landing-brand" aria-label="Piyali">
+        <VoiceOrb state={voiceOrbState} size={38} centered={false} />
+        <span>Piyali</span>
+      </div>
+      <div className="piyali-landing-actions">
+        <AnimatePresence initial={false}>
+          {showActions && (
+            <motion.div
+              className="piyali-landing-nav-buttons"
+              initial={{ opacity: 0, x: 14 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 14 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                size="sm"
+                onClick={onStartLearning}
+                loading={isCreating}
+                disabled={isCreating}
+                style={{
+                  borderRadius: "999px",
+                  padding: "8px 14px",
+                  boxShadow: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Start Learning
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onSignIn}
+                style={{
+                  borderRadius: "999px",
+                  padding: "8px 14px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Sign In
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <ThemeModeToggle
+          themeMode={themeMode}
+          onModeChange={onThemeModeChange}
+          fixed={false}
+          compact
+        />
+      </div>
+    </div>
+  </motion.header>
+);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BUTTON COMPONENT
@@ -1635,6 +1824,9 @@ const LandingPage = ({ onAuthenticated }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(null);
   const [hasExtension, setHasExtension] = useState(false);
+  const [showHeaderActions, setShowHeaderActions] = useState(false);
+  const [isHeaderScrolled, setIsHeaderScrolled] = useState(false);
+  const heroSectionRef = useRef(null);
   const [heroVoiceOrbState] = useState(() => {
     const randomIndex = Math.floor(Math.random() * HERO_VOICE_ORB_STATES.length);
     return HERO_VOICE_ORB_STATES[randomIndex];
@@ -1659,6 +1851,41 @@ const LandingPage = ({ onAuthenticated }) => {
     syncDocumentLanguage(lang);
   }, [lang]);
 
+  useEffect(() => {
+    if (view !== "landing") {
+      setShowHeaderActions(false);
+      setIsHeaderScrolled(false);
+      return;
+    }
+
+    let frame = 0;
+    const updateVisibility = () => {
+      frame = 0;
+      setIsHeaderScrolled(window.scrollY > 0);
+      const hero = heroSectionRef.current;
+      if (!hero) {
+        setShowHeaderActions(false);
+        return;
+      }
+      const threshold = hero.offsetTop + hero.offsetHeight - 96;
+      setShowHeaderActions(window.scrollY >= threshold);
+    };
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(updateVisibility);
+    };
+
+    updateVisibility();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, [view]);
+
   const handleCreate = useCallback(async () => {
     if (displayName.trim().length < 2 || isCreating) return;
     playSound(submitActionSound);
@@ -1673,6 +1900,26 @@ const LandingPage = ({ onAuthenticated }) => {
       setIsCreating(false);
     }
   }, [displayName, isCreating, generateNostrKeys, onAuthenticated, playSound]);
+
+  const handleInstantCreate = useCallback(async () => {
+    if (isCreating) return;
+    playSound(submitActionSound);
+    setIsCreating(true);
+    try {
+      await generateNostrKeys("");
+      localStorage.setItem("displayName", "");
+      onAuthenticated?.();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsCreating(false);
+    }
+  }, [isCreating, generateNostrKeys, onAuthenticated, playSound]);
+
+  const openSignInView = useCallback(() => {
+    playSound(selectSound);
+    setView("signIn");
+  }, [playSound]);
 
   const handleSignIn = useCallback(
     async (key) => {
@@ -1810,20 +2057,28 @@ const LandingPage = ({ onAuthenticated }) => {
       <GlobalStyles />
       <AnimatedBackground />
 
-      <ThemeModeToggle
+      <LandingHeader
         themeMode={themeMode}
-        onModeChange={handleThemeModeChange}
+        onThemeModeChange={handleThemeModeChange}
+        onStartLearning={handleInstantCreate}
+        onSignIn={openSignInView}
+        isCreating={isCreating}
+        voiceOrbState={heroVoiceOrbState}
+        showActions={showHeaderActions}
+        isScrolled={isHeaderScrolled}
       />
 
       {/* Hero Section */}
       <section
+        ref={heroSectionRef}
         style={{
           minHeight: "auto",
           display: "flex",
           // alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          padding: "10px 24px 0px",
+          marginTop: "10px",
+          padding: "clamp(82px, 10vw, 104px) 24px 0px",
           overflow: "hidden",
         }}
       >
@@ -1838,16 +2093,6 @@ const LandingPage = ({ onAuthenticated }) => {
             zIndex: 10,
           }}
         >
-          {/* Robot Buddy Pro */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            style={{ marginBottom: "16px" }}
-          >
-            <VoiceOrb state={heroVoiceOrbState} />
-          </motion.div>
-
           {/* Title */}
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
@@ -1920,10 +2165,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => {
-                playSound(selectSound);
-                setView("signIn");
-              }}
+              onClick={openSignInView}
               fullWidth
             >
               {copy.cta_signin}
@@ -2399,10 +2641,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => {
-                playSound(selectSound);
-                setView("signIn");
-              }}
+              onClick={openSignInView}
               fullWidth
             >
               {copy.cta_signin}

@@ -4,16 +4,17 @@ const EASE_IN = [0.4, 0, 1, 1];
 const getDrawerExitOffset = (direction = "right") => {
   switch (direction) {
     case "left":
-      return { x: "-100%", y: 0 };
+      return { x: "-100vw", y: 0 };
     case "right":
-      return { x: "100%", y: 0 };
+      return { x: "100vw", y: 0 };
     case "top":
-      return { x: 0, y: "-100%" };
+      return { x: 0, y: "-100vh" };
     case "bottom":
     default:
-      return { x: 0, y: "100%" };
+      return { x: 0, y: "100vh" };
   }
 };
+
 
 export const nativeModalMotionProps = {
   initial: "closed",

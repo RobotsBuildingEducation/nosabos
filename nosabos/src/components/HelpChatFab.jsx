@@ -51,11 +51,7 @@ import {
   FaPlus,
 } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import {
-  TTS_LANG_TAG,
-  getPreferredTTSVoice,
-  getTTSPlayer,
-} from "../utils/tts";
+import { TTS_LANG_TAG, getPreferredTTSVoice, getTTSPlayer } from "../utils/tts";
 
 const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
 const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
@@ -82,7 +78,10 @@ const LANG_COLORS = {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { getGermanCopy } from "../utils/germanCopy";
 import { FiSend } from "react-icons/fi";
@@ -101,7 +100,7 @@ import {
   normalizeSupportLanguage,
 } from "../constants/languages";
 import {
-  nativeDrawerMotionProps,
+  nativeAnchoredDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
@@ -178,7 +177,17 @@ const CHINESE_SUPPORT_COPY = {
   Stop: "停止",
 };
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+function supportCopy(
+  lang,
+  en,
+  es,
+  it,
+  fr,
+  ja,
+  pt = null,
+  hi = null,
+  ar = null,
+) {
   if (lang === "de") return getGermanCopy(en) || en;
   if (lang === "zh") return CHINESE_SUPPORT_COPY[en] || en;
   if (lang === "ar") {
@@ -337,7 +346,7 @@ const HelpChatFab = forwardRef(
     );
 
     const ui = translations[uiLang] || translations.en;
-    const selectedVoice = getPreferredTTSVoice(progress?.voice);
+    const selectedVoice = useMemo(() => getPreferredTTSVoice(), []);
     const helpUi = useMemo(
       () => ({
         noMessagesTitle: supportCopy(
@@ -951,7 +960,6 @@ const HelpChatFab = forwardRef(
 
       const targetLang = normalizePracticeLanguage(progress?.targetLang, "es"); // practice language
       const primaryLang = supportLang; // replies must follow the learner's support language
-      const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
       const showTranslations =
         typeof progress?.showTranslations === "boolean"
@@ -963,13 +971,13 @@ const HelpChatFab = forwardRef(
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
           : primaryLang === "zh"
             ? "请完全使用普通话中文作为支持语言回答，即使用户用其他语言书写。"
-          : primaryLang === "ar"
-            ? "رد بالكامل بالمصري/العربية المصرية كلغة الدعم، حتى لو المستخدم كتب بلغة تانية."
-          : primaryLang === "en"
-            ? "Respond entirely in English (the support language), even if the user writes in another language."
-            : `Respond entirely in ${nameForLanguage(
-                primaryLang,
-              )} (support language), even if the user writes in another language.`;
+            : primaryLang === "ar"
+              ? "رد بالكامل بالمصري/العربية المصرية كلغة الدعم، حتى لو المستخدم كتب بلغة تانية."
+              : primaryLang === "en"
+                ? "Respond entirely in English (the support language), even if the user writes in another language."
+                : `Respond entirely in ${nameForLanguage(
+                    primaryLang,
+                  )} (support language), even if the user writes in another language.`;
 
       const levelHint = (() => {
         if (primaryLang === "es") {
@@ -1043,29 +1051,29 @@ const HelpChatFab = forwardRef(
               )} بس لما تكون مفيدة، وخلي الشرح الأساسي بـ ${nameForLanguage(
                 primaryLang,
               )}.`
-          : primaryLang === "hi"
-            ? `${nameForLanguage(
-                primaryLang,
-              )} में समझाएँ और मार्गदर्शन दें। ${nameForLanguage(
-                targetLang,
-              )} के उदाहरण या वाक्य केवल तभी शामिल करें जब वे मदद करें, लेकिन मुख्य व्याख्या ${nameForLanguage(
-                primaryLang,
-              )} में रखें।`
-          : primaryLang === "zh"
-            ? `用${nameForLanguage(
-                primaryLang,
-              )}解释和指导。只有在有帮助时才加入${nameForLanguage(
-                targetLang,
-              )}的例句或短语，但主要解释必须保持${nameForLanguage(
-                primaryLang,
-              )}。`
-          : `Explica y guía en ${nameForLanguage(
-              primaryLang,
-            )}. Incluye ejemplos o frases en ${nameForLanguage(
-              targetLang,
-            )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
-              primaryLang,
-            )}.`;
+            : primaryLang === "hi"
+              ? `${nameForLanguage(
+                  primaryLang,
+                )} में समझाएँ और मार्गदर्शन दें। ${nameForLanguage(
+                  targetLang,
+                )} के उदाहरण या वाक्य केवल तभी शामिल करें जब वे मदद करें, लेकिन मुख्य व्याख्या ${nameForLanguage(
+                  primaryLang,
+                )} में रखें।`
+              : primaryLang === "zh"
+                ? `用${nameForLanguage(
+                    primaryLang,
+                  )}解释和指导。只有在有帮助时才加入${nameForLanguage(
+                    targetLang,
+                  )}的例句或短语，但主要解释必须保持${nameForLanguage(
+                    primaryLang,
+                  )}。`
+                : `Explica y guía en ${nameForLanguage(
+                    primaryLang,
+                  )}. Incluye ejemplos o frases en ${nameForLanguage(
+                    targetLang,
+                  )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
+                    primaryLang,
+                  )}.`;
 
       // Morpheme mode instructions - placed at START for priority
       const morphemePrefix = morphemeMode
@@ -1095,16 +1103,16 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           ? `Depois da explicação, adicione uma única linha de exemplo ou tradução em ${glossHuman}. Coloque-a em uma nova linha que comece com "// ".`
           : primaryLang === "ar"
             ? `بعد الشرح، ضيف سطر واحد بس كمثال أو ترجمة بـ ${glossHuman}. ابدأ السطر الجديد بـ "// ".`
-          : primaryLang === "hi"
-            ? `व्याख्या के बाद ${glossHuman} में उदाहरण या अनुवाद की केवल एक पंक्ति जोड़ें। उसे नई पंक्ति में "// " से शुरू करें।`
-          : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
+            : primaryLang === "hi"
+              ? `व्याख्या के बाद ${glossHuman} में उदाहरण या अनुवाद की केवल एक पंक्ति जोड़ें। उसे नई पंक्ति में "// " से शुरू करें।`
+              : `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
         : primaryLang === "pt"
           ? "Não adicione traduções extras."
           : primaryLang === "ar"
             ? "ما تضيفش ترجمات زيادة."
-          : primaryLang === "hi"
-            ? "अतिरिक्त अनुवाद न जोड़ें।"
-          : "No añadas traducciones adicionales.";
+            : primaryLang === "hi"
+              ? "अतिरिक्त अनुवाद न जोड़ें।"
+              : "No añadas traducciones adicionales.";
 
       return [
         morphemePrefix,
@@ -1114,7 +1122,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           targetLang,
         )}; their support/UI language is ${nameForLanguage(primaryLang)}.`,
         levelHint,
-        persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
         morphemeMode
@@ -1411,7 +1418,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         progress?.supportLang,
         DEFAULT_SUPPORT_LANGUAGE,
       );
-      const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
 
       const nameFor = (code) =>
@@ -1446,7 +1452,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         `The learner is practicing ${nameFor(targetLang)}.`,
         `Their native/support language is ${nameFor(supportLang)}.`,
         `Level: ${lvl}. ${levelHint}`,
-        persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         "Keep responses brief (under 30 seconds of speech).",
         "Be encouraging and helpful. Correct mistakes gently.",
@@ -1765,7 +1770,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        const resp = await fetch(REALTIME_URL, {
+        const resp = await appCheckFetch(REALTIME_URL, {
           method: "POST",
           headers: { "Content-Type": "application/sdp" },
           body: offer.sdp,
@@ -1959,9 +1964,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
     const composerBg = isLightTheme ? APP_SURFACE_ELEVATED : "gray.800";
     const composerBorderColor = isLightTheme ? APP_BORDER : "gray.700";
     const composerTextColor = isLightTheme ? APP_TEXT_PRIMARY : "gray.100";
-    const composerPlaceholderColor = isLightTheme
-      ? APP_TEXT_MUTED
-      : "gray.500";
+    const composerPlaceholderColor = isLightTheme ? APP_TEXT_MUTED : "gray.500";
     const sendButtonBg = isLightTheme ? "#0f766e" : "white";
     const sendButtonColor = isLightTheme ? "#fffaf3" : "gray.900";
     const sendButtonHoverBg = isLightTheme ? "#115e59" : "gray.200";
@@ -2142,23 +2145,23 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
 
         {/* Help chat bottom drawer */}
         <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
-          <DrawerOverlay
+          {/* <DrawerOverlay
             {...chatSwipeDismiss.overlayProps}
             motionProps={nativeOverlayMotionProps}
             bg="blackAlpha.600"
-          />
+          /> */}
           <DrawerContent
             {...chatSwipeDismiss.drawerContentProps}
-            motionProps={nativeDrawerMotionProps}
+            motionProps={nativeAnchoredDrawerMotionProps}
             bg="gray.900"
             color="gray.100"
             borderTopRadius="24px"
-            h="95vh"
+            h="90vh"
             m={0}
             overflow="hidden"
             sx={{
               "@supports (height: 100dvh)": {
-                height: "95dvh",
+                height: "90dvh",
               },
             }}
           >
@@ -2323,7 +2326,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               border="none"
                               color={composerTextColor}
                               _focus={{ boxShadow: "none", border: "none" }}
-                              _placeholder={{ color: composerPlaceholderColor }}
+                              // _placeholder={{ color: composerPlaceholderColor }}
                               resize="none"
                               minH="40px"
                               maxH="140px"
@@ -2331,7 +2334,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
-                              placeholder={helpUi.askPlaceholder}
+                              // placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -2578,7 +2581,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               border="none"
                               color={composerTextColor}
                               _focus={{ boxShadow: "none", border: "none" }}
-                              _placeholder={{ color: composerPlaceholderColor }}
+                              // _placeholder={{ color: composerPlaceholderColor }}
                               resize="none"
                               minH="40px"
                               maxH="140px"
@@ -2586,7 +2589,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
-                              placeholder={helpUi.askPlaceholder}
+                              // placeholder={helpUi.askPlaceholder}
                               fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
@@ -2668,9 +2671,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             placement="left"
             onClose={drawerDisclosure.onClose}
           >
-            <DrawerOverlay motionProps={nativeOverlayMotionProps} />
+            {/* <DrawerOverlay motionProps={nativeOverlayMotionProps} /> */}
             <DrawerContent
-              motionProps={nativeDrawerMotionProps}
+              motionProps={nativeAnchoredDrawerMotionProps}
               bg="gray.900"
               color="gray.100"
               maxW="280px"
@@ -2680,9 +2683,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                 borderColor="gray.800"
                 py={3}
               >
-                <Text fontSize="sm">
-                  {helpUi.menu}
-                </Text>
+                <Text fontSize="sm">{helpUi.menu}</Text>
               </DrawerHeader>
               <DrawerBody p={3}>{SidebarContent}</DrawerBody>
             </DrawerContent>

@@ -32,14 +32,15 @@ const CORS_ORIGINS = [
   "http://localhost:5173",
   "http://localhost:3000",
   process.env.DEPLOYED_URL,
+  process.env.NEW_DEPLOYED_URL,
 ];
 
 // Only permit the models you actually use with /proxyResponses
 const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
 const DEFAULT_REALTIME_MODEL = "gpt-realtime-mini";
 
-// Optionally require Firebase App Check (set true after client wiring)
-const REQUIRE_APPCHECK = false;
+// Enable after the web client is deployed with App Check initialized.
+const REQUIRE_APPCHECK = process.env.REQUIRE_APPCHECK === "true";
 
 // ===== Small CORS helper =====
 function applyCors(req, res) {
@@ -60,25 +61,25 @@ function applyCors(req, res) {
   return false;
 }
 
-// ===== App Check (optional but recommended) =====
-// async function verifyAppCheck(req) {
-//   if (!REQUIRE_APPCHECK) return;
-//   const token = req.header("X-Firebase-AppCheck");
-//   if (!token) {
-//     throw new functions.https.HttpsError(
-//       "unauthenticated",
-//       "Missing App Check token."
-//     );
-//   }
-//   try {
-//     await admin.appCheck().verifyToken(token);
-//   } catch (e) {
-//     throw new functions.https.HttpsError(
-//       "permission-denied",
-//       "Invalid App Check token."
-//     );
-//   }
-// }
+// ===== App Check for onRequest endpoints =====
+async function verifyAppCheck(req, res) {
+  if (!REQUIRE_APPCHECK) return true;
+
+  const token = req.header("X-Firebase-AppCheck");
+  if (!token) {
+    res.status(401).json({ error: "Missing App Check token." });
+    return false;
+  }
+
+  try {
+    await admin.appCheck().verifyToken(token);
+    return true;
+  } catch (error) {
+    functions.logger.warn("Invalid App Check token", error?.message || error);
+    res.status(401).json({ error: "Invalid App Check token." });
+    return false;
+  }
+}
 
 // ===== Helpers =====
 function validateApiKey() {
@@ -102,6 +103,13 @@ function normalizeRealtimeModel(model) {
   return trimmed;
 }
 
+function buildRealtimeSessionConfig(model) {
+  return {
+    type: "realtime",
+    model: normalizeRealtimeModel(model),
+  };
+}
+
 // ======================================================
 // 1) Realtime SDP Exchange Proxy
 //    Frontend posts SDP offer here instead of OpenAI.
@@ -121,13 +129,14 @@ exports.exchangeRealtimeSDP = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
-    // await verifyAppCheck(req);
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Accept raw SDP (Content-Type: application/sdp) or JSON { sdp, model }
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     let offerSDP = "";
     let model = normalizeRealtimeModel(req.query?.model);
+    let sessionConfig = null;
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {
@@ -136,22 +145,29 @@ exports.exchangeRealtimeSDP = onRequest(
       if (typeof body.model === "string" && body.model.trim()) {
         model = normalizeRealtimeModel(body.model);
       }
+      if (body.session && typeof body.session === "object") {
+        sessionConfig = {
+          ...body.session,
+          type: body.session.type || "realtime",
+          model: normalizeRealtimeModel(body.session.model || model),
+        };
+      }
     }
     if (!offerSDP) badRequest("Missing SDP offer.");
 
-    const url = `https://api.openai.com/v1/realtime?model=${encodeURIComponent(
-      model,
-    )}`;
+    const formData = new FormData();
+    formData.set("sdp", offerSDP);
+    formData.set(
+      "session",
+      JSON.stringify(sessionConfig || buildRealtimeSessionConfig(model)),
+    );
 
     let upstream;
     try {
-      upstream = await fetch(url, {
+      upstream = await fetch("https://api.openai.com/v1/realtime/calls", {
         method: "POST",
-        headers: {
-          ...authzHeader(),
-          "Content-Type": "application/sdp",
-        },
-        body: offerSDP,
+        headers: authzHeader(),
+        body: formData,
       });
     } catch (e) {
       functions.logger.error(
@@ -196,7 +212,7 @@ exports.proxyResponses = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
-    // await verifyAppCheck(req);
+    if (!(await verifyAppCheck(req, res))) return;
 
     const body = req.body || {};
     const model = (body.model || "").toString();
@@ -257,6 +273,7 @@ exports.proxyTTS = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();
@@ -288,6 +305,7 @@ exports.generateStory = onRequest(
     if (applyCors(req, res)) return;
     if (req.method !== "POST")
       return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();
@@ -485,6 +503,7 @@ exports.handleRealtimeStory = onRequest(
   async (req, res) => {
     if (applyCors(req, res)) return;
     if (req.method !== "GET") return res.status(405).send("Method Not Allowed");
+    if (!(await verifyAppCheck(req, res))) return;
 
     // Validate API key
     const keyError = validateApiKey();

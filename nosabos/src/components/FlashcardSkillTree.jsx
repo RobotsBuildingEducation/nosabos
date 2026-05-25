@@ -24,6 +24,7 @@ import { WaveBar } from "./WaveBar";
 import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import { useThemeStore } from "../useThemeStore";
 import {
@@ -906,9 +907,11 @@ export default function FlashcardSkillTree({
   activeCEFRLevel = null,
   pauseMs = 2000,
 }) {
-  const [practiceCard, setPracticeCard] = useState(null);
-  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
-  const [isReviewSession, setIsReviewSession] = useState(false);
+  // Practice modal lives in useModalStore so tapping a card doesn't
+  // re-render this 1,500-line FlashcardSkillTree before the modal opens.
+  // The modal subscribes via FlashcardPracticeGate at the bottom of render.
+  const openFlashcardPractice = useModalStore((s) => s.openFlashcardPractice);
+  const closeFlashcardPractice = useModalStore((s) => s.closeFlashcardPractice);
   const [localProgressOverrides, setLocalProgressOverrides] = useState({});
   const [flashcardData, setFlashcardData] = useState([]);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(true);
@@ -1201,20 +1204,23 @@ export default function FlashcardSkillTree({
     (card, practiceMode, practiceStatus = null) => {
       if (!card) return;
 
-      playSound(selectSound);
       const reviewProgress = effectiveProgressMap[card.id] || EMPTY_PROGRESS;
       const reviewSnapshot = reviewSnapshotMap.get(card.id);
 
-      setIsReviewSession(practiceMode === "review");
-      setPracticeCard({
-        ...card,
-        reviewProgress,
-        reviewState: reviewSnapshot?.reviewState,
-        practiceStatus,
-      });
-      setIsPracticeOpen(true);
+      // Flip the store first so the modal can start opening on the next
+      // paint; fire the sound after (its sync portion still costs us a few ms).
+      openFlashcardPractice(
+        {
+          ...card,
+          reviewProgress,
+          reviewState: reviewSnapshot?.reviewState,
+          practiceStatus,
+        },
+        practiceMode === "review",
+      );
+      void playSound(selectSound);
     },
-    [effectiveProgressMap, playSound, reviewSnapshotMap],
+    [effectiveProgressMap, openFlashcardPractice, playSound, reviewSnapshotMap],
   );
 
   const handleCardClick = useCallback(
@@ -1243,24 +1249,24 @@ export default function FlashcardSkillTree({
         },
       }));
 
-      if (isReviewSession) {
+      // Read isReviewSession from the store at fire-time so the callback
+      // doesn't need to subscribe (which would re-render this component
+      // whenever a card was opened).
+      const isReview = useModalStore.getState().isReviewSession;
+      if (isReview) {
         onRandomPractice?.(card);
       } else {
         onStartFlashcard?.(card);
       }
 
-      setIsPracticeOpen(false);
-      setPracticeCard(null);
-      setIsReviewSession(false);
+      closeFlashcardPractice();
     },
-    [isReviewSession, onRandomPractice, onStartFlashcard],
+    [closeFlashcardPractice, onRandomPractice, onStartFlashcard],
   );
 
   const handleClosePractice = useCallback(() => {
-    setIsPracticeOpen(false);
-    setPracticeCard(null);
-    setIsReviewSession(false);
-  }, []);
+    closeFlashcardPractice();
+  }, [closeFlashcardPractice]);
 
   const handleLaunchDueSession = useCallback(() => {
     if (dueCards[0]) {
@@ -1560,18 +1566,41 @@ export default function FlashcardSkillTree({
         ) : null}
       </VStack>
 
-      {practiceCard ? (
-        <FlashcardPractice
-          card={practiceCard}
-          isOpen={isPracticeOpen}
-          onClose={handleClosePractice}
-          onComplete={handleComplete}
-          targetLang={targetLang}
-          supportLang={supportLang}
-          pauseMs={pauseMs}
-          languageXp={languageXp}
-        />
-      ) : null}
+      {/* Practice modal — Gate subscribes to useModalStore so toggling open/
+          close doesn't re-render the whole FlashcardSkillTree component. */}
+      <FlashcardPracticeGate
+        onClose={handleClosePractice}
+        onComplete={handleComplete}
+        targetLang={targetLang}
+        supportLang={supportLang}
+        pauseMs={pauseMs}
+        languageXp={languageXp}
+      />
     </Box>
+  );
+}
+
+function FlashcardPracticeGate({
+  onClose,
+  onComplete,
+  targetLang,
+  supportLang,
+  pauseMs,
+  languageXp,
+}) {
+  const isOpen = useModalStore((s) => s.flashcardPracticeOpen);
+  const card = useModalStore((s) => s.practiceCard);
+  if (!card) return null;
+  return (
+    <FlashcardPractice
+      card={card}
+      isOpen={isOpen}
+      onClose={onClose}
+      onComplete={onComplete}
+      targetLang={targetLang}
+      supportLang={supportLang}
+      pauseMs={pauseMs}
+      languageXp={languageXp}
+    />
   );
 }

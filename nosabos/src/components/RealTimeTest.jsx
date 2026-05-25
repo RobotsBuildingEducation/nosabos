@@ -1,5 +1,11 @@
 // components/RealtimeAgent.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Badge,
   Box,
@@ -12,7 +18,8 @@ import {
   Wrap,
   WrapItem,
   useToast,
-  Flex, Modal,
+  Flex,
+  Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
@@ -21,7 +28,12 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaDice, FaRegCommentDots, FaExclamation } from "react-icons/fa";
+import {
+  FaStop,
+  FaDice,
+  FaRegCommentDots,
+  FaExclamation,
+} from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 import { MdOutlineTranslate } from "react-icons/md";
 
@@ -35,6 +47,7 @@ import {
   increment,
 } from "firebase/firestore";
 import {
+  appCheckFetch,
   database,
   analytics,
   simplemodel,
@@ -66,6 +79,7 @@ import {
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
@@ -465,7 +479,11 @@ function AlignedBubble({
               variant="ghost"
               colorScheme="cyan"
               icon={
-                isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />
+                isReplaying ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <RiVolumeUpLine size={14} />
+                )
               }
               onClick={onReplay}
               isDisabled={isReplaying}
@@ -613,9 +631,7 @@ function UserBubble({ label, text, textLang = "en" }) {
       boxShadow={isLightTheme ? APP_SHADOW : "0 6px 20px rgba(0,0,0,0.25)"}
       border="1px solid"
       borderColor={
-        isLightTheme
-          ? "rgba(108, 182, 191, 0.22)"
-          : "rgba(255,255,255,0.08)"
+        isLightTheme ? "rgba(108, 182, 191, 0.22)" : "rgba(255,255,255,0.08)"
       }
     >
       <Box
@@ -782,9 +798,6 @@ export default function RealTimeTest({
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState(initialSupportLanguage);
   const [voice, setVoice] = useState(() => getPreferredTTSVoice());
-  const [voicePersona, setVoicePersona] = useState(
-    translations.en.onboarding_persona_default_example,
-  );
   const [targetLang, setTargetLang] = useState("es");
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
@@ -793,7 +806,6 @@ export default function RealTimeTest({
 
   // live refs
   const voiceRef = useRef(voice);
-  const voicePersonaRef = useRef(voicePersona);
   const levelRef = useRef(level);
   const supportLangRef = useRef(supportLang);
   const goalLocalizationBusyRef = useRef(false);
@@ -806,9 +818,6 @@ export default function RealTimeTest({
   useEffect(() => {
     voiceRef.current = voice;
   }, [voice]);
-  useEffect(() => {
-    voicePersonaRef.current = voicePersona;
-  }, [voicePersona]);
   useEffect(() => {
     levelRef.current = level;
   }, [level]);
@@ -899,7 +908,7 @@ export default function RealTimeTest({
       "{language}",
       translations[uiLang][`language_${secondaryPref}`],
     ) ||
-    ({
+    {
       en: "Show translation",
       es: "Mostrar traducción",
       pt: "Mostrar tradução",
@@ -908,7 +917,8 @@ export default function RealTimeTest({
       ja: "翻訳を表示",
       hi: "अनुवाद दिखाएं",
       ar: "إظهار الترجمة",
-    }[uiLang] || "Show translation");
+    }[uiLang] ||
+    "Show translation";
 
   /* ---------------------------
      Replay playback helpers
@@ -952,8 +962,10 @@ export default function RealTimeTest({
       setReplayingId((cur) => (cur === mid ? null : cur));
       toast({
         status: "warning",
-        description:
-          uiText("ra_toast_no_audio_replay", "No audio available to replay."),
+        description: uiText(
+          "ra_toast_no_audio_replay",
+          "No audio available to replay.",
+        ),
         duration: 3000,
         position: "top",
       });
@@ -985,38 +997,38 @@ export default function RealTimeTest({
     (goalUiLang === "fr"
       ? "Objectif"
       : goalUiLang === "es"
-      ? "Meta"
-      : goalUiLang === "pt"
-      ? "Meta"
-      : goalUiLang === "it"
-      ? "Obiettivo"
-      : goalUiLang === "hi"
-      ? "लक्ष्य"
-      : "Goal");
+        ? "Meta"
+        : goalUiLang === "pt"
+          ? "Meta"
+          : goalUiLang === "it"
+            ? "Obiettivo"
+            : goalUiLang === "hi"
+              ? "लक्ष्य"
+              : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es"
       ? "¡Meta lograda!"
       : goalUiLang === "pt"
-      ? "Meta concluída!"
-      : goalUiLang === "it"
-        ? "Obiettivo completato!"
-        : goalUiLang === "hi"
-          ? "लक्ष्य पूरा हुआ!"
-        : "Goal completed!");
+        ? "Meta concluída!"
+        : goalUiLang === "it"
+          ? "Obiettivo completato!"
+          : goalUiLang === "hi"
+            ? "लक्ष्य पूरा हुआ!"
+            : "Goal completed!");
   const tGoalSkip =
     gtr?.ra_goal_skip ||
     (goalUiLang === "fr"
       ? "Passer"
       : goalUiLang === "es"
-      ? "Saltar"
-      : goalUiLang === "pt"
-      ? "Pular"
-      : goalUiLang === "it"
-      ? "Salta"
-      : goalUiLang === "hi"
-      ? "छोड़ें"
-      : "Skip");
+        ? "Saltar"
+        : goalUiLang === "pt"
+          ? "Pular"
+          : goalUiLang === "it"
+            ? "Salta"
+            : goalUiLang === "hi"
+              ? "छोड़ें"
+              : "Skip");
   const tGoalCriteria = gtr?.ra_goal_criteria || "";
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
@@ -1159,7 +1171,6 @@ export default function RealTimeTest({
     if (!hydrated) return;
     scheduleProfileSave();
   }, [
-    voicePersona,
     supportLang,
     showTranslations,
     level,
@@ -1243,17 +1254,11 @@ export default function RealTimeTest({
       supportLangRef.current = v;
       setSupportLang(v);
     }
-    if (p.voice) {
-      const nextVoice = getPreferredTTSVoice(p.voice);
-      voiceRef.current = nextVoice;
-      setVoice(nextVoice);
-    }
-    if (typeof p.voicePersona === "string") {
-      voicePersonaRef.current = p.voicePersona;
-      setVoicePersona(p.voicePersona);
-    }
     if (p.targetLang) {
-      const v = normalizePracticeLanguage(p.targetLang, DEFAULT_TARGET_LANGUAGE);
+      const v = normalizePracticeLanguage(
+        p.targetLang,
+        DEFAULT_TARGET_LANGUAGE,
+      );
       targetLangRef.current = v;
       setTargetLang(v);
     }
@@ -1293,6 +1298,40 @@ export default function RealTimeTest({
       prefix_padding_ms: 120,
     };
   }
+  function buildRealtimeAudioSession({
+    instructions,
+    voice,
+    turnDetection,
+    transcription = false,
+    transcriptionLanguage,
+  } = {}) {
+    const input = { turn_detection: turnDetection };
+    if (transcription) {
+      input.transcription = {
+        model: "gpt-4o-mini-transcribe",
+        ...(transcriptionLanguage ? { language: transcriptionLanguage } : {}),
+      };
+    }
+
+    const output = { format: { type: "audio/pcm", rate: 24000 } };
+    if (voice) output.voice = voice;
+
+    const session = {
+      type: "realtime",
+      output_modalities: ["audio"],
+      audio: { input, output },
+    };
+    if (instructions) session.instructions = instructions;
+    return session;
+  }
+  function buildRealtimeVadSession(turnDetection) {
+    return {
+      type: "realtime",
+      audio: {
+        input: { turn_detection: turnDetection },
+      },
+    };
+  }
   function setLocalMicEnabled(enabled) {
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
@@ -1306,11 +1345,13 @@ export default function RealTimeTest({
     if (locked) setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
-        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
+        );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildTurnDetectionConfig() },
+            session: buildRealtimeVadSession(buildTurnDetectionConfig()),
           }),
         );
       }
@@ -1341,7 +1382,7 @@ export default function RealTimeTest({
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: { turn_detection: null },
+          session: buildRealtimeVadSession(null),
         }),
       );
     } catch {}
@@ -1363,15 +1404,13 @@ export default function RealTimeTest({
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
-          },
+          session: buildRealtimeVadSession({
+            type: "server_vad",
+            silence_duration_ms: pauseMsRef.current || 2000,
+            threshold: 0.35,
+            prefix_padding_ms: 120,
+            interrupt_response: false,
+          }),
         }),
       );
     } catch {}
@@ -1477,10 +1516,7 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        const voiceName = getPreferredTTSVoice(
-          savedPrefs?.voice,
-          voiceRef.current,
-        );
+        const voiceName = getPreferredTTSVoice(voiceRef.current);
         voiceRef.current = voiceName;
         setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
@@ -1506,16 +1542,13 @@ export default function RealTimeTest({
         dc.send(
           JSON.stringify({
             type: "session.update",
-            session: {
+            session: buildRealtimeAudioSession({
               instructions,
-              modalities: ["audio", "text"],
               voice: voiceName,
-              turn_detection: buildTurnDetectionConfig(),
-              input_audio_transcription: sttLang
-                ? { model: "gpt-4o-mini-transcribe", language: sttLang }
-                : { model: "gpt-4o-mini-transcribe" },
-              output_audio_format: "pcm16",
-            },
+              turnDetection: buildTurnDetectionConfig(),
+              transcription: true,
+              transcriptionLanguage: sttLang,
+            }),
           }),
         );
 
@@ -1538,7 +1571,7 @@ export default function RealTimeTest({
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
+      const resp = await appCheckFetch(REALTIME_URL, {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,
@@ -1573,7 +1606,7 @@ export default function RealTimeTest({
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: buildRealtimeVadSession(null),
           }),
         );
       }
@@ -1663,38 +1696,38 @@ export default function RealTimeTest({
       goalLang === "ja"
         ? "こんにちはと言う"
         : goalLang === "fr"
-        ? "Dis bonjour"
-        : goalLang === "de"
-        ? "Sag Hallo"
-        : goalLang === "es"
-        ? "Di hola"
-        : goalLang === "pt"
-        ? "Diga olá"
-        : goalLang === "it"
-        ? "Di' ciao"
-        : goalLang === "hi"
-        ? "नमस्ते कहें"
-        : goalLang === "ar"
-        ? "قول أهلا"
-        : "Say hello";
+          ? "Dis bonjour"
+          : goalLang === "de"
+            ? "Sag Hallo"
+            : goalLang === "es"
+              ? "Di hola"
+              : goalLang === "pt"
+                ? "Diga olá"
+                : goalLang === "it"
+                  ? "Di' ciao"
+                  : goalLang === "hi"
+                    ? "नमस्ते कहें"
+                    : goalLang === "ar"
+                      ? "قول أهلا"
+                      : "Say hello";
     const successCriteria =
       goalLang === "ja"
         ? "学習者がこんにちはと言う。"
         : goalLang === "de"
-        ? "Der Lernende sagt Hallo."
-        : goalLang === "es"
-        ? "El estudiante dice hola."
-        : goalLang === "pt"
-        ? 'O aluno diz "olá".'
-        : goalLang === "it"
-          ? "Lo studente dice ciao."
-          : goalLang === "hi"
-            ? "सीखने वाला नमस्ते कहता है।"
-            : goalLang === "ar"
-              ? "المتعلم يقول أهلًا."
-          : goalLang === "fr"
-            ? "L'apprenant dit bonjour."
-          : "The learner says hello.";
+          ? "Der Lernende sagt Hallo."
+          : goalLang === "es"
+            ? "El estudiante dice hola."
+            : goalLang === "pt"
+              ? 'O aluno diz "olá".'
+              : goalLang === "it"
+                ? "Lo studente dice ciao."
+                : goalLang === "hi"
+                  ? "सीखने वाला नमस्ते कहता है।"
+                  : goalLang === "ar"
+                    ? "المتعلم يقول أهلًا."
+                    : goalLang === "fr"
+                      ? "L'apprenant dit bonjour."
+                      : "The learner says hello.";
     return {
       id: `goal_tutorial_${Date.now()}`,
       title_en: "Say hello",
@@ -1726,7 +1759,7 @@ export default function RealTimeTest({
       successCriteria_hi: "सीखने वाला नमस्ते कहता है।",
       successCriteria_ar: "المتعلم يقول أهلًا.",
       roleplayPrompt:
-        "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
+        "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with one natural short greeting phrase or sentence in a neutral adult tone.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
       attempts: 0,
       status: "active",
@@ -1799,6 +1832,7 @@ The goal must be:
 2. Written as a clear action (not "practice X" or "X conversation")
 3. Something that demonstrates understanding of ${topic}
 4. CONCISE: Maximum 10-15 words regardless of level. Higher levels use sophisticated vocabulary, NOT longer sentences.
+5. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
 
 The goal must be written entirely in ${goalLangName}. Do NOT output English unless the goal language is English.
 
@@ -1806,7 +1840,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[5-15 word specific task - be concise even for advanced levels]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1841,9 +1875,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
               ? `Conclua a tarefa sobre ${topic}`
               : goalLangCode === "de"
                 ? `Schließe die Aufgabe zu ${topic} ab`
-              : goalLangCode === "hi"
-                ? `${topic} से जुड़ा कार्य पूरा करें`
-                : `Complete the ${topic} task`),
+                : goalLangCode === "hi"
+                  ? `${topic} से जुड़ा कार्य पूरा करें`
+                  : `Complete the ${topic} task`),
         };
       }
     } catch (err) {
@@ -1885,8 +1919,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "سلّم واسأل الشخص عامل إيه",
           prompt:
             "ابدأ بتحية بسيطة وخلي المتعلم يرد برد مناسب ويكمل سؤال قصير عن الحال.",
-          successCriteria:
-            "المتعلم يسلّم ويرد بشكل مناسب على سؤال عن الحال",
+          successCriteria: "المتعلم يسلّم ويرد بشكل مناسب على سؤال عن الحال",
         },
       },
       numbers: {
@@ -1922,8 +1955,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "قل رقم تليفونك أو سنك",
           prompt:
             "اسأل المتعلم عن رقم تليفونه أو سنه أو أي رقم تاني في سياق واضح.",
-          successCriteria:
-            "المتعلم يقول الأرقام بشكل صحيح في سياق له معنى",
+          successCriteria: "المتعلم يقول الأرقام بشكل صحيح في سياق له معنى",
         },
       },
       food: {
@@ -1959,8 +1991,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "اطلب حاجة تاكلها أو تشربها",
           prompt:
             "أنت نادل أو باريستا. خلّي المتعلم يطلب أكل أو مشروب باستخدام عبارات مناسبة.",
-          successCriteria:
-            "المتعلم يطلب حاجة واحدة على الأقل بعبارات مناسبة",
+          successCriteria: "المتعلم يطلب حاجة واحدة على الأقل بعبارات مناسبة",
         },
       },
       places: {
@@ -1996,8 +2027,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "اوصف فين ساكن أو فين نفسك تزور",
           prompt:
             "اسأل المتعلم عن مكان: فين ساكن، أو عايز يزوره، أو مكانه المفضل.",
-          successCriteria:
-            "المتعلم يوصف مكان بتفصيلتين أو تلاتة على الأقل",
+          successCriteria: "المتعلم يوصف مكان بتفصيلتين أو تلاتة على الأقل",
         },
       },
       shopping: {
@@ -2033,8 +2063,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "اشتري حاجة من محل",
           prompt:
             "أنت البايع. ساعد المتعلم يشتري حاجة ويتكلم عن السعر والاختيارات.",
-          successCriteria:
-            "المتعلم يسأل عن غرض ويكمل عملية شراء بسيطة",
+          successCriteria: "المتعلم يسأل عن غرض ويكمل عملية شراء بسيطة",
         },
       },
       travel: {
@@ -2068,10 +2097,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         },
         ar: {
           scenario: "اسأل عن الطريق أو اشرحه",
-          prompt:
-            "إما تشرح طريق لمكان، أو تسأل المتعلم يوصل لمكان إزاي.",
-          successCriteria:
-            "المتعلم يفهم أو يدي اتجاهات باستخدام كلمات المكان",
+          prompt: "إما تشرح طريق لمكان، أو تسأل المتعلم يوصل لمكان إزاي.",
+          successCriteria: "المتعلم يفهم أو يدي اتجاهات باستخدام كلمات المكان",
         },
       },
       family: {
@@ -2105,8 +2132,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         },
         ar: {
           scenario: "اوصف أفراد عيلتك",
-          prompt:
-            "اسأل المتعلم عن عيلته: مين فيها، أعمارهم، أسماؤهم، وهكذا.",
+          prompt: "اسأل المتعلم عن عيلته: مين فيها، أعمارهم، أسماؤهم، وهكذا.",
           successCriteria:
             "المتعلم يوصف فردين على الأقل من عيلته مع شوية تفاصيل",
         },
@@ -2144,8 +2170,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
           scenario: "احكي عن روتينك اليومي",
           prompt:
             "اسأل المتعلم بيعمل إيه في أوقات مختلفة من اليوم، زي الصبح أو وقت الأكل.",
-          successCriteria:
-            "المتعلم يوصف أنشطة مرتبطة بأوقات معينة",
+          successCriteria: "المتعلم يوصف أنشطة مرتبطة بأوقات معينة",
         },
       },
     };
@@ -2295,6 +2320,7 @@ Create a SPECIFIC, ACTIONABLE goal that:
 3. Demonstrates understanding of ${topic}
 4. Is DIFFERENT from any previous goals
 5. Is CONCISE: Maximum 10-15 words. For advanced levels, use sophisticated vocabulary instead of longer sentences.
+6. For Pre-A1/A1, simple does not mean childish: use adult-realistic scenarios and neutral adult wording.
 
 Examples of good goals:
 - "Ask for directions to the nearest pharmacy"
@@ -2395,34 +2421,19 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
-    const localized =
-      goal[`title_${gLang}`] ||
-      goal[`scenario_${gLang}`] ||
-      "";
+    const localized = goal[`title_${gLang}`] || goal[`scenario_${gLang}`] || "";
     if (localized) return localized;
     if (gLang !== "en") return "";
-    return (
-      goal.title_en ||
-      goal.title_es ||
-      goal.scenario ||
-      ""
-    );
+    return goal.title_en || goal.title_es || goal.scenario || "";
   }
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
     const localized =
-      goal[`rubric_${gLang}`] ||
-      goal[`successCriteria_${gLang}`] ||
-      "";
+      goal[`rubric_${gLang}`] || goal[`successCriteria_${gLang}`] || "";
     if (localized) return localized;
     if (gLang !== "en") return "";
-    return (
-      goal.successCriteria ||
-      goal.rubric_en ||
-      goal.rubric_es ||
-      ""
-    );
+    return goal.successCriteria || goal.rubric_en || goal.rubric_es || "";
   }
   function goalTitleForTarget(goal) {
     if (!goal) return "";
@@ -2495,7 +2506,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     const prompt = `${buildSimpleTranslationPrompt(target)}\n${trimmed}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2587,11 +2598,10 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     // Not in lesson mode - show a message
     toast({
       title: uiText("ra_free_practice_title", "Free practice mode"),
-      description:
-        uiText(
-          "ra_free_practice_desc",
-          "In free mode, use the Connect button to practice conversation.",
-        ),
+      description: uiText(
+        "ra_free_practice_desc",
+        "In free mode, use the Connect button to practice conversation.",
+      ),
       status: "info",
       duration: 2000,
     });
@@ -2678,7 +2688,7 @@ Return ONLY JSON:
     };
 
     try {
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -2736,9 +2746,6 @@ Return ONLY JSON:
      Language instructions
   --------------------------- */
   function buildLanguageInstructions(prefs) {
-    const persona = String(
-      (prefs?.voicePersona ?? voicePersonaRef.current ?? "").slice(0, 240),
-    );
     const focus = String(
       (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240),
     );
@@ -2800,13 +2807,17 @@ Return ONLY JSON:
     }
 
     const levelHint = getCEFRPromptHint(currentCefrLevel);
+    const adultBeginnerTone = getAdultBeginnerToneRule(
+      currentCefrLevel,
+      "conversation",
+    );
 
     const focusLine = focus ? `Focus area: ${focus}.` : "";
     const pronLine = pronOn
       ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
     const tutorialLine = isTutorial
-      ? "Tutorial mode: ONLY use simple greetings (hello/hi/good morning/goodbye). Keep replies 1–4 words. Do not introduce other topics."
+      ? "Tutorial mode: ONLY use simple greetings (hello/hi/good morning/goodbye). Keep replies to one natural short greeting phrase or sentence. Do not introduce other topics. Keep the tone neutral, adult, and conversational."
       : "";
 
     // Build comprehensive goal guidance for the AI tutor
@@ -2828,8 +2839,8 @@ Return ONLY JSON:
       strict,
       "Keep replies very brief (≤25 words) and natural.",
       "IMPORTANT: Do NOT start the conversation. Wait for the user to speak first. Never greet or initiate - only respond to what the user says.",
-      `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       levelHint,
+      adultBeginnerTone,
       focusLine,
       pronLine,
       tutorialLine,
@@ -2882,14 +2893,12 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2918,13 +2927,11 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             voice: voiceName,
-            modalities: ["audio", "text"],
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2943,27 +2950,27 @@ Return ONLY JSON:
                   ? "Stem bijgewerkt."
                   : targetLangRef.current === "zh"
                     ? "语音已更新。"
-                  : targetLangRef.current === "ja"
-                    ? "音声を更新しました。"
-                    : targetLangRef.current === "ru"
-                      ? "Голос обновлён."
-                      : targetLangRef.current === "de"
-                        ? "Stimme aktualisiert."
-                        : targetLangRef.current === "el"
-                          ? "Η φωνή ενημερώθηκε."
-                          : targetLangRef.current === "pl"
-                            ? "Głos zaktualizowany."
-                            : targetLangRef.current === "ga"
-                              ? "Guth nuashonraithe."
-                              : targetLangRef.current === "yua"
-                                ? "T'aan ts'áaj."
-                                : "Voice updated.";
+                    : targetLangRef.current === "ja"
+                      ? "音声を更新しました。"
+                      : targetLangRef.current === "ru"
+                        ? "Голос обновлён."
+                        : targetLangRef.current === "de"
+                          ? "Stimme aktualisiert."
+                          : targetLangRef.current === "el"
+                            ? "Η φωνή ενημερώθηκε."
+                            : targetLangRef.current === "pl"
+                              ? "Głos zaktualizowany."
+                              : targetLangRef.current === "ga"
+                                ? "Guth nuashonraithe."
+                                : targetLangRef.current === "yua"
+                                  ? "T'aan ts'áaj."
+                                  : "Voice updated.";
       try {
         dcRef.current.send(
           JSON.stringify({
             type: "response.create",
             response: {
-              modalities: ["audio", "text"],
+              output_modalities: ["audio"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
               metadata: { kind: "voice_probe" },
@@ -2982,14 +2989,12 @@ Return ONLY JSON:
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -3110,6 +3115,22 @@ Return ONLY JSON:
       .trim();
   }
 
+  function extractResponseOutputText(response) {
+    const output = Array.isArray(response?.output) ? response.output : [];
+    return output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) =>
+        typeof part?.transcript === "string"
+          ? part.transcript
+          : typeof part?.text === "string"
+            ? part.text
+            : "",
+      )
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -3145,11 +3166,11 @@ Return ONLY JSON:
       return;
     }
 
-    if (
-      t === "response.output_audio.done" ||
-      t === "output_audio.done" ||
-      t === "output_audio_buffer.stopped"
-    ) {
+    if (t === "response.output_audio.done" || t === "output_audio.done") {
+      return;
+    }
+
+    if (t === "output_audio_buffer.stopped") {
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(aliveRef.current ? "listening" : "idle");
@@ -3161,6 +3182,7 @@ Return ONLY JSON:
     if (t === "response.created") {
       isIdleRef.current = false;
       clearAutoStopTimer();
+      disableVAD();
       setAssistantInputLocked(true);
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
@@ -3182,9 +3204,9 @@ Return ONLY JSON:
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
         t === "input_audio_transcription.completed") &&
-      data?.transcript
+      (data?.transcript || data?.text)
     ) {
-      const text = (data.transcript || "").trim();
+      const text = (data.transcript || data.text || "").trim();
       if (text) {
         const now = Date.now();
         if (
@@ -3234,6 +3256,7 @@ Return ONLY JSON:
 
     if (
       (t === "response.audio_transcript.delta" ||
+        t === "response.output_audio_transcript.delta" ||
         t === "response.output_text.delta" ||
         t === "response.text.delta") &&
       typeof data?.delta === "string"
@@ -3247,10 +3270,12 @@ Return ONLY JSON:
 
     if (
       (t === "response.audio_transcript.done" ||
+        t === "response.output_audio_transcript.done" ||
         t === "response.output_text.done" ||
         t === "response.text.done") &&
-      typeof data?.text === "string"
+      typeof (data?.transcript || data?.text) === "string"
     ) {
+      const finalText = data.transcript || data.text || "";
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
@@ -3262,7 +3287,7 @@ Return ONLY JSON:
       }
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: ((m.textFinal || "").trim() + " " + finalText).trim(),
         textStream: "",
       }));
       return;
@@ -3291,6 +3316,16 @@ Return ONLY JSON:
             textStream: "",
             textFinal: ((m.textFinal || "") + " " + buf).trim(),
           }));
+        }
+        const finalResponseText = extractResponseOutputText(data?.response);
+        if (finalResponseText) {
+          updateMessage(mid, (m) => {
+            const existingText = `${m.textFinal || ""} ${m.textStream || ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+            if (existingText) return m;
+            return { ...m, textFinal: finalResponseText, textStream: "" };
+          });
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         logEvent(analytics, "handleTurn", { action: "turn_completed" });
@@ -3349,10 +3384,7 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const target = normalizeSupportLanguage(
-      uiLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
+    const target = normalizeSupportLanguage(uiLang, DEFAULT_SUPPORT_LANGUAGE);
 
     if (getBaseLanguageCode(m.lang || targetLangRef.current) === target) {
       updateMessage(id, (prev) => ({
@@ -3381,7 +3413,7 @@ Return ONLY JSON:
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3454,8 +3486,6 @@ Return ONLY JSON:
               uiLang,
               DEFAULT_SUPPORT_LANGUAGE,
             ),
-            voice: voiceRef.current,
-            voicePersona: voicePersonaRef.current,
             targetLang: normalizePracticeLanguage(
               targetLangRef.current,
               DEFAULT_TARGET_LANGUAGE,
@@ -3491,8 +3521,6 @@ Return ONLY JSON:
         partial.supportLang ?? uiLang,
         DEFAULT_SUPPORT_LANGUAGE,
       ),
-      voice: getPreferredTTSVoice(partial.voice, voiceRef.current),
-      voicePersona: partial.voicePersona ?? voicePersonaRef.current,
       targetLang: normalizePracticeLanguage(
         partial.targetLang ?? targetLangRef.current,
         DEFAULT_TARGET_LANGUAGE,
@@ -3598,8 +3626,10 @@ Return ONLY JSON:
     getOutgoingTextById: getAssistantMessageTextById,
     measureDeps: [showTranslations, replayingId, translatingMessageId],
   });
-  const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
+  const chatLogButtonHighlightProps = getChatLogButtonHighlightProps(
+    isChatLogHighlighted,
+    isLightTheme,
+  );
   const orbUiState = getRealtimeOrbVisualState(uiState);
 
   const liveStateLabel = uiStateLabel(uiState, uiLang);
@@ -3615,7 +3645,10 @@ Return ONLY JSON:
       await translateMessage(id);
     } catch (e) {
       toast({
-        title: uiText("ra_toast_translation_failed_title", "Translation failed"),
+        title: uiText(
+          "ra_toast_translation_failed_title",
+          "Translation failed",
+        ),
         description: e?.message || String(e),
         status: "error",
         duration: 2200,
@@ -3681,146 +3714,145 @@ Return ONLY JSON:
               position="relative"
               boxShadow={isLightTheme ? APP_SHADOW : undefined}
             >
-              <VStack
-                align="flex-start"
-                spacing={2}
-                width="100%"
-              >
-              <Box w="100%">
-                <HStack justify="space-between" align="center" mb={1}>
-                  <HStack spacing={2} align="center" flex="1">
+              <VStack align="flex-start" spacing={2} width="100%">
+                <Box w="100%">
+                  <HStack justify="space-between" align="center" mb={1}>
+                    <HStack spacing={2} align="center" flex="1">
+                      <IconButton
+                        icon={
+                          isGeneratingGoal ? (
+                            <VoiceOrb
+                              state={getRealtimeOrbVisualState(
+                                ["idle", "listening", "speaking"][
+                                  Math.floor(Math.random() * 3)
+                                ],
+                              )}
+                              size={16}
+                            />
+                          ) : (
+                            <FaDice />
+                          )
+                        }
+                        size="xs"
+                        variant="ghost"
+                        color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
+                        aria-label={uiText("ra_new_goal", "New goal")}
+                        onClick={generateGoalVariation}
+                        opacity={0.7}
+                        bg={isLightTheme ? APP_SURFACE : undefined}
+                        _hover={{
+                          opacity: 1,
+                          bg: isLightTheme
+                            ? APP_SURFACE_MUTED
+                            : "whiteAlpha.100",
+                        }}
+                        isDisabled={status === "connected" || isGeneratingGoal}
+                        minW="24px"
+                        h="24px"
+                      />
+                      <Badge
+                        colorScheme="yellow"
+                        variant="subtle"
+                        fontSize={"10px"}
+                      >
+                        {tGoalLabel}
+                      </Badge>
+                      <Text
+                        fontSize="xs"
+                        opacity={0.9}
+                        color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                        flex="1"
+                      >
+                        {isGeneratingGoal
+                          ? streamingGoalText ||
+                            uiText("ra_generating", "Generating...")
+                          : currentGoalTitleText ||
+                            (uiLang === "en"
+                              ? "—"
+                              : uiText("ra_generating", "Generating..."))}
+                      </Text>
+                    </HStack>
                     <IconButton
-                      icon={
-                        isGeneratingGoal ? (
-                          <VoiceOrb
-                            state={getRealtimeOrbVisualState(
-                              ["idle", "listening", "speaking"][
-                                Math.floor(Math.random() * 3)
-                              ],
-                            )}
-                            size={16}
-                          />
-                        ) : (
-                          <FaDice />
-                        )
-                      }
+                      ref={chatLogButtonRef}
+                      icon={<FaRegCommentDots size={14} />}
                       size="xs"
                       variant="ghost"
-                      color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
-                      aria-label={uiText("ra_new_goal", "New goal")}
-                      onClick={generateGoalVariation}
-                      opacity={0.7}
-                      bg={isLightTheme ? APP_SURFACE : undefined}
-                      _hover={{
-                        opacity: 1,
-                        bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
-                      }}
-                      isDisabled={status === "connected" || isGeneratingGoal}
-                      minW="24px"
-                      h="24px"
+                      colorScheme="cyan"
+                      {...chatLogButtonHighlightProps}
+                      _hover={{ opacity: 1 }}
+                      onClick={() => setShowChatLog(true)}
+                      isDisabled={!timeline.length}
+                      aria-label={uiText("ra_chat_log", "Chat log")}
                     />
-                    <Badge
-                      colorScheme="yellow"
-                      variant="subtle"
-                      fontSize={"10px"}
-                    >
-                      {tGoalLabel}
-                    </Badge>
-                    <Text
-                      fontSize="xs"
-                      opacity={0.9}
-                      color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                      flex="1"
-                    >
-                      {isGeneratingGoal
-                        ? streamingGoalText ||
-                          uiText("ra_generating", "Generating...")
-                        : currentGoalTitleText ||
-                          (uiLang === "en"
-                            ? "—"
-                            : uiText("ra_generating", "Generating..."))}
-                    </Text>
                   </HStack>
-                  <IconButton
-                    ref={chatLogButtonRef}
-                    icon={<FaRegCommentDots size={14} />}
-                    size="xs"
-                    variant="ghost"
-                    colorScheme="cyan"
-                    {...chatLogButtonHighlightProps}
-                    _hover={{ opacity: 1 }}
-                    onClick={() => setShowChatLog(true)}
-                    isDisabled={!timeline.length}
-                    aria-label={uiText("ra_chat_log", "Chat log")}
-                  />
-                </HStack>
-                {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
-                  <Text
-                    fontSize="xs"
-                    opacity={0.8}
-                    color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
-                  >
-                    <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                    {currentGoalRubricText}
-                  </Text>
-                ) : null}
-                {goalFeedback && !isGeneratingGoal ? (
-                  <HStack
-                    mt={2}
-                    spacing={2}
-                    align="flex-start"
-                    color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
-                  >
-                    <Box
-                      mt="2px"
-                      width="14px"
-                      height="14px"
-                      display="inline-flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      borderRadius="full"
-                      border="1px solid"
-                      borderColor={
-                        isLightTheme
-                          ? "rgba(165, 89, 108, 0.38)"
-                          : "red.300"
-                      }
-                      bg={
-                        isLightTheme
-                          ? "rgba(214, 96, 122, 0.16)"
-                          : "rgba(239,68,68,0.9)"
-                      }
-                      color={isLightTheme ? "#8f4a5e" : "white"}
-                      boxShadow={
-                        isLightTheme
-                          ? "0 1px 0 rgba(255,255,255,0.45)"
-                          : undefined
-                      }
-                      flexShrink={0}
-                    >
-                      <FaExclamation size={7} />
-                    </Box>
+                  {currentGoal && !isGeneratingGoal && currentGoalRubricText ? (
                     <Text
                       fontSize="xs"
-                      opacity={0.95}
+                      opacity={0.8}
+                      color={
+                        isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                      }
+                    >
+                      <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+                      {currentGoalRubricText}
+                    </Text>
+                  ) : null}
+                  {goalFeedback && !isGeneratingGoal ? (
+                    <HStack
+                      mt={2}
+                      spacing={2}
+                      align="flex-start"
                       color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
                     >
-                      {goalFeedback}
-                    </Text>
-                  </HStack>
-                ) : null}
+                      <Box
+                        mt="2px"
+                        width="14px"
+                        height="14px"
+                        display="inline-flex"
+                        alignItems="center"
+                        justifyContent="center"
+                        borderRadius="full"
+                        border="1px solid"
+                        borderColor={
+                          isLightTheme ? "rgba(165, 89, 108, 0.38)" : "red.300"
+                        }
+                        bg={
+                          isLightTheme
+                            ? "rgba(214, 96, 122, 0.16)"
+                            : "rgba(239,68,68,0.9)"
+                        }
+                        color={isLightTheme ? "#8f4a5e" : "white"}
+                        boxShadow={
+                          isLightTheme
+                            ? "0 1px 0 rgba(255,255,255,0.45)"
+                            : undefined
+                        }
+                        flexShrink={0}
+                      >
+                        <FaExclamation size={7} />
+                      </Box>
+                      <Text
+                        fontSize="xs"
+                        opacity={0.95}
+                        color={isLightTheme ? "#8f4a5e" : "whiteAlpha.900"}
+                      >
+                        {goalFeedback}
+                      </Text>
+                    </HStack>
+                  ) : null}
 
-                <Box mt={3}>
-                  <XpProgressHeader
-                    levelText={`${
-                      uiText("ra_label_level", "Level")
-                    } ${xpLevelNumber}`}
-                    xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
-                    progressPct={progressPct}
-                    xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
-                  />
+                  <Box mt={3}>
+                    <XpProgressHeader
+                      levelText={`${uiText(
+                        "ra_label_level",
+                        "Level",
+                      )} ${xpLevelNumber}`}
+                      xpText={`${uiText("ra_label_xp", "XP")} ${xp}`}
+                      progressPct={progressPct}
+                      xpBadgeProps={{ colorScheme: "teal", fontSize: "10px" }}
+                    />
+                  </Box>
                 </Box>
-              </Box>
               </VStack>
             </Box>
 
@@ -3860,7 +3892,9 @@ Return ONLY JSON:
                   primaryText={`${latestAssistantMessage.textFinal || ""}${
                     latestAssistantMessage.textStream || ""
                   }`}
-                  primaryLang={latestAssistantMessage.lang || targetLang || "es"}
+                  primaryLang={
+                    latestAssistantMessage.lang || targetLang || "es"
+                  }
                   secondaryText={
                     showTranslations
                       ? latestAssistantMessage.source === "hist"
@@ -3870,9 +3904,9 @@ Return ONLY JSON:
                           latestAssistantMessage.trans_es ||
                           ""
                         : normalizeSupportLanguage(
-                            latestAssistantMessage.translationLang,
-                            "",
-                          ) === uiLang
+                              latestAssistantMessage.translationLang,
+                              "",
+                            ) === uiLang
                           ? latestAssistantMessage.translation || ""
                           : ""
                       : ""
@@ -3882,14 +3916,16 @@ Return ONLY JSON:
                     latestAssistantMessage.source === "hist"
                       ? latestAssistantMessage.pairs || []
                       : normalizeSupportLanguage(
-                          latestAssistantMessage.translationLang,
-                          "",
-                        ) === uiLang
+                            latestAssistantMessage.translationLang,
+                            "",
+                          ) === uiLang
                         ? latestAssistantMessage.pairs || []
                         : []
                   }
                   showSecondary={showTranslations}
-                  isTranslating={translatingMessageId === latestAssistantMessage.id}
+                  isTranslating={
+                    translatingMessageId === latestAssistantMessage.id
+                  }
                   canReplay={
                     !!latestAssistantMessage.hasAudio ||
                     audioCacheIndexRef.current.has(latestAssistantMessage.id)
@@ -3967,7 +4003,7 @@ Return ONLY JSON:
                     ? {
                         bg: "linear-gradient(180deg, #35bfd3 0%, #27adc0 100%)",
                       }
-                  : undefined
+                    : undefined
               }
               color={
                 status === "connected"
@@ -4061,11 +4097,11 @@ Return ONLY JSON:
           size="xl"
           motionPreset="none"
         >
-          <ModalOverlay
+          {/* <ModalOverlay
             motionProps={nativeOverlayMotionProps}
             bg="blackAlpha.700"
             backdropFilter="blur(4px)"
-          />
+          /> */}
           <ModalContent
             motionProps={nativeModalMotionProps}
             bg="gray.900"
@@ -4099,12 +4135,13 @@ Return ONLY JSON:
                           uiLang
                         ? m.translation || ""
                         : "";
-                  const replayLabel =
-                    uiText("ra_btn_replay", "Replay");
+                  const replayLabel = uiText("ra_btn_replay", "Replay");
                   return (
                     <RowLeft key={m.id}>
                       <AlignedBubble
-                        primaryLabel={languageNameFor(m.lang || targetLang || "es")}
+                        primaryLabel={languageNameFor(
+                          m.lang || targetLang || "es",
+                        )}
                         secondaryLabel={
                           (m.lang || targetLang || "es") === "es"
                             ? translations[uiLang].language_en
@@ -4118,9 +4155,9 @@ Return ONLY JSON:
                           m.source === "hist"
                             ? m.pairs || []
                             : normalizeSupportLanguage(
-                                m.translationLang,
-                                "",
-                              ) === uiLang
+                                  m.translationLang,
+                                  "",
+                                ) === uiLang
                               ? m.pairs || []
                               : []
                         }

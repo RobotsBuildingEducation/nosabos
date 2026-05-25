@@ -12,7 +12,8 @@ import {
   Button,
   Flex,
   HStack,
-  Input, Text,
+  Input,
+  Text,
   VStack,
   Radio,
   RadioGroup,
@@ -324,7 +325,7 @@ function stableHash(str = "") {
 function shouldUseDragVariant(question, choices = [], answers = []) {
   if (!question || !choices.length) return false;
   const seed = stableHash(
-    question + JSON.stringify(choices) + JSON.stringify(answers)
+    question + JSON.stringify(choices) + JSON.stringify(answers),
   );
   return seed % 2 === 0;
 }
@@ -413,7 +414,10 @@ export default function LessonGroupQuiz({
       const sLang =
         prog.supportLang === "auto" || prog.supportLang === "bilingual"
           ? "auto"
-          : normalizeSupportLanguage(prog.supportLang, DEFAULT_SUPPORT_LANGUAGE);
+          : normalizeSupportLanguage(
+              prog.supportLang,
+              DEFAULT_SUPPORT_LANGUAGE,
+            );
       const showTr = prog.showTranslations !== false;
       const langXp = prog.languageXp?.[tLang] || prog.totalXp || 0;
 
@@ -538,11 +542,11 @@ export default function LessonGroupQuiz({
       });
       if (allWords.length > 0) {
         topicDirective = `- CONTEXT: Draw from this vocabulary pool: ${JSON.stringify(
-          [...new Set(allWords)]
+          [...new Set(allWords)],
         )}. Use these words or related concepts.`;
       } else if (allTopics.length > 0) {
         topicDirective = `- CONTEXT: Questions should relate to these topics: ${allTopics.join(
-          ", "
+          ", ",
         )}.`;
       }
     }
@@ -578,11 +582,11 @@ export default function LessonGroupQuiz({
       });
       if (allWords.length > 0) {
         topicDirective = `- CONTEXT: Draw from this vocabulary pool: ${JSON.stringify(
-          [...new Set(allWords)]
+          [...new Set(allWords)],
         )}. Use these words or related concepts.`;
       } else if (allTopics.length > 0) {
         topicDirective = `- CONTEXT: Questions should relate to these topics: ${allTopics.join(
-          ", "
+          ", ",
         )}.`;
       }
     }
@@ -618,11 +622,11 @@ export default function LessonGroupQuiz({
       });
       if (allWords.length > 0) {
         topicDirective = `- CONTEXT: Draw from this vocabulary pool: ${JSON.stringify(
-          [...new Set(allWords)]
+          [...new Set(allWords)],
         )}. Use these words or related concepts.`;
       } else if (allTopics.length > 0) {
         topicDirective = `- CONTEXT: Questions should relate to these topics: ${allTopics.join(
-          ", "
+          ", ",
         )}.`;
       }
     }
@@ -660,11 +664,11 @@ export default function LessonGroupQuiz({
       });
       if (allWords.length > 0) {
         topicDirective = `- CONTEXT: Draw from this vocabulary pool: ${JSON.stringify(
-          [...new Set(allWords)]
+          [...new Set(allWords)],
         )}. Use these words or related concepts.`;
       } else if (allTopics.length > 0) {
         topicDirective = `- CONTEXT: Questions should relate to these topics: ${allTopics.join(
-          ", "
+          ", ",
         )}.`;
       }
     }
@@ -704,11 +708,11 @@ export default function LessonGroupQuiz({
       });
       if (allWords.length > 0) {
         topicDirective = `- CONTEXT: Draw from this vocabulary pool: ${JSON.stringify(
-          [...new Set(allWords)]
+          [...new Set(allWords)],
         )}. Use these words or related concepts.`;
       } else if (allTopics.length > 0) {
         topicDirective = `- CONTEXT: Questions should relate to these topics: ${allTopics.join(
-          ", "
+          ", ",
         )}.`;
       }
     }
@@ -1143,7 +1147,7 @@ export default function LessonGroupQuiz({
     const useDrag = shouldUseDragVariant(
       qMC,
       choicesMC,
-      [answerMC].filter(Boolean)
+      [answerMC].filter(Boolean),
     );
     setMcLayout(useDrag ? "drag" : "buttons");
     setMcSlotIndex(null);
@@ -1278,7 +1282,7 @@ Reply ONE WORD ONLY: YES or NO
             ([li, ri]) =>
               `L${li + 1} -> R${ri + 1}  (${mLeft[li]} -> ${
                 mRight[ri] || "(none)"
-              })`
+              })`,
           )
           .join("\n") || "(none)";
 
@@ -1408,7 +1412,7 @@ YES or NO
         setIsQuestionPlaying(false);
       }
     },
-    [isQuestionPlaying, targetLang, toast, userLanguage]
+    [isQuestionPlaying, targetLang, toast, userLanguage],
   );
 
   const questionListenLabel = quizUi.listenQuestion;
@@ -1468,7 +1472,7 @@ YES or NO
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay motionProps={nativeOverlayMotionProps} />
+        {/* <ModalOverlay motionProps={nativeOverlayMotionProps} /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="#1a1e2e"
@@ -1480,8 +1484,7 @@ YES or NO
           <ModalBody>
             <VStack spacing={4}>
               <Text fontSize="2xl">
-                {quizUi.score}:{" "}
-                {correctAnswers}/{TOTAL_QUESTIONS}
+                {quizUi.score}: {correctAnswers}/{TOTAL_QUESTIONS}
               </Text>
               <Progress
                 value={(correctAnswers / TOTAL_QUESTIONS) * 100}
@@ -1504,9 +1507,7 @@ YES or NO
                   {quizUi.retry}
                 </Button>
               )}
-              <Button onClick={handleComplete}>
-                {quizUi.continue}
-              </Button>
+              <Button onClick={handleComplete}>{quizUi.continue}</Button>
             </HStack>
           </ModalFooter>
         </ModalContent>
@@ -1519,23 +1520,16 @@ YES or NO
   const isGrading = loadingGFill || loadingGMC || loadingGMA || loadingMJ;
 
   return (
-    <Box
-      minH="100vh"
-      bg="transparent"
-      color={APP_TEXT_PRIMARY}
-      py={8}
-    >
+    <Box minH="100vh" bg="transparent" color={APP_TEXT_PRIMARY} py={8}>
       <VStack spacing={6} maxW="800px" mx="auto" px={4}>
         {/* Progress Header */}
         <Box w="full">
           <HStack justify="space-between" mb={2}>
             <Badge colorScheme="teal">
-              {quizUi.question}{" "}
-              {questionsAnswered + 1}/{TOTAL_QUESTIONS}
+              {quizUi.question} {questionsAnswered + 1}/{TOTAL_QUESTIONS}
             </Badge>
             <Badge colorScheme="purple">
-              {quizUi.correct}:{" "}
-              {correctAnswers}/{questionsAnswered}
+              {quizUi.correct}: {correctAnswers}/{questionsAnswered}
             </Badge>
           </HStack>
           <Progress
@@ -1558,7 +1552,14 @@ YES or NO
         >
           {isLoading ? (
             <VStack spacing={4}>
-              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={32} />
+              <VoiceOrb
+                state={
+                  ["idle", "listening", "speaking"][
+                    Math.floor(Math.random() * 3)
+                  ]
+                }
+                size={32}
+              />
               <Text color={APP_TEXT_PRIMARY}>
                 {t(userLanguage, "history_generating_question")}
               </Text>
@@ -1591,9 +1592,7 @@ YES or NO
               <Input
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
-                placeholder={
-                  quizUi.answerPlaceholder
-                }
+                placeholder={quizUi.answerPlaceholder}
                 size="lg"
                 bg={APP_SURFACE}
                 color={APP_TEXT_PRIMARY}
@@ -1801,9 +1800,7 @@ YES or NO
               </Text>
             </VStack>
           ) : (
-            <Text color={APP_TEXT_PRIMARY}>
-              {quizUi.unknownQuestionType}
-            </Text>
+            <Text color={APP_TEXT_PRIMARY}>{quizUi.unknownQuestionType}</Text>
           )}
 
           {/* Feedback */}
@@ -1816,9 +1813,7 @@ YES or NO
               color="white"
               textAlign="center"
             >
-              {lastOk
-                ? quizUi.feedbackCorrect
-                : quizUi.feedbackIncorrect}
+              {lastOk ? quizUi.feedbackCorrect : quizUi.feedbackIncorrect}
             </Box>
           )}
 

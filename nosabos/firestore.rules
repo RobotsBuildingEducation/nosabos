@@ -2,18 +2,49 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isValidNpubId(userId) {
+      return userId.matches('^npub1[023456789acdefghjklmnpqrstuvwxyz]{58}$');
+    }
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    function hasUserKey(data) {
+      return data.keys().hasAny(['local_npub', 'npub']);
+    }
+
+    function hasMatchingUserKey(data, userId) {
+      return
+        (data.keys().hasAny(['local_npub']) && data.local_npub == userId) ||
+        (data.keys().hasAny(['npub']) && data.npub == userId);
+    }
+
+    function isValidUserWrite(userId) {
+      return isValidNpubId(userId) &&
+        hasMatchingUserKey(request.resource.data, userId);
+    }
+
+    function isValidExistingUser(userId) {
+      return isValidNpubId(userId) &&
+        (!exists(/databases/$(database)/documents/users/$(userId)) ||
+          isMatchingOrRepairableUser(userId));
+    }
+
+    function isMatchingOrRepairableUser(userId) {
+      let data = get(/databases/$(database)/documents/users/$(userId)).data;
+      return hasMatchingUserKey(data, userId) || !hasUserKey(data);
+    }
+
+    match /users/{userId} {
+      allow get: if isValidExistingUser(userId);
+      allow list: if false;
+      allow create, update: if isValidUserWrite(userId);
+      allow delete: if isValidExistingUser(userId);
+
+      match /{document=**} {
+        allow read, write: if isValidExistingUser(userId);
+      }
+    }
+
     match /{document=**} {
-      allow read, write;
+      allow read, write: if false;
     }
   }
 }

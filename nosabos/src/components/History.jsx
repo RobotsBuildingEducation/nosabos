@@ -42,6 +42,7 @@ import { getGermanCopy } from "../utils/germanCopy";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
+  appCheckFetch,
   database,
   simplemodel,
   gradingModel,
@@ -148,7 +149,7 @@ const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 
 async function callResponses({ model, input }) {
   try {
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -403,7 +404,7 @@ function useSharedProgress() {
     targetLang: "es",
     supportLang: initialSupportLang,
     showTranslations: true,
-    voice: getPreferredTTSVoice(user?.progress?.voice),
+    voice: getPreferredTTSVoice(),
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -437,7 +438,7 @@ function useSharedProgress() {
             : normalizeSupportLanguage(p.supportLang, supportFallback),
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
-        voice: getPreferredTTSVoice(p.voice),
+        voice: getPreferredTTSVoice(),
       });
       setIsLoading(false);
     });
@@ -1594,7 +1595,7 @@ export default function History({
       const player = await getTTSPlayer({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
-        voice: getPreferredTTSVoice(user?.progress?.voice),
+        voice: getPreferredTTSVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
 

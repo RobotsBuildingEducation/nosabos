@@ -79,8 +79,8 @@ const HINDI_SUPPORT_COPY = {
   "Display name updated": "प्रदर्शित नाम अपडेट हो गया",
   Error: "त्रुटि",
   "Join us on Patreon": "Patreon पर हमारा साथ दें",
-  "Access more education apps and content":
-    "और अधिक शैक्षिक ऐप्स और सामग्री तक पहुंचें",
+  "Get full access to more education apps and content":
+    "और अधिक शैक्षिक ऐप्स और सामग्री तक पूर्ण पहुंच प्राप्त करें",
   Join: "जुड़ें",
   "Change display name": "प्रदर्शित नाम बदलें",
   "Create display name": "प्रदर्शित नाम बनाएं",
@@ -116,8 +116,8 @@ const ARABIC_SUPPORT_COPY = {
   "Display name updated": "اتحدّث اسم العرض",
   Error: "خطأ",
   "Join us on Patreon": "انضم لينا على Patreon",
-  "Access more education apps and content":
-    "افتح تطبيقات ومحتوى تعليمي أكتر",
+  "Get full access to more education apps and content":
+    "احصل على وصول كامل لتطبيقات ومحتوى تعليمي أكتر",
   Join: "انضم",
   "Change display name": "غيّر اسم العرض",
   "Create display name": "اعمل اسم عرض",
@@ -138,12 +138,10 @@ const ARABIC_SUPPORT_COPY = {
   "Couldn't create invoice": "ماقدرناش ننشئ الفاتورة",
   "Failed to initiate deposit": "فشل بدء الإيداع",
   "Address copied": "اتنسخ العنوان",
-  "Lightning invoice copied to clipboard.":
-    "فاتورة Lightning اتنسخت للحافظة.",
+  "Lightning invoice copied to clipboard.": "فاتورة Lightning اتنسخت للحافظة.",
   "Choose a recipient": "اختار مستلِم",
   "View site": "افتح الموقع",
-  "Select an option to enable deposits.":
-    "اختار خيار عشان تفعّل الإيداعات.",
+  "Select an option to enable deposits.": "اختار خيار عشان تفعّل الإيداعات.",
   "Bitcoin wallet": "محفظة بيتكوين",
   "Loading wallet…": "جارٍ تحميل المحفظة…",
 };
@@ -153,7 +151,8 @@ const CHINESE_SUPPORT_COPY = {
   "Display name updated": "显示名称已更新",
   Error: "错误",
   "Join us on Patreon": "在 Patreon 支持我们",
-  "Access more education apps and content": "解锁更多教育应用和内容",
+  "Get full access to more education apps and content":
+    "完整解锁更多教育应用和内容",
   Join: "加入",
   "Change display name": "更改显示名称",
   "Create display name": "创建显示名称",
@@ -181,7 +180,17 @@ const CHINESE_SUPPORT_COPY = {
   "Loading wallet…": "正在加载钱包…",
 };
 
-function supportCopy(lang, en, es, it, fr, ja, pt = null, hi = null, ar = null) {
+function supportCopy(
+  lang,
+  en,
+  es,
+  it,
+  fr,
+  ja,
+  pt = null,
+  hi = null,
+  ar = null,
+) {
   if (lang === "de") {
     if (typeof en === "string" && /'s Account$/.test(en)) {
       return `Konto von ${en.replace(/'s Account$/, "")}`;
@@ -241,6 +250,7 @@ export function IdentityPanel({
   postNostrContent,
   showHeader = true,
   showSignOutButton = true,
+  showPatreonSupport = true,
 }) {
   const toast = useToast();
   const themeMode = useThemeStore((s) => s.themeMode);
@@ -564,66 +574,67 @@ export function IdentityPanel({
           </Button>
         </HStack>
 
-        {/* Patreon Support Link */}
-        <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
-          <HStack spacing={3} align="center">
-            <Box
-              p={2}
-              bg="black"
-              rounded="lg"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <SiPatreon size={20} color="white" />
-            </Box>
-            <VStack align="start" spacing={0} flex={1}>
-              <Text fontWeight="semibold" fontSize="sm">
-              {supportCopy(
-                  lang,
-                  "Join us on Patreon",
-                  "Apóyanos en Patreon",
-                  "Sostienici su Patreon",
-                  "Rejoins-nous sur Patreon",
-                  "Patreonで応援",
-                  "Apoie-nos no Patreon",
-                )}
-              </Text>
-              <Text fontSize="xs" color="gray.400">
+        {showPatreonSupport ? (
+          <Box p={4} bg="gray.800" rounded="lg" maxW="600px" w="100%" mx="auto">
+            <HStack spacing={3} align="center">
+              <Box
+                p={2}
+                bg="black"
+                rounded="lg"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <SiPatreon size={20} color="white" />
+              </Box>
+              <VStack align="start" spacing={0} flex={1}>
+                <Text fontWeight="semibold" fontSize="sm">
+                  {supportCopy(
+                    lang,
+                    "Join us on Patreon",
+                    "Apóyanos en Patreon",
+                    "Sostienici su Patreon",
+                    "Rejoins-nous sur Patreon",
+                    "Patreonで応援",
+                    "Apoie-nos no Patreon",
+                  )}
+                </Text>
+                <Text fontSize="xs" color="gray.400">
+                  {supportCopy(
+                    lang,
+                    "Get full access to more education apps and content",
+                    "Obtén acceso completo a más apps educativas y contenido",
+                    "Ottieni accesso completo a più app educative e contenuti",
+                    "Obtiens un accès complet à plus d'apps éducatives et de contenu",
+                    "さらに多くの教育アプリとコンテンツにフルアクセス",
+                    "Tenha acesso completo a mais apps educacionais e conteúdo",
+                  )}
+                </Text>
+              </VStack>
+              <Button
+                size="sm"
+                bg="black"
+                boxShadow="0px 0px 4px gray"
+                onClick={() =>
+                  window.open(
+                    "https://www.patreon.com/NotesAndOtherStuff",
+                    "_blank",
+                  )
+                }
+              >
                 {supportCopy(
                   lang,
-                  "Access more education apps and content",
-                  "Accede a más apps educativas y contenido",
-                  "Accedi a più app educative e contenuti",
-                  "Accede a plus d'apps educatives et de contenu",
-                  "さらに多くの教育アプリとコンテンツにアクセス",
-                  "Acesse mais apps educacionais e conteúdo",
+                  "Join",
+                  "Unirse",
+                  "Unisciti",
+                  "Rejoindre",
+                  "参加",
+                  "Entrar",
                 )}
-              </Text>
-            </VStack>
-            <Button
-              size="sm"
-              bg="black"
-              boxShadow="0px 0px 4px gray"
-              onClick={() =>
-                window.open(
-                  "https://www.patreon.com/NotesAndOtherStuff",
-                  "_blank",
-                )
-              }
-            >
-              {supportCopy(
-                lang,
-                "Join",
-                "Unirse",
-                "Unisciti",
-                "Rejoindre",
-                "参加",
-                "Entrar",
-              )}
-            </Button>
-          </HStack>
-        </Box>
+              </Button>
+            </HStack>
+          </Box>
+        ) : null}
 
         {/* Display Name + Switch Account Accordions */}
         <Accordion
@@ -666,17 +677,15 @@ export function IdentityPanel({
               <Input
                 value={displayNameInput}
                 onChange={(e) => setDisplayNameInput(e.target.value)}
-                placeholder={
-                  supportCopy(
-                    lang,
-                    "Enter a display name",
-                    "Ingresa tu nombre",
-                    "Inserisci un nome visualizzato",
-                    "Saisis un nom d'affichage",
-                    "表示名を入力",
-                    "Digite um nome de exibição",
-                  )
-                }
+                placeholder={supportCopy(
+                  lang,
+                  "Enter a display name",
+                  "Ingresa tu nombre",
+                  "Inserisci un nome visualizzato",
+                  "Saisis un nom d'affichage",
+                  "表示名を入力",
+                  "Digite um nome de exibição",
+                )}
                 bg="gray.700"
                 mb={2}
               />
@@ -859,7 +868,11 @@ export function IdentityPanel({
                   {step.subText ? (
                     <Text
                       fontSize="xs"
-                      color={isLightTheme ? panelTheme.textSecondary : panelTheme.accentSoft}
+                      color={
+                        isLightTheme
+                          ? panelTheme.textSecondary
+                          : panelTheme.accentSoft
+                      }
                       mt={2}
                       ml={8}
                       lineHeight="1.65"
@@ -999,11 +1012,11 @@ export default function IdentityDrawer({ isOpen, onClose, ...panelProps }) {
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay
+      {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg="blackAlpha.600"
-      />
+      /> */}
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeDrawerMotionProps}
@@ -1201,8 +1214,9 @@ export function BitcoinWalletSection({
     setSelectedIdentity(identity || "");
   }, [identity]);
 
-  const effectiveSelectedIdentity =
-    showIdentitySelector ? selectedIdentity : identity || selectedIdentity;
+  const effectiveSelectedIdentity = showIdentitySelector
+    ? selectedIdentity
+    : identity || selectedIdentity;
 
   // walletBalance is now a clean number from the store
   const totalBalance = useMemo(() => {
@@ -1356,14 +1370,12 @@ export function BitcoinWalletSection({
       generateNew: "新しいQRを生成",
       balanceLabel: "残高",
       cardNameLabel: "ウォレット",
-      scholarshipNote:
-        "あなたの入金は学習による奨学金づくりを支援します: ",
+      scholarshipNote: "あなたの入金は学習による奨学金づくりを支援します: ",
       nip07NsecTitle: "シークレットキーが必要です",
       nip07NsecDescription:
         "ブラウザ拡張機能でサインインしているため、秘密鍵にアクセスできません。ウォレットを作成するには、下にnsecを入力してください。",
       nip07NsecPlaceholder: "nsec1...を入力",
-      nip07NsecWarning:
-        "キーはウォレット作成にのみ使用され、保存されません。",
+      nip07NsecWarning: "キーはウォレット作成にのみ使用され、保存されません。",
     };
     const ar = {
       createWallet: "أنشئ محفظة",
@@ -1378,14 +1390,12 @@ export function BitcoinWalletSection({
       generateNew: "أنشئ QR جديدًا",
       balanceLabel: "الرصيد",
       cardNameLabel: "المحفظة",
-      scholarshipNote:
-        "إيداعاتك تساعدنا نعمل منح دراسية من خلال التعلّم مع ",
+      scholarshipNote: "إيداعاتك تساعدنا نعمل منح دراسية من خلال التعلّم مع ",
       nip07NsecTitle: "مطلوب المفتاح السري",
       nip07NsecDescription:
         "أنت مسجل الدخول من إضافة في المتصفح، لذلك لا نملك الوصول إلى مفتاحك الخاص. لإنشاء محفظة، أدخل nsec بالأسفل.",
       nip07NsecPlaceholder: "أدخل nsec1...",
-      nip07NsecWarning:
-        "يُستخدم مفتاحك فقط لإنشاء المحفظة ولا يتم حفظه.",
+      nip07NsecWarning: "يُستخدم مفتاحك فقط لإنشاء المحفظة ولا يتم حفظه.",
     };
     const de = {
       createWallet: "Wallet erstellen",
@@ -1410,24 +1420,24 @@ export function BitcoinWalletSection({
         "Dein Schlüssel wird nur zum Erstellen der Wallet verwendet und nicht gespeichert.",
     };
     return (
-      walletLang === "ja"
+      (walletLang === "ja"
         ? ja
         : walletLang === "fr"
-        ? fr
-        : walletLang === "it"
-        ? it
-        : walletLang === "pt"
-        ? pt
-        : walletLang === "hi"
-        ? hi
-        : walletLang === "ar"
-        ? ar
-        : walletLang === "de"
-        ? de
-        : walletLang === "es"
-        ? es
-        : en
-    )[key] ?? key;
+          ? fr
+          : walletLang === "it"
+            ? it
+            : walletLang === "pt"
+              ? pt
+              : walletLang === "hi"
+                ? hi
+                : walletLang === "ar"
+                  ? ar
+                  : walletLang === "de"
+                    ? de
+                    : walletLang === "es"
+                      ? es
+                      : en)[key] ?? key
+    );
   };
 
   const ensureWalletConnection = useCallback(async () => {
@@ -1590,24 +1600,22 @@ export function BitcoinWalletSection({
 
   const ensureIdentitySelected = () => {
     if (!effectiveSelectedIdentity) {
-      const title =
-        supportCopy(
-          walletLang,
-          "Select an identity",
-          "Selecciona una identidad",
-          "Seleziona un'identità",
-          "Selectionne une identite",
-          "IDを選択してください",
-        );
-      const description =
-        supportCopy(
-          walletLang,
-          "Choose who receives your deposits before continuing.",
-          "Elige un destinatario para tus depósitos.",
-          "Scegli chi riceve i tuoi depositi prima di continuare.",
-          "Choisis qui recoit tes depots avant de continuer.",
-          "続行する前に入金の受取先を選んでください。",
-        );
+      const title = supportCopy(
+        walletLang,
+        "Select an identity",
+        "Selecciona una identidad",
+        "Seleziona un'identità",
+        "Selectionne une identite",
+        "IDを選択してください",
+      );
+      const description = supportCopy(
+        walletLang,
+        "Choose who receives your deposits before continuing.",
+        "Elige un destinatario para tus depósitos.",
+        "Scegli chi riceve i tuoi depositi prima di continuare.",
+        "Choisis qui recoit tes depots avant de continuer.",
+        "続行する前に入金の受取先を選んでください。",
+      );
       toast({
         title,
         description,

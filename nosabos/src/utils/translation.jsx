@@ -136,7 +136,7 @@ export const translations = {
     onboarding_pron_label: "Practice pronunciation",
     onboarding_pron_hint:
       "When enabled, your coach will prompt you to repeat lines and focus on sounds/intonation.",
-    ra_title: "No Sabo — {language} Learning Coach",
+    ra_title: "Piyali — {language} Learning Coach",
     ra_label_you: "You",
     ra_label_xp: "XP",
     ra_label_level: "Level",
@@ -236,9 +236,9 @@ export const translations = {
     onboarding_practice_language_desc:
       "The language you want to learn and practice",
     onboarding_section_difficulty_support: "Difficulty & Language Support",
-    onboarding_section_voice_persona: "Voice & Personality",
-    onboarding_voice_title: "Voice",
-    onboarding_voice_desc: "Choose the voice and style for your coach.",
+    onboarding_section_voice_persona: "Tutor Voice & Personality",
+    onboarding_voice_title: "Tutor voice",
+    onboarding_voice_desc: "Choose the voice and style for your tutor.",
     onboarding_vad_title: "How long to wait to respond to your speech",
     onboarding_vad_explanation:
       "Voice features will pause before accepting your answer. This gives you time to finish speaking before your voice assistant responds",
@@ -1515,7 +1515,7 @@ export const translations = {
       "¡Depósito recibido! Recargando para actualizar tu saldo…",
     bitcoin_modal_skip: "Omitir por ahora",
     bitcoin_modal_close: "Cerrar",
-    ra_title: "No Sabo — Entrenador de {language}",
+    ra_title: "Piyali — Entrenador de {language}",
     ra_label_you: "Tú",
     ra_label_xp: "XP",
     ra_label_level: "Nivel",
@@ -1977,7 +1977,7 @@ translations.it = {
   onboarding_pron_label: "Pratica pronuncia",
   onboarding_pron_hint:
     "Se attiva, il coach ti chiederà di ripetere frasi e lavorare su suoni e intonazione.",
-  ra_title: "No Sabo — Coach di {language}",
+  ra_title: "Piyali — Coach di {language}",
   ra_label_you: "Tu",
   ra_label_xp: "XP",
   ra_label_level: "Livello",
@@ -2859,7 +2859,7 @@ translations.fr = {
   onboarding_pron_label: "Pratiquer la prononciation",
   onboarding_pron_hint:
     "Quand c'est active, ton coach te demandera de repeter des phrases et de travailler les sons et l'intonation.",
-  ra_title: "No Sabo - Coach d'apprentissage {language}",
+  ra_title: "Piyali - Coach d'apprentissage {language}",
   ra_label_you: "Toi",
   ra_label_xp: "XP",
   ra_label_level: "Niveau",
@@ -3816,7 +3816,7 @@ translations.ja = {
   onboarding_pron_label: "発音を練習",
   onboarding_pron_hint:
     "オンにすると、コーチがリピート練習と音・イントネーションのヒントを出します。",
-  ra_title: "No Sabo — {language} 学習コーチ",
+  ra_title: "Piyali — {language} 学習コーチ",
   ra_label_you: "あなた",
   ra_label_xp: "XP",
   ra_label_level: "レベル",

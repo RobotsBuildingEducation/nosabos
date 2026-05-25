@@ -1,6 +1,7 @@
 import React, {
   Suspense,
   lazy,
+  memo,
   useState,
   useEffect,
   useMemo,
@@ -25,7 +26,6 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-  useDisclosure,
   Flex,
   useBreakpointValue,
 } from "@chakra-ui/react";
@@ -230,15 +230,19 @@ import {
 } from "../constants/languages";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
+import Conversations from "./Conversations";
 import {
   getAllLessonProgress,
   getAllFlashcardProgress,
 } from "../utils/cefrProgress";
+import FlashcardSkillTree from "./FlashcardSkillTree";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import { TbLanguage } from "react-icons/tb";
+import Tutor from "./Tutor";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import VoiceOrb from "./VoiceOrb";
 import { buildGameReviewContext } from "../utils/gameReviewContext";
@@ -247,10 +251,10 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
-const Conversations = lazy(() => import("./Conversations"));
-const Tutor = lazy(() => import("./Tutor"));
-const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
 const LoadingMiniGame = lazy(() => import("./LoadingMiniGame"));
+const KeepAliveConversations = memo(Conversations);
+const KeepAliveFlashcardSkillTree = memo(FlashcardSkillTree);
+const KeepAliveTutor = memo(Tutor);
 
 const hexToRgb = (hex) => {
   if (typeof hex !== "string") return null;
@@ -313,6 +317,24 @@ function PathModeFallback({ fill = false }) {
     </Box>
   );
 }
+
+const KEEP_ALIVE_PATH_MODES = ["path", "flashcards", "conversations", "tutor"];
+const normalizeKeepAlivePathMode = (mode) =>
+  KEEP_ALIVE_PATH_MODES.includes(mode) ? mode : "path";
+const isKeepAliveModeVisible = (pathMode, mode) =>
+  normalizeKeepAlivePathMode(pathMode) === mode;
+
+function detectTouchWebKit() {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return isIOS && /WebKit/i.test(ua);
+}
+
+const SHOULD_KEEP_ALIVE_MODES = !detectTouchWebKit();
+const SHOULD_RENDER_DECORATIVE_FILTERS = !detectTouchWebKit();
 
 const mixHexColors = (baseHex, mixHex, amount = 0.5) => {
   const base = hexToRgb(baseHex);
@@ -976,7 +998,8 @@ function LessonNode({
     ? "rgba(247, 199, 74, 0.46)"
     : "rgba(224,170,44,0.34)";
   const progressRingStrokeColor = isLightTheme ? "#F7C74A" : "#E0AA2C";
-  const shouldPastelizeNode = isLightTheme && !isLocked && status !== SKILL_STATUS.COMPLETED;
+  const shouldPastelizeNode =
+    isLightTheme && !isLocked && status !== SKILL_STATUS.COMPLETED;
   const lightNodeColorStart = shouldPastelizeNode
     ? mixHexColors(unit.color, "#fffaf3", 0.26)
     : unit.color;
@@ -1089,7 +1112,11 @@ function LessonNode({
               borderRadius="full"
               bgGradient={nodeBackground}
               border="4px solid"
-              borderColor={isLocked && isLightTheme ? "rgba(168, 146, 119, 0.16)" : "transparent"}
+              borderColor={
+                isLocked && isLightTheme
+                  ? "rgba(168, 146, 119, 0.16)"
+                  : "transparent"
+              }
               display="flex"
               alignItems="center"
               justifyContent="center"
@@ -1143,12 +1170,11 @@ function LessonNode({
                 size={36}
                 color={iconColor}
                 style={{
-                  filter:
-                    !isLocked
-                      ? isLightTheme
-                        ? "drop-shadow(0 1px 2px rgba(118, 92, 60, 0.18))"
-                        : "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                      : "none",
+                  filter: !isLocked
+                    ? isLightTheme
+                      ? "drop-shadow(0 1px 2px rgba(118, 92, 60, 0.18))"
+                      : "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                    : "none",
                 }}
               />
 
@@ -1248,7 +1274,6 @@ function LessonNode({
           >
             {lessonTitle}
           </Text>
-
         </VStack>
       </Box>
     </Box>
@@ -1378,7 +1403,9 @@ const UnitSection = React.memo(function UnitSection({
                 <Heading
                   size="sm"
                   color={isLightTheme ? "var(--app-text-primary)" : undefined}
-                  bgGradient={isLightTheme ? undefined : `linear(to-r, white, gray.200)`}
+                  bgGradient={
+                    isLightTheme ? undefined : `linear(to-r, white, gray.200)`
+                  }
                   bgClip={isLightTheme ? undefined : "text"}
                   fontWeight="bold"
                 >
@@ -1633,49 +1660,54 @@ const UnitSection = React.memo(function UnitSection({
             );
           })}
           {/* Connector from last lesson to next unit */}
-          {hasNextUnit && (() => {
-            const lastLessonIndex = unit.lessons.length - 1;
-            const lastIsEven = lastLessonIndex % 2 === 0;
-            const lastOffset = lastIsEven ? 0 : zigzagOffset;
-            return (
-              <Box
-                as="svg"
-                position="absolute"
-                top={`${lastLessonIndex * 140 + 45}px`}
-                left="50%"
-                transform="translateX(-50%)"
-                width={`${svgWidth}px`}
-                height="140px"
-                overflow="visible"
-                zIndex={0}
-                pointerEvents="none"
-              >
-                <defs>
-                  <linearGradient
-                    id={`unit-end-${unit.id}`}
-                    x1="0%"
-                    y1="0%"
-                    x2="0%"
-                    y2="100%"
-                  >
-                    <stop offset="0%" stopColor={unit.color} stopOpacity={0.8} />
-                    <stop
-                      offset="100%"
-                      stopColor={unit.color}
-                      stopOpacity={0.3}
-                    />
-                  </linearGradient>
-                </defs>
-                <path
-                  d={`M ${svgWidth / 2 + lastOffset} 0 Q ${svgWidth / 2 + lastOffset / 2} 70, ${svgWidth / 2} 95`}
-                  stroke={`url(#unit-end-${unit.id})`}
-                  strokeWidth="5"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </Box>
-            );
-          })()}
+          {hasNextUnit &&
+            (() => {
+              const lastLessonIndex = unit.lessons.length - 1;
+              const lastIsEven = lastLessonIndex % 2 === 0;
+              const lastOffset = lastIsEven ? 0 : zigzagOffset;
+              return (
+                <Box
+                  as="svg"
+                  position="absolute"
+                  top={`${lastLessonIndex * 140 + 45}px`}
+                  left="50%"
+                  transform="translateX(-50%)"
+                  width={`${svgWidth}px`}
+                  height="140px"
+                  overflow="visible"
+                  zIndex={0}
+                  pointerEvents="none"
+                >
+                  <defs>
+                    <linearGradient
+                      id={`unit-end-${unit.id}`}
+                      x1="0%"
+                      y1="0%"
+                      x2="0%"
+                      y2="100%"
+                    >
+                      <stop
+                        offset="0%"
+                        stopColor={unit.color}
+                        stopOpacity={0.8}
+                      />
+                      <stop
+                        offset="100%"
+                        stopColor={unit.color}
+                        stopOpacity={0.3}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d={`M ${svgWidth / 2 + lastOffset} 0 Q ${svgWidth / 2 + lastOffset / 2} 70, ${svgWidth / 2} 95`}
+                    stroke={`url(#unit-end-${unit.id})`}
+                    strokeWidth="5"
+                    fill="none"
+                    strokeLinecap="round"
+                  />
+                </Box>
+              );
+            })()}
           {/* Spacer to ensure container height accommodates all lessons */}
           <Box h={`${unit.lessons.length * 140}px`} />
         </Box>
@@ -1907,9 +1939,8 @@ function LessonDetailModal({
         gameContent?.topic,
         gameContent?.unitTitle,
       ].filter(Boolean);
-      const { REVIEW_WORLD_ID, generateScenarioWithAI } = await import(
-        "./RPGGame/scenarios"
-      );
+      const { REVIEW_WORLD_ID, generateScenarioWithAI } =
+        await import("./RPGGame/scenarios");
 
       const scenario = await generateScenarioWithAI(
         REVIEW_WORLD_ID,
@@ -1946,7 +1977,10 @@ function LessonDetailModal({
         }
       } catch (startError) {
         if (requestToken !== generationTokenRef.current) return;
-        console.error("Failed to start fallback lesson from modal:", startError);
+        console.error(
+          "Failed to start fallback lesson from modal:",
+          startError,
+        );
         setGameLoading(false);
       }
     }
@@ -1968,11 +2002,11 @@ function LessonDetailModal({
       closeOnEsc={!isTransitioningToLesson}
       motionPreset="none"
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         backdropFilter="blur(8px)"
         bg="var(--app-overlay)"
-      />
+      /> */}
       <ModalContent
         ref={modalContentRef}
         motionProps={nativeModalMotionProps}
@@ -2121,7 +2155,9 @@ function LessonDetailModal({
                     fontSize="2xl"
                     fontWeight="bold"
                     color={isLightTheme ? "var(--app-text-primary)" : "white"}
-                    bgGradient={isLightTheme ? undefined : `linear(to-r, white, gray.200)`}
+                    bgGradient={
+                      isLightTheme ? undefined : `linear(to-r, white, gray.200)`
+                    }
                     bgClip={isLightTheme ? undefined : "text"}
                   >
                     {lessonTitle}
@@ -2130,7 +2166,9 @@ function LessonDetailModal({
                 <Text
                   fontSize="sm"
                   fontWeight="normal"
-                  color={isLightTheme ? "var(--app-text-secondary)" : "gray.400"}
+                  color={
+                    isLightTheme ? "var(--app-text-secondary)" : "gray.400"
+                  }
                   ml={7}
                 >
                   {unitTitle}
@@ -2141,7 +2179,9 @@ function LessonDetailModal({
               color="gray.400"
               _hover={{
                 color: isLightTheme ? "gray.100" : "white",
-                bg: isLightTheme ? "var(--app-glass-bg-soft)" : "whiteAlpha.200",
+                bg: isLightTheme
+                  ? "var(--app-glass-bg-soft)"
+                  : "whiteAlpha.200",
               }}
               borderRadius="lg"
               top={4}
@@ -2152,7 +2192,9 @@ function LessonDetailModal({
             <ModalBody pb={6} pt={6} position="relative">
               <VStack align="stretch" spacing={6}>
                 <Text
-                  color={isLightTheme ? "var(--app-text-secondary)" : "gray.300"}
+                  color={
+                    isLightTheme ? "var(--app-text-secondary)" : "gray.300"
+                  }
                   fontSize="md"
                   lineHeight="tall"
                 >
@@ -2161,11 +2203,15 @@ function LessonDetailModal({
 
                 {/* Lesson modes */}
                 <Box
-                  bg={isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.50"}
+                  bg={
+                    isLightTheme ? "var(--app-surface-muted)" : "whiteAlpha.50"
+                  }
                   p={5}
                   borderRadius="xl"
                   border="1px solid"
-                  borderColor={isLightTheme ? "var(--app-border)" : "whiteAlpha.100"}
+                  borderColor={
+                    isLightTheme ? "var(--app-border)" : "whiteAlpha.100"
+                  }
                 >
                   <Text
                     fontWeight="bold"
@@ -2180,9 +2226,7 @@ function LessonDetailModal({
                       const Icon = MODE_ICONS[mode] || RiStarLine;
                       const modeKey = `mode_${mode}`;
                       const modeName =
-                        t(modeKey) !== modeKey
-                          ? t(modeKey)
-                          : mode;
+                        t(modeKey) !== modeKey ? t(modeKey) : mode;
                       return (
                         <Badge
                           key={mode}
@@ -2198,7 +2242,9 @@ function LessonDetailModal({
                           fontSize="sm"
                           border="2px solid"
                           borderColor={
-                            isLightTheme ? "rgba(255,255,255,0.58)" : "whiteAlpha.300"
+                            isLightTheme
+                              ? "rgba(255,255,255,0.58)"
+                              : "whiteAlpha.300"
                           }
                           boxShadow={
                             isLightTheme
@@ -2209,7 +2255,9 @@ function LessonDetailModal({
                           <Icon size={16} />
                           <Text
                             textTransform={
-                              resolvedSupportLang === "ar" ? "none" : "capitalize"
+                              resolvedSupportLang === "ar"
+                                ? "none"
+                                : "capitalize"
                             }
                           >
                             {modeName}
@@ -2222,7 +2270,9 @@ function LessonDetailModal({
 
                 {/* XP Goal / Passing Score / Tutorial / Game */}
                 <Box
-                  bg={isLightTheme ? "rgba(255, 252, 247, 0.92)" : "transparent"}
+                  bg={
+                    isLightTheme ? "rgba(255, 252, 247, 0.92)" : "transparent"
+                  }
                   p={5}
                   borderRadius="xl"
                   position="relative"
@@ -2331,14 +2381,15 @@ function LessonDetailModal({
                       </Box>
                       <Text
                         fontWeight="bold"
-                        color={isLightTheme ? "var(--app-text-primary)" : "white"}
+                        color={
+                          isLightTheme ? "var(--app-text-primary)" : "white"
+                        }
                         fontSize="md"
                       >
                         {lesson.isTutorial
                           ? t("skill_tree_tutorial_goal")
                           : lesson.isGame
-                            ? t("skill_tree_game_reward") ||
-                              "Game Reward"
+                            ? t("skill_tree_game_reward") || "Game Reward"
                             : lesson.isFinalQuiz
                               ? t("skill_tree_passing_score")
                               : t("skill_tree_xp_reward")}
@@ -2456,31 +2507,19 @@ export default function SkillTree({
   initialUnits = null,
   initialUnitsKey = "",
 }) {
-  const [selectedLesson, setSelectedLesson] = useState(null);
-  const [selectedUnit, setSelectedUnit] = useState(null);
+  // Lesson-detail modal state lives in useModalStore so clicking a lesson
+  // node does NOT re-render this 3,000-line SkillTree component before the
+  // modal can open. The modal subscribes via LessonDetailModalGate below.
+  const openLessonDetail = useModalStore((s) => s.openLessonDetail);
+  const closeLessonDetail = useModalStore((s) => s.closeLessonDetail);
 
-  // Defer heavy mode content by one frame so the old view clears instantly
-  const [deferredPathMode, setDeferredPathMode] = useState(pathMode);
-  const prevPathModeRef = useRef(pathMode);
-  useEffect(() => {
-    if (prevPathModeRef.current !== pathMode) {
-      prevPathModeRef.current = pathMode;
-      // Defer the content switch by one frame so React can paint
-      // the cleared view before mounting the new heavy component
-      const frame = requestAnimationFrame(() => {
-        setDeferredPathMode(pathMode);
-      });
-      return () => cancelAnimationFrame(frame);
-    }
-  }, [pathMode]);
+  const isModeVisible = (mode) => isKeepAliveModeVisible(pathMode, mode);
 
   // Sound settings
   const playSound = useSoundSettings((s) => s.playSound);
 
   // Ref for the latest unlocked lesson element
   const latestUnlockedRef = useRef(null);
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Scroll to latest unlocked lesson function
   const scrollToLatestUnlocked = useCallback(() => {
@@ -2604,43 +2643,66 @@ export default function SkillTree({
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";
+  const shouldKeepAliveModes = SHOULD_KEEP_ALIVE_MODES;
+  const shouldRenderDecorativeFilters = SHOULD_RENDER_DECORATIVE_FILTERS;
 
-  const handleLessonClick = (lesson, unit, status) => {
-    if (
-      status === SKILL_STATUS.AVAILABLE ||
-      status === SKILL_STATUS.IN_PROGRESS ||
-      status === SKILL_STATUS.COMPLETED
-    ) {
-      playSound(selectSound);
-      setSelectedLesson(lesson);
-      setSelectedUnit(unit);
-      onOpen();
-    }
-  };
+  const handleLessonClick = useCallback(
+    (lesson, unit, status) => {
+      if (
+        status === SKILL_STATUS.AVAILABLE ||
+        status === SKILL_STATUS.IN_PROGRESS ||
+        status === SKILL_STATUS.COMPLETED
+      ) {
+        // Flip the modal in the store first so the open animation can start
+        // on the next paint; fire the sound after so its sync portion (Tone.js
+        // synth scheduling + haptic) doesn't sit between tap and open.
+        openLessonDetail(lesson, unit);
+        void playSound(selectSound);
+      }
+    },
+    [openLessonDetail, playSound],
+  );
 
-  const handleStartLesson = async (lesson, preGeneratedScenario) => {
-    playSound("lessonStart");
-    if (onStartLesson) {
-      const startResult = await onStartLesson(lesson, preGeneratedScenario);
-      return startResult !== false;
-    }
-    return false;
-  };
+  const handleStartLesson = useCallback(
+    async (lesson, preGeneratedScenario) => {
+      playSound("lessonStart");
+      if (onStartLesson) {
+        const startResult = await onStartLesson(lesson, preGeneratedScenario);
+        if (startResult !== false) {
+          // Clear the modal payload in the store once the lesson view is
+          // taking over. Without this, the store still holds
+          // lessonDetailOpen=true with the previous lesson, so when the user
+          // returns to SkillTree (mode switch) the Gate re-mounts and the
+          // modal pops up unprompted.
+          closeLessonDetail();
+        }
+        return startResult !== false;
+      }
+      return false;
+    },
+    [closeLessonDetail, onStartLesson, playSound],
+  );
 
   // Separate handler for flashcard completion - doesn't trigger lesson logic
-  const handleFlashcardComplete = (card) => {
-    // Call parent callback to award XP and update progress
-    if (onCompleteFlashcard) {
-      onCompleteFlashcard(card);
-    }
-  };
+  const handleFlashcardComplete = useCallback(
+    (card) => {
+      // Call parent callback to award XP and update progress
+      if (onCompleteFlashcard) {
+        onCompleteFlashcard(card);
+      }
+    },
+    [onCompleteFlashcard],
+  );
 
   // Handler for random practice - awards XP and resets card to be practiced again
-  const handleRandomPractice = (card) => {
-    if (onRandomPracticeFlashcard) {
-      onRandomPracticeFlashcard(card);
-    }
-  };
+  const handleRandomPractice = useCallback(
+    (card) => {
+      if (onRandomPracticeFlashcard) {
+        onRandomPracticeFlashcard(card);
+      }
+    },
+    [onRandomPracticeFlashcard],
+  );
 
   // Calculate overall progress
   const totalLessons = units.reduce(
@@ -2711,6 +2773,52 @@ export default function SkillTree({
     return null;
   }, [visibleUnits, userProgress, isTutorialComplete]);
 
+  const pathModeContent = useMemo(() => {
+    if (isLoadingUnits) {
+      return <PathModeFallback />;
+    }
+
+    return (
+      <VStack spacing={8} align="stretch">
+        {visibleUnits.length > 0 ? (
+          visibleUnits.map((unit, index) => (
+            <UnitSection
+              key={unit.id}
+              unit={unit}
+              userProgress={userProgress}
+              onLessonClick={handleLessonClick}
+              index={index}
+              supportLang={supportLang}
+              hasNextUnit={index < visibleUnits.length - 1}
+              previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+              latestUnlockedLessonId={latestUnlockedLessonId}
+              latestUnlockedRef={latestUnlockedRef}
+              isTutorialComplete={isTutorialComplete}
+            />
+          ))
+        ) : (
+          <Box textAlign="center" py={12}>
+            <Text fontSize="lg" color="gray.400">
+              {getTranslation("skill_tree_no_path")}
+            </Text>
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              {getTranslation("skill_tree_check_back")}
+            </Text>
+          </Box>
+        )}
+      </VStack>
+    );
+  }, [
+    handleLessonClick,
+    isLoadingUnits,
+    isTutorialComplete,
+    latestUnlockedLessonId,
+    latestUnlockedRef,
+    supportLang,
+    userProgress,
+    visibleUnits,
+  ]);
+
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
     if (visibleUnits.length === 0) return 0;
@@ -2742,60 +2850,40 @@ export default function SkillTree({
       overflow={isConversationStyleMode ? "visible" : "hidden"}
     >
       {/* Animated Background Gradients */}
-      <Box
-        position="absolute"
-        top="-20%"
-        left="-10%"
-        w="600px"
-        h="600px"
-        bgGradient="radial(circle, teal.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.15}
-        animation="float 20s ease-in-out infinite"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(50px, -30px) scale(1.1)" },
-            "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
-          },
-        }}
-      />
-      <Box
-        position="absolute"
-        top="30%"
-        right="-10%"
-        w="500px"
-        h="500px"
-        bgGradient="radial(circle, purple.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.12}
-        animation="float 25s ease-in-out infinite 5s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
-            "66%": { transform: "translate(40px, -40px) scale(0.9)" },
-          },
-        }}
-      />
-      <Box
-        position="absolute"
-        bottom="10%"
-        left="20%"
-        w="400px"
-        h="400px"
-        bgGradient="radial(circle, blue.500, transparent 70%)"
-        filter="blur(80px)"
-        opacity={0.1}
-        animation="float 30s ease-in-out infinite 10s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(30px, -50px) scale(1.2)" },
-            "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
-          },
-        }}
-      />
+      {shouldRenderDecorativeFilters && (
+        <>
+          <Box
+            position="absolute"
+            top="-20%"
+            left="-10%"
+            w="600px"
+            h="600px"
+            bgGradient="radial(circle, teal.500, transparent 70%)"
+            filter="blur(32px)"
+            opacity={0.15}
+          />
+          <Box
+            position="absolute"
+            top="30%"
+            right="-10%"
+            w="500px"
+            h="500px"
+            bgGradient="radial(circle, purple.500, transparent 70%)"
+            filter="blur(28px)"
+            opacity={0.12}
+          />
+          <Box
+            position="absolute"
+            bottom="10%"
+            left="20%"
+            w="400px"
+            h="400px"
+            bgGradient="radial(circle, blue.500, transparent 70%)"
+            filter="blur(24px)"
+            opacity={0.1}
+          />
+        </>
+      )}
 
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
@@ -2820,7 +2908,6 @@ export default function SkillTree({
         {/* Minimal Progress Header - hidden in conversation-style modes */}
         {!isConversationStyleMode && (
           <Box mb={4} display="flex" justifyContent={"center"}>
-
             <HStack
               justify="space-between"
               bg="var(--app-glass-bg-soft)"
@@ -2891,51 +2978,23 @@ export default function SkillTree({
           </Box>
         )}
 
-        {/* Skill Tree Units, Flashcards, or Conversations */}
-        {/* When pathMode changes, deferredPathMode lags by one frame.
-            Render nothing during that gap so the old view clears instantly
-            before the new heavy component mounts on the next frame. */}
-        {pathMode !== deferredPathMode ? null : deferredPathMode === "path" ? (
-          <Box>
-            {isLoadingUnits ? (
-              <PathModeFallback />
-            ) : (
-              <VStack spacing={8} align="stretch">
-                {visibleUnits.length > 0 ? (
-                visibleUnits.map((unit, index) => (
-                  <UnitSection
-                    key={unit.id}
-                    unit={unit}
-                    userProgress={userProgress}
-                    onLessonClick={handleLessonClick}
-                    index={index}
-                    supportLang={supportLang}
-                    hasNextUnit={index < visibleUnits.length - 1}
-                    previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-                    latestUnlockedLessonId={latestUnlockedLessonId}
-                    latestUnlockedRef={latestUnlockedRef}
-                    isTutorialComplete={isTutorialComplete}
-                  />
-                ))
-                ) : (
-                  <Box textAlign="center" py={12}>
-                    <Text fontSize="lg" color="gray.400">
-                      {getTranslation("skill_tree_no_path")}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      {getTranslation("skill_tree_check_back")}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            )}
-          </Box>
-        ) : deferredPathMode === "flashcards" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
+        {/* Desktop keeps these modes mounted for fast switching. On iOS WebKit,
+            keeping the hidden tutor/flashcard/conversation surfaces alive makes
+            fixed top-bar overlays repaint the entire hidden tree. */}
+        {shouldKeepAliveModes ? (
+          <>
+            <Box
+              display={isModeVisible("path") ? "block" : "none"}
+              aria-hidden={!isModeVisible("path")}
             >
-              <FlashcardSkillTree
+              {pathModeContent}
+            </Box>
+
+            <Box
+              display={isModeVisible("flashcards") ? "block" : "none"}
+              aria-hidden={!isModeVisible("flashcards")}
+            >
+              <KeepAliveFlashcardSkillTree
                 userProgress={userProgress}
                 onStartFlashcard={handleFlashcardComplete}
                 onRandomPractice={handleRandomPractice}
@@ -2944,28 +3003,27 @@ export default function SkillTree({
                 activeCEFRLevel={effectiveActiveLevel}
                 pauseMs={pauseMs}
               />
-            </Suspense>
-          </Box>
-        ) : deferredPathMode === "conversations" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
+            </Box>
+
+            <Box
+              display={isModeVisible("conversations") ? "block" : "none"}
+              aria-hidden={!isModeVisible("conversations")}
             >
-              <Conversations
+              <KeepAliveConversations
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
                 pauseMs={pauseMs}
                 maxProficiencyLevel={maxProficiencyLevel}
+                isActive={isModeVisible("conversations")}
               />
-            </Suspense>
-          </Box>
-        ) : deferredPathMode === "tutor" ? (
-          <Box>
-            <Suspense
-              fallback={<PathModeFallback />}
+            </Box>
+
+            <Box
+              display={isModeVisible("tutor") ? "block" : "none"}
+              aria-hidden={!isModeVisible("tutor")}
             >
-              <Tutor
+              <KeepAliveTutor
                 activeNpub={activeNpub}
                 targetLang={targetLang}
                 supportLang={supportLang}
@@ -2973,22 +3031,86 @@ export default function SkillTree({
                 maxProficiencyLevel={maxProficiencyLevel}
                 onFirstLessonComplete={onTutorFirstLessonComplete}
                 onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                isActive={isModeVisible("tutor")}
               />
-            </Suspense>
-          </Box>
-        ) : null}
+            </Box>
+          </>
+        ) : (
+          <>
+            {isModeVisible("path") && pathModeContent}
+            {isModeVisible("flashcards") && (
+              <KeepAliveFlashcardSkillTree
+                userProgress={userProgress}
+                onStartFlashcard={handleFlashcardComplete}
+                onRandomPractice={handleRandomPractice}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            )}
+            {isModeVisible("conversations") && (
+              <KeepAliveConversations
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                isActive
+              />
+            )}
+            {isModeVisible("tutor") && (
+              <KeepAliveTutor
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                pauseMs={pauseMs}
+                maxProficiencyLevel={maxProficiencyLevel}
+                onFirstLessonComplete={onTutorFirstLessonComplete}
+                onDailyGoalCelebration={onTutorDailyGoalCelebration}
+                isActive
+              />
+            )}
+          </>
+        )}
 
-        {/* Lesson Detail Modal */}
-        <LessonDetailModal
-          isOpen={isOpen}
-          onClose={onClose}
-          lesson={selectedLesson}
-          unit={selectedUnit}
+        {/* Lesson Detail Modal — rendered via a Gate that subscribes to
+            useModalStore for isOpen + lesson + unit, so toggling the modal
+            doesn't re-render the whole SkillTree component. */}
+        <LessonDetailModalGate
           onStartLesson={handleStartLesson}
           supportLang={supportLang}
           targetLang={targetLang}
         />
       </Container>
     </Box>
+  );
+}
+
+// Subscribes to useModalStore for isOpen + the selected lesson/unit payload.
+// Static props (onStartLesson, languages) come from SkillTree but the
+// modal's visibility flip stays inside this tiny wrapper.
+//
+// Lazy-mounts the modal subtree until first open — keeps the heavy
+// LessonDetailModal hooks/effects out of every SkillTree render until
+// they're actually needed.
+function LessonDetailModalGate({ onStartLesson, supportLang, targetLang }) {
+  const isOpen = useModalStore((s) => s.lessonDetailOpen);
+  const lesson = useModalStore((s) => s.selectedLesson);
+  const unit = useModalStore((s) => s.selectedUnit);
+  const onClose = useModalStore((s) => s.closeLessonDetail);
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return (
+    <LessonDetailModal
+      isOpen={isOpen}
+      onClose={onClose}
+      lesson={lesson}
+      unit={unit}
+      onStartLesson={onStartLesson}
+      supportLang={supportLang}
+      targetLang={targetLang}
+    />
   );
 }

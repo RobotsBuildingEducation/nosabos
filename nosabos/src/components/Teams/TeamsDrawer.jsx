@@ -76,12 +76,12 @@ export default function TeamsDrawer({
 
   return (
     <Drawer isOpen={isOpen} onClose={onClose} placement="bottom">
-      <DrawerOverlay
+      {/* <DrawerOverlay
         {...swipeDismiss.overlayProps}
         motionProps={nativeOverlayMotionProps}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.600"}
         backdropFilter="blur(4px)"
-      />
+      /> */}
       <DrawerContent
         {...swipeDismiss.drawerContentProps}
         motionProps={nativeDrawerMotionProps}
@@ -129,7 +129,10 @@ export default function TeamsDrawer({
               isFitted
               colorScheme="purple"
             >
-              <TabList mb={4} borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}>
+              <TabList
+                mb={4}
+                borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+              >
                 <Tab
                   color={isLightTheme ? APP_TEXT_SECONDARY : "gray.300"}
                   _selected={{
@@ -188,12 +191,23 @@ export default function TeamsDrawer({
             </Tabs>
           </Box>
         </DrawerBody>
-        <DrawerFooter borderTopWidth="1px" borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}>
-          <Box maxW="720px" mx="auto" w="100%" display="flex" justifyContent="flex-end">
+        <DrawerFooter
+          borderTopWidth="1px"
+          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+        >
+          <Box
+            maxW="720px"
+            mx="auto"
+            w="100%"
+            display="flex"
+            justifyContent="flex-end"
+          >
             <Button
               variant={"ghost"}
               color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+              }}
               onClick={onClose}
             >
               {t?.teams_drawer_close || "Close"}

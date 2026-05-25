@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { FaAddressCard } from "react-icons/fa";
 import { HiOutlineDocumentCheck } from "react-icons/hi2";
 
 import {
@@ -98,7 +99,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import { useThemeStore } from "../useThemeStore";
-import { SiMonkeytie } from "react-icons/si";
+import { SiMonkeytie, SiPatreon } from "react-icons/si";
 import {
   nativeDrawerMotionProps,
   nativeModalMotionProps,
@@ -6177,7 +6178,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "Compare DNExpress costs",
+    primaryCta: "See paid-help value",
     backCta: "Back to benefits",
   },
   es: {
@@ -6261,7 +6262,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "Comparar costos de DNExpress",
+    primaryCta: "Ver el valor de la ayuda pagada",
     backCta: "Volver a beneficios",
   },
   pt: {
@@ -6345,7 +6346,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "Comparar custos do DNExpress",
+    primaryCta: "Ver o valor da ajuda paga",
     backCta: "Voltar aos benefícios",
   },
   it: {
@@ -6429,7 +6430,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "Confronta i costi DNExpress",
+    primaryCta: "Vedi il valore dell'aiuto pagato",
     backCta: "Torna ai benefici",
   },
   fr: {
@@ -6513,7 +6514,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "Comparer les couts DNExpress",
+    primaryCta: "Voir la valeur de l'aide payante",
     backCta: "Retour aux avantages",
   },
   ja: {
@@ -6597,7 +6598,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "DNExpress費用を比較",
+    primaryCta: "有料支援の価値を見る",
     backCta: "メリットに戻る",
   },
   hi: {
@@ -6681,7 +6682,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "DNExpress लागतों की तुलना करें",
+    primaryCta: "भुगतान वाली मदद का मूल्य देखें",
     backCta: "लाभों पर वापस जाएं",
   },
   ar: {
@@ -6765,7 +6766,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "قارن تكاليف DNExpress",
+    primaryCta: "اطلع على قيمة المساعدة المدفوعة",
     backCta: "العودة إلى الفوائد",
   },
   zh: {
@@ -6849,7 +6850,7 @@ const DUAL_CITIZENSHIP_BENEFITS = {
         ],
       },
     ],
-    primaryCta: "比较DNExpress费用",
+    primaryCta: "查看付费帮助的价值",
     backCta: "返回好处",
   },
 };
@@ -6935,7 +6936,7 @@ DUAL_CITIZENSHIP_BENEFITS.de = {
       ],
     },
   ],
-  primaryCta: "DNExpress-Kosten vergleichen",
+  primaryCta: "Wert bezahlter Hilfe ansehen",
   backCta: "Zurück zu den Vorteilen",
 };
 
@@ -6943,14 +6944,15 @@ const getDualCitizenshipBenefits = (language) =>
   DUAL_CITIZENSHIP_BENEFITS[normalizeSupportLanguage(language)] ||
   DUAL_CITIZENSHIP_BENEFITS.en;
 
-const DNEXPRESS_POSTS = {
+const PAID_HELP_POSTS = {
   en: {
-    title: "Is DNExpress worth it?",
+    title: "How paid help adds value",
+    freeSubheader: "This tool is free",
     subtitle:
-      "Sometimes - but it depends on whether you are paying for convenience or paying to fix a real document problem.",
+      "Paid help can save time, reduce uncertainty, and solve document problems. The value depends on how clean or complex your case is.",
     intro: [
       "If you were born in the U.S. to a Mexican parent, the official Mexican birth registration process can often be free or very low cost through a Mexican consulate.",
-      "That means a paid service is not automatically necessary. The real question is whether your case is clean, slightly messy, or genuinely complicated.",
+      "Paid help is most valuable when it turns uncertainty into a clear plan: checking records, spotting mismatches, and fixing blockers before they cost you time.",
     ],
     priceFooter:
       "Prices vary by provider, consulate, and case complexity. Always verify current fees before paying.",
@@ -6978,8 +6980,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "Green case",
-        title: "Probably not worth it",
-        body: "You likely do not need full-service help if your documents already line up.",
+        title: "Convenience and confidence",
+        body: "When your documents already line up, paid help brings value as a convenience layer: review, organization, and reassurance before you book.",
         examplesTitle: "This usually means:",
         examples: [
           "You have your long-form U.S. birth certificate",
@@ -6989,15 +6991,15 @@ const DNEXPRESS_POSTS = {
           "No adoption, paternity, court order, deceased-parent, or major name issue",
         ],
         bestMove:
-          "Best move: Try the official consulate route first. Paid help may only be worth it if you want convenience.",
+          "Best move: Use the official consulate route with confidence. Paid help can still be useful if you want someone to review the packet and keep the process moving.",
         priceNote:
-          "DIY estimate: very low cost. Paid service estimate: hundreds of dollars. Recommendation: save the money unless you value convenience.",
+          "DIY estimate: very low cost. Paid help estimate: hundreds of dollars. Value: convenience, document organization, and peace of mind.",
       },
       {
         tone: "yellow",
         status: "Yellow case",
-        title: "Maybe worth a document review",
-        body: "You may have a fixable issue, but probably not enough to justify an expensive full-service package yet.",
+        title: "Clarity before the appointment",
+        body: "Small mismatches or missing records are where paid help can add value by identifying the exact fix before your appointment.",
         examplesTitle: "This usually means:",
         examples: [
           "You only have a short-form birth certificate",
@@ -7008,15 +7010,15 @@ const DNEXPRESS_POSTS = {
           "You are unsure if your documents match exactly",
         ],
         bestMove:
-          "Best move: Fix or verify the document issue before booking the consulate appointment. A low-cost review may be useful, but do not pay for a large package until you know the exact blocker.",
+          "Best move: Use paid help for a focused document review or correction plan before booking the consulate appointment.",
         priceNote:
-          "DIY estimate: low to moderate. Paid review estimate: possibly worth it. Recommendation: pay for clarity, not for a full package too early.",
+          "DIY estimate: low to moderate. Paid review estimate: moderate. Value: clarity, fewer appointment surprises, and a cleaner document plan.",
       },
       {
         tone: "red",
         status: "Red case",
-        title: "Paid help may be worth it",
-        body: "This is where a service may actually provide value, but only if they are fixing the specific problem blocking your registration.",
+        title: "Problem-solving support",
+        body: "Complex blockers are where paid help can provide the strongest value, especially when the helper can fix the specific record or coordinate Mexico-side steps.",
         examplesTitle: "This usually means:",
         examples: [
           "A parent is deceased, absent, or unwilling to appear",
@@ -7028,14 +7030,14 @@ const DNEXPRESS_POSTS = {
           "The consulate says the case must be handled in Mexico",
         ],
         bestMove:
-          "Best move: Do not just pay for citizenship help. Ask exactly what record is wrong, who will fix it, where it will be fixed, and what happens if the consulate rejects it.",
+          "Best move: Ask exactly what record will be fixed, who will fix it, where it will be fixed, and how they will handle consulate feedback.",
         priceNote:
-          "DIY estimate: unpredictable. Paid/legal help estimate: potentially worth it. Recommendation: worth considering only if they solve the actual blocker.",
+          "DIY estimate: unpredictable. Paid/legal help estimate: higher. Value: targeted fixes, Mexico-side coordination, and a path through real blockers.",
       },
     ],
-    closingTitle: "What are you really paying for?",
+    closingTitle: "What paid help is really for",
     closing:
-      "You are not buying Mexican citizenship. If you qualify through a Mexican parent, you may already be Mexican by birth. What you are paying for is help proving it.",
+      "Paid help does not create citizenship. It helps you prove and document the route you may already qualify for through record review, correction strategy, and appointment readiness.",
     officialChecklistTitle: "Official document checklist",
     officialChecklistIntro:
       "For a clean U.S.-born child of Mexican parent case, these are the usual documents to verify before booking. Consulates can vary.",
@@ -7051,15 +7053,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "Start my citizenship questionnaire",
     secondaryCta: "Show me the official document checklist",
     secondaryCtaHide: "Hide the official document checklist",
-    stickyTakeaway: "Pay for problem-solving, not for citizenship.",
+    stickyTakeaway: "Pay for clarity, preparation, and problem-solving.",
   },
   es: {
-    title: "¿Vale la pena DNExpress?",
+    title: "Cómo aporta valor la ayuda pagada",
+    freeSubheader: "Esta herramienta es gratis",
     subtitle:
-      "A veces, pero depende de si pagas por comodidad o por arreglar un problema real de documentos.",
+      "La ayuda pagada puede ahorrar tiempo, reducir incertidumbre y resolver problemas de documentos. El valor depende de qué tan limpio o complejo sea tu caso.",
     intro: [
       "Si naciste en EE. UU. de padre o madre mexicana, el registro mexicano de nacimiento suele ser gratis o de muy bajo costo en un consulado mexicano.",
-      "Eso significa que un servicio pagado no siempre es necesario. La pregunta real es si tu caso está limpio, algo complicado o verdaderamente enredado.",
+      "La ayuda pagada aporta más valor cuando convierte la incertidumbre en un plan claro: revisar actas, detectar diferencias y corregir bloqueos antes de que te cuesten tiempo.",
     ],
     priceFooter:
       "Los precios varían por proveedor, consulado y complejidad del caso. Verifica tarifas actuales antes de pagar.",
@@ -7087,8 +7090,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "Caso verde",
-        title: "Probablemente no vale la pena",
-        body: "Probablemente no necesitas ayuda completa si tus documentos ya coinciden.",
+        title: "Comodidad y confianza",
+        body: "Cuando tus documentos ya coinciden, la ayuda pagada aporta valor como capa de comodidad: revisión, organización y tranquilidad antes de agendar.",
         examplesTitle: "Esto suele significar:",
         examples: [
           "Tienes tu acta de nacimiento larga de EE. UU.",
@@ -7098,15 +7101,15 @@ const DNEXPRESS_POSTS = {
           "No hay adopción, paternidad, orden judicial, padre fallecido o cambio mayor de nombre",
         ],
         bestMove:
-          "Mejor movimiento: prueba primero la ruta oficial del consulado. La ayuda pagada puede valer la pena solo si quieres comodidad.",
+          "Mejor movimiento: usa la ruta oficial del consulado con confianza. La ayuda pagada aún puede servir si quieres que alguien revise el paquete y mantenga el proceso en movimiento.",
         priceNote:
-          "Estimado por cuenta propia: costo muy bajo. Servicio pagado: cientos de dólares. Recomendación: ahorra el dinero salvo que valores la comodidad.",
+          "Estimado por cuenta propia: costo muy bajo. Ayuda pagada: cientos de dólares. Valor: comodidad, organización documental y tranquilidad.",
       },
       {
         tone: "yellow",
         status: "Caso amarillo",
-        title: "Quizá vale una revisión de documentos",
-        body: "Puede haber un problema corregible, pero quizá no justifica todavía un paquete completo caro.",
+        title: "Claridad antes de la cita",
+        body: "Cuando hay diferencias pequeñas o documentos faltantes, la ayuda pagada puede aportar valor al identificar la corrección exacta antes de tu cita.",
         examplesTitle: "Esto suele significar:",
         examples: [
           "Solo tienes acta corta",
@@ -7117,15 +7120,15 @@ const DNEXPRESS_POSTS = {
           "No sabes si los documentos coinciden exactamente",
         ],
         bestMove:
-          "Mejor movimiento: corrige o verifica el documento antes de agendar. Una revisión de bajo costo puede servir, pero no pagues un paquete grande antes de conocer el bloqueo exacto.",
+          "Mejor movimiento: usa ayuda pagada para una revisión enfocada de documentos o un plan de corrección antes de agendar en el consulado.",
         priceNote:
-          "Estimado por cuenta propia: bajo a moderado. Revisión pagada: quizá útil. Recomendación: paga por claridad, no por un paquete completo demasiado pronto.",
+          "Estimado por cuenta propia: bajo a moderado. Revisión pagada: moderada. Valor: claridad, menos sorpresas en la cita y un plan documental más limpio.",
       },
       {
         tone: "red",
         status: "Caso rojo",
-        title: "La ayuda pagada puede valer la pena",
-        body: "Aquí un servicio puede aportar valor, pero solo si corrige el problema específico que bloquea tu registro.",
+        title: "Apoyo para resolver problemas",
+        body: "Los bloqueos complejos son donde la ayuda pagada puede aportar más valor, especialmente si quien ayuda puede corregir el acta específica o coordinar pasos en México.",
         examplesTitle: "Esto suele significar:",
         examples: [
           "Un padre falleció, está ausente o no quiere presentarse",
@@ -7137,14 +7140,14 @@ const DNEXPRESS_POSTS = {
           "El consulado dice que el caso debe hacerse en México",
         ],
         bestMove:
-          "Mejor movimiento: no pagues solo por ayuda de ciudadanía. Pregunta qué registro está mal, quién lo arregla, dónde se arregla y qué pasa si el consulado lo rechaza.",
+          "Mejor movimiento: pregunta exactamente qué registro se corregirá, quién lo corregirá, dónde se corregirá y cómo manejarán comentarios del consulado.",
         priceNote:
-          "Estimado por cuenta propia: impredecible. Ayuda pagada/legal: potencialmente útil. Recomendación: considérala solo si resuelve el bloqueo real.",
+          "Estimado por cuenta propia: impredecible. Ayuda pagada/legal: más alta. Valor: correcciones puntuales, coordinación en México y una ruta para superar bloqueos reales.",
       },
     ],
-    closingTitle: "¿Qué estás pagando realmente?",
+    closingTitle: "Para qué sirve realmente la ayuda pagada",
     closing:
-      "No estás comprando ciudadanía mexicana. Si calificas por padre o madre mexicana, quizá ya eres mexicano/a por nacimiento. Lo que pagas es ayuda para probarlo.",
+      "La ayuda pagada no crea ciudadanía. Te ayuda a probar y documentar la ruta para la que quizá ya calificas mediante revisión de actas, estrategia de corrección y preparación para la cita.",
     officialChecklistTitle: "Lista oficial de documentos",
     officialChecklistIntro:
       "Para un caso limpio de persona nacida en EE. UU. con padre o madre mexicana, estos son los documentos comunes que debes revisar antes de agendar. Cada consulado puede variar.",
@@ -7160,15 +7163,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "Empezar mi cuestionario de ciudadanía",
     secondaryCta: "Mostrar la lista oficial de documentos",
     secondaryCtaHide: "Ocultar la lista oficial de documentos",
-    stickyTakeaway: "Paga por resolver problemas, no por ciudadanía.",
+    stickyTakeaway: "Paga por claridad, preparación y solución de problemas.",
   },
   pt: {
-    title: "DNExpress vale a pena?",
+    title: "Como a ajuda paga agrega valor",
+    freeSubheader: "Esta ferramenta é gratuita",
     subtitle:
-      "Às vezes, mas depende se você está pagando por conveniência ou para resolver um problema real de documentos.",
+      "A ajuda paga pode economizar tempo, reduzir incerteza e resolver problemas de documentos. O valor depende de quão limpo ou complexo é o seu caso.",
     intro: [
       "Se você nasceu nos EUA com pai ou mãe mexicana, o registro mexicano de nascimento muitas vezes pode ser gratuito ou de baixo custo em um consulado mexicano.",
-      "Isso significa que um serviço pago não é automaticamente necessário. A pergunta real é se o seu caso está limpo, um pouco confuso ou realmente complicado.",
+      "A ajuda paga traz mais valor quando transforma incerteza em um plano claro: revisar registros, encontrar divergências e corrigir bloqueios antes que custem tempo.",
     ],
     priceFooter:
       "Preços variam por provedor, consulado e complexidade do caso. Verifique as taxas atuais antes de pagar.",
@@ -7196,8 +7200,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "Caso verde",
-        title: "Provavelmente não vale a pena",
-        body: "Você provavelmente não precisa de ajuda completa se seus documentos já batem.",
+        title: "Conveniência e confiança",
+        body: "Quando seus documentos já batem, a ajuda paga agrega valor como uma camada de conveniência: revisão, organização e tranquilidade antes de marcar.",
         examplesTitle: "Isso geralmente significa:",
         examples: [
           "Você tem sua certidão longa dos EUA",
@@ -7207,15 +7211,15 @@ const DNEXPRESS_POSTS = {
           "Não há adoção, paternidade, ordem judicial, pai falecido ou grande problema de nome",
         ],
         bestMove:
-          "Melhor passo: tente primeiro a rota oficial do consulado. Ajuda paga pode valer apenas pela conveniência.",
+          "Melhor passo: use a rota oficial do consulado com confiança. A ajuda paga ainda pode servir se você quiser alguém revisando o pacote e mantendo o processo em movimento.",
         priceNote:
-          "Estimativa por conta própria: custo muito baixo. Serviço pago: centenas de dólares. Recomendação: economize salvo se a conveniência valer para você.",
+          "Estimativa por conta própria: custo muito baixo. Ajuda paga: centenas de dólares. Valor: conveniência, organização documental e tranquilidade.",
       },
       {
         tone: "yellow",
         status: "Caso amarelo",
-        title: "Talvez valha uma revisão",
-        body: "Pode haver um problema corrigível, mas talvez ainda não justifique um pacote completo caro.",
+        title: "Clareza antes da consulta",
+        body: "Pequenas divergências ou documentos faltantes são situações em que a ajuda paga agrega valor ao identificar a correção exata antes da consulta.",
         examplesTitle: "Isso geralmente significa:",
         examples: [
           "Você só tem certidão curta",
@@ -7226,15 +7230,15 @@ const DNEXPRESS_POSTS = {
           "Você não sabe se os documentos batem exatamente",
         ],
         bestMove:
-          "Melhor passo: corrija ou verifique o documento antes de marcar. Uma revisão barata pode ajudar, mas não pague um pacote grande antes de saber o bloqueio exato.",
+          "Melhor passo: use ajuda paga para uma revisão focada dos documentos ou um plano de correção antes de marcar no consulado.",
         priceNote:
-          "Estimativa por conta própria: baixa a moderada. Revisão paga: pode valer. Recomendação: pague por clareza, não por um pacote completo cedo demais.",
+          "Estimativa por conta própria: baixa a moderada. Revisão paga: moderada. Valor: clareza, menos surpresas na consulta e um plano documental mais limpo.",
       },
       {
         tone: "red",
         status: "Caso vermelho",
-        title: "Ajuda paga pode valer a pena",
-        body: "Um serviço pode ter valor se resolver o problema específico que bloqueia seu registro.",
+        title: "Apoio para resolver problemas",
+        body: "Bloqueios complexos são onde a ajuda paga pode trazer mais valor, especialmente quando quem ajuda consegue corrigir o registro específico ou coordenar etapas no México.",
         examplesTitle: "Isso geralmente significa:",
         examples: [
           "Um pai faleceu, está ausente ou não quer comparecer",
@@ -7246,14 +7250,14 @@ const DNEXPRESS_POSTS = {
           "O consulado diz que o caso deve ser tratado no México",
         ],
         bestMove:
-          "Melhor passo: não pague apenas por ajuda de cidadania. Pergunte qual registro está errado, quem corrigirá, onde será corrigido e o que acontece se o consulado rejeitar.",
+          "Melhor passo: pergunte exatamente qual registro será corrigido, quem corrigirá, onde será corrigido e como lidarão com comentários do consulado.",
         priceNote:
-          "Estimativa por conta própria: imprevisível. Ajuda paga/legal: potencialmente útil. Recomendação: considere apenas se resolver o bloqueio real.",
+          "Estimativa por conta própria: imprevisível. Ajuda paga/legal: mais alta. Valor: correções direcionadas, coordenação no México e um caminho para bloqueios reais.",
       },
     ],
-    closingTitle: "Pelo que você está pagando?",
+    closingTitle: "Para que a ajuda paga realmente serve",
     closing:
-      "Você não está comprando cidadania mexicana. Se você se qualifica por pai ou mãe mexicana, talvez já seja mexicano por nascimento. O que se paga é ajuda para provar isso.",
+      "A ajuda paga não cria cidadania. Ela ajuda você a provar e documentar a rota para a qual talvez já se qualifique por meio de revisão de registros, estratégia de correção e preparo para a consulta.",
     officialChecklistTitle: "Checklist oficial de documentos",
     officialChecklistIntro:
       "Para um caso limpo de pessoa nascida nos EUA com pai ou mãe mexicana, estes são documentos comuns para verificar antes de marcar. Consulados podem variar.",
@@ -7269,15 +7273,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "Começar meu questionário de cidadania",
     secondaryCta: "Mostrar o checklist oficial de documentos",
     secondaryCtaHide: "Ocultar o checklist oficial de documentos",
-    stickyTakeaway: "Pague por solução de problemas, não por cidadania.",
+    stickyTakeaway: "Pague por clareza, preparo e solução de problemas.",
   },
   it: {
-    title: "DNExpress vale la pena?",
+    title: "Come l'aiuto pagato aggiunge valore",
+    freeSubheader: "Questo strumento è gratuito",
     subtitle:
-      "A volte, ma dipende se stai pagando per comodità o per risolvere un vero problema documentale.",
+      "L'aiuto pagato può far risparmiare tempo, ridurre l'incertezza e risolvere problemi documentali. Il valore dipende da quanto il caso è lineare o complesso.",
     intro: [
       "Se sei nato/a negli Stati Uniti da un genitore messicano, la registrazione messicana della nascita può spesso essere gratuita o a basso costo tramite un consolato messicano.",
-      "Quindi un servizio a pagamento non è automaticamente necessario. La vera domanda è se il tuo caso è pulito, un po' complesso o davvero complicato.",
+      "L'aiuto pagato porta più valore quando trasforma l'incertezza in un piano chiaro: controllare i registri, trovare differenze e correggere blocchi prima che facciano perdere tempo.",
     ],
     priceFooter:
       "I prezzi variano per fornitore, consolato e complessità del caso. Verifica sempre le tariffe attuali prima di pagare.",
@@ -7305,8 +7310,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "Caso verde",
-        title: "Probabilmente non vale la pena",
-        body: "Probabilmente non hai bisogno di assistenza completa se i documenti coincidono già.",
+        title: "Comodità e sicurezza",
+        body: "Quando i documenti coincidono già, l'aiuto pagato aggiunge valore come livello di comodità: revisione, organizzazione e tranquillità prima della prenotazione.",
         examplesTitle: "Di solito significa:",
         examples: [
           "Hai il certificato di nascita statunitense in formato lungo",
@@ -7316,15 +7321,15 @@ const DNEXPRESS_POSTS = {
           "Nessuna adozione, paternità, ordine del tribunale, genitore deceduto o grande problema di nome",
         ],
         bestMove:
-          "Mossa migliore: prova prima la via ufficiale del consolato. L'aiuto pagato può valere solo per comodità.",
+          "Mossa migliore: usa la via ufficiale del consolato con fiducia. L'aiuto pagato può comunque servire se vuoi una revisione del fascicolo e supporto per tenere il processo in movimento.",
         priceNote:
-          "Stima fai-da-te: costo molto basso. Servizio pagato: centinaia di dollari. Raccomandazione: risparmia, salvo se la comodità conta molto.",
+          "Stima fai-da-te: costo molto basso. Aiuto pagato: centinaia di dollari. Valore: comodità, organizzazione documentale e tranquillità.",
       },
       {
         tone: "yellow",
         status: "Caso giallo",
-        title: "Forse vale una revisione documenti",
-        body: "Potresti avere un problema risolvibile, ma non abbastanza per giustificare subito un pacchetto completo costoso.",
+        title: "Chiarezza prima dell'appuntamento",
+        body: "Piccole differenze o documenti mancanti sono casi in cui l'aiuto pagato aggiunge valore individuando la correzione esatta prima dell'appuntamento.",
         examplesTitle: "Di solito significa:",
         examples: [
           "Hai solo un certificato breve",
@@ -7335,15 +7340,15 @@ const DNEXPRESS_POSTS = {
           "Non sai se i documenti coincidono esattamente",
         ],
         bestMove:
-          "Mossa migliore: verifica o correggi il problema prima dell'appuntamento. Una revisione a basso costo può aiutare, ma non pagare un grande pacchetto prima di sapere il blocco esatto.",
+          "Mossa migliore: usa l'aiuto pagato per una revisione mirata dei documenti o un piano di correzione prima di prenotare al consolato.",
         priceNote:
-          "Stima fai-da-te: bassa o moderata. Revisione pagata: forse utile. Raccomandazione: paga per chiarezza, non troppo presto per un pacchetto completo.",
+          "Stima fai-da-te: bassa o moderata. Revisione pagata: moderata. Valore: chiarezza, meno sorprese all'appuntamento e un piano documentale più pulito.",
       },
       {
         tone: "red",
         status: "Caso rosso",
-        title: "L'aiuto pagato può valere",
-        body: "Un servizio può avere valore se risolve il problema specifico che blocca la registrazione.",
+        title: "Supporto per risolvere problemi",
+        body: "I blocchi complessi sono dove l'aiuto pagato può dare più valore, soprattutto se chi aiuta può correggere il registro specifico o coordinare passaggi in Messico.",
         examplesTitle: "Di solito significa:",
         examples: [
           "Un genitore è deceduto, assente o non disposto a comparire",
@@ -7355,14 +7360,14 @@ const DNEXPRESS_POSTS = {
           "Il consolato dice che il caso va gestito in Messico",
         ],
         bestMove:
-          "Mossa migliore: non pagare genericamente per aiuto di cittadinanza. Chiedi quale registro è sbagliato, chi lo corregge, dove e cosa succede se il consolato rifiuta.",
+          "Mossa migliore: chiedi esattamente quale registro verrà corretto, chi lo correggerà, dove e come gestiranno eventuali osservazioni del consolato.",
         priceNote:
-          "Stima fai-da-te: imprevedibile. Aiuto pagato/legale: potenzialmente utile. Raccomandazione: valuta solo se risolve il blocco reale.",
+          "Stima fai-da-te: imprevedibile. Aiuto pagato/legale: più alto. Valore: correzioni mirate, coordinamento in Messico e un percorso attraverso blocchi reali.",
       },
     ],
-    closingTitle: "Per cosa stai pagando davvero?",
+    closingTitle: "A cosa serve davvero l'aiuto pagato",
     closing:
-      "Non stai comprando cittadinanza messicana. Se ti qualifichi tramite un genitore messicano, potresti essere già messicano/a per nascita. Paghi aiuto per provarlo.",
+      "L'aiuto pagato non crea cittadinanza. Ti aiuta a provare e documentare il percorso per cui potresti già qualificarti tramite revisione dei registri, strategia di correzione e preparazione all'appuntamento.",
     officialChecklistTitle: "Checklist ufficiale dei documenti",
     officialChecklistIntro:
       "Per un caso pulito di persona nata negli USA da genitore messicano, questi sono documenti comuni da verificare prima di prenotare. I consolati possono variare.",
@@ -7378,15 +7383,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "Inizia il questionario di cittadinanza",
     secondaryCta: "Mostra la checklist ufficiale",
     secondaryCtaHide: "Nascondi la checklist ufficiale",
-    stickyTakeaway: "Paga per risolvere problemi, non per cittadinanza.",
+    stickyTakeaway: "Paga per chiarezza, preparazione e soluzione dei problemi.",
   },
   fr: {
-    title: "DNExpress vaut-il le coup?",
+    title: "Comment l'aide payante apporte de la valeur",
+    freeSubheader: "Cet outil est gratuit",
     subtitle:
-      "Parfois, mais cela dépend si vous payez pour la commodité ou pour corriger un vrai problème de documents.",
+      "L'aide payante peut faire gagner du temps, réduire l'incertitude et résoudre des problèmes de documents. Sa valeur dépend de la simplicité ou de la complexité du dossier.",
     intro: [
       "Si vous êtes né/e aux États-Unis d'un parent mexicain, l'enregistrement mexicain de naissance peut souvent être gratuit ou peu coûteux via un consulat mexicain.",
-      "Un service payant n'est donc pas automatiquement nécessaire. La vraie question est de savoir si votre dossier est clair, un peu compliqué ou vraiment complexe.",
+      "L'aide payante apporte le plus de valeur lorsqu'elle transforme l'incertitude en plan clair: vérifier les actes, repérer les écarts et corriger les blocages avant qu'ils ne coûtent du temps.",
     ],
     priceFooter:
       "Les prix varient selon le prestataire, le consulat et la complexité du dossier. Vérifiez toujours les frais actuels avant de payer.",
@@ -7414,8 +7420,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "Cas vert",
-        title: "Probablement pas nécessaire",
-        body: "Vous n'avez probablement pas besoin d'un service complet si vos documents correspondent déjà.",
+        title: "Commodité et confiance",
+        body: "Quand vos documents correspondent déjà, l'aide payante apporte de la valeur comme couche de commodité: revue, organisation et tranquillité avant le rendez-vous.",
         examplesTitle: "Cela signifie souvent:",
         examples: [
           "Vous avez l'acte de naissance américain long-form certifié",
@@ -7425,15 +7431,15 @@ const DNEXPRESS_POSTS = {
           "Pas d'adoption, paternité, décision judiciaire, parent décédé ou problème majeur de nom",
         ],
         bestMove:
-          "Meilleur choix: essayez d'abord la voie officielle du consulat. L'aide payante vaut surtout si vous voulez de la commodité.",
+          "Meilleur choix: utilisez la voie officielle du consulat avec confiance. L'aide payante peut tout de même servir si vous voulez une revue du dossier et un accompagnement pour garder le processus en mouvement.",
         priceNote:
-          "Estimation par soi-même: coût très faible. Service payant: centaines de dollars. Recommandation: économisez sauf si la commodité vaut ce prix.",
+          "Estimation par soi-même: coût très faible. Aide payante: plusieurs centaines de dollars. Valeur: commodité, organisation documentaire et tranquillité.",
       },
       {
         tone: "yellow",
         status: "Cas jaune",
-        title: "Une revue documentaire peut aider",
-        body: "Vous avez peut-être un problème corrigeable, mais pas forcément assez pour justifier un grand forfait coûteux.",
+        title: "Clarté avant le rendez-vous",
+        body: "Les petits écarts ou documents manquants sont des cas où l'aide payante ajoute de la valeur en identifiant la correction exacte avant le rendez-vous.",
         examplesTitle: "Cela signifie souvent:",
         examples: [
           "Vous n'avez qu'un acte court",
@@ -7444,15 +7450,15 @@ const DNEXPRESS_POSTS = {
           "Vous ne savez pas si les documents correspondent exactement",
         ],
         bestMove:
-          "Meilleur choix: corrigez ou vérifiez le problème avant le rendez-vous. Une revue peu coûteuse peut aider, mais ne payez pas un gros forfait avant de connaître le blocage exact.",
+          "Meilleur choix: utilisez l'aide payante pour une revue ciblée des documents ou un plan de correction avant de réserver au consulat.",
         priceNote:
-          "Estimation par soi-même: faible à modérée. Revue payante: possiblement utile. Recommandation: payez pour la clarté, pas trop tôt pour un forfait complet.",
+          "Estimation par soi-même: faible à modérée. Revue payante: modérée. Valeur: clarté, moins de surprises au rendez-vous et un plan documentaire plus net.",
       },
       {
         tone: "red",
         status: "Cas rouge",
-        title: "L'aide payante peut valoir le coup",
-        body: "Un service peut avoir de la valeur s'il corrige le problème spécifique qui bloque votre enregistrement.",
+        title: "Soutien pour résoudre les problèmes",
+        body: "Les blocages complexes sont là où l'aide payante peut apporter le plus de valeur, surtout si elle peut corriger l'acte précis ou coordonner des démarches au Mexique.",
         examplesTitle: "Cela signifie souvent:",
         examples: [
           "Un parent est décédé, absent ou refuse de comparaître",
@@ -7464,14 +7470,14 @@ const DNEXPRESS_POSTS = {
           "Le consulat dit que le dossier doit être traité au Mexique",
         ],
         bestMove:
-          "Meilleur choix: ne payez pas simplement pour de l'aide citoyenneté. Demandez quel acte est erroné, qui le corrigera, où, et ce qui se passe si le consulat refuse.",
+          "Meilleur choix: demandez exactement quel acte sera corrigé, qui le corrigera, où, et comment les remarques du consulat seront traitées.",
         priceNote:
-          "Estimation par soi-même: imprévisible. Aide payante/juridique: potentiellement utile. Recommandation: seulement si cela résout le vrai blocage.",
+          "Estimation par soi-même: imprévisible. Aide payante/juridique: plus élevée. Valeur: corrections ciblées, coordination au Mexique et chemin clair à travers de vrais blocages.",
       },
     ],
-    closingTitle: "Que payez-vous vraiment?",
+    closingTitle: "À quoi sert vraiment l'aide payante",
     closing:
-      "Vous n'achetez pas la citoyenneté mexicaine. Si vous êtes admissible par un parent mexicain, vous êtes peut-être déjà mexicain/e de naissance. Vous payez de l'aide pour le prouver.",
+      "L'aide payante ne crée pas la citoyenneté. Elle aide à prouver et documenter le parcours auquel vous êtes peut-être déjà admissible grâce à la revue des actes, la stratégie de correction et la préparation du rendez-vous.",
     officialChecklistTitle: "Liste officielle de documents",
     officialChecklistIntro:
       "Pour un dossier simple né aux États-Unis avec parent mexicain, voici les documents habituels à vérifier avant le rendez-vous. Les consulats peuvent varier.",
@@ -7487,15 +7493,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "Commencer mon questionnaire de citoyenneté",
     secondaryCta: "Afficher la liste officielle",
     secondaryCtaHide: "Masquer la liste officielle",
-    stickyTakeaway: "Payez pour résoudre un problème, pas pour la citoyenneté.",
+    stickyTakeaway: "Payez pour la clarté, la préparation et la résolution des problèmes.",
   },
   ja: {
-    title: "DNExpress は使う価値がありますか？",
+    title: "有料支援が生む価値",
+    freeSubheader: "このツールは無料です",
     subtitle:
-      "場合によります。便利さに払うのか、実際の書類問題を直すために払うのかで変わります。",
+      "有料支援は時間を節約し、不安を減らし、書類問題を解決できます。その価値は案件がどれだけ整っているか、または複雑かによって変わります。",
     intro: [
       "米国生まれで親の一方がメキシコ人の場合、メキシコ領事館での出生登録は無料または低額で済むことがあります。",
-      "そのため有料サービスが必ず必要とは限りません。重要なのは、書類がきれいか、少し問題があるか、本当に複雑かです。",
+      "有料支援の価値が最も出るのは、不安を明確な計画に変えられるときです。記録を確認し、不一致を見つけ、時間を失う前に障害を直します。",
     ],
     priceFooter:
       "料金は業者、領事館、案件の複雑さで変わります。支払う前に最新料金を確認してください。",
@@ -7523,8 +7530,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "グリーン案件",
-        title: "たぶん不要",
-        body: "書類がすでにそろって一致しているなら、フルサービスは不要な可能性が高いです。",
+        title: "便利さと安心感",
+        body: "書類がすでに一致している場合、有料支援は予約前の確認、整理、安心感という便利な追加層として価値を持ちます。",
         examplesTitle: "通常は次の状態です:",
         examples: [
           "長形式の米国出生証明がある",
@@ -7534,15 +7541,15 @@ const DNEXPRESS_POSTS = {
           "養子、父子関係、裁判所命令、死亡した親、大きな氏名問題がない",
         ],
         bestMove:
-          "最善策: まず公式の領事館ルートを試す。有料支援は便利さを買う場合のみ価値があります。",
+          "最善策: 公式の領事館ルートを自信を持って進める。有料支援は、書類一式を確認してもらい手続きを止めずに進めたい場合にも役立ちます。",
         priceNote:
-          "自分で行う場合の目安: とても低額。有料サービス: 数百ドル。推奨: 便利さに価値を感じない限り節約。",
+          "自分で行う場合の目安: とても低額。有料支援: 数百ドル。価値: 便利さ、書類整理、安心感。",
       },
       {
         tone: "yellow",
         status: "イエロー案件",
-        title: "書類レビューは役立つかも",
-        body: "修正可能な問題かもしれませんが、高額なフルパッケージを早く買うほどではない可能性があります。",
+        title: "予約前の明確化",
+        body: "小さな不一致や不足書類がある場合、有料支援は予約前に正確な修正点を特定することで価値を生みます。",
         examplesTitle: "通常は次の状態です:",
         examples: [
           "短形式の出生証明しかない",
@@ -7553,15 +7560,15 @@ const DNEXPRESS_POSTS = {
           "書類が完全に一致するか不明",
         ],
         bestMove:
-          "最善策: 予約前に問題を確認または修正する。低額レビューは有用ですが、正確な障害が分かる前に大きなパッケージを買わないでください。",
+          "最善策: 領事館予約の前に、有料支援を使って書類の重点レビューや修正計画を作る。",
         priceNote:
-          "自分で行う場合の目安: 低から中程度。有料レビュー: 価値ありの場合あり。推奨: 早すぎるフルパッケージではなく明確さに払う。",
+          "自分で行う場合の目安: 低から中程度。有料レビュー: 中程度。価値: 明確さ、予約時の予想外の指摘を減らすこと、整理された書類計画。",
       },
       {
         tone: "red",
         status: "レッド案件",
-        title: "有料支援が価値を持つ場合",
-        body: "登録を妨げている具体的な問題を解決するなら、サービスに価値があるかもしれません。",
+        title: "問題解決サポート",
+        body: "複雑な障害がある場合、有料支援は最も大きな価値を持ちます。特定の記録を直したり、メキシコ側の手続きを調整できる場合は特に有用です。",
         examplesTitle: "通常は次の状態です:",
         examples: [
           "親が死亡、所在不明、または協力しない",
@@ -7573,14 +7580,14 @@ const DNEXPRESS_POSTS = {
           "領事館がメキシコで処理すべきと言っている",
         ],
         bestMove:
-          "最善策: 単なる国籍支援に払わないでください。どの記録が悪いのか、誰がどこで直すのか、領事館が拒否したらどうなるのかを確認してください。",
+          "最善策: どの記録を修正するのか、誰がどこで修正するのか、領事館から指摘が出た場合にどう対応するのかを具体的に確認してください。",
         priceNote:
-          "自分で行う場合の目安: 予測困難。有料/法的支援: 価値がある場合あり。推奨: 実際の障害を解決する場合のみ検討。",
+          "自分で行う場合の目安: 予測困難。有料/法的支援: 高め。価値: 的を絞った修正、メキシコ側の調整、実際の障害を越える道筋。",
       },
     ],
-    closingTitle: "本当に何に払うのか？",
+    closingTitle: "有料支援の本当の役割",
     closing:
-      "メキシコ国籍を買うわけではありません。メキシコ人の親を通じて該当するなら、すでに出生によるメキシコ人かもしれません。支払うのは、それを証明する手助けです。",
+      "有料支援が国籍を作るわけではありません。記録確認、修正戦略、予約準備を通じて、すでに該当している可能性のあるルートを証明し文書化する助けになります。",
     officialChecklistTitle: "公式書類チェックリスト",
     officialChecklistIntro:
       "米国生まれで親がメキシコ人のきれいな案件では、予約前に通常これらを確認します。領事館により違います。",
@@ -7596,15 +7603,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "国籍質問を始める",
     secondaryCta: "公式書類リストを表示",
     secondaryCtaHide: "公式書類リストを隠す",
-    stickyTakeaway: "国籍ではなく、問題解決に払う。",
+    stickyTakeaway: "明確さ、準備、問題解決に払う。",
   },
   hi: {
-    title: "क्या DNExpress उपयोगी है?",
+    title: "भुगतान वाली मदद कैसे मूल्य जोड़ती है",
+    freeSubheader: "यह टूल मुफ्त है",
     subtitle:
-      "कभी-कभी, लेकिन यह इस बात पर निर्भर है कि आप सुविधा के लिए भुगतान कर रहे हैं या असली दस्तावेज़ समस्या ठीक कराने के लिए।",
+      "भुगतान वाली मदद समय बचा सकती है, अनिश्चितता कम कर सकती है और दस्तावेज़ समस्याएं हल कर सकती है। मूल्य इस पर निर्भर करता है कि आपका मामला कितना साफ या जटिल है।",
     intro: [
       "अगर आपका जन्म अमेरिका में मैक्सिकन माता-पिता से हुआ है, तो मैक्सिकन वाणिज्य दूतावास के ज़रिए जन्म पंजीकरण अक्सर मुफ्त या बहुत कम खर्च में हो सकता है।",
-      "इसलिए भुगतान वाली सेवा हमेशा जरूरी नहीं है। असली सवाल यह है कि आपका मामला साफ है, थोड़ा उलझा है, या सच में जटिल है।",
+      "भुगतान वाली मदद सबसे अधिक मूल्य तब देती है जब वह अनिश्चितता को साफ योजना में बदलती है: रिकॉर्ड जांचना, अंतर पकड़ना और समय गंवाने से पहले रुकावटें ठीक करना।",
     ],
     priceFooter:
       "कीमतें सेवा प्रदाता, वाणिज्य दूतावास और मामले की जटिलता पर निर्भर करती हैं। भुगतान से पहले मौजूदा शुल्क जरूर जांचें।",
@@ -7632,8 +7640,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "हरा मामला",
-        title: "शायद इसकी जरूरत नहीं",
-        body: "अगर आपके दस्तावेज़ पहले से मेल खाते हैं, तो पूरी सेवा वाली मदद की जरूरत शायद नहीं है।",
+        title: "सुविधा और भरोसा",
+        body: "जब आपके दस्तावेज़ पहले से मेल खाते हैं, तो भुगतान वाली मदद समीक्षा, व्यवस्था और अपॉइंटमेंट से पहले भरोसे की सुविधा के रूप में मूल्य देती है।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
           "आपके पास लंबे प्रारूप वाला प्रमाणित अमेरिकी जन्म प्रमाणपत्र है",
@@ -7643,15 +7651,15 @@ const DNEXPRESS_POSTS = {
           "गोद लेने, पितृत्व, अदालत के आदेश, दिवंगत माता-पिता या बड़े नाम-समस्या का मामला नहीं है",
         ],
         bestMove:
-          "सबसे अच्छा कदम: पहले आधिकारिक वाणिज्य दूतावास वाला मार्ग आज़माएं। भुगतान वाली मदद सिर्फ सुविधा के लिए उपयोगी हो सकती है।",
+          "सबसे अच्छा कदम: आधिकारिक वाणिज्य दूतावास मार्ग को भरोसे के साथ इस्तेमाल करें। अगर आप चाहते हैं कि कोई पैकेट की समीक्षा करे और प्रक्रिया को आगे बढ़ाए, तो भुगतान वाली मदद फिर भी उपयोगी हो सकती है।",
         priceNote:
-          "खुद करने का अनुमान: बहुत कम लागत। भुगतान वाली सेवा: सैकड़ों डॉलर। सिफारिश: अगर सुविधा जरूरी नहीं है, तो पैसे बचाएं।",
+          "खुद करने का अनुमान: बहुत कम लागत। भुगतान वाली मदद: सैकड़ों डॉलर। मूल्य: सुविधा, दस्तावेज़ व्यवस्था और मन की शांति।",
       },
       {
         tone: "yellow",
         status: "पीला मामला",
-        title: "दस्तावेज़ समीक्षा उपयोगी हो सकती है",
-        body: "समस्या ठीक हो सकती है, लेकिन अभी महंगे पूरी-सेवा पैकेज को सही ठहराने लायक शायद नहीं है।",
+        title: "अपॉइंटमेंट से पहले स्पष्टता",
+        body: "छोटे अंतर या गायब दस्तावेज़ों में भुगतान वाली मदद अपॉइंटमेंट से पहले सही सुधार पहचानकर मूल्य जोड़ती है।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
           "आपके पास केवल छोटे प्रारूप वाला जन्म प्रमाणपत्र है",
@@ -7662,15 +7670,15 @@ const DNEXPRESS_POSTS = {
           "आपको भरोसा नहीं है कि दस्तावेज़ बिल्कुल मेल खाते हैं",
         ],
         bestMove:
-          "सबसे अच्छा कदम: अपॉइंटमेंट से पहले समस्या की पुष्टि करें या उसे ठीक करें। कम लागत वाली समीक्षा मदद कर सकती है, लेकिन सटीक रुकावट जाने बिना बड़ा पैकेज न खरीदें।",
+          "सबसे अच्छा कदम: वाणिज्य दूतावास अपॉइंटमेंट से पहले केंद्रित दस्तावेज़ समीक्षा या सुधार योजना के लिए भुगतान वाली मदद लें।",
         priceNote:
-          "खुद करने का अनुमान: कम से मध्यम। भुगतान वाली समीक्षा: शायद उपयोगी। सिफारिश: स्पष्टता के लिए भुगतान करें, बहुत जल्दी पूरी सेवा के लिए नहीं।",
+          "खुद करने का अनुमान: कम से मध्यम। भुगतान वाली समीक्षा: मध्यम। मूल्य: स्पष्टता, अपॉइंटमेंट में कम आश्चर्य और साफ दस्तावेज़ योजना।",
       },
       {
         tone: "red",
         status: "लाल मामला",
-        title: "भुगतान वाली मदद उपयोगी हो सकती है",
-        body: "सेवा तभी सच में मूल्य दे सकती है जब वह पंजीकरण रोक रही खास समस्या को हल करे।",
+        title: "समस्या समाधान सहायता",
+        body: "जटिल रुकावटों में भुगतान वाली मदद सबसे अधिक मूल्य दे सकती है, खासकर जब सहायक खास रिकॉर्ड ठीक कर सके या मेक्सिको वाले चरणों का समन्वय कर सके।",
         examplesTitle: "आम तौर पर इसका मतलब है:",
         examples: [
           "माता-पिता में से कोई दिवंगत, अनुपस्थित या उपस्थित होने को तैयार नहीं है",
@@ -7682,14 +7690,14 @@ const DNEXPRESS_POSTS = {
           "वाणिज्य दूतावास कहता है कि मामला मेक्सिको में संभालना होगा",
         ],
         bestMove:
-          "सबसे अच्छा कदम: सिर्फ नागरिकता मदद के नाम पर भुगतान न करें। पूछें कौन सा रिकॉर्ड गलत है, कौन ठीक करेगा, कहाँ ठीक होगा, और वाणिज्य दूतावास ने अस्वीकार किया तो क्या होगा।",
+          "सबसे अच्छा कदम: साफ पूछें कि कौन सा रिकॉर्ड ठीक होगा, कौन ठीक करेगा, कहाँ ठीक होगा और वाणिज्य दूतावास की प्रतिक्रिया को कैसे संभाला जाएगा।",
         priceNote:
-          "खुद करने का अनुमान: अनिश्चित। भुगतान वाली या कानूनी मदद: उपयोगी हो सकती है। सिफारिश: तभी विचार करें जब वे असली रुकावट हल करें।",
+          "खुद करने का अनुमान: अनिश्चित। भुगतान वाली या कानूनी मदद: अधिक। मूल्य: लक्षित सुधार, मेक्सिको-स्तर समन्वय और असली रुकावटों से निकलने का रास्ता।",
       },
     ],
-    closingTitle: "आप असल में किसके लिए भुगतान कर रहे हैं?",
+    closingTitle: "भुगतान वाली मदद असल में किसलिए है",
     closing:
-      "आप मैक्सिकन नागरिकता नहीं खरीद रहे। अगर आप मैक्सिकन माता-पिता के आधार पर पात्र हैं, तो आप जन्म से ही मैक्सिकन हो सकते हैं। भुगतान केवल इसे साबित करने में मदद के लिए है।",
+      "भुगतान वाली मदद नागरिकता नहीं बनाती। यह रिकॉर्ड समीक्षा, सुधार रणनीति और अपॉइंटमेंट तैयारी के जरिए उस मार्ग को साबित और दस्तावेज़ करने में मदद करती है जिसके लिए आप पहले से पात्र हो सकते हैं।",
     officialChecklistTitle: "आधिकारिक दस्तावेज़ सूची",
     officialChecklistIntro:
       "अमेरिका में जन्मे और मैक्सिकन माता-पिता वाले साफ मामले में अपॉइंटमेंट से पहले आम तौर पर ये दस्तावेज़ जांचे जाते हैं। वाणिज्य दूतावासों की जरूरतें अलग हो सकती हैं।",
@@ -7705,15 +7713,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "मेरी नागरिकता प्रश्नावली शुरू करें",
     secondaryCta: "आधिकारिक दस्तावेज़ सूची दिखाएं",
     secondaryCtaHide: "आधिकारिक दस्तावेज़ सूची छिपाएं",
-    stickyTakeaway: "समस्या हल कराने के लिए भुगतान करें, नागरिकता के लिए नहीं।",
+    stickyTakeaway: "स्पष्टता, तैयारी और समस्या समाधान के लिए भुगतान करें।",
   },
   ar: {
-    title: "هل يستحق DNExpress الدفع؟",
+    title: "كيف تضيف المساعدة المدفوعة قيمة",
+    freeSubheader: "هذه الأداة مجانية",
     subtitle:
-      "أحيانا، لكن الأمر يعتمد على ما إذا كنت تدفع مقابل الراحة أو مقابل حل مشكلة حقيقية في الوثائق.",
+      "يمكن للمساعدة المدفوعة أن توفر الوقت وتقلل الغموض وتحل مشكلات الوثائق. تعتمد قيمتها على مدى وضوح الحالة أو تعقيدها.",
     intro: [
       "إذا وُلدت في الولايات المتحدة لأب أو أم مكسيكية، فقد يكون تسجيل الميلاد المكسيكي عبر القنصلية مجانيا أو منخفض التكلفة.",
-      "لذلك ليست الخدمة المدفوعة ضرورية دائما. السؤال الحقيقي هو هل ملفك نظيف، أم فيه مشكلة بسيطة، أم معقد فعلا.",
+      "تقدم المساعدة المدفوعة أكبر قيمة عندما تحول الغموض إلى خطة واضحة: مراجعة السجلات، كشف الاختلافات، وحل العوائق قبل أن تكلفك الوقت.",
     ],
     priceFooter:
       "تختلف الأسعار حسب المزود والقنصلية وتعقيد الحالة. تحقق دائما من الرسوم الحالية قبل الدفع.",
@@ -7741,8 +7750,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "حالة خضراء",
-        title: "غالبا لا يستحق",
-        body: "غالبا لا تحتاج إلى خدمة كاملة إذا كانت وثائقك متطابقة بالفعل.",
+        title: "الراحة والثقة",
+        body: "عندما تكون وثائقك متطابقة بالفعل، تضيف المساعدة المدفوعة قيمة كطبقة راحة: مراجعة وتنظيم وطمأنينة قبل حجز الموعد.",
         examplesTitle: "هذا يعني عادة:",
         examples: [
           "لديك شهادة ميلاد أمريكية طويلة ومعتمدة",
@@ -7752,15 +7761,15 @@ const DNEXPRESS_POSTS = {
           "لا توجد مسألة تبن أو أبوة أو أمر محكمة أو والد متوفى أو مشكلة اسم كبيرة",
         ],
         bestMove:
-          "أفضل خطوة: جرّب المسار الرسمي في القنصلية أولا. قد تكون المساعدة المدفوعة مفيدة فقط إذا كنت تريد الراحة.",
+          "أفضل خطوة: استخدم المسار الرسمي في القنصلية بثقة. يمكن أن تفيد المساعدة المدفوعة أيضا إذا أردت من يراجع الملف ويحافظ على تقدم العملية.",
         priceNote:
-          "تقدير القيام بها بنفسك: تكلفة منخفضة جدا. الخدمة المدفوعة: مئات الدولارات. التوصية: وفر المال إلا إذا كانت الراحة مهمة لك.",
+          "تقدير القيام بها بنفسك: تكلفة منخفضة جدا. المساعدة المدفوعة: مئات الدولارات. القيمة: الراحة، تنظيم الوثائق، والطمأنينة.",
       },
       {
         tone: "yellow",
         status: "حالة صفراء",
-        title: "قد تستحق مراجعة الوثائق",
-        body: "قد تكون لديك مشكلة قابلة للإصلاح، لكنها ربما لا تبرر حزمة كاملة ومكلفة بعد.",
+        title: "وضوح قبل الموعد",
+        body: "عند وجود اختلافات بسيطة أو وثائق ناقصة، تضيف المساعدة المدفوعة قيمة بتحديد التصحيح الدقيق قبل الموعد.",
         examplesTitle: "هذا يعني عادة:",
         examples: [
           "لديك فقط شهادة ميلاد مختصرة",
@@ -7771,15 +7780,15 @@ const DNEXPRESS_POSTS = {
           "لست متأكدا من تطابق الوثائق تماما",
         ],
         bestMove:
-          "أفضل خطوة: أصلح أو تحقق من المشكلة قبل الموعد. قد تفيد مراجعة منخفضة التكلفة، لكن لا تدفع لحزمة كبيرة قبل معرفة العائق الدقيق.",
+          "أفضل خطوة: استخدم المساعدة المدفوعة لمراجعة وثائق مركزة أو خطة تصحيح قبل حجز موعد القنصلية.",
         priceNote:
-          "تقدير القيام بها بنفسك: منخفض إلى متوسط. المراجعة المدفوعة: قد تستحق. التوصية: ادفع للوضوح، لا لحزمة كاملة مبكرة.",
+          "تقدير القيام بها بنفسك: منخفض إلى متوسط. المراجعة المدفوعة: متوسطة. القيمة: وضوح، مفاجآت أقل في الموعد، وخطة وثائق أنظف.",
       },
       {
         tone: "red",
         status: "حالة حمراء",
-        title: "قد تستحق المساعدة المدفوعة",
-        body: "قد تقدم الخدمة قيمة إذا كانت تحل المشكلة المحددة التي تمنع التسجيل.",
+        title: "دعم حل المشكلات",
+        body: "العوائق المعقدة هي حيث يمكن للمساعدة المدفوعة أن تقدم أقوى قيمة، خصوصا عندما يستطيع المساعد تصحيح سجل محدد أو تنسيق خطوات داخل المكسيك.",
         examplesTitle: "هذا يعني عادة:",
         examples: [
           "أحد الوالدين متوفى أو غائب أو غير مستعد للحضور",
@@ -7791,14 +7800,14 @@ const DNEXPRESS_POSTS = {
           "القنصلية تقول إن الحالة يجب أن تتم في المكسيك",
         ],
         bestMove:
-          "أفضل خطوة: لا تدفع فقط مقابل مساعدة جنسية. اسأل ما السجل الخاطئ، من سيصلحه، أين سيصلح، وماذا يحدث إذا رفضته القنصلية.",
+          "أفضل خطوة: اسأل بالضبط أي سجل سيصحح، ومن سيصححه، وأين سيصحح، وكيف سيتم التعامل مع ملاحظات القنصلية.",
         priceNote:
-          "تقدير القيام بها بنفسك: غير متوقع. المساعدة المدفوعة/القانونية: قد تستحق. التوصية: فكر بها فقط إذا حلت العائق الحقيقي.",
+          "تقدير القيام بها بنفسك: غير متوقع. المساعدة المدفوعة/القانونية: أعلى. القيمة: تصحيحات موجهة، تنسيق داخل المكسيك، وطريق عبر العوائق الحقيقية.",
       },
     ],
-    closingTitle: "مقابل ماذا تدفع فعلا؟",
+    closingTitle: "ما الغرض الحقيقي من المساعدة المدفوعة؟",
     closing:
-      "أنت لا تشتري الجنسية المكسيكية. إذا كنت مؤهلا عبر والد مكسيكي، فقد تكون مكسيكيا بالميلاد بالفعل. ما تدفعه هو مساعدة لإثبات ذلك.",
+      "المساعدة المدفوعة لا تنشئ الجنسية. إنها تساعدك على إثبات وتوثيق المسار الذي قد تكون مؤهلا له بالفعل عبر مراجعة السجلات، واستراتيجية التصحيح، والاستعداد للموعد.",
     officialChecklistTitle: "قائمة الوثائق الرسمية",
     officialChecklistIntro:
       "في حالة نظيفة لشخص مولود في الولايات المتحدة من والد مكسيكي، هذه وثائق شائعة للتحقق قبل الموعد. قد تختلف القنصليات.",
@@ -7814,15 +7823,16 @@ const DNEXPRESS_POSTS = {
     primaryCta: "ابدأ استبيان الجنسية",
     secondaryCta: "أظهر قائمة الوثائق الرسمية",
     secondaryCtaHide: "أخف قائمة الوثائق الرسمية",
-    stickyTakeaway: "ادفع لحل المشكلة، لا لشراء الجنسية.",
+    stickyTakeaway: "ادفع للوضوح والاستعداد وحل المشكلات.",
   },
   zh: {
-    title: "DNExpress 值得吗？",
+    title: "付费帮助如何带来价值",
+    freeSubheader: "此工具免费",
     subtitle:
-      "有时候值得，但关键在于你是在为便利付费，还是在为解决真实文件问题付费。",
+      "付费帮助可以节省时间、减少不确定性，并解决文件问题。它的价值取决于你的案件是清晰还是复杂。",
     intro: [
       "如果你出生在美国，且父母一方是墨西哥人，通过墨西哥领事馆办理墨西哥出生登记通常可以免费或低成本完成。",
-      "所以付费服务并不是自动必要。真正的问题是你的文件是否干净、略有问题，还是确实复杂。",
+      "当付费帮助能把不确定性变成清晰计划时，它最有价值：审核记录、发现不一致，并在浪费时间之前解决障碍。",
     ],
     priceFooter:
       "价格会因服务商、领事馆和案件复杂度而不同。付款前请务必确认最新费用。",
@@ -7850,8 +7860,8 @@ const DNEXPRESS_POSTS = {
       {
         tone: "green",
         status: "绿色案件",
-        title: "可能不值得",
-        body: "如果你的文件已经匹配，通常不需要全套付费服务。",
+        title: "便利和安心",
+        body: "当你的文件已经匹配时，付费帮助的价值在于便利层：预约前审核、整理和提供安心感。",
         examplesTitle: "通常意味着：",
         examples: [
           "你有长表认证版美国出生证明",
@@ -7861,15 +7871,15 @@ const DNEXPRESS_POSTS = {
           "没有收养、亲子关系、法院命令、父母死亡或重大姓名问题",
         ],
         bestMove:
-          "最佳做法：先走官方领事馆路线。付费帮助可能只在你重视便利时值得。",
+          "最佳做法：有信心地走官方领事馆路线。如果你想让人审核材料并推动流程，付费帮助仍然有用。",
         priceNote:
-          "自办估计：成本很低。付费服务：数百美元。建议：除非你愿意为便利付费，否则省下这笔钱。",
+          "自办估计：成本很低。付费帮助：数百美元。价值：便利、文件整理和安心感。",
       },
       {
         tone: "yellow",
         status: "黄色案件",
-        title: "可能值得做文件审核",
-        body: "你可能有可修正的问题，但未必需要过早购买昂贵全套服务。",
+        title: "预约前获得清晰判断",
+        body: "小的不一致或缺失文件正是付费帮助能带来价值的地方，因为它可以在预约前找出准确修正方式。",
         examplesTitle: "通常意味着：",
         examples: [
           "你只有短表出生证明",
@@ -7880,15 +7890,15 @@ const DNEXPRESS_POSTS = {
           "不确定文件是否完全匹配",
         ],
         bestMove:
-          "最佳做法：预约前先确认或修正文件问题。低成本审核可能有用，但在知道具体障碍前不要购买大套餐。",
+          "最佳做法：在预约领事馆前，用付费帮助做聚焦的文件审核或修正计划。",
         priceNote:
-          "自办估计：低到中等。付费审核：可能值得。建议：为清晰度付费，不要太早买全套。",
+          "自办估计：低到中等。付费审核：中等。价值：清晰判断、减少预约时的意外问题，以及更干净的文件计划。",
       },
       {
         tone: "red",
         status: "红色案件",
-        title: "付费帮助可能值得",
-        body: "如果服务能解决阻碍登记的具体问题，它才可能真正有价值。",
+        title: "问题解决支持",
+        body: "复杂障碍是付费帮助最能体现价值的地方，尤其是协助者能修正具体记录或协调墨西哥境内步骤时。",
         examplesTitle: "通常意味着：",
         examples: [
           "父/母已死亡、缺席或不愿出面",
@@ -7900,14 +7910,14 @@ const DNEXPRESS_POSTS = {
           "领事馆说案件必须在墨西哥办理",
         ],
         bestMove:
-          "最佳做法：不要只为“国籍帮助”付费。问清楚哪份记录错了、谁来修、在哪里修，以及领事馆拒绝后怎么办。",
+          "最佳做法：问清楚要修正哪份记录、谁来修、在哪里修，以及如何处理领事馆反馈。",
         priceNote:
-          "自办估计：不可预测。付费/法律帮助：可能值得。建议：只有能解决真实障碍时才考虑。",
+          "自办估计：不可预测。付费/法律帮助：更高。价值：针对性修正、墨西哥境内协调，以及穿过真实障碍的路线。",
       },
     ],
-    closingTitle: "你真正支付的是什么？",
+    closingTitle: "付费帮助真正适合做什么",
     closing:
-      "你不是在购买墨西哥国籍。如果你通过墨西哥父/母符合条件，你可能出生时已经是墨西哥人。你支付的是证明这一点的帮助。",
+      "付费帮助不会创造国籍。它通过记录审核、修正策略和预约准备，帮助你证明并整理你可能已经符合的路径。",
     officialChecklistTitle: "官方文件清单",
     officialChecklistIntro:
       "对于美国出生、父/母为墨西哥人的干净案件，预约前通常需要核对这些文件。各领事馆可能不同。",
@@ -7923,17 +7933,18 @@ const DNEXPRESS_POSTS = {
     primaryCta: "开始我的国籍问卷",
     secondaryCta: "显示官方文件清单",
     secondaryCtaHide: "隐藏官方文件清单",
-    stickyTakeaway: "为解决问题付费，不是为国籍付费。",
+    stickyTakeaway: "为清晰判断、准备和解决问题付费。",
   },
 };
 
-DNEXPRESS_POSTS.de = {
-  title: "Lohnt sich DNExpress?",
+PAID_HELP_POSTS.de = {
+  title: "Wie bezahlte Hilfe Mehrwert bringt",
+  freeSubheader: "Dieses Tool ist kostenlos",
   subtitle:
-    "Manchmal, aber es hängt davon ab, ob du für Bequemlichkeit zahlst oder ein echtes Dokumentenproblem lösen musst.",
+    "Bezahlte Hilfe kann Zeit sparen, Unsicherheit reduzieren und Dokumentenprobleme lösen. Der Mehrwert hängt davon ab, wie sauber oder komplex dein Fall ist.",
   intro: [
     "Wenn du in den USA geboren wurdest und einen mexikanischen Elternteil hast, ist die offizielle mexikanische Geburtsregistrierung über ein mexikanisches Konsulat oft kostenlos oder sehr günstig.",
-    "Ein bezahlter Service ist also nicht automatisch nötig. Entscheidend ist, ob dein Fall sauber, leicht kompliziert oder wirklich schwierig ist.",
+    "Bezahlte Hilfe bringt den größten Mehrwert, wenn sie Unsicherheit in einen klaren Plan verwandelt: Unterlagen prüfen, Abweichungen finden und Blocker lösen, bevor sie Zeit kosten.",
   ],
   priceFooter:
     "Preise variieren je nach Anbieter, Konsulat und Komplexität. Prüfe aktuelle Gebühren immer vor der Zahlung.",
@@ -7961,8 +7972,8 @@ DNEXPRESS_POSTS.de = {
     {
       tone: "green",
       status: "Grüner Fall",
-      title: "Wahrscheinlich nicht lohnend",
-      body: "Du brauchst wahrscheinlich keine Vollservice-Hilfe, wenn deine Dokumente bereits zusammenpassen.",
+      title: "Bequemlichkeit und Sicherheit",
+      body: "Wenn deine Unterlagen bereits zusammenpassen, bringt bezahlte Hilfe Mehrwert als Komfortschicht: Prüfung, Organisation und Sicherheit vor der Terminbuchung.",
       examplesTitle: "Das bedeutet meistens:",
       examples: [
         "Du hast deine vollständige US-Geburtsurkunde",
@@ -7972,15 +7983,15 @@ DNEXPRESS_POSTS.de = {
         "Keine Adoption, Vaterschaftsfrage, Gerichtsentscheidung, verstorbener Elternteil oder größeres Namensproblem",
       ],
       bestMove:
-        "Bester Schritt: Versuche zuerst den offiziellen Konsulatsweg. Bezahlte Hilfe lohnt sich vielleicht nur, wenn du Bequemlichkeit möchtest.",
+        "Bester Schritt: Nutze den offiziellen Konsulatsweg mit Vertrauen. Bezahlte Hilfe kann trotzdem nützlich sein, wenn jemand dein Paket prüft und den Prozess in Bewegung hält.",
       priceNote:
-        "Eigenregie: sehr geringe Kosten. Bezahlter Service: mehrere hundert Dollar. Empfehlung: spare das Geld, außer Bequemlichkeit ist dir wichtig.",
+        "Eigenregie: sehr geringe Kosten. Bezahlte Hilfe: mehrere hundert Dollar. Wert: Bequemlichkeit, Dokumentenorganisation und Sicherheit.",
     },
     {
       tone: "yellow",
       status: "Gelber Fall",
-      title: "Vielleicht lohnt eine Dokumentenprüfung",
-      body: "Es kann ein lösbares Problem geben, aber wahrscheinlich noch keinen Grund für ein teures Vollpaket.",
+      title: "Klarheit vor dem Termin",
+      body: "Kleine Abweichungen oder fehlende Unterlagen sind Fälle, in denen bezahlte Hilfe Mehrwert schafft, indem sie die genaue Korrektur vor dem Termin erkennt.",
       examplesTitle: "Das bedeutet meistens:",
       examples: [
         "Du hast nur eine Kurzform der Geburtsurkunde",
@@ -7991,15 +8002,15 @@ DNEXPRESS_POSTS.de = {
         "Du bist unsicher, ob die Dokumente exakt übereinstimmen",
       ],
       bestMove:
-        "Bester Schritt: Kläre oder korrigiere das Dokumentenproblem vor dem Konsulatstermin. Eine günstige Prüfung kann nützlich sein, aber zahle nicht zu früh für ein großes Paket.",
+        "Bester Schritt: Nutze bezahlte Hilfe für eine gezielte Dokumentenprüfung oder einen Korrekturplan, bevor du den Konsulatstermin buchst.",
       priceNote:
-        "Eigenregie: niedrig bis moderat. Bezahlte Prüfung: möglicherweise sinnvoll. Empfehlung: zahle für Klarheit, nicht zu früh für ein Vollpaket.",
+        "Eigenregie: niedrig bis moderat. Bezahlte Prüfung: moderat. Wert: Klarheit, weniger Überraschungen beim Termin und ein saubererer Dokumentenplan.",
     },
     {
       tone: "red",
       status: "Roter Fall",
-      title: "Bezahlte Hilfe kann sich lohnen",
-      body: "Hier kann ein Service wirklich Wert bringen, aber nur wenn er das konkrete Problem löst, das deine Registrierung blockiert.",
+      title: "Unterstützung bei Problemlösung",
+      body: "Komplexe Blocker sind dort, wo bezahlte Hilfe den stärksten Mehrwert bringen kann, besonders wenn sie den konkreten Eintrag korrigieren oder Schritte in Mexiko koordinieren kann.",
       examplesTitle: "Das bedeutet meistens:",
       examples: [
         "Ein Elternteil ist verstorben, abwesend oder nicht bereit zu erscheinen",
@@ -8011,14 +8022,14 @@ DNEXPRESS_POSTS.de = {
         "Das Konsulat sagt, der Fall müsse in Mexiko bearbeitet werden",
       ],
       bestMove:
-        "Bester Schritt: Zahle nicht einfach für Staatsangehörigkeitshilfe. Frage genau, welcher Eintrag falsch ist, wer ihn wo korrigiert und was passiert, wenn das Konsulat ablehnt.",
+        "Bester Schritt: Frage genau, welcher Eintrag korrigiert wird, wer ihn wo korrigiert und wie Rückmeldungen des Konsulats behandelt werden.",
       priceNote:
-        "Eigenregie: unvorhersehbar. Bezahlte/rechtliche Hilfe: potenziell sinnvoll. Empfehlung: nur erwägen, wenn sie den echten Blocker löst.",
+        "Eigenregie: unvorhersehbar. Bezahlte/rechtliche Hilfe: höher. Wert: gezielte Korrekturen, Koordination in Mexiko und ein Weg durch echte Blocker.",
     },
   ],
-  closingTitle: "Wofür zahlst du wirklich?",
+  closingTitle: "Wofür bezahlte Hilfe wirklich da ist",
   closing:
-    "Du kaufst keine mexikanische Staatsangehörigkeit. Wenn du über einen mexikanischen Elternteil qualifizierst, bist du möglicherweise bereits durch Geburt mexikanisch. Du zahlst für Hilfe, das zu beweisen.",
+    "Bezahlte Hilfe schafft keine Staatsangehörigkeit. Sie hilft dir, den Weg, für den du möglicherweise bereits qualifizierst, durch Unterlagenprüfung, Korrekturstrategie und Terminvorbereitung zu belegen.",
   officialChecklistTitle: "Offizielle Dokumentencheckliste",
   officialChecklistIntro:
     "Für einen sauberen Fall einer in den USA geborenen Person mit mexikanischem Elternteil sind dies übliche Dokumente vor der Terminbuchung. Konsulate können variieren.",
@@ -8034,11 +8045,11 @@ DNEXPRESS_POSTS.de = {
   primaryCta: "Meinen Staatsangehörigkeitsfragebogen starten",
   secondaryCta: "Offizielle Dokumentencheckliste anzeigen",
   secondaryCtaHide: "Offizielle Dokumentencheckliste ausblenden",
-  stickyTakeaway: "Zahle für Problemlösung, nicht für Staatsangehörigkeit.",
+  stickyTakeaway: "Zahle für Klarheit, Vorbereitung und Problemlösung.",
 };
 
-const getDNExpressPost = (language) =>
-  DNEXPRESS_POSTS[normalizeSupportLanguage(language)] || DNEXPRESS_POSTS.en;
+const getPaidHelpPost = (language) =>
+  PAID_HELP_POSTS[normalizeSupportLanguage(language)] || PAID_HELP_POSTS.en;
 
 const OptionButton = ({ option, selected, onClick }) => (
   <Button
@@ -8817,7 +8828,7 @@ const CitizenshipIntro = ({
   );
 };
 
-const WORTH_IT_TONE_STYLES = {
+const PAID_HELP_CASE_TONE_STYLES = {
   green: {
     color: "#0f766e",
     bg: "rgba(15, 118, 110, 0.08)",
@@ -8835,7 +8846,7 @@ const WORTH_IT_TONE_STYLES = {
   },
 };
 
-const WORTH_IT_CASE_COSTS = {
+const PAID_HELP_CASE_COSTS = {
   en: {
     green: {
       summary: "$0-$75 before passport DIY / $200-$400+ paid help",
@@ -9023,14 +9034,121 @@ const WORTH_IT_CASE_COSTS = {
   },
 };
 
-const getWorthItCaseCost = (language, tone) => {
+const getPaidHelpCaseCost = (language, tone) => {
   const normalizedLanguage = normalizeSupportLanguage(language);
   return (
-    WORTH_IT_CASE_COSTS[normalizedLanguage]?.[tone] ||
-    WORTH_IT_CASE_COSTS.en[tone] ||
-    WORTH_IT_CASE_COSTS.en.green
+    PAID_HELP_CASE_COSTS[normalizedLanguage]?.[tone] ||
+    PAID_HELP_CASE_COSTS.en[tone] ||
+    PAID_HELP_CASE_COSTS.en.green
   );
 };
+
+const POST_QUESTIONNAIRE_RESOURCE_SECTIONS = {
+  en: {
+    paidHelpTitle: "Want paid help with your case?",
+    paidHelpBody:
+      "DubMex is a small family-run business that helps people organize and work through Mexican citizenship document problems. They are not affiliated with this platform.",
+    paidHelpCta: "Get help with citizenship",
+    supportTitle: "Support this free platform",
+    supportBody:
+      "If this checklist helped you, support Notes And Other Stuff on Patreon. Subscribers get full access to our education apps and subscriber content while helping us keep improving the citizenship guide.",
+    supportCta: "Subscribe",
+  },
+  es: {
+    paidHelpTitle: "¿Quieres ayuda pagada con tu caso?",
+    paidHelpBody:
+      "DubMex es un pequeño negocio familiar que ayuda a organizar y resolver problemas de documentos para ciudadanía mexicana. No están afiliados con esta plataforma.",
+    paidHelpCta: "Obtener ayuda con ciudadanía",
+    supportTitle: "Apoya esta plataforma gratuita",
+    supportBody:
+      "Si esta lista te ayudó, apoya a Notes And Other Stuff en Patreon. Las personas suscritas obtienen acceso completo a nuestras apps educativas y contenido para suscriptores mientras nos ayudan a seguir mejorando la guía de ciudadanía.",
+    supportCta: "Suscribirse",
+  },
+  pt: {
+    paidHelpTitle: "Quer ajuda paga com o seu caso?",
+    paidHelpBody:
+      "A DubMex é uma pequena empresa familiar que ajuda pessoas a organizar e resolver problemas de documentos para cidadania mexicana. Eles não são afiliados a esta plataforma.",
+    paidHelpCta: "Obter ajuda com cidadania",
+    supportTitle: "Apoie esta plataforma gratuita",
+    supportBody:
+      "Se este checklist ajudou você, apoie o Notes And Other Stuff no Patreon. Assinantes têm acesso completo aos nossos apps educacionais e conteúdo para assinantes enquanto nos ajudam a continuar melhorando o guia de cidadania.",
+    supportCta: "Assinar",
+  },
+  it: {
+    paidHelpTitle: "Vuoi aiuto pagato per il tuo caso?",
+    paidHelpBody:
+      "DubMex è una piccola attività familiare che aiuta a organizzare e risolvere problemi di documenti per la cittadinanza messicana. Non è affiliata a questa piattaforma.",
+    paidHelpCta: "Ricevi aiuto per la cittadinanza",
+    supportTitle: "Sostieni questa piattaforma gratuita",
+    supportBody:
+      "Se questa checklist ti ha aiutato, sostieni Notes And Other Stuff su Patreon. Gli abbonati ricevono accesso completo alle nostre app educative e ai contenuti per abbonati mentre ci aiutano a migliorare la guida alla cittadinanza.",
+    supportCta: "Abbonati",
+  },
+  fr: {
+    paidHelpTitle: "Vous voulez une aide payante pour votre dossier?",
+    paidHelpBody:
+      "DubMex est une petite entreprise familiale qui aide à organiser et résoudre les problèmes de documents pour la citoyenneté mexicaine. Elle n'est pas affiliée à cette plateforme.",
+    paidHelpCta: "Obtenir de l'aide pour la citoyenneté",
+    supportTitle: "Soutenir cette plateforme gratuite",
+    supportBody:
+      "Si cette checklist vous a aidé, soutenez Notes And Other Stuff sur Patreon. Les abonnés obtiennent un accès complet à nos apps éducatives et au contenu réservé aux abonnés tout en nous aidant à améliorer le guide de citoyenneté.",
+    supportCta: "S'abonner",
+  },
+  ja: {
+    paidHelpTitle: "有料サポートが必要ですか？",
+    paidHelpBody:
+      "DubMexは、メキシコ国籍の書類問題の整理と解決を支援する小さな家族経営の事業です。このプラットフォームとは提携していません。",
+    paidHelpCta: "国籍手続きの支援を受ける",
+    supportTitle: "この無料プラットフォームを支援",
+    supportBody:
+      "このチェックリストが役立った場合は、PatreonでNotes And Other Stuffを支援できます。登録者は教育アプリと登録者向けコンテンツをフル利用でき、国籍ガイドの改善も支えられます。",
+    supportCta: "登録する",
+  },
+  hi: {
+    paidHelpTitle: "अपने मामले में भुगतान वाली मदद चाहिए?",
+    paidHelpBody:
+      "DubMex एक छोटा परिवार-चलित व्यवसाय है जो मैक्सिकन नागरिकता दस्तावेज़ समस्याओं को व्यवस्थित और हल करने में मदद करता है। वे इस प्लेटफ़ॉर्म से संबद्ध नहीं हैं।",
+    paidHelpCta: "नागरिकता में मदद लें",
+    supportTitle: "इस मुफ्त प्लेटफ़ॉर्म का समर्थन करें",
+    supportBody:
+      "अगर यह चेकलिस्ट आपके काम आई, तो Patreon पर Notes And Other Stuff का समर्थन करें। सब्सक्राइबर हमारे शिक्षा ऐप्स और सब्सक्राइबर सामग्री का पूरा एक्सेस पाते हैं और नागरिकता गाइड को बेहतर बनाने में मदद करते हैं।",
+    supportCta: "सदस्यता लें",
+  },
+  ar: {
+    paidHelpTitle: "هل تريد مساعدة مدفوعة في حالتك؟",
+    paidHelpBody:
+      "DubMex مشروع عائلي صغير يساعد الناس على تنظيم وحل مشكلات وثائق الجنسية المكسيكية. ليست لديهم علاقة تابعة بهذه المنصة.",
+    paidHelpCta: "احصل على مساعدة في الجنسية",
+    supportTitle: "ادعم هذه المنصة المجانية",
+    supportBody:
+      "إذا ساعدتك هذه القائمة، ادعم Notes And Other Stuff على Patreon. يحصل المشتركون على وصول كامل إلى تطبيقاتنا التعليمية ومحتوى المشتركين، ويساعدوننا في تحسين دليل الجنسية.",
+    supportCta: "اشترك",
+  },
+  zh: {
+    paidHelpTitle: "想为你的案件获得付费帮助吗？",
+    paidHelpBody:
+      "DubMex 是一家小型家族经营企业，帮助人们整理并处理墨西哥国籍文件问题。他们与本平台没有关联。",
+    paidHelpCta: "获取国籍帮助",
+    supportTitle: "支持这个免费平台",
+    supportBody:
+      "如果这份清单帮到了你，可以在 Patreon 支持 Notes And Other Stuff。订阅者可完整使用我们的教育应用和订阅者内容，同时帮助我们继续改进国籍指南。",
+    supportCta: "订阅",
+  },
+  de: {
+    paidHelpTitle: "Möchtest du bezahlte Hilfe für deinen Fall?",
+    paidHelpBody:
+      "DubMex ist ein kleines familiengeführtes Unternehmen, das Menschen hilft, Dokumentenprobleme zur mexikanischen Staatsangehörigkeit zu ordnen und zu lösen. Es ist nicht mit dieser Plattform verbunden.",
+    paidHelpCta: "Hilfe zur Staatsangehörigkeit erhalten",
+    supportTitle: "Diese kostenlose Plattform unterstützen",
+    supportBody:
+      "Wenn dir diese Checkliste geholfen hat, unterstütze Notes And Other Stuff auf Patreon. Abonnenten erhalten vollen Zugriff auf unsere Bildungsapps und Inhalte für Abonnenten und helfen uns, den Staatsangehörigkeitsguide weiter zu verbessern.",
+    supportCta: "Abonnieren",
+  },
+};
+
+const getPostQuestionnaireResourceSections = (language) =>
+  POST_QUESTIONNAIRE_RESOURCE_SECTIONS[normalizeSupportLanguage(language)] ||
+  POST_QUESTIONNAIRE_RESOURCE_SECTIONS.en;
 
 const DualCitizenshipBenefitsScene = ({
   language,
@@ -9081,7 +9199,6 @@ const DualCitizenshipBenefitsScene = ({
         p={{ base: 4, md: 5 }}
       >
         <HStack spacing={2} mb={4} align="center">
-          <Icon as={Sparkles} boxSize="18px" color="#0f766e" />
           <Text color="var(--app-text-primary)" fontWeight="800">
             {content.overallTitle}
           </Text>
@@ -9172,7 +9289,7 @@ const DualCitizenshipBenefitsScene = ({
   );
 };
 
-const DNExpressWorthItPrimer = ({
+const PaidHelpValuePrimer = ({
   language,
   onBackToBenefits,
   onStartQuestions,
@@ -9180,7 +9297,7 @@ const DNExpressWorthItPrimer = ({
   onSelectSound,
   onSubmitSound,
 }) => {
-  const post = getDNExpressPost(language);
+  const post = getPaidHelpPost(language);
   const benefitsContent = getDualCitizenshipBenefits(language);
   const [openCaseIndexes, setOpenCaseIndexes] = useState([]);
 
@@ -9212,16 +9329,44 @@ const DNExpressWorthItPrimer = ({
           size="lg"
           letterSpacing="0"
           color="var(--app-text-primary)"
-          mb={3}
+          mb={1}
         >
           {post.title}
         </Heading>
+        <Text color="#0f766e" fontSize="sm" fontWeight="800" mb={3}>
+          {post.freeSubheader}
+        </Text>
         <Text
           color="var(--app-text-secondary)"
           fontSize={{ base: "md", md: "lg" }}
         >
           {post.subtitle}
         </Text>
+      </Box>
+
+      <Box
+        border="1px solid"
+        borderColor="rgba(15, 118, 110, 0.24)"
+        borderRadius="8px"
+        bg="rgba(15, 118, 110, 0.07)"
+        p={{ base: 4, md: 5 }}
+      >
+        <HStack spacing={2} mb={3} align="center">
+          <Text color="var(--app-text-primary)" fontWeight="800">
+            {post.stickyTakeaway}
+          </Text>
+        </HStack>
+        <Stack spacing={2}>
+          {post.intro.map((paragraph) => (
+            <Text
+              key={paragraph}
+              color="var(--app-text-secondary)"
+              fontSize="sm"
+            >
+              {paragraph}
+            </Text>
+          ))}
+        </Stack>
       </Box>
 
       <Text color="var(--app-text-muted)" fontSize="sm">
@@ -9254,8 +9399,9 @@ const DNExpressWorthItPrimer = ({
       >
         {post.cards.map((card) => {
           const tone =
-            WORTH_IT_TONE_STYLES[card.tone] || WORTH_IT_TONE_STYLES.green;
-          const cost = getWorthItCaseCost(language, card.tone);
+            PAID_HELP_CASE_TONE_STYLES[card.tone] ||
+            PAID_HELP_CASE_TONE_STYLES.green;
+          const cost = getPaidHelpCaseCost(language, card.tone);
           return (
             <AccordionItem
               key={card.status}
@@ -10912,6 +11058,95 @@ const ResultPanel = ({
   );
 };
 
+const PostQuestionnaireResources = ({ language, onSelectSound }) => {
+  const content = getPostQuestionnaireResourceSections(language);
+  const resources = [
+    {
+      title: content.paidHelpTitle,
+      body: content.paidHelpBody,
+      cta: content.paidHelpCta,
+      href: "https://dubmex.com",
+      icon: FaAddressCard,
+      iconBg: "rgba(15, 118, 110, 0.1)",
+      iconColor: "#0f766e",
+    },
+    {
+      title: content.supportTitle,
+      body: content.supportBody,
+      cta: content.supportCta,
+      href: "https://patreon.com/NotesAndOtherStuff",
+      icon: SiPatreon,
+      iconBg: "#111111",
+      iconColor: "white",
+    },
+  ];
+
+  return (
+    <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} my={3}>
+      {resources.map((resource) => (
+        <Box
+          key={resource.href}
+          border="1px solid"
+          borderColor="var(--app-border)"
+          borderRadius="8px"
+          bg="var(--app-surface)"
+          p={{ base: 4, md: 5 }}
+          textAlign="start"
+          display="flex"
+          flexDirection="column"
+          h="100%"
+        >
+          <HStack align="flex-start" spacing={3} mb={3}>
+            <Box
+              display="inline-flex"
+              alignItems="center"
+              justifyContent="center"
+              w="38px"
+              h="38px"
+              borderRadius="8px"
+              bg={resource.iconBg}
+              color={resource.iconColor}
+              flexShrink={0}
+            >
+              <Icon as={resource.icon} boxSize="20px" />
+            </Box>
+            <Box>
+              <Text color="var(--app-text-primary)" fontWeight="800">
+                {resource.title}
+              </Text>
+              <Text color="var(--app-text-secondary)" fontSize="sm" mt={1}>
+                {resource.body}
+              </Text>
+            </Box>
+          </HStack>
+          <Button
+            as="a"
+            href={resource.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            type="button"
+            variant="outline"
+            rightIcon={<Icon as={ExternalLink} boxSize="15px" />}
+            borderRadius="8px"
+            borderColor="var(--app-border)"
+            bg="var(--app-surface-elevated)"
+            color="var(--app-text-primary)"
+            boxShadow="none"
+            transform="none"
+            onClick={onSelectSound}
+            mt="auto"
+            alignSelf="flex-start"
+            _hover={{ bg: "var(--app-surface-muted)" }}
+            _active={{ boxShadow: "none", transform: "none" }}
+          >
+            {resource.cta}
+          </Button>
+        </Box>
+      ))}
+    </SimpleGrid>
+  );
+};
+
 const ChecklistPanel = ({
   evaluation,
   language,
@@ -12542,7 +12777,7 @@ export default function CitizenshipGuide() {
           ) : null}
 
           {showPrimer ? (
-            <DNExpressWorthItPrimer
+            <PaidHelpValuePrimer
               language={pageLanguage}
               onBackToBenefits={goBackToBenefits}
               onStartQuestions={startQuestions}
@@ -12762,7 +12997,7 @@ export default function CitizenshipGuide() {
                       bg="rgba(20, 184, 166, 0.1)"
                       borderColor="#14b8a6"
                       borderWidth="2px"
-                      color="#2dd4bf"
+                      color={isLightTheme ? "#0f766e" : "#2dd4bf"}
                       boxShadow="none"
                       transform="none"
                       fontWeight="800"
@@ -12773,7 +13008,7 @@ export default function CitizenshipGuide() {
                       _hover={{
                         bg: "rgba(20, 184, 166, 0.16)",
                         borderColor: "#2dd4bf",
-                        color: "#5eead4",
+                        color: isLightTheme ? "#0f766e" : "#5eead4",
                       }}
                       _active={{
                         bg: "rgba(20, 184, 166, 0.22)",
@@ -12891,6 +13126,10 @@ export default function CitizenshipGuide() {
                 language={pageLanguage}
                 locationAnswer={answers.handlingLocation}
                 onLocationChange={setHandlingLocation}
+                onSelectSound={playSelectSound}
+              />
+              <PostQuestionnaireResources
+                language={pageLanguage}
                 onSelectSound={playSelectSound}
               />
               <CitizenshipAssistantDrawer

@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -10,9 +16,8 @@ import {
   ModalBody,
   ModalContent,
   ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   ModalCloseButton,
+  ModalOverlay,
   Progress,
   Slider,
   SliderFilledTrack,
@@ -44,6 +49,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion.js";
+import { scheduleAfterNextPaint } from "../utils/afterPaint.js";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [100, 150, 200, 300];
@@ -525,6 +531,16 @@ export default function DailyGoalModal({
     [runResponsiveAction],
   );
 
+  const [bodyReady, setBodyReady] = useState(false);
+  useEffect(() => {
+    if (!isOpen) {
+      setBodyReady(false);
+      return undefined;
+    }
+
+    return scheduleAfterNextPaint(() => setBodyReady(true));
+  }, [isOpen]);
+
   // Lazy-mount the XP-activity heatmap AFTER the modal shell paints.
   // The heatmap is still ~371 DOM nodes + a scrollable grid; rendering
   // it on the same tick the modal opens is the last remaining cause of
@@ -532,25 +548,13 @@ export default function DailyGoalModal({
   // instantly, and the heatmap fills in immediately afterwards.
   const [heatmapReady, setHeatmapReady] = useState(false);
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !bodyReady) {
       setHeatmapReady(false);
       return undefined;
     }
-    if (typeof window === "undefined") {
-      setHeatmapReady(true);
-      return undefined;
-    }
-    let secondFrame = 0;
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        setHeatmapReady(true);
-      });
-    });
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      if (secondFrame) window.cancelAnimationFrame(secondFrame);
-    };
-  }, [isOpen]);
+
+    return scheduleAfterNextPaint(() => setHeatmapReady(true));
+  }, [bodyReady, isOpen]);
 
   // Reset field when modal re-opens or default changes
   useEffect(() => {
@@ -564,20 +568,6 @@ export default function DailyGoalModal({
     () => Math.max(1, Math.min(1000, Math.round(Number(goal) || 0))),
     [goal],
   );
-
-  // Pretty preview of “next reset” (local time)
-  const resetPreview = useMemo(() => {
-    const d = new Date(Date.now() + MS_24H);
-    const date = d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-    const time = d.toLocaleTimeString(undefined, {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${date} · ${time}`;
-  }, [isOpen]); // recompute on open
 
   const levelPct = Math.min(100, parsed); // % of one level (100 XP)
   const approxLevels = (parsed / 100).toFixed(parsed % 100 === 0 ? 0 : 1);
@@ -647,12 +637,26 @@ export default function DailyGoalModal({
       closeOnEsc={true}
       motionPreset="none"
       returnFocusOnClose={false}
+      trapFocus={false}
+      autoFocus={false}
+      useInert={false}
+      blockScrollOnMount={false}
+      preserveScrollBarGap={false}
+      lockFocusAcrossFrames={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
-        backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
-      />
+        bg={
+          useSharedBackdrop
+            ? "transparent"
+            : isLightTheme
+              ? APP_OVERLAY
+              : "blackAlpha.700"
+        }
+        backdropFilter={
+          useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
+        }
+      /> */}
 
       <ModalContent
         motionProps={nativeModalMotionProps}
@@ -715,133 +719,143 @@ export default function DailyGoalModal({
             },
           }}
         >
-          <VStack align="stretch" spacing={5}>
-            <DailyGoalPetPanel
-              lang={resolvedLang}
-              health={petHealth}
-              lastOutcome={petLastOutcome}
-              lastDelta={petLastDelta}
-              variant="setup"
-              showPreview={true}
-            />
-
-            {/* Quick presets */}
-            <Box>
-              <HStack spacing={2} wrap="wrap">
-                {PRESETS.map((v) => {
-                  const active = parsed === v;
-                  return (
-                    <Button
-                      key={v}
-                      size="sm"
-                      variant={
-                        isLightTheme ? "solid" : active ? "solid" : "outline"
-                      }
-                      bg={
-                        isLightTheme
-                          ? active
-                            ? "#3f9f9b"
-                            : APP_SURFACE_ELEVATED
-                          : undefined
-                      }
-                      color={
-                        isLightTheme
-                          ? active
-                            ? "white"
-                            : APP_TEXT_PRIMARY
-                          : undefined
-                      }
-                      border="1px solid"
-                      borderColor={
-                        isLightTheme
-                          ? active
-                            ? "rgba(63, 159, 155, 0.7)"
-                            : APP_BORDER
-                          : active
-                            ? "transparent"
-                            : undefined
-                      }
-                      boxShadow={
-                        isLightTheme && active
-                          ? "0 6px 0 rgba(36, 91, 89, 0.18)"
-                          : "none"
-                      }
-                      _hover={
-                        isLightTheme
-                          ? {
-                              bg: active ? "#398f8b" : APP_SURFACE_MUTED,
-                            }
-                          : undefined
-                      }
-                      colorScheme={isLightTheme ? undefined : "teal"}
-                      onClick={() => {
-                        playSound(selectSound);
-                        setGoal(String(v));
-                      }}
-                    >
-                      {v} XP
-                    </Button>
-                  );
-                })}
-              </HStack>
-            </Box>
-
-            {/* Simple text field (no steppers) */}
-            <FormControl>
-              <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
-                {ui.inputLabel || L.inputLabel}
-              </FormLabel>
-              <HStack spacing={3} align="center">
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min={1}
-                  max={1000}
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
-                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-                  borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-                  rounded="md"
-                  size="md"
-                  w="180px"
-                />
-                <Text color={isLightTheme ? APP_TEXT_SECONDARY : undefined}>
-                  {L.xpUnit}
-                </Text>
-              </HStack>
-              <Text
-                mt={2}
-                fontSize="xs"
-                color={isLightTheme ? APP_TEXT_MUTED : undefined}
-                opacity={isLightTheme ? 1 : 0.7}
-              >
-                {L.levelExplainer(levelPct, approxLevels)}
-              </Text>
-            </FormControl>
-
-            {heatmapReady ? (
-              <DailyGoalHeatmap
+          {bodyReady ? (
+            <VStack align="stretch" spacing={5}>
+              <DailyGoalPetPanel
                 lang={resolvedLang}
-                completedGoalDates={completedGoalDates}
-                dailyXpHistory={dailyXpHistory}
-                currentDailyXp={currentDailyXp}
-                currentGoalXp={currentGoalXp}
-                labels={heatmapLabels}
-                isLightTheme={isLightTheme}
+                health={petHealth}
+                lastOutcome={petLastOutcome}
+                lastDelta={petLastDelta}
+                variant="setup"
+                showPreview={true}
               />
-            ) : (
-              <Box
-                p={4}
-                borderRadius="xl"
-                bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
-                border="1px solid"
-                borderColor={isLightTheme ? APP_BORDER : "gray.700"}
-                minH={{ base: "150px", md: "170px" }}
-              />
-            )}
-          </VStack>
+
+              {/* Quick presets */}
+              <Box>
+                <HStack spacing={2} wrap="wrap">
+                  {PRESETS.map((v) => {
+                    const active = parsed === v;
+                    return (
+                      <Button
+                        key={v}
+                        size="sm"
+                        variant={
+                          isLightTheme ? "solid" : active ? "solid" : "outline"
+                        }
+                        bg={
+                          isLightTheme
+                            ? active
+                              ? "#3f9f9b"
+                              : APP_SURFACE_ELEVATED
+                            : undefined
+                        }
+                        color={
+                          isLightTheme
+                            ? active
+                              ? "white"
+                              : APP_TEXT_PRIMARY
+                            : undefined
+                        }
+                        border="1px solid"
+                        borderColor={
+                          isLightTheme
+                            ? active
+                              ? "rgba(63, 159, 155, 0.7)"
+                              : APP_BORDER
+                            : active
+                              ? "transparent"
+                              : undefined
+                        }
+                        boxShadow={
+                          isLightTheme && active
+                            ? "0 6px 0 rgba(36, 91, 89, 0.18)"
+                            : "none"
+                        }
+                        _hover={
+                          isLightTheme
+                            ? {
+                                bg: active ? "#398f8b" : APP_SURFACE_MUTED,
+                              }
+                            : undefined
+                        }
+                        colorScheme={isLightTheme ? undefined : "teal"}
+                        onClick={() => {
+                          playSound(selectSound);
+                          setGoal(String(v));
+                        }}
+                      >
+                        {v} XP
+                      </Button>
+                    );
+                  })}
+                </HStack>
+              </Box>
+
+              {/* Simple text field (no steppers) */}
+              <FormControl>
+                <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+                  {ui.inputLabel || L.inputLabel}
+                </FormLabel>
+                <HStack spacing={3} align="center">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min={1}
+                    max={1000}
+                    value={goal}
+                    onChange={(e) => setGoal(e.target.value)}
+                    bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.800"}
+                    color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                    borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
+                    rounded="md"
+                    size="md"
+                    w="180px"
+                  />
+                  <Text color={isLightTheme ? APP_TEXT_SECONDARY : undefined}>
+                    {L.xpUnit}
+                  </Text>
+                </HStack>
+                <Text
+                  mt={2}
+                  fontSize="xs"
+                  color={isLightTheme ? APP_TEXT_MUTED : undefined}
+                  opacity={isLightTheme ? 1 : 0.7}
+                >
+                  {L.levelExplainer(levelPct, approxLevels)}
+                </Text>
+              </FormControl>
+
+              {heatmapReady ? (
+                <DailyGoalHeatmap
+                  lang={resolvedLang}
+                  completedGoalDates={completedGoalDates}
+                  dailyXpHistory={dailyXpHistory}
+                  currentDailyXp={currentDailyXp}
+                  currentGoalXp={currentGoalXp}
+                  labels={heatmapLabels}
+                  isLightTheme={isLightTheme}
+                />
+              ) : (
+                <Box
+                  p={4}
+                  borderRadius="xl"
+                  bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
+                  border="1px solid"
+                  borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+                  minH={{ base: "150px", md: "170px" }}
+                />
+              )}
+            </VStack>
+          ) : (
+            <Box
+              minH={{ base: "430px", md: "500px" }}
+              borderRadius="xl"
+              bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+            />
+          )}
         </ModalBody>
         {/* Footer */}
         <ModalFooter
@@ -851,24 +865,21 @@ export default function DailyGoalModal({
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
-            <Button
-              variant={"ghost"}
-              color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-              {...getActionPressProps("daily-goal-close", handleClose)}
-            >
-              {t?.daily_goal_close || t?.teams_drawer_close || t?.app_close || "Close"}
-            </Button>
-            <Button
-              colorScheme={isLightTheme ? undefined : "teal"}
-              bg={isLightTheme ? "#3f9f9b" : undefined}
-              color={isLightTheme ? "white" : undefined}
-              _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
-              {...getActionPressProps("daily-goal-save", save)}
-              isDisabled={!npub}
-              boxShadow={"0px 4px 0px teal"}
-            >
-              {ui.save || L.save}
-            </Button>
+            {bodyReady ? (
+              <Button
+                colorScheme={isLightTheme ? undefined : "teal"}
+                bg={isLightTheme ? "#3f9f9b" : undefined}
+                color={isLightTheme ? "white" : undefined}
+                _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+                {...getActionPressProps("daily-goal-save", save)}
+                isDisabled={!npub}
+                boxShadow={"0px 4px 0px teal"}
+              >
+                {ui.save || L.save}
+              </Button>
+            ) : (
+              <Box h="40px" />
+            )}
           </HStack>
         </ModalFooter>
       </ModalContent>

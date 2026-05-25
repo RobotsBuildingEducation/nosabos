@@ -1,3 +1,5 @@
+import { appCheckFetch } from "../firebaseResources/firebaseResources";
+
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
 const REALTIME_URL =
@@ -71,10 +73,12 @@ export const TTS_VOICE_OPTIONS = [
 
 // Array version for random selection
 const TTS_VOICES_ARRAY = Array.from(SUPPORTED_TTS_VOICES);
+const RANDOM_DEFAULT_TTS_VOICE_KEY = "nosabos:realtime-mini-default-voice";
+let randomDefaultTTSVoice = null;
 
 /**
  * Returns a randomly selected voice from the available TTS voices.
- * This provides variety in voice playback for a more diverse experience.
+ * Use this only when a truly fresh random voice is needed.
  */
 export function getRandomVoice() {
   const index = Math.floor(Math.random() * TTS_VOICES_ARRAY.length);
@@ -126,23 +130,44 @@ export function normalizeTTSVoice(voice) {
   return sanitizeVoice(voice);
 }
 
-function getStoredTTSVoicePreference() {
-  if (typeof window === "undefined") return "";
+function getRandomDefaultTTSVoice() {
+  if (randomDefaultTTSVoice) return randomDefaultTTSVoice;
+
   try {
-    const raw = window.localStorage?.getItem("progress");
-    if (!raw) return "";
-    const parsed = JSON.parse(raw);
-    return SUPPORTED_TTS_VOICES.has(parsed?.voice) ? parsed.voice : "";
+    const storedVoice =
+      typeof window !== "undefined"
+        ? window.localStorage?.getItem(RANDOM_DEFAULT_TTS_VOICE_KEY)
+        : null;
+    if (SUPPORTED_TTS_VOICES.has(storedVoice)) {
+      randomDefaultTTSVoice = storedVoice;
+      return randomDefaultTTSVoice;
+    }
   } catch {
-    return "";
+    // Local storage may be blocked; fall back to an in-memory default.
   }
+
+  randomDefaultTTSVoice = getRandomVoice();
+
+  try {
+    if (typeof window !== "undefined") {
+      window.localStorage?.setItem(
+        RANDOM_DEFAULT_TTS_VOICE_KEY,
+        randomDefaultTTSVoice,
+      );
+    }
+  } catch {
+    // Cache stability is best-effort when storage is unavailable.
+  }
+
+  return randomDefaultTTSVoice;
 }
 
 export function getPreferredTTSVoice(...candidates) {
   for (const voice of candidates) {
     if (SUPPORTED_TTS_VOICES.has(voice)) return voice;
   }
-  return getStoredTTSVoicePreference() || DEFAULT_TTS_VOICE;
+  // Pick once so realtime-mini TTS can reuse cache entries across replays.
+  return getRandomDefaultTTSVoice();
 }
 
 export function getTTSVoiceOption(voice) {
@@ -183,7 +208,7 @@ export function warmRealtimeTTS({ force = false } = {}) {
   }
 
   lastRealtimeWarmupAt = now;
-  realtimeWarmupPromise = fetch(REALTIME_URL, {
+  realtimeWarmupPromise = appCheckFetch(REALTIME_URL, {
     method: "OPTIONS",
     mode: "cors",
     cache: "no-store",
@@ -869,6 +894,9 @@ async function getRealtimePlayer({
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (msg.type === "error") {
+        console.warn("Realtime TTS error:", msg.error?.message || msg.error);
+      }
       // Wait for live playback to actually settle before cleaning up.
       if (msg.type === "response.done") {
         responseDone = true;
@@ -890,13 +918,20 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
-            output_audio_format: "pcm16",
-            voice: sanitizedVoice,
+            type: "realtime",
+            output_modalities: ["audio"],
             instructions: personality
               ? `You are ${personality}, speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim, but in the voice and tone of your character. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided with your character's vocal qualities.`
               : `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
-            turn_detection: null,
+            audio: {
+              input: {
+                turn_detection: null,
+              },
+              output: {
+                format: { type: "audio/pcm", rate: 24000 },
+                voice: sanitizedVoice,
+              },
+            },
           },
         }),
       );
@@ -920,7 +955,7 @@ async function getRealtimePlayer({
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
+            output_modalities: ["audio"],
           },
         }),
       );
@@ -931,7 +966,7 @@ async function getRealtimePlayer({
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  const resp = await fetch(REALTIME_URL, {
+  const resp = await appCheckFetch(REALTIME_URL, {
     method: "POST",
     headers: { "Content-Type": "application/sdp" },
     body: offer.sdp,

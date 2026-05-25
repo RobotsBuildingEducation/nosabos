@@ -48,6 +48,7 @@ import ConversationAccountDrawer from "./ConversationAccountDrawer";
 
 import { doc, setDoc, getDoc, increment, updateDoc } from "firebase/firestore";
 import {
+  appCheckFetch,
   database,
   analytics,
   simplemodel,
@@ -77,11 +78,13 @@ import {
 } from "../utils/softStopButton";
 import { DEFAULT_TTS_VOICE, getPreferredTTSVoice } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import { getAdultBeginnerToneRule } from "../utils/adultBeginnerTone";
 import {
   getRandomSkillTreeTopics,
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
+import useModalStore from "../hooks/useModalStore";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 import XpProgressHeader from "./XpProgressHeader";
@@ -1003,6 +1006,7 @@ export default function Conversations({
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
   maxProficiencyLevel = "A1",
+  isActive = true,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -1020,8 +1024,9 @@ export default function Conversations({
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, []);
+  }, [isActive]);
 
   // Refs for realtime
   const audioRef = useRef(null);
@@ -1065,13 +1070,7 @@ export default function Conversations({
   const [translatingMessageId, setTranslatingMessageId] = useState(null);
 
   // Learning prefs
-  const [voice, setVoice] = useState(
-    getPreferredTTSVoice(user?.progress?.voice),
-  );
-  const [voicePersona, setVoicePersona] = useState(
-    user?.progress?.voicePersona ||
-      translations.en.onboarding_persona_default_example,
-  );
+  const [voice] = useState(() => getPreferredTTSVoice());
   const [showTranslations, setShowTranslations] = useState(
     user?.progress?.showTranslations !== false,
   );
@@ -1086,20 +1085,18 @@ export default function Conversations({
   const conversationSubjectsDraftRef = useRef(null);
   const conversationSubjectsClearTimerRef = useRef(null);
 
-  // Settings drawer
-  const {
-    isOpen: isSettingsOpen,
-    onOpen: openSettings,
-    onClose: closeSettings,
-  } = useDisclosure();
+  // Settings drawer (open/close lives in useModalStore so the drawer can open
+  // without re-running this 3,400-line Conversations component).
+  const openSettings = useModalStore((s) => s.openConversationSettings);
+  const closeSettings = useModalStore((s) => s.closeConversationSettings);
   const {
     isOpen: isTranscriptOpen,
     onOpen: openTranscript,
     onClose: closeTranscript,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
-    playSound(selectSound);
     openSettings();
+    void playSound(selectSound);
   }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
     if (typeof window === "undefined") return;
@@ -1108,7 +1105,6 @@ export default function Conversations({
 
   // Live refs
   const voiceRef = useRef(voice);
-  const voicePersonaRef = useRef(voicePersona);
   const targetLangRef = useRef(targetLang);
   const supportLangRef = useRef(supportLang);
   const pauseMsRef = useRef(pauseMs);
@@ -1117,9 +1113,6 @@ export default function Conversations({
   useEffect(() => {
     voiceRef.current = voice;
   }, [voice]);
-  useEffect(() => {
-    voicePersonaRef.current = voicePersona;
-  }, [voicePersona]);
   useEffect(() => {
     targetLangRef.current = targetLang;
   }, [targetLang]);
@@ -1248,7 +1241,7 @@ export default function Conversations({
 
       const levelDescription =
         selectedLevel === "Pre-A1"
-          ? "foundations - use only the most basic words and single-word responses"
+          ? "foundations - use very basic vocabulary in natural memorized phrases"
           : selectedLevel === "A1"
             ? "absolute beginner - use very simple vocabulary and short sentences"
             : selectedLevel === "A2"
@@ -1277,6 +1270,7 @@ Generate ONE clear, specific conversation topic that:
 3. Can be either based on the curriculum topics above, the user's custom interests, OR a creative topic you think would be engaging
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
+6. For Pre-A1/A1, simple does not mean childish: prefer adult-realistic situations over kid-coded topics.
 
 Examples of good topics:
 - "Describe your morning routine" (A1)
@@ -1728,10 +1722,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
-          if (data.progress?.voice)
-            setVoice(getPreferredTTSVoice(data.progress.voice));
-          if (data.progress?.voicePersona)
-            setVoicePersona(data.progress.voicePersona);
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
@@ -1782,8 +1772,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Scroll to top on mount
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [isActive]);
 
   /* ---------------------------
      Stream flushing
@@ -1862,7 +1853,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
+      const resp = await appCheckFetch(REALTIME_URL, {
         method: "POST",
         headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,
@@ -1896,7 +1887,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: buildRealtimeVadSession(null),
           }),
         );
       }
@@ -1979,7 +1970,6 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
-    const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const tLang = targetLangRef.current;
     const currentSettings = conversationSettingsRef.current;
     const selectedLevel =
@@ -2034,11 +2024,16 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
+    const preA1ExampleHint =
+      tLang === "es"
+        ? " Good shapes: 'Estoy bien. ¿Y tú?' 'Me llamo Ana.' 'Me gusta azul.' Bad shape: 'Bien. Muy bien. ¿Tú? ¿Bien?'"
+        : " Good shape: a short complete answer plus one simple follow-up. Bad shape: repeating the same basic word several times.";
+
     // Proficiency level guidance
     const levelGuidance = {
       "Pre-A1":
-        "CRITICAL: User is at foundations level (Pre-A1). Use ONLY the most basic words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Use 1-3 word phrases ONLY. Speak extremely slowly. Use single words when possible. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
-      A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
+        `CRITICAL: User is at foundations level (Pre-A1). Use ONLY very basic high-frequency language, but speak in natural memorized micro-sentences, not word fragments. Use one or two short complete phrases per turn, usually 3-8 words each. Present tense and formula chunks only. Speak slowly.${preA1ExampleHint}`,
+      A1: "CRITICAL: User is a beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Keep the register natural and adult. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
       A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
       B2: "CRITICAL: User is upper intermediate (B2). Use more complex vocabulary and abstract concepts. Can use longer sentences with subordinate clauses. Can use subjunctive mood occasionally. Can discuss hypotheticals.",
@@ -2047,10 +2042,14 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     };
 
     const proficiencyHint = levelGuidance[selectedLevel] || levelGuidance.A1;
+    const adultBeginnerTone = getAdultBeginnerToneRule(
+      selectedLevel,
+      "conversation",
+    );
 
     // Pronunciation practice instructions
     const pronunciationInstructions = practicePronunciation
-      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Praise good pronunciation."
+      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Acknowledge clear pronunciation briefly."
       : "";
 
     // Custom subjects context
@@ -2062,12 +2061,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
       proficiencyHint,
+      adultBeginnerTone,
       pronunciationInstructions,
       customSubjectsContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
-      `PERSONA: ${persona}. Stay consistent with that tone/style.`,
-      "Be encouraging and help the learner practice speaking naturally.",
+      "Be supportive and help the learner practice speaking naturally.",
       "Ask follow-up questions to keep the conversation flowing.",
     ]
       .filter(Boolean)
@@ -2081,6 +2080,38 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       silence_duration_ms: pauseMsRef.current || 2000,
       threshold: 0.35,
       prefix_padding_ms: 120,
+    };
+  }
+
+  function buildRealtimeAudioSession({
+    instructions,
+    voice,
+    turnDetection,
+    transcription = false,
+  } = {}) {
+    const input = { turn_detection: turnDetection };
+    if (transcription) {
+      input.transcription = { model: "gpt-4o-mini-transcribe" };
+    }
+
+    const output = { format: { type: "audio/pcm", rate: 24000 } };
+    if (voice) output.voice = voice;
+
+    const session = {
+      type: "realtime",
+      output_modalities: ["audio"],
+      audio: { input, output },
+    };
+    if (instructions) session.instructions = instructions;
+    return session;
+  }
+
+  function buildRealtimeVadSession(turnDetection) {
+    return {
+      type: "realtime",
+      audio: {
+        input: { turn_detection: turnDetection },
+      },
     };
   }
 
@@ -2104,7 +2135,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildTurnDetectionConfig() },
+            session: buildRealtimeVadSession(buildTurnDetectionConfig()),
           }),
         );
       }
@@ -2122,14 +2153,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
+          session: buildRealtimeAudioSession({
             instructions,
-            modalities: ["audio", "text"],
             voice: voiceName,
-            turn_detection: buildTurnDetectionConfig(),
-            input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-            output_audio_format: "pcm16",
-          },
+            turnDetection: buildTurnDetectionConfig(),
+            transcription: true,
+          }),
         }),
       );
     } catch {}
@@ -2150,7 +2179,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: { turn_detection: null },
+          session: buildRealtimeVadSession(null),
         }),
       );
     } catch {}
@@ -2171,15 +2200,13 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       dcRef.current.send(
         JSON.stringify({
           type: "session.update",
-          session: {
-            turn_detection: {
-              type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 2000,
-              threshold: 0.35,
-              prefix_padding_ms: 120,
-              interrupt_response: false,
-            },
-          },
+          session: buildRealtimeVadSession({
+            type: "server_vad",
+            silence_duration_ms: pauseMsRef.current || 2000,
+            threshold: 0.35,
+            prefix_padding_ms: 120,
+            interrupt_response: false,
+          }),
         }),
       );
     } catch {}
@@ -2292,7 +2319,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         input: prompt,
       };
 
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -2320,22 +2347,22 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         // Set positive feedback
         const defaultSuccess =
           sLang === "es"
-            ? "¡Bien hecho! Completaste la meta."
+            ? "Meta completada."
             : sLang === "pt"
-              ? "Muito bem! Você concluiu a meta."
+              ? "Meta concluída."
               : sLang === "ar"
-                ? "أحسنت! أنهيت الهدف."
-              : sLang === "it"
-                ? "Ben fatto! Hai completato l'obiettivo."
-                : sLang === "fr"
-                  ? "Bravo ! Tu as atteint l'objectif."
-                  : sLang === "de"
-                    ? "Gut gemacht! Du hast das Ziel erreicht."
-                  : sLang === "ja"
-                  ? "よくできました！目標を達成しました。"
-                  : sLang === "hi"
-                    ? "बहुत बढ़िया! आपने लक्ष्य पूरा कर लिया।"
-            : "Great job! You completed the goal!";
+                ? "اكتمل الهدف."
+                : sLang === "it"
+                  ? "Obiettivo completato."
+                  : sLang === "fr"
+                    ? "Objectif atteint."
+                    : sLang === "de"
+                      ? "Ziel erreicht."
+                      : sLang === "ja"
+                        ? "目標を達成しました。"
+                        : sLang === "hi"
+                          ? "लक्ष्य पूरा हुआ।"
+                          : "Goal complete.";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
         // Generate contextual next goal
@@ -2403,7 +2430,7 @@ Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
         selectedLevel === "Pre-A1"
-          ? "foundations - single words and basic phrases only"
+          ? "foundations - very basic vocabulary in natural memorized phrases"
           : selectedLevel === "A1"
             ? "beginner - simple tasks"
             : selectedLevel === "A2"
@@ -2418,6 +2445,7 @@ The goal should be appropriate for ${selectedLevel} level (${
       }).
 
 IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
+For Pre-A1/A1, simple does not mean childish: use adult-realistic goals and neutral adult wording.
 
 Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)", "pt": "goal in Portuguese (max 15 words)", "it": "goal in Italian (max 15 words)", "fr": "goal in French (max 15 words)", "de": "goal in German (max 15 words)", "ja": "goal in Japanese (max 15 words)", "hi": "goal in Hindi (max 15 words)", "ar": "goal in Egyptian Arabic (max 15 words)", "zh": "goal in Mandarin Chinese (max 15 words)"}`;
 
@@ -2427,7 +2455,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         input: prompt,
       };
 
-      const r = await fetch(RESPONSES_URL, {
+      const r = await appCheckFetch(RESPONSES_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -2529,6 +2557,22 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
   /* ---------------------------
      Realtime event handler
   --------------------------- */
+  function extractResponseOutputText(response) {
+    const output = Array.isArray(response?.output) ? response.output : [];
+    return output
+      .flatMap((item) => (Array.isArray(item?.content) ? item.content : []))
+      .map((part) =>
+        typeof part?.transcript === "string"
+          ? part.transcript
+          : typeof part?.text === "string"
+            ? part.text
+            : "",
+      )
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+  }
+
   async function handleRealtimeEvent(evt) {
     if (!aliveRef.current) return;
     let data;
@@ -2553,11 +2597,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       return;
     }
 
-    if (
-      t === "response.output_audio.done" ||
-      t === "output_audio.done" ||
-      t === "output_audio_buffer.stopped"
-    ) {
+    if (t === "response.output_audio.done" || t === "output_audio.done") {
+      return;
+    }
+
+    if (t === "output_audio_buffer.stopped") {
       enableVAD();
       setAssistantInputLocked(false);
       setUiState(status === "connected" ? "listening" : "idle");
@@ -2593,9 +2637,9 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
     if (
       (t === "conversation.item.input_audio_transcription.completed" ||
         t === "input_audio_transcription.completed") &&
-      data?.transcript
+      (data?.transcript || data?.text)
     ) {
-      const text = (data.transcript || "").trim();
+      const text = (data.transcript || data.text || "").trim();
       if (text) {
         const now = Date.now();
         if (
@@ -2644,6 +2688,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (
       (t === "response.audio_transcript.delta" ||
+        t === "response.output_audio_transcript.delta" ||
         t === "response.output_text.delta" ||
         t === "response.text.delta") &&
       typeof data?.delta === "string"
@@ -2657,10 +2702,12 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
     if (
       (t === "response.audio_transcript.done" ||
+        t === "response.output_audio_transcript.done" ||
         t === "response.output_text.done" ||
         t === "response.text.done") &&
-      typeof data?.text === "string"
+      typeof (data?.transcript || data?.text) === "string"
     ) {
+      const finalText = data.transcript || data.text || "";
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
@@ -2672,7 +2719,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       }
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: ((m.textFinal || "").trim() + " " + finalText).trim(),
         textStream: "",
       }));
       return;
@@ -2701,6 +2748,16 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
             textStream: "",
             textFinal: ((m.textFinal || "") + " " + buf).trim(),
           }));
+        }
+        const finalResponseText = extractResponseOutputText(data?.response);
+        if (finalResponseText) {
+          updateMessage(mid, (m) => {
+            const existingText = `${m.textFinal || ""} ${m.textStream || ""}`
+              .trim()
+              .replace(/\s+/g, " ");
+            if (existingText) return m;
+            return { ...m, textFinal: finalResponseText, textStream: "" };
+          });
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
         logEvent(analytics, "conversation_turn", {
@@ -2802,7 +2859,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3289,9 +3346,11 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
 
       <ArchiveTextAnimation animation={archiveAnimation} />
 
-      {/* Conversation + Account Drawer */}
-      <ConversationAccountDrawer
-        isOpen={isSettingsOpen}
+      {/* Conversation + Account Drawer
+          Rendered via a tiny Gate that subscribes to useModalStore so the
+          drawer's open/close flip doesn't re-render the whole Conversations
+          component. */}
+      <ConversationAccountDrawerGate
         onClose={handleSettingsClose}
         appLanguage={uiLang}
         settings={conversationSettings}
@@ -3376,4 +3435,20 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       </Modal>
     </>
   );
+}
+
+// Subscribes to useModalStore for the conversation-settings drawer's isOpen
+// flag so the flip doesn't re-render the surrounding Conversations component.
+// All other props (settings data, callbacks) are passed through from the
+// parent unchanged.
+//
+// Lazy-mounts the drawer until first open so the heavy ConversationSettingsPanel
+// subtree doesn't sit in the React tree on every Conversations render before
+// the user has ever tapped Settings.
+function ConversationAccountDrawerGate(props) {
+  const isOpen = useModalStore((s) => s.conversationSettingsOpen);
+  const hasEverOpened = useRef(false);
+  if (isOpen) hasEverOpened.current = true;
+  if (!hasEverOpened.current) return null;
+  return <ConversationAccountDrawer isOpen={isOpen} {...props} />;
 }

@@ -147,8 +147,7 @@ const LINKS_PAPER_PAGE_SX = {
 
 const SUPPORT_LANGUAGE_FLAG_SWATCHES = {
   en: {
-    bg:
-      "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
+    bg: "linear-gradient(180deg, #b22234 0 7.7%, #fff 7.7% 15.4%, #b22234 15.4% 23.1%, #fff 23.1% 30.8%, #b22234 30.8% 38.5%, #fff 38.5% 46.2%, #b22234 46.2% 53.9%, #fff 53.9% 61.6%, #b22234 61.6% 69.3%, #fff 69.3% 77%, #b22234 77% 84.7%, #fff 84.7% 92.4%, #b22234 92.4% 100%)",
     canton: "#3c3b6e",
   },
   es: {
@@ -233,7 +232,8 @@ const getThemeModeToggleProps = (isLightTheme) => ({
 });
 
 const SupportLanguageFlagSwatch = ({ value }) => {
-  const flag = SUPPORT_LANGUAGE_FLAG_SWATCHES[value] || SUPPORT_LANGUAGE_FLAG_SWATCHES.en;
+  const flag =
+    SUPPORT_LANGUAGE_FLAG_SWATCHES[value] || SUPPORT_LANGUAGE_FLAG_SWATCHES.en;
 
   return (
     <Box
@@ -382,7 +382,9 @@ const LanguageFlagIcon = ({ option, value }) => {
         },
       }}
     >
-      {renderedFlag || <SupportLanguageFlagSwatch value={value || option?.value} />}
+      {renderedFlag || (
+        <SupportLanguageFlagSwatch value={value || option?.value} />
+      )}
     </Box>
   );
 };
@@ -481,10 +483,7 @@ const LanguageMenuFixed = ({
                 fontSize="sm"
                 fontFamily="monospace"
               >
-                <HStack
-                  spacing={2}
-                  justify="flex-start"
-                >
+                <HStack spacing={2} justify="flex-start">
                   <LanguageFlagIcon option={opt} value={opt.value} />
                   <Text
                     color={APP_TEXT_PRIMARY}
@@ -583,14 +582,7 @@ function RetroStarfield({ isLightTheme = false }) {
     const starArray = [];
     // Neon 80s colors
     const colors = isLightTheme
-      ? [
-          "#0f766e",
-          "#1d4ed8",
-          "#db2777",
-          "#a16207",
-          "#ffffff",
-          "#7c3aed",
-        ]
+      ? ["#0f766e", "#1d4ed8", "#db2777", "#a16207", "#ffffff", "#7c3aed"]
       : [
           "#ff00ff", // Magenta
           "#00ffff", // Cyan
@@ -752,9 +744,7 @@ function LinkCard({
       borderRadius="36px"
       px={{ base: 4, md: 6 }}
       py={{ base: 4, md: 5 }}
-      boxShadow={
-        isLightTheme ? APP_SHADOW : "0 0 10px rgba(0, 255, 255, 0.15)"
-      }
+      boxShadow={isLightTheme ? APP_SHADOW : "0 0 10px rgba(0, 255, 255, 0.15)"}
     >
       <Stack
         direction="column"
@@ -925,7 +915,9 @@ export default function LinksPage() {
   const secondaryAccent = isLightTheme ? "#c026d3" : "#ff00ff";
   const linkAccent = isLightTheme ? "#1d4ed8" : "#4da3ff";
   const walletAccent = isLightTheme ? "#15803d" : "#16b078";
-  const modalOverlayBg = isLightTheme ? "rgba(76, 60, 40, 0.24)" : "blackAlpha.800";
+  const modalOverlayBg = isLightTheme
+    ? "rgba(76, 60, 40, 0.24)"
+    : "blackAlpha.800";
   const modalBg = isLightTheme ? APP_SURFACE_ELEVATED : "rgba(7, 16, 29, 0.95)";
   const modalBorderColor = isLightTheme ? APP_BORDER_STRONG : primaryAccent;
   const modalBorderSoft = isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)";
@@ -941,7 +933,9 @@ export default function LinksPage() {
         width: "8px",
       },
       "&::-webkit-scrollbar-track": {
-        background: isLightTheme ? "rgba(96, 77, 56, 0.08)" : "rgba(0, 0, 0, 0.3)",
+        background: isLightTheme
+          ? "rgba(96, 77, 56, 0.08)"
+          : "rgba(0, 0, 0, 0.3)",
         borderRadius: "4px",
       },
       "&::-webkit-scrollbar-thumb": {
@@ -1130,13 +1124,13 @@ export default function LinksPage() {
 
   const citizenshipUrl = isLocalhost()
     ? "http://localhost:5173/citizenship"
-    : "https://nosabos.app/citizenship";
+    : "https://piyali.app/citizenship";
 
   const links = [
     {
       title: translations.noSabosTitle,
       description: translations.noSabosDescription,
-      href: "https://nosabos.app",
+      href: "https://piyali.app",
       analyticsName: "nosabos_app",
       visual: (
         <Box
@@ -1637,7 +1631,6 @@ export default function LinksPage() {
               {translations.about}
             </Button>
           </HStack>
-
         </VStack>
 
         {/* Links List */}
@@ -1728,10 +1721,10 @@ export default function LinksPage() {
         size="md"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg={modalOverlayBg}
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}
@@ -1740,7 +1733,9 @@ export default function LinksPage() {
           border="1px solid"
           borderColor={modalBorderColor}
           rounded="xl"
-          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
+          boxShadow={
+            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
+          }
           fontFamily="monospace"
         >
           <ModalHeader
@@ -1795,13 +1790,11 @@ export default function LinksPage() {
                 color={isLightTheme ? "#f8fafc" : "white"}
                 w="100%"
                 boxShadow={
-                  isLightTheme ? "0 8px 18px rgba(15, 118, 110, 0.16)" : undefined
-                }
-                _hover={
                   isLightTheme
-                    ? { bg: "#0d9488" }
+                    ? "0 8px 18px rgba(15, 118, 110, 0.16)"
                     : undefined
                 }
+                _hover={isLightTheme ? { bg: "#0d9488" } : undefined}
                 onClick={() => {
                   handleSubmitActionSound();
                   if (!isLocalhost()) {
@@ -1828,7 +1821,9 @@ export default function LinksPage() {
               }}
               variant="ghost"
               color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+              }}
             >
               {translations.close}
             </Button>
@@ -1845,10 +1840,10 @@ export default function LinksPage() {
         scrollBehavior="inside"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg={modalOverlayBg}
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}
@@ -1857,7 +1852,9 @@ export default function LinksPage() {
           border="1px solid"
           borderColor={modalBorderColor}
           rounded="xl"
-          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
+          boxShadow={
+            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
+          }
           fontFamily="monospace"
           maxH="85vh"
           style={{
@@ -1885,7 +1882,12 @@ export default function LinksPage() {
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="sm"
+                  color={labelColor}
+                  mb={2}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.username}
                 </Text>
                 <Input
@@ -1909,7 +1911,12 @@ export default function LinksPage() {
 
               {/* Profile Picture Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="sm"
+                  color={labelColor}
+                  mb={2}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.profilePictureUrl}
                 </Text>
                 <Input
@@ -1945,18 +1952,29 @@ export default function LinksPage() {
                 color={isLightTheme ? "#f8fafc" : "black"}
                 w="100%"
                 boxShadow={
-                  isLightTheme ? "0 8px 18px rgba(15, 118, 110, 0.16)" : undefined
+                  isLightTheme
+                    ? "0 8px 18px rgba(15, 118, 110, 0.16)"
+                    : undefined
                 }
                 _hover={isLightTheme ? { bg: "#0d9488" } : undefined}
               >
                 {translations.saveProfile}
               </Button>
 
-              <Divider borderColor={isLightTheme ? APP_BORDER : "rgba(255, 0, 255, 0.3)"} />
+              <Divider
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(255, 0, 255, 0.3)"
+                }
+              />
 
               {/* Secret Key Section */}
               <Box>
-                <Text fontSize="sm" color={labelColor} mb={2} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="sm"
+                  color={labelColor}
+                  mb={2}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.secretKey}
                 </Text>
                 <Button
@@ -1977,7 +1995,12 @@ export default function LinksPage() {
                 >
                   {translations.copySecretKey}
                 </Button>
-                <Text fontSize="xs" color={helperColor} mt={2} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="xs"
+                  color={helperColor}
+                  mt={2}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.secretKeyWarning}
                 </Text>
               </Box>
@@ -2033,7 +2056,11 @@ export default function LinksPage() {
                       >
                         {translations.switchAccount}
                       </Button>
-                      <Text fontSize="xs" color={helperColor} textAlign={directionalTextAlign}>
+                      <Text
+                        fontSize="xs"
+                        color={helperColor}
+                        textAlign={directionalTextAlign}
+                      >
                         {translations.switchAccountHelp}
                       </Text>
                     </VStack>
@@ -2041,7 +2068,11 @@ export default function LinksPage() {
                 </AccordionItem>
               </Accordion>
 
-              <Divider borderColor={isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)"} />
+              <Divider
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(0, 255, 255, 0.3)"
+                }
+              />
               {/* Bitcoin Wallet Section */}
               <Box
                 bg={isLightTheme ? APP_SURFACE : "rgba(0, 0, 0, 0.3)"}
@@ -2060,11 +2091,21 @@ export default function LinksPage() {
                   {translations.bitcoinWallet}
                 </Text>
 
-                <Text fontSize="xs" color={labelColor} mb={4} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="xs"
+                  color={labelColor}
+                  mb={4}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.walletDescription1}
                 </Text>
 
-                <Text fontSize="xs" color={labelColor} mb={4} textAlign={directionalTextAlign}>
+                <Text
+                  fontSize="xs"
+                  color={labelColor}
+                  mb={4}
+                  textAlign={directionalTextAlign}
+                >
                   {translations.walletDescription2}
                 </Text>
 
@@ -2106,10 +2147,7 @@ export default function LinksPage() {
                             : "rgba(255, 0, 255, 0.3)"
                         }
                       >
-                        <HStack
-                          mb={2}
-                          justify="flex-start"
-                        >
+                        <HStack mb={2} justify="flex-start">
                           <FaKey color={secondaryAccent} />
                           <Text
                             fontSize="sm"
@@ -2120,7 +2158,12 @@ export default function LinksPage() {
                             {translations.secretKeyRequired}
                           </Text>
                         </HStack>
-                        <Text fontSize="xs" color={labelColor} mb={3} textAlign={directionalTextAlign}>
+                        <Text
+                          fontSize="xs"
+                          color={labelColor}
+                          mb={3}
+                          textAlign={directionalTextAlign}
+                        >
                           {translations.nip07Warning}
                         </Text>
                         <Input
@@ -2278,7 +2321,11 @@ export default function LinksPage() {
                             {translations.copyAddress}
                           </Button>
                         </HStack>
-                        <Text fontSize="xs" color={helperColor} textAlign="center">
+                        <Text
+                          fontSize="xs"
+                          color={helperColor}
+                          textAlign="center"
+                        >
                           {translations.lightningInstructions}
                           <br />
                           <Link
@@ -2335,7 +2382,9 @@ export default function LinksPage() {
               }}
               variant="ghost"
               color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+              }}
             >
               {translations.close}
             </Button>
@@ -2352,10 +2401,10 @@ export default function LinksPage() {
         scrollBehavior="inside"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg={modalOverlayBg}
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           dir={pageDirection}
@@ -2364,7 +2413,9 @@ export default function LinksPage() {
           border="1px solid"
           borderColor={modalBorderColor}
           rounded="xl"
-          boxShadow={isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"}
+          boxShadow={
+            isLightTheme ? APP_SHADOW : "0 0 30px rgba(0, 255, 255, 0.3)"
+          }
           fontFamily="monospace"
           maxH="85vh"
           style={{
@@ -2432,7 +2483,9 @@ export default function LinksPage() {
               }}
               variant="ghost"
               color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-              _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100" }}
+              _hover={{
+                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+              }}
             >
               {translations.close}
             </Button>

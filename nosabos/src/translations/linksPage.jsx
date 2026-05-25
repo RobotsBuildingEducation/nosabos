@@ -90,7 +90,7 @@ export const linksPageTranslations = {
     buyApps: "Buy apps",
 
     // Link cards
-    noSabosTitle: "No Sabos",
+    noSabosTitle: "Piyali",
     noSabosDescription:
       "Your personal language tutor. Learn and explore new languages using intelligent tools to help you practice.",
     rbeTitle: "Robots Building Education",
@@ -289,7 +289,7 @@ export const linksPageTranslations = {
     buyApps: "Acquista app",
 
     // Link cards
-    noSabosTitle: "No Sabos",
+    noSabosTitle: "Piyali",
     noSabosDescription:
       "Il tuo tutor personale di lingue. Impara ed esplora nuove lingue usando strumenti intelligenti per aiutarti a praticare.",
     rbeTitle: "Robots Building Education",
@@ -484,7 +484,7 @@ export const linksPageTranslations = {
     buyApps: "Comprar apps",
 
     // Link cards
-    noSabosTitle: "No Sabos",
+    noSabosTitle: "Piyali",
     noSabosDescription:
       "Tu tutor personal de idiomas. Aprende y explora nuevos idiomas usando herramientas inteligentes que te ayudan a practicar.",
     rbeTitle: "Robots Building Education",
@@ -838,7 +838,7 @@ linksPageTranslations.ar = {
   launchApp: "افتح التطبيق",
   subscribe: "اشترك",
   buyApps: "اشترِ التطبيقات",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "مدرّسك الشخصي للغات. اتعلّم واستكشف لغات جديدة بأدوات ذكية تساعدك تتدرّب.",
   rbeTitle: "Robots Building Education",
@@ -1012,7 +1012,7 @@ linksPageTranslations.fr = {
   launchApp: "Ouvrir l'app",
   subscribe: "S'abonner",
   buyApps: "Acheter les apps",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "Ton tuteur personnel de langues. Apprends et explore de nouvelles langues avec des outils intelligents pour t'aider a pratiquer.",
   rbeDescription:
@@ -1178,7 +1178,7 @@ linksPageTranslations.ja = {
   launchApp: "アプリを開く",
   subscribe: "購読",
   buyApps: "アプリを購入",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "あなた専用の言語チューター。インテリジェントなツールで新しい言語を学び、練習できます。",
   rbeTitle: "Robots Building Education",
@@ -1355,7 +1355,7 @@ linksPageTranslations.de = {
   launchApp: "App öffnen",
   subscribe: "Abonnieren",
   buyApps: "Apps kaufen",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "Dein persönlicher Sprachcoach. Lerne und entdecke neue Sprachen mit intelligenten Übungstools.",
   rbeTitle: "Robots Building Education",

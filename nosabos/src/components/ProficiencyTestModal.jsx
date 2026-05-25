@@ -18,7 +18,7 @@ import RandomCharacter from "./RandomCharacter";
 import { t as tFn } from "../utils/translation";
 import {
   nativeModalMotionProps,
-  nativeOverlayMotionProps,
+  // nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
 export default function ProficiencyTestModal({
@@ -71,11 +71,11 @@ export default function ProficiencyTestModal({
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
-      />
+      /> */}
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg="gray.900"
@@ -105,20 +105,20 @@ export default function ProficiencyTestModal({
                   (lang === "ja"
                     ? "この言語"
                     : lang === "zh"
-                    ? "这门语言"
-                    : lang === "ar"
-                    ? "اللغة دي"
-                    : lang === "fr"
-                    ? "cette langue"
-                    : lang === "pt"
-                    ? "este idioma"
-                    : lang === "it"
-                    ? "questa lingua"
-                    : lang === "de"
-                    ? "diese Sprache"
-                    : lang === "es"
-                    ? "el idioma"
-                    : "the language"),
+                      ? "这门语言"
+                      : lang === "ar"
+                        ? "اللغة دي"
+                        : lang === "fr"
+                          ? "cette langue"
+                          : lang === "pt"
+                            ? "este idioma"
+                            : lang === "it"
+                              ? "questa lingua"
+                              : lang === "de"
+                                ? "diese Sprache"
+                                : lang === "es"
+                                  ? "el idioma"
+                                  : "the language"),
               })}
             </Text>
           </VStack>

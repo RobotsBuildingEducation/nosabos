@@ -81,6 +81,7 @@ import {
   normalizeSupportLanguage,
 } from "../../constants/languages";
 import { buildGameReviewContext } from "../../utils/gameReviewContext";
+import { getAdultBeginnerToneRule } from "../../utils/adultBeginnerTone";
 import {
   SOFT_STOP_BUTTON_SOLID_BG,
   SOFT_STOP_BUTTON_SOLID_HOVER_BG,
@@ -95,9 +96,9 @@ import {
 // ─── Pixel-art drawing for gather-quest items (32×32 canvas, 2× scale) ────
 const GATHER_SPRITE_SIZE = 32;
 const GATHER_SPRITE_GRID = 16;
-const GAME_SPEECH_VAD_MS = 850;
-const GAME_SPEECH_STOP_DELAY_MS = 250;
-const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 150;
+const GAME_SPEECH_VAD_MS = 1200;
+const GAME_SPEECH_STOP_DELAY_MS = 900;
+const GAME_SPEECH_RESPONSE_DONE_DELAY_MS = 600;
 const RPG_MUSIC_VOLUME = 0.02;
 const RPG_MUSIC_PREF_VERSION = 2;
 const OBJECT_SEARCH_TEST_COPY = {
@@ -131,7 +132,8 @@ const OBJECT_SEARCH_TEST_COPY = {
       `Ho bisogno di ${itemName}. Cerca tra gli oggetti in qualsiasi stanza di questa mappa. Ognuno nasconde un oggetto. Portami quello giusto.`,
     wrongItem: (wrongName, correctName) =>
       `Questo è ${wrongName}. Ho ancora bisogno di ${correctName}. Continua a controllare gli oggetti.`,
-    success: (itemName) => `Perfetto. ${itemName} è esattamente ciò di cui avevo bisogno.`,
+    success: (itemName) =>
+      `Perfetto. ${itemName} è esattamente ciò di cui avevo bisogno.`,
     chooseItem: "Scegli un oggetto da consegnare:",
     foundItem: (itemName) => `Trovato: ${itemName}`,
     alreadyChecked: "Hai già controllato questo oggetto.",
@@ -143,7 +145,8 @@ const OBJECT_SEARCH_TEST_COPY = {
       `J'ai besoin de ${itemName}. Fouille les objets dans n'importe quelle salle de cette carte. Chacun cache un objet. Rapporte-moi le bon.`,
     wrongItem: (wrongName, correctName) =>
       `C'est ${wrongName}. J'ai encore besoin de ${correctName}. Continue a verifier les objets.`,
-    success: (itemName) => `Parfait. ${itemName} est exactement ce qu'il me fallait.`,
+    success: (itemName) =>
+      `Parfait. ${itemName} est exactement ce qu'il me fallait.`,
     chooseItem: "Choisis un objet a donner :",
     foundItem: (itemName) => `Trouve : ${itemName}`,
     alreadyChecked: "Tu as deja verifie cet objet.",
@@ -182,7 +185,7 @@ const QUEST_LOG_COPY = {
     button: "Quest log",
     currentTask: "Current task",
     progress: (done, total) => `Progress: ${done}/${total}`,
-    complete: "Quest complete! Nice work.",
+    complete: "Quest complete.",
     defaultTask: "Keep exploring and talk to the next character.",
     startObjectSearch: (npcName, itemName) =>
       `Talk to ${npcName} to start the search for ${itemName}.`,
@@ -200,7 +203,7 @@ const QUEST_LOG_COPY = {
     button: "Registro de mision",
     currentTask: "Tarea actual",
     progress: (done, total) => `Progreso: ${done}/${total}`,
-    complete: "Mision completada. Buen trabajo.",
+    complete: "Mision completada.",
     defaultTask: "Sigue explorando y habla con el siguiente personaje.",
     startObjectSearch: (npcName, itemName) =>
       `Habla con ${npcName} para comenzar la busqueda de ${itemName}.`,
@@ -219,7 +222,7 @@ const QUEST_LOG_COPY = {
     button: "Diario missioni",
     currentTask: "Compito attuale",
     progress: (done, total) => `Progresso: ${done}/${total}`,
-    complete: "Missione completata! Ottimo lavoro.",
+    complete: "Missione completata.",
     defaultTask: "Continua ad esplorare e parla con il prossimo personaggio.",
     startObjectSearch: (npcName, itemName) =>
       `Parla con ${npcName} per iniziare la ricerca di ${itemName}.`,
@@ -237,7 +240,7 @@ const QUEST_LOG_COPY = {
     button: "Journal de quetes",
     currentTask: "Tache actuelle",
     progress: (done, total) => `Progres : ${done}/${total}`,
-    complete: "Quete terminee ! Beau travail.",
+    complete: "Quete terminee.",
     defaultTask: "Continue a explorer et parle au prochain personnage.",
     startObjectSearch: (npcName, itemName) =>
       `Parle a ${npcName} pour commencer la recherche de ${itemName}.`,
@@ -255,13 +258,14 @@ const QUEST_LOG_COPY = {
     button: "クエストログ",
     currentTask: "現在のタスク",
     progress: (done, total) => `進捗: ${done}/${total}`,
-    complete: "クエスト完了！よくできました。",
+    complete: "クエスト完了。",
     defaultTask: "探索を続けて、次のキャラクターに話しかけましょう。",
     startObjectSearch: (npcName, itemName) =>
       `${npcName}に話しかけて、${itemName}探しを始めましょう。`,
     searchObjects: (itemName) =>
       `どの部屋でも、調べられる物から${itemName}を探しましょう。それぞれの物に1つずつアイテムが隠れています。`,
-    returnItem: (itemName, npcName) => `${itemName}を${npcName}に持っていきましょう。`,
+    returnItem: (itemName, npcName) =>
+      `${itemName}を${npcName}に持っていきましょう。`,
     gatherSearch: (itemName) => `このエリアで${itemName}を探しましょう。`,
     gatherHint: (hint) => `ヒント: ${hint}`,
     choiceTask: (npcName) => `${npcName}に話しかけて、返答を選びましょう。`,
@@ -273,17 +277,19 @@ const QUEST_LOG_COPY = {
     button: "क्वेस्ट लॉग",
     currentTask: "वर्तमान कार्य",
     progress: (done, total) => `प्रगति: ${done}/${total}`,
-    complete: "क्वेस्ट पूरी हुई! बहुत बढ़िया।",
+    complete: "क्वेस्ट पूरी हुई।",
     defaultTask: "खोज जारी रखें और अगले पात्र से बात करें।",
     startObjectSearch: (npcName, itemName) =>
       `${itemName} की खोज शुरू करने के लिए ${npcName} से बात करें।`,
     searchObjects: (itemName) =>
       `${itemName} ढूँढ़ने के लिए किसी भी कमरे की जाँचने योग्य वस्तुओं को देखें। हर वस्तु के भीतर एक चीज़ छिपी है।`,
-    returnItem: (itemName, npcName) => `${itemName} को वापस ${npcName} के पास ले जाएँ।`,
+    returnItem: (itemName, npcName) =>
+      `${itemName} को वापस ${npcName} के पास ले जाएँ।`,
     gatherSearch: (itemName) => `इस इलाके में ${itemName} खोजें।`,
     gatherHint: (hint) => `संकेत: ${hint}`,
     choiceTask: (npcName) => `${npcName} से बात करें और एक उत्तर चुनें।`,
-    speechTask: (npcName) => `${npcName} से बात करें और अपनी आवाज़ में उत्तर दें।`,
+    speechTask: (npcName) =>
+      `${npcName} से बात करें और अपनी आवाज़ में उत्तर दें।`,
     continueTask: (npcName) => `आगे बढ़ने के लिए ${npcName} से बात करें।`,
   },
 };
@@ -293,7 +299,8 @@ OBJECT_SEARCH_TEST_COPY.pt = {
     `Preciso de ${itemName}. Procure nos objetos de qualquer sala deste mapa. Cada um esconde um item. Traga o certo para mim.`,
   wrongItem: (wrongName, correctName) =>
     `Isso é ${wrongName}. Ainda preciso de ${correctName}. Continue procurando nos objetos.`,
-  success: (itemName) => `Perfeito. ${itemName} é exatamente o que eu precisava.`,
+  success: (itemName) =>
+    `Perfeito. ${itemName} é exatamente o que eu precisava.`,
   chooseItem: "Escolha um item para entregar:",
   foundItem: (itemName) => `Encontrado: ${itemName}`,
   alreadyChecked: "Você já verificou este objeto.",
@@ -312,7 +319,8 @@ QUEST_LOG_COPY.pt = {
     `Fale com ${npcName} para começar a procura por ${itemName}.`,
   searchObjects: (itemName) =>
     `Procure ${itemName} nos objetos examináveis de qualquer sala. Cada objeto esconde um item.`,
-  returnItem: (itemName, npcName) => `Leve ${itemName} de volta para ${npcName}.`,
+  returnItem: (itemName, npcName) =>
+    `Leve ${itemName} de volta para ${npcName}.`,
   gatherSearch: (itemName) => `Procure ${itemName} nesta área.`,
   gatherHint: (hint) => `Dica: ${hint}`,
   choiceTask: (npcName) => `Fale com ${npcName} e escolha uma resposta.`,
@@ -389,7 +397,8 @@ OBJECT_SEARCH_TEST_COPY.de = {
     `Ich brauche ${itemName}. Durchsuche die Objekte in einem beliebigen Raum auf dieser Karte. In jedem ist ein Gegenstand versteckt. Bring mir den richtigen.`,
   wrongItem: (wrongName, correctName) =>
     `Das ist ${wrongName}. Ich brauche noch ${correctName}. Such weiter in den Objekten.`,
-  success: (itemName) => `Perfekt. ${itemName} ist genau das, was ich gebraucht habe.`,
+  success: (itemName) =>
+    `Perfekt. ${itemName} ist genau das, was ich gebraucht habe.`,
   chooseItem: "Wähle einen Gegenstand zum Abgeben:",
   foundItem: (itemName) => `Gefunden: ${itemName}`,
   alreadyChecked: "Dieses Objekt hast du schon untersucht.",
@@ -412,7 +421,8 @@ QUEST_LOG_COPY.de = {
   gatherSearch: (itemName) => `Suche in diesem Bereich nach ${itemName}.`,
   gatherHint: (hint) => `Hinweis: ${hint}`,
   choiceTask: (npcName) => `Sprich mit ${npcName} und wähle eine Antwort.`,
-  speechTask: (npcName) => `Sprich mit ${npcName} und antworte mit deiner Stimme.`,
+  speechTask: (npcName) =>
+    `Sprich mit ${npcName} und antworte mit deiner Stimme.`,
   continueTask: (npcName) => `Sprich mit ${npcName}, um fortzufahren.`,
 };
 
@@ -1743,7 +1753,8 @@ const UI_TEXT = {
     talkHint: "Premi SPAZIO o tocca per parlare",
     correct: "Corretto!",
     incorrect: "Riprova!",
-    completed: "Congratulazioni! Hai risposto correttamente a tutte le domande!",
+    completed:
+      "Congratulazioni! Hai risposto correttamente a tutte le domande!",
     playAgain: "Gioca ancora",
     back: "Indietro",
     progress: "Progresso",
@@ -1785,7 +1796,8 @@ const UI_TEXT = {
     talkHint: "Appuie sur ESPACE ou touche pour parler",
     correct: "Correct !",
     incorrect: "Reessaie !",
-    completed: "Felicitations ! Tu as repondu correctement a toutes les questions !",
+    completed:
+      "Felicitations ! Tu as repondu correctement a toutes les questions !",
     playAgain: "Rejouer",
     back: "Retour",
     progress: "Progres",
@@ -2562,8 +2574,7 @@ function getLocalizedObjectExamineLabel(type = "", lang = "en") {
   const supportLang = normalizeSupportLanguage(lang, DEFAULT_SUPPORT_LANGUAGE);
   const rawType = String(type || "").trim();
   const fallbackLabel =
-    humanizeObjectType(rawType) ||
-    OBJECT_EXAMINE_FALLBACK_LABELS.en.object;
+    humanizeObjectType(rawType) || OBJECT_EXAMINE_FALLBACK_LABELS.en.object;
   return (
     OBJECT_EXAMINE_FALLBACK_LABELS[supportLang]?.[rawType] ||
     OBJECT_EXAMINE_FALLBACK_LABELS.en?.[rawType] ||
@@ -2595,7 +2606,8 @@ function getRpgItemSecondaryLabels(item) {
   const transcription = String(item?.transcription || "").trim();
   const sourceName = String(item?.name || "").trim();
   return [transcription, sourceName].filter(
-    (value, idx, arr) => value && value !== primary && arr.indexOf(value) === idx,
+    (value, idx, arr) =>
+      value && value !== primary && arr.indexOf(value) === idx,
   );
 }
 
@@ -2799,8 +2811,8 @@ export default function RPGGame({
   const cefrDialogueRule = useMemo(() => {
     const rules = {
       "Pre-A1": {
-        es: "IMPORTANTE: Nivel Pre-A1. Usa SOLO palabras sueltas o frases de 1-3 palabras. Sin conjugaciones complejas. Vocabulario muy básico (hola, sí, no, gracias, por favor, números 1-10, colores básicos). NO uses subjuntivo, condicional ni frases largas.",
-        en: "IMPORTANT: Pre-A1 level. Use ONLY single words or 1-3 word phrases. No complex conjugations. Very basic vocabulary (hello, yes, no, thank you, please, numbers 1-10, basic colors). Do NOT use complex sentences.",
+        es: "IMPORTANTE: Nivel Pre-A1. Usa vocabulario muy básico, pero en frases naturales y completas, no palabras sueltas repetidas. Una o dos frases cortas por turno. Solo presente y fórmulas memorizadas. NO uses subjuntivo, condicional ni frases largas.",
+        en: "IMPORTANT: Pre-A1 level. Use very basic vocabulary, but in natural complete phrases, not repeated isolated words. One or two short phrases per turn. Formula chunks and present tense only. Do NOT use complex sentences.",
       },
       A1: {
         es: "IMPORTANTE: Nivel A1. Usa oraciones muy cortas y simples (máximo 5-8 palabras). Solo presente de indicativo. Vocabulario cotidiano básico. Frases como 'Me llamo...', '¿Dónde está...?', 'Quiero...'. NO uses subjuntivo, condicional, pasado complejo ni vocabulario avanzado.",
@@ -2844,10 +2856,8 @@ export default function RPGGame({
   const supportTextProps = getBidiTextProps(supportLang);
   const ui = UI_TEXT[supportLang] || UI_TEXT.en;
   const objectSearchCopy =
-    OBJECT_SEARCH_TEST_COPY[supportLang] ||
-    OBJECT_SEARCH_TEST_COPY.en;
-  const questLogCopy =
-    QUEST_LOG_COPY[supportLang] || QUEST_LOG_COPY.en;
+    OBJECT_SEARCH_TEST_COPY[supportLang] || OBJECT_SEARCH_TEST_COPY.en;
+  const questLogCopy = QUEST_LOG_COPY[supportLang] || QUEST_LOG_COPY.en;
   const isMobileDialogueLayout =
     useBreakpointValue({ base: true, md: false }) ?? false;
 
@@ -2916,7 +2926,9 @@ export default function RPGGame({
   const rpgPanelBgSoft = isLightTheme
     ? "rgba(249, 240, 221, 0.94)"
     : "orange.50";
-  const rpgPanelBorder = isLightTheme ? "rgba(224, 180, 116, 0.92)" : "orange.200";
+  const rpgPanelBorder = isLightTheme
+    ? "rgba(224, 180, 116, 0.92)"
+    : "orange.200";
   const rpgPanelBorderSoft = isLightTheme
     ? "rgba(216, 183, 133, 0.52)"
     : "orange.100";
@@ -2938,7 +2950,9 @@ export default function RPGGame({
   const rpgChoiceShadow = isLightTheme
     ? "0px 3px 0px #d2c1a9"
     : "0px 4px 0px #a9a18c";
-  const rpgOverlayBg = isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700";
+  const rpgOverlayBg = isLightTheme
+    ? "rgba(76, 60, 40, 0.22)"
+    : "blackAlpha.700";
   const transitionCooldownUntilRef = useRef(0);
   const mapEntrySpawnRef = useRef(null);
   const npcAssignmentsCacheRef = useRef(null);
@@ -3196,6 +3210,10 @@ export default function RPGGame({
     () => cefrDialogueRule.en || cefrDialogueRule.es || "",
     [cefrDialogueRule],
   );
+  const adultBeginnerToneRule = useMemo(
+    () => getAdultBeginnerToneRule(cefrLevel, "rpg"),
+    [cefrLevel],
+  );
   const objectExamineCefrPromptRule = useMemo(() => {
     const rules = {
       "Pre-A1":
@@ -3247,7 +3265,7 @@ export default function RPGGame({
           ? "Tutorial rule: greetings, saying your name, and other ultra-basic polite expressions only."
           : "",
         ["Pre-A1", "A1"].includes(cefrLevel || "")
-          ? "Beginner rule: no dramatic missions, metaphors, abstract narration, or advanced sentence structures."
+          ? "Beginner rule: keep missions concrete and grounded. Simple stakes or mystery are fine, but avoid metaphors, abstract narration, or advanced sentence structures."
           : "",
       ]
         .filter(Boolean)
@@ -3294,6 +3312,7 @@ export default function RPGGame({
     (...sections) =>
       [
         cefrPromptRule,
+        adultBeginnerToneRule,
         strictTargetLanguageGuard,
         reviewPromptContext,
         buildCharacterRosterPrompt(),
@@ -3303,6 +3322,7 @@ export default function RPGGame({
         .join("\n"),
     [
       buildCharacterRosterPrompt,
+      adultBeginnerToneRule,
       cefrPromptRule,
       reviewPromptContext,
       strictTargetLanguageGuard,
@@ -3473,7 +3493,10 @@ export default function RPGGame({
 
           uncachedObjects.forEach((object) => {
             const key = getObjectExamineKey(map, object);
-            const fallback = buildFallbackObjectExamineText(object, supportLang);
+            const fallback = buildFallbackObjectExamineText(
+              object,
+              supportLang,
+            );
             const resolved = resolvedTexts.get(key);
             const text = resolved
               ? {
@@ -6921,7 +6944,13 @@ export default function RPGGame({
         w={isEmbedded ? "100%" : "100vw"}
         h={isEmbedded ? "80vh" : "100vh"}
         minH={isEmbedded ? "400px" : undefined}
-        bg={isEmbedded ? "transparent" : isLightTheme ? "var(--app-bg)" : "#1a1a2e"}
+        bg={
+          isEmbedded
+            ? "transparent"
+            : isLightTheme
+              ? "var(--app-bg)"
+              : "#1a1a2e"
+        }
         display="flex"
         alignItems={isEmbedded ? "flex-start" : "center"}
         justifyContent="center"
@@ -6995,14 +7024,22 @@ export default function RPGGame({
                         bg={isLightTheme ? rpgPanelBg : "whiteAlpha.100"}
                         color={isLightTheme ? rpgTextPrimary : "white"}
                         border="2px solid"
-                        borderColor={isLightTheme ? rpgPanelBorderSoft : "whiteAlpha.200"}
+                        borderColor={
+                          isLightTheme ? rpgPanelBorderSoft : "whiteAlpha.200"
+                        }
                         borderRadius="xl"
                         _hover={{
                           bg: isLightTheme ? rpgPanelBgSoft : "whiteAlpha.200",
-                          borderColor: isLightTheme ? rpgPanelBorder : "yellow.400",
+                          borderColor: isLightTheme
+                            ? rpgPanelBorder
+                            : "yellow.400",
                           transform: "scale(1.05)",
                         }}
-                        boxShadow={isLightTheme ? "0 10px 20px rgba(84, 62, 36, 0.14)" : undefined}
+                        boxShadow={
+                          isLightTheme
+                            ? "0 10px 20px rgba(84, 62, 36, 0.14)"
+                            : undefined
+                        }
                         transition="all 0.2s"
                         onClick={() => handleSelectScenario(choice.id)}
                         flexDir="column"
@@ -7046,7 +7083,13 @@ export default function RPGGame({
         }
         minH={isEmbedded ? "400px" : undefined}
         borderRadius={isEmbedded ? "xl" : undefined}
-        bg={isEmbedded ? "transparent" : isLightTheme ? "var(--app-bg)" : "#1a1a2e"}
+        bg={
+          isEmbedded
+            ? "transparent"
+            : isLightTheme
+              ? "var(--app-bg)"
+              : "#1a1a2e"
+        }
         mx="auto"
         display="flex"
         flexDirection="column"
@@ -7219,7 +7262,11 @@ export default function RPGGame({
           border={isLightTheme ? "1px solid" : undefined}
           borderColor={isLightTheme ? rpgPanelBorderSoft : undefined}
         >
-          <Text color={isLightTheme ? rpgTextPrimary : "white"} fontSize="sm" fontWeight="bold">
+          <Text
+            color={isLightTheme ? rpgTextPrimary : "white"}
+            fontSize="sm"
+            fontWeight="bold"
+          >
             {completedSteps}/{totalSteps}
           </Text>
           <Progress
@@ -7366,11 +7413,18 @@ export default function RPGGame({
           </ModalHeader>
           <ModalCloseButton
             color={rpgTextMuted}
-            _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
+            _hover={{
+              bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200",
+            }}
           />
           <ModalBody pb={4}>
             {inventory.length === 0 ? (
-              <Text color={rpgTextMuted} fontSize="sm" textAlign="center" py={4}>
+              <Text
+                color={rpgTextMuted}
+                fontSize="sm"
+                textAlign="center"
+                py={4}
+              >
                 {ui.noItems}
               </Text>
             ) : (
@@ -7416,12 +7470,19 @@ export default function RPGGame({
                     borderColor={rpgPanelBorderSoft}
                   >
                     <VStack align="start" spacing={0} flex="1">
-                      <Text color={rpgTextPrimary} fontSize="sm" fontWeight="medium">
+                      <Text
+                        color={rpgTextPrimary}
+                        fontSize="sm"
+                        fontWeight="medium"
+                      >
                         {getRpgItemPrimaryLabel(inventory[selectedInvItem])}
                       </Text>
-                      {getRpgItemSecondaryLabels(inventory[selectedInvItem]).length ? (
+                      {getRpgItemSecondaryLabels(inventory[selectedInvItem])
+                        .length ? (
                         <Text color={rpgTextMuted} fontSize="xs">
-                          {getRpgItemSecondaryLabels(inventory[selectedInvItem]).join(" · ")}
+                          {getRpgItemSecondaryLabels(
+                            inventory[selectedInvItem],
+                          ).join(" · ")}
                         </Text>
                       ) : null}
                     </VStack>
@@ -7475,7 +7536,9 @@ export default function RPGGame({
           </ModalHeader>
           <ModalCloseButton
             color={rpgTextMuted}
-            _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
+            _hover={{
+              bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200",
+            }}
           />
           <ModalBody pb={4}>
             <VStack align="stretch" spacing={3}>
@@ -7571,10 +7634,18 @@ export default function RPGGame({
                 py={2}
                 spacing={2}
                 justify="center"
-                boxShadow={isLightTheme ? "0 10px 18px rgba(84, 62, 36, 0.16)" : "0 0 12px rgba(236,201,75,0.3)"}
+                boxShadow={
+                  isLightTheme
+                    ? "0 10px 18px rgba(84, 62, 36, 0.16)"
+                    : "0 0 12px rgba(236,201,75,0.3)"
+                }
                 maxW="min(82vw, 320px)"
               >
-                <Text color={isLightTheme ? rpgReplyText : "yellow.300"} fontSize="sm" fontWeight="bold">
+                <Text
+                  color={isLightTheme ? rpgReplyText : "yellow.300"}
+                  fontSize="sm"
+                  fontWeight="bold"
+                >
                   +
                 </Text>
                 <Text
@@ -7612,7 +7683,7 @@ export default function RPGGame({
                         objectExamine.text ||
                         objectExamine.supportText
                           ? 1
-                        : 0
+                          : 0
                       }
                       {...supportTextProps}
                       sx={mergeBidiSx(supportTextProps)}
@@ -7796,7 +7867,11 @@ export default function RPGGame({
                 right={2}
                 variant="ghost"
                 color={rpgTextMuted}
-                _hover={{ bg: isLightTheme ? "rgba(86, 72, 52, 0.08)" : "whiteAlpha.200" }}
+                _hover={{
+                  bg: isLightTheme
+                    ? "rgba(86, 72, 52, 0.08)"
+                    : "whiteAlpha.200",
+                }}
                 onClick={closeDialogue}
               />
 
@@ -7806,7 +7881,9 @@ export default function RPGGame({
                   <Box
                     bg={isLightTheme ? "rgba(98, 143, 202, 0.10)" : "blue.50"}
                     border="1px solid"
-                    borderColor={isLightTheme ? "rgba(98, 143, 202, 0.24)" : "blue.200"}
+                    borderColor={
+                      isLightTheme ? "rgba(98, 143, 202, 0.24)" : "blue.200"
+                    }
                     borderRadius="lg"
                     px={3}
                     py={2}
@@ -7875,7 +7952,11 @@ export default function RPGGame({
                       size="xs"
                       rounded="md"
                       bg={isLightTheme ? rpgChoiceBg : "white"}
-                      color={hasDialogueTranslations ? rpgReplyText : rpgTranslationText}
+                      color={
+                        hasDialogueTranslations
+                          ? rpgReplyText
+                          : rpgTranslationText
+                      }
                       boxShadow={
                         hasDialogueTranslations
                           ? isLightTheme
@@ -8039,7 +8120,9 @@ export default function RPGGame({
                               boxShadow={rpgChoiceShadow}
                               _hover={{
                                 bg: rpgChoiceHoverBg,
-                                borderColor: isLightTheme ? rpgPanelBorderSoft : "blackAlpha.300",
+                                borderColor: isLightTheme
+                                  ? rpgPanelBorderSoft
+                                  : "blackAlpha.300",
                               }}
                               _active={{
                                 bg: rpgChoiceHoverBg,
@@ -8051,7 +8134,9 @@ export default function RPGGame({
                               _disabled={{
                                 opacity: 1,
                                 bg: rpgChoiceBg,
-                                color: isLightTheme ? rpgTextSecondary : "gray.700",
+                                color: isLightTheme
+                                  ? rpgTextSecondary
+                                  : "gray.700",
                                 borderColor: rpgChoiceBorder,
                                 boxShadow: rpgChoiceShadow,
                                 cursor: "not-allowed",
@@ -8066,7 +8151,9 @@ export default function RPGGame({
                             >
                               <VStack align="stretch" spacing={0} w="100%">
                                 <Text
-                                  color={isLightTheme ? rpgTextPrimary : "gray.900"}
+                                  color={
+                                    isLightTheme ? rpgTextPrimary : "gray.900"
+                                  }
                                   fontSize="sm"
                                   m={0}
                                   {...targetTextProps}
@@ -8243,8 +8330,8 @@ export default function RPGGame({
                           >
                             {dialogueActionLabelMap.continue}
                           </Text>
-                        {actionTranslations?.continue ? (
-                          <Text
+                          {actionTranslations?.continue ? (
+                            <Text
                               color={rpgTranslationText}
                               fontSize="xs"
                               fontStyle="italic"
@@ -8325,12 +8412,18 @@ export default function RPGGame({
             maxW="400px"
             mx={4}
             textAlign="center"
-            boxShadow={isLightTheme ? rpgPanelShadow : "0 0 40px rgba(255,215,0,0.3)"}
+            boxShadow={
+              isLightTheme ? rpgPanelShadow : "0 0 40px rgba(255,215,0,0.3)"
+            }
           >
             <Text fontSize="4xl">
               {scenario?.emoji || SCENARIO_EMOJIS[scenarioId] || "🏆"}
             </Text>
-            <Text color={isLightTheme ? rpgTextPrimary : "yellow.300"} fontSize="xl" fontWeight="bold">
+            <Text
+              color={isLightTheme ? rpgTextPrimary : "yellow.300"}
+              fontSize="xl"
+              fontWeight="bold"
+            >
               {ui.completed}
             </Text>
             <HStack spacing={3}>
@@ -8343,11 +8436,7 @@ export default function RPGGame({
                 bg={isLightTheme ? rpgChoiceBg : undefined}
                 color={isLightTheme ? rpgTextPrimary : "white"}
                 borderColor={isLightTheme ? rpgChoiceBorder : undefined}
-                _hover={
-                  isLightTheme
-                    ? { bg: rpgChoiceHoverBg }
-                    : undefined
-                }
+                _hover={isLightTheme ? { bg: rpgChoiceHoverBg } : undefined}
                 onClick={goToScenarioSelect}
               >
                 {isTutorialGame ? ui.scenario : ui.newWorld}

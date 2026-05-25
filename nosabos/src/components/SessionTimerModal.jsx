@@ -37,6 +37,7 @@ import {
   nativeModalMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
+import { scheduleAfterNextPaint } from "../utils/afterPaint";
 
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
@@ -172,8 +173,7 @@ function ClockVisual({
     };
   }, [rotationMinutes, maxMinutes]);
 
-  // Calculate how many full rotations and the remainder
-  const fullRotations = Math.floor(parsedMinutes / rotationMinutes);
+  // Calculate the current rotation remainder.
   const remainder = parsedMinutes % rotationMinutes;
   const isFullCircle = parsedMinutes >= rotationMinutes && remainder === 0;
 
@@ -222,23 +222,26 @@ function ClockVisual({
   }, [isLightTheme]);
 
   // Arc path generator for a given portion of the circle
-  const createArcPath = (startMin, endMin, radius) => {
-    if (endMin <= startMin) return "";
+  const createArcPath = useCallback(
+    (startMin, endMin, radius) => {
+      if (endMin <= startMin) return "";
 
-    const startAngle = (startMin / rotationMinutes) * 360 - 90;
-    const endAngle = (endMin / rotationMinutes) * 360 - 90;
-    const cx = 50;
-    const cy = 50;
+      const startAngle = (startMin / rotationMinutes) * 360 - 90;
+      const endAngle = (endMin / rotationMinutes) * 360 - 90;
+      const cx = 50;
+      const cy = 50;
 
-    const startX = cx + radius * Math.cos((startAngle * Math.PI) / 180);
-    const startY = cy + radius * Math.sin((startAngle * Math.PI) / 180);
-    const endX = cx + radius * Math.cos((endAngle * Math.PI) / 180);
-    const endY = cy + radius * Math.sin((endAngle * Math.PI) / 180);
+      const startX = cx + radius * Math.cos((startAngle * Math.PI) / 180);
+      const startY = cy + radius * Math.sin((startAngle * Math.PI) / 180);
+      const endX = cx + radius * Math.cos((endAngle * Math.PI) / 180);
+      const endY = cy + radius * Math.sin((endAngle * Math.PI) / 180);
 
-    const largeArc = endMin - startMin > rotationMinutes / 2 ? 1 : 0;
+      const largeArc = endMin - startMin > rotationMinutes / 2 ? 1 : 0;
 
-    return `M ${cx} ${cy} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
-  };
+      return `M ${cx} ${cy} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
+    },
+    [rotationMinutes],
+  );
 
   // First layer arc (teal) - up to first 120 minutes
   const firstLayerMinutes = Math.min(parsedMinutes, rotationMinutes);
@@ -249,7 +252,7 @@ function ClockVisual({
       return null; // We'll render a full circle instead
     }
     return createArcPath(0, firstLayerMinutes, 35);
-  }, [parsedMinutes, firstLayerMinutes, rotationMinutes]);
+  }, [createArcPath, parsedMinutes, firstLayerMinutes, rotationMinutes]);
 
   // Second layer arc (purple/magenta) - 120-240 minutes
   const secondLayerMinutes = parsedMinutes > rotationMinutes ? remainder : 0;
@@ -260,7 +263,7 @@ function ClockVisual({
       return null;
     }
     return createArcPath(0, secondLayerMinutes, 35);
-  }, [parsedMinutes, secondLayerMinutes, rotationMinutes]);
+  }, [createArcPath, parsedMinutes, secondLayerMinutes, rotationMinutes]);
 
   // Hand end point
   const handLength = 32;
@@ -479,6 +482,7 @@ export default function SessionTimerModal({
   t = {},
   lang = "en",
   useSharedBackdrop = false,
+  deferBody = true,
 }) {
   const presets = [10, 20, 30, 45, 60, 90, 120, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
@@ -498,6 +502,22 @@ export default function SessionTimerModal({
   useEffect(() => {
     if (isOpen) setLocalMinutes(normalizeTimerMinutesDraft(minutes));
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [bodyReady, setBodyReady] = useState(false);
+  useEffect(() => {
+    if (!isOpen) {
+      setBodyReady(false);
+      return undefined;
+    }
+
+    if (!deferBody) {
+      setBodyReady(true);
+      return undefined;
+    }
+
+    return scheduleAfterNextPaint(() => setBodyReady(true));
+  }, [deferBody, isOpen]);
+  const shouldRenderBody = !deferBody || bodyReady;
 
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
@@ -553,12 +573,26 @@ export default function SessionTimerModal({
       size="lg"
       motionPreset="none"
       returnFocusOnClose={false}
+      trapFocus={false}
+      autoFocus={false}
+      useInert={false}
+      blockScrollOnMount={false}
+      preserveScrollBarGap={false}
+      lockFocusAcrossFrames={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
-        bg={useSharedBackdrop ? "transparent" : isLightTheme ? APP_OVERLAY : "blackAlpha.700"}
-        backdropFilter={useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined}
-      />
+        bg={
+          useSharedBackdrop
+            ? "transparent"
+            : isLightTheme
+              ? APP_OVERLAY
+              : "blackAlpha.700"
+        }
+        backdropFilter={
+          useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
+        }
+      /> */}
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
@@ -592,122 +626,135 @@ export default function SessionTimerModal({
           }}
         />
         <ModalBody>
-          <VStack align="stretch" spacing={4}>
-            <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
-              {t.timer_modal_description || "Set how long you want to focus."}
-            </Text>
+          {shouldRenderBody ? (
+            <VStack align="stretch" spacing={4}>
+              <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
+                {t.timer_modal_description || "Set how long you want to focus."}
+              </Text>
 
-            {/* Clock visual — drag around the face to adjust time */}
-            <ClockVisual
-              minutes={localMinutes}
-              onMinutesChange={handleLocalMinutesChange}
-              playSliderTick={playSliderTick}
-              isLightTheme={isLightTheme}
-              dragHint={
-                t.timer_modal_drag_hint ||
-                "Drag around the clock to set time"
-              }
-            />
-
-            {helper}
-
-            <FormControl>
-              <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
-                {t.timer_modal_minutes_label || "Minutes"}
-              </FormLabel>
-              <Input
-                type="number"
-                min={0}
-                max={240}
-                value={localMinutes}
-                onChange={handleInputChange}
-                bg={isLightTheme ? APP_SURFACE : "gray.800"}
-                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-                borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
-                _hover={{
-                  borderColor: isLightTheme ? APP_BORDER_STRONG : "gray.500",
-                }}
-                _focus={{
-                  borderColor: "teal.400",
-                  boxShadow: isLightTheme
-                    ? "0 0 0 1px rgba(63, 159, 155, 0.78)"
-                    : "0 0 0 1px #38B2AC",
-                }}
+              {/* Clock visual — drag around the face to adjust time */}
+              <ClockVisual
+                minutes={localMinutes}
+                onMinutesChange={handleLocalMinutesChange}
+                playSliderTick={playSliderTick}
+                isLightTheme={isLightTheme}
+                dragHint={
+                  t.timer_modal_drag_hint || "Drag around the clock to set time"
+                }
               />
-              <Text
-                fontSize="xs"
-                color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}
-                mt={1}
-              >
-                {t.timer_modal_max_hint || "max 240 minutes (4 hours)"}
-              </Text>
-            </FormControl>
 
-            <Box>
-              <Text
-                fontSize="sm"
-                mb={2}
-                color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
-              >
-                {t.timer_modal_quick_picks || "Quick picks"}
-              </Text>
-              <HStack spacing={2} wrap="wrap">
-                {presets.map((preset) => {
-                  const isActive = Number(localMinutes) === preset;
-                  return (
-                    <Button
-                      key={preset}
-                      size="sm"
-                      variant={
-                        isLightTheme ? "solid" : isActive ? "solid" : "outline"
-                      }
-                      colorScheme={isLightTheme ? undefined : "teal"}
-                      bg={
-                        isLightTheme
-                          ? isActive
-                            ? "#3f9f9b"
-                            : APP_SURFACE_ELEVATED
-                          : undefined
-                      }
-                      color={
-                        isLightTheme
-                          ? isActive
-                            ? "white"
-                            : APP_TEXT_PRIMARY
-                          : undefined
-                      }
-                      border="1px solid"
-                      borderColor={
-                        isLightTheme
-                          ? isActive
-                            ? "rgba(63, 159, 155, 0.7)"
-                            : APP_BORDER
-                          : undefined
-                      }
-                      boxShadow={
-                        isLightTheme && isActive
-                          ? "0 6px 0 rgba(36, 91, 89, 0.18)"
-                          : "none"
-                      }
-                      _hover={
-                        isLightTheme
-                          ? {
-                              bg: isActive ? "#398f8b" : APP_SURFACE_MUTED,
-                            }
-                          : undefined
-                      }
-                      onClick={() => {
-                        playSound(selectSound);
-                        handleLocalMinutesChange(String(preset));
-                      }}
-                    >
-                      {preset}m
-                    </Button>
-                  );
-                })}
-              </HStack>
-            </Box>
-          </VStack>
+              {helper}
+
+              <FormControl>
+                <FormLabel color={isLightTheme ? APP_TEXT_PRIMARY : undefined}>
+                  {t.timer_modal_minutes_label || "Minutes"}
+                </FormLabel>
+                <Input
+                  type="number"
+                  min={0}
+                  max={240}
+                  value={localMinutes}
+                  onChange={handleInputChange}
+                  bg={isLightTheme ? APP_SURFACE : "gray.800"}
+                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                  borderColor={isLightTheme ? APP_BORDER_STRONG : "gray.600"}
+                  _hover={{
+                    borderColor: isLightTheme ? APP_BORDER_STRONG : "gray.500",
+                  }}
+                  _focus={{
+                    borderColor: "teal.400",
+                    boxShadow: isLightTheme
+                      ? "0 0 0 1px rgba(63, 159, 155, 0.78)"
+                      : "0 0 0 1px #38B2AC",
+                  }}
+                />
+                <Text
+                  fontSize="xs"
+                  color={isLightTheme ? APP_TEXT_MUTED : "gray.500"}
+                  mt={1}
+                >
+                  {t.timer_modal_max_hint || "max 240 minutes (4 hours)"}
+                </Text>
+              </FormControl>
+
+              <Box>
+                <Text
+                  fontSize="sm"
+                  mb={2}
+                  color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                >
+                  {t.timer_modal_quick_picks || "Quick picks"}
+                </Text>
+                <HStack spacing={2} wrap="wrap">
+                  {presets.map((preset) => {
+                    const isActive = Number(localMinutes) === preset;
+                    return (
+                      <Button
+                        key={preset}
+                        size="sm"
+                        variant={
+                          isLightTheme
+                            ? "solid"
+                            : isActive
+                              ? "solid"
+                              : "outline"
+                        }
+                        colorScheme={isLightTheme ? undefined : "teal"}
+                        bg={
+                          isLightTheme
+                            ? isActive
+                              ? "#3f9f9b"
+                              : APP_SURFACE_ELEVATED
+                            : undefined
+                        }
+                        color={
+                          isLightTheme
+                            ? isActive
+                              ? "white"
+                              : APP_TEXT_PRIMARY
+                            : undefined
+                        }
+                        border="1px solid"
+                        borderColor={
+                          isLightTheme
+                            ? isActive
+                              ? "rgba(63, 159, 155, 0.7)"
+                              : APP_BORDER
+                            : undefined
+                        }
+                        boxShadow={
+                          isLightTheme && isActive
+                            ? "0 6px 0 rgba(36, 91, 89, 0.18)"
+                            : "none"
+                        }
+                        _hover={
+                          isLightTheme
+                            ? {
+                                bg: isActive ? "#398f8b" : APP_SURFACE_MUTED,
+                              }
+                            : undefined
+                        }
+                        onClick={() => {
+                          playSound(selectSound);
+                          handleLocalMinutesChange(String(preset));
+                        }}
+                      >
+                        {preset}m
+                      </Button>
+                    );
+                  })}
+                </HStack>
+              </Box>
+            </VStack>
+          ) : (
+            <Box
+              minH={{ base: "360px", md: "390px" }}
+              borderRadius="xl"
+              bg={isLightTheme ? APP_SURFACE_MUTED : "gray.800"}
+              border="1px solid"
+              borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+            />
+          )}
         </ModalBody>
         <ModalFooter
           gap={3}
@@ -715,26 +762,32 @@ export default function SessionTimerModal({
           borderTop="1px solid"
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
-          <Button
-            variant="ghost"
-            colorScheme="gray"
-            color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
-            onClick={handleClose}
-          >
-            {t.timer_modal_close || "Close"}
-          </Button>
-          <Button
-            colorScheme={isLightTheme ? undefined : "teal"}
-            bg={isLightTheme ? "#3f9f9b" : undefined}
-            color={isLightTheme ? "white" : undefined}
-            _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
-            onClick={handleStart}
-            boxShadow={"0px 4px 0px teal"}
-          >
-            {isRunning
-              ? t.timer_modal_restart || "Restart timer"
-              : t.timer_modal_start || "Start timer"}
-          </Button>
+          {shouldRenderBody ? (
+            <>
+              <Button
+                variant="ghost"
+                colorScheme="gray"
+                color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                onClick={handleClose}
+              >
+                {t.timer_modal_close || "Close"}
+              </Button>
+              <Button
+                colorScheme={isLightTheme ? undefined : "teal"}
+                bg={isLightTheme ? "#3f9f9b" : undefined}
+                color={isLightTheme ? "white" : undefined}
+                _hover={isLightTheme ? { bg: "#398f8b" } : undefined}
+                onClick={handleStart}
+                boxShadow={"0px 4px 0px teal"}
+              >
+                {isRunning
+                  ? t.timer_modal_restart || "Restart timer"
+                  : t.timer_modal_start || "Start timer"}
+              </Button>
+            </>
+          ) : (
+            <Box h="40px" />
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>

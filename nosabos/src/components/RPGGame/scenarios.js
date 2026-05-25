@@ -5,6 +5,7 @@ import {
   normalizeSupportLanguage,
 } from "../../constants/languages";
 import { callResponses } from "../../utils/llm";
+import { getAdultBeginnerToneRule } from "../../utils/adultBeginnerTone";
 import {
   REVIEW_WORLD_ID,
   applyObjectCollisions,
@@ -349,7 +350,7 @@ function buildReviewContextBlock(reviewContext = null, lessonTerms = [], levelKe
       ? "TUTORIAL REVIEW: Greetings, saying your name, and simple polite responses only. No errands, mysteries, or abstract storylines."
       : "",
     isBeginnerReviewLevel(levelKey)
-      ? "BEGINNER REVIEW: Keep the mission concrete and classroom-friendly. Use short, high-frequency language tied directly to the review topics."
+      ? "BEGINNER REVIEW: Keep the mission concrete and adult-relevant. Use short, high-frequency language tied directly to the review topics."
       : "",
   ].filter(Boolean);
 
@@ -1273,7 +1274,7 @@ function normalizeQuest(
       gatherWrongItem: (wrongName, correctName) =>
         `Eso es ${wrongName}. No es lo que necesito. Busca ${correctName}.`,
       gatherSuccess: (itemName) =>
-        `¡Excelente! Tienes ${itemName}. Eso me ayuda mucho.`,
+        `Listo. Tienes ${itemName}. Eso me ayuda.`,
       gatherPlayerReport: (itemName) => `Encontré ${itemName}. Aquí está.`,
       speechContinue: "Entiendo lo que dices. Sigamos adelante.",
     },
@@ -1445,8 +1446,7 @@ function normalizeQuest(
       gatherHint: (hint) => `A clue: ${hint}`,
       gatherWrongItem: (wrongName, correctName) =>
         `That's ${wrongName}. Not what I need. Look for ${correctName}.`,
-      gatherSuccess: (itemName) =>
-        `Excellent! You have ${itemName}. That helps a lot.`,
+      gatherSuccess: (itemName) => `Good. You have ${itemName}. That helps.`,
       gatherPlayerReport: (itemName) => `I found ${itemName}. Here it is.`,
       speechContinue: "I understand what you're saying. Let's keep going.",
     },
@@ -1750,8 +1750,9 @@ async function adaptQuestForReviewContext(
       ? "Tutorial rule: greetings, saying your name, and simple polite expressions only. No mysteries, errands, memory loss, urgency, or dramatic twists."
       : "",
     isBeginnerReviewLevel(levelKey)
-      ? "Beginner rule: rewrite everything into very short, concrete, high-frequency review language. No abstract, literary, or poetic lines."
+      ? "Beginner rule: rewrite everything into very short, concrete, high-frequency review language with adult register. No abstract, literary, or poetic lines."
       : "",
+    getAdultBeginnerToneRule(levelKey, "rpg"),
     `Rewrite every learner-facing string into ${targetLangName} and align it to the review brief.`,
     "This includes intro, storySeed, step titles/intros, node dialogue, player lines, choice text, choice replies, gather item names, hints, and gather-data item names/hints.",
     "Keep the JSON structure exactly the same.",
@@ -3352,8 +3353,8 @@ async function fallbackScenario(
 
 const CEFR_DIALOGUE_GUIDANCE = {
   "Pre-A1":
-    "Use only the most basic words (1-3 word phrases). Very simple greetings and labels. No grammar complexity.",
-  A1: "Use short, simple sentences (5-8 words max). Present tense only. Basic everyday vocabulary. NPC dialogue should be easy to understand for absolute beginners.",
+    "Use only very basic high-frequency language, but write natural complete micro-sentences instead of isolated word fragments. One or two short formulaic phrases per turn. No grammar complexity. Keep the register adult, socially normal, and conversational.",
+  A1: "Use short, simple sentences (5-8 words max). Present tense only. Basic everyday vocabulary. Keep NPC dialogue natural, adult, and easy to understand for beginners.",
   A2: "Use simple sentences and common expressions. Present and simple past tense. Everyday situations and familiar topics. Short dialogue turns.",
   B1: "Use moderately complex sentences. Mix of tenses allowed. Can include opinions and explanations. Connected discourse but still clear.",
   B2: "Use varied sentence structures. All tenses appropriate. Can include abstract topics, idioms, and nuanced language.",
@@ -3390,6 +3391,7 @@ function buildPrompt({
       : null;
   const dialogueGuidance =
     CEFR_DIALOGUE_GUIDANCE[levelKey] || CEFR_DIALOGUE_GUIDANCE.A1;
+  const adultBeginnerToneRule = getAdultBeginnerToneRule(levelKey, "rpg");
   const supportedObjects = getSupportedObjectTypes().join(", ");
   const supportedDecor = getSupportedDecorKinds().join(", ");
 
@@ -3403,6 +3405,7 @@ CEFR proficiency level: ${levelKey}
 
 ${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
+${adultBeginnerToneRule}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
 ${reviewContextBlock.promptBlock ? `\n${reviewContextBlock.promptBlock}\n` : ""}
 
@@ -3493,11 +3496,12 @@ CEFR proficiency level: ${levelKey}
 
 ${languageGuard}
 CRITICAL - Language difficulty: ${dialogueGuidance}
+${adultBeginnerToneRule}
 ALL NPC dialogue, quest text, questions, and greetings MUST match ${levelKey} proficiency level.
 ${reviewContextBlock.promptBlock ? `\n${reviewContextBlock.promptBlock}\n` : ""}
 ${
   mapId === TUTORIAL_MAP_ID
-    ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly and simple."
+    ? "TUTORIAL MODE: Make this a greetings-only onboarding scene. NPC dialogue must focus on saying hello, introducing yourself, and polite greetings. Keep it friendly, simple, and adult in register."
     : ""
 }
 

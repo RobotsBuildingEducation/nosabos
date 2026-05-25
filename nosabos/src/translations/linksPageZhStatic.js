@@ -21,7 +21,7 @@ export const LINKS_PAGE_ZH_STATIC = {
   launchApp: "打开应用",
   subscribe: "订阅",
   buyApps: "购买应用",
-  noSabosTitle: "No Sabos",
+  noSabosTitle: "Piyali",
   noSabosDescription:
     "你的个人语言导师。使用智能工具学习并探索新语言，帮助你持续练习。",
   rbeTitle: "Robots Building Education",

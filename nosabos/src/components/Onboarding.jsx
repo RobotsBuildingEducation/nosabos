@@ -55,7 +55,11 @@ import {
   nativeDrawerMotionProps,
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
-import { normalizeTTSVoice } from "../utils/tts";
+import {
+  GEMINI_LIVE_VOICE_OPTIONS,
+  getGeminiLiveVoiceOption,
+  normalizeGeminiLiveVoice,
+} from "../utils/geminiLiveVoices";
 
 const BASE_PATH = "/onboarding";
 const stepContentReveal = keyframes`
@@ -143,10 +147,12 @@ export default function Onboarding({
         initialDraft.targetLang,
         getDefaultTargetForSupport(initialSupportLang),
       ),
-      voice: normalizeTTSVoice(initialDraft.voice || "marin"),
+      tutorVoice: normalizeGeminiLiveVoice(
+        initialDraft.tutorVoice || initialDraft.voice,
+      ),
       voicePersona:
         personaForSupportLanguage(
-          initialDraft.voicePersona,
+          initialDraft.tutorVoicePersona ?? initialDraft.voicePersona,
           initialSupportLang,
         ) ??
         personaDefaultFor(initialSupportLang) ??
@@ -174,7 +180,7 @@ export default function Onboarding({
 
   const [level] = useState(defaults.level);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
-  const [voice, setVoice] = useState(defaults.voice);
+  const [tutorVoice, setTutorVoice] = useState(defaults.tutorVoice);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
@@ -276,8 +282,8 @@ export default function Onboarding({
       const payload = {
         level,
         supportLang,
-        voice,
-        voicePersona,
+        tutorVoice,
+        tutorVoicePersona: voicePersona,
         targetLang,
         pauseMs,
         soundEnabled,
@@ -673,11 +679,15 @@ export default function Onboarding({
                     <>
                       <VoicePreferenceField
                         t={ui}
-                        voice={voice}
-                        voicePersona={voicePersona}
+        voice={tutorVoice}
+        voicePersona={voicePersona}
                         targetLang={targetLang}
                         supportLang={supportLang}
-                        onVoiceChange={setVoice}
+        voiceOptions={GEMINI_LIVE_VOICE_OPTIONS}
+        normalizeVoice={normalizeGeminiLiveVoice}
+        getVoiceOption={getGeminiLiveVoiceOption}
+        previewProvider="gemini-live"
+        onVoiceChange={setTutorVoice}
                         onVoicePersonaChange={setVoicePersona}
                         onSelectSound={() => playOnboardingSound(selectSound)}
                         heading={ui.onboarding_section_voice_persona}

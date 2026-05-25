@@ -47,7 +47,12 @@ import {
 } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import { database, analytics } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  database,
+  analytics,
+  gradingLiteModel,
+} from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -69,6 +74,7 @@ import {
   completeTutorLesson,
   getLanguageXp,
   saveTutorAgendaProgress,
+  saveTutorLessonEarnedXp,
   startTutorLesson,
 } from "../utils/progressTracking";
 import {
@@ -82,6 +88,8 @@ import {
   getPreferredTTSVoice,
   getTTSPlayer,
 } from "../utils/tts";
+import { createGeminiLiveRealtimeBridge } from "../utils/geminiLiveBridge";
+import { normalizeGeminiLiveVoice } from "../utils/geminiLiveVoices";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   loadMultiLevelLearningPath,
@@ -102,15 +110,6 @@ import {
   nativeOverlayMotionProps,
 } from "../utils/modalMotion";
 
-const TUTOR_REALTIME_MODEL =
-  (import.meta.env.VITE_TUTOR_REALTIME_MODEL || "gpt-realtime") + "";
-
-const REALTIME_URL = import.meta.env.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      TUTOR_REALTIME_MODEL,
-    )}`
-  : "";
-
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
@@ -124,7 +123,7 @@ const ARCHIVE_INCOMING_HOLD_MS = 170;
 const archiveLayoutCache = new Map();
 let archiveMeasureContext = null;
 const TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION =
-  "You are a language tutor. You must pronounce words correctly when code switching and changing languages.";
+  "You are a language tutor. Correct target-language pronunciation is required. When code switching, switch accent and phonology for the target-language words instead of reading them with the surrounding language accent.";
 
 /* ---------------------------
    Utils & helpers
@@ -267,7 +266,109 @@ const TUTOR_STARTER_LESSON_IDS = new Set([
   "lesson-tutorial-a1",
 ]);
 const TUTOR_STARTER_LESSON_XP_REQUIRED = 50;
+const TUTOR_LESSON_XP_REQUIRED_MIN = 60;
+const TUTOR_LESSON_XP_REQUIRED_MAX = 90;
 const TUTOR_TURN_XP_RANGE = { min: 3, max: 7 };
+const TUTOR_TASK_VARIATIONS = [
+  "Ask one tiny meaning-check question about the current lesson concept.",
+  "Give a fill-in-the-blank prompt using a current lesson phrase.",
+  "Offer two short choices and ask the learner to pick the correct one.",
+  "Ask the learner to transform or personalize a current lesson phrase.",
+  "Set up a tiny realistic scenario and ask for one short reply.",
+  "Ask the learner to combine two already covered lesson concepts.",
+];
+const TUTOR_SIGNATURE_EXPERIENCES = {
+  microMission: {
+    label: "Micro mission",
+    instruction:
+      "Give the next few turns a clear tiny goal, such as introduce yourself, order one item, get one detail, explain one problem, or defend one opinion. Keep it tied to the lesson agenda and celebrate the specific win when the learner completes the goal.",
+  },
+  askMeBack: {
+    label: "Ask-me-back",
+    instruction:
+      "After the learner answers a question, coach them to ask the same or a related question back. This trains conversation flow, not only answering.",
+  },
+  listeningCheckpoint: {
+    label: "Listening checkpoint",
+    instruction:
+      "Say one short target-language sentence or phrase, then ask the learner to prove they understood one detail. Use yes/no, either/or, or a tiny answer at lower levels.",
+  },
+  mistakeComeback: {
+    label: "Comeback moment",
+    instruction:
+      "Bring back a phrase, pattern, or meaning the learner recently missed, hesitated on, or needed help with. If there was no clear miss, use quick recall of an earlier lesson phrase. Make it feel like an easy redemption moment.",
+  },
+  conversationRepair: {
+    label: "Conversation repair",
+    instruction:
+      "Practice what to do when communication breaks: ask for repetition, ask what a word means, correct a misunderstanding, clarify a time/place/detail, or say you meant a different thing.",
+  },
+  informationGap: {
+    label: "Information gap",
+    instruction:
+      "Give the learner missing information they must ask for, such as time, place, price, name, reason, or preference. Let their question unlock the next reply.",
+  },
+  pushbackPractice: {
+    label: "Pushback practice",
+    instruction:
+      "Gently challenge the learner's answer once, then ask them to clarify, support, soften, or revise their point. Keep the challenge friendly and level-appropriate.",
+  },
+  polishMode: {
+    label: "Polish mode",
+    instruction:
+      "After the learner gives an understandable answer, ask for a more natural, polite, concise, professional, casual, or precise version. Focus on tone and style instead of basic correctness.",
+  },
+};
+const TUTOR_SIGNATURE_EXPERIENCE_POOLS = {
+  "Pre-A1": ["microMission", "listeningCheckpoint", "mistakeComeback"],
+  A1: [
+    "microMission",
+    "askMeBack",
+    "listeningCheckpoint",
+    "mistakeComeback",
+    "conversationRepair",
+  ],
+  A2: [
+    "microMission",
+    "conversationRepair",
+    "listeningCheckpoint",
+    "askMeBack",
+    "informationGap",
+    "mistakeComeback",
+  ],
+  B1: [
+    "microMission",
+    "informationGap",
+    "conversationRepair",
+    "askMeBack",
+    "mistakeComeback",
+    "pushbackPractice",
+  ],
+  B2: [
+    "microMission",
+    "conversationRepair",
+    "listeningCheckpoint",
+    "pushbackPractice",
+    "polishMode",
+    "informationGap",
+  ],
+  C1: [
+    "polishMode",
+    "pushbackPractice",
+    "conversationRepair",
+    "microMission",
+    "informationGap",
+    "listeningCheckpoint",
+  ],
+  C2: [
+    "polishMode",
+    "pushbackPractice",
+    "conversationRepair",
+    "microMission",
+    "informationGap",
+    "listeningCheckpoint",
+  ],
+};
 const TUTOR_STARTER_AGENDA_ITEMS = [
   {
     id: "hello",
@@ -545,15 +646,25 @@ function buildTutorLessonContext(
   };
 }
 
-function buildTutorCodeSwitchingAudioInstruction(targetLanguageName = "") {
+function buildTutorCodeSwitchingAudioInstruction(
+  targetLanguageName = "",
+  supportLanguageName = "",
+) {
   return [
     TUTOR_CODE_SWITCHING_AUDIO_INSTRUCTION,
     targetLanguageName
-      ? `When you include ${targetLanguageName} words or phrases, pronounce those words as ${targetLanguageName} even if the surrounding tutoring language is different.`
+      ? `When you include ${targetLanguageName} words or phrases, pronounce those words with native-like ${targetLanguageName} sounds, rhythm, stress, and intonation even if the surrounding tutoring language is different.`
+      : "",
+    targetLanguageName && supportLanguageName
+      ? `Do not anglicize, hispanicize, or otherwise adapt ${targetLanguageName} model phrases to ${supportLanguageName} pronunciation. The accent must switch for the target phrase itself.`
       : "",
     targetLanguageName
-      ? `Say each ${targetLanguageName} model phrase as a short standalone phrase. Do not blend it into a support-language sentence.`
+      ? `Before and after each ${targetLanguageName} model phrase, separate it naturally with normal speech timing so the audio clearly switches into ${targetLanguageName} pronunciation.`
       : "",
+    targetLanguageName
+      ? `Say each ${targetLanguageName} model phrase as a short standalone phrase. Do not blend its sounds into a support-language sentence.`
+      : "",
+    "Never write visible timing, SSML, or control tags such as <pause>, </pause>, <break>, or [pause]. Use normal punctuation only.",
     "Write target-language words in normal spelling. Do not use phonetic respelling, hyphenation, or transliteration unless the learner explicitly asks.",
   ]
     .filter(Boolean)
@@ -680,11 +791,70 @@ function isTutorStarterAgendaLesson(lesson) {
   return TUTOR_STARTER_LESSON_IDS.has(id);
 }
 
+function getStableTutorLessonXpRequired(lesson) {
+  const source = String(
+    lesson?.id || lesson?.title?.en || lesson?.title?.es || "tutor-lesson",
+  );
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  const range = TUTOR_LESSON_XP_REQUIRED_MAX - TUTOR_LESSON_XP_REQUIRED_MIN + 1;
+  return TUTOR_LESSON_XP_REQUIRED_MIN + (hash % range);
+}
+
 function getTutorLessonXpRequired(lesson) {
   const required = isTutorStarterAgendaLesson(lesson)
     ? TUTOR_STARTER_LESSON_XP_REQUIRED
-    : lesson?.xpReward;
+    : getStableTutorLessonXpRequired(lesson);
   return Math.max(0, Number(required) || 0);
+}
+
+function getTutorTaskVariationInstruction(turnCount = 0) {
+  const index =
+    Math.abs(Number.isFinite(turnCount) ? turnCount : 0) %
+    TUTOR_TASK_VARIATIONS.length;
+  return `CURRENT TASK FORMAT: ${TUTOR_TASK_VARIATIONS[index]}`;
+}
+
+function getTutorSignatureExperienceInstruction({
+  selectedLevel = "A1",
+  turnCount = 0,
+  isKickoff = false,
+  isStarterLesson = false,
+} = {}) {
+  const level = TUTOR_CEFR_LEVELS.includes(selectedLevel)
+    ? selectedLevel
+    : "A1";
+  const pool =
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS[level] ||
+    TUTOR_SIGNATURE_EXPERIENCE_POOLS.A1;
+  const turn = Math.abs(Number.isFinite(turnCount) ? turnCount : 0);
+  const preferredId = isKickoff ? "microMission" : pool[turn % pool.length];
+  const card =
+    TUTOR_SIGNATURE_EXPERIENCES[preferredId] ||
+    TUTOR_SIGNATURE_EXPERIENCES.microMission;
+
+  return [
+    "SIGNATURE EXPERIENCE LAYER: Keep the existing Tutor agenda and current task formats. Use this as a light overlay, not a replacement for the lesson.",
+    "Do not announce internal labels like 'signature experience' to the learner. You may naturally say 'tiny mission' when helpful.",
+    `CURRENT SIGNATURE EXPERIENCE: ${card.label}. ${card.instruction}`,
+    isStarterLesson
+      ? "For the starter introductions lesson, keep the fixed phrase agenda as the source of truth. Use the experience layer only to add listening checks, ask-me-back turns, or tiny missions around the current phrase."
+      : "",
+    "If the recent on-screen context shows an experience already in progress, continue or complete it before starting a new one.",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function getStoredTutorLessonEarnedXp(lessonProgress, lesson) {
+  const required = getTutorLessonXpRequired(lesson);
+  if (lessonProgress?.status === SKILL_STATUS.COMPLETED) return required;
+  const earned = Number(lessonProgress?.earnedXp);
+  if (!Number.isFinite(earned)) return 0;
+  return Math.min(required, Math.max(0, earned));
 }
 
 function getTutorStarterAgendaSummary(lang = "en") {
@@ -852,23 +1022,66 @@ function tutorPhraseMatchesTranscript(phrase, transcript) {
   return phraseTokens.length >= 4 && matched >= phraseTokens.length - 1;
 }
 
-function hasPrematureTutorCompletionText(text = "") {
+function tutorPhraseIsDirectAnswer(phrase, transcript) {
+  const normalizedPhrase = normalizeTutorAgendaSpeech(phrase);
+  const normalizedTranscript = normalizeTutorAgendaSpeech(transcript);
+  if (!normalizedPhrase || !normalizedTranscript) return false;
+  if (normalizedTranscript === normalizedPhrase) return true;
+
+  const phraseTokens = normalizedPhrase.split(/\s+/).filter(Boolean);
+  const transcriptTokens = normalizedTranscript.split(/\s+/).filter(Boolean);
+  if (!phraseTokens.length || !transcriptTokens.length) return false;
+  if (phraseTokens.length === 1) {
+    return (
+      transcriptTokens.length === 1 && transcriptTokens[0] === phraseTokens[0]
+    );
+  }
+  if (transcriptTokens.length > phraseTokens.length + 2) return false;
+
+  if (normalizedTranscript.includes(normalizedPhrase)) return true;
+
+  let phraseIndex = 0;
+  transcriptTokens.forEach((token) => {
+    if (token === phraseTokens[phraseIndex]) phraseIndex += 1;
+  });
+  return phraseIndex >= phraseTokens.length;
+}
+
+function anyTutorPhraseIsDirectAnswer(phrases = [], transcript = "") {
+  return phrases.some((phrase) =>
+    tutorPhraseIsDirectAnswer(phrase, transcript),
+  );
+}
+
+function hasTutorMeaningfulTranscript(text = "") {
   const normalized = normalizeTutorAgendaSpeech(text);
   if (!normalized) return false;
-  return [
-    /\b(completed|finished|done with|wrapped up|complete)\b.*\b(lesson|today)\b/i,
-    /\b(lesson|today)\b.*\b(completed|finished|done|complete)\b/i,
-    /\b(that'?s all|all done|we'?re done|you'?re done|see you|goodbye|bye for now)\b/i,
-    /\bhas completado\b.*\b(leccion|lesson)\b/i,
-    /\bhas completado\b.*\b(practica|hoy|todo|toda)\b/i,
-    /\bcompletaste\b.*\b(leccion|lesson)\b/i,
-    /\bcompletaste\b.*\b(practica|hoy|todo|toda)\b/i,
-    /\bleccion\b.*\b(completada|terminada|completa)\b/i,
-    /\b(practica|sesion|hoy)\b.*\b(completada|terminada|completa|terminamos|acabamos)\b/i,
-    /\b(lo lograste|lo hiciste muy bien)\b.*\b(completado|completaste|terminamos|listo|practica de hoy)\b/i,
-    /\b(ya terminamos|hemos terminado|eso es todo por hoy)\b/i,
-    /\b(nos vemos|hasta pronto|hasta luego|sigue practicando)\b/i,
-  ].some((pattern) => pattern.test(normalized));
+  const meaningfulChars = normalized.match(/[\p{L}\p{N}]/gu)?.length || 0;
+  if (meaningfulChars >= 2) return true;
+  return /[\u3040-\u30ff\u3400-\u9fff]/u.test(String(text || ""));
+}
+
+function extractGeminiResponseText(resp) {
+  const result = resp?.response || resp;
+  if (typeof result?.text === "function") return result.text();
+  if (typeof result?.text === "string") return result.text;
+  const cand = result?.candidates?.[0];
+  if (cand?.content?.parts?.length) {
+    return cand.content.parts.map((part) => part.text || "").join("");
+  }
+  return "";
+}
+
+function sanitizeTutorAssistantText(text = "", { trim = true } = {}) {
+  const value = String(text || "")
+    .replace(/<\/?\s*(?:pause|break|silence)\b[^>]*>/gi, " ")
+    .replace(/<\s*\/?\s*(?:pause|break|silence)\s*$/gi, "")
+    .replace(/\[\s*(?:pause|break|silence)\s*\]/gi, " ")
+    .replace(/\(\s*(?:pause|break|silence)\s*\)/gi, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([¿¡])\s+/g, "$1")
+    .replace(/[ \t]{2,}/g, " ");
+  return trim ? value.trim() : value;
 }
 
 function normalizeTutorStarterAgendaProgress(progress = {}) {
@@ -1255,7 +1468,9 @@ function findNextTutorLessonAfter(units, lessonId, progressLessons = {}) {
 }
 
 function getTutorMessageVisibleText(message) {
-  return `${message?.textFinal || ""}${message?.textStream || ""}`.trim();
+  return sanitizeTutorAssistantText(
+    `${message?.textFinal || ""}${message?.textStream || ""}`,
+  );
 }
 
 function hasVisibleTutorMessages(messages = []) {
@@ -1276,9 +1491,9 @@ function buildRecentTutorConversationContext(messages = [], limit = 4) {
 }
 
 function sanitizeTutorMessageForStorage(message) {
-  const textFinal = `${message?.textFinal || ""} ${
-    message?.textStream || ""
-  }`.trim();
+  const textFinal = sanitizeTutorAssistantText(
+    `${message?.textFinal || ""} ${message?.textStream || ""}`,
+  );
   if (!textFinal) return null;
 
   return {
@@ -1640,7 +1855,9 @@ async function ensureUserDoc(npub, defaults = {}) {
             level: "beginner",
             supportLang: "en",
             voice: DEFAULT_TTS_VOICE,
-            voicePersona: translations.en.onboarding_persona_default_example,
+            tutorVoice: normalizeGeminiLiveVoice(),
+            tutorVoicePersona:
+              translations.en.onboarding_persona_default_example,
             targetLang: "es",
             showTranslations: true,
             helpRequest: "",
@@ -2434,7 +2651,13 @@ function uiStateLabel(uiState, uiLang) {
   return "";
 }
 
-function TutorViewportEdgeGlow({ state = "idle", isLightTheme = false }) {
+function TutorViewportEdgeGlow({
+  enabled = true,
+  state = "idle",
+  isLightTheme = false,
+}) {
+  if (!enabled) return null;
+
   const isSpeaking = state === "speaking";
   const isThinking = state === "thinking";
   const isActive = isSpeaking || isThinking;
@@ -3201,6 +3424,7 @@ export default function Tutor({
   maxProficiencyLevel = "Pre-A1",
   onFirstLessonComplete,
   onDailyGoalCelebration,
+  isActive = true,
 }) {
   const aliveRef = useRef(false);
   const autoStopTimerRef = useRef(null);
@@ -3219,8 +3443,9 @@ export default function Tutor({
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-  }, []);
+  }, [isActive]);
 
   // Refs for realtime
   const audioRef = useRef(null);
@@ -3244,8 +3469,6 @@ export default function Tutor({
   const recTailRef = useRef(new Map());
   const replayRidSetRef = useRef(new Set());
   const ignoredRidSetRef = useRef(new Set());
-  const prematureCompletionRidSetRef = useRef(new Set());
-  const pendingStarterReviewCorrectionRef = useRef(false);
   const replayAudioRef = useRef(null);
   const replayAudioUrlRef = useRef("");
   const replayCleanupRef = useRef(null);
@@ -3278,10 +3501,13 @@ export default function Tutor({
 
   // Learning prefs
   const [voice, setVoice] = useState(
-    getPreferredTTSVoice(user?.progress?.voice),
+    normalizeGeminiLiveVoice(
+      user?.progress?.tutorVoice || user?.progress?.voice,
+    ),
   );
   const [voicePersona, setVoicePersona] = useState(
-    user?.progress?.voicePersona ||
+    user?.progress?.tutorVoicePersona ||
+      user?.progress?.voicePersona ||
       translations.en.onboarding_persona_default_example,
   );
   const [showTranslations, setShowTranslations] = useState(
@@ -3347,11 +3573,10 @@ export default function Tutor({
       : {};
 
     return {
-      totalXp: xp,
       lessons: lessonsForLanguage,
       targetLang,
     };
-  }, [targetLang, user?.progress, xp]);
+  }, [targetLang, user?.progress]);
 
   const {
     isOpen: isTutorPathOpen,
@@ -3379,6 +3604,7 @@ export default function Tutor({
   );
   const tutorStarterAgendaProgressRef = useRef({});
   const tutorLessonCompletionTriggeredRef = useRef(false);
+  const pendingTutorLessonCompletionRef = useRef(false);
   const [completedTutorLessonData, setCompletedTutorLessonData] =
     useState(null);
   const [showTutorLessonComplete, setShowTutorLessonComplete] = useState(false);
@@ -3637,13 +3863,11 @@ export default function Tutor({
       ) {
         tutorResumeAppliedRef.current = resumeKey;
 
-        const lessonStartXp =
-          progressLessons?.[resumeLesson.lesson.id]?.lessonStartXp ?? xp;
         const earned =
           resumeLesson.status === SKILL_STATUS.IN_PROGRESS
-            ? Math.min(
-                getTutorLessonXpRequired(resumeLesson.lesson),
-                Math.max(0, xp - lessonStartXp),
+            ? getStoredTutorLessonEarnedXp(
+                progressLessons?.[resumeLesson.lesson.id],
+                resumeLesson.lesson,
               )
             : 0;
 
@@ -3742,20 +3966,11 @@ export default function Tutor({
       );
     }
 
-    const lessonStartXp = tutorUserProgress.lessons?.[lesson.id]?.lessonStartXp;
+    const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
     const required = getTutorLessonXpRequired(lesson);
-    if (
-      typeof lessonStartXp !== "number" ||
-      typeof tutorUserProgress.totalXp !== "number" ||
-      !required
-    ) {
-      return 0;
-    }
-    return Math.round(
-      (Math.max(0, tutorUserProgress.totalXp - lessonStartXp) /
-        Math.max(1, required)) *
-        100,
-    );
+    if (!required) return 0;
+    const earned = getStoredTutorLessonEarnedXp(lessonProgress, lesson);
+    return Math.round((Math.max(0, earned) / Math.max(1, required)) * 100);
   }
 
   function handleTutorPathOpen() {
@@ -3775,16 +3990,9 @@ export default function Tutor({
 
     const lessonProgress = tutorUserProgress.lessons?.[lesson.id];
     const isCompleted = status === SKILL_STATUS.COMPLETED;
-    const lessonStartXp =
-      typeof lessonProgress?.lessonStartXp === "number"
-        ? lessonProgress.lessonStartXp
-        : xp;
     const earned =
       status === SKILL_STATUS.IN_PROGRESS || isCompleted
-        ? Math.min(
-            getTutorLessonXpRequired(lesson),
-            Math.max(0, xp - (lessonProgress?.lessonStartXp ?? xp)),
-          )
+        ? getStoredTutorLessonEarnedXp(lessonProgress, lesson)
         : 0;
     const savedStarterProgress = isTutorStarterAgendaLesson(lesson)
       ? getSavedTutorStarterAgendaProgress(lessonProgress)
@@ -3821,7 +4029,6 @@ export default function Tutor({
           lesson.id,
           targetLangRef.current,
           tutorUserProgress,
-          lessonStartXp,
         );
       } catch (error) {
         console.error("Failed to start Tutor lesson:", error);
@@ -3849,7 +4056,6 @@ export default function Tutor({
         lesson.id,
         targetLangRef.current,
         tutorUserProgress,
-        xp,
       );
     } catch (error) {
       console.error("Failed to start Tutor lesson:", error);
@@ -3916,6 +4122,9 @@ export default function Tutor({
 
   // Response mapping
   const respToMsg = useRef(new Map());
+  const tutorClosingActCheckedKeysRef = useRef(new Set());
+  const tutorClosingActRecoveryTurnRef = useRef(null);
+  const tutorClosingActRecoveryInFlightRef = useRef(false);
   const sessionUpdateTimer = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
   const inlineFeedbackRef = useRef(inlineFeedback);
@@ -3971,8 +4180,14 @@ export default function Tutor({
   const [displayRobotState, setDisplayRobotState] = useState(liveUiState);
   const [previousRobotState, setPreviousRobotState] = useState(null);
   const [isRobotTransitioning, setIsRobotTransitioning] = useState(false);
-  const displayOrbState = getRealtimeOrbVisualState(displayRobotState);
-  const previousOrbState = getRealtimeOrbVisualState(previousRobotState);
+  const displayOrbState =
+    displayRobotState === "thinking"
+      ? "idle"
+      : getRealtimeOrbVisualState(displayRobotState);
+  const previousOrbState =
+    previousRobotState === "thinking"
+      ? "idle"
+      : getRealtimeOrbVisualState(previousRobotState);
 
   useEffect(() => {
     if (liveUiState === displayRobotState) return;
@@ -3996,8 +4211,7 @@ export default function Tutor({
   const timeline = [...messages].sort((a, b) => b.ts - a.ts);
   const latestAssistantMessage = timeline.find((m) => {
     if (m.role !== "assistant") return false;
-    const text = `${m.textFinal || ""}${m.textStream || ""}`.trim();
-    return Boolean(text);
+    return Boolean(getTutorMessageVisibleText(m));
   });
   const previousAssistantIdRef = useRef(null);
   const liveBubbleSurfaceRef = useRef(null);
@@ -4053,9 +4267,7 @@ export default function Tutor({
     const previousMessage = messages.find((m) => m.id === prevId);
     const snapshot = liveBubbleSnapshotRef.current;
     const targetNode = chatLogButtonRef.current;
-    const outgoingText = `${previousMessage?.textFinal || ""}${
-      previousMessage?.textStream || ""
-    }`.trim();
+    const outgoingText = getTutorMessageVisibleText(previousMessage);
 
     if (!previousMessage || !snapshot || !outgoingText) return;
     if (!(targetNode instanceof HTMLElement)) return;
@@ -4253,8 +4465,8 @@ export default function Tutor({
   function startRecordingForRid(rid, mid) {
     if (!captureOutRef.current || !audioGraphReadyRef.current) return;
     try {
-      const dest = captureOutRef.current;
-      const recorder = new MediaRecorder(dest.stream, {
+      const stream = captureOutRef.current?.stream || captureOutRef.current;
+      const recorder = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
       });
       const chunks = [];
@@ -4340,10 +4552,18 @@ export default function Tutor({
           const data = snap.data() || {};
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
-          if (data.progress?.voice)
-            setVoice(getPreferredTTSVoice(data.progress.voice));
-          if (data.progress?.voicePersona)
-            setVoicePersona(data.progress.voicePersona);
+          if (data.progress?.tutorVoice || data.progress?.voice) {
+            setVoice(
+              normalizeGeminiLiveVoice(
+                data.progress.tutorVoice || data.progress.voice,
+              ),
+            );
+          }
+          if (data.progress?.tutorVoicePersona || data.progress?.voicePersona) {
+            setVoicePersona(
+              data.progress.tutorVoicePersona || data.progress.voicePersona,
+            );
+          }
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
@@ -4389,8 +4609,9 @@ export default function Tutor({
 
   // Scroll to top on mount
   useEffect(() => {
+    if (!isActive) return;
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, []);
+  }, [isActive]);
 
   /* ---------------------------
      Stream flushing
@@ -4410,7 +4631,9 @@ export default function Tutor({
       streamBuffersRef.current.set(mid, "");
       updateMessage(mid, (m) => ({
         ...m,
-        textStream: (m.textStream || "") + buf,
+        textStream: sanitizeTutorAssistantText((m.textStream || "") + buf, {
+          trim: false,
+        }),
       }));
     }
   }
@@ -4429,64 +4652,31 @@ export default function Tutor({
     setMood("thoughtful");
     try {
       await ensureSelectedTutorLessonStarted();
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      localRef.current = stream;
       assistantInputLockedRef.current = false;
-      setLocalMicEnabled(true);
-
-      const pc = new RTCPeerConnection();
-      pcRef.current = pc;
-
-      pc.ontrack = (e) => {
-        if (!audioRef.current) return;
-        audioRef.current.srcObject = e.streams[0];
-        audioRef.current.play().catch(() => {});
-
-        // Setup audio graph for recording
-        if (!audioGraphReadyRef.current) {
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          audioCtxRef.current = ctx;
-          const src = ctx.createMediaStreamSource(e.streams[0]);
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          src.connect(analyser);
+      const bridge = await createGeminiLiveRealtimeBridge({
+        audioElement: audioRef.current,
+        initialInstructions: buildLanguageInstructions(),
+        voice: normalizeGeminiLiveVoice(voiceRef.current),
+        onEvent: handleRealtimeEvent,
+        onError: (message) => setErr((prev) => prev || message),
+        onAudioGraph: ({ audioContext, analyser, floatBuffer, stream }) => {
+          audioCtxRef.current = audioContext;
           analyserRef.current = analyser;
-          floatBufRef.current = new Float32Array(analyser.frequencyBinCount);
-          const dest = ctx.createMediaStreamDestination();
-          src.connect(dest);
-          captureOutRef.current = dest;
+          floatBufRef.current = floatBuffer;
+          captureOutRef.current = stream;
           audioGraphReadyRef.current = true;
-        }
-      };
-
-      stream.getTracks().forEach((t) => pc.addTrack(t, stream));
-
-      const dc = pc.createDataChannel("oai-events");
-      dcRef.current = dc;
-
-      dc.onopen = () => {
-        aliveRef.current = true;
-        setTimeout(() => {
-          applyLanguagePolicyNow();
-        }, 60);
-      };
-
-      dc.onmessage = handleRealtimeEvent;
-
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-      const resp = await fetch(REALTIME_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/sdp" },
-        body: offer.sdp,
+        },
       });
-      const answer = await resp.text();
-      if (!resp.ok) throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
-      await pc.setRemoteDescription({ type: "answer", sdp: answer });
+      dcRef.current = bridge;
+      pcRef.current = bridge;
+      localRef.current = bridge.mediaStream;
+      setLocalMicEnabled(true);
 
       setStatus("connected");
       aliveRef.current = true;
+      tutorSessionReadyRef.current = true;
       setUiState("idle");
+      applyLanguagePolicyNow();
       scheduleAutoStop();
     } catch (e) {
       clearAutoStopTimer();
@@ -4579,8 +4769,9 @@ export default function Tutor({
     recTailRef.current.clear();
     replayRidSetRef.current.clear();
     ignoredRidSetRef.current.clear();
-    prematureCompletionRidSetRef.current.clear();
-    pendingStarterReviewCorrectionRef.current = false;
+    tutorClosingActCheckedKeysRef.current.clear();
+    tutorClosingActRecoveryTurnRef.current = null;
+    tutorClosingActRecoveryInFlightRef.current = false;
     guardrailItemIdsRef.current = [];
     pendingGuardrailTextRef.current = "";
 
@@ -4629,7 +4820,10 @@ export default function Tutor({
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
-      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+      buildTutorCodeSwitchingAudioInstruction(
+        targetLanguageName,
+        supportLanguageName,
+      );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
         targetLang: tLang,
@@ -4700,11 +4894,13 @@ export default function Tutor({
             "Ask open-ended follow-ups, respond to the learner's ideas, and weave corrections into the conversation.",
             "Only pause for explicit teaching or support-language clarification when the learner asks or is clearly stuck.",
           ].join(" ");
+    // Tutor speech is the dominant Gemini Live cost, so these length limits are
+    // cost guardrails as much as UX tuning.
     const replyLengthInstruction = isEarlyTutorLevel
-      ? "Keep replies short but instructional: 1-3 compact sentences, usually under 45 words."
+      ? "Keep replies short but instructional: 1-2 compact sentences, usually under 28 words and under 12 seconds spoken."
       : isAdvancedTutorLevel
-        ? "Keep replies natural and conversational: usually 2-4 concise sentences, with one clear follow-up question."
-        : "Keep replies brief and target-language-first: 1-3 short sentences.";
+        ? "Keep replies natural and conversational: usually 1-3 concise sentences, with one clear follow-up question, under 16 seconds spoken."
+        : "Keep replies brief and target-language-first: 1-2 short sentences, under 12 seconds spoken.";
     const speechAcceptanceInstructions = isEarlyTutorLevel
       ? [
           "SPEECH ACCEPTANCE RULE: Sound quality is not the gate for progress.",
@@ -4741,6 +4937,33 @@ export default function Tutor({
     const feedbackContext = feedbackText
       ? `LATEST TUTOR FEEDBACK: ${feedbackText}. Use this to adjust the next micro-step without repeating the feedback verbatim.`
       : "";
+    const requiredXp = getTutorLessonXpRequired(selectedTutorLessonRef.current);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const lessonStillInProgress =
+      requiredXp > 0 &&
+      earnedXp < requiredXp &&
+      !tutorLessonCompletionTriggeredRef.current;
+    const completionControlInstruction = lessonStillInProgress
+      ? [
+          `INTERNAL ONLY: current lesson practice progress is ${earnedXp}/${requiredXp}; the app has not completed this lesson.`,
+          "Do not perform a closing act in any language or wording.",
+          "A closing act includes any farewell, completion announcement, end-of-session summary, offer to stop, or suggestion that the lesson is over.",
+          "The app will automatically close the conversation and show the lesson-complete modal when the threshold is reached.",
+          "Until then, keep reviewing, combining, or practicing only the selected lesson concepts.",
+        ].join(" ")
+      : "";
+    const interactionVarietyInstruction = [
+      "Avoid repetitive prompt endings. Do not repeatedly end with 'can you say that' or 'can you try that'.",
+      "Vary the learner task: fill a blank, choose between options, answer a small meaning question, transform a phrase, respond to a tiny scenario, or use the model phrase in context.",
+      "Use direct, natural prompts and do not reuse the same request wording twice in a row.",
+      getTutorTaskVariationInstruction(turnCountRef.current),
+    ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isStarterLesson: starterAgendaLesson,
+      });
 
     return [
       "Act as a warm, practical language tutor leading a focused tutoring session.",
@@ -4753,9 +4976,12 @@ export default function Tutor({
       tutorLessonContext,
       starterAgendaContext,
       feedbackContext,
+      completionControlInstruction,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       tutorPedagogyInstructions,
       speechAcceptanceInstructions,
+      interactionVarietyInstruction,
+      signatureExperienceInstruction,
       replyLengthInstruction,
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
@@ -4780,7 +5006,10 @@ export default function Tutor({
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
-      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+      buildTutorCodeSwitchingAudioInstruction(
+        targetLanguageName,
+        supportLanguageName,
+      );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
         targetLang: tLang,
@@ -4813,6 +5042,27 @@ export default function Tutor({
       unit,
       supportCode,
     );
+    const requiredXp = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const lessonStillInProgress =
+      requiredXp > 0 &&
+      earnedXp < requiredXp &&
+      !tutorLessonCompletionTriggeredRef.current;
+    const noWrapInstruction = lessonStillInProgress
+      ? "LESSON_STATE: IN_PROGRESS. Do not perform a closing act in any language or wording. The app will close the conversation and show the lesson-complete modal when the threshold is reached."
+      : "";
+    const varietyInstruction = [
+      "Do not end with a generic repeated request.",
+      "Use a natural varied prompt, such as a tiny question, choice, blank, transformation, or scenario tied to the lesson.",
+      getTutorTaskVariationInstruction(turnCountRef.current),
+    ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isKickoff: true,
+        isStarterLesson: isTutorStarterAgendaLesson(lesson),
+      });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       const nextItem = getNextTutorStarterAgendaItem(
@@ -4832,6 +5082,9 @@ export default function Tutor({
       targetLanguageBoundaryInstruction,
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
+      noWrapInstruction,
+      varietyInstruction,
+      signatureExperienceInstruction,
       `Use the selected lesson agenda: ${agendaTitle}${
         agendaSubtitle ? ` - ${agendaSubtitle}` : ""
       }. Treat this as the lesson topic/concept, not permission to practice non-${targetLanguageName} phrases.`,
@@ -4877,7 +5130,10 @@ export default function Tutor({
     const targetLanguageName =
       getLanguagePromptName(targetLang) || "the target language";
     const codeSwitchingAudioInstruction =
-      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+      buildTutorCodeSwitchingAudioInstruction(
+        targetLanguageName,
+        supportLanguageName,
+      );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
         targetLang,
@@ -4934,6 +5190,20 @@ export default function Tutor({
       .filter(Boolean)
       .join(", ");
     const recentOnScreenContext = buildRecentOnScreenContextInstruction();
+    const unit = selectedTutorUnitRef.current;
+    const selectedLevel =
+      unit?.cefrLevel ||
+      unit?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "Pre-A1";
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isKickoff,
+        isStarterLesson: true,
+      });
 
     if (!item) {
       return [
@@ -4942,6 +5212,7 @@ export default function Tutor({
         teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
         recentOnScreenContext,
+        signatureExperienceInstruction,
         "All required agenda items have been introduced, but the lesson is NOT complete until the app transitions. Keep practicing by reviewing or combining only the concepts already covered.",
         `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for model phrases.`,
         supportCode === targetLang
@@ -4955,16 +5226,16 @@ export default function Tutor({
           ? "REVIEW LOOP ACTIVE: acknowledge the learner briefly, then ask one natural review/combo practice task using only the covered concepts. There is no fixed number of review turns; continue this loop until the app itself ends the session."
           : "If this instruction is reached after the app has enough XP, do not make a closing announcement; ask one tiny practice prompt and let the app handle the transition.",
         remainingXp > 0
-          ? `CRITICAL: ${remainingXp} XP is still required. Do not say the lesson, practice, or today's work is complete. Do not say goodbye, "nos vemos", "hasta pronto", or any closing phrase. Ask the next review task instead.`
+          ? `CRITICAL: ${remainingXp} XP is still required. Do not perform a closing act in any language or wording. Ask the next review task instead.`
           : "",
         latestTranscript
           ? `Latest learner transcript: "${latestTranscript}".`
           : "",
-        "Do not mention XP, internal progress, finishing, being done, goodbye, or seeing the learner later.",
+        "Do not mention XP, internal progress, or any end-of-session state.",
         "Ask for one small review task or one simple combination of learned concepts in natural tutor language.",
         "Do not introduce new subjects, advanced vocabulary, or open-ended free conversation.",
         "Do not mention pronunciation, accents, or sound quality. Do not ask the learner to repeat for pronunciation.",
-        "Keep it natural and concise: 1-2 short sentences.",
+        "Keep it natural and concise: 1 short sentence, or 2 very short sentences only when needed.",
       ]
         .filter(Boolean)
         .join("\n");
@@ -4976,6 +5247,7 @@ export default function Tutor({
       teacherTalkLanguageInstruction,
       codeSwitchingAudioInstruction,
       recentOnScreenContext,
+      signatureExperienceInstruction,
       "The app controls the agenda. Your job is to tutor the current agenda item naturally.",
       `Use ${supportLanguageName} for brief guidance and ${targetLanguageName} for the phrase the learner should try.`,
       supportCode === targetLang
@@ -5019,7 +5291,7 @@ export default function Tutor({
       "Only app-accepted turns are progress. Do not treat unrelated words, random phrases, or a different target phrase as progress.",
       "Do not ask the learner to repeat for pronunciation, do not split syllables, and do not rate accent.",
       "Do not drift into topics beyond the current agenda item.",
-      "Keep it natural and concise: 1-2 short sentences.",
+      "Keep it natural and concise: 1 short sentence, or 2 very short sentences only when needed.",
       `Response kind: ${kind}.`,
     ]
       .filter(Boolean)
@@ -5131,9 +5403,9 @@ export default function Tutor({
           )}. Model this ${targetLanguageName} phrase if useful: "${nextModel}". Meaning in ${supportLanguageName}: "${nextMeaning}".`
         : `All agenda items have been covered. Internal only, do not say this to the learner: app-tracked XP is ${earnedXp}/${requiredXp}, with ${remainingXp} XP of review practice remaining. Continue with natural review or combination practice using only covered concepts until the app ends the session.`,
       "Use the app-tracked agenda state as the source of truth. Do not evaluate accent, sound quality, or pronunciation. Only explicitly accepted agenda items are complete.",
-      "Do not mention XP, internal progress, finishing, being done, goodbye, or seeing the learner later. The app UI handles the transition.",
+      "Do not mention XP, internal progress, or any end-of-session state. The app UI handles the transition.",
       remainingXp > 0
-        ? `Internal only: ${remainingXp} XP remains. Do not say the lesson, practice, or today is complete. Do not say goodbye or "nos vemos"; continue with one more review prompt.`
+        ? `Internal only: ${remainingXp} XP remains. Do not perform a closing act in any language or wording; continue with one more review prompt.`
         : "",
       nextItem
         ? `Before asking the learner to repeat "${nextModel}", briefly explain that it means "${nextMeaning}" in ${supportLanguageName}.`
@@ -5160,7 +5432,10 @@ export default function Tutor({
     const supportLanguageName =
       getLanguagePromptName(supportCode) || "the user's support language";
     const codeSwitchingAudioInstruction =
-      buildTutorCodeSwitchingAudioInstruction(targetLanguageName);
+      buildTutorCodeSwitchingAudioInstruction(
+        targetLanguageName,
+        supportLanguageName,
+      );
     const targetLanguageBoundaryInstruction =
       buildTutorTargetLanguageBoundaryInstruction({
         targetLang: tLang,
@@ -5185,6 +5460,35 @@ export default function Tutor({
         supportLanguageName,
         isEarlyTutorLevel,
       });
+    const requiredXp = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const remainingXp = Math.max(0, requiredXp - earnedXp);
+    const lessonStillInProgress =
+      requiredXp > 0 &&
+      earnedXp < requiredXp &&
+      !tutorLessonCompletionTriggeredRef.current;
+    const noWrapInstruction = lessonStillInProgress
+      ? [
+          `INTERNAL LESSON PROGRESS: ${earnedXp}/${requiredXp} app-tracked lesson XP; ${remainingXp} XP remains.`,
+          "LESSON_STATE: IN_PROGRESS.",
+          "Do not perform a closing act in any language or wording.",
+          "A closing act includes any farewell, completion announcement, end-of-session summary, offer to stop, or suggestion that the lesson is over.",
+          "The app, not you, ends the lesson. When the threshold is reached, the app will close the conversation and show the lesson-complete modal.",
+          "Until then, continue with one review, combination, or comprehension task from the selected lesson.",
+        ].join(" ")
+      : "";
+    const varietyInstruction = [
+      "INTERACTION VARIETY: Do not end every message with 'can you try that' or 'can you say that'.",
+      "Vary the task format naturally: fill a blank, choose between two options, answer a tiny question, transform a phrase, identify meaning, or use the phrase in a short reply.",
+      "Avoid using the same closing request wording twice in a row.",
+      getTutorTaskVariationInstruction(turnCountRef.current),
+    ].join(" ");
+    const signatureExperienceInstruction =
+      getTutorSignatureExperienceInstruction({
+        selectedLevel,
+        turnCount: turnCountRef.current,
+        isStarterLesson: isTutorStarterAgendaLesson(lesson),
+      });
 
     if (isTutorStarterAgendaLesson(lesson)) {
       return [
@@ -5193,6 +5497,9 @@ export default function Tutor({
         teacherTalkLanguageInstruction,
         codeSwitchingAudioInstruction,
         buildTutorStarterProgressInstructions(userMessage, acceptedItemIds),
+        noWrapInstruction,
+        varietyInstruction,
+        signatureExperienceInstruction,
         `Use brief ${supportLanguageName} guidance and one tiny ${targetLanguageName} practice step.`,
         acceptedItemIds.length
           ? "The latest app-tracked item is complete. Continue to the next agenda item."
@@ -5210,6 +5517,9 @@ export default function Tutor({
       codeSwitchingAudioInstruction,
       userMessage ? `Latest learner transcript: "${userMessage}".` : "",
       buildRecentOnScreenContextInstruction(),
+      noWrapInstruction,
+      varietyInstruction,
+      signatureExperienceInstruction,
       `Keep teaching from the selected agenda topic: ${agendaTitle}. Convert any non-${targetLanguageName} source wording into ${targetLanguageName} before modeling it.`,
       "Work through the agenda first. Once the agenda has been covered, review, combine, or practice only what was covered in this lesson until the app transitions away.",
       isEarlyTutorLevel
@@ -5242,6 +5552,11 @@ export default function Tutor({
   }
 
   function setLocalMicEnabled(enabled) {
+    // Route mic state through the Gemini bridge so "muted" also means no
+    // billable input-audio stream.
+    try {
+      dcRef.current?.setInputAudioEnabled?.(enabled);
+    } catch {}
     try {
       localRef.current?.getAudioTracks?.().forEach((track) => {
         track.enabled = enabled;
@@ -5342,7 +5657,7 @@ export default function Tutor({
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
-    const voiceName = getPreferredTTSVoice(voiceRef.current);
+    const voiceName = normalizeGeminiLiveVoice(voiceRef.current);
     const instructions = buildLanguageInstructions();
 
     const previousGuardrailIds = Array.from(
@@ -5445,7 +5760,11 @@ export default function Tutor({
     }
   }
 
-  function requestTutorTurnFollowup(userMessage = "", acceptedItemIds = []) {
+  function requestTutorTurnFollowup(
+    userMessage = "",
+    acceptedItemIds = [],
+    { kind = "tutor_followup" } = {},
+  ) {
     if (!aliveRef.current) return;
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
 
@@ -5466,7 +5785,7 @@ export default function Tutor({
         targetLang: tLang,
         userMessage,
         acceptedItemIds,
-        kind: "tutor_followup",
+        kind,
       });
       return;
     }
@@ -5488,7 +5807,7 @@ export default function Tutor({
           response: {
             modalities: ["audio", "text"],
             instructions,
-            metadata: { kind: "tutor_followup" },
+            metadata: { kind },
           },
         }),
       );
@@ -5573,27 +5892,156 @@ export default function Tutor({
     }
   }
 
-  function isStarterReviewXpIncomplete() {
-    const lesson = selectedTutorLessonRef.current;
-    if (!isTutorStarterAgendaLesson(lesson)) return false;
-    if (tutorLessonCompletionTriggeredRef.current) return false;
-
-    const xpRequired = getTutorLessonXpRequired(lesson);
-    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
-    return xpRequired > 0 && earnedXp < xpRequired;
+  function waitUntilIdle(timeoutMs = 2000) {
+    if (isIdleRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      idleWaitersRef.current.push(resolve);
+      setTimeout(resolve, timeoutMs);
+    });
   }
 
-  function getPendingAssistantOutputText(mid, pendingText = "") {
-    if (!mid) return String(pendingText || "");
+  function isTutorLessonPracticeInProgress() {
+    const lesson = selectedTutorLessonRef.current;
+    if (!lesson || tutorLessonCompletionTriggeredRef.current) return false;
+    const requiredXp = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const xpIncomplete = requiredXp > 0 && earnedXp < requiredXp;
+    const starterAgendaIncomplete =
+      isTutorStarterAgendaLesson(lesson) &&
+      !isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+    return xpIncomplete || starterAgendaIncomplete;
+  }
+
+  function getTutorAssistantOutputText(mid) {
+    if (!mid) return "";
     const message = messagesRef.current.find((item) => item.id === mid);
+    return sanitizeTutorAssistantText(
+      [
+        message?.textFinal || "",
+        message?.textStream || "",
+        streamBuffersRef.current.get(mid) || "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim(),
+    );
+  }
+
+  function getLatestTutorUserText() {
+    const items = messagesRef.current || [];
+    for (let i = items.length - 1; i >= 0; i -= 1) {
+      if (items[i]?.role === "user") {
+        return String(items[i].textFinal || items[i].textStream || "").trim();
+      }
+    }
+    return "";
+  }
+
+  function buildTutorClosingActJudgePrompt(assistantText = "") {
+    const lesson = selectedTutorLessonRef.current;
+    const unit = selectedTutorUnitRef.current;
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
+    );
+    const tLang = targetLangRef.current || targetLang || "es";
+    const targetLanguageName =
+      getLanguagePromptName(tLang) || "the target language";
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the user's support language";
+    const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
+    const requiredXp = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+
     return [
-      message?.textFinal || "",
-      message?.textStream || "",
-      streamBuffersRef.current.get(mid) || "",
-      pendingText || "",
-    ]
-      .filter(Boolean)
-      .join(" ");
+      "You are a language-neutral semantic classifier for a realtime language tutor.",
+      "The app state is LESSON_STATE: IN_PROGRESS. The app, not the tutor text, owns lesson completion.",
+      "Classify the assistant message by intent and meaning across any language, writing system, or code-switching. Do not use keyword matching.",
+      "A closing act means the tutor presents the lesson/session/practice as ended, offers to end it, gives a final-session summary, says farewell as the session conclusion, or stops assigning practice because it thinks the lesson is complete.",
+      "A continuing tutor turn acknowledges, corrects, explains, reviews, combines, or asks a concrete next practice/comprehension task from the lesson.",
+      `Lesson: ${agendaTitle || lesson?.title || "selected Tutor lesson"}.`,
+      `Target language: ${targetLanguageName}. Support language: ${supportLanguageName}.`,
+      `Internal app progress: ${earnedXp}/${requiredXp || "unknown"} lesson XP.`,
+      "Assistant message:",
+      `"""${String(assistantText || "").slice(0, 1600)}"""`,
+      'Return ONLY JSON: {"closingAct":true|false,"confidence":0..1,"reason":"short semantic reason"}',
+    ].join("\n");
+  }
+
+  async function judgeTutorClosingAct(assistantText = "") {
+    try {
+      if (!gradingLiteModel) {
+        return { closingAct: false, confidence: 0, reason: "" };
+      }
+      const resp = await gradingLiteModel.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: buildTutorClosingActJudgePrompt(assistantText) }],
+          },
+        ],
+      });
+      const raw = extractGeminiResponseText(resp);
+      const parsed = safeParseJson(raw) || {};
+      const closingAct =
+        parsed.closingAct === true || parsed.closing_act === true;
+      const confidence =
+        parsed.confidence === undefined
+          ? 1
+          : Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+      return {
+        closingAct: closingAct && confidence >= 0.6,
+        confidence,
+        reason: String(parsed.reason || "").slice(0, 180),
+      };
+    } catch (error) {
+      console.warn("Tutor closing-act semantic judge failed:", error);
+      return { closingAct: false, confidence: 0, reason: "" };
+    }
+  }
+
+  async function recoverFromSemanticTutorClosingAct(rid, mid) {
+    const checkKey = rid || mid;
+    if (!checkKey || !mid) return;
+    if (tutorClosingActCheckedKeysRef.current.has(checkKey)) return;
+    if (tutorClosingActRecoveryInFlightRef.current) return;
+    if (!isTutorLessonPracticeInProgress()) return;
+
+    const checkedTurn = turnCountRef.current;
+    if (tutorClosingActRecoveryTurnRef.current === checkedTurn) return;
+
+    const assistantText = getTutorAssistantOutputText(mid);
+    if (!assistantText) return;
+
+    tutorClosingActCheckedKeysRef.current.add(checkKey);
+    const verdict = await judgeTutorClosingAct(assistantText);
+    if (!verdict.closingAct) return;
+    if (!aliveRef.current) return;
+    if (turnCountRef.current !== checkedTurn) return;
+    if (!isTutorLessonPracticeInProgress()) return;
+
+    tutorClosingActRecoveryInFlightRef.current = true;
+    tutorClosingActRecoveryTurnRef.current = checkedTurn;
+    try {
+      if (!isIdleRef.current && dcRef.current?.readyState === "open") {
+        try {
+          dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        } catch {}
+        await waitUntilIdle(1800);
+      }
+
+      if (!aliveRef.current) return;
+      if (turnCountRef.current !== checkedTurn) return;
+      if (!isTutorLessonPracticeInProgress()) return;
+
+      streamBuffersRef.current.delete(mid);
+      removeMessage(mid);
+      requestTutorTurnFollowup(getLatestTutorUserText(), [], {
+        kind: "tutor_semantic_review_retry",
+      });
+    } finally {
+      tutorClosingActRecoveryInFlightRef.current = false;
+    }
   }
 
   function dispatchTutorCompletionSequenceStart() {
@@ -5654,6 +6102,12 @@ export default function Tutor({
 
   function releaseTutorDailyGoalCelebration() {
     const directCelebration = pendingTutorDailyGoalCelebrationRef.current;
+    const openedQueued = releaseQueuedDailyGoalCelebration(directCelebration);
+    if (openedQueued) {
+      pendingTutorDailyGoalCelebrationRef.current = null;
+      return true;
+    }
+
     if (directCelebration && typeof onDailyGoalCelebration === "function") {
       const opened = onDailyGoalCelebration(directCelebration) !== false;
       if (opened) {
@@ -5662,58 +6116,7 @@ export default function Tutor({
       }
     }
 
-    const opened = releaseQueuedDailyGoalCelebration(
-      pendingTutorDailyGoalCelebrationRef.current,
-    );
-    if (opened) pendingTutorDailyGoalCelebrationRef.current = null;
-    return opened;
-  }
-
-  function cancelPrematureStarterCompletionResponse(rid, mid) {
-    if (!rid || prematureCompletionRidSetRef.current.has(rid)) return;
-    prematureCompletionRidSetRef.current.add(rid);
-    pendingStarterReviewCorrectionRef.current = true;
-    if (mid) {
-      streamBuffersRef.current.set(mid, "");
-      updateMessage(mid, (message) => ({
-        ...message,
-        textFinal: "",
-        textStream: "",
-        done: true,
-      }));
-    }
-    try {
-      dcRef.current?.send(JSON.stringify({ type: "response.cancel" }));
-    } catch {}
-  }
-
-  function recoverFromCompletedPrematureStarterResponse(rid, mid) {
-    if (!mid || !isStarterReviewXpIncomplete()) return false;
-    const fullText = getPendingAssistantOutputText(mid);
-    if (!hasPrematureTutorCompletionText(fullText)) return false;
-
-    streamBuffersRef.current.set(mid, "");
-    updateMessage(mid, (message) => ({
-      ...message,
-      textFinal: "",
-      textStream: "",
-      done: true,
-    }));
-    pendingStarterReviewCorrectionRef.current = false;
-    if (rid) prematureCompletionRidSetRef.current.delete(rid);
-    const supportCode = normalizeSupportLanguage(
-      supportLangRef.current || resolvedSupportLang,
-      DEFAULT_SUPPORT_LANGUAGE,
-    );
-    requestRealtimeTutorAgendaResponse({
-      item: getNextTutorStarterAgendaItem(
-        tutorStarterAgendaProgressRef.current,
-      ),
-      supportLang: supportCode,
-      targetLang: targetLangRef.current || targetLang || "es",
-      kind: "tutor_review_retry",
-    });
-    return true;
+    return false;
   }
 
   function scheduleAutoStop() {
@@ -5826,10 +6229,7 @@ export default function Tutor({
         const nextProgress = nextProgressLessons[nextTutorLesson.lesson.id];
         const nextEarned =
           nextTutorLesson.status === SKILL_STATUS.IN_PROGRESS
-            ? Math.min(
-                getTutorLessonXpRequired(nextTutorLesson.lesson),
-                Math.max(0, xp - (nextProgress?.lessonStartXp ?? xp)),
-              )
+            ? getStoredTutorLessonEarnedXp(nextProgress, nextTutorLesson.lesson)
             : 0;
 
         setSelectedTutorLesson(nextTutorLesson.lesson);
@@ -5876,6 +6276,7 @@ export default function Tutor({
     xpGain,
     awardPromise = null,
     localDailyGoalUpdate = null,
+    { deferCompletionUntilIdle = false } = {},
   ) {
     const lesson = selectedTutorLessonRef.current;
     const unit = selectedTutorUnitRef.current;
@@ -5889,18 +6290,40 @@ export default function Tutor({
     );
     tutorLessonEarnedXpRef.current = nextEarned;
     setTutorLessonEarnedXp(nextEarned);
+    if (currentNpub) {
+      void saveTutorLessonEarnedXp(
+        currentNpub,
+        lesson.id,
+        targetLangRef.current,
+        nextEarned,
+      ).catch((error) => {
+        console.error("Failed to save Tutor lesson XP:", error);
+      });
+    }
 
     const canCompleteLesson =
       !isTutorStarterAgendaLesson(lesson) ||
       isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
     if (nextEarned >= xpRequired && canCompleteLesson) {
-      dispatchTutorCompletionSequenceStart();
-      void completeTutorLessonFromXp(
-        lesson,
-        unit,
-        awardPromise ? [awardPromise] : [],
-        localDailyGoalUpdate ? [localDailyGoalUpdate] : [],
-      );
+      if (pendingTutorLessonCompletionRef.current) return true;
+      pendingTutorLessonCompletionRef.current = true;
+      void (async () => {
+        try {
+          if (deferCompletionUntilIdle && !isIdleRef.current) {
+            await waitUntilIdle(45000);
+          }
+          if (tutorLessonCompletionTriggeredRef.current) return;
+          dispatchTutorCompletionSequenceStart();
+          await completeTutorLessonFromXp(
+            lesson,
+            unit,
+            awardPromise ? [awardPromise] : [],
+            localDailyGoalUpdate ? [localDailyGoalUpdate] : [],
+          );
+        } finally {
+          pendingTutorLessonCompletionRef.current = false;
+        }
+      })();
       return true;
     }
 
@@ -5920,7 +6343,7 @@ export default function Tutor({
     });
   }
 
-  function trackTutorStarterAgendaProgress(userMessage) {
+  function getTutorStarterAgendaCandidateItemIds() {
     const lesson = selectedTutorLessonRef.current;
     if (!isTutorStarterAgendaLesson(lesson)) return [];
     if (tutorLessonCompletionTriggeredRef.current) return [];
@@ -5929,22 +6352,34 @@ export default function Tutor({
       tutorStarterAgendaProgressRef.current,
     );
     if (!currentItem) return [];
+    return [currentItem.id];
+  }
 
-    const matches = getTutorStarterAgendaMatches(
-      userMessage,
-      targetLangRef.current,
+  function commitTutorStarterAgendaProgress(itemIds = []) {
+    const lesson = selectedTutorLessonRef.current;
+    if (!isTutorStarterAgendaLesson(lesson)) return [];
+    if (tutorLessonCompletionTriggeredRef.current) return [];
+
+    const allowedIds = new Set(
+      TUTOR_STARTER_AGENDA_ITEMS.map((item) => item.id),
     );
-    if (!matches.includes(currentItem.id)) return [];
+    const acceptedIds = compactUnique(itemIds).filter(
+      (id) =>
+        allowedIds.has(id) && !tutorStarterAgendaProgressRef.current?.[id],
+    );
+    if (!acceptedIds.length) return [];
 
     const nextProgress = { ...tutorStarterAgendaProgressRef.current };
-    nextProgress[currentItem.id] = true;
+    acceptedIds.forEach((id) => {
+      nextProgress[id] = true;
+    });
     const normalizedNextProgress =
       normalizeTutorStarterAgendaProgress(nextProgress);
     tutorStarterAgendaProgressRef.current = normalizedNextProgress;
     setTutorStarterAgendaProgress(normalizedNextProgress);
 
     persistTutorStarterAgendaProgress(lesson, normalizedNextProgress);
-    return [currentItem.id];
+    return acceptedIds;
   }
 
   function getRegularTutorAcceptedPhrases() {
@@ -5969,12 +6404,262 @@ export default function Tutor({
       );
   }
 
-  function isRegularTutorTurnAccepted(userMessage) {
-    const acceptedPhrases = getRegularTutorAcceptedPhrases();
-    if (!acceptedPhrases.length) return false;
-    return acceptedPhrases.some((phrase) =>
-      tutorPhraseMatchesTranscript(phrase, userMessage),
+  function buildTutorTurnSuccessJudgePrompt(
+    userMessage = "",
+    {
+      starterCandidateItemIds = [],
+      exactStarterMatches = [],
+      regularPhraseMatch = false,
+      directPhraseAnswer = false,
+      acceptedPhrases = [],
+    } = {},
+  ) {
+    const lesson = selectedTutorLessonRef.current;
+    const unit = selectedTutorUnitRef.current;
+    const supportCode = normalizeSupportLanguage(
+      supportLangRef.current || resolvedSupportLang,
+      DEFAULT_SUPPORT_LANGUAGE,
     );
+    const tLang = targetLangRef.current || targetLang || "es";
+    const targetLanguageName =
+      getLanguagePromptName(tLang) || "the target language";
+    const supportLanguageName =
+      getLanguagePromptName(supportCode) || "the user's support language";
+    const selectedLevel =
+      unit?.cefrLevel ||
+      unit?.level ||
+      conversationSettingsRef.current.proficiencyLevel ||
+      maxProficiencyLevel ||
+      "A1";
+    const latestAssistantText = getLatestTutorAssistantText(
+      messagesRef.current,
+    );
+    const agendaTitle = getTutorLessonAgendaTitle(lesson, unit, supportCode);
+    const agendaSubtitle = getTutorLessonAgendaSubtitle(
+      lesson,
+      unit,
+      supportCode,
+    );
+    const starterCandidates = starterCandidateItemIds
+      .map((id) => TUTOR_STARTER_AGENDA_ITEMS.find((item) => item.id === id))
+      .filter(Boolean)
+      .map((item) => ({
+        id: item.id,
+        phrase: getTutorStarterItemModelPhrase(item, tLang),
+        meaning: getTutorStarterItemSupportMeaning(item, supportCode),
+      }));
+    const regularPhrases = compactUnique(acceptedPhrases)
+      .slice(0, 8)
+      .map((phrase) => String(phrase || "").slice(0, 120));
+    const focusItems = getTutorLessonFocusAgendaItems(lesson)
+      .map((item) => item.phrase || item.label)
+      .filter(Boolean)
+      .slice(0, 10);
+
+    return [
+      "You are a strict, language-neutral XP gate for a realtime language tutor.",
+      "Classify the latest learner transcript semantically across any language or writing system. Do not use keyword matching.",
+      "XP should be awarded only for a correct or successful learner attempt at the tutor's immediately previous practice/comprehension task.",
+      "Successful means the learner answered the prompt, produced the requested target-language phrase, completed the requested transformation, chose/identified the correct meaning, or gave a relevant understandable response for an open conversational prompt.",
+      "Also count newer Tutor experiences when the learner completes the requested communicative move: asks the question back, asks for repetition or clarification, corrects a misunderstanding, supplies a missing detail in an information gap, identifies a listened detail, responds to friendly pushback, or improves tone/register/naturalness when asked.",
+      "For fill-in-the-blank tasks, the learner may answer with only the missing word. Count it as successful if that word correctly completes the tutor's blank.",
+      "Accent, speech quality, minor grammar mistakes, and transcription imperfections are not blockers when the intended answer is clear.",
+      "Not successful: the learner asks how to say something, asks for help/explanation/translation, says they do not know, refuses, gives only filler, gives random/unrelated words, repeats support-language instructions, quotes/mentions the answer inside a question, or answers a different task.",
+      "If a local phrase matcher found words, still return successful=false when the transcript is a meta-question or mention rather than an answer.",
+      "For starter agenda phrase-production tasks, require an attempt at the target-language phrase itself; a support-language translation alone is not enough unless the tutor explicitly asked for the meaning instead of asking the learner to say the phrase.",
+      `Lesson: ${agendaTitle || "selected Tutor lesson"}.`,
+      agendaSubtitle ? `Lesson focus: ${agendaSubtitle}.` : "",
+      `Learner level: ${selectedLevel}.`,
+      `Target language: ${targetLanguageName}. Support language: ${supportLanguageName}.`,
+      starterCandidates.length
+        ? `Current starter agenda candidate(s): ${JSON.stringify(
+            starterCandidates,
+          )}`
+        : "",
+      exactStarterMatches.length
+        ? `Exact starter phrase match candidates from transcript: ${JSON.stringify(
+            exactStarterMatches,
+          )}`
+        : "",
+      regularPhrases.length
+        ? `Target phrase(s) likely requested by the tutor: ${JSON.stringify(
+            regularPhrases,
+          )}`
+        : "",
+      regularPhraseMatch
+        ? "A local phrase matcher found overlap with a requested phrase, but you must still judge whether the transcript is actually an answer."
+        : "",
+      directPhraseAnswer
+        ? "The transcript is a short direct phrase answer to the requested model phrase. Unless there is clear evidence of a different task, this is successful."
+        : "",
+      focusItems.length
+        ? `Lesson concept list: ${JSON.stringify(focusItems)}`
+        : "",
+      "Immediately previous tutor prompt:",
+      `"""${String(latestAssistantText || "").slice(0, 1800)}"""`,
+      "Latest learner transcript:",
+      `"""${String(userMessage || "").slice(0, 800)}"""`,
+      'Return ONLY JSON: {"successful":true|false,"confidence":0..1,"reason":"short semantic reason"}',
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  async function judgeTutorTurnSuccessfulForXp(userMessage = "", opts = {}) {
+    if (!hasTutorMeaningfulTranscript(userMessage)) {
+      return { successful: false, confidence: 0, reason: "empty transcript" };
+    }
+    if (opts?.directPhraseAnswer) {
+      return {
+        successful: true,
+        confidence: 1,
+        reason: "direct phrase answer",
+      };
+    }
+
+    try {
+      if (!gradingLiteModel) {
+        return {
+          successful: false,
+          confidence: 0,
+          reason: "grading model unavailable",
+        };
+      }
+      const resp = await gradingLiteModel.generateContent({
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { text: buildTutorTurnSuccessJudgePrompt(userMessage, opts) },
+            ],
+          },
+        ],
+      });
+      const parsed = safeParseJson(extractGeminiResponseText(resp)) || {};
+      const successful =
+        parsed.successful === true ||
+        parsed.success === true ||
+        parsed.accepted === true;
+      const confidence =
+        parsed.confidence === undefined
+          ? 1
+          : Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+
+      return {
+        successful: successful && confidence >= 0.55,
+        confidence,
+        reason: String(parsed.reason || "").slice(0, 180),
+      };
+    } catch (error) {
+      console.warn("Tutor XP success judge failed:", error);
+      return { successful: false, confidence: 0, reason: "judge failed" };
+    }
+  }
+
+  function getLocalTutorTurnSuccessfulForXp({
+    isStarterLesson = false,
+    starterCandidateItemIds = [],
+    exactStarterMatches = [],
+    regularTurnAccepted = false,
+    directPhraseAnswer = false,
+  } = {}) {
+    if (directPhraseAnswer) return true;
+    if (!isStarterLesson) return regularTurnAccepted;
+
+    const candidateIds = new Set(starterCandidateItemIds);
+    return exactStarterMatches.some((id) => candidateIds.has(id));
+  }
+
+  function couldPotentialTutorTurnCompleteLesson({
+    lesson = selectedTutorLessonRef.current,
+    isStarterLesson = isTutorStarterAgendaLesson(lesson),
+    starterCandidateItemIds = [],
+  } = {}) {
+    if (!lesson || tutorLessonCompletionTriggeredRef.current) return false;
+
+    const xpRequired = getTutorLessonXpRequired(lesson);
+    const earnedXp = Math.max(0, Number(tutorLessonEarnedXpRef.current) || 0);
+    const remainingXp = xpRequired - earnedXp;
+    if (remainingXp <= 0 || remainingXp > TUTOR_TURN_XP_RANGE.max) {
+      return false;
+    }
+
+    if (!isStarterLesson) return true;
+    if (isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current)) {
+      return true;
+    }
+
+    const potentialProgress = { ...tutorStarterAgendaProgressRef.current };
+    starterCandidateItemIds.forEach((id) => {
+      potentialProgress[id] = true;
+    });
+    return isTutorStarterAgendaComplete(potentialProgress);
+  }
+
+  function applySuccessfulTutorTurnProgress({
+    isStarterLesson = false,
+    starterCandidateItemIds = [],
+    successful = false,
+    deferCompletionUntilIdle = false,
+  } = {}) {
+    if (!successful) {
+      return { acceptedItemIds: [], lessonCompletionTriggered: false };
+    }
+
+    const acceptedItemIds =
+      isStarterLesson && starterCandidateItemIds.length
+        ? commitTutorStarterAgendaProgress(starterCandidateItemIds)
+        : [];
+    const starterAgendaComplete =
+      isStarterLesson &&
+      isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
+    const starterReviewAccepted =
+      isStarterLesson && starterAgendaComplete && !acceptedItemIds.length;
+    const canAwardXpForTurn =
+      (!isStarterLesson && successful) ||
+      acceptedItemIds.length > 0 ||
+      starterReviewAccepted;
+    let lessonCompletionTriggered = false;
+
+    if (canAwardXpForTurn) {
+      lessonCompletionTriggered =
+        awardTurnXp({ deferCompletionUntilIdle })?.lessonCompletionTriggered ||
+        false;
+    }
+
+    return { acceptedItemIds, lessonCompletionTriggered };
+  }
+
+  function validateTutorTurnForXpInBackground({
+    text = "",
+    lessonId = "",
+    starterCandidateItemIds = [],
+    exactStarterMatches = [],
+    regularTurnAccepted = false,
+    directPhraseAnswer = false,
+    regularAcceptedPhrases = [],
+  } = {}) {
+    void (async () => {
+      const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+        starterCandidateItemIds,
+        exactStarterMatches,
+        regularPhraseMatch: regularTurnAccepted,
+        directPhraseAnswer,
+        acceptedPhrases: regularAcceptedPhrases,
+      });
+      if (!turnSuccess.successful) return;
+      if (!aliveRef.current) return;
+      if (lessonId && selectedTutorLessonRef.current?.id !== lessonId) return;
+
+      applySuccessfulTutorTurnProgress({
+        isStarterLesson: isTutorStarterAgendaLesson(
+          selectedTutorLessonRef.current,
+        ),
+        starterCandidateItemIds,
+        successful: true,
+        deferCompletionUntilIdle: true,
+      });
+    })();
   }
 
   function notifyTutorFirstLessonCompleteOnce() {
@@ -6003,6 +6688,20 @@ export default function Tutor({
     window.setTimeout(finishSequence, 0);
   }
 
+  function runAfterTutorModalClose(task) {
+    if (typeof task !== "function") return;
+    if (typeof window === "undefined") {
+      task();
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.setTimeout(task, 120);
+      });
+    });
+  }
+
   function closeTutorLessonCompleteModal() {
     setShowTutorLessonComplete(false);
     setCompletedTutorLessonData(null);
@@ -6012,20 +6711,20 @@ export default function Tutor({
       return;
     }
 
-    releaseTutorDailyGoalOrNotifyFirstLesson();
+    runAfterTutorModalClose(releaseTutorDailyGoalOrNotifyFirstLesson);
   }
 
   function closeTutorCompletedAgendaModal() {
     setShowTutorCompletedAgenda(false);
     setCompletedTutorAgendaData(null);
 
-    releaseTutorDailyGoalOrNotifyFirstLesson();
+    runAfterTutorModalClose(releaseTutorDailyGoalOrNotifyFirstLesson);
   }
 
   /* ---------------------------
      Award XP per turn (3-7 XP)
   --------------------------- */
-  function awardTurnXp() {
+  function awardTurnXp({ deferCompletionUntilIdle = false } = {}) {
     const npub = currentNpub;
     if (!npub) {
       return { xpGain: 0, lessonCompletionTriggered: false };
@@ -6055,6 +6754,7 @@ export default function Tutor({
       xpGain,
       awardPromise,
       dailyGoalUpdate,
+      { deferCompletionUntilIdle },
     );
     if (!lessonCompletionTriggered) {
       void awardPromise;
@@ -6138,38 +6838,6 @@ export default function Tutor({
           setUiState(status === "connected" ? "listening" : "idle");
           setMood("neutral");
           if (aliveRef.current) scheduleAutoStop();
-        }
-      }
-      return;
-    }
-
-    if (rid && prematureCompletionRidSetRef.current.has(rid)) {
-      if (
-        t === "response.completed" ||
-        t === "response.done" ||
-        t === "response.canceled"
-      ) {
-        prematureCompletionRidSetRef.current.delete(rid);
-        if (
-          pendingStarterReviewCorrectionRef.current &&
-          isStarterReviewXpIncomplete()
-        ) {
-          pendingStarterReviewCorrectionRef.current = false;
-          const supportCode = normalizeSupportLanguage(
-            supportLangRef.current || resolvedSupportLang,
-            DEFAULT_SUPPORT_LANGUAGE,
-          );
-          requestRealtimeTutorAgendaResponse({
-            item: getNextTutorStarterAgendaItem(
-              tutorStarterAgendaProgressRef.current,
-            ),
-            supportLang: supportCode,
-            targetLang: targetLangRef.current || targetLang || "es",
-            kind: "tutor_review_retry",
-          });
-        } else {
-          pendingStarterReviewCorrectionRef.current = false;
-          finishAssistantOutput();
         }
       }
       return;
@@ -6259,28 +6927,83 @@ export default function Tutor({
         ts: userTs,
       });
       turnCountRef.current += 1;
-      const acceptedItemIds = trackTutorStarterAgendaProgress(text);
       const currentLesson = selectedTutorLessonRef.current;
       const isStarterLesson = isTutorStarterAgendaLesson(currentLesson);
-      const starterAgendaComplete =
-        isStarterLesson &&
-        isTutorStarterAgendaComplete(tutorStarterAgendaProgressRef.current);
-      const starterReviewAccepted =
-        starterAgendaComplete &&
-        getTutorStarterAgendaMatches(text, targetLangRef.current).length > 0;
+      const starterCandidateItemIds = isStarterLesson
+        ? getTutorStarterAgendaCandidateItemIds()
+        : [];
+      const exactStarterMatches = isStarterLesson
+        ? getTutorStarterAgendaMatches(text, targetLangRef.current)
+        : [];
+      const starterCandidatePhrases = starterCandidateItemIds
+        .map((id) => TUTOR_STARTER_AGENDA_ITEMS.find((item) => item.id === id))
+        .filter(Boolean)
+        .map((item) =>
+          getTutorStarterItemModelPhrase(item, targetLangRef.current),
+        );
+      const regularAcceptedPhrases = !isStarterLesson
+        ? getRegularTutorAcceptedPhrases()
+        : [];
       const regularTurnAccepted =
-        !isStarterLesson && isRegularTutorTurnAccepted(text);
-      const canAwardXpForTurn =
-        regularTurnAccepted ||
-        acceptedItemIds.length > 0 ||
-        starterReviewAccepted;
-      let lessonCompletionTriggered = false;
-      if (canAwardXpForTurn) {
-        lessonCompletionTriggered =
-          awardTurnXp()?.lessonCompletionTriggered || false;
+        !isStarterLesson &&
+        regularAcceptedPhrases.some((phrase) =>
+          tutorPhraseMatchesTranscript(phrase, text),
+        );
+      const directPhraseAnswer = isStarterLesson
+        ? anyTutorPhraseIsDirectAnswer(starterCandidatePhrases, text)
+        : anyTutorPhraseIsDirectAnswer(regularAcceptedPhrases, text);
+      const localTurnSuccessful = getLocalTutorTurnSuccessfulForXp({
+        isStarterLesson,
+        starterCandidateItemIds,
+        exactStarterMatches,
+        regularTurnAccepted,
+        directPhraseAnswer,
+      });
+      const shouldGateEndOfLesson =
+        !localTurnSuccessful &&
+        couldPotentialTutorTurnCompleteLesson({
+          lesson: currentLesson,
+          isStarterLesson,
+          starterCandidateItemIds,
+        });
+      let { acceptedItemIds, lessonCompletionTriggered } =
+        applySuccessfulTutorTurnProgress({
+          isStarterLesson,
+          starterCandidateItemIds,
+          successful: localTurnSuccessful,
+        });
+
+      if (shouldGateEndOfLesson) {
+        const turnSuccess = await judgeTutorTurnSuccessfulForXp(text, {
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularPhraseMatch: regularTurnAccepted,
+          directPhraseAnswer,
+          acceptedPhrases: regularAcceptedPhrases,
+        });
+        if (!aliveRef.current) return;
+        if (currentLesson?.id !== selectedTutorLessonRef.current?.id) return;
+        const progressResult = applySuccessfulTutorTurnProgress({
+          isStarterLesson,
+          starterCandidateItemIds,
+          successful: turnSuccess.successful,
+        });
+        acceptedItemIds = progressResult.acceptedItemIds;
+        lessonCompletionTriggered = progressResult.lessonCompletionTriggered;
+      } else if (!localTurnSuccessful) {
+        validateTutorTurnForXpInBackground({
+          text,
+          lessonId: currentLesson?.id || "",
+          starterCandidateItemIds,
+          exactStarterMatches,
+          regularTurnAccepted,
+          directPhraseAnswer,
+          regularAcceptedPhrases,
+        });
       }
-      // Build the next prompt after local XP updates so the tutor never
-      // guesses at completion from stale progress.
+
+      // Keep the voice loop hot: semantic grading may still update XP/progress
+      // behind the scenes, but the tutor response should not wait for it.
       if (!lessonCompletionTriggered) {
         requestTutorTurnFollowup(text, acceptedItemIds);
       }
@@ -6317,16 +7040,9 @@ export default function Tutor({
     ) {
       const mid = ensureMessageForResponse(rid);
       const prev = streamBuffersRef.current.get(mid) || "";
-      const nextText = prev + data.delta;
-      if (
-        isStarterReviewXpIncomplete() &&
-        hasPrematureTutorCompletionText(
-          getPendingAssistantOutputText(mid, data.delta),
-        )
-      ) {
-        cancelPrematureStarterCompletionResponse(rid, mid);
-        return;
-      }
+      const nextText = sanitizeTutorAssistantText(prev + data.delta, {
+        trim: false,
+      });
       streamBuffersRef.current.set(mid, nextText);
       scheduleStreamFlush();
       return;
@@ -6340,27 +7056,24 @@ export default function Tutor({
     ) {
       const mid = ensureMessageForResponse(rid);
       const buf = streamBuffersRef.current.get(mid) || "";
-      if (
-        isStarterReviewXpIncomplete() &&
-        hasPrematureTutorCompletionText(
-          getPendingAssistantOutputText(mid, `${buf} ${data.text}`),
-        )
-      ) {
-        cancelPrematureStarterCompletionResponse(rid, mid);
-        return;
-      }
       if (buf) {
         streamBuffersRef.current.set(mid, "");
         updateMessage(mid, (m) => ({
           ...m,
-          textStream: (m.textStream || "") + buf,
+          textStream: sanitizeTutorAssistantText((m.textStream || "") + buf, {
+            trim: false,
+          }),
         }));
       }
+      const doneText = sanitizeTutorAssistantText(data.text);
       updateMessage(mid, (m) => ({
         ...m,
-        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textFinal: sanitizeTutorAssistantText(
+          `${m.textFinal || ""} ${doneText}`,
+        ),
         textStream: "",
       }));
+      void recoverFromSemanticTutorClosingAct(rid, mid);
       return;
     }
 
@@ -6396,45 +7109,19 @@ export default function Tutor({
       });
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
-        if (recoverFromCompletedPrematureStarterResponse(rid, mid)) {
-          stopRecorderAfterTail(rid);
-          isIdleRef.current = true;
-          idleWaitersRef.current.splice(0).forEach((fn) => {
-            try {
-              fn();
-            } catch {}
-          });
-          respToMsg.current.delete(rid);
-          return;
-        }
         const buf = streamBuffersRef.current.get(mid) || "";
         if (buf) {
-          if (
-            isStarterReviewXpIncomplete() &&
-            hasPrematureTutorCompletionText(
-              getPendingAssistantOutputText(mid, buf),
-            )
-          ) {
-            if (recoverFromCompletedPrematureStarterResponse(rid, mid)) {
-              stopRecorderAfterTail(rid);
-              isIdleRef.current = true;
-              idleWaitersRef.current.splice(0).forEach((fn) => {
-                try {
-                  fn();
-                } catch {}
-              });
-              respToMsg.current.delete(rid);
-              return;
-            }
-          }
           streamBuffersRef.current.set(mid, "");
           updateMessage(mid, (m) => ({
             ...m,
             textStream: "",
-            textFinal: ((m.textFinal || "") + " " + buf).trim(),
+            textFinal: sanitizeTutorAssistantText(
+              `${m.textFinal || ""} ${buf}`,
+            ),
           }));
         }
         updateMessage(mid, (m) => ({ ...m, done: true }));
+        void recoverFromSemanticTutorClosingAct(rid, mid);
         logEvent(analytics, "conversation_turn", {
           action: "turn_completed",
         });
@@ -6482,6 +7169,9 @@ export default function Tutor({
   }
 
   function pushMessage(m) {
+    if (!messagesRef.current.some((existing) => existing.id === m.id)) {
+      messagesRef.current = [...messagesRef.current, m];
+    }
     setMessages((p) => {
       // Prevent duplicate messages with same ID
       if (p.some((existing) => existing.id === m.id)) {
@@ -6492,7 +7182,15 @@ export default function Tutor({
   }
 
   function updateMessage(id, fn) {
+    messagesRef.current = messagesRef.current.map((m) =>
+      m.id === id ? fn(m) : m,
+    );
     setMessages((p) => p.map((m) => (m.id === id ? fn(m) : m)));
+  }
+
+  function removeMessage(id) {
+    messagesRef.current = messagesRef.current.filter((m) => m.id !== id);
+    setMessages((p) => p.filter((m) => m.id !== id));
   }
 
   /* ---------------------------
@@ -6501,7 +7199,9 @@ export default function Tutor({
   async function translateMessage(id) {
     const m = messagesRef.current.find((x) => x.id === id);
     if (!m) return;
-    const src = (m.textFinal + " " + (m.textStream || "")).trim();
+    const src = sanitizeTutorAssistantText(
+      `${m.textFinal || ""} ${m.textStream || ""}`,
+    );
     if (!src) return;
     if (m.role !== "assistant") return;
 
@@ -6531,7 +7231,7 @@ export default function Tutor({
       input: `${prompt}\n\n${src}`,
     };
 
-    const r = await fetch(RESPONSES_URL, {
+    const r = await appCheckFetch(RESPONSES_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -6683,6 +7383,7 @@ export default function Tutor({
   return (
     <>
       <TutorViewportEdgeGlow
+        enabled={isActive}
         state={edgeGlowState}
         isLightTheme={isLightTheme}
       />
@@ -6882,9 +7583,9 @@ export default function Tutor({
                         ? "translateY(10px) scale(0.985)"
                         : "translateY(0px) scale(1)"
                     }
-                    primaryText={`${latestAssistantMessage.textFinal || ""}${
-                      latestAssistantMessage.textStream || ""
-                    }`}
+                    primaryText={getTutorMessageVisibleText(
+                      latestAssistantMessage,
+                    )}
                     primaryLang={
                       latestAssistantMessage.lang || targetLang || "es"
                     }
@@ -6911,7 +7612,7 @@ export default function Tutor({
                     isTranslating={
                       translatingMessageId === latestAssistantMessage.id
                     }
-                    canTranslate={showTranslations}
+                    canTranslate={false}
                     onTranslate={() =>
                       handleManualTranslate(latestAssistantMessage.id)
                     }
@@ -7032,11 +7733,11 @@ export default function Tutor({
         scrollBehavior="inside"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE : "gray.950"}
@@ -7198,11 +7899,11 @@ export default function Tutor({
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -7264,15 +7965,15 @@ export default function Tutor({
                     opacity={0.8}
                   >
                     {tutorCopy(uiLang, {
-                      en: "XP Practiced",
-                      es: "XP practicado",
-                      pt: "XP praticado",
-                      it: "XP praticati",
-                      fr: "XP pratique",
-                      ja: "練習XP",
-                      hi: "अभ्यास XP",
-                      ar: "XP اتدرّب",
-                      zh: "练习 XP",
+                      en: "XP Gained",
+                      es: "XP ganado",
+                      pt: "XP ganho",
+                      it: "XP guadagnati",
+                      fr: "XP gagne",
+                      ja: "獲得XP",
+                      hi: "कमाया XP",
+                      ar: "XP مكتسب",
+                      zh: "获得 XP",
                     })}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -7315,11 +8016,11 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(5px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           mx={3}
@@ -7488,10 +8189,10 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="gray.800"
@@ -7518,7 +8219,7 @@ export default function Tutor({
                   );
                 }
 
-                const primaryText = (m.textFinal || "") + (m.textStream || "");
+                const primaryText = getTutorMessageVisibleText(m);
                 const secondaryText =
                   normalizeSupportLanguage(m.translationLang, "") ===
                   resolvedSupportLang
@@ -7541,7 +8242,7 @@ export default function Tutor({
                       }
                       showSecondary={showTranslations}
                       isTranslating={translatingMessageId === m.id}
-                      canTranslate={showTranslations}
+                      canTranslate={false}
                       onTranslate={() => handleManualTranslate(m.id)}
                       canReplay={!!getTutorMessageVisibleText(m)}
                       onReplay={() => playSavedClip(m.id)}

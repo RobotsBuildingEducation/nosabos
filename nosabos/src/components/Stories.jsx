@@ -40,7 +40,11 @@ import {
   serverTimestamp,
   onSnapshot,
 } from "firebase/firestore";
-import { database } from "../firebaseResources/firebaseResources";
+import {
+  appCheckFetch,
+  database,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
@@ -57,7 +61,6 @@ import {
   stopAllTTSPlayback,
   TTS_LANG_TAG,
 } from "../utils/tts";
-import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
@@ -737,7 +740,7 @@ export default function StoryMode({
           lessonContent?.scenario ||
           "general conversation";
 
-      const response = await fetch(storyUrl, {
+      const response = await appCheckFetch(storyUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
