@@ -482,6 +482,7 @@ export default function SessionTimerModal({
   t = {},
   lang = "en",
   useSharedBackdrop = false,
+  deferBody = true,
 }) {
   const presets = [10, 20, 30, 45, 60, 90, 120, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
@@ -509,8 +510,14 @@ export default function SessionTimerModal({
       return undefined;
     }
 
+    if (!deferBody) {
+      setBodyReady(true);
+      return undefined;
+    }
+
     return scheduleAfterNextPaint(() => setBodyReady(true));
-  }, [isOpen]);
+  }, [deferBody, isOpen]);
+  const shouldRenderBody = !deferBody || bodyReady;
 
   const deferPostAction = useCallback((task) => {
     if (typeof task !== "function") return;
@@ -573,7 +580,7 @@ export default function SessionTimerModal({
       preserveScrollBarGap={false}
       lockFocusAcrossFrames={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         bg={
           useSharedBackdrop
@@ -585,7 +592,7 @@ export default function SessionTimerModal({
         backdropFilter={
           useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
         }
-      />
+      /> */}
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
@@ -619,11 +626,10 @@ export default function SessionTimerModal({
           }}
         />
         <ModalBody>
-          {bodyReady ? (
+          {shouldRenderBody ? (
             <VStack align="stretch" spacing={4}>
               <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
-                {t.timer_modal_description ||
-                  "Set how long you want to focus."}
+                {t.timer_modal_description || "Set how long you want to focus."}
               </Text>
 
               {/* Clock visual — drag around the face to adjust time */}
@@ -633,8 +639,7 @@ export default function SessionTimerModal({
                 playSliderTick={playSliderTick}
                 isLightTheme={isLightTheme}
                 dragHint={
-                  t.timer_modal_drag_hint ||
-                  "Drag around the clock to set time"
+                  t.timer_modal_drag_hint || "Drag around the clock to set time"
                 }
               />
 
@@ -757,7 +762,7 @@ export default function SessionTimerModal({
           borderTop="1px solid"
           borderColor={isLightTheme ? APP_BORDER : "gray.800"}
         >
-          {bodyReady ? (
+          {shouldRenderBody ? (
             <>
               <Button
                 variant="ghost"

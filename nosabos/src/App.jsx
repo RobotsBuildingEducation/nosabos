@@ -1174,6 +1174,7 @@ function TopBar({
 
   // The iOS freeze came from the heavy SkillTree mode surface underneath the
   // overlay, not from the click sound itself. Keep the familiar feedback.
+  const topBarPointerActionKeyRef = useRef(null);
   const runTopBarAction = useCallback(
     (action) => {
       if (!action) return;
@@ -1188,10 +1189,37 @@ function TopBar({
   );
 
   const getTopBarPressProps = useCallback(
-    (_key, action) => ({
-      touchAction: "manipulation",
-      onClick: () => runTopBarAction(action),
-    }),
+    (key, action) => {
+      const shouldOpenOnPointerDown =
+        key === "daily-goal" || key === "session-timer";
+
+      return {
+        touchAction: "manipulation",
+        cursor: "pointer",
+        onPointerDown: shouldOpenOnPointerDown
+          ? (event) => {
+              if (event.button != null && event.button !== 0) return;
+              topBarPointerActionKeyRef.current = key;
+              runTopBarAction(action);
+
+              if (typeof window !== "undefined") {
+                window.setTimeout(() => {
+                  if (topBarPointerActionKeyRef.current === key) {
+                    topBarPointerActionKeyRef.current = null;
+                  }
+                }, 350);
+              }
+            }
+          : undefined,
+        onClick: () => {
+          if (topBarPointerActionKeyRef.current === key) {
+            topBarPointerActionKeyRef.current = null;
+            return;
+          }
+          runTopBarAction(action);
+        },
+      };
+    },
     [runTopBarAction],
   );
 
@@ -1244,6 +1272,7 @@ function TopBar({
                 })}
                 borderColor="teal.600"
                 px={{ base: 2, md: 3 }}
+                _active={{ transform: "none" }}
                 {...getTopBarPressProps("daily-goal", onOpenDailyGoalModal)}
               />
               <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
@@ -1272,6 +1301,7 @@ function TopBar({
                   ja: "タイマーを開く",
                   zh: "打开计时器",
                 })}
+                _active={{ transform: "none" }}
                 {...getTopBarPressProps("session-timer", onOpenTimerModal)}
               >
                 <FiClock />
@@ -1313,6 +1343,11 @@ function TopBar({
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
+        {/* <DrawerOverlay
+          // {...settingsSwipeDismiss.overlayProps}
+          motionProps={nativeOverlayMotionProps}
+          // bg="var(--app-overlay)"
+        /> */}
         <DrawerContent
           {...settingsSwipeDismiss.drawerContentProps}
           motionProps={nativeAnchoredDrawerMotionProps}
@@ -2967,19 +3002,6 @@ export default function App({ onBootReady } = {}) {
     }
   }, []);
 
-  const runOnNextFrame = useCallback((task) => {
-    if (typeof task !== "function") return;
-
-    if (typeof window === "undefined") {
-      task();
-      return;
-    }
-
-    window.requestAnimationFrame(() => {
-      task();
-    });
-  }, []);
-
   const runAfterNextPaint = useCallback((task) => {
     if (typeof task !== "function") return;
 
@@ -3021,6 +3043,7 @@ export default function App({ onBootReady } = {}) {
   const [timerActive, setTimerActive] = useState(false);
   const [timerPaused, setTimerPaused] = useState(false);
   const [timerEndsAt, setTimerEndsAt] = useState(null);
+  const [timerModalImmediateBody, setTimerModalImmediateBody] = useState(false);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
   const [hasTimer, setHasTimer] = useState(false);
   const timerIntervalRef = useRef(null);
@@ -3303,6 +3326,7 @@ export default function App({ onBootReady } = {}) {
 
       flushSync(() => {
         setTimerModalOpen(false);
+        setTimerModalImmediateBody(false);
         if (shouldOpenProficiency) {
           proficiencyCheckDoneRef.current = true;
           setShouldShowProficiencyAfterTimer(false);
@@ -4907,15 +4931,11 @@ export default function App({ onBootReady } = {}) {
       setDailyGoalOpen(false);
       if (shouldOpenTimer) {
         setShouldShowTimerAfterGoal(false);
+        setTimerModalImmediateBody(true);
+        setTimerModalOpen(true);
       }
     });
-
-    if (shouldOpenTimer) {
-      runOnNextFrame(() => {
-        setTimerModalOpen(true);
-      });
-    }
-  }, [blurActiveElement, runOnNextFrame, shouldShowTimerAfterGoal]);
+  }, [blurActiveElement, shouldShowTimerAfterGoal]);
 
   const handleDailyGoalSave = useCallback(
     (goalValue) => {
@@ -4943,14 +4963,10 @@ export default function App({ onBootReady } = {}) {
         setDailyGoalOpen(false);
         if (shouldOpenTimer) {
           setShouldShowTimerAfterGoal(false);
+          setTimerModalImmediateBody(true);
+          setTimerModalOpen(true);
         }
       });
-
-      if (shouldOpenTimer) {
-        runOnNextFrame(() => {
-          setTimerModalOpen(true);
-        });
-      }
 
       const commitDailyGoal = () => {
         patchUser?.({
@@ -5032,7 +5048,6 @@ export default function App({ onBootReady } = {}) {
       dailyGoalXpHistory,
       patchUser,
       runAfterNextPaint,
-      runOnNextFrame,
       shouldShowTimerAfterGoal,
       toast,
     ],
@@ -5043,6 +5058,7 @@ export default function App({ onBootReady } = {}) {
 
     flushSync(() => {
       setTimerModalOpen(false);
+      setTimerModalImmediateBody(false);
       if (shouldOpenProficiency) {
         proficiencyCheckDoneRef.current = true;
         setShouldShowProficiencyAfterTimer(false);
@@ -6769,7 +6785,10 @@ export default function App({ onBootReady } = {}) {
           hasTimer={hasTimer}
           isTimerRunning={isTimerRunning}
           timerPaused={timerPaused}
-          onOpenTimerModal={() => setTimerModalOpen(true)}
+          onOpenTimerModal={() => {
+            setTimerModalImmediateBody(false);
+            setTimerModalOpen(true);
+          }}
           onTogglePauseTimer={handleTogglePauseTimer}
           onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
           allowPosts={allowPosts}
@@ -6819,6 +6838,7 @@ export default function App({ onBootReady } = {}) {
         helper={null}
         t={t}
         lang={appLanguage}
+        deferBody={!timerModalImmediateBody}
       />
 
       {/* Teams/global feed modal temporarily hidden — replaced by Real-World Practice tasks.
@@ -7197,11 +7217,11 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #c084fc 0%, #22d3ee 100%)"
@@ -7283,11 +7303,11 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)"
@@ -7413,11 +7433,11 @@ export default function App({ onBootReady } = {}) {
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -7553,11 +7573,11 @@ export default function App({ onBootReady } = {}) {
         closeOnOverlayClick={false}
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={
@@ -7713,8 +7733,8 @@ function OnboardingChainBackdrop({ appChainOpen }) {
         inset="0"
         zIndex="1300"
         pointerEvents="none"
-        bg="var(--app-overlay)"
-        backdropFilter="blur(4px)"
+        // bg="var(--app-overlay)"
+        // backdropFilter="blur(4px)"
       />
     </Portal>
   );

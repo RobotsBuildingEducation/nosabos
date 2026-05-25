@@ -233,8 +233,12 @@ function getFlashcardModalTrimTheme(card, cefrColor, isLightTheme) {
       };
     default:
       return {
-        borderColor: isLightTheme ? `${cefrColor.primary}52` : `${cefrColor.primary}80`,
-        ringColor: isLightTheme ? `${cefrColor.primary}14` : `${cefrColor.primary}26`,
+        borderColor: isLightTheme
+          ? `${cefrColor.primary}52`
+          : `${cefrColor.primary}80`,
+        ringColor: isLightTheme
+          ? `${cefrColor.primary}14`
+          : `${cefrColor.primary}26`,
       };
   }
 }
@@ -329,10 +333,7 @@ export default function FlashcardPractice({
       ? {
           title: getTranslation("flashcard_rate_recall"),
           icon: (
-            <RiEyeLine
-              size={30}
-              color={isLightTheme ? "#7b8794" : "#93C5FD"}
-            />
+            <RiEyeLine size={30} color={isLightTheme ? "#7b8794" : "#93C5FD"} />
           ),
           shellBg: isLightTheme ? APP_SURFACE_ELEVATED : "#10233d",
           shellBorderColor: isLightTheme
@@ -421,7 +422,9 @@ export default function FlashcardPractice({
         ? "rgba(176, 94, 122, 0.32)"
         : "rgba(255, 227, 237, 0.38)",
       shadow: isLightTheme ? "0px 3px 0px #c993a3" : "0px 4px 0px #8f2950",
-      activeShadow: isLightTheme ? "0px 1px 0px #c993a3" : "0px 2px 0px #8f2950",
+      activeShadow: isLightTheme
+        ? "0px 1px 0px #c993a3"
+        : "0px 2px 0px #8f2950",
       textColor: isLightTheme ? "#432b33" : "white",
       delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
@@ -433,7 +436,9 @@ export default function FlashcardPractice({
         ? "rgba(154, 109, 36, 0.28)"
         : "rgba(255, 239, 204, 0.38)",
       shadow: isLightTheme ? "0px 3px 0px #bf9b62" : "0px 4px 0px #8a5300",
-      activeShadow: isLightTheme ? "0px 1px 0px #bf9b62" : "0px 2px 0px #8a5300",
+      activeShadow: isLightTheme
+        ? "0px 1px 0px #bf9b62"
+        : "0px 2px 0px #8a5300",
       textColor: isLightTheme ? "#4a3921" : "white",
       delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
@@ -445,7 +450,9 @@ export default function FlashcardPractice({
         ? "rgba(68, 135, 122, 0.24)"
         : "rgba(213, 255, 247, 0.34)",
       shadow: isLightTheme ? "0px 3px 0px #88b8aa" : "0px 4px 0px #0c7a6d",
-      activeShadow: isLightTheme ? "0px 1px 0px #88b8aa" : "0px 2px 0px #0c7a6d",
+      activeShadow: isLightTheme
+        ? "0px 1px 0px #88b8aa"
+        : "0px 2px 0px #0c7a6d",
       textColor: isLightTheme ? "#2d403a" : "white",
       delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
@@ -457,7 +464,9 @@ export default function FlashcardPractice({
         ? "rgba(90, 124, 169, 0.26)"
         : "rgba(226, 242, 255, 0.36)",
       shadow: isLightTheme ? "0px 3px 0px #93afd2" : "0px 4px 0px #2f6fda",
-      activeShadow: isLightTheme ? "0px 1px 0px #93afd2" : "0px 2px 0px #2f6fda",
+      activeShadow: isLightTheme
+        ? "0px 1px 0px #93afd2"
+        : "0px 2px 0px #2f6fda",
       textColor: isLightTheme ? "#314256" : "white",
       delayColor: isLightTheme ? "#5b4b3a" : "whiteAlpha.900",
     },
@@ -583,7 +592,11 @@ export default function FlashcardPractice({
         selectedOption?.patch ||
         buildFlashcardReviewUpdate(card.reviewProgress || {}, rating);
       const earnedXp =
-        rating === "again" ? 0 : assessmentMode === "ai" && isCorrect ? xpAwarded : 0;
+        rating === "again"
+          ? 0
+          : assessmentMode === "ai" && isCorrect
+            ? xpAwarded
+            : 0;
 
       await Promise.resolve(
         onComplete({
@@ -751,10 +764,7 @@ export default function FlashcardPractice({
     }
     streamingRef.current = true;
 
-    const sourceText = getConceptText(
-      card,
-      effectiveCardLanguage,
-    );
+    const sourceText = getConceptText(card, effectiveCardLanguage);
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(
       targetLang,
     )}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
@@ -953,11 +963,11 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
       isCentered
       motionPreset="none"
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         backdropFilter={isLightTheme ? "blur(4px)" : "blur(8px)"}
         bg={isLightTheme ? "rgba(76, 60, 40, 0.22)" : "blackAlpha.700"}
-      />
+      /> */}
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={modalShellTheme.bg}
@@ -1021,7 +1031,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
               flex="1"
               display="flex"
               flexDirection="column"
-              justifyContent={shouldCenterModalContent ? "center" : "flex-start"}
+              justifyContent={
+                shouldCenterModalContent ? "center" : "flex-start"
+              }
             >
               <VStack spacing={6} align="stretch">
                 {!showResult && !isGrading && (
@@ -1052,7 +1064,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                       >
                         <Text
                           fontSize="xs"
-                          color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                          color={
+                            isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"
+                          }
                           fontWeight="medium"
                           mb={1}
                         >
@@ -1064,13 +1078,12 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           fontSize="3xl"
                           fontWeight="black"
                           color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                          textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"}
+                          textShadow={
+                            isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.2)"
+                          }
                           {...cardPromptTextProps}
                         >
-                          {getConceptText(
-                            card,
-                            effectiveCardLanguage,
-                          )}
+                          {getConceptText(card, effectiveCardLanguage)}
                         </Text>
                         <IconButton
                           aria-label={getTranslation("flashcard_show_answer")}
@@ -1088,7 +1101,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           }
                           icon={<MdOutlineSupportAgent size={18} />}
                           onClick={handleShowAnswer}
-                          _hover={{ bg: isLightTheme ? APP_SURFACE_MUTED : "gray.50" }}
+                          _hover={{
+                            bg: isLightTheme ? APP_SURFACE_MUTED : "gray.50",
+                          }}
                           rounded="xl"
                         />
                       </Box>
@@ -1130,7 +1145,11 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             fontSize="3xl"
                             fontWeight="black"
                             color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
-                            textShadow={isLightTheme ? "none" : "0 2px 4px rgba(0,0,0,0.3)"}
+                            textShadow={
+                              isLightTheme
+                                ? "none"
+                                : "0 2px 4px rgba(0,0,0,0.3)"
+                            }
                             {...targetTextProps}
                           >
                             {streamedAnswer || "..."}
@@ -1142,7 +1161,8 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             <IconButton
                               aria-label={
                                 loadingTts
-                                  ? getTranslation("flashcard_loading") || "Loading"
+                                  ? getTranslation("flashcard_loading") ||
+                                    "Loading"
                                   : getTranslation("flashcard_listen")
                               }
                               position="absolute"
@@ -1160,7 +1180,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                               }
                               onClick={handleListenToAnswer}
                               _hover={{
-                                bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.300",
+                                bg: isLightTheme
+                                  ? APP_SURFACE_MUTED
+                                  : "whiteAlpha.300",
                               }}
                               fontSize="xs"
                             />
@@ -1195,7 +1217,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           }
                           size={48}
                         />
-                        <Text color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}>
+                        <Text
+                          color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                        >
                           {getTranslation("flashcard_grading")}
                         </Text>
                       </VStack>
@@ -1266,12 +1290,16 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             borderRadius="lg"
                             bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
                             border="1px solid"
-                            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                            borderColor={
+                              isLightTheme ? APP_BORDER : "whiteAlpha.200"
+                            }
                             w="100%"
                           >
                             <Text
                               fontSize="sm"
-                              color={isLightTheme ? APP_TEXT_SECONDARY : "gray.400"}
+                              color={
+                                isLightTheme ? APP_TEXT_SECONDARY : "gray.400"
+                              }
                               mb={1}
                             >
                               {getTranslation("flashcard_recognized")}
@@ -1301,9 +1329,13 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             dir={targetTextProps.dir}
                             lang={targetTextProps.lang}
                             textAlign={targetTextProps.textAlign}
-                            bg={isLightTheme ? APP_SURFACE_ELEVATED : "#f4f5ffff"}
+                            bg={
+                              isLightTheme ? APP_SURFACE_ELEVATED : "#f4f5ffff"
+                            }
                             border="2px solid"
-                            borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                            borderColor={
+                              isLightTheme ? APP_BORDER : "whiteAlpha.200"
+                            }
                             color={isLightTheme ? APP_TEXT_PRIMARY : "black"}
                             _placeholder={{
                               color: isLightTheme ? APP_TEXT_MUTED : "gray.500",
@@ -1345,7 +1377,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           color={isLightTheme ? APP_TEXT_SECONDARY : "white"}
                           onClick={handleCancel}
                           _hover={{
-                            bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.100",
+                            bg: isLightTheme
+                              ? APP_SURFACE_MUTED
+                              : "whiteAlpha.100",
                           }}
                         >
                           {getTranslation("flashcard_cancel")}
@@ -1487,7 +1521,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           borderRadius="lg"
                           bg={isLightTheme ? APP_SURFACE : "whiteAlpha.100"}
                           border="1px solid"
-                          borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.200"}
+                          borderColor={
+                            isLightTheme ? APP_BORDER : "whiteAlpha.200"
+                          }
                         >
                           <HStack justify="flex-end" mb={-1}>
                             <Popover trigger="click" placement="top-end" isLazy>
@@ -1499,44 +1535,74 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                   icon={<FiHelpCircle />}
                                   size="sm"
                                   variant="ghost"
-                                  color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_PRIMARY
+                                      : "whiteAlpha.900"
+                                  }
                                   onClick={() => playSound(selectSound)}
                                   _hover={{
-                                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.200",
+                                    bg: isLightTheme
+                                      ? APP_SURFACE_MUTED
+                                      : "whiteAlpha.200",
                                   }}
                                   _active={{
-                                    bg: isLightTheme ? APP_SURFACE_MUTED : "whiteAlpha.300",
+                                    bg: isLightTheme
+                                      ? APP_SURFACE_MUTED
+                                      : "whiteAlpha.300",
                                   }}
                                 />
                               </PopoverTrigger>
                               <Portal>
                                 <PopoverContent
-                                  bg={isLightTheme ? APP_SURFACE_ELEVATED : "rgba(15, 23, 42, 0.98)"}
-                                  borderColor={isLightTheme ? APP_BORDER : "whiteAlpha.300"}
-                                  color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
+                                  bg={
+                                    isLightTheme
+                                      ? APP_SURFACE_ELEVATED
+                                      : "rgba(15, 23, 42, 0.98)"
+                                  }
+                                  borderColor={
+                                    isLightTheme ? APP_BORDER : "whiteAlpha.300"
+                                  }
+                                  color={
+                                    isLightTheme ? APP_TEXT_PRIMARY : "white"
+                                  }
                                   maxW="280px"
                                   zIndex={1600}
                                 >
                                   <PopoverArrow
-                                    bg={isLightTheme ? APP_SURFACE_ELEVATED : "rgba(15, 23, 42, 0.98)"}
+                                    bg={
+                                      isLightTheme
+                                        ? APP_SURFACE_ELEVATED
+                                        : "rgba(15, 23, 42, 0.98)"
+                                    }
                                   />
                                   <PopoverBody py={4}>
                                     <VStack align="stretch" spacing={3}>
                                       <Text fontSize="sm" fontWeight="bold">
-                                        {getTranslation("flashcard_rating_help_title")}
+                                        {getTranslation(
+                                          "flashcard_rating_help_title",
+                                        )}
                                       </Text>
                                       {reviewHelpItems.map((item) => (
                                         <Box key={item.rating}>
                                           <Text
                                             fontSize="sm"
                                             fontWeight="semibold"
-                                            color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
+                                            color={
+                                              isLightTheme
+                                                ? APP_TEXT_PRIMARY
+                                                : "whiteAlpha.900"
+                                            }
                                           >
                                             {item.label}
                                           </Text>
                                           <Text
                                             fontSize="xs"
-                                            color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                                            color={
+                                              isLightTheme
+                                                ? APP_TEXT_SECONDARY
+                                                : "whiteAlpha.800"
+                                            }
                                             lineHeight="1.5"
                                           >
                                             {item.description}
@@ -1625,7 +1691,10 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                                     </Text>
                                     <Text
                                       fontSize="xs"
-                                      color={buttonTheme.delayColor || "whiteAlpha.900"}
+                                      color={
+                                        buttonTheme.delayColor ||
+                                        "whiteAlpha.900"
+                                      }
                                       textShadow={
                                         isLightTheme
                                           ? "none"
@@ -1656,9 +1725,15 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                             }
                             border="1px solid"
                             borderColor={
-                              isLightTheme ? "rgba(194, 103, 132, 0.24)" : "pink.400"
+                              isLightTheme
+                                ? "rgba(194, 103, 132, 0.24)"
+                                : "pink.400"
                             }
-                            boxShadow={isLightTheme ? "none" : "0 4px 12px rgba(0, 0, 0, 0.2)"}
+                            boxShadow={
+                              isLightTheme
+                                ? "none"
+                                : "0 4px 12px rgba(0, 0, 0, 0.2)"
+                            }
                           >
                             <Text
                               fontSize="sm"
@@ -1670,8 +1745,9 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                               gap={2}
                             >
                               <RiEyeLine />
-                              {getTranslation("flashcard_explanation_heading") ||
-                                "Explanation"}
+                              {getTranslation(
+                                "flashcard_explanation_heading",
+                              ) || "Explanation"}
                             </Text>
                             <Box
                               color={isLightTheme ? APP_TEXT_PRIMARY : "white"}
@@ -1708,7 +1784,11 @@ Provide a brief response in ${LANG_NAME(effectiveCardLanguage)} with two parts:
                           <VStack align="stretch" spacing={3} w="100%" p={4}>
                             <Text
                               fontSize="xs"
-                              color={isLightTheme ? APP_TEXT_SECONDARY : "whiteAlpha.800"}
+                              color={
+                                isLightTheme
+                                  ? APP_TEXT_SECONDARY
+                                  : "whiteAlpha.800"
+                              }
                               textAlign="center"
                             >
                               {`${getTranslation("flashcard_xp_level", {

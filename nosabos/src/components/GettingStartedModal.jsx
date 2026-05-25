@@ -128,11 +128,11 @@ export default function GettingStartedModal({
       motionPreset="none"
       returnFocusOnClose={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         bg={useSharedBackdrop ? "transparent" : isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
         backdropFilter={useSharedBackdrop ? undefined : "blur(4px)"}
-      />
+      /> */}
       <ModalContent
         motionProps={nativeModalMotionProps}
         bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
@@ -151,7 +151,9 @@ export default function GettingStartedModal({
           px={{ base: 4, md: 5 }}
           py={{ base: 3, md: 4 }}
           borderBottom="1px solid"
-          borderColor={isLightTheme ? "rgba(99, 102, 241, 0.18)" : "transparent"}
+          borderColor={
+            isLightTheme ? "rgba(99, 102, 241, 0.18)" : "transparent"
+          }
         >
           <VStack spacing={1.5} align="center">
             <RandomCharacter notSoRandomCharacter={"39"} width="48px" />
@@ -187,8 +189,12 @@ export default function GettingStartedModal({
                   p={6}
                   rounded="md"
                   border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.08)"}
-                  boxShadow={isLightTheme ? "none" : "0 8px 20px rgba(0,0,0,0.18)"}
+                  borderColor={
+                    isLightTheme ? APP_BORDER : "rgba(255,255,255,0.08)"
+                  }
+                  boxShadow={
+                    isLightTheme ? "none" : "0 8px 20px rgba(0,0,0,0.18)"
+                  }
                 >
                   <VStack
                     spacing={1}
@@ -217,8 +223,12 @@ export default function GettingStartedModal({
                   p={6}
                   rounded="md"
                   border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.08)"}
-                  boxShadow={isLightTheme ? "none" : "0 8px 20px rgba(0,0,0,0.18)"}
+                  borderColor={
+                    isLightTheme ? APP_BORDER : "rgba(255,255,255,0.08)"
+                  }
+                  boxShadow={
+                    isLightTheme ? "none" : "0 8px 20px rgba(0,0,0,0.18)"
+                  }
                   cursor="pointer"
                   onClick={handleCopyKey}
                   _hover={{
@@ -241,13 +251,14 @@ export default function GettingStartedModal({
                       lineHeight="1.35"
                       color={isLightTheme ? APP_TEXT_PRIMARY : "whiteAlpha.900"}
                     >
-                      6.{" "}
-                      {ui("app_install_step6")}{" "}
+                      6. {ui("app_install_step6")}{" "}
                       <Box
                         as="span"
                         display="inline-block"
                         verticalAlign="middle"
-                        color={isLightTheme ? APP_TEXT_SECONDARY : APP_TEXT_MUTED}
+                        color={
+                          isLightTheme ? APP_TEXT_SECONDARY : APP_TEXT_MUTED
+                        }
                       >
                         <LuCopy size={12} />
                       </Box>

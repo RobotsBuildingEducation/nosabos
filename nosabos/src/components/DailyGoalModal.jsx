@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -638,7 +644,7 @@ export default function DailyGoalModal({
       preserveScrollBarGap={false}
       lockFocusAcrossFrames={false}
     >
-      <ModalOverlay
+      {/* <ModalOverlay
         motionProps={nativeOverlayMotionProps}
         bg={
           useSharedBackdrop
@@ -650,7 +656,7 @@ export default function DailyGoalModal({
         backdropFilter={
           useSharedBackdrop ? undefined : isLightTheme ? "blur(4px)" : undefined
         }
-      />
+      /> */}
 
       <ModalContent
         motionProps={nativeModalMotionProps}
@@ -734,11 +740,7 @@ export default function DailyGoalModal({
                         key={v}
                         size="sm"
                         variant={
-                          isLightTheme
-                            ? "solid"
-                            : active
-                              ? "solid"
-                              : "outline"
+                          isLightTheme ? "solid" : active ? "solid" : "outline"
                         }
                         bg={
                           isLightTheme

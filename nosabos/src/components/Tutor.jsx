@@ -793,18 +793,14 @@ function isTutorStarterAgendaLesson(lesson) {
 
 function getStableTutorLessonXpRequired(lesson) {
   const source = String(
-    lesson?.id ||
-      lesson?.title?.en ||
-      lesson?.title?.es ||
-      "tutor-lesson",
+    lesson?.id || lesson?.title?.en || lesson?.title?.es || "tutor-lesson",
   );
   let hash = 2166136261;
   for (let index = 0; index < source.length; index += 1) {
     hash ^= source.charCodeAt(index);
     hash = Math.imul(hash, 16777619) >>> 0;
   }
-  const range =
-    TUTOR_LESSON_XP_REQUIRED_MAX - TUTOR_LESSON_XP_REQUIRED_MIN + 1;
+  const range = TUTOR_LESSON_XP_REQUIRED_MAX - TUTOR_LESSON_XP_REQUIRED_MIN + 1;
   return TUTOR_LESSON_XP_REQUIRED_MIN + (hash % range);
 }
 
@@ -1052,7 +1048,9 @@ function tutorPhraseIsDirectAnswer(phrase, transcript) {
 }
 
 function anyTutorPhraseIsDirectAnswer(phrases = [], transcript = "") {
-  return phrases.some((phrase) => tutorPhraseIsDirectAnswer(phrase, transcript));
+  return phrases.some((phrase) =>
+    tutorPhraseIsDirectAnswer(phrase, transcript),
+  );
 }
 
 function hasTutorMeaningfulTranscript(text = "") {
@@ -3503,7 +3501,9 @@ export default function Tutor({
 
   // Learning prefs
   const [voice, setVoice] = useState(
-    normalizeGeminiLiveVoice(user?.progress?.tutorVoice || user?.progress?.voice),
+    normalizeGeminiLiveVoice(
+      user?.progress?.tutorVoice || user?.progress?.voice,
+    ),
   );
   const [voicePersona, setVoicePersona] = useState(
     user?.progress?.tutorVoicePersona ||
@@ -3970,11 +3970,7 @@ export default function Tutor({
     const required = getTutorLessonXpRequired(lesson);
     if (!required) return 0;
     const earned = getStoredTutorLessonEarnedXp(lessonProgress, lesson);
-    return Math.round(
-      (Math.max(0, earned) /
-        Math.max(1, required)) *
-        100,
-    );
+    return Math.round((Math.max(0, earned) / Math.max(1, required)) * 100);
   }
 
   function handleTutorPathOpen() {
@@ -5919,14 +5915,16 @@ export default function Tutor({
   function getTutorAssistantOutputText(mid) {
     if (!mid) return "";
     const message = messagesRef.current.find((item) => item.id === mid);
-    return sanitizeTutorAssistantText([
-      message?.textFinal || "",
-      message?.textStream || "",
-      streamBuffersRef.current.get(mid) || "",
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim());
+    return sanitizeTutorAssistantText(
+      [
+        message?.textFinal || "",
+        message?.textStream || "",
+        streamBuffersRef.current.get(mid) || "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim(),
+    );
   }
 
   function getLatestTutorUserText() {
@@ -6231,10 +6229,7 @@ export default function Tutor({
         const nextProgress = nextProgressLessons[nextTutorLesson.lesson.id];
         const nextEarned =
           nextTutorLesson.status === SKILL_STATUS.IN_PROGRESS
-            ? getStoredTutorLessonEarnedXp(
-                nextProgress,
-                nextTutorLesson.lesson,
-              )
+            ? getStoredTutorLessonEarnedXp(nextProgress, nextTutorLesson.lesson)
             : 0;
 
         setSelectedTutorLesson(nextTutorLesson.lesson);
@@ -6365,9 +6360,12 @@ export default function Tutor({
     if (!isTutorStarterAgendaLesson(lesson)) return [];
     if (tutorLessonCompletionTriggeredRef.current) return [];
 
-    const allowedIds = new Set(TUTOR_STARTER_AGENDA_ITEMS.map((item) => item.id));
+    const allowedIds = new Set(
+      TUTOR_STARTER_AGENDA_ITEMS.map((item) => item.id),
+    );
     const acceptedIds = compactUnique(itemIds).filter(
-      (id) => allowedIds.has(id) && !tutorStarterAgendaProgressRef.current?.[id],
+      (id) =>
+        allowedIds.has(id) && !tutorStarterAgendaProgressRef.current?.[id],
     );
     if (!acceptedIds.length) return [];
 
@@ -7614,7 +7612,7 @@ export default function Tutor({
                     isTranslating={
                       translatingMessageId === latestAssistantMessage.id
                     }
-                    canTranslate={showTranslations}
+                    canTranslate={false}
                     onTranslate={() =>
                       handleManualTranslate(latestAssistantMessage.id)
                     }
@@ -7735,11 +7733,11 @@ export default function Tutor({
         scrollBehavior="inside"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE : "gray.950"}
@@ -7901,11 +7899,11 @@ export default function Tutor({
         size="lg"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -8018,11 +8016,11 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(5px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           mx={3}
@@ -8191,10 +8189,10 @@ export default function Tutor({
         size="xl"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="gray.800"
@@ -8244,7 +8242,7 @@ export default function Tutor({
                       }
                       showSecondary={showTranslations}
                       isTranslating={translatingMessageId === m.id}
-                      canTranslate={showTranslations}
+                      canTranslate={false}
                       onTranslate={() => handleManualTranslate(m.id)}
                       canReplay={!!getTutorMessageVisibleText(m)}
                       onReplay={() => playSavedClip(m.id)}

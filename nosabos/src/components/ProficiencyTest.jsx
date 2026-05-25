@@ -24,7 +24,8 @@ import {
   ModalHeader,
   Text,
   VStack,
-  Badge, Divider,
+  Badge,
+  Divider,
   Grid,
   GridItem,
 } from "@chakra-ui/react";
@@ -175,9 +176,39 @@ const CEFR_LEVEL_INFO = {
     },
     color: "#8B5CF6",
   },
-  A1: { name: { en: "Beginner", es: "Principiante", pt: "Iniciante", it: "Principiante", fr: "Debutant", ja: "初心者" }, color: "#3B82F6" },
-  A2: { name: { en: "Elementary", es: "Elemental", pt: "Elementar", it: "Elementare", fr: "Elementaire", ja: "初級" }, color: "#8B5CF6" },
-  B1: { name: { en: "Intermediate", es: "Intermedio", pt: "Intermediário", it: "Intermedio", fr: "Intermediaire", ja: "中級" }, color: "#A855F7" },
+  A1: {
+    name: {
+      en: "Beginner",
+      es: "Principiante",
+      pt: "Iniciante",
+      it: "Principiante",
+      fr: "Debutant",
+      ja: "初心者",
+    },
+    color: "#3B82F6",
+  },
+  A2: {
+    name: {
+      en: "Elementary",
+      es: "Elemental",
+      pt: "Elementar",
+      it: "Elementare",
+      fr: "Elementaire",
+      ja: "初級",
+    },
+    color: "#8B5CF6",
+  },
+  B1: {
+    name: {
+      en: "Intermediate",
+      es: "Intermedio",
+      pt: "Intermediário",
+      it: "Intermedio",
+      fr: "Intermediaire",
+      ja: "中級",
+    },
+    color: "#A855F7",
+  },
   B2: {
     name: {
       en: "Upper Intermediate",
@@ -189,8 +220,28 @@ const CEFR_LEVEL_INFO = {
     },
     color: "#F97316",
   },
-  C1: { name: { en: "Advanced", es: "Avanzado", pt: "Avançado", it: "Avanzato", fr: "Avance", ja: "上級" }, color: "#EF4444" },
-  C2: { name: { en: "Mastery", es: "Maestría", pt: "Domínio", it: "Padronanza", fr: "Maitrise", ja: "熟達" }, color: "#EC4899" },
+  C1: {
+    name: {
+      en: "Advanced",
+      es: "Avanzado",
+      pt: "Avançado",
+      it: "Avanzato",
+      fr: "Avance",
+      ja: "上級",
+    },
+    color: "#EF4444",
+  },
+  C2: {
+    name: {
+      en: "Mastery",
+      es: "Maestría",
+      pt: "Domínio",
+      it: "Padronanza",
+      fr: "Maitrise",
+      ja: "熟達",
+    },
+    color: "#EC4899",
+  },
 };
 
 CEFR_LEVEL_INFO["Pre-A1"].name.ar = "مبتدئ تمامًا";
@@ -479,12 +530,66 @@ CEFR_LEVEL_OFFERINGS.C2.de = [
 ];
 
 const ASSESSMENT_CRITERIA = [
-  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación", it: "Pronuncia", fr: "Prononciation", de: "Aussprache", ja: "発音", zh: "发音" },
-  { key: "grammar", en: "Grammar", es: "Gramática", it: "Grammatica", fr: "Grammaire", de: "Grammatik", ja: "文法", zh: "语法" },
-  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario", it: "Vocabolario", fr: "Vocabulaire", de: "Wortschatz", ja: "語彙", zh: "词汇" },
-  { key: "fluency", en: "Fluency", es: "Fluidez", it: "Fluidità", fr: "Fluidite", de: "Flüssigkeit", ja: "流暢さ", zh: "流利度" },
-  { key: "confidence", en: "Confidence", es: "Confianza", it: "Sicurezza", fr: "Confiance", de: "Sicherheit", ja: "自信", zh: "自信度" },
-  { key: "comprehension", en: "Comprehension", es: "Comprensión", it: "Comprensione", fr: "Comprehension", de: "Verständnis", ja: "理解", zh: "理解力" },
+  {
+    key: "pronunciation",
+    en: "Pronunciation",
+    es: "Pronunciación",
+    it: "Pronuncia",
+    fr: "Prononciation",
+    de: "Aussprache",
+    ja: "発音",
+    zh: "发音",
+  },
+  {
+    key: "grammar",
+    en: "Grammar",
+    es: "Gramática",
+    it: "Grammatica",
+    fr: "Grammaire",
+    de: "Grammatik",
+    ja: "文法",
+    zh: "语法",
+  },
+  {
+    key: "vocabulary",
+    en: "Vocabulary",
+    es: "Vocabulario",
+    it: "Vocabolario",
+    fr: "Vocabulaire",
+    de: "Wortschatz",
+    ja: "語彙",
+    zh: "词汇",
+  },
+  {
+    key: "fluency",
+    en: "Fluency",
+    es: "Fluidez",
+    it: "Fluidità",
+    fr: "Fluidite",
+    de: "Flüssigkeit",
+    ja: "流暢さ",
+    zh: "流利度",
+  },
+  {
+    key: "confidence",
+    en: "Confidence",
+    es: "Confianza",
+    it: "Sicurezza",
+    fr: "Confiance",
+    de: "Sicherheit",
+    ja: "自信",
+    zh: "自信度",
+  },
+  {
+    key: "comprehension",
+    en: "Comprehension",
+    es: "Comprensión",
+    it: "Comprensione",
+    fr: "Comprehension",
+    de: "Verständnis",
+    ja: "理解",
+    zh: "理解力",
+  },
 ];
 
 const ASSESSMENT_CRITERIA_AR = {
@@ -1219,7 +1324,9 @@ export default function ProficiencyTest() {
     if (locked) setLocalMicEnabled(false);
     try {
       if (dcRef.current?.readyState === "open") {
-        dcRef.current.send(JSON.stringify({ type: "input_audio_buffer.clear" }));
+        dcRef.current.send(
+          JSON.stringify({ type: "input_audio_buffer.clear" }),
+        );
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
@@ -1631,7 +1738,8 @@ export default function ProficiencyTest() {
         if (turn) {
           turn.endTs = now;
           turn.durationMs = Math.max(0, now - (turn.startTs || now));
-          if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+          if (turn.rmsSamples > 0)
+            turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
         }
         currentSpeechTurnRef.current = null;
         stopSpeechSampling();
@@ -1695,29 +1803,42 @@ export default function ProficiencyTest() {
     );
 
     const LANG_MAP = {
-      es: "Spanish", ar: "Egyptian Arabic", zh: "Mandarin Chinese", pt: "Portuguese", fr: "French", it: "Italian",
-      nl: "Dutch", ja: "Japanese", ru: "Russian", de: "German",
-      el: "Greek", pl: "Polish", ga: "Irish", nah: "Nahuatl",
-      yua: "Yucatec Maya", en: "English",
+      es: "Spanish",
+      ar: "Egyptian Arabic",
+      zh: "Mandarin Chinese",
+      pt: "Portuguese",
+      fr: "French",
+      it: "Italian",
+      nl: "Dutch",
+      ja: "Japanese",
+      ru: "Russian",
+      de: "German",
+      el: "Greek",
+      pl: "Polish",
+      ga: "Irish",
+      nah: "Nahuatl",
+      yua: "Yucatec Maya",
+      en: "English",
     };
     const langName = LANG_MAP[targetLang] || "the target language";
     const supportName = LANG_MAP[supportLang] || "English";
 
-    const insufficientAudioMsg = {
-      es: "Evidencia de audio insuficiente.",
-      ar: "أدلة الصوت غير كفاية.",
-      zh: "音频证据不足。",
-      it: "Prove audio insufficienti.",
-      pt: "Evidência de áudio insuficiente.",
-      fr: "Preuves audio insuffisantes.",
-      de: "Unzureichende Audiobeweise.",
-      nl: "Onvoldoende audiobewijs.",
-      ja: "音声証拠が不十分です。",
-      ru: "Недостаточно аудиодоказательств.",
-      el: "Ανεπαρκή ηχητικά στοιχεία.",
-      pl: "Niewystarczające dowody audio.",
-      ga: "Fianaise fuaime neamhleor.",
-    }[supportLang] || "Insufficient audio evidence.";
+    const insufficientAudioMsg =
+      {
+        es: "Evidencia de audio insuficiente.",
+        ar: "أدلة الصوت غير كفاية.",
+        zh: "音频证据不足。",
+        it: "Prove audio insufficienti.",
+        pt: "Evidência de áudio insuficiente.",
+        fr: "Preuves audio insuffisantes.",
+        de: "Unzureichende Audiobeweise.",
+        nl: "Onvoldoende audiobewijs.",
+        ja: "音声証拠が不十分です。",
+        ru: "Недостаточно аудиодоказательств.",
+        el: "Ανεπαρκή ηχητικά στοιχεία.",
+        pl: "Niewystarczające dowody audio.",
+        ga: "Fianaise fuaime neamhleor.",
+      }[supportLang] || "Insufficient audio evidence.";
 
     const prompt = `You are an EXTREMELY STRICT CEFR language proficiency assessor for ${langName}. Your job is to accurately place learners — most test-takers are beginners and should score low.
 
@@ -2275,8 +2396,10 @@ Return ONLY valid JSON:
     latestMessageText: latestAssistantText,
     getOutgoingTextById: getAssistantMessageTextById,
   });
-  const chatLogButtonHighlightProps =
-    getChatLogButtonHighlightProps(isChatLogHighlighted, isLightTheme);
+  const chatLogButtonHighlightProps = getChatLogButtonHighlightProps(
+    isChatLogHighlighted,
+    isLightTheme,
+  );
   const liveUiState =
     status === "connected" && uiState === "idle" ? "listening" : uiState;
   const orbUiState = getRealtimeOrbVisualState(liveUiState);
@@ -2385,20 +2508,13 @@ Return ONLY valid JSON:
   ];
 
   const RUBRIC_ROWS_AR = {
-    "Pre-A1":
-      "كلمات منفصلة أو ردود قصيرة جدًا مع انقطاع متكرر في الفهم.",
-    A1:
-      "يقدر يتعامل مع التحيات والبيانات الشخصية الأساسية بقوالب بسيطة محفوظة.",
-    A2:
-      "يقدر يتكلم عن موضوعات روتينية ويجاوب على أسئلة مباشرة بتفاصيل محدودة.",
-    B1:
-      "يقدر يشرح آراءه ويحكي أحداث ويحافظ على محادثة قصيرة مع بعض الأخطاء.",
-    B2:
-      "يقدر يتواصل بوضوح عن موضوعات مألوفة ومجردة مع تحكم وطلاقة كويسين.",
-    C1:
-      "يقدر ينتج لغة مرنة وبتفاصيل دقيقة في ردود أطول مع فهم قوي.",
-    C2:
-      "دقة وسرعة ومرونة قريبة جدًا من المتحدث الأصلي في الموضوعات المعقدة.",
+    "Pre-A1": "كلمات منفصلة أو ردود قصيرة جدًا مع انقطاع متكرر في الفهم.",
+    A1: "يقدر يتعامل مع التحيات والبيانات الشخصية الأساسية بقوالب بسيطة محفوظة.",
+    A2: "يقدر يتكلم عن موضوعات روتينية ويجاوب على أسئلة مباشرة بتفاصيل محدودة.",
+    B1: "يقدر يشرح آراءه ويحكي أحداث ويحافظ على محادثة قصيرة مع بعض الأخطاء.",
+    B2: "يقدر يتواصل بوضوح عن موضوعات مألوفة ومجردة مع تحكم وطلاقة كويسين.",
+    C1: "يقدر ينتج لغة مرنة وبتفاصيل دقيقة في ردود أطول مع فهم قوي.",
+    C2: "دقة وسرعة ومرونة قريبة جدًا من المتحدث الأصلي في الموضوعات المعقدة.",
   };
 
   rubricRows.forEach((row) => {
@@ -2413,27 +2529,31 @@ Return ONLY valid JSON:
         color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
         position="relative"
         pb="140px"
-        sx={isLightTheme ? PAPER_PAGE_SX : {
-          background:
-            "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.2) 0%, transparent 42%), " +
-            "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.14) 0%, transparent 40%), " +
-            "linear-gradient(180deg, rgba(9,13,30,0.98) 0%, rgba(4,8,22,0.99) 100%)",
-          "&::before": {
-            content: '\"\"',
-            position: "absolute",
-            inset: 0,
-            backgroundImage:
-              "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
-              "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
-            opacity: 0.45,
-            mixBlendMode: "screen",
-            pointerEvents: "none",
-          },
-          "& > :not([data-proficiency-bottom-dock='true'])": {
-            position: "relative",
-            zIndex: 1,
-          },
-        }}
+        sx={
+          isLightTheme
+            ? PAPER_PAGE_SX
+            : {
+                background:
+                  "radial-gradient(circle at 20% 15%, rgba(30,64,175,0.2) 0%, transparent 42%), " +
+                  "radial-gradient(circle at 82% 25%, rgba(6,95,70,0.14) 0%, transparent 40%), " +
+                  "linear-gradient(180deg, rgba(9,13,30,0.98) 0%, rgba(4,8,22,0.99) 100%)",
+                "&::before": {
+                  content: '\"\"',
+                  position: "absolute",
+                  inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(0deg, rgba(148,163,184,0.06) 0px, rgba(148,163,184,0.06) 1px, transparent 1px, transparent 28px), " +
+                    "repeating-linear-gradient(90deg, rgba(148,163,184,0.05) 0px, rgba(148,163,184,0.05) 1px, transparent 1px, transparent 28px)",
+                  opacity: 0.45,
+                  mixBlendMode: "screen",
+                  pointerEvents: "none",
+                },
+                "& > :not([data-proficiency-bottom-dock='true'])": {
+                  position: "relative",
+                  zIndex: 1,
+                },
+              }
+        }
       >
         {/* Header */}
         <Box px={4} py={4} position="relative">
@@ -2730,9 +2850,9 @@ Return ONLY valid JSON:
           </Box>
         )}
 
-      {/* Remote live audio sink */}
-      <audio ref={audioRef} />
-      <ArchiveTextAnimation animation={archiveAnimation} />
+        {/* Remote live audio sink */}
+        <audio ref={audioRef} />
+        <ArchiveTextAnimation animation={archiveAnimation} />
       </Box>
 
       <Modal
@@ -2741,11 +2861,11 @@ Return ONLY valid JSON:
         size="xl"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}
@@ -2811,9 +2931,7 @@ Return ONLY valid JSON:
           flexDirection="column"
           borderTop={isLightTheme ? `1px solid ${APP_BORDER}` : undefined}
           boxShadow={
-            isLightTheme
-              ? "0 -18px 42px rgba(111, 86, 54, 0.12)"
-              : undefined
+            isLightTheme ? "0 -18px 42px rgba(111, 86, 54, 0.12)" : undefined
           }
           sx={{
             "@supports (height: 100dvh)": {
@@ -2822,7 +2940,13 @@ Return ONLY valid JSON:
           }}
         >
           <DrawerBody px={{ base: 4, md: 6 }} py={0} overflowY="auto">
-            <VStack spacing={5} align="stretch" w="100%" maxW="1180px" mx="auto">
+            <VStack
+              spacing={5}
+              align="stretch"
+              w="100%"
+              maxW="1180px"
+              mx="auto"
+            >
               {/* Header */}
               <Box
                 bg={isLightTheme ? APP_SURFACE : undefined}
@@ -2851,7 +2975,11 @@ Return ONLY valid JSON:
                     rounded="full"
                     border={isLightTheme ? "1px solid" : undefined}
                     borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-                    boxShadow={isLightTheme ? "0 8px 18px rgba(111, 86, 54, 0.08)" : undefined}
+                    boxShadow={
+                      isLightTheme
+                        ? "0 8px 18px rgba(111, 86, 54, 0.08)"
+                        : undefined
+                    }
                   >
                     <Box
                       as={LuBadgeCheck}
@@ -2888,10 +3016,16 @@ Return ONLY valid JSON:
                       fontWeight="bold"
                       border={isLightTheme ? "1px solid" : undefined}
                       borderColor={isLightTheme ? APP_BORDER_STRONG : undefined}
-                      boxShadow={isLightTheme ? "0 6px 14px rgba(111, 86, 54, 0.06)" : undefined}
+                      boxShadow={
+                        isLightTheme
+                          ? "0 6px 14px rgba(111, 86, 54, 0.06)"
+                          : undefined
+                      }
                     >
                       {assessedLevel} —{" "}
-                      {levelInfo?.name?.[supportLang] || levelInfo?.name?.en || assessedLevel}
+                      {levelInfo?.name?.[supportLang] ||
+                        levelInfo?.name?.en ||
+                        assessedLevel}
                     </Badge>
                   )}
                 </VStack>
@@ -2904,8 +3038,14 @@ Return ONLY valid JSON:
                   py={{ base: 4, md: 5 }}
                   rounded="2xl"
                   border="1px solid"
-                  borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
-                  boxShadow={isLightTheme ? "0 8px 20px rgba(111, 86, 54, 0.06)" : undefined}
+                  borderColor={
+                    isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"
+                  }
+                  boxShadow={
+                    isLightTheme
+                      ? "0 8px 20px rgba(111, 86, 54, 0.06)"
+                      : undefined
+                  }
                 >
                   <Text
                     fontSize="xs"
@@ -2932,7 +3072,9 @@ Return ONLY valid JSON:
               {/* Individual criterion scores — compact grid */}
               {assessmentScores && (
                 <>
-                  <Divider borderColor={isLightTheme ? APP_BORDER : "gray.700"} />
+                  <Divider
+                    borderColor={isLightTheme ? APP_BORDER : "gray.700"}
+                  />
                   <Box>
                     <Text
                       fontWeight="semibold"
@@ -2944,7 +3086,10 @@ Return ONLY valid JSON:
                     >
                       {ui.proficiency_test_breakdown}
                     </Text>
-                    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={3}>
+                    <Grid
+                      templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
+                      gap={3}
+                    >
                       {ASSESSMENT_CRITERIA.map((criterion) => {
                         const data = assessmentScores[criterion.key];
                         const score =
@@ -2999,10 +3144,14 @@ Return ONLY valid JSON:
                               py={3.5}
                               rounded="2xl"
                               borderLeft="3px solid"
-                              borderLeftColor={isLightTheme ? lightTone.border : accent}
+                              borderLeftColor={
+                                isLightTheme ? lightTone.border : accent
+                              }
                               h="100%"
                               border={isLightTheme ? "1px solid" : undefined}
-                              borderColor={isLightTheme ? APP_BORDER : undefined}
+                              borderColor={
+                                isLightTheme ? APP_BORDER : undefined
+                              }
                               boxShadow={
                                 isLightTheme
                                   ? "0 8px 18px rgba(111, 86, 54, 0.05)"
@@ -3017,7 +3166,9 @@ Return ONLY valid JSON:
                                 <Text
                                   fontSize="sm"
                                   fontWeight="semibold"
-                                  color={isLightTheme ? APP_TEXT_PRIMARY : undefined}
+                                  color={
+                                    isLightTheme ? APP_TEXT_PRIMARY : undefined
+                                  }
                                 >
                                   {criterion[supportLang] || criterion.en}
                                 </Text>
@@ -3031,7 +3182,9 @@ Return ONLY valid JSON:
                                     <Text
                                       fontSize="md"
                                       fontWeight="bold"
-                                      color={isLightTheme ? lightTone.fg : accent}
+                                      color={
+                                        isLightTheme ? lightTone.fg : accent
+                                      }
                                       lineHeight="1"
                                     >
                                       {score}
@@ -3044,7 +3197,11 @@ Return ONLY valid JSON:
                                   fontSize="xs"
                                   lineHeight="1.6"
                                   noOfLines={3}
-                                  color={isLightTheme ? APP_TEXT_SECONDARY : undefined}
+                                  color={
+                                    isLightTheme
+                                      ? APP_TEXT_SECONDARY
+                                      : undefined
+                                  }
                                 >
                                   {note}
                                 </Text>
@@ -3114,7 +3271,10 @@ Return ONLY valid JSON:
                     letterSpacing="0.05em"
                     color={isLightTheme ? APP_TEXT_MUTED : undefined}
                   >
-                    {ui.proficiency_test_level_label?.replace("{level}", assessedLevel) || `Level ${assessedLevel}`}
+                    {ui.proficiency_test_level_label?.replace(
+                      "{level}",
+                      assessedLevel,
+                    ) || `Level ${assessedLevel}`}
                   </Text>
                   <VStack align="start" spacing={1}>
                     {(
@@ -3204,7 +3364,11 @@ Return ONLY valid JSON:
                 rounded="xl"
                 isDisabled={!assessedLevel}
                 color={isLightTheme ? "#083344" : undefined}
-                boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
+                boxShadow={
+                  isLightTheme
+                    ? "0 8px 18px rgba(66, 168, 181, 0.18)"
+                    : undefined
+                }
               >
                 {ui.proficiency_test_return_app}
               </Button>
@@ -3228,11 +3392,19 @@ Return ONLY valid JSON:
         <DrawerContent
           {...rubricSwipeDismiss.drawerContentProps}
           motionProps={nativeDrawerMotionProps}
-          bg={isLightTheme ? APP_SURFACE_ELEVATED : "linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"}
+          bg={
+            isLightTheme
+              ? APP_SURFACE_ELEVATED
+              : "linear-gradient(180deg, #0f172a 0%, #111827 40%, #020617 100%)"
+          }
           color={isLightTheme ? APP_TEXT_PRIMARY : "gray.100"}
           borderTopRadius="24px"
           h="80vh"
-          borderTop={isLightTheme ? `1px solid ${APP_BORDER}` : "1px solid rgba(255,255,255,0.14)"}
+          borderTop={
+            isLightTheme
+              ? `1px solid ${APP_BORDER}`
+              : "1px solid rgba(255,255,255,0.14)"
+          }
           boxShadow={
             isLightTheme
               ? APP_SHADOW
@@ -3257,12 +3429,20 @@ Return ONLY valid JSON:
               <Box
                 ref={rubricInitialFocusRef}
                 tabIndex={-1}
-                bg={isLightTheme ? APP_SURFACE_MUTED : "linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"}
+                bg={
+                  isLightTheme
+                    ? APP_SURFACE_MUTED
+                    : "linear-gradient(135deg, rgba(128, 0, 248, 0.22), rgba(173, 90, 250, 0.22))"
+                }
                 border="1px solid"
-                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.18)"}
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(255,255,255,0.18)"
+                }
                 borderRadius="2xl"
                 p={4}
-                boxShadow={isLightTheme ? "none" : "inset 0 1px 0 rgba(255,255,255,0.06)"}
+                boxShadow={
+                  isLightTheme ? "none" : "inset 0 1px 0 rgba(255,255,255,0.06)"
+                }
                 maxWidth="600px"
                 width="100%"
               >
@@ -3286,7 +3466,9 @@ Return ONLY valid JSON:
                 borderRadius="xl"
                 p={4}
                 border="1px solid"
-                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"
+                }
                 maxWidth="600px"
                 width="100%"
               >
@@ -3307,7 +3489,9 @@ Return ONLY valid JSON:
                 borderRadius="xl"
                 p={4}
                 border="1px solid"
-                borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
+                borderColor={
+                  isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"
+                }
                 maxWidth={"600px"}
                 width="100%"
               >
@@ -3315,22 +3499,10 @@ Return ONLY valid JSON:
                   {ui.proficiency_test_scoring_heading}
                 </Text>
                 <VStack align="start" spacing={1} fontSize="sm" opacity={0.85}>
-                  <Text>
-                    •{" "}
-                    {ui.proficiency_test_scoring_1}
-                  </Text>
-                  <Text>
-                    •{" "}
-                    {ui.proficiency_test_scoring_2}
-                  </Text>
-                  <Text>
-                    •{" "}
-                    {ui.proficiency_test_scoring_3}
-                  </Text>
-                  <Text>
-                    •{" "}
-                    {ui.proficiency_test_scoring_4}
-                  </Text>
+                  <Text>• {ui.proficiency_test_scoring_1}</Text>
+                  <Text>• {ui.proficiency_test_scoring_2}</Text>
+                  <Text>• {ui.proficiency_test_scoring_3}</Text>
+                  <Text>• {ui.proficiency_test_scoring_4}</Text>
                 </VStack>
               </Box>
 
@@ -3339,14 +3511,22 @@ Return ONLY valid JSON:
                   {rubricRows.map((row) => (
                     <Box
                       key={row.level}
-                      bg={isLightTheme ? APP_SURFACE : "linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.78))"}
+                      bg={
+                        isLightTheme
+                          ? APP_SURFACE
+                          : "linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.78))"
+                      }
                       borderRadius="xl"
                       px={3}
                       py={2.5}
                       border="1px solid"
-                      borderColor={isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"}
+                      borderColor={
+                        isLightTheme ? APP_BORDER : "rgba(255,255,255,0.10)"
+                      }
                       _hover={{
-                        borderColor: isLightTheme ? "rgba(86, 168, 155, 0.35)" : "rgba(34,211,238,0.45)",
+                        borderColor: isLightTheme
+                          ? "rgba(86, 168, 155, 0.35)"
+                          : "rgba(34,211,238,0.45)",
                       }}
                       transition="border-color 0.2s ease"
                     >
@@ -3391,7 +3571,11 @@ Return ONLY valid JSON:
                 color="white"
                 rounded="xl"
                 onClick={closeRubric}
-                boxShadow={isLightTheme ? "0 8px 18px rgba(66, 168, 181, 0.18)" : undefined}
+                boxShadow={
+                  isLightTheme
+                    ? "0 8px 18px rgba(66, 168, 181, 0.18)"
+                    : undefined
+                }
               >
                 {ui.proficiency_test_got_it}
               </Button>
@@ -3408,11 +3592,11 @@ Return ONLY valid JSON:
         size="sm"
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg={isLightTheme ? "rgba(76, 60, 40, 0.18)" : "blackAlpha.700"}
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg={isLightTheme ? APP_SURFACE_ELEVATED : "gray.900"}

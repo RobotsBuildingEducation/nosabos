@@ -2156,12 +2156,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             bg="gray.900"
             color="gray.100"
             borderTopRadius="24px"
-            h="95vh"
+            h="90vh"
             m={0}
             overflow="hidden"
             sx={{
               "@supports (height: 100dvh)": {
-                height: "95dvh",
+                height: "90dvh",
               },
             }}
           >

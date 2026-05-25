@@ -102,7 +102,9 @@ import {
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
-const submitSpinner = <Spinner size="sm" thickness="2px" color="currentColor" />;
+const submitSpinner = (
+  <Spinner size="sm" thickness="2px" color="currentColor" />
+);
 const APP_SURFACE = "var(--app-surface)";
 const APP_SURFACE_ELEVATED = "var(--app-surface-elevated)";
 const APP_SURFACE_MUTED = "var(--app-surface-muted)";
@@ -1184,7 +1186,10 @@ export default function Vocabulary({
   const supportLang =
     progress.supportLang === "bilingual"
       ? "bilingual"
-      : normalizeSupportLanguage(progress.supportLang, DEFAULT_SUPPORT_LANGUAGE);
+      : normalizeSupportLanguage(
+          progress.supportLang,
+          DEFAULT_SUPPORT_LANGUAGE,
+        );
   const showTranslations =
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
@@ -1271,11 +1276,11 @@ export default function Vocabulary({
           ? "Copiado (pergunta + dica + traducao)"
           : userLanguage === "ar"
             ? "اتنسخ (السؤال + التلميح + الترجمة)"
-          : userLanguage === "de"
-            ? "Kopiert (Frage + Hinweis + Übersetzung)"
-          : userLanguage === "es"
-            ? "Copiado (pregunta + pista + traducción)"
-            : "Copied (question + hint + translation)"),
+            : userLanguage === "de"
+              ? "Kopiert (Frage + Hinweis + Übersetzung)"
+              : userLanguage === "es"
+                ? "Copiado (pregunta + pista + traducción)"
+                : "Copied (question + hint + translation)"),
       duration: 1200,
       isClosable: true,
       position: "top",
@@ -1285,12 +1290,9 @@ export default function Vocabulary({
   function makeBundle(q, h, tr) {
     const lines = [];
     if (q?.trim()) lines.push(q.trim());
-    if (h?.trim())
-      lines.push((t("vocab_speak_hint_label") + ": ") + h.trim());
+    if (h?.trim()) lines.push(t("vocab_speak_hint_label") + ": " + h.trim());
     if (tr?.trim())
-      lines.push(
-        (t("vocab_speak_translation_label") + ": ") + tr.trim(),
-      );
+      lines.push(t("vocab_speak_translation_label") + ": " + tr.trim());
     return lines.join("\n");
   }
 
@@ -1376,9 +1378,7 @@ export default function Vocabulary({
           model: DEFAULT_RESPONSES_MODEL,
           input: prompt,
         });
-        setAssistantSupportText(
-          response || t("vocab_assistant_error"),
-        );
+        setAssistantSupportText(response || t("vocab_assistant_error"));
       }
     } catch (error) {
       console.error("Failed to generate assistant support:", error);
@@ -1752,9 +1752,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
           model: MODEL,
           input: prompt,
         });
-        setExplanationText(
-          explanation || t("vocab_explanation_error"),
-        );
+        setExplanationText(explanation || t("vocab_explanation_error"));
       }
     } catch (error) {
       console.error("Failed to generate explanation:", error);
@@ -3397,8 +3395,8 @@ Return JSON ONLY:
             supportCode === "ja"
               ? "森"
               : supportCode === "es"
-              ? "bosque"
-              : "forest";
+                ? "bosque"
+                : "forest";
           const targetWord =
             targetLang === "es"
               ? "bosque"
@@ -3418,16 +3416,16 @@ Return JSON ONLY:
             supportCode === "ja"
               ? "目標言語で言いましょう"
               : supportCode === "es"
-              ? "Di la versión en español"
-              : "Say it in the target language",
+                ? "Di la versión en español"
+                : "Say it in the target language",
           );
           setSTranslation(
             showTranslations
               ? supportCode === "ja"
                 ? "森"
                 : supportCode === "es"
-                ? "bosque"
-                : "forest"
+                  ? "bosque"
+                  : "forest"
               : "",
           );
         } else if (fallbackVariant === "complete") {
@@ -3450,16 +3448,16 @@ Return JSON ONLY:
             supportCode === "ja"
               ? "動詞は「歌う」です"
               : supportCode === "es"
-              ? "El verbo es 'cantar'"
-              : "The verb is 'to sing'",
+                ? "El verbo es 'cantar'"
+                : "The verb is 'to sing'",
           );
           setSTranslation(
             showTranslations
               ? supportCode === "ja"
                 ? "女の子が歌を歌います。"
                 : supportCode === "es"
-                ? "La niña canta una canción."
-                : "The girl sings a song."
+                  ? "La niña canta una canción."
+                  : "The girl sings a song."
               : "",
           );
         } else {
@@ -3482,16 +3480,16 @@ Return JSON ONLY:
             supportCode === "ja"
               ? "幸せという意味です"
               : supportCode === "es"
-              ? "significa felicidad"
-              : "means happiness",
+                ? "significa felicidad"
+                : "means happiness",
           );
           setSTranslation(
             showTranslations
               ? supportCode === "ja"
                 ? "調和"
                 : supportCode === "es"
-                ? "sonrisa"
-                : "harmony"
+                  ? "sonrisa"
+                  : "harmony"
               : "",
           );
         }
@@ -4365,75 +4363,75 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       isJapaneseUI
         ? "単語マッチング練習です。単語を単語バンクの選択肢と組み合わせて答えてください。"
         : isArabicUI
-        ? "تمرين توصيل كلمات. جاوب بوصل الكلمات باختيارات بنك الكلمات."
-        : isChineseUI
-        ? "这是单词配对练习。请把单词与词库中的正确选项配对作答。"
-        : isPortugueseUI
-        ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
-        : isGermanUI
-        ? "Wortzuordnungsübung. Antworte, indem du die Wörter den Optionen in der Wortbank zuordnest."
-        : isSpanishUI
-        ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
-        : "Match the words exercise. Respond by matching the words with the word bank options.",
+          ? "تمرين توصيل كلمات. جاوب بوصل الكلمات باختيارات بنك الكلمات."
+          : isChineseUI
+            ? "这是单词配对练习。请把单词与词库中的正确选项配对作答。"
+            : isPortugueseUI
+              ? "Exercicio de associacao de palavras. Responda relacionando as palavras com as opcoes do banco de palavras."
+              : isGermanUI
+                ? "Wortzuordnungsübung. Antworte, indem du die Wörter den Optionen in der Wortbank zuordnest."
+                : isSpanishUI
+                  ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
+                  : "Match the words exercise. Respond by matching the words with the word bank options.",
       mStem
         ? isJapaneseUI
           ? `指示: ${mStem}`
           : isArabicUI
-          ? `التعليمات: ${mStem}`
-          : isChineseUI
-          ? `说明：${mStem}`
-          : isPortugueseUI
-          ? `Instrucao: ${mStem}`
-          : isGermanUI
-          ? `Anweisung: ${mStem}`
-          : isSpanishUI
-          ? `Indicador o consigna: ${mStem}`
-          : `Prompt: ${mStem}`
+            ? `التعليمات: ${mStem}`
+            : isChineseUI
+              ? `说明：${mStem}`
+              : isPortugueseUI
+                ? `Instrucao: ${mStem}`
+                : isGermanUI
+                  ? `Anweisung: ${mStem}`
+                  : isSpanishUI
+                    ? `Indicador o consigna: ${mStem}`
+                    : `Prompt: ${mStem}`
         : null,
       mLeft.length
         ? isJapaneseUI
           ? `左の列: ${mLeft.join(" | ")}`
           : isArabicUI
-          ? `العمود الشمال: ${mLeft.join(" | ")}`
-          : isChineseUI
-          ? `左侧栏：${mLeft.join(" | ")}`
-          : isPortugueseUI
-          ? `Coluna esquerda: ${mLeft.join(" | ")}`
-          : isGermanUI
-          ? `Linke Spalte: ${mLeft.join(" | ")}`
-          : isSpanishUI
-          ? `Columna izquierda: ${mLeft.join(" | ")}`
-          : `Left column: ${mLeft.join(" | ")}`
+            ? `العمود الشمال: ${mLeft.join(" | ")}`
+            : isChineseUI
+              ? `左侧栏：${mLeft.join(" | ")}`
+              : isPortugueseUI
+                ? `Coluna esquerda: ${mLeft.join(" | ")}`
+                : isGermanUI
+                  ? `Linke Spalte: ${mLeft.join(" | ")}`
+                  : isSpanishUI
+                    ? `Columna izquierda: ${mLeft.join(" | ")}`
+                    : `Left column: ${mLeft.join(" | ")}`
         : null,
       mRight.length
         ? isJapaneseUI
           ? `単語バンク: ${mRight.join(" | ")}`
           : isArabicUI
-          ? `بنك الكلمات: ${mRight.join(" | ")}`
-          : isChineseUI
-          ? `词库：${mRight.join(" | ")}`
-          : isPortugueseUI
-          ? `Banco de palavras: ${mRight.join(" | ")}`
-          : isGermanUI
-          ? `Wortbank: ${mRight.join(" | ")}`
-          : isSpanishUI
-          ? `Banco de palabras: ${mRight.join(" | ")}`
-          : `Word bank: ${mRight.join(" | ")}`
+            ? `بنك الكلمات: ${mRight.join(" | ")}`
+            : isChineseUI
+              ? `词库：${mRight.join(" | ")}`
+              : isPortugueseUI
+                ? `Banco de palavras: ${mRight.join(" | ")}`
+                : isGermanUI
+                  ? `Wortbank: ${mRight.join(" | ")}`
+                  : isSpanishUI
+                    ? `Banco de palabras: ${mRight.join(" | ")}`
+                    : `Word bank: ${mRight.join(" | ")}`
         : null,
       mHint
         ? isJapaneseUI
           ? `ヒント: ${mHint}`
           : isArabicUI
-          ? `تلميح: ${mHint}`
-          : isChineseUI
-          ? `提示：${mHint}`
-          : isPortugueseUI
-            ? `Dica: ${mHint}`
-          : isGermanUI
-            ? `Hinweis: ${mHint}`
-          : isSpanishUI
-            ? `Pista: ${mHint}`
-            : `Hint: ${mHint}`
+            ? `تلميح: ${mHint}`
+            : isChineseUI
+              ? `提示：${mHint}`
+              : isPortugueseUI
+                ? `Dica: ${mHint}`
+                : isGermanUI
+                  ? `Hinweis: ${mHint}`
+                  : isSpanishUI
+                    ? `Pista: ${mHint}`
+                    : `Hint: ${mHint}`
         : null,
     ].filter(Boolean);
     handleAskAssistant(promptLines.join("\n"));
@@ -4460,105 +4458,105 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         ? isJapaneseUI
           ? "声に出して言う（翻訳）。与えられた単語を練習言語に翻訳して答えてください。"
           : isArabicUI
-          ? "قلها بصوت عالي (ترجمة). قول ترجمة الكلمة دي بلغة التدرّب."
-          : isChineseUI
-          ? "大声说出来（翻译）。请说出给定单词在练习语言中的翻译。"
-          : isPortugueseUI
-          ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
-          : isGermanUI
-          ? "Laut sagen (übersetzen). Sage die Übersetzung des gezeigten Wortes in der Übungssprache."
-          : isSpanishUI
-          ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
-          : "Say it aloud (translate). Provide the target language translation for the given word."
+            ? "قلها بصوت عالي (ترجمة). قول ترجمة الكلمة دي بلغة التدرّب."
+            : isChineseUI
+              ? "大声说出来（翻译）。请说出给定单词在练习语言中的翻译。"
+              : isPortugueseUI
+                ? "Fale em voz alta (traducao). Diga a traducao para o idioma de pratica da palavra mostrada."
+                : isGermanUI
+                  ? "Laut sagen (übersetzen). Sage die Übersetzung des gezeigten Wortes in der Übungssprache."
+                  : isSpanishUI
+                    ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
+                    : "Say it aloud (translate). Provide the target language translation for the given word."
         : isJapaneseUI
           ? "声に出して言う（完成）。学習者が欠けている単語を入れて文全体を言えるよう助けてください。"
           : isArabicUI
-          ? "قلها بصوت عالي (إكمال). ساعد المتعلّم يقول الجملة كاملة بالكلمة الناقصة."
-          : isChineseUI
-          ? "大声说出来（补全）。请帮助学习者用缺失的词说完整句子。"
-          : isPortugueseUI
-          ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
-          : isGermanUI
-          ? "Laut sagen (ergänzen). Hilf dem Lernenden, den ganzen Satz mit dem fehlenden Wort zu sagen."
-          : isSpanishUI
-          ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
-          : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
+            ? "قلها بصوت عالي (إكمال). ساعد المتعلّم يقول الجملة كاملة بالكلمة الناقصة."
+            : isChineseUI
+              ? "大声说出来（补全）。请帮助学习者用缺失的词说完整句子。"
+              : isPortugueseUI
+                ? "Fale em voz alta (completar). Ajude o aluno a dizer a frase inteira com a palavra que falta."
+                : isGermanUI
+                  ? "Laut sagen (ergänzen). Hilf dem Lernenden, den ganzen Satz mit dem fehlenden Wort zu sagen."
+                  : isSpanishUI
+                    ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
+                    : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
 
     const details = [
       sPrompt
         ? isJapaneseUI
           ? `指示: ${sPrompt}`
           : isArabicUI
-          ? `التعليمات: ${sPrompt}`
-          : isChineseUI
-          ? `说明：${sPrompt}`
-          : isPortugueseUI
-          ? `Instrucao: ${sPrompt}`
-          : isGermanUI
-          ? `Anweisung: ${sPrompt}`
-          : isSpanishUI
-          ? `Consigna o indicación: ${sPrompt}`
-          : `Prompt: ${sPrompt}`
+            ? `التعليمات: ${sPrompt}`
+            : isChineseUI
+              ? `说明：${sPrompt}`
+              : isPortugueseUI
+                ? `Instrucao: ${sPrompt}`
+                : isGermanUI
+                  ? `Anweisung: ${sPrompt}`
+                  : isSpanishUI
+                    ? `Consigna o indicación: ${sPrompt}`
+                    : `Prompt: ${sPrompt}`
         : null,
       sStimulus
         ? isJapaneseUI
           ? `学習者に表示: ${sStimulus}`
           : isArabicUI
-          ? `المعروض للمتعلّم: ${sStimulus}`
-          : isChineseUI
-          ? `学习者看到的内容：${sStimulus}`
-          : isPortugueseUI
-          ? `Mostrado ao aluno: ${sStimulus}`
-          : isGermanUI
-          ? `Dem Lernenden gezeigt: ${sStimulus}`
-          : isSpanishUI
-          ? `Mostrado al estudiante: ${sStimulus}`
-          : `Shown to learner: ${sStimulus}`
+            ? `المعروض للمتعلّم: ${sStimulus}`
+            : isChineseUI
+              ? `学习者看到的内容：${sStimulus}`
+              : isPortugueseUI
+                ? `Mostrado ao aluno: ${sStimulus}`
+                : isGermanUI
+                  ? `Dem Lernenden gezeigt: ${sStimulus}`
+                  : isSpanishUI
+                    ? `Mostrado al estudiante: ${sStimulus}`
+                    : `Shown to learner: ${sStimulus}`
         : null,
       sTarget
         ? isJapaneseUI
           ? `期待される発話答え: ${sTarget}`
           : isArabicUI
-          ? `الإجابة المنطوقة المتوقعة: ${sTarget}`
-          : isChineseUI
-          ? `预期口头答案：${sTarget}`
-          : isPortugueseUI
-          ? `Resposta falada esperada: ${sTarget}`
-          : isGermanUI
-          ? `Erwartete gesprochene Antwort: ${sTarget}`
-          : isSpanishUI
-          ? `Respuesta hablada esperada: ${sTarget}`
-          : `Expected spoken answer: ${sTarget}`
+            ? `الإجابة المنطوقة المتوقعة: ${sTarget}`
+            : isChineseUI
+              ? `预期口头答案：${sTarget}`
+              : isPortugueseUI
+                ? `Resposta falada esperada: ${sTarget}`
+                : isGermanUI
+                  ? `Erwartete gesprochene Antwort: ${sTarget}`
+                  : isSpanishUI
+                    ? `Respuesta hablada esperada: ${sTarget}`
+                    : `Expected spoken answer: ${sTarget}`
         : null,
       sHint
         ? isJapaneseUI
           ? `ヒント: ${sHint}`
           : isArabicUI
-          ? `تلميح: ${sHint}`
-          : isChineseUI
-          ? `提示：${sHint}`
-          : isPortugueseUI
-            ? `Dica: ${sHint}`
-          : isGermanUI
-            ? `Hinweis: ${sHint}`
-          : isSpanishUI
-            ? `Pista: ${sHint}`
-            : `Hint: ${sHint}`
+            ? `تلميح: ${sHint}`
+            : isChineseUI
+              ? `提示：${sHint}`
+              : isPortugueseUI
+                ? `Dica: ${sHint}`
+                : isGermanUI
+                  ? `Hinweis: ${sHint}`
+                  : isSpanishUI
+                    ? `Pista: ${sHint}`
+                    : `Hint: ${sHint}`
         : null,
       sTranslation
         ? isJapaneseUI
           ? `サポート翻訳/文脈: ${sTranslation}`
           : isArabicUI
-          ? `ترجمة أو سياق مساعد: ${sTranslation}`
-          : isChineseUI
-          ? `辅助翻译/上下文：${sTranslation}`
-          : isPortugueseUI
-          ? `Traducao ou contexto de apoio: ${sTranslation}`
-          : isGermanUI
-          ? `Hilfsübersetzung/Kontext: ${sTranslation}`
-          : isSpanishUI
-          ? `Traducción o contexto de apoyo: ${sTranslation}`
-          : `Support translation/context: ${sTranslation}`
+            ? `ترجمة أو سياق مساعد: ${sTranslation}`
+            : isChineseUI
+              ? `辅助翻译/上下文：${sTranslation}`
+              : isPortugueseUI
+                ? `Traducao ou contexto de apoio: ${sTranslation}`
+                : isGermanUI
+                  ? `Hilfsübersetzung/Kontext: ${sTranslation}`
+                  : isSpanishUI
+                    ? `Traducción o contexto de apoyo: ${sTranslation}`
+                    : `Support translation/context: ${sTranslation}`
         : null,
     ].filter(Boolean);
 
@@ -4601,9 +4599,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ? "Traduza a palavra"
             : userLanguage === "ar"
               ? "ترجم الكلمة"
-            : userLanguage === "es"
-              ? "Traduce la palabra"
-              : "Translate the word")
+              : userLanguage === "es"
+                ? "Traduce la palabra"
+                : "Translate the word")
         );
       case "complete":
         return (
@@ -4612,9 +4610,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ? "Complete a frase"
             : userLanguage === "ar"
               ? "كمّل الجملة"
-            : userLanguage === "es"
-              ? "Completa la oración"
-              : "Complete the sentence")
+              : userLanguage === "es"
+                ? "Completa la oración"
+                : "Complete the sentence")
         );
       case "repeat":
       default:
@@ -4624,9 +4622,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ? "Fale a palavra"
             : userLanguage === "ar"
               ? "قل الكلمة"
-            : userLanguage === "es"
-              ? "Pronuncia la palabra"
-              : "Speak the word")
+              : userLanguage === "es"
+                ? "Pronuncia la palabra"
+                : "Speak the word")
         );
     }
   }, [sVariant, t, userLanguage]);
@@ -4679,15 +4677,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const AssistantSupportBox = () => {
     if (!assistantSupportText && !isLoadingAssistantSupport) return null;
     return (
-      <Box
-        p={4}
-        borderRadius="lg"
-        mt={4}
-        {...getQuestionAssistantPanelProps()}
-      >
+      <Box p={4} borderRadius="lg" mt={4} {...getQuestionAssistantPanelProps()}>
         <HStack spacing={2} mb={2}>
           <MdOutlineSupportAgent color={questionAssistantText.accent} />
-          <Text fontWeight="semibold" color={questionAssistantText.accentStrong}>
+          <Text
+            fontWeight="semibold"
+            color={questionAssistantText.accentStrong}
+          >
             {t("vocab_assistant")}
           </Text>
           {isLoadingAssistantSupport && (
@@ -4734,9 +4730,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? "Solte a resposta aqui"
       : userLanguage === "ar"
         ? "حط الإجابة هنا"
-      : userLanguage === "es"
-        ? "Suelta la respuesta aquí"
-        : "Drop the answer here");
+        : userLanguage === "es"
+          ? "Suelta la respuesta aquí"
+          : "Drop the answer here");
 
   const renderMcPrompt = () => {
     if (!qMC) return null;
@@ -4780,9 +4776,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderRadius="md"
                 borderBottomWidth="2px"
                 borderBottomColor={
-                  snapshot.isDraggingOver
-                    ? "purple.300"
-                    : APP_BORDER_STRONG
+                  snapshot.isDraggingOver ? "purple.300" : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
@@ -4813,9 +4807,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         rounded="md"
                         borderWidth="1px"
                         borderColor={
-                          snapshot.isDragging
-                            ? "purple.300"
-                            : APP_BORDER
+                          snapshot.isDragging ? "purple.300" : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4890,9 +4882,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderRadius="md"
                 borderBottomWidth="2px"
                 borderBottomColor={
-                  snapshot.isDraggingOver
-                    ? "purple.300"
-                    : APP_BORDER_STRONG
+                  snapshot.isDraggingOver ? "purple.300" : APP_BORDER_STRONG
                 }
                 bg={
                   snapshot.isDraggingOver
@@ -4927,9 +4917,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         rounded="md"
                         borderWidth="1px"
                         borderColor={
-                          snapshot.isDragging
-                            ? "purple.300"
-                            : APP_BORDER
+                          snapshot.isDragging ? "purple.300" : APP_BORDER
                         }
                         bg={
                           snapshot.isDragging
@@ -4966,21 +4954,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? "Proxima pergunta"
       : userLanguage === "ar"
         ? "السؤال التالي"
-      : userLanguage === "es"
-        ? "Siguiente pregunta"
-        : "Next question");
+        : userLanguage === "es"
+          ? "Siguiente pregunta"
+          : "Next question");
   const translatedSkipLabel = t("practice_skip_question");
   const skipLabel =
-    translatedSkipLabel &&
-    translatedSkipLabel !== "practice_skip_question"
+    translatedSkipLabel && translatedSkipLabel !== "practice_skip_question"
       ? translatedSkipLabel
       : userLanguage === "ar"
         ? "تخطي"
-      : userLanguage === "pt"
-        ? "Pular"
-        : userLanguage === "es"
-          ? "Saltar"
-          : "Skip";
+        : userLanguage === "pt"
+          ? "Pular"
+          : userLanguage === "es"
+            ? "Saltar"
+            : "Skip";
   const canSkip = !isFinalQuiz && !quizCompleted;
   const showNextButton = isFinalQuiz
     ? Boolean(nextAction)
@@ -4993,9 +4980,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? "Sintetizando..."
       : userLanguage === "ar"
         ? "جارٍ التركيب..."
-      : userLanguage === "es"
-        ? "Sintetizando..."
-        : "Synthesizing...");
+        : userLanguage === "es"
+          ? "Sintetizando..."
+          : "Synthesizing...");
   const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
   const isTranslateTargetToSupport = tDirection === "target-to-support";
   const translateSourceLang = isTranslateTargetToSupport
@@ -5371,7 +5358,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </HStack>
 
                 <Text fontSize="xs" color="gray.400" textAlign="center">
-                  {t("vocab_quiz_score_failed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
+                  {t("vocab_quiz_score_failed", {
+                    correct: quizCorrectAnswers,
+                    needed: quizConfig.passingScore,
+                  })}
                 </Text>
               </VStack>
             ) : (
@@ -5470,7 +5460,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   px={{ base: 4, md: 6 }}
                   py={{ base: 3, md: 4 }}
                 >
-                  {showKeyboard ? t("history_keyboard_close") : t("history_keyboard_open")}
+                  {showKeyboard
+                    ? t("history_keyboard_close")
+                    : t("history_keyboard_open")}
                 </Button>
               )}
               {canSkip && (
@@ -5522,7 +5514,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
+            <Text
+              fontSize="xl"
+              fontWeight="bold"
+              color={APP_TEXT_PRIMARY}
+              mb={2}
+            >
               {t("vocab_mc_instruction")}
             </Text>
             {mcLayout === "drag" ? (
@@ -5609,7 +5606,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     : APP_SURFACE_ELEVATED
                                 }
                                 color={
-                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
+                                  snapshot.isDragging
+                                    ? "white"
+                                    : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign={targetTextProps.textAlign}
@@ -5784,7 +5783,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={2}>
+            <Text
+              fontSize="xl"
+              fontWeight="bold"
+              color={APP_TEXT_PRIMARY}
+              mb={2}
+            >
               {t("vocab_ma_instruction")}
             </Text>
             {maLayout === "drag" ? (
@@ -5871,7 +5875,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     : APP_SURFACE_ELEVATED
                                 }
                                 color={
-                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
+                                  snapshot.isDragging
+                                    ? "white"
+                                    : APP_TEXT_PRIMARY
                                 }
                                 fontSize="sm"
                                 textAlign={targetTextProps.textAlign}
@@ -6060,7 +6066,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
             <HStack justify="space-between" align="center" mb={2}>
-              <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
+              <Text
+                fontSize="xl"
+                fontWeight="bold"
+                color={APP_TEXT_PRIMARY}
+                mb={0}
+              >
                 {t("vocab_say_it_aloud")}
               </Text>
               {sVariant === "translate" || sVariant === "complete" ? (
@@ -6145,9 +6156,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Ultima tentativa"
                       : userLanguage === "ar"
                         ? "آخر محاولة"
-                      : userLanguage === "es"
-                        ? "Último intento"
-                        : "Last attempt")}
+                        : userLanguage === "es"
+                          ? "Último intento"
+                          : "Last attempt")}
                   :
                 </Text>{" "}
                 {sRecognized}
@@ -6223,9 +6234,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             ? "Reconhecimento de voz indisponivel"
                             : userLanguage === "ar"
                               ? "التعرّف على الصوت غير متاح"
-                            : userLanguage === "es"
-                              ? "Reconocimiento de voz no disponible"
-                              : "Speech recognition unavailable"),
+                              : userLanguage === "es"
+                                ? "Reconocimiento de voz no disponible"
+                                : "Speech recognition unavailable"),
                         description: t("flashcard_speech_unavailable_desc"),
                         status: "warning",
                         duration: 3200,
@@ -6267,17 +6278,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         ? "Parar"
                         : userLanguage === "ar"
                           ? "إيقاف"
-                        : userLanguage === "es"
-                          ? "Detener"
-                          : "Stop")
+                          : userLanguage === "es"
+                            ? "Detener"
+                            : "Stop")
                     : t("vocab_speak_record") ||
                       (userLanguage === "pt"
                         ? "Gravar"
                         : userLanguage === "ar"
                           ? "سجّل"
-                        : userLanguage === "es"
-                          ? "Grabar"
-                          : "Record")}
+                          : userLanguage === "es"
+                            ? "Grabar"
+                            : "Record")}
               </Button>
             </Stack>
 
@@ -6306,9 +6317,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     ? "Otima pronunciacao!"
                     : userLanguage === "ar"
                       ? "نطق ممتاز!"
-                    : userLanguage === "es"
-                      ? "¡Gran pronunciación!"
-                      : "Great pronunciation!")
+                      : userLanguage === "es"
+                        ? "¡Gran pronunciación!"
+                        : "Great pronunciation!")
                 }
                 scoreLabel={
                   sEval
@@ -6317,9 +6328,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         ? `Pontuacao ${sEval.score}%`
                         : userLanguage === "ar"
                           ? `النتيجة ${sEval.score}%`
-                        : userLanguage === "es"
-                          ? `Puntaje ${sEval.score}%`
-                          : `Score ${sEval.score}%`)
+                          : userLanguage === "es"
+                            ? `Puntaje ${sEval.score}%`
+                            : `Score ${sEval.score}%`)
                     : ""
                 }
                 xp={recentXp}
@@ -6356,7 +6367,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
               {/* Header */}
               <HStack justify="space-between" align="center" mb={2}>
-                <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY} mb={0}>
+                <Text
+                  fontSize="xl"
+                  fontWeight="bold"
+                  color={APP_TEXT_PRIMARY}
+                  mb={0}
+                >
                   {t("vocab_match_instruction")}
                 </Text>
                 <IconButton
@@ -6825,11 +6841,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         closeOnOverlayClick={false}
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
@@ -6915,7 +6931,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {quizCorrectAnswers}/{quizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {t("vocab_quiz_score_passed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
+                    {t("vocab_quiz_score_passed", {
+                      correct: quizCorrectAnswers,
+                      needed: quizConfig.passingScore,
+                    })}
                   </Text>
                 </VStack>
               </Box>
@@ -6949,11 +6968,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         closeOnOverlayClick={false}
         motionPreset="none"
       >
-        <ModalOverlay
+        {/* <ModalOverlay
           motionProps={nativeOverlayMotionProps}
           bg="blackAlpha.700"
           backdropFilter="blur(4px)"
-        />
+        /> */}
         <ModalContent
           motionProps={nativeModalMotionProps}
           bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"
@@ -7019,7 +7038,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {quizCorrectAnswers}/{quizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {t("vocab_quiz_score_failed", { correct: quizCorrectAnswers, needed: quizConfig.passingScore })}
+                    {t("vocab_quiz_score_failed", {
+                      correct: quizCorrectAnswers,
+                      needed: quizConfig.passingScore,
+                    })}
                   </Text>
                 </VStack>
               </Box>

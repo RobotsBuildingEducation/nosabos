@@ -1,5 +1,3 @@
-import React from "react";
-import { motion } from "framer-motion";
 import { useThemeStore } from "../useThemeStore";
 
 /**
@@ -40,12 +38,7 @@ const AnimatedBackground = () => {
         }}
       />
 
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: isLightTheme ? [0.22, 0.34, 0.22] : [0.3, 0.5, 0.3],
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      <div
         style={{
           position: "absolute",
           top: "10%",
@@ -56,20 +49,12 @@ const AnimatedBackground = () => {
           background: isLightTheme
             ? "radial-gradient(circle, rgba(251, 146, 60, 0.18) 0%, transparent 70%)"
             : "radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, transparent 70%)",
-          filter: "blur(60px)",
+          opacity: isLightTheme ? 0.28 : 0.38,
+          transform: "scale(1.08)",
+          filter: "blur(30px)",
         }}
       />
-      <motion.div
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: isLightTheme ? [0.16, 0.28, 0.16] : [0.2, 0.4, 0.2],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-          ease: "easeInOut",
-          delay: 2,
-        }}
+      <div
         style={{
           position: "absolute",
           bottom: "20%",
@@ -80,7 +65,9 @@ const AnimatedBackground = () => {
           background: isLightTheme
             ? "radial-gradient(circle, rgba(59, 130, 246, 0.14) 0%, transparent 70%)"
             : "radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%)",
-          filter: "blur(50px)",
+          opacity: isLightTheme ? 0.22 : 0.3,
+          transform: "scale(1.06)",
+          filter: "blur(24px)",
         }}
       />
 
