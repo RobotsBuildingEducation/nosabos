@@ -1520,7 +1520,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: null },
+            session: {
+              type: "realtime",
+              audio: { input: { turn_detection: null } },
+            },
           }),
         );
       } catch {
@@ -1551,7 +1554,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
         dcRef.current.send(
           JSON.stringify({
             type: "session.update",
-            session: { turn_detection: buildRealtimeTurnDetection() },
+            session: {
+              type: "realtime",
+              audio: { input: { turn_detection: buildRealtimeTurnDetection() } },
+            },
           }),
         );
       } catch {
@@ -1639,7 +1645,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           }
 
           // Handle assistant response transcript
-          if (eventType === "response.audio_transcript.delta") {
+          if (
+            eventType === "response.audio_transcript.delta" ||
+            eventType === "response.output_audio_transcript.delta" ||
+            eventType === "response.output_text.delta" ||
+            eventType === "response.text.delta"
+          ) {
             const delta = data.delta || "";
             const turn = findRealtimeTurnForResponse(responseId);
             const assistantMessageId =
@@ -1655,7 +1666,12 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             return;
           }
 
-          if (eventType === "response.audio_transcript.done") {
+          if (
+            eventType === "response.audio_transcript.done" ||
+            eventType === "response.output_audio_transcript.done" ||
+            eventType === "response.output_text.done" ||
+            eventType === "response.text.done"
+          ) {
             const turn = responseId
               ? realtimeTurnQueueRef.current.find(
                   (candidate) => candidate.responseId === responseId,
@@ -1755,12 +1771,19 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
             JSON.stringify({
               type: "session.update",
               session: {
+                type: "realtime",
                 instructions,
-                modalities: ["audio", "text"],
-                voice: voiceName,
-                turn_detection: buildRealtimeTurnDetection(),
-                input_audio_transcription: { model: "gpt-4o-mini-transcribe" },
-                output_audio_format: "pcm16",
+                output_modalities: ["audio"],
+                audio: {
+                  input: {
+                    turn_detection: buildRealtimeTurnDetection(),
+                    transcription: { model: "gpt-4o-mini-transcribe" },
+                  },
+                  output: {
+                    format: { type: "audio/pcm", rate: 24000 },
+                    voice: voiceName,
+                  },
+                },
               },
             }),
           );
