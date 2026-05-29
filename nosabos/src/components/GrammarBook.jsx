@@ -1747,10 +1747,11 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
           setExplanationText(finalText);
         }
       } else {
-        // Fallback to non-streaming if Gemini unavailable
+        // Fallback streaming when Gemini unavailable
         const explanation = await callResponses({
           model: MODEL,
           input: prompt,
+          onChunk: (fullText) => setExplanationText(fullText || ""),
         });
         setExplanationText(
           explanation || t("vocab_explanation_error"),
