@@ -10,7 +10,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
+import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
@@ -385,7 +385,7 @@ export default function RepeatWhatYouHear({
   }, [consumePrimedWarmAudio, createWarmAudio, onPlayTTS, sourceSentence]);
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
+    <SortableArea onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
         <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
           {headingLabel}
@@ -398,7 +398,68 @@ export default function RepeatWhatYouHear({
           p={5}
           boxShadow={APP_SHADOW}
         >
-          <VStack align="stretch" spacing={4}>
+          <VStack align="stretch" spacing={5}>
+            {/* Audio speaker and assistant controls centered above the answer box */}
+            <HStack justify="center" spacing={4} py={2}>
+              <IconButton
+                aria-label={
+                  userLanguage === "ja"
+                    ? "聞く"
+                    : userLanguage === "zh"
+                      ? "聆听"
+                    : userLanguage === "ar"
+                      ? "استمع"
+                    : userLanguage === "pt"
+                      ? "Ouvir"
+                    : userLanguage === "es"
+                      ? "Escuchar"
+                      : "Listen"
+                }
+                icon={renderSpeakerIcon(isSynthesizing)}
+                size="lg"
+                fontSize="2xl"
+                onPointerDown={primeTTSGesture}
+                onTouchStart={primeTTSGesture}
+                onClick={handleManualPlay}
+                isRound
+                {...getQuestionToolButtonProps({
+                  active: isSynthesizing,
+                })}
+              />
+              {onAskAssistant && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "ja"
+                      ? "アシスタントに聞く"
+                      : userLanguage === "zh"
+                        ? "询问助手"
+                        : userLanguage === "ar"
+                          ? "اسأل المساعد"
+                        : userLanguage === "pt"
+                      ? "Pedir ajuda"
+                      : userLanguage === "es"
+                      ? "Pedir ayuda"
+                      : "Ask the assistant"
+                  }
+                  icon={
+                    isLoadingAssistantSupport ? (
+                      <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
+                    ) : (
+                      <MdOutlineSupportAgent />
+                    )
+                  }
+                  size="md"
+                  fontSize="xl"
+                  rounded="xl"
+                  onClick={handleSendHelp}
+                  isDisabled={
+                    isLoadingAssistantSupport || !!assistantSupportText
+                  }
+                  {...getQuestionToolButtonProps()}
+                />
+              )}
+            </HStack>
+
             <Box
               bg={APP_SURFACE}
               borderRadius="lg"
@@ -413,182 +474,108 @@ export default function RepeatWhatYouHear({
               p={4}
               minH="80px"
             >
-              <Droppable droppableId="selected-words" direction="horizontal">
-                {(provided, snapshot) => (
-                  <Flex
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    wrap="wrap"
-                    gap={2}
-                    minH="48px"
-                    align="center"
-                    justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
-                    dir={answerDir}
-                    bg={
-                      snapshot.isDraggingOver
-                        ? "rgba(128, 90, 213, 0.08)"
-                        : "transparent"
-                    }
-                    borderRadius="md"
-                    p={2}
-                    transition="background 0.2s ease"
+              <SortableList
+                id="selected-words"
+                items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
+                wrap="wrap"
+                gap={2}
+                minH="48px"
+                align="center"
+                justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+                dir={answerDir}
+                bg="transparent"
+                activeStyles={{ bg: "rgba(128, 90, 213, 0.08)" }}
+                borderRadius="md"
+                p={2}
+                transition="background 0.2s ease"
+              >
+                {selectedWords.length === 0 && (
+                  <Text
+                    color={APP_TEXT_MUTED}
+                    fontSize="sm"
+                    fontStyle="italic"
+                    w="100%"
+                    textAlign="center"
                   >
-                    <Flex align="center" gap={3}>
-                      {onAskAssistant && (
-                        <IconButton
-                          aria-label={
-                            userLanguage === "ja"
-                              ? "アシスタントに聞く"
-                              : userLanguage === "zh"
-                                ? "询问助手"
-                              : userLanguage === "ar"
-                                ? "اسأل المساعد"
-                              : userLanguage === "pt"
-                              ? "Pedir ajuda"
-                              : userLanguage === "es"
-                              ? "Pedir ayuda"
-                              : "Ask the assistant"
-                          }
-                          icon={
-                            isLoadingAssistantSupport ? (
-                              <VoiceOrb state={["idle","listening","speaking"][Math.floor(Math.random()*3)]} size={16} />
-                            ) : (
-                              <MdOutlineSupportAgent />
-                            )
-                          }
-                          size="sm"
-                          fontSize="lg"
-                          rounded="xl"
-                          onClick={handleSendHelp}
-                          isDisabled={
-                            isLoadingAssistantSupport || !!assistantSupportText
-                          }
-                          {...getQuestionToolButtonProps()}
-                        />
-                      )}
-                      <IconButton
-                        aria-label={
-                          userLanguage === "ja"
-                            ? "聞く"
-                            : userLanguage === "zh"
-                              ? "聆听"
-                            : userLanguage === "ar"
-                              ? "استمع"
-                            : userLanguage === "pt"
-                              ? "Ouvir"
-                            : userLanguage === "es"
-                              ? "Escuchar"
-                              : "Listen"
-                        }
-                        icon={renderSpeakerIcon(isSynthesizing)}
-                        size="md"
-                        fontSize="xl"
-                        onPointerDown={primeTTSGesture}
-                        onTouchStart={primeTTSGesture}
-                        onClick={handleManualPlay}
-                        isRound
-                        {...getQuestionToolButtonProps({
-                          active: isSynthesizing,
-                        })}
-                      />
-                      {selectedWords.length === 0 &&
-                        !snapshot.isDraggingOver && (
-                          <Text
-                            color={APP_TEXT_MUTED}
-                            fontSize="sm"
-                            fontStyle="italic"
-                            w="100%"
-                            textAlign="center"
-                          >
-                            {instructionLabel}
-                          </Text>
-                        )}
-                    </Flex>
-
-                    {selectedWords.map((wordIndex, position) => (
-                      <Draggable
-                        key={`selected-${wordIndex}-${position}`}
-                        draggableId={`selected-${wordIndex}-${position}`}
-                        index={position}
-                        isDragDisabled={lastOk === true}
-                      >
-                        {(dragProvided, dragSnapshot) => (
-                          <Box
-                            ref={dragProvided.innerRef}
-                            {...dragProvided.draggableProps}
-                            {...dragProvided.dragHandleProps}
-                            px={3}
-                            py={2}
-                            rounded="md"
-                            {...getQuestionChipProps({
-                              dragging: dragSnapshot.isDragging,
-                            })}
-                            cursor={lastOk === true ? "default" : "grab"}
-                            dir={answerTextProps.dir}
-                            lang={answerTextProps.lang}
-                            sx={{ unicodeBidi: "plaintext" }}
-                            onClick={() => {
-                              if (lastOk !== true) {
-                                playSound(selectSound);
-                                handleSelectedWordClick(position);
-                              }
-                            }}
-                            _hover={
-                              lastOk !== true ? getQuestionChipProps()._hover : {}
-                            }
-                            style={dragProvided.draggableProps.style}
-                          >
-                            {wordBank[wordIndex]}
-                          </Box>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </Flex>
+                    {instructionLabel}
+                  </Text>
                 )}
-              </Droppable>
+
+                {selectedWords.map((wordIndex, position) => (
+                  <SortableItem
+                    key={`selected-${wordIndex}`}
+                    id={`selected-${wordIndex}`}
+                    disabled={lastOk === true}
+                  >
+                    {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                      <Box
+                        ref={setNodeRef}
+                        style={style}
+                        {...attributes}
+                        {...listeners}
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        {...getQuestionChipProps({
+                          dragging: isDragging,
+                        })}
+                        cursor={lastOk === true ? "default" : "grab"}
+                        dir={answerTextProps.dir}
+                        lang={answerTextProps.lang}
+                        sx={{ unicodeBidi: "plaintext" }}
+                        onClick={() => {
+                          if (lastOk !== true) {
+                            playSound(selectSound);
+                            handleSelectedWordClick(position);
+                          }
+                        }}
+                        _hover={
+                          lastOk !== true ? getQuestionChipProps()._hover : {}
+                        }
+                        >
+                          {wordBank[wordIndex]}
+                        </Box>
+                      )}
+                    </SortableItem>
+                  ))}
+                </SortableList>
             </Box>
           </VStack>
         </Box>
 
         <Box borderBottomWidth="1px" borderColor={APP_BORDER} />
 
-        <Droppable droppableId="word-bank" direction="horizontal">
-          {(provided, snapshot) => (
-            <Flex
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              wrap="wrap"
-              gap={3}
-              justify="center"
-              p={2}
-              minH="60px"
-              dir={answerDir}
-              bg={
-                snapshot.isDraggingOver
-                  ? "rgba(128, 90, 213, 0.05)"
-                  : "transparent"
-              }
-              borderRadius="md"
-              transition="background 0.2s ease"
-            >
+        <SortableList
+          id="word-bank"
+          items={bankOrder.map((wordIndex) => `bank-${wordIndex}`)}
+          wrap="wrap"
+          gap={3}
+          justify="center"
+          p={2}
+          minH="60px"
+          dir={answerDir}
+          bg="transparent"
+          activeStyles={{ bg: "rgba(128, 90, 213, 0.05)" }}
+          borderRadius="md"
+          transition="background 0.2s ease"
+        >
               {bankOrder.map((wordIndex, position) => (
-                <Draggable
+                <SortableItem
                   key={`bank-${wordIndex}`}
-                  draggableId={`bank-${wordIndex}`}
-                  index={position}
-                  isDragDisabled={lastOk === true}
+                  id={`bank-${wordIndex}`}
+                  disabled={lastOk === true}
                 >
-                  {(dragProvided, dragSnapshot) => (
+                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                     <Box
-                      ref={dragProvided.innerRef}
-                      {...dragProvided.draggableProps}
-                      {...dragProvided.dragHandleProps}
+                      ref={setNodeRef}
+                      style={style}
+                      {...attributes}
+                      {...listeners}
                       px={4}
                       py={2}
                       rounded="lg"
                       {...getQuestionChipProps({
-                        dragging: dragSnapshot.isDragging,
+                        dragging: isDragging,
                       })}
                       fontSize="sm"
                       dir={answerTextProps.dir}
@@ -604,17 +591,13 @@ export default function RepeatWhatYouHear({
                       _hover={
                         lastOk !== true ? getQuestionChipProps()._hover : {}
                       }
-                      style={dragProvided.draggableProps.style}
                     >
                       {wordBank[wordIndex]}
                     </Box>
                   )}
-                </Draggable>
+                </SortableItem>
               ))}
-              {provided.placeholder}
-            </Flex>
-          )}
-        </Droppable>
+            </SortableList>
 
         {/* Inline assistant support response */}
         {(assistantSupportText || isLoadingAssistantSupport) && (
@@ -706,6 +689,6 @@ export default function RepeatWhatYouHear({
           noteCreated={noteCreated}
         />
       </VStack>
-    </DragDropContext>
+    </SortableArea>
   );
 }

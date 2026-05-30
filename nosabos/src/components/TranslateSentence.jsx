@@ -3,7 +3,6 @@ import React, { useState, useCallback, useEffect, useRef } from "react";
 import {
   Box,
   Button,
-  Flex,
   HStack,
   IconButton, Text,
   Spinner,
@@ -11,7 +10,7 @@ import {
   Stack,
   Center,
 } from "@chakra-ui/react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
@@ -405,7 +404,7 @@ export default function TranslateSentence({
   }, [consumePrimedWarmAudio, createWarmAudio, onPlayTTS, sourceSentence]);
 
   return (
-    <DragDropContext onDragEnd={handleDragEnd}>
+    <SortableArea onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
         {/* Header with character and sentence */}
         <Text fontSize="xl" fontWeight="bold" color={APP_TEXT_PRIMARY}>
@@ -575,27 +574,22 @@ export default function TranslateSentence({
           minH="80px"
           boxShadow={APP_SHADOW}
         >
-          <Droppable droppableId="selected-words" direction="horizontal">
-            {(provided, snapshot) => (
-              <Flex
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                wrap="wrap"
-                gap={2}
-                minH="48px"
-                align="center"
-                justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
-                dir={answerDir}
-                bg={
-                  snapshot.isDraggingOver
-                    ? "rgba(128, 90, 213, 0.08)"
-                    : "transparent"
-                }
-                borderRadius="md"
-                p={2}
-                transition="background 0.2s ease"
-              >
-                {selectedWords.length === 0 && !snapshot.isDraggingOver && (
+          <SortableList
+            id="selected-words"
+            items={selectedWords.map((wordIndex) => `selected-${wordIndex}`)}
+            wrap="wrap"
+            gap={2}
+            minH="48px"
+            align="center"
+            justify={answerDir === "rtl" ? "flex-end" : "flex-start"}
+            dir={answerDir}
+            bg="transparent"
+            activeStyles={{ bg: "rgba(128, 90, 213, 0.08)" }}
+            borderRadius="md"
+            p={2}
+            transition="background 0.2s ease"
+          >
+            {selectedWords.length === 0 && (
                   <Text
                     color={APP_TEXT_MUTED}
                     fontSize="sm"
@@ -606,89 +600,80 @@ export default function TranslateSentence({
                     {instructionLabel}
                   </Text>
                 )}
-                {selectedWords.map((wordIndex, position) => (
-                  <Draggable
-                    key={`selected-${wordIndex}-${position}`}
-                    draggableId={`selected-${wordIndex}-${position}`}
-                    index={position}
-                    isDragDisabled={lastOk === true}
+            {selectedWords.map((wordIndex, position) => (
+              <SortableItem
+                key={`selected-${wordIndex}`}
+                id={`selected-${wordIndex}`}
+                disabled={lastOk === true}
+              >
+                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                  <Box
+                    ref={setNodeRef}
+                    style={style}
+                    {...attributes}
+                    {...listeners}
+                    px={3}
+                    py={2}
+                    rounded="md"
+                    {...getQuestionChipProps({
+                      dragging: isDragging,
+                    })}
+                    fontSize="sm"
+                    dir={answerTextProps.dir}
+                    lang={answerTextProps.lang}
+                    sx={{ unicodeBidi: "plaintext" }}
+                    cursor={lastOk === true ? "default" : "pointer"}
+                    onClick={() => {
+                      if (lastOk !== true) {
+                        playSound(selectSound);
+                        handleSelectedWordClick(position);
+                      }
+                    }}
+                    _hover={lastOk !== true ? getQuestionChipProps()._hover : {}}
                   >
-                    {(dragProvided, dragSnapshot) => (
-                      <Box
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        px={3}
-                        py={2}
-                        rounded="md"
-                        {...getQuestionChipProps({
-                          dragging: dragSnapshot.isDragging,
-                        })}
-                        fontSize="sm"
-                        dir={answerTextProps.dir}
-                        lang={answerTextProps.lang}
-                        sx={{ unicodeBidi: "plaintext" }}
-                        cursor={lastOk === true ? "default" : "pointer"}
-                        onClick={() => {
-                          if (lastOk !== true) {
-                            playSound(selectSound);
-                            handleSelectedWordClick(position);
-                          }
-                        }}
-                        _hover={lastOk !== true ? getQuestionChipProps()._hover : {}}
-                        style={dragProvided.draggableProps.style}
-                      >
-                        {wordBank[wordIndex]}
-                      </Box>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </Flex>
-            )}
-          </Droppable>
+                    {wordBank[wordIndex]}
+                  </Box>
+                )}
+              </SortableItem>
+            ))}
+          </SortableList>
         </Box>
 
         {/* Divider line */}
         <Box borderBottomWidth="1px" borderColor={APP_BORDER} />
 
         {/* Word bank */}
-        <Droppable droppableId="word-bank" direction="horizontal">
-          {(provided, snapshot) => (
-            <Flex
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              wrap="wrap"
-              gap={3}
-              justify="center"
-              p={2}
-              minH="60px"
-              dir={answerDir}
-              bg={
-                snapshot.isDraggingOver
-                  ? "rgba(128, 90, 213, 0.05)"
-                  : "transparent"
-              }
-              borderRadius="md"
-              transition="background 0.2s ease"
-            >
+        <SortableList
+          id="word-bank"
+          items={bankOrder.map((wordIndex) => `bank-${wordIndex}`)}
+          wrap="wrap"
+          gap={3}
+          justify="center"
+          p={2}
+          minH="60px"
+          dir={answerDir}
+          bg="transparent"
+          activeStyles={{ bg: "rgba(128, 90, 213, 0.05)" }}
+          borderRadius="md"
+          transition="background 0.2s ease"
+        >
               {bankOrder.map((wordIndex, position) => (
-                <Draggable
+                <SortableItem
                   key={`bank-${wordIndex}`}
-                  draggableId={`bank-${wordIndex}`}
-                  index={position}
-                  isDragDisabled={lastOk === true}
+                  id={`bank-${wordIndex}`}
+                  disabled={lastOk === true}
                 >
-                  {(dragProvided, dragSnapshot) => (
+                  {({ setNodeRef, attributes, listeners, style, isDragging }) => (
                     <Box
-                      ref={dragProvided.innerRef}
-                      {...dragProvided.draggableProps}
-                      {...dragProvided.dragHandleProps}
+                      ref={setNodeRef}
+                      style={style}
+                      {...attributes}
+                      {...listeners}
                       px={4}
                       py={2}
                       rounded="lg"
                       {...getQuestionChipProps({
-                        dragging: dragSnapshot.isDragging,
+                        dragging: isDragging,
                       })}
                       fontSize="sm"
                       dir={answerTextProps.dir}
@@ -702,17 +687,13 @@ export default function TranslateSentence({
                         }
                       }}
                       _hover={lastOk !== true ? getQuestionChipProps()._hover : {}}
-                      style={dragProvided.draggableProps.style}
                     >
                       {wordBank[wordIndex]}
                     </Box>
                   )}
-                </Draggable>
+                </SortableItem>
               ))}
-              {provided.placeholder}
-            </Flex>
-          )}
-        </Droppable>
+            </SortableList>
 
         {/* Action buttons */}
         <Stack direction="row" spacing={3} align="center" justify="flex-end">
@@ -762,6 +743,6 @@ export default function TranslateSentence({
           noteCreated={noteCreated}
         />
       </VStack>
-    </DragDropContext>
+    </SortableArea>
   );
 }

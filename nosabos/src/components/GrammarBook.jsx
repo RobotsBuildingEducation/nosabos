@@ -26,7 +26,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { SortableArea, SortableList, SortableItem } from "./dnd/Sortable";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
@@ -2328,10 +2328,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
   useEffect(() => {
     if (maLayout !== "drag") return;
     setMaPicks((prev) => {
-      const filled = maSlots
-        .filter((idx) => idx != null)
-        .map((idx) => maChoices[idx])
-        .filter(Boolean);
+      const filled = maSlots.filter((idx) => idx != null);
       if (
         filled.length === prev.length &&
         filled.every((val, idx) => val === prev[idx])
@@ -2340,7 +2337,7 @@ Bleib knapp, unterstützend und aufs Lernen fokussiert. Schreibe die gesamte Ant
       }
       return filled;
     });
-  }, [maLayout, maSlots, maChoices]);
+  }, [maLayout, maSlots]);
 
   /* ---------- AUTO-GENERATE on first render (respect language settings) ---------- */
   // ✅ Wait until 'ready' so the very first prompt uses the user's target/support language.
@@ -3764,8 +3761,9 @@ Return JSON ONLY:
     setExplanationText("");
     setCurrentQuestionData(null);
 
+    const selectedStrings = maPicks.map((idx) => maChoices[idx]).filter((s) => s !== undefined);
     const answerSet = new Set((maAnswers || []).map((a) => norm(a)));
-    const pickSet = new Set(maPicks.map((a) => norm(a)));
+    const pickSet = new Set(selectedStrings.map((a) => norm(a)));
     const deterministicOk =
       answerSet.size > 0 &&
       answerSet.size === pickSet.size &&
@@ -3777,7 +3775,7 @@ Return JSON ONLY:
         targetLang,
         stem: maQ,
         choices: maChoices,
-        userSelections: maPicks,
+        userSelections: selectedStrings,
         hint: maHint,
       }),
     });
@@ -3812,7 +3810,7 @@ Return JSON ONLY:
     // Store question data for explanation and note creation
     setCurrentQuestionData({
       question: maQ,
-      userAnswer: maPicks.join(", "),
+      userAnswer: selectedStrings.join(", "),
       correctAnswer: maAnswers?.join(", ") || maHint,
       questionType: "ma",
     });
@@ -4744,81 +4742,57 @@ Return JSON ONLY:
         }
         blankPlaced = true;
         nodes.push(
-          <Droppable
-            droppableId="mc-slot"
-            direction="horizontal"
+          <SortableList
+            id="mc-slot"
+            items={mcSlotIndex != null ? [`mc-${mcSlotIndex}`] : []}
             key={`grammar-mc-blank-${idx}`}
+            as="span"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            minW="72px"
+            minH="32px"
+            px={2}
+            py={1}
+            mx={1}
+            borderRadius="md"
+            borderBottomWidth="2px"
+            borderBottomColor={APP_BORDER_STRONG}
+            bg={APP_SURFACE_MUTED}
+            activeStyles={{
+              borderBottomColor: "purple.300",
+              bg: "rgba(128,90,213,0.18)",
+            }}
+            transition="all 0.2s ease"
           >
-            {(provided, snapshot) => (
-              <Box
-                as="span"
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                display="inline-flex"
-                alignItems="center"
-                justifyContent="center"
-                minW="72px"
-                minH="32px"
-                px={2}
-                py={1}
-                mx={1}
-                borderRadius="md"
-                borderBottomWidth="2px"
-                borderBottomColor={
-                  snapshot.isDraggingOver
-                    ? "purple.300"
-                    : APP_BORDER_STRONG
-                }
-                bg={
-                  snapshot.isDraggingOver
-                    ? "rgba(128,90,213,0.18)"
-                    : APP_SURFACE_MUTED
-                }
-                transition="all 0.2s ease"
-              >
-                {mcSlotIndex != null ? (
-                  <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
-                    {(dragProvided, snapshot) => (
-                      <Box
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        style={{
-                          cursor: "grab",
-                          ...(dragProvided.draggableProps.style || {}),
-                        }}
-                        px={3}
-                        py={2}
-                        rounded="md"
-                        borderWidth="1px"
-                        borderColor={
-                          snapshot.isDragging
-                            ? "purple.300"
-                            : APP_BORDER
-                        }
-                        bg={
-                          snapshot.isDragging
-                            ? "rgba(128,90,213,0.24)"
-                            : "purple.600"
-                        }
-                        color="white"
-                        fontSize="sm"
-                      >
-                        {mcChoices[mcSlotIndex]}
-                      </Box>
-                    )}
-                  </Draggable>
-                ) : (
-                  <Text as="span" fontSize="sm" opacity={0.7}>
-                    {dragPlaceholderLabel}
-                  </Text>
+            {mcSlotIndex != null ? (
+              <SortableItem id={`mc-${mcSlotIndex}`}>
+                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                  <Box
+                    ref={setNodeRef}
+                    style={style}
+                    {...attributes}
+                    {...listeners}
+                    cursor="grab"
+                    px={3}
+                    py={2}
+                    rounded="md"
+                    borderWidth="1px"
+                    borderColor={isDragging ? "purple.300" : APP_BORDER}
+                    bg={isDragging ? "rgba(128,90,213,0.24)" : "purple.600"}
+                    color="white"
+                    fontSize="sm"
+                  >
+                    {mcChoices[mcSlotIndex]}
+                  </Box>
                 )}
-                <Box as="span" display="none">
-                  {provided.placeholder}
-                </Box>
-              </Box>
+              </SortableItem>
+            ) : (
+              <Text as="span" fontSize="sm" opacity={0.7}>
+                {dragPlaceholderLabel}
+              </Text>
             )}
-          </Droppable>,
+          </SortableList>,
         );
       }
     });
@@ -4850,81 +4824,57 @@ Return JSON ONLY:
         }
         const choiceIdx = maSlots[currentSlot];
         nodes.push(
-          <Droppable
-            droppableId={`ma-slot-${currentSlot}`}
-            direction="horizontal"
+          <SortableList
+            id={`ma-slot-${currentSlot}`}
+            items={choiceIdx != null ? [`ma-${choiceIdx}`] : []}
             key={`grammar-ma-blank-${currentSlot}`}
+            as="span"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            minW="72px"
+            minH="32px"
+            px={2}
+            py={1}
+            mx={1}
+            borderRadius="md"
+            borderBottomWidth="2px"
+            borderBottomColor={APP_BORDER_STRONG}
+            bg={APP_SURFACE_MUTED}
+            activeStyles={{
+              borderBottomColor: "purple.300",
+              bg: "rgba(128,90,213,0.18)",
+            }}
+            transition="all 0.2s ease"
           >
-            {(provided, snapshot) => (
-              <Box
-                as="span"
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                display="inline-flex"
-                alignItems="center"
-                justifyContent="center"
-                minW="72px"
-                minH="32px"
-                px={2}
-                py={1}
-                mx={1}
-                borderRadius="md"
-                borderBottomWidth="2px"
-                borderBottomColor={
-                  snapshot.isDraggingOver
-                    ? "purple.300"
-                    : APP_BORDER_STRONG
-                }
-                bg={
-                  snapshot.isDraggingOver
-                    ? "rgba(128,90,213,0.18)"
-                    : APP_SURFACE_MUTED
-                }
-                transition="all 0.2s ease"
-              >
-                {choiceIdx != null ? (
-                  <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
-                    {(dragProvided, snapshot) => (
-                      <Box
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        style={{
-                          cursor: "grab",
-                          ...(dragProvided.draggableProps.style || {}),
-                        }}
-                        px={3}
-                        py={2}
-                        rounded="md"
-                        borderWidth="1px"
-                        borderColor={
-                          snapshot.isDragging
-                            ? "purple.300"
-                            : APP_BORDER
-                        }
-                        bg={
-                          snapshot.isDragging
-                            ? "rgba(128,90,213,0.24)"
-                            : "purple.600"
-                        }
-                        color="white"
-                        fontSize="sm"
-                      >
-                        {maChoices[choiceIdx]}
-                      </Box>
-                    )}
-                  </Draggable>
-                ) : (
-                  <Text as="span" fontSize="sm" opacity={0.7}>
-                    {dragPlaceholderLabel}
-                  </Text>
+            {choiceIdx != null ? (
+              <SortableItem id={`ma-${choiceIdx}`}>
+                {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                  <Box
+                    ref={setNodeRef}
+                    style={style}
+                    {...attributes}
+                    {...listeners}
+                    cursor="grab"
+                    px={3}
+                    py={2}
+                    rounded="md"
+                    borderWidth="1px"
+                    borderColor={isDragging ? "purple.300" : APP_BORDER}
+                    bg={isDragging ? "rgba(128,90,213,0.24)" : "purple.600"}
+                    color="white"
+                    fontSize="sm"
+                  >
+                    {maChoices[choiceIdx]}
+                  </Box>
                 )}
-                <Box as="span" display="none">
-                  {provided.placeholder}
-                </Box>
-              </Box>
+              </SortableItem>
+            ) : (
+              <Text as="span" fontSize="sm" opacity={0.7}>
+                {dragPlaceholderLabel}
+              </Text>
             )}
-          </Droppable>,
+          </SortableList>,
         );
       }
     });
@@ -5176,7 +5126,7 @@ Return JSON ONLY:
               {t("vocab_mc_instruction")}
             </Text>
             {mcLayout === "drag" ? (
-              <DragDropContext onDragEnd={handleMcDragEnd}>
+              <SortableArea onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
                     bg={APP_SURFACE_ELEVATED}
@@ -5219,73 +5169,56 @@ Return JSON ONLY:
                       </HStack>
                     </VStack>
                   </Box>
-                  <Droppable droppableId="mc-bank" direction="horizontal">
-                    {(provided) => (
-                      <Flex
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        align="stretch"
-                        wrap="wrap"
-                        gap={3}
-                        w="full"
-                      >
-                        {mcBankOrder.map((idx, position) => (
-                          <Draggable
-                            draggableId={`mc-${idx}`}
-                            index={position}
-                            key={`grammar-mc-bank-${idx}`}
+                  <SortableList
+                    id="mc-bank"
+                    items={mcBankOrder.map((idx) => `mc-${idx}`)}
+                    align="stretch"
+                    wrap="wrap"
+                    gap={3}
+                    w="full"
+                  >
+                    {mcBankOrder.map((idx, position) => (
+                      <SortableItem id={`mc-${idx}`} key={`grammar-mc-bank-${idx}`}>
+                        {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                          <Box
+                            ref={setNodeRef}
+                            style={style}
+                            {...attributes}
+                            {...listeners}
+                            cursor="pointer"
+                            px={3}
+                            py={2}
+                            rounded="md"
+                            borderWidth="1px"
+                            borderColor={
+                              isDragging ? "purple.300" : APP_BORDER
+                            }
+                            bg={
+                              isDragging
+                                ? "rgba(128,90,213,0.16)"
+                                : APP_SURFACE_ELEVATED
+                            }
+                            color={isDragging ? "white" : APP_TEXT_PRIMARY}
+                            fontSize="sm"
+                            textAlign={targetTextProps.textAlign}
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
+                            sx={{ unicodeBidi: "plaintext" }}
+                            onClick={() => handleMcAnswerClick(idx, position)}
+                            _hover={{
+                              bg: APP_SURFACE_MUTED,
+                              borderColor: "purple.200",
+                            }}
+                            transition="all 0.15s ease"
                           >
-                            {(dragProvided, snapshot) => (
-                              <Box
-                                ref={dragProvided.innerRef}
-                                {...dragProvided.draggableProps}
-                                {...dragProvided.dragHandleProps}
-                                style={{
-                                  cursor: "pointer",
-                                  ...(dragProvided.draggableProps.style || {}),
-                                }}
-                                px={3}
-                                py={2}
-                                rounded="md"
-                                borderWidth="1px"
-                                borderColor={
-                                  snapshot.isDragging
-                                    ? "purple.300"
-                                    : APP_BORDER
-                                }
-                                bg={
-                                  snapshot.isDragging
-                                    ? "rgba(128,90,213,0.16)"
-                                    : APP_SURFACE_ELEVATED
-                                }
-                                color={
-                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
-                                }
-                                fontSize="sm"
-                                textAlign={targetTextProps.textAlign}
-                                dir={targetTextProps.dir}
-                                lang={targetTextProps.lang}
-                                sx={{ unicodeBidi: "plaintext" }}
-                                onClick={() =>
-                                  handleMcAnswerClick(idx, position)
-                                }
-                                _hover={{
-                                  bg: APP_SURFACE_MUTED,
-                                  borderColor: "purple.200",
-                                }}
-                                transition="all 0.15s ease"
-                              >
-                                {mcChoices[idx]}
-                              </Box>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Flex>
-                    )}
-                  </Droppable>
+                            {mcChoices[idx]}
+                          </Box>
+                        )}
+                      </SortableItem>
+                    ))}
+                  </SortableList>
                 </VStack>
-              </DragDropContext>
+              </SortableArea>
             ) : (
               <>
                 <Box
@@ -5447,7 +5380,7 @@ Return JSON ONLY:
               {t("vocab_ma_instruction")}
             </Text>
             {maLayout === "drag" ? (
-              <DragDropContext onDragEnd={handleMaDragEnd}>
+              <SortableArea onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   <Box
                     bg={APP_SURFACE_ELEVATED}
@@ -5490,73 +5423,56 @@ Return JSON ONLY:
                       </HStack>
                     </VStack>
                   </Box>
-                  <Droppable droppableId="ma-bank" direction="horizontal">
-                    {(provided) => (
-                      <Flex
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        align="stretch"
-                        wrap="wrap"
-                        gap={3}
-                        w="full"
-                      >
-                        {maBankOrder.map((idx, position) => (
-                          <Draggable
-                            draggableId={`ma-${idx}`}
-                            index={position}
-                            key={`grammar-ma-bank-${idx}`}
+                  <SortableList
+                    id="ma-bank"
+                    items={maBankOrder.map((idx) => `ma-${idx}`)}
+                    align="stretch"
+                    wrap="wrap"
+                    gap={3}
+                    w="full"
+                  >
+                    {maBankOrder.map((idx, position) => (
+                      <SortableItem id={`ma-${idx}`} key={`grammar-ma-bank-${idx}`}>
+                        {({ setNodeRef, attributes, listeners, style, isDragging }) => (
+                          <Box
+                            ref={setNodeRef}
+                            style={style}
+                            {...attributes}
+                            {...listeners}
+                            cursor="pointer"
+                            px={3}
+                            py={2}
+                            rounded="md"
+                            borderWidth="1px"
+                            borderColor={
+                              isDragging ? "purple.300" : APP_BORDER
+                            }
+                            bg={
+                              isDragging
+                                ? "rgba(128,90,213,0.16)"
+                                : APP_SURFACE_ELEVATED
+                            }
+                            color={isDragging ? "white" : APP_TEXT_PRIMARY}
+                            fontSize="sm"
+                            textAlign={targetTextProps.textAlign}
+                            dir={targetTextProps.dir}
+                            lang={targetTextProps.lang}
+                            sx={{ unicodeBidi: "plaintext" }}
+                            onClick={() => handleMaAnswerClick(idx, position)}
+                            _hover={{
+                              bg: APP_SURFACE_MUTED,
+                              borderColor: "purple.200",
+                            }}
+                            transition="all 0.15s ease"
                           >
-                            {(dragProvided, snapshot) => (
-                              <Box
-                                ref={dragProvided.innerRef}
-                                {...dragProvided.draggableProps}
-                                {...dragProvided.dragHandleProps}
-                                style={{
-                                  cursor: "pointer",
-                                  ...(dragProvided.draggableProps.style || {}),
-                                }}
-                                px={3}
-                                py={2}
-                                rounded="md"
-                                borderWidth="1px"
-                                borderColor={
-                                  snapshot.isDragging
-                                    ? "purple.300"
-                                    : APP_BORDER
-                                }
-                                bg={
-                                  snapshot.isDragging
-                                    ? "rgba(128,90,213,0.16)"
-                                    : APP_SURFACE_ELEVATED
-                                }
-                                color={
-                                  snapshot.isDragging ? "white" : APP_TEXT_PRIMARY
-                                }
-                                fontSize="sm"
-                                textAlign={targetTextProps.textAlign}
-                                dir={targetTextProps.dir}
-                                lang={targetTextProps.lang}
-                                sx={{ unicodeBidi: "plaintext" }}
-                                onClick={() =>
-                                  handleMaAnswerClick(idx, position)
-                                }
-                                _hover={{
-                                  bg: APP_SURFACE_MUTED,
-                                  borderColor: "purple.200",
-                                }}
-                                transition="all 0.15s ease"
-                              >
-                                {maChoices[idx]}
-                              </Box>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </Flex>
-                    )}
-                  </Droppable>
+                            {maChoices[idx]}
+                          </Box>
+                        )}
+                      </SortableItem>
+                    ))}
+                  </SortableList>
                 </VStack>
-              </DragDropContext>
+              </SortableArea>
             ) : (
               <>
                 <Box
@@ -5608,7 +5524,7 @@ Return JSON ONLY:
                       ? ["…", "…", "…", "…", "…"]
                       : []
                   ).map((c, i) => {
-                    const isSelected = maPicks.includes(c);
+                    const isSelected = maPicks.includes(i);
                     return (
                       <Box
                         key={i}
@@ -5616,9 +5532,9 @@ Return JSON ONLY:
                           if (!maChoices.length) return;
                           playSound(selectSound);
                           if (isSelected) {
-                            setMaPicks(maPicks.filter((p) => p !== c));
+                            setMaPicks(maPicks.filter((p) => p !== i));
                           } else {
-                            setMaPicks([...maPicks, c]);
+                            setMaPicks([...maPicks, i]);
                           }
                         }}
                         cursor={maChoices.length ? "pointer" : "not-allowed"}
@@ -6003,7 +5919,7 @@ Return JSON ONLY:
                 />
               </HStack>
 
-              <DragDropContext onDragEnd={onDragEnd}>
+              <SortableArea onDragEnd={onDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   {(mLeft.length
                     ? mLeft
@@ -6024,14 +5940,17 @@ Return JSON ONLY:
                       {/* Left word */}
                       <HStack
                         minW={{ base: "120px", md: "180px" }}
+                        maxW={{ base: "60%", md: "55%" }}
                         spacing={1}
-                        flexShrink={0}
+                        flexShrink={1}
+                        align="start"
                       >
                         <IconButton
                           aria-label={t("vocab_listen_word")}
                           icon={renderSpeakerIcon(matchWordSynthesizing === i)}
                           size="xs"
                           fontSize="md"
+                          flexShrink={0}
                           onPointerDown={primeTTSGesture}
                           onTouchStart={primeTTSGesture}
                           onClick={() => handlePlayMatchWordTTS(lhs, i)}
@@ -6040,7 +5959,13 @@ Return JSON ONLY:
                             active: matchWordSynthesizing === i,
                           })}
                         />
-                        <Text fontWeight="semibold" color={APP_TEXT_PRIMARY}>
+                        <Text
+                          fontWeight="semibold"
+                          color={APP_TEXT_PRIMARY}
+                          minW={0}
+                          whiteSpace="normal"
+                          overflowWrap="anywhere"
+                        >
                           {lhs}
                         </Text>
                       </HStack>
@@ -6051,95 +5976,77 @@ Return JSON ONLY:
                       </Text>
 
                       {/* Drop slot */}
-                      <Droppable
-                        droppableId={`slot-${i}`}
-                        direction="horizontal"
+                      <SortableList
+                        id={`slot-${i}`}
+                        items={
+                          mSlots[i] !== null && mRight[mSlots[i]] != null
+                            ? [`r-${mSlots[i]}`]
+                            : []
+                        }
+                        align="center"
+                        minH="42px"
+                        px={3}
+                        {...getQuestionDropZoneProps({
+                          filled:
+                            mSlots[i] !== null && mRight[mSlots[i]] != null,
+                        })}
+                        rounded="lg"
+                        w="100%"
                       >
-                        {(provided) => (
-                          <HStack
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            minH="42px"
-                            px={3}
-                            {...getQuestionDropZoneProps({
-                              filled:
-                                mSlots[i] !== null && mRight[mSlots[i]] != null,
-                            })}
-                            rounded="lg"
-                            w="100%"
-                          >
-                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
-                              <Draggable
-                                draggableId={`r-${mSlots[i]}`}
-                                index={0}
-                              >
-                                {(dragProvided) => (
-                                  <Box
-                                    ref={dragProvided.innerRef}
-                                    {...dragProvided.draggableProps}
-                                    {...dragProvided.dragHandleProps}
-                                    onClick={() => {
-                                      playSound(selectSound);
-                                      handleMatchAutoMove(
-                                        mSlots[i],
-                                        `slot-${i}`,
-                                      );
-                                    }}
-                                    onKeyDown={(event) => {
-                                      if (
-                                        event.key === "Enter" ||
-                                        event.key === " "
-                                      ) {
-                                        event.preventDefault();
-                                        playSound(selectSound);
-                                        handleMatchAutoMove(
-                                          mSlots[i],
-                                          `slot-${i}`,
-                                        );
-                                      }
-                                    }}
-                                    role="button"
-                                    tabIndex={0}
-                                    style={{
-                                      cursor: "pointer",
-                                      transition:
-                                        "transform 0.18s ease, box-shadow 0.18s ease",
-                                      ...(dragProvided.draggableProps.style ||
-                                        {}),
-                                    }}
-                                    _hover={{
-                                      transform: "translateY(-2px)",
-                                      boxShadow:
-                                        "0 4px 12px rgba(128,90,213,0.3)",
-                                    }}
-                                    _focusVisible={{
-                                      boxShadow:
-                                        "0 0 0 2px rgba(128,90,213,0.5)",
-                                      transform: "translateY(-2px)",
-                                    }}
-                                    px={3}
-                                    py={1.5}
-                                    rounded="lg"
-                                    {...getQuestionChipProps()}
-                                    fontSize="sm"
-                                  >
-                                    {mRight[mSlots[i]]}
-                                  </Box>
-                                )}
-                              </Draggable>
-                            ) : (
-                              <Text
-                                opacity={0.4}
+                        {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                          <SortableItem id={`r-${mSlots[i]}`}>
+                            {({ setNodeRef, attributes, listeners, style }) => (
+                              <Box
+                                ref={setNodeRef}
+                                style={style}
+                                {...attributes}
+                                {...listeners}
+                                onClick={() => {
+                                  playSound(selectSound);
+                                  handleMatchAutoMove(mSlots[i], `slot-${i}`);
+                                }}
+                                onKeyDown={(event) => {
+                                  if (
+                                    event.key === "Enter" ||
+                                    event.key === " "
+                                  ) {
+                                    event.preventDefault();
+                                    playSound(selectSound);
+                                    handleMatchAutoMove(mSlots[i], `slot-${i}`);
+                                  }
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                cursor="pointer"
+                                transition="transform 0.18s ease, box-shadow 0.18s ease"
+                                _hover={{
+                                  transform: "translateY(-2px)",
+                                  boxShadow: "0 4px 12px rgba(128,90,213,0.3)",
+                                }}
+                                _focusVisible={{
+                                  boxShadow: "0 0 0 2px rgba(128,90,213,0.5)",
+                                  transform: "translateY(-2px)",
+                                }}
+                                px={3}
+                                py={1.5}
+                                rounded="lg"
+                                {...getQuestionChipProps()}
                                 fontSize="sm"
-                                fontStyle="italic"
                               >
-                                {t("grammar_dnd_drop_here")}
-                              </Text>
+                                {mRight[mSlots[i]]}
+                              </Box>
                             )}
-                            {provided.placeholder}
-                          </HStack>
+                          </SortableItem>
+                        ) : (
+                          <Text
+                            opacity={0.4}
+                            fontSize="sm"
+                            fontStyle="italic"
+                          >
+                            {t("grammar_dnd_drop_here")}
+                          </Text>
                         )}
-                      </Droppable>
+                      </SortableList>
                     </HStack>
                   ))}
                 </VStack>
@@ -6162,97 +6069,90 @@ Return JSON ONLY:
                   >
                     {t("grammar_dnd_bank")}
                   </Text>
-                  <Droppable droppableId="bank" direction="horizontal">
-                    {(provided) => (
-                      <HStack
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        spacing={2}
-                        flexWrap="wrap"
-                        minH="44px"
-                        p={2}
-                        border={`1px dashed ${APP_BORDER_STRONG}`}
-                        rounded="lg"
-                        bg={APP_SURFACE_MUTED}
-                      >
-                        {(mBank.length
-                          ? mBank
-                          : loadingMG
-                            ? [0, 1, 2]
-                            : []
-                        ).map((ri, index) =>
-                          mRight[ri] != null ? (
-                            <Draggable
-                              key={`r-${ri}`}
-                              draggableId={`r-${ri}`}
-                              index={index}
-                            >
-                              {(dragProvided) => (
-                                <Box
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  onClick={() => {
-                                    playSound(selectSound);
-                                    handleMatchAutoMove(ri, "bank");
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (
-                                      event.key === "Enter" ||
-                                      event.key === " "
-                                    ) {
-                                      event.preventDefault();
-                                      playSound(selectSound);
-                                      handleMatchAutoMove(ri, "bank");
-                                    }
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  style={{
-                                    cursor: "pointer",
-                                    transition:
-                                      "transform 0.18s ease, box-shadow 0.18s ease",
-                                    ...(dragProvided.draggableProps.style ||
-                                      {}),
-                                  }}
-                                  _hover={{
-                                    transform: "translateY(-2px)",
-                                    boxShadow:
-                                      "0 4px 12px rgba(128,90,213,0.25)",
-                                  }}
-                                  _focusVisible={{
-                                    boxShadow: "0 0 0 2px rgba(128,90,213,0.5)",
-                                    transform: "translateY(-2px)",
-                                  }}
-                                  px={3}
-                                  py={1.5}
-                                  rounded="lg"
-                                  {...getQuestionChipProps()}
-                                  fontSize="sm"
-                                >
-                                  {mRight[ri]}
-                                </Box>
-                              )}
-                            </Draggable>
-                          ) : (
+                  <SortableList
+                    id="bank"
+                    items={(mBank.length
+                      ? mBank
+                      : loadingMG
+                        ? [0, 1, 2]
+                        : []
+                    )
+                      .filter((ri) => mRight[ri] != null)
+                      .map((ri) => `r-${ri}`)}
+                    gap={2}
+                    flexWrap="wrap"
+                    minH="44px"
+                    p={2}
+                    border={`1px dashed ${APP_BORDER_STRONG}`}
+                    rounded="lg"
+                    bg={APP_SURFACE_MUTED}
+                  >
+                    {(mBank.length
+                      ? mBank
+                      : loadingMG
+                        ? [0, 1, 2]
+                        : []
+                    ).map((ri, index) =>
+                      mRight[ri] != null ? (
+                        <SortableItem key={`r-${ri}`} id={`r-${ri}`}>
+                          {({ setNodeRef, attributes, listeners, style }) => (
                             <Box
-                              key={`placeholder-${index}`}
+                              ref={setNodeRef}
+                              style={style}
+                              {...attributes}
+                              {...listeners}
+                              onClick={() => {
+                                playSound(selectSound);
+                                handleMatchAutoMove(ri, "bank");
+                              }}
+                              onKeyDown={(event) => {
+                                if (
+                                  event.key === "Enter" ||
+                                  event.key === " "
+                                ) {
+                                  event.preventDefault();
+                                  playSound(selectSound);
+                                  handleMatchAutoMove(ri, "bank");
+                                }
+                              }}
+                              role="button"
+                              tabIndex={0}
+                              cursor="pointer"
+                              transition="transform 0.18s ease, box-shadow 0.18s ease"
+                              _hover={{
+                                transform: "translateY(-2px)",
+                                boxShadow: "0 4px 12px rgba(128,90,213,0.25)",
+                              }}
+                              _focusVisible={{
+                                boxShadow: "0 0 0 2px rgba(128,90,213,0.5)",
+                                transform: "translateY(-2px)",
+                              }}
                               px={3}
                               py={1.5}
                               rounded="lg"
-                              border={`1px dashed ${APP_BORDER_STRONG}`}
-                              opacity={0.4}
+                              {...getQuestionChipProps()}
+                              fontSize="sm"
                             >
-                              …
+                              {mRight[ri]}
                             </Box>
-                          ),
-                        )}
-                        {provided.placeholder}
-                      </HStack>
+                          )}
+                        </SortableItem>
+                      ) : (
+                        <Box
+                          key={`placeholder-${index}`}
+                          px={3}
+                          py={1.5}
+                          rounded="lg"
+                          border={`1px dashed ${APP_BORDER_STRONG}`}
+                          opacity={0.4}
+                        >
+                          …
+                        </Box>
+                      ),
                     )}
-                  </Droppable>
+                  </SortableList>
                 </Box>
-              </DragDropContext>
+              </SortableArea>
             </Box>
 
             <AssistantSupportBox />
